@@ -1,178 +1,221 @@
-import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit"
+import { createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit'
+import type { TypedStartListening } from '@reduxjs/toolkit'
+import type { RootState } from '@/store'
 import {
-  resetQuizState,
-  setCurrentQuestion,
-  setUserAnswer,
-  startTimer,
-  pauseTimer,
-  resumeTimer,
-  markQuizCompleted,
   fetchQuiz,
+  saveQuizSubmissionState, 
+  clearQuizSubmissionState,
   submitQuiz,
-} from "../slices/quizSlice"
-import type { RootState } from "@/store"
+  resetQuizState,
+  setUserAnswer,
+  setCurrentQuestion
+} from '../slices/quizSlice'
 
-const listenerMiddleware = createListenerMiddleware()
-const QUIZ_STATE_KEY = "quiz_state"
+// Constants - storage keys
+const STORAGE_KEYS = {
+  QUIZ_STATE: 'quiz_state',
+  AUTH_REDIRECT: 'auth-redirect-state',
+  SUBMISSION_PREFIX: 'quiz-submission-'
+}
 
-/**
- * Middleware that persists quiz state to localStorage when specific actions are dispatched
- */
-listenerMiddleware.startListening({
+// Types for persistent state
+interface PersistentQuizState {
+  quizData: any;
+  currentQuestion: number;
+  userAnswers: any[];
+  timeRemaining?: number | null;
+  timerActive?: boolean;
+}
+
+// Helper functions - moved outside of middleware for better reusability
+export function persistQuizState(state: PersistentQuizState): void {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.QUIZ_STATE, JSON.stringify(state));
+    }
+  } catch (e) {
+    // Silent fail on storage errors
+  }
+}
+
+export function loadPersistedQuizState(): PersistentQuizState | null {
+  try {
+    if (typeof window !== 'undefined') {
+      const data = localStorage.getItem(STORAGE_KEYS.QUIZ_STATE);
+      return data ? JSON.parse(data) : null;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function clearPersistedQuizState(): void {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEYS.QUIZ_STATE);
+    }
+  } catch (e) {
+    // Silent fail on storage errors
+  }
+}
+
+// Authentication redirect state
+export function persistAuthRedirectState(state: any): void {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.AUTH_REDIRECT, JSON.stringify(state));
+    }
+  } catch (e) {
+    // Silent fail
+  }
+}
+
+export function loadAuthRedirectState(): any {
+  try {
+    if (typeof window !== 'undefined') {
+      const data = localStorage.getItem(STORAGE_KEYS.AUTH_REDIRECT);
+      return data ? JSON.parse(data) : null;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function clearAuthRedirectState(): void {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_REDIRECT);
+    }
+  } catch (e) {
+    // Silent fail
+  }
+}
+
+export function hasAuthRedirectState(): boolean {
+  try {
+    if (typeof window !== 'undefined') {
+      return Boolean(localStorage.getItem(STORAGE_KEYS.AUTH_REDIRECT));
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Submission state handling - moved from slice to middleware
+export function saveSubmissionState(slug: string, state: string): void {
+  if (typeof window === 'undefined' || !slug) return;
+  try {
+    localStorage.setItem(`${STORAGE_KEYS.SUBMISSION_PREFIX}${slug}`, state);
+  } catch (e) {
+    // Silent fail
+  }
+}
+
+export function clearSubmissionState(slug: string): void {
+  if (typeof window === 'undefined' || !slug) return;
+  try {
+    localStorage.removeItem(`${STORAGE_KEYS.SUBMISSION_PREFIX}${slug}`);
+  } catch (e) {
+    // Silent fail
+  }
+}
+
+export function getSubmissionState(slug: string): string | null {
+  if (typeof window === 'undefined' || !slug) return null;
+  try {
+    return localStorage.getItem(`${STORAGE_KEYS.SUBMISSION_PREFIX}${slug}`);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Create and export the middleware
+const persistQuizMiddleware = createListenerMiddleware();
+type AppStartListening = TypedStartListening<RootState>;
+const startAppListening = persistQuizMiddleware.startListening as AppStartListening;
+
+// Listen to actions that should trigger state persistence
+startAppListening({
   matcher: isAnyOf(
-    resetQuizState,
-    setCurrentQuestion,
     setUserAnswer,
-    startTimer,
-    pauseTimer,
-    resumeTimer,
-    markQuizCompleted,
-    fetchQuiz.fulfilled,
-    submitQuiz.fulfilled,
-    // Add rejected actions to handle auth errors
-    fetchQuiz.rejected,
-    submitQuiz.rejected,
+    setCurrentQuestion,
+    fetchQuiz.fulfilled
   ),
-  effect: (action, listenerApi) => {
-    const state = listenerApi.getState() as RootState
-
-    // Skip if running on server
-    if (typeof window === "undefined") return
-
-    // If quiz is completed or no current quiz, remove from localStorage
-    if (state.quiz.isCompleted || !state.quiz.currentQuizId) {
-      try {
-        localStorage.removeItem(QUIZ_STATE_KEY)
-      } catch (error) {
-        console.error("Failed to remove completed quiz state:", error)
-      }
-      return
+  effect: async (action, listenerApi) => {
+    const state = listenerApi.getState().quiz;
+    
+    // Skip persistence for test environment
+    if (process.env.NODE_ENV === 'test') return;
+    
+    // Skip if no quiz is loaded
+    if (!state.quizData) return;
+    
+    // Schedule persistence during idle time
+    if (typeof window !== 'undefined' && window.requestIdleCallback) {
+      window.requestIdleCallback(() => {
+        persistQuizState({
+          quizData: state.quizData,
+          currentQuestion: state.currentQuestion,
+          userAnswers: state.userAnswers,
+          timeRemaining: state.timeRemaining,
+          timerActive: state.timerActive,
+        });
+      });
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      setTimeout(() => {
+        persistQuizState({
+          quizData: state.quizData,
+          currentQuestion: state.currentQuestion,
+          userAnswers: state.userAnswers,
+          timeRemaining: state.timeRemaining,
+          timerActive: state.timerActive,
+        });
+      }, 100);
     }
-
-    // Special handling for authentication errors
-    if (
-      action.type.endsWith("/rejected") &&
-      action.payload &&
-      (action.payload === "Unauthorized" || action.payload.includes("Session"))
-    ) {
-      // Make sure to persist state before redirecting to login
-      try {
-        const persistedState = {
-          quizData: state.quiz.quizData
-            ? {
-              id: state.quiz.quizData.id,
-              title: state.quiz.quizData.title,
-              type: state.quiz.quizData.type || "code", // ✅ fallback
-              slug: state.quiz.quizData.slug,
-            }
-            : null,
-
-          currentQuestion: state.quiz.currentQuestion,
-          userAnswers: state.quiz.userAnswers,
-          currentQuizId: state.quiz.currentQuizId,
-          timeRemaining: state.quiz.timeRemaining,
-          timerActive: false, // Always pause timer during auth flow
-          authRedirect: true, // Flag to indicate auth redirect
-        }
-
-        localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(persistedState))
-      } catch (error) {
-        console.error("Failed to persist quiz state during auth error:", error)
-      }
-      return
-    }
-
-    // Extract only the necessary state to persist
-    const persistedState = {
-      quizData: state.quiz.quizData
-        ? {
-          id: state.quiz.quizData.id,
-          title: state.quiz.quizData.title,
-          type: state.quiz.quizData.type || "code", // ✅ fallback
-          slug: state.quiz.quizData.slug,
-        }
-        : null,
-
-      currentQuestion: state.quiz.currentQuestion,
-      userAnswers: state.quiz.userAnswers,
-      currentQuizId: state.quiz.currentQuizId,
-      timeRemaining: state.quiz.timeRemaining,
-      timerActive: state.quiz.timerActive,
-    }
-
-    // Save to localStorage using requestIdleCallback when available
-    try {
-      if (window.requestIdleCallback) {
-        window.requestIdleCallback(() => {
-          localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(persistedState))
-        })
-      } else {
-        setTimeout(() => {
-          localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(persistedState))
-        }, 0)
-      }
-    } catch (error) {
-      console.error("Failed to persist quiz state:", error)
-    }
-  },
-})
-
-/**
- * Loads persisted quiz state from localStorage
- * @returns The persisted quiz state or undefined if not found
- */
-export const loadPersistedQuizState = () => {
-  if (typeof window === "undefined") return undefined
-
-  try {
-    const json = localStorage.getItem(QUIZ_STATE_KEY)
-    if (!json) return undefined
-
-    const state = JSON.parse(json)
-
-    // If this was an auth redirect, clear the flag
-    if (state.authRedirect) {
-      state.authRedirect = false
-      // Save the updated state back to localStorage
-      localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(state))
-    }
-
-    return state
-  } catch (error) {
-    console.error("Failed to load persisted quiz state:", error)
-    return undefined
   }
-}
+});
 
-/**
- * Clears persisted quiz state from localStorage
- */
-export const clearPersistedQuizState = () => {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.removeItem(QUIZ_STATE_KEY)
-  } catch (error) {
-    console.error("Failed to clear persisted quiz state:", error)
+// Clear persistence when quiz completes
+startAppListening({
+  matcher: isAnyOf(
+    submitQuiz.fulfilled,
+    resetQuizState
+  ),
+  effect: async () => {
+    // Skip for test environment
+    if (process.env.NODE_ENV === 'test') return;
+    
+    clearPersistedQuizState();
   }
-}
+});
 
-/**
- * Checks if there is persisted quiz state from an auth redirect
- * @returns True if there is persisted state from an auth redirect
- */
-export const hasAuthRedirectState = () => {
-  if (typeof window === "undefined") return false
-
-  try {
-    const json = localStorage.getItem(QUIZ_STATE_KEY)
-    if (!json) return false
-
-    const state = JSON.parse(json)
-    return state.authRedirect === true
-  } catch (error) {
-    console.error("Failed to check for auth redirect state:", error)
-    return false
+// Handle submission state persistence actions
+startAppListening({
+  actionCreator: saveQuizSubmissionState.fulfilled,
+  effect: async (action) => {
+    if (process.env.NODE_ENV === 'test') return;
+    
+    const { slug, state } = action.payload;
+    if (slug) {
+      saveSubmissionState(slug, state);
+    }
   }
-}
+});
 
-export default listenerMiddleware
+startAppListening({
+  actionCreator: clearQuizSubmissionState.fulfilled,
+  effect: async (action) => {
+    if (process.env.NODE_ENV === 'test') return;
+    
+    const slug = action.payload;
+    if (slug) {
+      clearSubmissionState(slug);
+    }
+  }
+});
+
+export default persistQuizMiddleware;

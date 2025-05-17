@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useEffect } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
@@ -15,19 +15,31 @@ interface ResultsPageProps {
   }
 }
 
-export default function ResultsPage({ params:paramsPromise }: ResultsPageProps) {
-  const { slug } = use(paramsPromise);
+export default function ResultsPage({ params }: ResultsPageProps) {
+  const { slug } = params
   const router = useRouter()
   const { userId, isAuthenticated, status } = useAuth()
-  const { 
-    quizData, 
-    results, 
-    isLoading, 
-    resultsError,
-    getResults
-  } = useQuiz()
   
-  // Load results if authenticated
+  // Get quiz hook - handle both new and old API formats
+  const quizHook = useQuiz()
+  
+  // Handle both new and old API formats for compatibility
+  const isNewApiFormat = quizHook && 'quiz' in quizHook && 'actions' in quizHook
+  
+  // Extract values from either new or old API
+  const quizData = isNewApiFormat ? quizHook.quiz.data : (quizHook as any).quizData
+  const results = isNewApiFormat ? quizHook.results : (quizHook as any).results
+  const isLoading = isNewApiFormat ? quizHook.status.isLoading : (quizHook as any).isLoading
+  const resultsError = isNewApiFormat 
+    ? quizHook.status.errorMessage 
+    : (quizHook as any).resultsError || (quizHook as any).error
+  
+  // Get the appropriate getResults function
+  const getResults = isNewApiFormat 
+    ? quizHook.actions.getResults 
+    : (quizHook as any).getResults || (() => Promise.resolve(null))
+  
+  // Load results if authenticated and not already loaded
   useEffect(() => {
     if (isAuthenticated && !results && !isLoading) {
       getResults(slug).catch(error => {
@@ -36,13 +48,9 @@ export default function ResultsPage({ params:paramsPromise }: ResultsPageProps) 
     }
   }, [slug, isAuthenticated, getResults, isLoading, results])
   
-  // Loading state
-  if (isLoading || status === 'loading') {
-    return <InitializingDisplay />
-  }
-  
-  // Authentication required
-  if (!isAuthenticated) {
+  // Authentication required - immediately show sign in prompt if not authenticated
+  // This needs to be the first check BEFORE loading state check
+  if (status === 'unauthenticated' || (status !== 'loading' && !isAuthenticated)) {
     return (
       <NonAuthenticatedUserSignInPrompt
         quizType="code"
@@ -50,6 +58,11 @@ export default function ResultsPage({ params:paramsPromise }: ResultsPageProps) 
         showSaveMessage={false}
       />
     )
+  }
+  
+  // Loading state - only show after checking authentication status
+  if (isLoading || status === 'loading') {
+    return <InitializingDisplay />
   }
   
   // Error state
@@ -63,8 +76,8 @@ export default function ResultsPage({ params:paramsPromise }: ResultsPageProps) 
     )
   }
   
-  // No results found
-  if (!results) {
+  // No results found - only after checking authentication and loading
+  if (!results && isAuthenticated) {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
@@ -81,10 +94,12 @@ export default function ResultsPage({ params:paramsPromise }: ResultsPageProps) 
     )
   }
   
-  // Display results using the correct component (CodeQuizResult)
-  return (
+  // Display results - only show if authenticated and results exist
+  return isAuthenticated && results ? (
     <div className="container max-w-4xl py-6">
       <CodeQuizResult result={results as QuizResult} />
     </div>
+  ) : (
+    <InitializingDisplay />
   )
 }

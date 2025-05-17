@@ -1,5 +1,4 @@
-// Re-export all hooks from a central location
-export * from "./use-auth"
+
 export * from "./use-idle-timer"
 export * from "./use-responsive" // New consolidated responsive hook
 export * from "./use-ripple"

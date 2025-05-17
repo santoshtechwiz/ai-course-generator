@@ -2,22 +2,21 @@
 
 export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended';
 
-// Base question interface that all question types should implement
+// Base question type with common properties
 export interface BaseQuestion {
   id: string;
   question: string;
   type: QuizType;
 }
 
-// Multiple choice question
+// Specific question types
 export interface MCQQuestion extends BaseQuestion {
   type: 'mcq';
   options: string[];
   correctAnswer: string;
 }
 
-// Code question
-export interface CodeQuestion extends BaseQuestion {
+export interface CodeQuizQuestion extends BaseQuestion {
   type: 'code';
   codeSnippet?: string;
   options?: string[];
@@ -26,23 +25,20 @@ export interface CodeQuestion extends BaseQuestion {
   language?: string;
 }
 
-// Fill in the blanks question
 export interface BlankQuestion extends BaseQuestion {
   type: 'blanks';
   text: string;
   blanks: Record<string, string>;
+  correctAnswers?: Record<string, string>;
 }
 
-// Open ended question
 export interface OpenEndedQuestion extends BaseQuestion {
   type: 'openended';
-  answer?: string;
-  keywords?: string[];
-  maxScore?: number;
+  modelAnswer?: string;
 }
 
-// Union of all question types
-export type QuizQuestion = MCQQuestion | CodeQuestion | BlankQuestion | OpenEndedQuestion;
+// Union type for all question types
+export type QuizQuestion = MCQQuestion | CodeQuizQuestion | BlankQuestion | OpenEndedQuestion;
 
 // Answer data structure
 export interface UserAnswer {
@@ -59,8 +55,8 @@ export interface QuizData {
   questions: QuizQuestion[];
   isPublic?: boolean;
   isFavorite?: boolean;
-  ownerId?: string;
   userId?: string;
+  ownerId?: string;
   timeLimit?: number | null;
   description?: string;
 }

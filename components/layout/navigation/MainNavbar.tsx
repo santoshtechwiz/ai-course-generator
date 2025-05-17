@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Search } from "lucide-react"
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
-import { useAuth } from "@/hooks/use-auth"
+
 import MobileMenu from "@/components/layout/navigation/MobileMenu"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
 import SearchModal from "@/components/layout/navigation/SearchModal"
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import useSubscription from "@/hooks/use-subscription"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function MainNavbar() {
   const pathname = usePathname()

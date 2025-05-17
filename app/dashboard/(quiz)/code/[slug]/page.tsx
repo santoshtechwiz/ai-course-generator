@@ -1,30 +1,51 @@
 "use client"
 
 import { useEffect } from "react"
-import { use } from "react" // Import use from React
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
+import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 
-interface CodeQuizPageProps {
-  params: {
-    slug: string
-  }
-}
-
-export default function CodeQuizPage({ params: paramsPromise }: CodeQuizPageProps) {
-  // Unwrap params with React.use()
-  const params = use(paramsPromise)
+export default function CodeQuizPage({
+  params,
+}: {
+  params: { slug: string }
+}) {
+  const router = useRouter()
+  const { userId, status } = useAuth()
+  
+  // Extract slug directly from params instead of using use()
   const slug = params.slug
   
-  const router = useRouter()
-  const { userId, isAuthenticated, status } = useAuth()
-  const { loadQuiz, quizData, isLoading, quizError } = useQuiz()
+  // Get quiz state from hook
+  const quizHook = useQuiz()
   
-  // Load quiz from Redux state
+  // Handle both old and new API formats for compatibility
+  const isNewApiFormat = quizHook && 'quiz' in quizHook && 'actions' in quizHook
+  
+  // Extract values from either the new or old API
+  const quizData = isNewApiFormat 
+    ? quizHook.quiz.data 
+    : (quizHook as any)?.quizData
+    
+  const isLoading = isNewApiFormat 
+    ? quizHook.status.isLoading 
+    : (quizHook as any)?.isLoading
+    
+  const errorMessage = isNewApiFormat 
+    ? quizHook.status.errorMessage 
+    : (quizHook as any)?.error || (quizHook as any)?.quizError
+    
+  // Get loadQuiz function from either API format
+  const loadQuiz = isNewApiFormat 
+    ? quizHook.actions.loadQuiz 
+    : (quizHook as any)?.loadQuiz
+  
+  // Load quiz from Redux state or API
   useEffect(() => {
-    if (!isLoading && !quizData && slug) {
+    if (!isLoading && !quizData && typeof slug === 'string' && slug && loadQuiz) {
+      console.log("Loading quiz with slug:", slug);
       loadQuiz(slug, "code")
         .catch(error => {
           console.error("Error loading quiz:", error)
@@ -32,33 +53,19 @@ export default function CodeQuizPage({ params: paramsPromise }: CodeQuizPageProp
     }
   }, [slug, loadQuiz, isLoading, quizData])
 
-  // Loading state
-  if (isLoading || status === 'loading') {
-    return (
-      <div className="container max-w-4xl py-10">
-        <div className="flex flex-col items-center justify-center p-8">
-          <div className="w-16 h-16 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
-          <p className="mt-4 text-muted-foreground">Loading quiz...</p>
-        </div>
-      </div>
-    )
+  // If still loading or waiting for auth status, show loading
+  if (isLoading || status === "loading") {
+    return <InitializingDisplay />
   }
-  
+
   // Error state
-  if (quizError) {
+  if (errorMessage) {
     return (
-      <div className="container max-w-4xl py-10 text-center">
-        <h1 className="text-2xl font-bold mb-4">Error Loading Quiz</h1>
-        <p>{quizError}</p>
-        <p className="mt-4">
-          <button 
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="text-primary underline"
-          >
-            Return to quizzes
-          </button>
-        </p>
-      </div>
+      <ErrorDisplay 
+        error={errorMessage} 
+        onRetry={() => window.location.reload()} 
+        onReturn={() => router.push("/dashboard/quizzes")}
+      />
     )
   }
   
@@ -80,12 +87,5 @@ export default function CodeQuizPage({ params: paramsPromise }: CodeQuizPageProp
   }
   
   // Default loading state
-  return (
-    <div className="container max-w-4xl py-10">
-      <div className="flex flex-col items-center justify-center p-8">
-        <div className="w-16 h-16 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
-        <p className="mt-4 text-muted-foreground">Loading quiz...</p>
-      </div>
-    </div>
-  )
+  return <InitializingDisplay />
 }
