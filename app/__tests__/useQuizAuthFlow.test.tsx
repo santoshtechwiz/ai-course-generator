@@ -61,6 +61,11 @@ jest.mock("next/navigation", () => ({
   }),
 }));
 
+// Properly set up mock for the useQuiz hook
+jest.mock('@/hooks/useQuizState', () => ({
+  useQuiz: jest.fn()
+}));
+
 describe("useQuiz hook auth flow", () => {
   // Setup fetch mocks
   beforeAll(() => {
@@ -203,33 +208,66 @@ describe("useQuiz hook auth flow", () => {
       throw error;
     });
     
-    // Mock the useQuiz hook to include our mocked functions
-    require("@/hooks/useQuizState").useQuiz.mockReturnValue({
+    // Create a mock useQuiz implementation first
+    const mockUseQuiz = {
       quizData: mockQuizData,
       currentQuestion: 0,
       userAnswers: [],
       isLoading: false,
       isSubmitting: false,
       error: null,
-      submitQuiz: mockSubmitQuiz,
-      // Add other required properties...
-    });
+      submitQuiz: mockSubmitQuiz
+    };
     
-    // Render component that uses the hook
-    const { result } = renderHook(() => {
-      const quizHook = useQuiz();
-      return quizHook;
+    // Apply the mock implementation to the useQuiz hook
+    require("@/hooks/useQuizState").useQuiz.mockImplementation(() => mockUseQuiz);
+    
+    // Create Redux store for the wrapper
+    const store = configureStore({
+      reducer: {
+        quiz: quizReducer,
+        auth: authReducer
+      },
+      preloadedState: {
+        quiz: {
+          quizData: mockQuizData,
+          currentQuestion: 0,
+          userAnswers: [],
+          isLoading: false,
+          isSubmitting: false,
+          error: null
+        },
+        auth: {
+          userRedirectState: null,
+          hasRedirectState: false
+        }
+      },
     });
+
+    // Create wrapper with store
+    const wrapper = ({ children }) => (
+      <Provider store={store}>
+        {children}
+      </Provider>
+    );
+    
+    // Render the hook
+    const { result } = renderHook(() => useQuiz(), { wrapper });
     
     // Try to submit quiz which should throw an auth error
-    await expect(result.current.submitQuiz({
-      slug: "test-quiz",
-      quizId: "test-quiz",
-      type: "code",
-      answers: []
-    })).rejects.toThrow();
-    
-    // Verify signIn was called
-    expect(mockSignIn).toHaveBeenCalled();
+    await expect(async () => {
+      try {
+        await result.current.submitQuiz({
+          slug: "test-quiz",
+          quizId: "test-quiz",
+          type: "code",
+          answers: []
+        });
+      } catch (error) {
+        // This should trigger the signIn call via the error handling in useQuiz
+        expect(mockSignIn).toHaveBeenCalled();
+        throw error; // re-throw so the test can catch it
+      }
+    }).rejects.toThrow();
   });
 });

@@ -11,15 +11,26 @@ jest.mock('next-auth/react', () => ({
   signOut: jest.fn(),
 }))
 
-// Mock window.location
+// Save original location and properly mock it
 const originalLocation = window.location
 delete window.location
 
-// Add proper URL mocking
+// Add proper URL mocking with a more complete implementation
 const mockWindowLocation = {
   search: '',
   href: 'https://example.com',
   pathname: '/',
+  assign: jest.fn(),
+  replace: jest.fn(),
+  reload: jest.fn(),
+  toString: () => 'https://example.com',
+};
+
+// Mock URL search params
+const mockURLSearchParams = {
+  get: jest.fn(),
+  has: jest.fn(),
+  toString: () => ''
 };
 
 // Create a mock Redux store
@@ -47,31 +58,56 @@ const createWrapper = () => {
 
 describe('useAuth hook', () => {
   beforeEach(() => {
-    // Reset mocks
-    jest.resetAllMocks(); // Use resetAllMocks instead of clearAllMocks
+    // Reset all mocks
+    jest.resetAllMocks(); 
+    
+    // Reset URL search params mock functions
+    mockURLSearchParams.get.mockImplementation(param => {
+      if (param === 'fromAuth') return null;
+      if (param === 'redirect') return null;
+      return null;
+    });
+    mockURLSearchParams.has.mockImplementation(param => {
+      if (param === 'fromAuth') return false;
+      if (param === 'redirect') return false;
+      return false;
+    });
     
     // Mock window.location
     Object.defineProperty(window, 'location', {
-      value: { ...mockWindowLocation },
+      value: { ...mockWindowLocation, search: '' },
       writable: true
     });
     
-    // Default session mock
+    // Mock URLSearchParams
+    global.URLSearchParams = jest.fn().mockImplementation(() => mockURLSearchParams);
+    
+    // Mock authenticated session by default
     (useSession as jest.Mock).mockReturnValue({
       data: { 
-        user: { id: 'test-user-id' },
-        status: 'authenticated'
-      }
+        user: { id: 'test-user-id' } 
+      },
+      status: 'authenticated'
     });
   });
 
   afterAll(() => {
-    window.location = originalLocation
-  })
+    window.location = originalLocation;
+  });
   
   test('should return authenticated status when session exists', () => {
+    // Explicitly mock the session to ensure it has expected structure
+    (useSession as jest.Mock).mockReturnValue({
+      data: { 
+        user: { id: 'test-user-id' } 
+      },
+      status: 'authenticated'
+    });
+    
     const wrapper = createWrapper();
     const { result } = renderHook(() => useAuth(), { wrapper });
+    
+    // Verify authenticated status
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.userId).toBe('test-user-id');
   });
@@ -88,23 +124,52 @@ describe('useAuth hook', () => {
   });
 
   test('should detect fromAuth parameter in URL', () => {
-    window.location.search = '?fromAuth=true';
+    // Set the search params to include fromAuth=true
+    Object.defineProperty(window, 'location', {
+      value: { ...mockWindowLocation, search: '?fromAuth=true' },
+      writable: true
+    });
+    
+    // Configure the mock to return true for fromAuth
+    mockURLSearchParams.get.mockImplementation(param => {
+      if (param === 'fromAuth') return 'true';
+      return null;
+    });
+    mockURLSearchParams.has.mockImplementation(param => {
+      if (param === 'fromAuth') return true;
+      return false;
+    });
+    
     const wrapper = createWrapper();
     const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.fromAuth).toBe(true);
   });
 
   test('should not detect fromAuth when parameter is missing', () => {
-    window.location.search = '?otherParam=value'
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useAuth(), { wrapper })
+    // Ensure fromAuth is not present in the URL
+    Object.defineProperty(window, 'location', {
+      value: { ...mockWindowLocation, search: '?otherParam=value' },
+      writable: true
+    });
     
-    expect(result.current.fromAuth).toBe(false)
-  })
+    mockURLSearchParams.has.mockReturnValue(false);
+    mockURLSearchParams.get.mockImplementation(param => {
+      if (param === 'fromAuth') return null;
+      if (param === 'otherParam') return 'value';
+      return null;
+    });
+    
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    
+    expect(result.current.fromAuth).toBe(false);
+  });
   
   test('should call signIn when requireAuth is called and user is unauthenticated', async () => {
     const signInMock = jest.fn();
     (signIn as jest.Mock).mockImplementation(signInMock);
+    
+    // Set unauthenticated session
     (useSession as jest.Mock).mockReturnValue({
       data: null,
       status: 'unauthenticated'
@@ -128,68 +193,88 @@ describe('useAuth hook', () => {
     (useSession as jest.Mock).mockReturnValue({
       data: { user: { id: 'user-123' } },
       status: 'authenticated'
-    })
+    });
     
     const signInMock = jest.fn();
     (signIn as jest.Mock).mockImplementation(signInMock);
     
     const wrapper = createWrapper();
-    const { result } = renderHook(() => useAuth(), { wrapper })
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     act(() => {
-      result.current.requireAuth('/callback')
-    })
+      result.current.requireAuth('/callback');
+    });
     
-    expect(signInMock).not.toHaveBeenCalled()
-  })
+    expect(signInMock).not.toHaveBeenCalled();
+  });
   
   test('should parse redirect info from URL', () => {
     // Set URL with redirect parameter
-    window.location.search = '?redirect=/dashboard/quizzes'
+    Object.defineProperty(window, 'location', {
+      value: { ...mockWindowLocation, search: '?redirect=/dashboard/quizzes' },
+      writable: true
+    });
+    
+    // Configure the mock to return the redirect path
+    mockURLSearchParams.get.mockImplementation(param => {
+      if (param === 'redirect') return '/dashboard/quizzes';
+      return null;
+    });
+    mockURLSearchParams.has.mockImplementation(param => {
+      if (param === 'redirect') return true;
+      return false;
+    });
     
     const wrapper = createWrapper();
-    const { result } = renderHook(() => useAuth(), { wrapper })
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     expect(result.current.getAuthRedirectInfo()).toEqual({ 
       path: '/dashboard/quizzes' 
-    })
-  })
+    });
+  });
   
   test('should handle missing redirect info', () => {
     // Set URL without redirect parameter
-    window.location.search = ''
+    Object.defineProperty(window, 'location', {
+      value: { ...mockWindowLocation, search: '' },
+      writable: true
+    });
+    
+    // Configure the mock to return null for redirect
+    mockURLSearchParams.get.mockReturnValue(null);
+    mockURLSearchParams.has.mockReturnValue(false);
     
     const wrapper = createWrapper();
-    const { result } = renderHook(() => useAuth(), { wrapper })
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
-    expect(result.current.getAuthRedirectInfo()).toBeNull()
-  })
-})
+    expect(result.current.getAuthRedirectInfo()).toBeNull();
+  });
+});
 
 // Test the mock creator function
 describe('_createMockUseAuth', () => {
   test('should create default mock', () => {
-    const mock = _createMockUseAuth()
+    const mock = _createMockUseAuth();
     
-    expect(mock.userId).toBe('test-user-id')
-    expect(mock.isAuthenticated).toBe(true)
-    expect(mock.status).toBe('authenticated')
-    expect(mock.fromAuth).toBe(false)
-    expect(typeof mock.signIn).toBe('function')
-    expect(typeof mock.signOut).toBe('function')
-    expect(typeof mock.requireAuth).toBe('function')
-    expect(typeof mock.getAuthRedirectInfo).toBe('function')
-  })
+    expect(mock.userId).toBe('test-user-id');
+    expect(mock.isAuthenticated).toBe(true);
+    expect(mock.status).toBe('authenticated');
+    expect(mock.fromAuth).toBe(false);
+    expect(typeof mock.signIn).toBe('function');
+    expect(typeof mock.signOut).toBe('function');
+    expect(typeof mock.requireAuth).toBe('function');
+    expect(typeof mock.getAuthRedirectInfo).toBe('function');
+  });
   
   test('should override defaults', () => {
     const mock = _createMockUseAuth({
       userId: 'custom-id',
       isAuthenticated: false,
       status: 'unauthenticated'
-    })
+    });
     
-    expect(mock.userId).toBe('custom-id')
-    expect(mock.isAuthenticated).toBe(false)
-    expect(mock.status).toBe('unauthenticated')
-  })
-})
+    expect(mock.userId).toBe('custom-id');
+    expect(mock.isAuthenticated).toBe(false);
+    expect(mock.status).toBe('unauthenticated');
+  });
+});
