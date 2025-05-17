@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+import { createAction } from '@reduxjs/toolkit';
 import type { QuizData, UserAnswer, QuizResult, QuizHistoryItem, QuizType } from "@/app/types/quiz-types"
 
 // Constants - move to separate file in larger applications
@@ -132,14 +133,14 @@ export const fetchQuiz = createAsyncThunk(
 )
 
 export const submitQuiz = createAsyncThunk(
-  "quiz/submitQuiz",
+  'quiz/submitQuiz',
   async (payload: { 
     slug: string; 
     quizId?: string; 
     type: QuizType; 
     answers: UserAnswer[];
     timeTaken?: number;
-  }, { rejectWithValue }) => {
+  }, { dispatch, rejectWithValue }) => {
     try {
       // Use the correct API endpoint for quiz submission
       const response = await fetch(`/api/quizzes/common/${payload.slug}/complete`, {
@@ -157,6 +158,24 @@ export const submitQuiz = createAsyncThunk(
         }),
       });
 
+      // Handle 401 auth errors
+      if (response.status === 401) {
+        // Dispatch the authentication required action
+        dispatch(authenticationRequired({ 
+          fromSubmission: true,
+          callbackUrl: `/dashboard/${payload.type}/${payload.slug}`
+        }));
+        
+        // Throw error with status for test detection
+        const error = new Error('Authentication required');
+        Object.defineProperty(error, 'status', {
+          value: 401,
+          writable: true,
+          configurable: true
+        });
+        throw error;
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         return rejectWithValue(errorData || response.statusText);
@@ -164,6 +183,14 @@ export const submitQuiz = createAsyncThunk(
 
       return await response.json();
     } catch (error: any) {
+      // Add check for auth errors in catch block
+      if (error.status === 401 || error.message === 'Unauthorized') {
+        dispatch(authenticationRequired({ 
+          fromSubmission: true,
+          callbackUrl: `/dashboard/${payload.type}/${payload.slug}`
+        }));
+      }
+
       return rejectWithValue(error.message || "An unexpected error occurred");
     }
   }
@@ -272,6 +299,12 @@ function getQuestionCorrectAnswer(q: any): string {
   if (q.answer) return q.answer;
   return "";
 }
+
+// Add a new action for auth requirements
+export const authenticationRequired = createAction<{
+  fromSubmission?: boolean,
+  callbackUrl?: string
+}>('quiz/authenticationRequired');
 
 // -----------------------------------------
 // Slice Definition
