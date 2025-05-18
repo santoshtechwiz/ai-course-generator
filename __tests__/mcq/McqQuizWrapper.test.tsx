@@ -1,10 +1,12 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import MCQQuizWrapper from '@/app/dashboard/(quiz)/mcq/components/McqQuizWrapper'
+// Update the import path to use correct case
 import { useAuth } from '@/hooks/useAuth'
 import { useQuiz } from '@/hooks/useQuizState'
 import { signIn } from 'next-auth/react'
+
+import McqQuizWrapper from '@/app/dashboard/(quiz)/mcq/components/McqQuizWrapper'
 
 // Mock necessary hooks and components
 jest.mock('next/navigation', () => ({
@@ -58,7 +60,7 @@ jest.mock('@/app/dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt', 
   )
 }))
 
-jest.mock('@/app/dashboard/(quiz)/mcq/components/McqQuiz', () => ({
+jest.mock('@/app/dashboard/(quiz)/mcq/components/MCQQuiz', () => ({
   __esModule: true,
   default: ({ question, onAnswer }) => (
     <div data-testid="mcq-quiz" onClick={() => onAnswer('Test Answer', 30, true)}>
@@ -95,7 +97,7 @@ jest.mock('@/providers/animation-provider', () => ({
   useAnimation: jest.fn().mockReturnValue({ animationsEnabled: false })
 }))
 
-describe('MCQQuizWrapper Component', () => {
+describe('McqQuizWrapper Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -147,11 +149,11 @@ describe('MCQQuizWrapper Component', () => {
     });
     
     render(
-      <MCQQuizWrapper
+      <McqQuizWrapper
         slug="test-mcq-quiz"
         quizId="quiz123"
         userId={null}
-        _testMode={true}
+       
       />
     );
     
@@ -211,12 +213,12 @@ describe('MCQQuizWrapper Component', () => {
     });
     
     render(
-      <MCQQuizWrapper
+      <McqQuizWrapper
         slug="test-mcq-quiz"
         quizId="quiz123"
         userId={null}
         quizData={mockQuizData}
-        _testMode={true}
+       
       />
     );
     
@@ -274,12 +276,12 @@ describe('MCQQuizWrapper Component', () => {
     });
     
     render(
-      <MCQQuizWrapper
+      <McqQuizWrapper
         slug="test-mcq-quiz"
         quizId="quiz123"
         userId="user123"
         quizData={mockQuizData}
-        _testMode={true}
+       
       />
     );
     
@@ -317,12 +319,12 @@ describe('MCQQuizWrapper Component', () => {
     });
     
     render(
-      <MCQQuizWrapper
+      <McqQuizWrapper
         slug="test-mcq-quiz"
         quizId="quiz123"
         userId="user123"
         quizData={mockQuizData}
-        _testMode={true}
+       
       />
     );
     

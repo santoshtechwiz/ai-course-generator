@@ -1,12 +1,15 @@
 "use client"
 
-import { use, useEffect } from "react"
+import { use, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
 
 import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
-import McqQuizWrapper from "../components/McqQuizWrapper"
+import McqQuizWrapper from "../components//McqQuizWrapper"
+
+
+
 
 export default function McqQuizPage({
   params,
@@ -15,6 +18,7 @@ export default function McqQuizPage({
 }) {
   const router = useRouter()
   const { userId, status } = useAuth()
+  const loadStartedRef = useRef(false)
 
   // Extract slug directly from params instead of using use()
   const { slug } = use(params);
@@ -43,13 +47,20 @@ export default function McqQuizPage({
     ? quizHook.actions.loadQuiz
     : (quizHook as any)?.loadQuiz
 
-  // Load quiz from Redux state or API
+  // Load quiz from Redux state or API - prevent duplicate calls
   useEffect(() => {
-    if (!isLoading && !quizData && typeof slug === 'string' && slug && loadQuiz) {
+    // Only load if:
+    // 1. We have loadQuiz function
+    // 2. We're not already loading
+    // 3. We don't have quiz data yet
+    // 4. We haven't started loading yet (using ref)
+    if (loadQuiz && !isLoading && !quizData && !loadStartedRef.current && slug) {
+      loadStartedRef.current = true;
       console.log("Loading quiz with slug:", slug);
       loadQuiz(slug, "mcq")
         .catch(error => {
           console.error("Error loading quiz:", error)
+          loadStartedRef.current = false; // Reset flag if error occurred to allow retry
         })
     }
   }, [slug, loadQuiz, isLoading, quizData])
@@ -64,7 +75,12 @@ export default function McqQuizPage({
     return (
       <ErrorDisplay
         error={errorMessage}
-        onRetry={() => window.location.reload()}
+        onRetry={() => {
+          // Reset load flag to allow retry
+          loadStartedRef.current = false;
+          // Then reload page
+          window.location.reload();
+        }}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )

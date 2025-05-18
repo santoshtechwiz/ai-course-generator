@@ -9,7 +9,6 @@ import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../
 import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 
-
 import { UserAnswer } from "@/app/types/quiz-types"
 
 import {
@@ -23,8 +22,9 @@ import toast from "react-hot-toast"
 import { prepareSubmissionPayload } from "@/lib/utils/quiz-submission-utils"
 import { createMCQResultsPreview } from "./MCQQuizHelpers"
 import MCQResultPreview from "./MCQResultPreview"
-import MCQQuiz from "./McqQuiz"
-import { McqQuestion } from "./types"
+
+import type { MCQQuestion } from "@/app/types/quiz-types"
+import McqQuiz from "./McqQuiz"
 
 // Simple type for preview results
 interface PreviewResults {
@@ -43,7 +43,7 @@ interface PreviewResults {
 }
 
 // Simplified props interface
-interface CodeQuizWrapperProps {
+interface McqQuizWrapperProps {
   slug: string
   quizId: string
   userId: string | null
@@ -51,7 +51,7 @@ interface CodeQuizWrapperProps {
     id: string
     title: string
     slug: string
-    questions: McqQuestion[]
+    questions: MCQQuestion[]
     timeLimit?: number | null
     isPublic?: boolean
     isFavorite?: boolean
@@ -63,7 +63,7 @@ interface CodeQuizWrapperProps {
   ownerId?: string
 }
 
-export default function CodeQuizWrapper({
+export default function McqQuizWrapper({
   slug,
   quizId,
   userId,
@@ -71,7 +71,7 @@ export default function CodeQuizWrapper({
   isPublic,
   isFavorite,
   ownerId,
-}: CodeQuizWrapperProps) {
+}: McqQuizWrapperProps) {
   const router = useRouter()
   const { status, fromAuth } = useAuth()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -540,7 +540,7 @@ export default function CodeQuizWrapper({
   if (isLoading || status === "loading") {
     return <InitializingDisplay />
   }
-
+  console.log("Quiz state:", quizState);
   // Empty questions state render
   if (quizState && Array.isArray(quizState.questions) && quizState.questions.length === 0) {
     return <EmptyQuestionsDisplay onReturn={handleReturn} />
@@ -551,7 +551,7 @@ export default function CodeQuizWrapper({
     const existingAnswer = userAnswers.find(a => a.questionId === currentQuestionData.id)?.answer;
 
     return (
-      <MCQQuiz
+      <McqQuiz
         question={currentQuestionData}
         onAnswer={handleAnswer}
         questionNumber={currentQuestion + 1}
