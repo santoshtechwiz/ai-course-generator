@@ -169,6 +169,7 @@
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/date-fns": "^2.6.3",
     "@types/diff": "^7.0.2",

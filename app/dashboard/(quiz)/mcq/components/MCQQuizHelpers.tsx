@@ -1,4 +1,4 @@
-import { MCQQuestion } from "@/app/types/mcq-quiz-types";
+import { MCQQuestion } from "@/app/types/quiz-types";
 import { UserAnswer } from "@/app/types/quiz-types";
 import { getCorrectAnswer, isAnswerCorrect } from "@/lib/utils/quiz-type-utils";
 
@@ -66,6 +66,38 @@ export function createMCQResultsPreview({
     questions: formattedQuestions,
     title: quizTitle,
     slug
+  };
+}
+
+/**
+ * Prepares submission payload to ensure all required fields are properly included
+ */
+export function prepareMCQSubmissionPayload({
+  answers,
+  quizId,
+  slug,
+  timeTaken = 600
+}: {
+  answers: UserAnswer[],
+  quizId?: string,
+  slug: string,
+  timeTaken?: number
+}) {
+  // Ensure answers are properly formatted
+  const formattedAnswers = answers.map(answer => ({
+    questionId: answer.questionId,
+    answer: typeof answer.answer === 'string' 
+      ? answer.answer 
+      : JSON.stringify(answer.answer)
+  }));
+  
+  // Build complete payload with all required fields
+  return {
+    quizId: quizId || slug, // Use slug as fallback if no quizId
+    slug, // Include slug for routing
+    type: "mcq" as const,
+    answers: formattedAnswers,
+    timeTaken: timeTaken || 600 // Default to 10 minutes if not provided
   };
 }
 

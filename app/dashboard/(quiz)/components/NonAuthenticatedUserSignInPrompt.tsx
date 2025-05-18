@@ -6,11 +6,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Lock, LogIn, Save } from "lucide-react"
 
 interface NonAuthenticatedUserSignInPromptProps {
-  quizType: "mcq" | "code" | "interview"
+  quizType: "mcq" | "code" | "openended" | "blanks"
   onSignIn?: () => void
   showSaveMessage?: boolean
   previewData?: any
   message?: string
+  'data-testid'?: string
 }
 
 export default function NonAuthenticatedUserSignInPrompt({
@@ -19,17 +20,20 @@ export default function NonAuthenticatedUserSignInPrompt({
   showSaveMessage = true,
   previewData,
   message,
+  'data-testid': testId = 'non-authenticated-prompt'
 }: NonAuthenticatedUserSignInPromptProps) {
   const router = useRouter()
 
   const handleSignIn = () => {
-    // Guard against potential errors
+    // For tests, ensure we always call onSignIn when it's provided
+    if (typeof onSignIn === 'function') {
+      onSignIn()
+      return
+    }
+    
+    // Default routing behavior
     try {
-      if (typeof onSignIn === 'function') {
-        onSignIn()
-      } else {
-        router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}`)}`);
-      }
+      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}`)}`);
     } catch (err) {
       console.error("Error during sign in:", err);
       // Fallback to basic redirect
@@ -37,8 +41,15 @@ export default function NonAuthenticatedUserSignInPrompt({
     }
   }
 
+  // Map quiz type to readable name
+  const quizTypeName = 
+    quizType === 'mcq' ? 'Multiple Choice Quiz' :
+    quizType === 'code' ? 'Coding Challenge' :
+    quizType === 'openended' ? 'Open Ended Quiz' :
+    'Fill in the Blanks Quiz'
+
   return (
-    <div className="flex items-center justify-center min-h-[50vh] p-4" data-testid="non-authenticated-prompt">
+    <div className="flex items-center justify-center min-h-[50vh] p-4" data-testid={testId}>
       <Card className="max-w-md w-full bg-background">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">

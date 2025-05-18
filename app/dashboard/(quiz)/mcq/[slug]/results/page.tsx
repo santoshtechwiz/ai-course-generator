@@ -4,7 +4,7 @@ import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 
-import CodeQuizResult from "../../components/CodeQuizResult"
+
 import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
 import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import { QuizResult } from "@/app/types/quiz-types"
@@ -107,7 +107,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
   // Display results - only if authenticated and results exist
   return results ? (
     <div className="container max-w-4xl py-6">
-      <CodeQuizResult result={results as QuizResult} />
+      <McqQuizResult result={results as QuizResult} />
     </div>
   ) : (
     <InitializingDisplay />
