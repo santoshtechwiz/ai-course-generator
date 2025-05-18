@@ -184,7 +184,10 @@ export function useQuiz() {
     }
   }, [dispatch])
 
-  // Core quiz loading action
+  // Create a request cache for deduplication
+  const requestCache = new Map<string, Promise<any>>();
+
+  // Core quiz loading action with deduplication
   const loadQuiz = useCallback(
     async (slug: string, type: QuizType = "mcq", initialData?: QuizData) => {
       // Clear any existing errors first
@@ -196,9 +199,37 @@ export function useQuiz() {
         return initialData
       }
 
+      // Create unique cache key for this request
+      const cacheKey = `${type}-${slug}`;
+      
+      // Check if there's already a pending request for this quiz
+      if (requestCache.has(cacheKey)) {
+        try {
+          return await requestCache.get(cacheKey);
+        } catch (error) {
+          // If cached request fails, continue with a new request
+          requestCache.delete(cacheKey);
+        }
+      }
+
       try {
-        return await dispatch(fetchQuiz({ slug, type })).unwrap()
+        // Create the request promise
+        const requestPromise = dispatch(fetchQuiz({ slug, type })).unwrap();
+        
+        // Store in cache
+        requestCache.set(cacheKey, requestPromise);
+        
+        // Wait for response
+        const result = await requestPromise;
+        
+        // Remove from cache when complete
+        setTimeout(() => requestCache.delete(cacheKey), 5000);
+        
+        return result;
       } catch (error: any) {
+        // Remove failed request from cache
+        requestCache.delete(cacheKey);
+        
         if (
           error === "Unauthorized" ||
           (typeof error === "string" && error.includes("auth")) ||

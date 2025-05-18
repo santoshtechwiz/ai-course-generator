@@ -1,5 +1,7 @@
 "use client"
 
+// Ensure the file name is correct and matches the imports
+
 import { useCallback, useState, useEffect } from "react"
 import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -8,7 +10,7 @@ import { useAnimation } from "@/providers/animation-provider"
 import { cn } from "@/lib/tailwindUtils"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
 
-interface MCQQuizProps {
+interface McqQuizProps {
   question: {
     id: string
     question: string
@@ -24,7 +26,7 @@ interface MCQQuizProps {
   existingAnswer?: string
 }
 
-export default function MCQQuiz({
+export default function McqQuiz({
   question,
   onAnswer,
   questionNumber,
@@ -32,7 +34,7 @@ export default function MCQQuiz({
   isLastQuestion,
   isSubmitting = false,
   existingAnswer,
-}: MCQQuizProps) {
+}: McqQuizProps) {
   const animation = useAnimation?.()
   const animationsEnabled = animation?.animationsEnabled ?? false
 
