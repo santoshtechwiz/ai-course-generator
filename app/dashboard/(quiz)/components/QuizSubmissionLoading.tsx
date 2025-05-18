@@ -1,89 +1,64 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { motion } from "framer-motion"
+import { Loader2 } from "lucide-react"
 
 interface QuizSubmissionLoadingProps {
-  quizType: string
+  quizType: "mcq" | "code" | "openended" | "blanks"
+  message?: string
 }
 
-export function QuizSubmissionLoading({ quizType }: QuizSubmissionLoadingProps) {
-  const [progress, setProgress] = useState(10)
-  const [message, setMessage] = useState("Processing your answers...")
-  
+export function QuizSubmissionLoading({
+  quizType,
+  message,
+}: QuizSubmissionLoadingProps) {
+  const [loadingMessage, setLoadingMessage] = useState<string>(
+    message || "Processing your submission..."
+  )
+  const [dots, setDots] = useState(".")
+
+  // Add animation for loading dots
   useEffect(() => {
-    let isMounted = true;
-    
-    // Simulate progress for better UX
-    const interval = setInterval(() => {
-      if (isMounted) {
-        setProgress((prev) => {
-          if (prev >= 95) {
-            clearInterval(interval)
-            return 95
-          }
-          return prev + 5
-        })
-      }
-    }, 300)
+    const timer = setInterval(() => {
+      setDots((prev) => (prev.length >= 3 ? "." : prev + "."))
+    }, 500)
 
-    // Update messages for a more engaging loading experience
-    const messages = [
-      "Processing your answers...",
-      "Calculating your score...",
-      "Generating feedback...",
-      "Almost done...",
-      "Finalizing results..."
-    ]
-    
-    let messageIndex = 0
-    const messageInterval = setInterval(() => {
-      if (isMounted) {
-        messageIndex = (messageIndex + 1) % messages.length
-        setMessage(messages[messageIndex])
-        
-        if (messageIndex === messages.length - 1) {
-          clearInterval(messageInterval)
-        }
-      }
-    }, 2000)
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval)
-      clearInterval(messageInterval)
-    }
+    return () => clearInterval(timer)
   }, [])
 
+  // Update loading message after a delay to improve UX
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingMessage("Almost there! Finalizing your results...")
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  const quizTypeName =
+    quizType === "mcq"
+      ? "Multiple Choice Quiz"
+      : quizType === "code"
+      ? "Coding Challenge"
+      : quizType === "openended"
+      ? "Open Ended Quiz"
+      : "Fill in the Blanks Quiz"
+
   return (
-    <div className="min-h-[50vh] flex items-center justify-center p-6" data-testid="quiz-submission-loading">
-      <Card className="w-full max-w-md shadow-lg border-t-4 border-t-primary">
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-2 text-center">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex justify-center"
-            >
-              <div className="relative w-24 h-24 mb-4">
-                <div className="absolute inset-0 rounded-full border-4 border-primary/30 border-t-primary animate-spin"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">{progress}%</span>
-                </div>
-              </div>
-            </motion.div>
-            
-            <h3 className="text-xl font-bold">Finalizing Your {quizType.charAt(0).toUpperCase() + quizType.slice(1)} Quiz</h3>
-            <p className="text-muted-foreground" data-testid="submission-progress">{message}</p>
-          </div>
-          
-          <Progress value={progress} className="h-2" />
-          
-          <p className="text-xs text-center text-muted-foreground">Please wait while we process your quiz results...</p>
-        </CardContent>
-      </Card>
+    <div 
+      className="flex flex-col items-center justify-center min-h-[60vh] p-4" 
+      data-testid="quiz-submission-loading"
+    >
+      <div className="mb-8 relative">
+        <Loader2 className="h-16 w-16 text-primary animate-spin" />
+      </div>
+      <h3 className="text-2xl font-medium mb-2 text-center">
+        {loadingMessage}
+        <span className="inline-block w-[20px]">{dots}</span>
+      </h3>
+      <p className="text-muted-foreground text-center max-w-md">
+        Please wait while we process your {quizTypeName.toLowerCase()} submission. This won't take long.
+      </p>
     </div>
   )
 }

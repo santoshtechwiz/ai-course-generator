@@ -89,7 +89,7 @@
                 <canvas id="test-suites-canvas" width="100" height="100"></canvas>
                 <h2>Test Suites</h2>
                 <div class="list-group">
-                    <p id="test-suites-results" class="list-group-item list-group-item-action">8 passed, 9 total</p>
+                    <p id="test-suites-results" class="list-group-item list-group-item-action">11 passed, 14 total</p>
                 </div>
             </div>
             <!-- /.col-lg-4 -->
@@ -97,7 +97,7 @@
                 <canvas id="tests-canvas" width="100" height="100"></canvas>
                 <h2>Tests</h2>
                 <div class="list-group">
-                    <p id="tests-results" class="list-group-item list-group-item-action">94 passed, 94 total</p>
+                    <p id="tests-results" class="list-group-item list-group-item-action">124 passed, 129 total</p>
                 </div>
             </div>
             <!-- /.col-lg-4 -->
@@ -126,16 +126,16 @@
 }</div>
         <div id="accordion">
             <div class="d-none" id="test-results">{
-  &quot;numFailedTestSuites&quot;: 1,
-  &quot;numFailedTests&quot;: 0,
-  &quot;numPassedTestSuites&quot;: 8,
-  &quot;numPassedTests&quot;: 94,
+  &quot;numFailedTestSuites&quot;: 3,
+  &quot;numFailedTests&quot;: 5,
+  &quot;numPassedTestSuites&quot;: 11,
+  &quot;numPassedTests&quot;: 124,
   &quot;numPendingTestSuites&quot;: 0,
   &quot;numPendingTests&quot;: 0,
   &quot;numRuntimeErrorTestSuites&quot;: 1,
   &quot;numTodoTests&quot;: 0,
-  &quot;numTotalTestSuites&quot;: 9,
-  &quot;numTotalTests&quot;: 94,
+  &quot;numTotalTestSuites&quot;: 14,
+  &quot;numTotalTests&quot;: 129,
   &quot;openHandles&quot;: [],
   &quot;snapshot&quot;: {
     &quot;added&quot;: 0,
@@ -153,21 +153,21 @@
     &quot;unmatched&quot;: 0,
     &quot;updated&quot;: 0
   },
-  &quot;startTime&quot;: 1747493502869,
+  &quot;startTime&quot;: 1747544878059,
   &quot;success&quot;: false,
   &quot;testResults&quot;: [
     {
       &quot;leaks&quot;: false,
       &quot;numFailingTests&quot;: 0,
-      &quot;numPassingTests&quot;: 8,
+      &quot;numPassingTests&quot;: 5,
       &quot;numPendingTests&quot;: 0,
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493525671,
-        &quot;runtime&quot;: 4533,
+        &quot;end&quot;: 1747544903410,
+        &quot;runtime&quot;: 1782,
         &quot;slow&quot;: false,
-        &quot;start&quot;: 1747493521138
+        &quot;start&quot;: 1747544901628
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -179,127 +179,481 @@
         &quot;unmatched&quot;: 0,
         &quot;updated&quot;: 0
       },
-      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts&quot;,
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqQuizResult.test.tsx&quot;,
       &quot;testResults&quot;: [
         {
           &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
+            &quot;McqQuizResult Component&quot;
           ],
-          &quot;duration&quot;: 71,
+          &quot;duration&quot;: 52,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should return the initial state&quot;,
+          &quot;fullName&quot;: &quot;McqQuizResult Component should display loading state initially&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should return the initial state&quot;
+          &quot;title&quot;: &quot;should display loading state initially&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
+            &quot;McqQuizResult Component&quot;
           ],
-          &quot;duration&quot;: 6,
+          &quot;duration&quot;: 92,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should handle resetQuizState&quot;,
+          &quot;fullName&quot;: &quot;McqQuizResult Component should display error state with invalid result data&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
+          &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle resetQuizState&quot;
+          &quot;title&quot;: &quot;should display error state with invalid result data&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
+            &quot;McqQuizResult Component&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 56,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should handle setCurrentQuestion&quot;,
+          &quot;fullName&quot;: &quot;McqQuizResult Component should display quiz results after loading&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
+          &quot;numPassingAsserts&quot;: 11,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle setCurrentQuestion&quot;
+          &quot;title&quot;: &quot;should display quiz results after loading&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
+            &quot;McqQuizResult Component&quot;
           ],
-          &quot;duration&quot;: 4,
+          &quot;duration&quot;: 14,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should handle setUserAnswer for new answer&quot;,
+          &quot;fullName&quot;: &quot;McqQuizResult Component should navigate when buttons are clicked&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
+          &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle setUserAnswer for new answer&quot;
+          &quot;title&quot;: &quot;should navigate when buttons are clicked&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
+            &quot;McqQuizResult Component&quot;
           ],
-          &quot;duration&quot;: 4,
+          &quot;duration&quot;: 11,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should handle setUserAnswer for existing answer&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 3,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle setUserAnswer for existing answer&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
-          ],
-          &quot;duration&quot;: 5,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should handle timer actions&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 5,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle timer actions&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
-          ],
-          &quot;duration&quot;: 2,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should handle markQuizCompleted&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 3,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle markQuizCompleted&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;quizSlice&quot;
-          ],
-          &quot;duration&quot;: 20,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;quizSlice should handle submitQuiz action&quot;,
+          &quot;fullName&quot;: &quot;McqQuizResult Component should handle results with incomplete data&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 4,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle submitQuiz action&quot;
+          &quot;title&quot;: &quot;should handle results with incomplete data&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 16,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747544909663,
+        &quot;runtime&quot;: 4712,
+        &quot;slow&quot;: false,
+        &quot;start&quot;: 1747544904951
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\MCQQuizTest.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 128,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should display loading state initially&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should display loading state initially&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 175,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should display quiz questions when loaded&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should display quiz questions when loaded&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 127,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should navigate to next question when answering&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should navigate to next question when answering&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 79,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should show results preview on last question&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should show results preview on last question&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 69,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should submit quiz and redirect to results page&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 5,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should submit quiz and redirect to results page&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 301,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should show sign-in prompt for non-authenticated users&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should show sign-in prompt for non-authenticated users&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 9,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should handle errors properly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle errors properly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 20,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should handle empty questions state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle empty questions state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 152,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component redirects unauthenticated user to login page&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;redirects unauthenticated user to login page&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 128,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component sends correct payload on submit&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;sends correct payload on submit&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 41,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component saves result in state after successful API response&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;saves result in state after successful API response&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 264,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component shows success toast on result save&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;shows success toast on result save&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 221,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component should handle error with submission&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle error with submission&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 71,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component prevents tampering by validating submission server-side&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;prevents tampering by validating submission server-side&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 42,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component does not expose auth token in client state or DOM&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 6,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;does not expose auth token in client state or DOM&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Component&quot;
+          ],
+          &quot;duration&quot;: 87,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Component displays quiz result from state after sign-in&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;displays quiz result from state after sign-in&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 1,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747544911182,
+        &quot;runtime&quot;: 6402,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747544904780
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\mocks\\mockAnimationProvider.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Animation Provider Mock&quot;
+          ],
+          &quot;duration&quot;: 396,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Animation Provider Mock should provide animation context with animations disabled by default&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should provide animation context with animations disabled by default&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 4,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747544912034,
+        &quot;runtime&quot;: 5373,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747544906661
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\persistQuizMiddleware.test.ts&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 192,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware should persist quiz state when actions are dispatched&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should persist quiz state when actions are dispatched&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 13,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware should remove quiz state from localStorage when quiz is completed&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should remove quiz state from localStorage when quiz is completed&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 5,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware loadPersistedQuizState should return persisted state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;loadPersistedQuizState should return persisted state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;persistQuizMiddleware&quot;
+          ],
+          &quot;duration&quot;: 2,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;persistQuizMiddleware clearPersistedQuizState should remove state from localStorage&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;clearPersistedQuizState should remove state from localStorage&quot;
         }
       ],
       &quot;failureMessage&quot;: null
@@ -332,21 +686,21 @@
         &quot;message&quot;: &quot;Your test suite must contain at least one test.&quot;,
         &quot;stack&quot;: &quot;Error: Your test suite must contain at least one test.\n    at onResult (C:\\Work\\Projects\\ai-learning\\node_modules\\@jest\\core\\build\\TestScheduler.js:133:18)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@jest\\core\\build\\TestScheduler.js:254:19\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\emittery\\index.js:363:13\n    at Array.map (&lt;anonymous&gt;)\n    at Emittery.emit (C:\\Work\\Projects\\ai-learning\\node_modules\\emittery\\index.js:361:23)\n    at process.processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)&quot;
       },
-      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\mocks\\mockAnimationProvider.test.tsx&quot;,
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\mocks\\mockAnimationProvider.tsx&quot;,
       &quot;testResults&quot;: []
     },
     {
       &quot;leaks&quot;: false,
       &quot;numFailingTests&quot;: 0,
-      &quot;numPassingTests&quot;: 4,
+      &quot;numPassingTests&quot;: 12,
       &quot;numPendingTests&quot;: 0,
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493525772,
-        &quot;runtime&quot;: 4504,
-        &quot;slow&quot;: false,
-        &quot;start&quot;: 1747493521268
+        &quot;end&quot;: 1747544921913,
+        &quot;runtime&quot;: 12067,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747544909846
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -358,67 +712,393 @@
         &quot;unmatched&quot;: 0,
         &quot;updated&quot;: 0
       },
-      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\persistQuizMiddleware.test.ts&quot;,
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizHook.test.tsx&quot;,
       &quot;testResults&quot;: [
         {
           &quot;ancestorTitles&quot;: [
-            &quot;persistQuizMiddleware&quot;
+            &quot;useQuiz Hook&quot;
           ],
-          &quot;duration&quot;: 68,
+          &quot;duration&quot;: 120,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;persistQuizMiddleware should persist quiz state when actions are dispatched&quot;,
+          &quot;fullName&quot;: &quot;useQuiz Hook should return initial state&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 4,
+          &quot;numPassingAsserts&quot;: 16,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should persist quiz state when actions are dispatched&quot;
+          &quot;title&quot;: &quot;should return initial state&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;persistQuizMiddleware&quot;
+            &quot;useQuiz Hook&quot;
           ],
-          &quot;duration&quot;: 9,
+          &quot;duration&quot;: 17,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;persistQuizMiddleware should remove quiz state from localStorage when quiz is completed&quot;,
+          &quot;fullName&quot;: &quot;useQuiz Hook should reset quiz state&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should remove quiz state from localStorage when quiz is completed&quot;
+          &quot;title&quot;: &quot;should reset quiz state&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;persistQuizMiddleware&quot;
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 10,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should navigate to next question&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should navigate to next question&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 43,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should navigate to previous question&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should navigate to previous question&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 12,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should save user answer&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should save user answer&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 8,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should format remaining time correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should format remaining time correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 15,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should get current question&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should get current question&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 6,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should check if current question is last&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should check if current question is last&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 6,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle authentication requirement&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle authentication requirement&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
           ],
           &quot;duration&quot;: 5,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;persistQuizMiddleware loadPersistedQuizState should return persisted state&quot;,
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle undefined quiz data&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
+          &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;loadPersistedQuizState should return persisted state&quot;
+          &quot;title&quot;: &quot;should handle undefined quiz data&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;persistQuizMiddleware&quot;
+            &quot;useQuiz Hook&quot;
           ],
-          &quot;duration&quot;: 3,
+          &quot;duration&quot;: 5,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;persistQuizMiddleware clearPersistedQuizState should remove state from localStorage&quot;,
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle missing question id&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;clearPersistedQuizState should remove state from localStorage&quot;
+          &quot;title&quot;: &quot;should handle missing question id&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;useQuiz Hook&quot;
+          ],
+          &quot;duration&quot;: 34,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;useQuiz Hook should handle quiz submission&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 5,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle quiz submission&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 4,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747544922674,
+        &quot;runtime&quot;: 15100,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747544907574
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizSubmission.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Animation Provider Mock&quot;
+          ],
+          &quot;duration&quot;: 110,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Animation Provider Mock should provide animation context with animations disabled by default&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should provide animation context with animations disabled by default&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Submission Flow&quot;
+          ],
+          &quot;duration&quot;: 114,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Submission Flow handles submission payload correctly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles submission payload correctly&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Submission Flow&quot;
+          ],
+          &quot;duration&quot;: 124,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Submission Flow handles server-side validation errors&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 5,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles server-side validation errors&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;Code Quiz Submission Flow&quot;
+          ],
+          &quot;duration&quot;: 60,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Code Quiz Submission Flow handles missing quiz ID in payload&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;handles missing quiz ID in payload&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 6,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747544923060,
+        &quot;runtime&quot;: 12783,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747544910277
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\components\\__tests__\\NonAuthenticatedUserSignInPrompt.test.tsx&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;NonAuthenticatedUserSignInPrompt&quot;
+          ],
+          &quot;duration&quot;: 44,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt renders with default props&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;renders with default props&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;NonAuthenticatedUserSignInPrompt&quot;
+          ],
+          &quot;duration&quot;: 31,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt calls onSignIn when sign-in button is clicked&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;calls onSignIn when sign-in button is clicked&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;NonAuthenticatedUserSignInPrompt&quot;
+          ],
+          &quot;duration&quot;: 12,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt displays save message when showSaveMessage is true&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;displays save message when showSaveMessage is true&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;NonAuthenticatedUserSignInPrompt&quot;
+          ],
+          &quot;duration&quot;: 8,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt does not display save message when showSaveMessage is false&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;does not display save message when showSaveMessage is false&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;NonAuthenticatedUserSignInPrompt&quot;
+          ],
+          &quot;duration&quot;: 19,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt displays custom message when provided&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;displays custom message when provided&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;NonAuthenticatedUserSignInPrompt&quot;
+          ],
+          &quot;duration&quot;: 18,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt redirects to default route when onSignIn not provided&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;redirects to default route when onSignIn not provided&quot;
         }
       ],
       &quot;failureMessage&quot;: null
@@ -431,10 +1111,10 @@
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493526475,
-        &quot;runtime&quot;: 4883,
-        &quot;slow&quot;: false,
-        &quot;start&quot;: 1747493521592
+        &quot;end&quot;: 1747544928701,
+        &quot;runtime&quot;: 9708,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747544918993
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -453,7 +1133,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;formatTime&quot;
           ],
-          &quot;duration&quot;: 43,
+          &quot;duration&quot;: 30,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities formatTime formats seconds correctly&quot;,
@@ -469,7 +1149,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;formatTime&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 1,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities formatTime handles null or undefined&quot;,
@@ -501,7 +1181,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;formatDate&quot;
           ],
-          &quot;duration&quot;: 50,
+          &quot;duration&quot;: 41,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities formatDate formats date correctly&quot;,
@@ -533,7 +1213,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;truncateString&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 1,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities truncateString truncates string correctly&quot;,
@@ -565,7 +1245,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;calculatePercentage&quot;
           ],
-          &quot;duration&quot;: 1,
+          &quot;duration&quot;: 3,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities calculatePercentage handles zero or negative maxScore&quot;,
@@ -613,7 +1293,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;generateFeedback&quot;
           ],
-          &quot;duration&quot;: 3,
+          &quot;duration&quot;: 2,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities generateFeedback generates appropriate feedback based on percentage&quot;,
@@ -629,7 +1309,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;calculateStringSimilarity&quot;
           ],
-          &quot;duration&quot;: 4,
+          &quot;duration&quot;: 2,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities calculateStringSimilarity calculates string similarity correctly&quot;,
@@ -677,7 +1357,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;evaluateOpenEndedAnswer&quot;
           ],
-          &quot;duration&quot;: 3,
+          &quot;duration&quot;: 2,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities evaluateOpenEndedAnswer evaluates open-ended answers based on keywords&quot;,
@@ -709,7 +1389,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;evaluateOpenEndedAnswer&quot;
           ],
-          &quot;duration&quot;: 0,
+          &quot;duration&quot;: 3,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities evaluateOpenEndedAnswer matches similar words&quot;,
@@ -725,7 +1405,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;evaluateCode&quot;
           ],
-          &quot;duration&quot;: 3,
+          &quot;duration&quot;: 5,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities evaluateCode evaluates code against test cases&quot;,
@@ -757,7 +1437,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;getDifficultyColor&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 3,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities getDifficultyColor returns correct color classes for different difficulty levels&quot;,
@@ -773,7 +1453,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;getDifficultyColor&quot;
           ],
-          &quot;duration&quot;: 1,
+          &quot;duration&quot;: 0,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities getDifficultyColor handles unknown difficulty and undefined&quot;,
@@ -789,7 +1469,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;getDifficultyColor&quot;
           ],
-          &quot;duration&quot;: 1,
+          &quot;duration&quot;: 0,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities getDifficultyColor is case insensitive&quot;,
@@ -805,7 +1485,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;calculateEstimatedTime&quot;
           ],
-          &quot;duration&quot;: 1,
+          &quot;duration&quot;: 0,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities calculateEstimatedTime calculates estimated time based on question types&quot;,
@@ -821,7 +1501,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;calculateEstimatedTime&quot;
           ],
-          &quot;duration&quot;: 1,
+          &quot;duration&quot;: 2,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities calculateEstimatedTime handles empty questions array&quot;,
@@ -837,7 +1517,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;calculateEstimatedTime&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 3,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities calculateEstimatedTime handles unknown question types&quot;,
@@ -853,7 +1533,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;areAllRequiredQuestionsAnswered&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 1,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered checks if all required questions are answered&quot;,
@@ -901,7 +1581,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;areAllRequiredQuestionsAnswered&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 1,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered validates fill-in-the-blanks answers&quot;,
@@ -917,7 +1597,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;areAllRequiredQuestionsAnswered&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 0,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities areAllRequiredQuestionsAnswered validates open-ended answers with minimum length&quot;,
@@ -965,7 +1645,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;shuffleArray&quot;
           ],
-          &quot;duration&quot;: 1,
+          &quot;duration&quot;: 2,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities shuffleArray handles empty arrays&quot;,
@@ -997,7 +1677,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;capitalizeFirstLetter&quot;
           ],
-          &quot;duration&quot;: 3,
+          &quot;duration&quot;: 1,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities capitalizeFirstLetter handles empty strings&quot;,
@@ -1013,7 +1693,7 @@
             &quot;Quiz Utilities&quot;,
             &quot;debounce&quot;
           ],
-          &quot;duration&quot;: 10,
+          &quot;duration&quot;: 9,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Quiz Utilities debounce debounces function calls&quot;,
@@ -1030,15 +1710,163 @@
     {
       &quot;leaks&quot;: false,
       &quot;numFailingTests&quot;: 0,
+      &quot;numPassingTests&quot;: 8,
+      &quot;numPendingTests&quot;: 0,
+      &quot;numTodoTests&quot;: 0,
+      &quot;openHandles&quot;: [],
+      &quot;perfStats&quot;: {
+        &quot;end&quot;: 1747544929431,
+        &quot;runtime&quot;: 7229,
+        &quot;slow&quot;: true,
+        &quot;start&quot;: 1747544922202
+      },
+      &quot;skipped&quot;: false,
+      &quot;snapshot&quot;: {
+        &quot;added&quot;: 0,
+        &quot;fileDeleted&quot;: false,
+        &quot;matched&quot;: 0,
+        &quot;unchecked&quot;: 0,
+        &quot;uncheckedKeys&quot;: [],
+        &quot;unmatched&quot;: 0,
+        &quot;updated&quot;: 0
+      },
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts&quot;,
+      &quot;testResults&quot;: [
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 46,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should return the initial state&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should return the initial state&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 4,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle resetQuizState&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle resetQuizState&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 2,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle setCurrentQuestion&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle setCurrentQuestion&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 3,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle setUserAnswer for new answer&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle setUserAnswer for new answer&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 3,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle setUserAnswer for existing answer&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle setUserAnswer for existing answer&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 6,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle timer actions&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 5,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle timer actions&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 8,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle markQuizCompleted&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 3,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle markQuizCompleted&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;quizSlice&quot;
+          ],
+          &quot;duration&quot;: 13,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;quizSlice should handle submitQuiz action&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 4,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should handle submitQuiz action&quot;
+        }
+      ],
+      &quot;failureMessage&quot;: null
+    },
+    {
+      &quot;leaks&quot;: false,
+      &quot;numFailingTests&quot;: 0,
       &quot;numPassingTests&quot;: 10,
       &quot;numPendingTests&quot;: 0,
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493527420,
-        &quot;runtime&quot;: 6236,
+        &quot;end&quot;: 1747544930440,
+        &quot;runtime&quot;: 10824,
         &quot;slow&quot;: true,
-        &quot;start&quot;: 1747493521184
+        &quot;start&quot;: 1747544919616
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -1056,7 +1884,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;useAuth hook&quot;
           ],
-          &quot;duration&quot;: 83,
+          &quot;duration&quot;: 95,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;useAuth hook should return authenticated status when session exists&quot;,
@@ -1071,7 +1899,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;useAuth hook&quot;
           ],
-          &quot;duration&quot;: 11,
+          &quot;duration&quot;: 12,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;useAuth hook should return unauthenticated status when session is missing&quot;,
@@ -1086,7 +1914,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;useAuth hook&quot;
           ],
-          &quot;duration&quot;: 12,
+          &quot;duration&quot;: 10,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;useAuth hook should detect fromAuth parameter in URL&quot;,
@@ -1116,7 +1944,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;useAuth hook&quot;
           ],
-          &quot;duration&quot;: 15,
+          &quot;duration&quot;: 23,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;useAuth hook should call signIn when requireAuth is called and user is unauthenticated&quot;,
@@ -1131,7 +1959,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;useAuth hook&quot;
           ],
-          &quot;duration&quot;: 8,
+          &quot;duration&quot;: 9,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;useAuth hook should not call signIn when requireAuth is called but user is authenticated&quot;,
@@ -1146,7 +1974,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;useAuth hook&quot;
           ],
-          &quot;duration&quot;: 9,
+          &quot;duration&quot;: 7,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;useAuth hook should parse redirect info from URL&quot;,
@@ -1161,7 +1989,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;useAuth hook&quot;
           ],
-          &quot;duration&quot;: 12,
+          &quot;duration&quot;: 9,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;useAuth hook should handle missing redirect info&quot;,
@@ -1176,7 +2004,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;_createMockUseAuth&quot;
           ],
-          &quot;duration&quot;: 14,
+          &quot;duration&quot;: 30,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;_createMockUseAuth should create default mock&quot;,
@@ -1191,7 +2019,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;_createMockUseAuth&quot;
           ],
-          &quot;duration&quot;: 1,
+          &quot;duration&quot;: 3,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;_createMockUseAuth should override defaults&quot;,
@@ -1207,16 +2035,16 @@
     },
     {
       &quot;leaks&quot;: false,
-      &quot;numFailingTests&quot;: 0,
-      &quot;numPassingTests&quot;: 12,
+      &quot;numFailingTests&quot;: 3,
+      &quot;numPassingTests&quot;: 4,
       &quot;numPendingTests&quot;: 0,
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493527505,
-        &quot;runtime&quot;: 6195,
+        &quot;end&quot;: 1747544930878,
+        &quot;runtime&quot;: 9341,
         &quot;slow&quot;: true,
-        &quot;start&quot;: 1747493521310
+        &quot;start&quot;: 1747544921537
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -1228,321 +2056,150 @@
         &quot;unmatched&quot;: 0,
         &quot;updated&quot;: 0
       },
-      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\useQuizHook.test.tsx&quot;,
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqResults.test.tsx&quot;,
       &quot;testResults&quot;: [
         {
           &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
+            &quot;MCQ Quiz Results Page&quot;
           ],
-          &quot;duration&quot;: 88,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should return initial state&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 16,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should return initial state&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
+          &quot;duration&quot;: 114,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;matcherResult&quot;: {
+                &quot;message&quot;: &quot;\u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug&#x2F;results\&quot;\u001b[39m\nReceived: \u001b[31m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-slug&#x2F;results\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m1\u001b[39m&quot;,
+                &quot;pass&quot;: false
+              }
+            }
           ],
-          &quot;duration&quot;: 22,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should reset quiz state&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should reset quiz state&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
+          &quot;failureMessages&quot;: [
+            &quot;Error: \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug&#x2F;results\&quot;\u001b[39m\nReceived: \u001b[31m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-slug&#x2F;results\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m1\u001b[39m\n    at Object.toHaveBeenCalledWith (C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqResults.test.tsx:111:29)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
           ],
-          &quot;duration&quot;: 15,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should navigate to next question&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should navigate to next question&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
-          ],
-          &quot;duration&quot;: 16,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should navigate to previous question&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should navigate to previous question&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
-          ],
-          &quot;duration&quot;: 9,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should save user answer&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should save user answer&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
-          ],
-          &quot;duration&quot;: 4,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should format remaining time correctly&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Results Page should show sign in prompt when user is not authenticated&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should format remaining time correctly&quot;
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should show sign in prompt when user is not authenticated&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
-          ],
-          &quot;duration&quot;: 7,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should get current question&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should get current question&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
-          ],
-          &quot;duration&quot;: 6,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should check if current question is last&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should check if current question is last&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
+            &quot;MCQ Quiz Results Page&quot;
           ],
           &quot;duration&quot;: 10,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should handle authentication requirement&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Results Page should show loading state while authentication is pending&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle authentication requirement&quot;
+          &quot;title&quot;: &quot;should show loading state while authentication is pending&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
+            &quot;MCQ Quiz Results Page&quot;
           ],
-          &quot;duration&quot;: 5,
+          &quot;duration&quot;: 9,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should handle undefined quiz data&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle undefined quiz data&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
-          ],
-          &quot;duration&quot;: 36,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should handle missing question id&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Results Page should show loading state while quiz results are loading&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle missing question id&quot;
+          &quot;title&quot;: &quot;should show loading state while quiz results are loading&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;useQuiz Hook&quot;
+            &quot;MCQ Quiz Results Page&quot;
           ],
-          &quot;duration&quot;: 28,
+          &quot;duration&quot;: 10,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;useQuiz Hook should handle quiz submission&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Results Page should show error state when results fetch fails&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 5,
+          &quot;numPassingAsserts&quot;: 3,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle quiz submission&quot;
+          &quot;title&quot;: &quot;should show error state when results fetch fails&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Results Page&quot;
+          ],
+          &quot;duration&quot;: 23,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;matcherResult&quot;: {
+                &quot;message&quot;: &quot;\u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug\&quot;\u001b[39m\nReceived: \u001b[31m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-slug\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m1\u001b[39m&quot;,
+                &quot;pass&quot;: false
+              }
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;Error: \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug\&quot;\u001b[39m\nReceived: \u001b[31m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-slug\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m1\u001b[39m\n    at Object.toHaveBeenCalledWith (C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqResults.test.tsx:206:22)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;MCQ Quiz Results Page should show \&quot;No Results Found\&quot; when authenticated but no results available&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should show \&quot;No Results Found\&quot; when authenticated but no results available&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Results Page&quot;
+          ],
+          &quot;duration&quot;: 665,
+          &quot;failureDetails&quot;: [
+            {}
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;ReferenceError: McqQuizResult is not defined\n    at McqQuizResult (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\results\\page.tsx:110:8)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.&lt;anonymous&gt; (C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqResults.test.tsx:243:11)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;MCQ Quiz Results Page should display quiz results when authenticated and results are available&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 0,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should display quiz results when authenticated and results are available&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Results Page&quot;
+          ],
+          &quot;duration&quot;: 19,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Results Page should fetch results when authenticated and no results are available&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should fetch results when authenticated and no results are available&quot;
         }
       ],
-      &quot;failureMessage&quot;: null
+      &quot;failureMessage&quot;: &quot;\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMCQ Quiz Results Page › should show sign in prompt when user is not authenticated\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n    Expected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug&#x2F;results\&quot;\u001b[39m\n    Received: \u001b[31m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-slug&#x2F;results\&quot;\u001b[39m\n\n    Number of calls: \u001b[31m1\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 109 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Simulate sign in click\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 110 |\u001b[39m     screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m&#39;sign-in-prompt-mock&#39;\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 111 |\u001b[39m     expect(mockRequireAuth)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[32m&#39;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug&#x2F;results&#39;\u001b[39m)\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 112 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 113 |\u001b[39m   \u001b[22m\n\u001b[2m     \u001b[90m 114 |\u001b[39m   test(\u001b[32m&#39;should show loading state while authentication is pending&#39;\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m&#x3D;&gt;\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toHaveBeenCalledWith (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__&#x2F;mcq&#x2F;McqResults.test.tsx\u001b[39m\u001b[0m\u001b[2m:111:29)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMCQ Quiz Results Page › should show \&quot;No Results Found\&quot; when authenticated but no results available\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n    Expected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug\&quot;\u001b[39m\n    Received: \u001b[31m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-slug\&quot;\u001b[39m\n\n    Number of calls: \u001b[31m1\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 204 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Test \&quot;Take the Quiz\&quot; button functionality\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 205 |\u001b[39m     screen\u001b[33m.\u001b[39mgetByText(\u001b[32m&#39;Take the Quiz&#39;\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 206 |\u001b[39m     expect(mockPush)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[32m&#39;&#x2F;dashboard&#x2F;mcq&#x2F;test-slug&#39;\u001b[39m)\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 207 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 208 |\u001b[39m   \u001b[22m\n\u001b[2m     \u001b[90m 209 |\u001b[39m   test(\u001b[32m&#39;should display quiz results when authenticated and results are available&#39;\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m&#x3D;&gt;\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toHaveBeenCalledWith (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__&#x2F;mcq&#x2F;McqResults.test.tsx\u001b[39m\u001b[0m\u001b[2m:206:22)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMCQ Quiz Results Page › should display quiz results when authenticated and results are available\u001b[39m\u001b[22m\n\n    ReferenceError: McqQuizResult is not defined\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 108 |\u001b[39m   \u001b[36mreturn\u001b[39m results \u001b[33m?\u001b[39m (\u001b[22m\n\u001b[2m     \u001b[90m 109 |\u001b[39m     \u001b[33m&lt;\u001b[39m\u001b[33mdiv\u001b[39m className\u001b[33m&#x3D;\u001b[39m\u001b[32m\&quot;container max-w-4xl py-6\&quot;\u001b[39m\u001b[33m&gt;\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 110 |\u001b[39m       \u001b[33m&lt;\u001b[39m\u001b[33mMcqQuizResult\u001b[39m result\u001b[33m&#x3D;\u001b[39m{results \u001b[36mas\u001b[39m \u001b[33mQuizResult\u001b[39m} \u001b[33m&#x2F;\u001b[39m\u001b[33m&gt;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 111 |\u001b[39m     \u001b[33m&lt;\u001b[39m\u001b[33m&#x2F;\u001b[39m\u001b[33mdiv\u001b[39m\u001b[33m&gt;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 112 |\u001b[39m   ) \u001b[33m:\u001b[39m (\u001b[22m\n\u001b[2m     \u001b[90m 113 |\u001b[39m     \u001b[33m&lt;\u001b[39m\u001b[33mInitializingDisplay\u001b[39m \u001b[33m&#x2F;\u001b[39m\u001b[33m&gt;\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat McqQuizResult (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m..&#x2F;..&#x2F;..&#x2F;mcq&#x2F;[slug]&#x2F;results&#x2F;page.tsx\u001b[2m:110:8)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules&#x2F;react-dom&#x2F;cjs&#x2F;react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules&#x2F;react&#x2F;cjs&#x2F;react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules&#x2F;react&#x2F;cjs&#x2F;react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;react&#x2F;dist&#x2F;act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;react&#x2F;dist&#x2F;pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;react&#x2F;dist&#x2F;pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.&lt;anonymous&gt; (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__&#x2F;mcq&#x2F;McqResults.test.tsx\u001b[39m\u001b[0m\u001b[2m:243:11)\u001b[22m\u001b[2m\u001b[22m\n&quot;
     },
     {
       &quot;leaks&quot;: false,
       &quot;numFailingTests&quot;: 0,
-      &quot;numPassingTests&quot;: 6,
+      &quot;numPassingTests&quot;: 16,
       &quot;numPendingTests&quot;: 0,
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493527774,
-        &quot;runtime&quot;: 6319,
+        &quot;end&quot;: 1747544930900,
+        &quot;runtime&quot;: 11321,
         &quot;slow&quot;: true,
-        &quot;start&quot;: 1747493521455
-      },
-      &quot;skipped&quot;: false,
-      &quot;snapshot&quot;: {
-        &quot;added&quot;: 0,
-        &quot;fileDeleted&quot;: false,
-        &quot;matched&quot;: 0,
-        &quot;unchecked&quot;: 0,
-        &quot;uncheckedKeys&quot;: [],
-        &quot;unmatched&quot;: 0,
-        &quot;updated&quot;: 0
-      },
-      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\components\\__tests__\\NonAuthenticatedUserSignInPrompt.test.tsx&quot;,
-      &quot;testResults&quot;: [
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;NonAuthenticatedUserSignInPrompt&quot;
-          ],
-          &quot;duration&quot;: 283,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt renders with default props&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;renders with default props&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;NonAuthenticatedUserSignInPrompt&quot;
-          ],
-          &quot;duration&quot;: 34,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt calls onSignIn when sign-in button is clicked&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;calls onSignIn when sign-in button is clicked&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;NonAuthenticatedUserSignInPrompt&quot;
-          ],
-          &quot;duration&quot;: 26,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt displays save message when showSaveMessage is true&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;displays save message when showSaveMessage is true&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;NonAuthenticatedUserSignInPrompt&quot;
-          ],
-          &quot;duration&quot;: 11,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt does not display save message when showSaveMessage is false&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;does not display save message when showSaveMessage is false&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;NonAuthenticatedUserSignInPrompt&quot;
-          ],
-          &quot;duration&quot;: 26,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt displays custom message when provided&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;displays custom message when provided&quot;
-        },
-        {
-          &quot;ancestorTitles&quot;: [
-            &quot;NonAuthenticatedUserSignInPrompt&quot;
-          ],
-          &quot;duration&quot;: 20,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;NonAuthenticatedUserSignInPrompt redirects to default route when onSignIn not provided&quot;,
-          &quot;invocations&quot;: 1,
-          &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
-          &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;redirects to default route when onSignIn not provided&quot;
-        }
-      ],
-      &quot;failureMessage&quot;: null
-    },
-    {
-      &quot;leaks&quot;: false,
-      &quot;numFailingTests&quot;: 0,
-      &quot;numPassingTests&quot;: 15,
-      &quot;numPendingTests&quot;: 0,
-      &quot;numTodoTests&quot;: 0,
-      &quot;openHandles&quot;: [],
-      &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493528238,
-        &quot;runtime&quot;: 6984,
-        &quot;slow&quot;: true,
-        &quot;start&quot;: 1747493521254
+        &quot;start&quot;: 1747544919579
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -1558,9 +2215,24 @@
       &quot;testResults&quot;: [
         {
           &quot;ancestorTitles&quot;: [
+            &quot;Animation Provider Mock&quot;
+          ],
+          &quot;duration&quot;: 142,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;Animation Provider Mock should provide animation context with animations disabled by default&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 1,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should provide animation context with animations disabled by default&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 158,
+          &quot;duration&quot;: 54,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should display loading state initially&quot;,
@@ -1575,7 +2247,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 71,
+          &quot;duration&quot;: 60,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should display quiz questions when loaded&quot;,
@@ -1590,7 +2262,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 34,
+          &quot;duration&quot;: 31,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should navigate to next question when answering&quot;,
@@ -1605,7 +2277,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 37,
+          &quot;duration&quot;: 47,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should show results preview on last question&quot;,
@@ -1620,7 +2292,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 37,
+          &quot;duration&quot;: 48,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should submit quiz and redirect to results page&quot;,
@@ -1635,7 +2307,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 55,
+          &quot;duration&quot;: 47,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should show sign-in prompt for non-authenticated users&quot;,
@@ -1650,7 +2322,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 9,
+          &quot;duration&quot;: 12,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should handle errors properly&quot;,
@@ -1665,7 +2337,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 15,
+          &quot;duration&quot;: 10,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component should handle empty questions state&quot;,
@@ -1680,7 +2352,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 42,
+          &quot;duration&quot;: 75,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component redirects unauthenticated user to login page&quot;,
@@ -1695,7 +2367,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 37,
+          &quot;duration&quot;: 39,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component sends correct payload on submit&quot;,
@@ -1710,7 +2382,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 15,
+          &quot;duration&quot;: 14,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component saves result in state after successful API response&quot;,
@@ -1725,7 +2397,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 41,
+          &quot;duration&quot;: 38,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component shows success toast on result save&quot;,
@@ -1740,7 +2412,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 30,
+          &quot;duration&quot;: 53,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component prevents tampering by validating submission server-side&quot;,
@@ -1755,7 +2427,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 14,
+          &quot;duration&quot;: 64,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component does not expose auth token in client state or DOM&quot;,
@@ -1770,7 +2442,7 @@
           &quot;ancestorTitles&quot;: [
             &quot;Code Quiz Component&quot;
           ],
-          &quot;duration&quot;: 43,
+          &quot;duration&quot;: 61,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
           &quot;fullName&quot;: &quot;Code Quiz Component displays quiz result from state after sign-in&quot;,
@@ -1786,16 +2458,16 @@
     },
     {
       &quot;leaks&quot;: false,
-      &quot;numFailingTests&quot;: 0,
-      &quot;numPassingTests&quot;: 3,
+      &quot;numFailingTests&quot;: 2,
+      &quot;numPassingTests&quot;: 2,
       &quot;numPendingTests&quot;: 0,
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747493528730,
-        &quot;runtime&quot;: 6929,
+        &quot;end&quot;: 1747544932977,
+        &quot;runtime&quot;: 11205,
         &quot;slow&quot;: true,
-        &quot;start&quot;: 1747493521801
+        &quot;start&quot;: 1747544921772
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -1807,55 +2479,82 @@
         &quot;unmatched&quot;: 0,
         &quot;updated&quot;: 0
       },
-      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\app\\__tests__\\CodeQuizSubmission.test.tsx&quot;,
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqQuizWrapper.test.tsx&quot;,
       &quot;testResults&quot;: [
         {
           &quot;ancestorTitles&quot;: [
-            &quot;Code Quiz Submission Flow&quot;
+            &quot;MCQQuizWrapper Component&quot;
           ],
-          &quot;duration&quot;: 277,
+          &quot;duration&quot;: 154,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;Code Quiz Submission Flow handles submission payload correctly&quot;,
+          &quot;fullName&quot;: &quot;MCQQuizWrapper Component should display loading state initially&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 4,
+          &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;handles submission payload correctly&quot;
+          &quot;title&quot;: &quot;should display loading state initially&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;Code Quiz Submission Flow&quot;
+            &quot;MCQQuizWrapper Component&quot;
           ],
-          &quot;duration&quot;: 104,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;Code Quiz Submission Flow handles server-side validation errors&quot;,
+          &quot;duration&quot;: 33,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;name&quot;: &quot;TestingLibraryElementError&quot;
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;TestingLibraryElementError: Unable to find an element by: [data-testid&#x3D;\&quot;non-authenticated-prompt\&quot;]\n\nIgnored nodes: comments, script, style\n\u001b[36m&lt;body&gt;\u001b[39m\n  \u001b[36m&lt;div&gt;\u001b[39m\n    \u001b[36m&lt;div\u001b[39m\n      \u001b[33mdata-testid\u001b[39m&#x3D;\u001b[32m\&quot;mcq-quiz\&quot;\u001b[39m\n    \u001b[36m&gt;\u001b[39m\n      \u001b[0mQuestion: \u001b[0m\n      \u001b[0mWhat is the color of the sky?\u001b[0m\n    \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n  \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n\u001b[36m&lt;&#x2F;body&gt;\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqQuizWrapper.test.tsx:224:19)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;MCQQuizWrapper Component should display sign in prompt for non-authenticated users at submission&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 5,
+          &quot;numPassingAsserts&quot;: 0,
           &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;handles server-side validation errors&quot;
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should display sign in prompt for non-authenticated users at submission&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;Code Quiz Submission Flow&quot;
+            &quot;MCQQuizWrapper Component&quot;
           ],
-          &quot;duration&quot;: 44,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;Code Quiz Submission Flow handles missing quiz ID in payload&quot;,
+          &quot;duration&quot;: 14,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;name&quot;: &quot;TestingLibraryElementError&quot;
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;TestingLibraryElementError: Unable to find an element by: [data-testid&#x3D;\&quot;submission-loading\&quot;]\n\nIgnored nodes: comments, script, style\n\u001b[36m&lt;body&gt;\u001b[39m\n  \u001b[36m&lt;div&gt;\u001b[39m\n    \u001b[36m&lt;div\u001b[39m\n      \u001b[33mdata-testid\u001b[39m&#x3D;\u001b[32m\&quot;mcq-quiz\&quot;\u001b[39m\n    \u001b[36m&gt;\u001b[39m\n      \u001b[0mQuestion: \u001b[0m\n      \u001b[0mWhat is the color of the sky?\u001b[0m\n    \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n  \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n\u001b[36m&lt;&#x2F;body&gt;\u001b[39m\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByTestId (C:\\Work\\Projects\\ai-learning\\__tests__\\mcq\\McqQuizWrapper.test.tsx:287:19)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal&#x2F;process&#x2F;task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)&quot;
+          ],
+          &quot;fullName&quot;: &quot;MCQQuizWrapper Component should handle successful quiz submission for authenticated user&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 4,
+          &quot;numPassingAsserts&quot;: 0,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should handle successful quiz submission for authenticated user&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQQuizWrapper Component&quot;
+          ],
+          &quot;duration&quot;: 21,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQQuizWrapper Component should handle error state properly&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;handles missing quiz ID in payload&quot;
+          &quot;title&quot;: &quot;should handle error state properly&quot;
         }
       ],
-      &quot;failureMessage&quot;: null
+      &quot;failureMessage&quot;: &quot;\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMCQQuizWrapper Component › should display sign in prompt for non-authenticated users at submission\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid&#x3D;\&quot;non-authenticated-prompt\&quot;]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m&lt;body&gt;\u001b[39m\n      \u001b[36m&lt;div&gt;\u001b[39m\n        \u001b[36m&lt;div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m&#x3D;\u001b[32m\&quot;mcq-quiz\&quot;\u001b[39m\n        \u001b[36m&gt;\u001b[39m\n          \u001b[0mQuestion: \u001b[0m\n          \u001b[0mWhat is the color of the sky?\u001b[0m\n        \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n      \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n    \u001b[36m&lt;&#x2F;body&gt;\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 222 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 223 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Should show sign in prompt directly in test mode\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 224 |\u001b[39m     expect(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m&#39;non-authenticated-prompt&#39;\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                   \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 225 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 226 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Click sign in button\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 227 |\u001b[39m     \u001b[36mawait\u001b[39m userEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m&#39;non-authenticated-prompt&#39;\u001b[39m))\u001b[33m;\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__&#x2F;mcq&#x2F;McqQuizWrapper.test.tsx\u001b[39m\u001b[0m\u001b[2m:224:19)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMCQQuizWrapper Component › should handle successful quiz submission for authenticated user\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element by: [data-testid&#x3D;\&quot;submission-loading\&quot;]\n\n    Ignored nodes: comments, script, style\n    \u001b[36m&lt;body&gt;\u001b[39m\n      \u001b[36m&lt;div&gt;\u001b[39m\n        \u001b[36m&lt;div\u001b[39m\n          \u001b[33mdata-testid\u001b[39m&#x3D;\u001b[32m\&quot;mcq-quiz\&quot;\u001b[39m\n        \u001b[36m&gt;\u001b[39m\n          \u001b[0mQuestion: \u001b[0m\n          \u001b[0mWhat is the color of the sky?\u001b[0m\n        \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n      \u001b[36m&lt;&#x2F;div&gt;\u001b[39m\n    \u001b[36m&lt;&#x2F;body&gt;\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 285 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 286 |\u001b[39m     \u001b[90m&#x2F;&#x2F; Should show the submission loading component\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 287 |\u001b[39m     expect(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m&#39;submission-loading&#39;\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                   \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 288 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 289 |\u001b[39m   \u001b[22m\n\u001b[2m     \u001b[90m 290 |\u001b[39m   test(\u001b[32m&#39;should handle error state properly&#39;\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m&#x3D;&gt;\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules&#x2F;@testing-library&#x2F;dom&#x2F;dist&#x2F;query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByTestId (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__&#x2F;mcq&#x2F;McqQuizWrapper.test.tsx\u001b[39m\u001b[0m\u001b[2m:287:19)\u001b[22m\u001b[2m\u001b[22m\n&quot;
     }
   ],
   &quot;wasInterrupted&quot;: false
@@ -1920,7 +2619,7 @@
   ],
   &quot;rootDir&quot;: &quot;C:\\Work\\Projects\\ai-learning&quot;,
   &quot;runTestsByPath&quot;: false,
-  &quot;seed&quot;: 2097060232,
+  &quot;seed&quot;: 183245779,
   &quot;skipFilter&quot;: false,
   &quot;snapshotFormat&quot;: {
     &quot;escapeString&quot;: false,
