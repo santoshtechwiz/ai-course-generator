@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { AlertCircle, RefreshCw } from "lucide-react"
 
-import { resetQuiz } from "@/store/slices/quizSlice"
 import { useAppDispatch } from "@/store"
+import { resetFlashCards } from "@/store/slices/flashcardSlice"
 
 interface FlashCardResultsProps {
   quizId: string
@@ -71,7 +71,7 @@ export default function FlashCardResults({
     setIsRestarting(true)
 
     // Reset the quiz state in Redux
-    dispatch(resetQuiz())
+    dispatch(resetFlashCards())
 
     // Add reset parameters to URL to force a fresh load
     const url = new URL(window.location.href)

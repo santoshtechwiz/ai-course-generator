@@ -1,16 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { FlashCard } from "@/app/types/types"
 import { useToast } from "@/hooks/use-toast"
 import { Sparkles } from "lucide-react"
-import axios from "axios"
+import { useDispatch, useSelector } from "react-redux"
 
 import QuizActions from "../../components/QuizActions"
 import { FlashCardWrapper } from "./FlashCardWrapper"
+import {
+  fetchFlashCards,
+  toggleSaveCard,
+  selectFlashCards,
+  selectSavedCardIds,
+  selectFlashCardsLoading,
+  selectFlashCardsError,
+  selectOwnerId,
+  selectQuizId
+} from "@/store/slices/flashcardSlice"
+import { AppDispatch } from "@/store"
 
 interface FlashCardsPageClientProps {
   slug: string
@@ -18,85 +28,33 @@ interface FlashCardsPageClientProps {
 }
 
 export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageClientProps) {
-  const [flashCards, setFlashCards] = useState<FlashCard[]>([])
-  const [savedCardIds, setSavedCardIds] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [ownerId, setOwnerId] = useState<string>("")
-  const [quizId, setQuizId] = useState<string>("")
-  const [error, setError] = useState<string | null>(null)
-
+  const dispatch = useDispatch<AppDispatch>()
   const { toast } = useToast()
+  
+  // Get data from Redux state
+  const flashCards = useSelector(selectFlashCards)
+  const savedCardIds = useSelector(selectSavedCardIds)
+  const loading = useSelector(selectFlashCardsLoading)
+  const error = useSelector(selectFlashCardsError)
+  const ownerId = useSelector(selectOwnerId)
+  const quizId = useSelector(selectQuizId)
 
+  // Fetch flashcards when component mounts or slug changes
   useEffect(() => {
-    const fetchFlashCards = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+    dispatch(fetchFlashCards(slug))
+  }, [slug, dispatch])
 
-        const response = await axios.get(`/api/flashcard?slug=${slug}`)
-        if (response.data.data.flashCards) {
-          setOwnerId(response.data.data.quiz?.userId)
-          setQuizId(response.data.data.quiz?.id)
-          setFlashCards(response.data.data.flashCards)
-
-          // Extract saved card IDs
-          const savedIds = response.data.data.flashCards
-            .filter((card: FlashCard) => card.isSaved)
-            .map((card: FlashCard) => card.id)
-
-          setSavedCardIds(savedIds)
-        } else {
-          setFlashCards([])
-          setSavedCardIds([])
-        }
-      } catch (error) {
-        console.warn("Error fetching flash cards:", error)
-        setError("Failed to load your flash cards")
-        toast({
-          title: "Error",
-          description: "Failed to load your flash cards. Please try again later.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchFlashCards()
-  }, [slug, toast])
-
-  const handleSaveCard = async (card: FlashCard) => {
+  // Handle saving/unsaving cards
+  const handleSaveCard = async (card: any) => {
     try {
-      // Toggle saved status
-      const isSaved = savedCardIds.includes(card.id || "")
-
-      // Update UI immediately for better UX
-      if (isSaved) {
-        setSavedCardIds(savedCardIds.filter((id) => id !== card.id))
-      } else {
-        setSavedCardIds([...savedCardIds, String(card.id) || ""])
-      }
-
-      // Call API to update saved status
-      await axios.patch(`/api/flashcard`, {
-        id: card.id,
-        isSaved: !isSaved,
-      })
-
-      toast({
-        title: isSaved ? "Card unsaved" : "Card saved",
-        description: isSaved ? "Card removed from your saved collection" : "Card added to your saved collection",
-      })
+      // Toggle save status and update Redux state
+      dispatch(toggleSaveCard({
+        cardId: card.id || "",
+        isSaved: !savedCardIds.includes(card.id || ""),
+        toast
+      }))
     } catch (error) {
       console.error("Error saving card:", error)
-
-      // Revert the UI change since the API call failed
-      if (savedCardIds.includes(String(card.id))) {
-        setSavedCardIds(savedCardIds.filter((id) => id !== card.id))
-      } else {
-        setSavedCardIds([...savedCardIds, card.id || ""])
-      }
-
       toast({
         title: "Error",
         description: "Failed to save the card. Please try again.",
@@ -106,7 +64,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
   }
 
   return (
-    <div className="container mx-auto  max-w-3xl">
+    <div className="container mx-auto max-w-3xl">
       <QuizActions
         quizId={quizId}
         quizSlug={slug}
@@ -117,6 +75,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
         quizType="flashcard"
         position="left-center"
       />
+      
       {loading ? (
         <Card className="w-full h-80 flex items-center justify-center">
           <div className="text-center">
@@ -131,7 +90,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardsPageCli
             <CardDescription>{error}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => window.location.reload()}>
+            <Button className="w-full" onClick={() => dispatch(fetchFlashCards(slug))}>
               Try Again
             </Button>
           </CardContent>

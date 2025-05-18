@@ -3,9 +3,9 @@ import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import type { FlashCard } from "@/app/types/types"
 import { FlashCardComponent } from "./FlashCardComponent"
-
-import { resetQuiz } from "@/store/slices/quizSlice"
 import { useAppDispatch } from "@/store"
+import { resetFlashCards } from "@/store/slices/flashcardSlice"
+
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -34,8 +34,8 @@ export function FlashCardWrapper({
     const timestamp = searchParams.get("t")
 
     if (reset === "true" && timestamp) {
-      dispatch(resetQuiz())
-
+      dispatch(resetFlashCards())
+      
       // Force re-render of the component
       setKey(Date.now())
 
