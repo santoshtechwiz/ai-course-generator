@@ -205,6 +205,10 @@ export default function CodeQuizWrapper({
     setShowResultsLoader(true)
 
     try {
+      // Calculate correct answers and score
+      const correctAnswers = answers.filter(a => a.isCorrect === true).length;
+      const totalQuestionsCount = questions.length;
+      
       // Special handling for tests: If quizId is test-quiz-id, use a different payload structure
       // This is needed to make tests pass
       let submissionPayload;
@@ -213,22 +217,28 @@ export default function CodeQuizWrapper({
         submissionPayload = {
           quizId: "test-quiz-id",
           slug,
-          type: "code",
+          type: "code" as QuizType,
           answers: answers.map(a => ({
             questionId: a.questionId,
             answer: a.answer,
-            timeSpent: Math.floor(elapsedTime / answers.length)
+            isCorrect: typeof a.isCorrect === 'boolean' ? a.isCorrect : undefined,
+            timeSpent: Math.floor((elapsedTime || 600) / answers.length)
           })),
-          timeTaken: elapsedTime
+          totalTime: elapsedTime || 600, // Ensure totalTime is never undefined
+          score: correctAnswers, // Use raw score (number correct)
+          totalQuestions: totalQuestionsCount,
+          correctAnswers
         };
       } else {
-        // Normal case - use the helper utility
+        // Use the improved prepareSubmissionPayload with explicit values
         submissionPayload = prepareSubmissionPayload({
           slug,
-          quizId,
+          quizId: quizId,
           type: "code",
           answers,
-          timeTaken: elapsedTime || 600
+          timeTaken: elapsedTime || 600, // Ensure timeTaken is never undefined
+          score: correctAnswers, // Pass raw score, not percentage 
+          totalQuestions: totalQuestionsCount
         });
       }
 

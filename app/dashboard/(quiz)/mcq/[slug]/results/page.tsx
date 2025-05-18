@@ -37,11 +37,12 @@ export default function ResultsPage({ params }: ResultsPageProps) {
         // Safely check if getResults exists and is a function
         if (actions?.getResults && typeof actions.getResults === 'function') {
           try {
-            const fetchPromise = actions.getResults(slug);
+            // Make sure we're using the MCQ-specific endpoint
+            const fetchPromise = actions.getResults(slug, "mcq"); // Add type parameter
             if (fetchPromise && typeof fetchPromise.catch === 'function') {
               fetchPromise.catch(error => {
                 if (isMounted) {
-                  console.error("Error loading results:", error)
+                  console.error("Error loading MCQ results:", error)
                 }
               });
             }

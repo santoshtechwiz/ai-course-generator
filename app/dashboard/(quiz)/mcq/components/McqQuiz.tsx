@@ -81,7 +81,10 @@ export default function McqQuiz({
 
     setInternalSubmitting(true)
 
+    // Determine if the answer is correct
     const isCorrect = selectedOption === question.correctAnswer
+
+    // Pass the isCorrect flag when submitting the answer
     onAnswer(selectedOption || "", answerTime, isCorrect)
 
     if (!isLastQuestion) {

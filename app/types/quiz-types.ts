@@ -1,6 +1,6 @@
 // Unify the quiz types to ensure consistency across the application
 
-export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended';
+export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended' | 'flashcard';
 
 // Base question type with common properties
 export interface BaseQuestion {
@@ -13,7 +13,8 @@ export interface BaseQuestion {
 export interface MCQQuestion extends BaseQuestion {
   type: 'mcq';
   options: string[];
-  correctAnswer: string;
+  correctAnswer?: string;
+  answer?: string;
 }
 
 export interface CodeQuizQuestion extends BaseQuestion {
@@ -42,8 +43,10 @@ export type QuizQuestion = MCQQuestion | CodeQuizQuestion | BlankQuestion | Open
 
 // Answer data structure
 export interface UserAnswer {
-  questionId: string;
-  answer: string | Record<string, string>;
+  questionId: string | number;
+  answer: any;
+  isCorrect?: boolean;
+  timeSpent?: number;
 }
 
 // Quiz data structure

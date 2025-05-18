@@ -291,8 +291,10 @@ export function useQuiz() {
       slug: string;
       quizId?: string;
       type?: QuizType;
-      answers: Array<{ questionId: string; answer: any }>;
+      answers: Array<{ questionId: string; answer: any, isCorrect?: boolean }>;
       timeTaken?: number;
+      score?: number;
+      totalQuestions?: number;
     }) => {
       try {
         // Ensure we have what we need
@@ -300,12 +302,24 @@ export function useQuiz() {
           throw new Error("Invalid quiz submission data")
         }
         
+        // Calculate required values if not provided
+        const correctAnswers = payload.answers.filter(a => a.isCorrect === true).length;
+        const totalQuestions = payload.totalQuestions || payload.answers.length;
+        const score = payload.score !== undefined ? payload.score : correctAnswers;
+        const timeTaken = payload.timeTaken || 600; // Default to 10 minutes
+        
         // Prepare submission with default values where needed
         const submissionPayload = {
           quizId: payload.quizId || quizState.quizData?.id || payload.slug,
-          type: payload.type || quizState.quizData?.type || "code",
-          answers: payload.answers,
-          timeTaken: payload.timeTaken || quizState.timeRemaining || 600
+          type: payload.type || quizState.quizData?.type || "code", // Ensure we have a default type
+          answers: payload.answers.map(a => ({
+            ...a,
+            timeSpent: Math.floor(timeTaken / Math.max(payload.answers.length, 1))
+          })),
+          score: score,
+          totalTime: timeTaken,
+          totalQuestions: totalQuestions,
+          correctAnswers: correctAnswers
         }
         
         // Pause the timer
@@ -317,9 +331,13 @@ export function useQuiz() {
           state: "in-progress"
         })).unwrap()
 
-        // Add a specific API path that includes the slug for better routing
+        // Use the common API endpoint for all quiz types since MCQ endpoint doesn't exist
         const apiPath = `/api/quizzes/common/${payload.slug}/complete`;
         
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Submitting to endpoint: ${apiPath} with payload:`, submissionPayload);
+        }
+
         try {
           // Submit the quiz with the complete path
           const response = await fetch(apiPath, {
@@ -382,16 +400,25 @@ export function useQuiz() {
 
   // Fetch quiz results
   const fetchResults = useCallback(
-    (slug: string) => {
+    (slug: string, type?: QuizType) => {
       // If we already have results for this quiz, return them
       if (quizState.results && quizState.quizData?.slug === slug) {
         return Promise.resolve(quizState.results)
       }
       
-      // Otherwise fetch from the server
+      // Otherwise fetch from the server, using type if provided
+      const quizType = type || quizState.quizData?.type || "code";
+      
+      // For MCQ quizzes, use the MCQ-specific endpoint
+      if (quizType === "mcq") {
+        // Use MCQ-specific endpoint if needed
+        return dispatch(getQuizResults(`${slug}?type=mcq`)).unwrap()
+      }
+      
+      // Use default endpoint for other quiz types
       return dispatch(getQuizResults(slug)).unwrap()
     },
-    [dispatch, quizState.results, quizState.quizData?.slug]
+    [dispatch, quizState.results, quizState.quizData?.slug, quizState.quizData?.type]
   )
 
   // Timer control functions

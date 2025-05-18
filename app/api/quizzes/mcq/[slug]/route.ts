@@ -60,7 +60,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       return {
-        id: `question-${index}-${Math.random().toString(36).substring(2, 9)}`,
+        id: q.id,
         question: q.question || "",
         codeSnippet: "",
         options: options,
