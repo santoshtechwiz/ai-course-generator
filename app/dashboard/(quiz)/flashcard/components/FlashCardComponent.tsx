@@ -8,23 +8,25 @@ import { useAnimation as useAnimationContext } from "@/providers/animation-provi
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useRouter, useSearchParams } from "next/navigation"
-
-import {
-  initQuiz,
-  submitAnswer,
-  completeQuiz,
-  resetQuiz,
-  setRequiresAuth,
-  setPendingAuthRequired,
-  nextQuestion,
-  setCurrentQuestion,
-} from "@/store/slices/quizSlice"
-import FlashCardResults from "./FlashCardQuizResults"
 import { useSession } from "next-auth/react"
-import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAppDispatch, useAppSelector } from "@/store"
+
+// Import the flashcard slice actions
+import {
+  initFlashCardQuiz,
+  submitFlashCardAnswer,
+  completeFlashCardQuiz,
+  resetFlashCards,
+  setCurrentFlashCard,
+  nextFlashCard,
+  setRequiresFlashCardAuth,
+  setPendingFlashCardAuth
+} from "@/store/slices/flashcardSlice"
+
+import FlashCardResults from "./FlashCardQuizResults"
+import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -43,17 +45,17 @@ function FlashCardComponentInner({
   onSaveCard,
   savedCardIds = [],
 }: FlashCardComponentProps) {
-  // Redux state
+  // Get state from flashcard slice only
   const dispatch = useAppDispatch()
   const {
-    currentQuestionIndex,
+    currentQuestion: currentQuestionIndex,
     isCompleted,
     answers,
     requiresAuth,
     pendingAuthRequired,
     quizId: storeQuizId,
-  } = useAppSelector((state) => state.quiz)
-
+  } = useAppSelector((state) => state.flashcard)
+  
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -70,8 +72,6 @@ function FlashCardComponentInner({
   const [showSettings, setShowSettings] = useState(false)
   const [swipeThreshold, setSwipeThreshold] = useState(100)
   const [swipeDisabled, setSwipeDisabled] = useState(false)
-
-  // Add these state variables after the other state declarations
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [cardTimes, setCardTimes] = useState<Record<string, number>>({})
 
@@ -86,7 +86,7 @@ function FlashCardComponentInner({
     const timestamp = searchParams.get("t")
 
     if (reset === "true" && timestamp) {
-      dispatch(resetQuiz())
+      dispatch(resetFlashCards())
 
       // Remove the reset parameter from the URL
       const url = new URL(window.location.href)
@@ -96,17 +96,16 @@ function FlashCardComponentInner({
     }
   }, [searchParams, dispatch])
 
-  // Initialize quiz in Redux
+  // Initialize quiz in Redux using the flashcard slice
   useEffect(() => {
-    if (cards.length > 0 && (!storeQuizId || storeQuizId !== quizId.toString())) {
+    if (cards && cards.length > 0 && (!storeQuizId || storeQuizId !== quizId.toString())) {
       dispatch(
-        initQuiz({
+        initFlashCardQuiz({
           id: quizId.toString(),
           slug,
           title,
-          quizType: "flashcard",
           questions: cards,
-        }),
+        })
       )
     }
   }, [cards, quizId, slug, title, dispatch, storeQuizId])
@@ -119,65 +118,87 @@ function FlashCardComponentInner({
     return () => clearTimeout(timer)
   }, [])
 
-  // Get self-ratings from the answers in Redux
+  // Get self-ratings from the answers in Redux with proper null checks
   const selfRating = useMemo(() => {
     const ratings: Record<string, "correct" | "incorrect" | null> = {}
 
-    answers.forEach((answer, index) => {
-      if (cards[index]?.id && answer) {
-        ratings[cards[index].id.toString()] = answer.answer as "correct" | "incorrect"
-      }
-    })
+    if (answers && Array.isArray(answers) && cards) {
+      answers.forEach((answer) => {
+        if (answer && answer.questionId) {
+          ratings[answer.questionId] = answer.answer as "correct" | "incorrect"
+        }
+      })
+    }
 
     return ratings
   }, [answers, cards])
 
+  // Calculate score based on "correct" self-ratings
   const calculateScore = useCallback(() => {
-    return Object.values(selfRating).filter((rating) => rating === "correct").length
+    return Object.values(selfRating).filter(rating => rating === "correct").length
   }, [selfRating])
 
-  // Get indices of cards marked as "incorrect"
+  // Enhanced review card handling
   const cardsToReview = useMemo(() => {
+    if (!cards || !cards.length) return [];
+    
+    // Find the cards that were marked as incorrect
     return Object.entries(selfRating)
       .filter(([_, rating]) => rating === "incorrect")
-      .map(([cardId, _]) => {
-        // Find the index of the card with this ID
-        return cards.findIndex((card) => card.id?.toString() === cardId)
+      .map(([cardId]) => {
+        // Find the index of the card with matching ID
+        const index = cards.findIndex(card => {
+          const cardIdStr = card.id?.toString();
+          return cardIdStr === cardId;
+        });
+        return index;
       })
-      .filter((index) => index !== -1)
+      .filter(index => index !== -1);
   }, [selfRating, cards])
 
-  // Replace the handleEnterReviewMode function
+  // Fixed enter review mode function with better error handling
   const handleEnterReviewMode = useCallback(() => {
-    if (cardsToReview.length === 0) {
-      // No cards to review
-      return
+    if (!cardsToReview.length) {
+      console.log("No cards to review");
+      return;
     }
+    
+    // Set review cards and reset UI state
+    setReviewCards(cardsToReview);
+    setReviewMode(true);
+    setFlipped(false);
+    
+    // Reset to first review card via Redux
+    dispatch(setCurrentFlashCard(0));
+    setStartTime(Date.now());
+  }, [cardsToReview, dispatch])
 
-    setReviewCards(cardsToReview)
-    dispatch(setCurrentQuestion(0)) // Use the action creator
-    setFlipped(false)
-    setReviewMode(true)
-    setStartTime(Date.now()) // Reset start time for the first review card
-  }, [cardsToReview, dispatch, setCurrentQuestion])
-
-  // Fix 5: Update the handleExitReviewMode function
+  // Handle exiting review mode
   const handleExitReviewMode = useCallback(() => {
     setReviewMode(false)
-    dispatch(setCurrentQuestion(0)) // Use the action creator
+    dispatch(setCurrentFlashCard(0))
     setFlipped(false)
-    setStartTime(Date.now()) // Reset start time when exiting review mode
-  }, [dispatch, setCurrentQuestion])
+    setStartTime(Date.now())
+  }, [dispatch])
 
-  // Fix 6: Update the getCurrentCard function to properly handle review mode
+  // Fixed the current card function with defensive coding
   const getCurrentCard = useCallback(() => {
-    if (reviewMode && reviewCards.length > 0) {
-      // Make sure we don't go out of bounds
-      const reviewIndex = Math.min(currentQuestionIndex, reviewCards.length - 1)
-      const cardIndex = reviewCards[reviewIndex]
-      return cards[cardIndex] || cards[0] // Fallback to first card if index is invalid
+    if (!cards || !cards.length) return null;
+    
+    if (reviewMode && reviewCards && reviewCards.length > 0) {
+      // Get the current review index, bounded by array length
+      const reviewIndex = Math.min(currentQuestionIndex, reviewCards.length - 1);
+      
+      // Get the actual card index from our array of review indices
+      const cardIndex = reviewCards[reviewIndex];
+      
+      if (cardIndex !== undefined && cardIndex >= 0 && cardIndex < cards.length) {
+        return cards[cardIndex];
+      }
     }
-    return cards[currentQuestionIndex] || cards[0] // Fallback to first card if index is invalid
+    
+    // In normal mode or if review index was invalid
+    return cards[Math.min(currentQuestionIndex, cards.length - 1)];
   }, [reviewMode, reviewCards, currentQuestionIndex, cards])
 
   const currentCard = getCurrentCard()
@@ -185,37 +206,42 @@ function FlashCardComponentInner({
   // Check if current card is saved
   const isSaved = currentCard?.id ? savedCardIds.includes(currentCard.id.toString()) : false
 
-  // Calculate progress
+  // Calculate progress percentage
   const progress = useMemo(() => {
-    return reviewMode
-      ? ((currentQuestionIndex + 1) / reviewCards.length) * 100
-      : ((currentQuestionIndex + 1) / cards.length) * 100
-  }, [reviewMode, currentQuestionIndex, reviewCards.length, cards.length])
+    if (reviewMode) {
+      return reviewCards.length ? ((currentQuestionIndex + 1) / reviewCards.length) * 100 : 0
+    }
+    return cards?.length ? ((currentQuestionIndex + 1) / cards.length) * 100 : 0
+  }, [reviewMode, currentQuestionIndex, reviewCards.length, cards?.length])
 
-  // Update the toggleFlip function
+  // Handle card flip
   const toggleFlip = useCallback(() => {
-    // If flipping to the back of the card, reset the start time
     if (!flipped) {
       setStartTime(Date.now())
     }
     setFlipped(!flipped)
   }, [flipped])
 
+  // Handle saving/bookmarking cards
   const handleSaveCard = useCallback(() => {
     if (onSaveCard && currentCard) {
       onSaveCard(currentCard)
     }
   }, [onSaveCard, currentCard])
 
-  // Fix 7: Update the moveToNextCard function to handle review mode
+  // Handle moving to the next flashcard - fix review mode navigation
   const moveToNextCard = useCallback(() => {
-    const maxIndex = reviewMode ? reviewCards.length - 1 : cards.length - 1
+    if (!cards?.length) return
+    
+    const maxIndex = reviewMode ? 
+      (reviewCards.length - 1) : 
+      (cards.length - 1)
 
     if (currentQuestionIndex < maxIndex) {
       setDirection(1)
       setFlipped(false)
 
-      // Animate card exit to the left
+      // Animate card exit
       cardControls
         .start({
           x: -300,
@@ -223,137 +249,137 @@ function FlashCardComponentInner({
           transition: { duration: 0.3 },
         })
         .then(() => {
-          dispatch(nextQuestion())
-          // Reset position for next card
+          dispatch(nextFlashCard())
           cardControls.set({ x: 0, opacity: 1 })
-          // Reset start time for next card
           setStartTime(Date.now())
         })
     } else {
-      // Complete the quiz
+      // If we're in review mode and finished reviewing, go back to normal mode
+      if (reviewMode) {
+        setReviewMode(false)
+        dispatch(setCurrentFlashCard(0))
+        setFlipped(false)
+        return
+      }
+      
+      // Otherwise, complete the quiz
       const correctCount = calculateScore()
       const totalQuestions = cards.length
-      const score = (correctCount / totalQuestions) * 100
+      const score = totalQuestions ? (correctCount / totalQuestions) * 100 : 0
 
-      // Calculate total time from all answers with proper time values
-      const totalTime = answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0)
+      // Calculate total time from answers
+      const totalTime = Array.isArray(answers) ? 
+        answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0) : 0
 
-      dispatch(
-        completeQuiz({
-          score,
-          answers,
-          completedAt: new Date().toISOString(),
-        }),
-      )
+      dispatch(completeFlashCardQuiz({
+        score,
+        answers: answers || [],
+        completedAt: new Date().toISOString(),
+      }))
+      
+      // Show confetti for completion
+      setShowConfetti(true)
     }
   }, [
     currentQuestionIndex,
     reviewMode,
     reviewCards.length,
-    cards.length,
+    cards,
     dispatch,
     calculateScore,
     answers,
-    cardControls,
+    cardControls
   ])
 
-  // Replace the handleSelfRating function with this updated version
-  const handleSelfRating = useCallback(
-    (cardId: string, rating: "correct" | "incorrect") => {
-      // Calculate time spent on this card
-      const endTime = Date.now()
-      const timeSpent = Math.floor((endTime - startTime) / 1000) // Convert to seconds
+  // Handle self-rating functionality
+  const handleSelfRating = useCallback((cardId: string, rating: "correct" | "incorrect") => {
+    if (!cardId) return
+    
+    // Calculate time spent
+    const endTime = Date.now()
+    const timeSpent = Math.floor((endTime - startTime) / 1000)
 
-      // Update card times record
-      setCardTimes((prev) => ({
-        ...prev,
-        [cardId]: (prev[cardId] || 0) + timeSpent,
-      }))
+    // Update card times
+    setCardTimes(prev => ({
+      ...prev,
+      [cardId]: (prev[cardId] || 0) + timeSpent,
+    }))
 
-      // Temporarily disable swipe to prevent conflicts with rating animations
-      setSwipeDisabled(true)
+    // Disable swipe temporarily during rating animation
+    setSwipeDisabled(true)
 
-      // Submit the answer to Redux with the actual time spent
-      dispatch(
-        submitAnswer({
-          answer: rating,
-          userAnswer: rating,
-          timeSpent: timeSpent,
-          isCorrect: rating === "correct",
-          questionId: cardId,
-        }),
-      )
+    // Submit answer
+    const answerData = {
+      answer: rating,
+      userAnswer: rating,
+      timeSpent: timeSpent,
+      isCorrect: rating === "correct",
+      questionId: cardId,
+    }
 
-      setRatingAnimation(rating)
+    dispatch(submitFlashCardAnswer(answerData))
+    setRatingAnimation(rating)
 
-      // Auto-advance after rating if enabled
-      if (autoAdvance) {
-        const timer = setTimeout(() => {
-          setRatingAnimation(null)
-          moveToNextCard()
-          setSwipeDisabled(false)
-          // Reset start time for next card
-          setStartTime(Date.now())
-        }, 800)
-        return () => clearTimeout(timer)
-      } else {
-        // Just clear the animation after a delay
-        const timer = setTimeout(() => {
-          setRatingAnimation(null)
-          setSwipeDisabled(false)
-        }, 800)
-        return () => clearTimeout(timer)
-      }
-    },
-    [dispatch, autoAdvance, moveToNextCard, startTime],
-  )
+    // Handle auto-advance
+    if (autoAdvance) {
+      const timer = setTimeout(() => {
+        setRatingAnimation(null)
+        moveToNextCard()
+        setSwipeDisabled(false)
+        setStartTime(Date.now())
+      }, 800)
+      return () => clearTimeout(timer)
+    } else {
+      const timer = setTimeout(() => {
+        setRatingAnimation(null)
+        setSwipeDisabled(false)
+      }, 800)
+      return () => clearTimeout(timer)
+    }
+  }, [dispatch, autoAdvance, moveToNextCard, startTime])
 
+  // Handle restart quiz
   const handleRestartQuiz = useCallback(() => {
-    dispatch(resetQuiz())
+    dispatch(resetFlashCards())
+    
     setFlipped(false)
     setReviewMode(false)
     setReviewCards([])
+    setShowConfetti(false)
 
-    // Add reset parameters to URL to force a fresh load
+    // Add reset parameters to URL
     const url = new URL(window.location.href)
     url.searchParams.set("reset", "true")
     url.searchParams.set("t", Date.now().toString())
     router.push(url.toString())
   }, [dispatch, router])
 
+  // Handle authentication requirement
   const handleAuthenticationRequired = useCallback(() => {
-    dispatch(setRequiresAuth(true))
-    dispatch(setPendingAuthRequired(true))
+    dispatch(setRequiresFlashCardAuth(true))
+    dispatch(setPendingFlashCardAuth(true))
 
     const redirectUrl = `${window.location.origin}/dashboard/flashcard/${slug}?fromAuth=true&completed=true`
-
-    // Redirect to sign-in page
     router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(redirectUrl)}`)
   }, [dispatch, router, slug])
 
   // Handle swipe gestures
-  const handleDragEnd = useCallback(
-    (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-      if (swipeDisabled) return
+  const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (swipeDisabled) return
 
-      const swipeDirection = info.offset.x > 0 ? "right" : "left"
-      const swipeDistance = Math.abs(info.offset.x)
+    const swipeDirection = info.offset.x > 0 ? "right" : "left"
+    const swipeDistance = Math.abs(info.offset.x)
 
-      if (swipeDistance > swipeThreshold) {
-        if (swipeDirection === "left") {
-          // Swipe left to go to next card
-          moveToNextCard()
-        } else {
-          // Swipe right to flip card
-          toggleFlip()
-        }
+    if (swipeDistance > swipeThreshold) {
+      if (swipeDirection === "left") {
+        moveToNextCard()
       } else {
-        // Reset position if swipe wasn't far enough
-        cardControls.start({ x: 0, opacity: 1 })
+        toggleFlip()
       }
-    },
-    [swipeDisabled, swipeThreshold, moveToNextCard, toggleFlip, cardControls],
-  )
+    } else {
+      cardControls.start({ x: 0, opacity: 1 })
+    }
+  }, [swipeDisabled, swipeThreshold, moveToNextCard, toggleFlip, cardControls])
 
   // Keyboard navigation
   useEffect(() => {
@@ -387,7 +413,7 @@ function FlashCardComponentInner({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating])
 
-  // Confetti animation
+  // Confetti animation effect
   useEffect(() => {
     if (!showConfetti) return
 
@@ -441,16 +467,13 @@ function FlashCardComponentInner({
 
     createConfetti()
 
-    // Cleanup function
     return () => {
-      const confettiContainers = document.querySelectorAll(
-        'div[style*="position: fixed"][style*="pointer-events: none"]',
-      )
-      confettiContainers.forEach((container) => container.remove())
+      document.querySelectorAll('div[style*="position: fixed"][style*="pointer-events: none"]')
+        .forEach((container) => container.remove())
     }
   }, [showConfetti])
 
-  // Check for authentication return
+  // Handle authentication return
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -459,12 +482,9 @@ function FlashCardComponentInner({
     const completed = urlParams.get("completed") === "true"
 
     if ((fromAuth || completed) && session?.user) {
-      console.log("Detected return from authentication, processing pending data")
-
-      // If we have completed state in Redux, make sure it's properly set
+      // Process pending authentication
       if (pendingAuthRequired && isCompleted) {
-        // Force completion state to be visible
-        dispatch({ type: "FORCE_QUIZ_COMPLETED" })
+        dispatch({ type: "flashcard/FORCE_COMPLETED" })
       }
 
       // Clean up URL parameters
@@ -479,7 +499,7 @@ function FlashCardComponentInner({
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
 
-  // Card variants with swipe animation
+  // Animation variants
   const cardVariants = {
     initial: (direction: number) => ({
       x: direction > 0 ? 300 : -300,
@@ -515,7 +535,6 @@ function FlashCardComponentInner({
     },
   }
 
-  // Front and back card variants
   const frontCardVariants = {
     initial: { opacity: 0, rotateY: 0 },
     animate: {
@@ -544,7 +563,6 @@ function FlashCardComponentInner({
     },
   }
 
-  // Rating feedback animation variants
   const ratingFeedbackVariants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: {
@@ -563,20 +581,18 @@ function FlashCardComponentInner({
     },
   }
 
+  // Render different content based on quiz state
   const renderQuizContent = () => {
     if (isCompleted) {
       const correctCount = calculateScore()
-      const totalQuestions = cards.length
-      const percentage = (correctCount / totalQuestions) * 100
+      const totalQuestions = cards?.length || 0
+      const percentage = totalQuestions ? (correctCount / totalQuestions) * 100 : 0
 
-      // Calculate total time properly from answers
-      const totalTime = answers.reduce((acc, answer) => {
-        // Make sure we're adding a number
-        const time = typeof answer?.timeSpent === "number" ? answer.timeSpent : 0
-        return acc + time
-      }, 0)
+      // Calculate total time
+      const totalTime = Array.isArray(answers) ? 
+        answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0) : 0
 
-      // Show auth prompt if needed and user is not authenticated
+      // Show auth prompt if needed
       if (requiresAuth && !session?.user) {
         return (
           <motion.div
@@ -615,7 +631,12 @@ function FlashCardComponentInner({
 
           {cardsToReview.length > 0 && (
             <div className="mt-6 text-center">
-              <Button onClick={handleEnterReviewMode} variant="outline" className="mx-auto">
+              <Button 
+                onClick={handleEnterReviewMode}
+                variant="outline" 
+                className="mx-auto"
+                data-testid="review-cards-button"
+              >
                 Review {cardsToReview.length} card{cardsToReview.length !== 1 ? "s" : ""} to improve
               </Button>
             </div>
@@ -624,6 +645,7 @@ function FlashCardComponentInner({
       )
     }
 
+    // Not completed - show flashcard UI
     return (
       <div className="w-full max-w-4xl mx-auto">
         <div className="rounded-lg shadow-md border bg-background">
@@ -631,13 +653,14 @@ function FlashCardComponentInner({
           <div className="px-6 py-4 flex justify-between items-center">
             <QuizProgress
               currentQuestionIndex={currentQuestionIndex}
-              totalQuestions={reviewMode ? reviewCards.length : cards.length}
+              totalQuestions={reviewMode ? reviewCards.length : cards?.length || 0}
               timeSpent={[]}
               title={reviewMode ? `Review Mode: ${title}` : title}
               quizType="Flashcard"
               animate={animationsEnabled}
             />
 
+            {/* Settings popover */}
             <Popover open={showSettings} onOpenChange={setShowSettings}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -936,14 +959,14 @@ function FlashCardComponentInner({
               {/* Progress indicator */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
-                  {currentQuestionIndex + 1}/{reviewMode ? reviewCards.length : cards.length}
+                  {currentQuestionIndex + 1}/{reviewMode ? reviewCards.length : cards?.length || 0}
                 </span>
                 <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
                     className={`h-full rounded-full ${reviewMode ? "bg-destructive" : "bg-primary"}`}
                     style={{ width: `${progress}%` }}
                     initial={{
-                      width: `${(currentQuestionIndex / (reviewMode ? reviewCards.length : cards.length)) * 100}%`,
+                      width: `${(currentQuestionIndex / (reviewMode ? reviewCards.length : (cards?.length || 1))) * 100}%`,
                     }}
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
@@ -951,13 +974,13 @@ function FlashCardComponentInner({
                 </div>
               </div>
 
-              {/* Skip button for quick navigation */}
+              {/* Skip button */}
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={moveToNextCard}
-                  disabled={currentQuestionIndex >= cards.length - 1}
+                  disabled={currentQuestionIndex >= (cards?.length || 0) - 1}
                   className="flex items-center gap-1 h-9 px-3"
                 >
                   <span>Skip</span>

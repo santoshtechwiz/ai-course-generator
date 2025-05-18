@@ -22,6 +22,7 @@ import authReducer from "./slices/authSlice"
 import quizReducer from "./slices/quizSlice"
 import subscriptionReducer from "./slices/subscription-slice"
 import userReducer from "./slices/userSlice"
+import flashcardReducer from "./slices/flashcardSlice"
 
 // === PERSIST CONFIGS ===
 const makePersistConfig = (key: string, whitelist: string[]) => ({
@@ -54,6 +55,7 @@ const rootReducer = combineReducers({
     subscriptionReducer
   ),
   user: persistReducer(makePersistConfig("user", ["profile", "preferences", "statistics"]), userReducer),
+  flashcard: flashcardReducer,
 })
 
 // === STORE ===
