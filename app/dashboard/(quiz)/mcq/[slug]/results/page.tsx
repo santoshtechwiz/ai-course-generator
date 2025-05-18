@@ -9,6 +9,7 @@ import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticat
 import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import { QuizResult } from "@/app/types/quiz-types"
 import { useQuiz } from "@/hooks"
+import McqQuizResult from "../../components/McqQuizResult"
 
 interface ResultsPageProps {
    params: Promise<{ slug: string }>
