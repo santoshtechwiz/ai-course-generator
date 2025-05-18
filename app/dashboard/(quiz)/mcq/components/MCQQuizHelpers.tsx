@@ -1,6 +1,7 @@
 import { MCQQuestion } from "@/app/types/quiz-types";
 import { UserAnswer } from "@/app/types/quiz-types";
 import { getCorrectAnswer, isAnswerCorrect } from "@/lib/utils/quiz-type-utils";
+import { prepareSubmissionPayload } from "@/lib/utils/quiz-submission-utils";
 
 interface PreviewResults {
   score: number;
@@ -35,14 +36,57 @@ export function createMCQResultsPreview({
 }: ResultsPreviewParams): PreviewResults {
   // Calculate correct answers
   const correctAnswers = answers.filter(a => {
-    const q = questions.find(question => question.id === a.questionId);
-    if (!q) return false;
+    // Find question by ID, handling both string and number types
+    const q = questions.find(question => {
+      const qId = question.id;
+      const aId = a.questionId;
+      
+      // Direct comparison if types match
+      if (typeof qId === typeof aId) return qId === aId;
+      
+      // Convert string to number if it's numeric
+      if (typeof qId === 'string' && typeof aId === 'number') {
+        return /^\d+$/.test(qId) && parseInt(qId, 10) === aId;
+      }
+      
+      // Convert number to string for comparison
+      if (typeof qId === 'number' && typeof aId === 'string') {
+        return qId.toString() === aId;
+      }
+      
+      return false;
+    });
+    
+    if (!q) {
+      console.warn(`Question not found for ID: ${a.questionId}`);
+      return false;
+    }
+    
     return isAnswerCorrect(q, a.answer);
   }).length;
 
   // Format questions with answers
   const formattedQuestions = questions.map(question => {
-    const userAns = answers.find(a => a.questionId === question.id)?.answer || "";
+    // Find user answer, handling both string and number ID types
+    const userAns = answers.find(a => {
+      const qId = question.id;
+      const aId = a.questionId;
+      
+      // Direct comparison if types match
+      if (typeof qId === typeof aId) return qId === aId;
+      
+      // Handle type conversions
+      if (typeof qId === 'string' && typeof aId === 'number') {
+        return /^\d+$/.test(qId) && parseInt(qId, 10) === aId;
+      }
+      
+      if (typeof qId === 'number' && typeof aId === 'string') {
+        return qId.toString() === aId;
+      }
+      
+      return false;
+    })?.answer || "";
+    
     const correctAns = getCorrectAnswer(question);
     
     return {
@@ -71,6 +115,7 @@ export function createMCQResultsPreview({
 
 /**
  * Prepares submission payload to ensure all required fields are properly included
+ * @deprecated Use the shared prepareSubmissionPayload from quiz-submission-utils instead
  */
 export function prepareMCQSubmissionPayload({
   answers,
@@ -83,22 +128,14 @@ export function prepareMCQSubmissionPayload({
   slug: string,
   timeTaken?: number
 }) {
-  // Ensure answers are properly formatted
-  const formattedAnswers = answers.map(answer => ({
-    questionId: answer.questionId,
-    answer: typeof answer.answer === 'string' 
-      ? answer.answer 
-      : JSON.stringify(answer.answer)
-  }));
-  
-  // Build complete payload with all required fields
-  return {
-    quizId: quizId || slug, // Use slug as fallback if no quizId
-    slug, // Include slug for routing
-    type: "mcq" as const,
-    answers: formattedAnswers,
-    timeTaken: timeTaken || 600 // Default to 10 minutes if not provided
-  };
+  // For backwards compatibility, use the shared utility
+  return prepareSubmissionPayload({
+    answers,
+    quizId,
+    slug,
+    type: "mcq",
+    timeTaken
+  });
 }
 
 /**

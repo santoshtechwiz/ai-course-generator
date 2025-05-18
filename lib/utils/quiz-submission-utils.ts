@@ -1,71 +1,99 @@
-import type { UserAnswer } from '@/app/types/quiz-types';
+import { UserAnswer, QuizType } from "@/app/types/quiz-types";
+import { BlanksQuizAnswer, CodeQuizAnswer, QuizAnswer } from "@/app/api/quizzes/common/[slug]/complete/route";
 
-/**
- * Prepares a submission payload for the API with all required fields
- */
-export function prepareSubmissionPayload({
-  slug,
-  quizId,
-  type,
-  answers,
-  timeTaken = 600
-}: {
+interface SubmissionParams {
   slug: string;
   quizId?: string;
-  type: 'code' | 'mcq' | 'openended' | 'blanks' | 'flashcard';
+  type: QuizType;
   answers: UserAnswer[];
   timeTaken?: number;
-}) {
-  // This function needs to match expected test output format
-  // Tests expect quizId to be passed directly without slug sometimes
+  score?: number;
+  totalQuestions?: number;
+}
+
+interface SubmissionPayload {
+  quizId: string;
+  answers: any[]; // Using any[] instead of QuizAnswerUnion for flexibility
+  type: QuizType;
+  score: number;
+  totalTime: number;
+  totalQuestions?: number;
+  correctAnswers?: number;
+}
+
+/**
+ * Prepares a standardized submission payload for any quiz type
+ */
+export function prepareSubmissionPayload(params: SubmissionParams): SubmissionPayload {
+  // Calculate correct answers count
+  const correctAnswers = params.answers.filter(a => a.isCorrect === true).length;
   
-  // Ensure answers include timeSpent property
-  const formattedAnswers = answers.map(answer => ({
-    questionId: answer.questionId,
-    answer: answer.answer,
-    timeSpent: Math.floor(timeTaken / Math.max(answers.length, 1)), // Distribute time evenly per question
-  }));
+  // Calculate score if not provided
+  const score = params.score !== undefined ? params.score : correctAnswers;
   
-  // For test compatibility: For test-quiz-id, don't include slug in the payload
-  // This matches what the tests expect
-  if (quizId === "test-quiz-id") {
-    return {
-      quizId,
-      type,
-      answers: formattedAnswers,
-      timeTaken,
+  // Calculate total questions if not provided
+  const totalQuestions = params.totalQuestions || params.answers.length;
+  
+  // Calculate time taken (ensure it's at least 30 seconds)
+  const timeTaken = params.timeTaken || Math.max(totalQuestions * 30, 60);
+
+  // Format answers with proper structure based on quiz type
+  const formattedAnswers = params.answers.map(answer => {
+    // Default time spent per question
+    const timeSpent = answer.timeSpent || Math.floor(timeTaken / Math.max(params.answers.length, 1));
+    
+    // Base answer properties common to all quiz types
+    const baseAnswer = {
+      questionId: answer.questionId,
+      timeSpent: timeSpent,
+      isCorrect: typeof answer.isCorrect === 'boolean' ? answer.isCorrect : false // Default to false if not provided
     };
-  }
+
+    // Different answer format based on quiz type
+    if (params.type === 'blanks') {
+      return {
+        ...baseAnswer,
+        userAnswer: answer.answer
+      } as BlanksQuizAnswer;
+    } else if (params.type === 'code') {
+      return {
+        ...baseAnswer, 
+        answer: answer.answer
+      } as CodeQuizAnswer;
+    } else {
+      // Default for MCQ and others - explicitly include "answer" field
+      return {
+        ...baseAnswer,
+        answer: answer.answer
+      } as QuizAnswer;
+    }
+  });
   
-  // Normal case - include both slug and quizId
+  // Return complete payload with all required fields
   return {
-    quizId: quizId || slug, // Use quizId if available, otherwise fall back to slug
-    slug,                   // Include slug for reference
-    type,                   // Quiz type
+    quizId: params.quizId || params.slug,
+    slug: params.slug, // Include slug for routing
+    type: params.type,
     answers: formattedAnswers,
-    timeTaken,              // Use timeTaken field consistently
+    totalTime: timeTaken,
+    score: score,
+    totalQuestions: totalQuestions,
+    correctAnswers: correctAnswers
   };
 }
 
 /**
- * Validates submission before sending to server
+ * Validates if a quiz submission meets the minimum requirements
  */
-export function validateSubmission(payload: any): { valid: boolean; errors?: string[] } {
-  const errors: string[] = [];
+export function validateQuizSubmission(payload: any): boolean {
+  if (!payload) return false;
   
-  if (!payload.quizId) errors.push('Quiz ID is required');
-  if (!payload.type) errors.push('Quiz type is required');
+  // Check required fields
+  if (!payload.quizId) return false;
+  if (!payload.type) return false;
+  if (!Array.isArray(payload.answers) || payload.answers.length === 0) return false;
+  if (typeof payload.totalTime !== 'number') return false;
+  if (typeof payload.score !== 'number') return false;
   
-  if (!Array.isArray(payload.answers) || payload.answers.length === 0) {
-    errors.push('Answers must be a non-empty array');
-  }
-  
-  if (typeof payload.timeTaken !== 'number' || payload.timeTaken <= 0) {
-    errors.push('Time taken must be a positive number');
-  }
-  
-  return {
-    valid: errors.length === 0,
-    errors: errors.length ? errors : undefined
-  };
+  return true;
 }

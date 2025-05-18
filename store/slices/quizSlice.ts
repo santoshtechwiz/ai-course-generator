@@ -18,7 +18,9 @@ const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => 
   type,
   questions: Array.isArray(raw.quizData?.questions)
     ? raw.quizData.questions.map((q: any, index: number) => ({
-        id: q.id || `q-${index}-${Math.random().toString(36).substring(2, 8)}`,
+        // Preserve the original question ID instead of generating a random one
+        // For MCQ questions, ensure we maintain numeric IDs if they exist
+        id: q.id || q.questionId || `q-${index}-${Math.random().toString(36).substring(2, 8)}`,
         question: q.question || "",
         codeSnippet: q.codeSnippet || "",
         options: Array.isArray(q.options) ? [...q.options] : [],
@@ -140,22 +142,42 @@ export const submitQuiz = createAsyncThunk(
     type: QuizType; 
     answers: UserAnswer[];
     timeTaken?: number;
+    score?: number;
+    totalQuestions?: number;
   }, { dispatch, rejectWithValue }) => {
     try {
-      // Use the correct API endpoint for quiz submission
-      const response = await fetch(`/api/quizzes/common/${payload.slug}/complete`, {
+      // For MCQ quizzes, we should use the common API endpoint since the MCQ-specific one doesn't exist
+      const endpoint = `/api/quizzes/common/${payload.slug}/complete`;
+      
+      console.log(`Submitting quiz to endpoint: ${endpoint}`);
+      
+      // Ensure all required fields are present
+      const correctAnswers = payload.answers.filter(a => a.isCorrect === true).length;
+      const totalQuestions = payload.totalQuestions || payload.answers.length;
+      
+      const submissionData = {
+        quizId: payload.quizId || payload.slug,
+        answers: payload.answers.map(a => ({
+          questionId: a.questionId,
+          answer: a.answer,
+          isCorrect: typeof a.isCorrect === 'boolean' ? a.isCorrect : undefined,
+          timeSpent: Math.floor((payload.timeTaken || 600) / Math.max(payload.answers.length, 1))
+        })),
+        type: payload.type,
+        score: payload.score !== undefined ? payload.score : correctAnswers,
+        totalTime: payload.timeTaken || 600,
+        totalQuestions,
+        correctAnswers
+      };
+      
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Cache-Control": "no-cache",
         },
         credentials: "include",
-        body: JSON.stringify({
-          quizId: payload.quizId,
-          answers: payload.answers,
-          type: payload.type,
-          timeTaken: payload.timeTaken
-        }),
+        body: JSON.stringify(submissionData),
       });
 
       // Handle 401 auth errors

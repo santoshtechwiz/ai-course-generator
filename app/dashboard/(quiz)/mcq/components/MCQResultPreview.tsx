@@ -43,7 +43,15 @@ export default function MCQResultPreview({
     // Calculate approximate time spent based on number of questions
     const approximateTimePerQuestion = 30 // seconds per question
     const elapsedTime = result.questions.length * approximateTimePerQuestion
-    onSubmit(userAnswers, elapsedTime)
+    
+    // Make sure we preserve the original question ID format (string or number)
+    const processedAnswers = userAnswers.map(answer => ({
+      ...answer,
+      // Ensure questionId maintains its original format (don't convert to string)
+      questionId: answer.questionId
+    }));
+    
+    onSubmit(processedAnswers, elapsedTime)
   }
   
   return (
