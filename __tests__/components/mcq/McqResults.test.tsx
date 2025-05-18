@@ -5,7 +5,7 @@ import { configureStore } from '@reduxjs/toolkit'; // Fixed import
 import ResultsPage from '@/app/dashboard/(quiz)/mcq/[slug]/results/page';
 import * as authHooks from '@/hooks/useAuth';
 import * as quizHooks from '@/hooks/useQuizState';
-import { mockQuizData } from '../mocks/quiz-mock-data';
+import { mockQuizData } from '../../mocks/quiz-mock-data';
 
 // Mock useAuth hook
 jest.mock('@/hooks/useAuth', () => ({

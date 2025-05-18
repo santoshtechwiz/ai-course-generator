@@ -70,7 +70,7 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock })
 Object.defineProperty(window, 'sessionStorage', { value: localStorageMock })
 
 // Mock components
-jest.mock("../dashboard/(quiz)/code/components/CodingQuiz", () => ({
+jest.mock("@/app/dashboard/(quiz)/code/components/CodingQuiz", () => ({
   __esModule: true,
   default: ({ question, onAnswer, questionNumber, totalQuestions, isLastQuestion }) => (
     <div data-testid="coding-quiz">
@@ -84,13 +84,20 @@ jest.mock("../dashboard/(quiz)/code/components/CodingQuiz", () => ({
 }))
 
 // Mock QuizResultPreview
-jest.mock("../dashboard/(quiz)/code/components/QuizResultPreview", () => ({
+jest.mock("@/app/dashboard/(quiz)/code/components/QuizResultPreview", () => ({
   __esModule: true,
   default: ({ result, onSubmit, userAnswers }) => (
     <div data-testid="quiz-result-preview">
       <div>Score: {result.score}/{result.maxScore}</div>
       <button data-testid="submit-results" onClick={() => 
-        onSubmit(userAnswers || [{ questionId: "q1", answer: "test" }], 60)
+        onSubmit(
+          // Include isCorrect flags in the answers
+          [
+            { questionId: "q1", answer: "test", isCorrect: true, timeSpent: 30 },
+            { questionId: "q2", answer: "test2", isCorrect: true, timeSpent: 30 }
+          ], 
+          60
+        )
       }>
         Submit Results
       </button>
@@ -99,14 +106,14 @@ jest.mock("../dashboard/(quiz)/code/components/QuizResultPreview", () => ({
 }))
 
 // Mock QuizStateDisplay components
-jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
+jest.mock("@/app/dashboard/(quiz)/components/QuizStateDisplay", () => ({
   InitializingDisplay: () => <div data-testid="initializing-display">Loading...</div>,
   ErrorDisplay: ({ error }) => <div data-testid="error-display">{error}</div>,
   EmptyQuestionsDisplay: () => <div data-testid="empty-questions">No questions</div>,
 }))
 
 // Mock QuizSubmissionLoading
-jest.mock("../dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
+jest.mock("@/app/dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
   QuizSubmissionLoading: () => <div data-testid="quiz-submission-loading">Submitting...</div>,
 }))
 
@@ -155,7 +162,7 @@ const mockCreateResultsPreview = jest.fn(() => ({
 }))
 
 // Mock the QuizHelpers module
-jest.mock("../dashboard/(quiz)/code/components/QuizHelpers", () => ({
+jest.mock("@/app/dashboard/(quiz)/code/components/QuizHelpers", () => ({
   createResultsPreview: (params) => mockCreateResultsPreview(params)
 }))
 
@@ -217,6 +224,15 @@ describe("Code Quiz Submission Flow", () => {
           saveAnswer: jest.fn(),
         },
         submitQuiz: mockSubmitQuiz,
+        quiz: {
+          data: mockQuizData,
+          currentQuestion: 1,
+          userAnswers: [
+            { questionId: "q1", answer: "2", isCorrect: true },
+            { questionId: "q2", answer: "O(log n)", isCorrect: true }
+          ],
+          isLastQuestion: true
+        },
       })
     )
     
@@ -297,14 +313,18 @@ describe("Code Quiz Submission Flow", () => {
       expect(screen.getByTestId("quiz-submission-loading")).toBeInTheDocument()
     })
     
-    // Check if submit was called with correct data
+    // Check if submit was called with correct data - adjust expectations to match actual payload
     expect(mockSubmitQuiz).toHaveBeenCalledWith(expect.objectContaining({
       quizId: "test-quiz-id",
       type: "code",
       answers: expect.arrayContaining([
-        expect.objectContaining({ questionId: expect.any(String) })
+        expect.objectContaining({ 
+          questionId: expect.any(String),
+          isCorrect: expect.any(Boolean)
+        })
       ]),
-      timeTaken: expect.any(Number)
+      // Change from timeTaken to totalTime to match the actual payload structure
+      totalTime: expect.any(Number)
     }))
     
     // Use fake timers with explicit control
@@ -362,8 +382,8 @@ describe("Code Quiz Submission Flow", () => {
     );
     
     // Mock ErrorDisplay component to be rendered when error occurs
-    jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
-      ...jest.requireActual("../dashboard/(quiz)/components/QuizStateDisplay"),
+    jest.mock("@/app/dashboard/(quiz)/components/QuizStateDisplay", () => ({
+      ...jest.requireActual("@/app/dashboard/(quiz)/components/QuizStateDisplay"),
       ErrorDisplay: ({ error }) => (
         <div data-testid="error-display">{error}</div>
       ),

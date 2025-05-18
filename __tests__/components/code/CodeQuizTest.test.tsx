@@ -75,7 +75,7 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 Object.defineProperty(window, 'sessionStorage', { value: localStorageMock });
 
 // Mock components
-jest.mock("../dashboard/(quiz)/code/components/CodingQuiz", () => {
+jest.mock("@/app/dashboard/(quiz)/code/components/CodingQuiz", () => {
   return function MockCodingQuiz({ 
     question, 
     onAnswer, 
@@ -111,7 +111,7 @@ jest.mock("../dashboard/(quiz)/code/components/CodingQuiz", () => {
 })
 
 // Mock display components
-jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
+jest.mock("@/app/dashboard/(quiz)/components/QuizStateDisplay", () => ({
   InitializingDisplay: () => <div data-testid="initializing-display">Loading...</div>,
   QuizNotFoundDisplay: ({ onReturn }) => (
     <div data-testid="quiz-not-found">
@@ -139,7 +139,7 @@ jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
 }))
 
 // Mock the QuizSubmissionLoading component
-jest.mock("../dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
+jest.mock("@/app/dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
   QuizSubmissionLoading: () => (
     <div data-testid="quiz-submission-loading">
       Submitting quiz...
@@ -148,7 +148,7 @@ jest.mock("../dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
 }))
 
 // Mock NonAuthenticatedUserSignInPrompt component
-jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => {
+jest.mock("@/app/dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => {
   return function MockNonAuthPrompt({ onSignIn, showSaveMessage }) {
     return (
       <div data-testid="non-authenticated-prompt">
@@ -163,7 +163,7 @@ jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () 
 })
 
 // Mock QuizResultPreview component
-jest.mock("../dashboard/(quiz)/code/components/QuizResultPreview", () => {
+jest.mock("@/app/dashboard/(quiz)/code/components/QuizResultPreview", () => {
   return function MockQuizResultPreview({ result, onSubmit, onCancel }) {
     return (
       <div data-testid="quiz-result-preview">

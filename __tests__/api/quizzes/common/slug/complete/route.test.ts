@@ -13,15 +13,61 @@ global.Request = jest.fn().mockImplementation((input, init) => ({
 })) as any;
 
 // Mock the NextRequest which extends the standard Request
-jest.mock('next/server', () => ({
-  ...jest.requireActual('next/server'),
-  NextRequest: jest.fn().mockImplementation((url, init) => ({
-    url,
-    method: init?.method || 'GET',
-    json: jest.fn().mockResolvedValue(JSON.parse(init?.body || '{}')),
-    nextUrl: { pathname: '/api/quizzes/common/test-slug/complete' },
-    headers: new Map(Object.entries(init?.headers || {}))
-  }))
+jest.mock('next/server', () => {
+  // Create a storage for request bodies
+  const requests = new Map();
+  
+  const NextResponseMock = {
+    json: jest.fn((data, init = {}) => {
+      const resp = {
+        status: init.status || 200,
+        statusText: init.statusText || '',
+        headers: new Headers(init.headers),
+        json: async () => data,
+        text: async () => JSON.stringify(data),
+      };
+      return resp;
+    })
+  };
+  
+  return {
+    NextRequest: jest.fn().mockImplementation((url, init = {}) => {
+      const reqId = Math.random().toString();
+      
+      // Store the body for this request
+      if (init.body) {
+        requests.set(reqId, init.body);
+      }
+      
+      return {
+        id: reqId,
+        url,
+        method: init.method || 'GET',
+        // Implement json method that returns the parsed body
+        json: jest.fn().mockImplementation(async () => {
+          const body = requests.get(reqId);
+          if (body) {
+            return JSON.parse(body);
+          }
+          return {};
+        }),
+        // Implement text method that returns the raw body
+        text: jest.fn().mockImplementation(async () => {
+          return requests.get(reqId) || '';
+        }),
+        // Required by Next.js route handlers
+        nextUrl: { 
+          pathname: '/api/quizzes/common/test-slug/complete',
+          searchParams: new URLSearchParams()
+        },
+        // Add params property to simulate route parameters
+        params: { slug: 'test-slug' },
+        headers: new Headers(init.headers || {}),
+        cookies: { getAll: () => [] }
+      };
+    }),
+    NextResponse: NextResponseMock
+  };
 });
 
 // Mock auth and Prisma
@@ -47,6 +93,16 @@ jest.mock('@/lib/db', () => ({
     $transaction: jest.fn((callback) => callback(prisma)),
   },
 }));
+
+// Helper function to log additional debugging if test fails
+const expectWithDebug = async (response, statusCode) => {
+  if (response.status !== statusCode) {
+    console.log('Response status:', response.status);
+    console.log('Response body:', await response.text?.());
+    console.log('Response JSON:', await response.json?.());
+  }
+  expect(response.status).toBe(statusCode);
+};
 
 describe('Quiz Complete API Route', () => {
   // Reset mocks between tests
@@ -128,8 +184,8 @@ describe('Quiz Complete API Route', () => {
     const response = await POST(validMCQRequest);
     const responseData = await response.json();
     
-    // Assert
-    expect(response.status).toBe(200);
+    // Assert with better debugging
+    await expectWithDebug(response, 200);
     expect(responseData).toHaveProperty('success', true);
     
     // Verify Prisma calls
@@ -172,8 +228,8 @@ describe('Quiz Complete API Route', () => {
     const response = await POST(validCodeRequest);
     const responseData = await response.json();
     
-    // Assert
-    expect(response.status).toBe(200);
+    // Assert with better debugging
+    await expectWithDebug(response, 200);
     expect(responseData).toHaveProperty('success', true);
     
     // Similar Prisma verification as above
@@ -258,7 +314,7 @@ describe('Quiz Complete API Route', () => {
     const responseData = await response.json();
     
     // Assert
-    expect(response.status).toBe(404);
+    await expectWithDebug(response, 404);
     expect(responseData).toHaveProperty('success', false);
     expect(responseData).toHaveProperty('error', 'Quiz not found');
   });

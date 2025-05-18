@@ -1,6 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react";
-import { useAnimation } from "@/providers/animation-provider";
+
 
 // Mock the animation provider
 jest.mock("@/providers/animation-provider", () => ({

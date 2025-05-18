@@ -28,3 +28,7 @@ next-env.d.ts
 
 node_modules
 jest-stare
+jest-stare/jest-results.json
+
+jest-stare/index.html
+jest-stare/jest-results.json

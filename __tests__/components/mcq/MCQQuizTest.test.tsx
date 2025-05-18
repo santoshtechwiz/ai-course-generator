@@ -8,7 +8,7 @@ import quizReducer from "@/store/slices/quizSlice"
 import "@testing-library/jest-dom"
 import McqQuizWrapper from "@/app/dashboard/(quiz)/mcq/components/McqQuizWrapper"
 import toast from "react-hot-toast"
-import { MockAnimationProvider } from "../../mocks/mockAnimationProvider.test"
+import { MockAnimationProvider } from "@/__tests__/mocks/mockAnimationProvider.test"
 
 // Mock next/navigation
 jest.mock("next/navigation", () => ({
@@ -75,7 +75,7 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 Object.defineProperty(window, 'sessionStorage', { value: localStorageMock });
 
 // Mock components
-jest.mock("../dashboard/(quiz)/mcq/components/McqQuiz", () => {
+jest.mock("@/app/dashboard/(quiz)/mcq/components/McqQuiz", () => {
   return function MockMCQQuiz({ 
     question, 
     onAnswer, 
@@ -110,7 +110,7 @@ jest.mock("../dashboard/(quiz)/mcq/components/McqQuiz", () => {
 })
 
 // Mock display components
-jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
+jest.mock("@/app/dashboard/(quiz)/components/QuizStateDisplay", () => ({
   InitializingDisplay: () => <div data-testid="initializing-display">Loading...</div>,
   QuizNotFoundDisplay: ({ onReturn }) => (
     <div data-testid="quiz-not-found">
@@ -138,7 +138,7 @@ jest.mock("../dashboard/(quiz)/components/QuizStateDisplay", () => ({
 }))
 
 // Mock the QuizSubmissionLoading component
-jest.mock("../dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
+jest.mock("@/app/dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
   QuizSubmissionLoading: () => (
     <div data-testid="quiz-submission-loading">
       Submitting quiz...
@@ -147,7 +147,7 @@ jest.mock("../dashboard/(quiz)/components/QuizSubmissionLoading", () => ({
 }))
 
 // Mock NonAuthenticatedUserSignInPrompt component
-jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => {
+jest.mock("@/app/dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () => {
   return function MockNonAuthPrompt({ onSignIn, showSaveMessage }) {
     return (
       <div data-testid="non-authenticated-prompt">
@@ -162,7 +162,7 @@ jest.mock("../dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt", () 
 })
 
 // Mock MCQResultPreview component
-jest.mock("../dashboard/(quiz)/mcq/components/MCQResultPreview", () => {
+jest.mock("@/app/dashboard/(quiz)/mcq/components/MCQResultPreview", () => {
   return function MockMCQResultPreview({ result, onSubmit, onCancel }) {
     return (
       <div data-testid="mcq-quiz-result-preview">
