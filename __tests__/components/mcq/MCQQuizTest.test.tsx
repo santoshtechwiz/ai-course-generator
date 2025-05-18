@@ -6,9 +6,9 @@ import { SessionProvider } from "next-auth/react"
 import { configureStore } from "@reduxjs/toolkit"
 import quizReducer from "@/store/slices/quizSlice"
 import "@testing-library/jest-dom"
-import MCQQuizWrapper from "../dashboard/(quiz)/mcq/components/MCQQuizWrapper"
+import McqQuizWrapper from "@/app/dashboard/(quiz)/mcq/components/McqQuizWrapper"
 import toast from "react-hot-toast"
-import { MockAnimationProvider } from "./mocks/mockAnimationProvider"
+import { MockAnimationProvider } from "../../mocks/mockAnimationProvider.test"
 
 // Mock next/navigation
 jest.mock("next/navigation", () => ({
@@ -324,7 +324,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
 
     // Check for loading indicator
@@ -347,7 +347,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
 
     // Verify quiz content is displayed
@@ -387,7 +387,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
 
     // Click to answer the first question
@@ -417,7 +417,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     const { rerender } = renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
 
     // Answer last question
@@ -461,7 +461,7 @@ describe("MCQ Quiz Component", () => {
       <Provider store={setupStore()}>
         <SessionProvider>
           <MockAnimationProvider>
-            <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+            <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
           </MockAnimationProvider>
         </SessionProvider>
       </Provider>
@@ -526,7 +526,7 @@ describe("MCQ Quiz Component", () => {
 
     // Render with mock state that would show results preview
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
     
     // Check that preview is shown before attempting to click submit
@@ -586,7 +586,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId={null} />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId={null} />
     )
     
     // Click to submit last question
@@ -617,7 +617,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
     
     // Verify error is displayed
@@ -642,7 +642,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
     
     // Verify empty questions message is displayed
@@ -687,7 +687,7 @@ describe("MCQ Quiz Component", () => {
     )
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     )
     
     // Wait for the submit button to be available
@@ -755,7 +755,7 @@ describe("MCQ Quiz Component", () => {
     );
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Wait for the submit button to be available
@@ -824,7 +824,7 @@ describe("MCQ Quiz Component", () => {
     );
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Wait for the submit button to be available
@@ -877,7 +877,7 @@ describe("MCQ Quiz Component", () => {
     );
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Wait for the submit button to be available
@@ -929,7 +929,7 @@ describe("MCQ Quiz Component", () => {
     );
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Wait for the submit button to be available
@@ -1003,7 +1003,7 @@ describe("MCQ Quiz Component", () => {
     );
 
     renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Wait for the submit button to be available
@@ -1054,7 +1054,7 @@ describe("MCQ Quiz Component", () => {
     );
 
     const { container } = renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Get DOM content as string
@@ -1110,7 +1110,7 @@ describe("MCQ Quiz Component", () => {
     );
 
     const { rerender } = renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Click to get results preview
@@ -1133,7 +1133,7 @@ describe("MCQ Quiz Component", () => {
     
     // Re-render to trigger state update
      renderWithProviders(
-      <MCQQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
+      <McqQuizWrapper slug="test-quiz" quizId="test-quiz" userId="test-user" />
     );
     
     // Wait for quiz component

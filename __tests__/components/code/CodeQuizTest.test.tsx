@@ -6,9 +6,9 @@ import { SessionProvider } from "next-auth/react"
 import { configureStore } from "@reduxjs/toolkit"
 import quizReducer from "@/store/slices/quizSlice"
 import "@testing-library/jest-dom"
-import CodeQuizWrapper from "../dashboard/(quiz)/code/components/CodeQuizWrapper"
-import toast from "react-hot-toast"
-import { MockAnimationProvider } from "./mocks/mockAnimationProvider.test"
+import { MockAnimationProvider } from "@/__tests__/mocks/mockAnimationProvider.test"
+import CodeQuizWrapper from "@/app/dashboard/(quiz)/code/components/CodeQuizWrapper"
+
 
 // Mock next/navigation
 jest.mock("next/navigation", () => ({
