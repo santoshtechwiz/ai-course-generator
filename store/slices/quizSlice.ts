@@ -223,7 +223,18 @@ export const getQuizResults = createAsyncThunk(
   async (slug: string, { rejectWithValue }) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
-      const response = await fetch(`${baseUrl}/api/quizzes/results?slug=${slug}`)
+      
+      // Parse the slug to extract query params if present
+      const hasParams = slug.includes('?');
+      const queryParams = hasParams ? slug.split('?')[1] : '';
+      const cleanSlug = hasParams ? slug.split('?')[0] : slug;
+      
+      // Use appropriate URL format with or without query params
+      const url = hasParams 
+        ? `${baseUrl}/api/quizzes/results?slug=${cleanSlug}&${queryParams}`
+        : `${baseUrl}/api/quizzes/results?slug=${cleanSlug}`;
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: "Failed to retrieve results" }))

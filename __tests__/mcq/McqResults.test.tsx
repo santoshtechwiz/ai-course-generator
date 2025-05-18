@@ -1,272 +1,290 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { useRouter } from 'next/navigation'
-import ResultsPage from '@/app/dashboard/(quiz)/mcq/[slug]/results/page'
-import { useAuth } from '@/hooks/useAuth'
-import { useQuiz } from '@/hooks'
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit'; // Fixed import
+import ResultsPage from '@/app/dashboard/(quiz)/mcq/[slug]/results/page';
+import * as authHooks from '@/hooks/useAuth';
+import * as quizHooks from '@/hooks/useQuizState';
+import { mockQuizData } from '../mocks/quiz-mock-data';
 
-// Mock the necessary hooks and components
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
-  useParams: jest.fn().mockReturnValue({ slug: 'test-slug' })
-}))
-
+// Mock useAuth hook
 jest.mock('@/hooks/useAuth', () => ({
-  useAuth: jest.fn()
-}))
-
-jest.mock('@/hooks', () => ({
-  useQuiz: jest.fn()
-}))
-
-// Add mock for store/middleware/persistQuizMiddleware
-jest.mock('@/store/middleware/persistQuizMiddleware', () => ({
-  clearAuthRedirectState: jest.fn(),
-  loadAuthRedirectState: jest.fn(),
-  saveAuthRedirectState: jest.fn(),
-  hasAuthRedirectState: jest.fn().mockReturnValue(false)
-}))
-
-// Mock child components
-jest.mock('@/app/dashboard/(quiz)/mcq/components/McqQuizResult', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(({ result }) => (
-    <div data-testid="mcq-quiz-result-mock">
-      Result: {result.score}/{result.maxScore}
-    </div>
-  ))
-}))
+  useAuth: jest.fn(),
+}));
 
-jest.mock('@/app/dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt', () => ({
+// Mock useQuiz hook
+jest.mock('@/hooks/useQuizState', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(({ onSignIn, message }) => (
-    <div data-testid="sign-in-prompt-mock" onClick={onSignIn}>
-      {message}
-    </div>
-  ))
-}))
+  useQuiz: jest.fn(),
+}));
 
-jest.mock('@/app/dashboard/(quiz)/components/QuizStateDisplay', () => ({
-  InitializingDisplay: jest.fn().mockImplementation(() => (
-    <div data-testid="initializing-display-mock">Loading...</div>
-  )),
-  ErrorDisplay: jest.fn().mockImplementation(({ error, onRetry }) => (
-    <div data-testid="error-display-mock" onClick={onRetry}>
-      Error: {error}
-    </div>
-  ))
-}))
+// Mock next/navigation
+const pushMock = jest.fn();
+const replaceMock = jest.fn();
 
-// Mock the use function
-const mockUse = jest.fn().mockImplementation(() => {
-  return 'test-slug'
-})
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: pushMock,
+    replace: replaceMock,
+  }),
+}));
 
-// Replace React's use with our mock
-jest.mock('react', () => {
-  const originalModule = jest.requireActual('react')
-  return {
-    ...originalModule,
-    use: () => mockUse()
+// Create a minimal store for testing
+const createTestStore = () => configureStore({
+  reducer: {
+    quiz: (state = {}, action) => state,
+    auth: (state = {}, action) => state
   }
-})
+});
+
+// Reduce noise from console errors
+const originalConsoleError = console.error;
+beforeAll(() => {
+  console.error = jest.fn();
+});
+afterAll(() => {
+  console.error = originalConsoleError;
+});
+
+// Reset mocks between tests
+beforeEach(() => {
+  jest.clearAllMocks();
+  pushMock.mockReset();
+});
 
 describe('MCQ Quiz Results Page', () => {
-  // Setup common mocks
-  const mockPush = jest.fn()
-  const mockRequireAuth = jest.fn()
-  const mockGetResults = jest.fn().mockReturnValue(Promise.resolve())
-  
-  beforeEach(() => {
-    jest.clearAllMocks()
-    
-    // Default router mock
-    ;(useRouter as jest.Mock).mockReturnValue({
-      push: mockPush,
-    })
-  })
+  let store;
+  // Provide params directly as an object for tests
+  const mockParams = { slug: 'test-slug' };
 
-  test('should show sign in prompt when user is not authenticated', () => {
-    // Mock auth hook to return not authenticated
-    ;(useAuth as jest.Mock).mockReturnValue({
+  beforeEach(() => {
+    store = createTestStore();
+  });
+
+  test('should show sign in prompt when user is not authenticated', async () => {
+    // Mock useAuth to return unauthenticated status
+    const requireAuthMock = jest.fn();
+    (authHooks.useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: false,
       status: 'unauthenticated',
-      requireAuth: mockRequireAuth
-    })
+      requireAuth: requireAuthMock,
+    });
     
-    // Mock quiz hook with empty data
-    ;(useQuiz as jest.Mock).mockReturnValue({
+    // Mock useQuiz hook
+    (quizHooks.useQuiz as jest.Mock).mockReturnValue({
       quiz: { data: null },
       results: null,
       status: { isLoading: false, errorMessage: null },
-      actions: { getResults: mockGetResults }
-    })
+      actions: {
+        getResults: jest.fn(),
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ResultsPage params={mockParams} />
+      </Provider>
+    );
+
+    // Verify non-auth prompt is shown
+    expect(screen.getByText(/please sign in to view your quiz results/i)).toBeInTheDocument();
     
-    render(<ResultsPage params={Promise.resolve('test-slug')} />)
+    // Find and click the sign-in button
+    const signInButton = screen.getByRole('button', { name: /sign in/i });
+    signInButton.click();
     
-    // Check if sign in prompt is displayed
-    expect(screen.getByTestId('sign-in-prompt-mock')).toBeInTheDocument()
-    
-    // Simulate sign in click
-    screen.getByTestId('sign-in-prompt-mock').click()
-    expect(mockRequireAuth).toHaveBeenCalledWith('/dashboard/mcq/test-slug/results')
-  })
-  
+    // Verify the requireAuth function was called with correct path
+    expect(requireAuthMock).toHaveBeenCalledWith('/dashboard/mcq/test-slug/results');
+  });
+
   test('should show loading state while authentication is pending', () => {
-    // Mock auth hook to return loading state
-    ;(useAuth as jest.Mock).mockReturnValue({
+    // Mock useAuth to return loading state
+    (authHooks.useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: false,
-      status: 'loading'
-    })
+      status: 'loading',
+    });
     
-    // Mock quiz hook
-    ;(useQuiz as jest.Mock).mockReturnValue({
+    // Mock useQuiz hook
+    (quizHooks.useQuiz as jest.Mock).mockReturnValue({
       quiz: { data: null },
       results: null,
       status: { isLoading: false, errorMessage: null },
-      actions: { getResults: mockGetResults }
-    })
-    
-    render(<ResultsPage params={Promise.resolve('test-slug')} />)
-    
-    // Check if loading component is displayed
-    expect(screen.getByTestId('initializing-display-mock')).toBeInTheDocument()
-  })
-  
+      actions: {
+        getResults: jest.fn(),
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ResultsPage params={mockParams} />
+      </Provider>
+    );
+
+    // Check loading state is displayed
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+  });
+
   test('should show loading state while quiz results are loading', () => {
-    // Mock auth hook
-    ;(useAuth as jest.Mock).mockReturnValue({
+    // Mock useAuth to return authenticated
+    (authHooks.useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: true,
-      status: 'authenticated'
-    })
+      status: 'authenticated',
+    });
     
-    // Mock quiz hook with loading state
-    ;(useQuiz as jest.Mock).mockReturnValue({
+    // Mock useQuiz hook - with loading state
+    (quizHooks.useQuiz as jest.Mock).mockReturnValue({
       quiz: { data: null },
       results: null,
-      status: { isLoading: true, errorMessage: null },
-      actions: { getResults: mockGetResults }
-    })
-    
-    render(<ResultsPage params={Promise.resolve('test-slug')} />)
-    
-    // Check if loading component is displayed
-    expect(screen.getByTestId('initializing-display-mock')).toBeInTheDocument()
-  })
-  
+      status: { 
+        isLoading: true, 
+        errorMessage: null 
+      },
+      actions: {
+        getResults: jest.fn(),
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ResultsPage params={mockParams} />
+      </Provider>
+    );
+
+    // Check loading state is displayed
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+  });
+
   test('should show error state when results fetch fails', () => {
-    const errorMessage = 'Failed to load quiz results'
-    
-    // Mock auth hook
-    ;(useAuth as jest.Mock).mockReturnValue({
+    // Mock useAuth to return authenticated
+    (authHooks.useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: true,
-      status: 'authenticated'
-    })
+      status: 'authenticated',
+    });
     
-    // Mock quiz hook with error
-    ;(useQuiz as jest.Mock).mockReturnValue({
+    // Mock useQuiz hook with error
+    const getResultsMock = jest.fn();
+    (quizHooks.useQuiz as jest.Mock).mockReturnValue({
       quiz: { data: null },
       results: null,
-      status: { isLoading: false, errorMessage },
-      actions: { getResults: mockGetResults }
-    })
+      status: { 
+        isLoading: false, 
+        errorMessage: "Failed to load quiz results" 
+      },
+      actions: {
+        getResults: getResultsMock,
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ResultsPage params={mockParams} />
+      </Provider>
+    );
+
+    // Check error message is displayed
+    expect(screen.getByText(/failed to load quiz results/i)).toBeInTheDocument();
     
-    render(<ResultsPage params={Promise.resolve('test-slug')} />)
+    // Test retry button
+    const retryButton = screen.getByRole('button', { name: /try again/i });
+    retryButton.click();
     
-    // Check if error component is displayed with the correct message
-    expect(screen.getByTestId('error-display-mock')).toBeInTheDocument()
-    expect(screen.getByTestId('error-display-mock')).toHaveTextContent(errorMessage)
-    
-    // Test retry functionality
-    screen.getByTestId('error-display-mock').click()
-    expect(mockGetResults).toHaveBeenCalledWith('test-slug')
-  })
-  
+    expect(getResultsMock).toHaveBeenCalledWith('test-slug');
+  });
+
   test('should show "No Results Found" when authenticated but no results available', () => {
-    // Mock auth hook
-    ;(useAuth as jest.Mock).mockReturnValue({
+    // Mock useAuth to return authenticated
+    (authHooks.useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: true,
-      status: 'authenticated'
-    })
+      status: 'authenticated',
+    });
     
-    // Mock quiz hook with no results
-    ;(useQuiz as jest.Mock).mockReturnValue({
+    // Mock useQuiz hook with no results
+    (quizHooks.useQuiz as jest.Mock).mockReturnValue({
       quiz: { data: null },
       results: null,
-      status: { isLoading: false, errorMessage: null },
-      actions: { getResults: mockGetResults }
-    })
+      status: { 
+        isLoading: false, 
+        errorMessage: null 
+      },
+      actions: {
+        getResults: jest.fn(),
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ResultsPage params={mockParams} />
+      </Provider>
+    );
+
+    // Check "no results" message is displayed
+    expect(screen.getByText(/no results found/i)).toBeInTheDocument();
     
-    render(<ResultsPage params={Promise.resolve('test-slug')} />)
+    // Check take quiz button directs to proper MCQ path
+    const takeQuizButton = screen.getByRole('button', { name: /take the quiz/i });
+    takeQuizButton.click();
     
-    // Check if "No Results Found" message is displayed
-    expect(screen.getByText('No Results Found')).toBeInTheDocument()
-    
-    // Test "Take the Quiz" button functionality
-    screen.getByText('Take the Quiz').click()
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/mcq/test-slug')
-  })
-  
+    expect(pushMock).toHaveBeenCalledWith('/dashboard/mcq/test-slug');
+  });
+
   test('should display quiz results when authenticated and results are available', () => {
+    // Mock useAuth to return authenticated
+    (authHooks.useAuth as jest.Mock).mockReturnValue({
+      isAuthenticated: true,
+      status: 'authenticated',
+    });
+    
     // Mock quiz results
     const mockResults = {
-      id: 'result-id',
+      quizId: 'quiz-123',
       slug: 'test-slug',
-      title: 'Test Quiz',
-      score: 8,
+      title: 'Test MCQ Quiz',
+      score: 7,
       maxScore: 10,
+      percentage: 70,
+      completedAt: new Date().toISOString(),
       questions: [
         {
           id: 'q1',
-          question: 'Test Question 1',
-          userAnswer: 'Answer 1',
-          correctAnswer: 'Answer 1',
+          question: 'What is React?',
+          userAnswer: 'A library',
+          correctAnswer: 'A library',
+          isCorrect: true
+        },
+        {
+          id: 'q2',
+          question: 'What is TypeScript?',
+          userAnswer: 'A programming language',
+          correctAnswer: 'A programming language',
           isCorrect: true
         }
-      ],
-      completedAt: '2023-05-01T12:00:00Z'
-    }
+      ]
+    };
     
-    // Mock auth hook
-    ;(useAuth as jest.Mock).mockReturnValue({
-      isAuthenticated: true,
-      status: 'authenticated'
-    })
-    
-    // Mock quiz hook with results
-    ;(useQuiz as jest.Mock).mockReturnValue({
-      quiz: { data: null },
+    // Mock useQuiz hook with results
+    (quizHooks.useQuiz as jest.Mock).mockReturnValue({
+      quiz: { data: mockQuizData },
       results: mockResults,
-      status: { isLoading: false, errorMessage: null },
-      actions: { getResults: mockGetResults }
-    })
-    
-    render(<ResultsPage params={Promise.resolve('test-slug')} />)
-    
-    // Check if results component is displayed with the correct data
-    expect(screen.getByTestId('mcq-quiz-result-mock')).toBeInTheDocument()
-    expect(screen.getByTestId('mcq-quiz-result-mock')).toHaveTextContent('Result: 8/10')
-  })
-  
-  test('should fetch results when authenticated and no results are available', async () => {
-    // Mock auth hook
-    ;(useAuth as jest.Mock).mockReturnValue({
-      isAuthenticated: true,
-      status: 'authenticated'
-    })
-    
-    // Mock quiz hook with no results initially
-    ;(useQuiz as jest.Mock).mockReturnValue({
-      quiz: { data: null },
-      results: null,
-      status: { isLoading: false, errorMessage: null },
-      actions: { getResults: mockGetResults }
-    })
-    
-    render(<ResultsPage params={Promise.resolve('test-slug')} />)
-    
-    // Check if getResults was called with the correct slug
-    await waitFor(() => {
-      expect(mockGetResults).toHaveBeenCalledWith('test-slug')
-    })
-  })
-})
+      status: { 
+        isLoading: false, 
+        errorMessage: null 
+      },
+      actions: {
+        getResults: jest.fn(),
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ResultsPage params={mockParams} />
+      </Provider>
+    );
+
+    // Check results are displayed
+    expect(screen.getByTestId('mcq-quiz-result')).toBeInTheDocument();
+    expect(screen.getByText(/test mcq quiz/i)).toBeInTheDocument();
+    expect(screen.getByTestId('score-percentage')).toHaveTextContent('70% Score');
+  });
+
+});

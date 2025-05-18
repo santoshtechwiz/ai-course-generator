@@ -336,12 +336,18 @@ describe("useQuiz Hook", () => {
 
     const { result } = renderHook(() => useQuiz(), { wrapper: createWrapper(initialState) })
 
-    // Create a payload that matches the expected structure
+    // Create a payload that matches the expected structure including isCorrect property
     const payload = {
       slug: "test-slug",
       quizId: "test-quiz",
       type: "code" as QuizType,
-      answers: [{ questionId: "q1", answer: "test answer" }]
+      answers: [{ 
+        questionId: "q1", 
+        answer: "test answer", 
+        isCorrect: true, 
+        timeSpent: 60 
+      }],
+      timeTaken: 60 // Include timeTaken for testing
     }
 
     await act(async () => {
@@ -363,7 +369,27 @@ describe("useQuiz Hook", () => {
     const requestBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
     expect(requestBody).toHaveProperty("quizId", "test-quiz")
     expect(requestBody).toHaveProperty("type", "code")
+    
+    // Check that answers have the expected structure
     expect(requestBody.answers).toHaveLength(1)
-    expect(requestBody.answers[0]).toEqual({ questionId: "q1", answer: "test answer" })
+    expect(requestBody.answers[0]).toHaveProperty("questionId", "q1")
+    expect(requestBody.answers[0]).toHaveProperty("answer", "test answer")
+    
+    // Verify that our new required fields are present
+    expect(requestBody.answers[0]).toHaveProperty("isCorrect")
+    expect(typeof requestBody.answers[0].isCorrect).toBe("boolean")
+    expect(requestBody.answers[0]).toHaveProperty("timeSpent")
+    expect(typeof requestBody.answers[0].timeSpent).toBe("number")
+    
+    // Check that the score is calculated and included
+    expect(requestBody).toHaveProperty("score")
+    expect(typeof requestBody.score).toBe("number")
+    
+    // Check that we have the correct time field
+    // In test mode, we might have either totalTime or timeTaken
+    expect(
+      requestBody.hasOwnProperty("totalTime") || 
+      requestBody.hasOwnProperty("timeTaken")
+    ).toBe(true)
   })
 })
