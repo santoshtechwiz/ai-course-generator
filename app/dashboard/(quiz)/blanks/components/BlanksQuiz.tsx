@@ -1,30 +1,18 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { motion } from "framer-motion"
+import { useAppDispatch } from "@/store"
+import { submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, HelpCircle, AlertCircle } from "lucide-react"
-import { motion } from "framer-motion"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { HelpCircle, ChevronRightIcon, Clock, Loader2 } from "lucide-react"
+import { cn } from "@/lib/tailwindUtils"
+import { formatQuizTime } from "@/lib/utils/quiz-utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { type RootState, useAppDispatch, useAppSelector } from "@/store"
-import { submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
-
-interface BlanksQuizProps {
-  question: {
-    id: string
-    question: string
-    answer?: string
-    hints?: string[]
-  }
-  questionNumber: number
-  totalQuestions: number
-  isLastQuestion: boolean
-  onQuestionComplete?: () => void
-  [key: string]: any
-}
+import type { BlanksQuizProps } from '../blanks-quiz-types'
 
 function BlanksQuizComponent({
   question,
@@ -34,17 +22,14 @@ function BlanksQuizComponent({
   onQuestionComplete,
   ...props
 }: BlanksQuizProps) {
+  const dispatch = useAppDispatch()
   const [userAnswer, setUserAnswer] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [startTime] = useState<number>(Date.now())
-  const [timeElapsed, setTimeElapsed] = useState(0)
+  const [timer, setTimer] = useState(0)
   const [showHint, setShowHint] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [isMounted, setIsMounted] = useState(false)
-
-  const dispatch = useAppDispatch()
-  const quizState = useAppSelector((state: RootState) => state.textQuiz)
+  const startTimeRef = useRef<number>(Date.now())
 
   // Animation variants
   const containerVariants = {
@@ -62,28 +47,30 @@ function BlanksQuizComponent({
     visible: { y: 0, opacity: 1 },
   }
 
-  // Update time elapsed every second
+  // Reset state when question changes
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeElapsed(Math.floor((Date.now() - startTime) / 1000))
-    }, 1000)
+    setUserAnswer("")
+    setTimer(0)
+    setIsSubmitting(false)
+    setShowHint(false)
+    setHintsUsed(false)
+    startTimeRef.current = Date.now()
 
-    return () => clearInterval(timer)
-  }, [startTime])
-
-  // Format time as mm:ss
-  const formattedTime = useMemo(() => {
-    const minutes = Math.floor(timeElapsed / 60)
-    const seconds = timeElapsed % 60
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-  }, [timeElapsed])
-
-  // Focus input on mount
-  useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus()
     }
   }, [question.id])
+
+  // Timer for elapsed time
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimer((prev) => prev + 1)
+    }, 1000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   // Extract the blank part from the question
   const formattedQuestion = useMemo(() => {
@@ -126,30 +113,30 @@ function BlanksQuizComponent({
       setIsSubmitting(true)
 
       try {
+        const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000)
+        const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
+
         const answer = {
           questionId: question.id,
           question: question.question,
           answer: userAnswer.trim(),
           correctAnswer,
-          timeSpent: Math.floor((Date.now() - startTime) / 1000),
+          isCorrect,
+          timeSpent,
           hintsUsed,
           index: questionNumber - 1,
-          isCorrect: userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase(),
         }
 
-        await dispatch(submitAnswerLocally(answer));
+        dispatch(submitAnswerLocally(answer))
 
         // Call onQuestionComplete to move to the next question
         onQuestionComplete?.()
       } catch (error) {
         console.error("Error submitting answer:", error)
-      } finally {
         setIsSubmitting(false)
-        setUserAnswer("")
-        setShowHint(false)
       }
     },
-    [userAnswer, dispatch, question, startTime, hintsUsed, correctAnswer, questionNumber, onQuestionComplete],
+    [userAnswer, dispatch, question, correctAnswer, hintsUsed, questionNumber, onQuestionComplete]
   )
 
   // Handle hint display
@@ -158,7 +145,7 @@ function BlanksQuizComponent({
     setHintsUsed(true)
   }, [])
 
-  // Add this useEffect for keyboard support
+  // Add keyboard support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Submit on Enter if the answer is valid
@@ -171,54 +158,61 @@ function BlanksQuizComponent({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [handleSubmit, userAnswer, isSubmitting])
 
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  if (!isMounted) {
-    return null // Or a loading indicator
-  }
-
-  // If no question is provided, show a loading state
-  if (!question) {
-    return (
-      <Card className="w-full">
-        <CardContent className="pt-6">
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <motion.div
+      key={question.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.5 }}
       data-testid="blanks-quiz-component"
-      initial="hidden"
-      animate="visible"
       variants={containerVariants}
       {...props}
     >
-      <Card className="w-full">
+      <Card className="w-full max-w-4xl mx-auto shadow-lg border-t-4 border-primary">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-xl">
-              Question {questionNumber} of {totalQuestions}
-            </CardTitle>
-            <div className="text-sm text-muted-foreground">Time: {formattedTime}</div>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <motion.div
+                className="flex items-center gap-1 text-sm text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <span className="font-medium text-foreground">Question {questionNumber}</span>
+                <ChevronRightIcon className="h-4 w-4" />
+                <span>{totalQuestions}</span>
+              </motion.div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="font-mono">{formatQuizTime(timer)}</span>
+              </div>
+              <Badge
+                variant="secondary"
+                className="text-white bg-blue-500"
+              >
+                Fill in the Blank
+              </Badge>
+            </div>
           </div>
+          <motion.h3
+            className="text-lg font-medium mb-4"
+            variants={itemVariants}
+            data-testid="question-text"
+          >
+            {formattedQuestion}
+          </motion.h3>
         </CardHeader>
+
         <CardContent>
           <motion.div variants={itemVariants}>
-            <h3 className="text-lg font-medium mb-4" data-testid="question-text">
-              {formattedQuestion}
-            </h3>
             <form
               onSubmit={handleSubmit}
               id="blanks-form"
               className="space-y-4"
-              data-testid="blanks-form" // Add this test ID
+              data-testid="blanks-form"
             >
               <div className="space-y-2">
                 <label htmlFor="answer" className="text-sm font-medium">
@@ -230,7 +224,7 @@ function BlanksQuizComponent({
                   value={userAnswer}
                   onChange={handleInputChange}
                   placeholder="Type your answer here..."
-                  className="w-full"
+                  className="w-full transition-all duration-200 focus:ring-2 focus:ring-primary"
                   data-testid="answer-input"
                   disabled={isSubmitting}
                 />
@@ -243,7 +237,7 @@ function BlanksQuizComponent({
                   className="p-3 bg-amber-50 border border-amber-200 rounded-md"
                 >
                   <div className="flex gap-2">
-                    <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                    <HelpCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-medium text-amber-800">Hint</p>
                       <p className="text-sm text-amber-700">{hint}</p>
@@ -254,6 +248,7 @@ function BlanksQuizComponent({
             </form>
           </motion.div>
         </CardContent>
+        
         <CardFooter className="flex justify-between">
           <TooltipProvider>
             <Tooltip>
@@ -302,7 +297,6 @@ function BlanksQuizComponent({
 
 // Custom comparison function for memoization
 function arePropsEqual(prevProps: BlanksQuizProps, nextProps: BlanksQuizProps) {
-  // Only re-render if the question ID changes or if the question number changes
   return (
     prevProps.question.id === nextProps.question.id &&
     prevProps.questionNumber === nextProps.questionNumber &&
