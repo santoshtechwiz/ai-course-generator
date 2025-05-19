@@ -1,62 +1,61 @@
-'use client'
-import { use, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAppSelector } from '@/store'
-import { useAuth } from '@/hooks/useAuth'
-import { Card, CardContent } from '@/components/ui/card'
-import { LoadingDisplay, ErrorDisplay } from '../../../components/QuizStateDisplay'
-import NonAuthenticatedUserSignInPrompt from '../../../components/NonAuthenticatedUserSignInPrompt'
-import QuizResultsOpenEnded from '../../components/QuizResultsOpenEnded'
-import type { TextQuizState, QuizResult } from '@/types/quiz'
+"use client"
+
+import { use, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAppSelector } from "@/store"
+import { useAuth } from "@/hooks/useAuth"
+import { Card, CardContent } from "@/components/ui/card"
+import type { TextQuizState, QuizResult } from "@/types/quiz"
+import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
+import { LoadingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
+import QuizResultsOpenEnded from "../../components/QuizResultsOpenEnded"
 
 interface PageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }> | { slug: string }
 }
 
 export default function OpenEndedQuizResultsPage({ params }: PageProps) {
-  const router = useRouter()
   const { slug } = use(params)
+  const router = useRouter()
   const { isAuthenticated } = useAuth()
   const quizState = useAppSelector((state) => state.textQuiz) as unknown as TextQuizState
+
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Validate quiz state with a delay to let state rehydrate
     const timer = setTimeout(() => {
-      try {
-        const hasValidData = Boolean(
-          quizState?.quizId &&
-          Array.isArray(quizState?.answers) &&
-          quizState.answers.length > 0 &&
-          Array.isArray(quizState?.questions) &&
-          quizState.questions.length > 0
-        )
+      console.log("Validating quiz state:", quizState)
 
-        if (!hasValidData ) {
-          console.error("Invalid quiz state:", quizState)
-          setError("Quiz data not found or invalid")
-          // Wait before redirecting
-          setTimeout(() => router.replace('/dashboard/quizzes'), 2000)
-        }
-        
-        setIsLoading(false)
-      } catch (err) {
-        console.error("Error validating quiz state:", err)
-        setError("An error occurred while loading quiz results")
-        setIsLoading(false)
+      // Check for required fields
+      const hasQuizId = Boolean(quizState?.quizId)
+      const hasQuestions = Boolean(quizState?.questions && Array.isArray(quizState.questions) && quizState.questions.length > 0)
+
+      if (!hasQuizId || !hasQuestions) {
+        console.error("Invalid quiz state:", { hasQuizId, hasQuestions, quizState })
+        setError("Quiz data not found or invalid.")
+        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
+        return
       }
-    }, 1500) // Allow time for state to rehydrate
+
+      // Validate slug if available
+      if (quizState.slug && quizState.slug !== slug) {
+        console.error("Quiz slug mismatch:", { stateSlug: quizState.slug, pageSlug: slug })
+        setError("Quiz slug does not match.")
+        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
+        return
+      }
+
+      setIsLoading(false)
+    }, 500)
 
     return () => clearTimeout(timer)
-  }, [quizState, router])
+  }, [quizState, slug, router])
 
-  // While loading auth or quiz data
-  if ( isLoading) {
+  if (isLoading) {
     return <LoadingDisplay message="Loading quiz results..." />
   }
-  
-  // If there's an error
+
   if (error) {
     return (
       <ErrorDisplay
@@ -67,7 +66,6 @@ export default function OpenEndedQuizResultsPage({ params }: PageProps) {
     )
   }
 
-  // For guest users: show preview but prompt to sign in
   if (!isAuthenticated) {
     return (
       <NonAuthenticatedUserSignInPrompt
@@ -75,21 +73,21 @@ export default function OpenEndedQuizResultsPage({ params }: PageProps) {
         message="Sign in to save your results and track your progress"
         previewData={{
           score: quizState.answers.length,
-          maxScore: quizState.questions.length,
-          percentage: Math.round((quizState.answers.length / Math.max(1, quizState.questions.length)) * 100)
+          maxScore: quizState.questions?.length || 0,
+          percentage: Math.round((quizState.answers.length / Math.max(1, quizState.questions?.length || 0)) * 100),
         }}
       />
     )
   }
 
-  // Safe to render results now
   const quizResult: QuizResult = {
     quizId: quizState.quizId!,
     slug,
-    answers: quizState.answers,
-    questions: quizState.questions,
-    totalQuestions: quizState.questions.length,
+    answers: quizState.answers || [], // Ensure answers is never undefined
+    questions: quizState.questions || [], // Use questions from state
+    totalQuestions: quizState.questions?.length || 0,
     completedAt: quizState.completedAt || new Date().toISOString(),
+    title: quizState.title,
   }
 
   return (

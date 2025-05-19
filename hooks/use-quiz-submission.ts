@@ -1,6 +1,6 @@
 import { useCallback } from "react"
 import { useAppDispatch } from "@/store"
-import { submitAnswer } from "@/app/store/slices/textQuizSlice"
+import { submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
 import type { QuizAnswer } from "@/types/quiz"
 import { useToast } from "@/hooks/use-toast"
 
@@ -11,7 +11,7 @@ export function useQuizSubmission() {
   const submitQuizAnswer = useCallback(
     async (answer: QuizAnswer) => {
       try {
-        await dispatch(submitAnswer(answer)).unwrap()
+        await dispatch(submitAnswerLocally(answer));
         return true
       } catch (error) {
         toast({

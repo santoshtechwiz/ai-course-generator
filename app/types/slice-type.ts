@@ -2,8 +2,6 @@ import type { Question } from "@/lib/quiz-store"
 import type { PersistPartial } from "redux-persist/es/persistReducer"
 import { QuizType } from "./quiz-types"
 
-
-
 // Define the animation states
 export type AnimationState = "idle" | "answering" | "completed"
 
@@ -139,6 +137,7 @@ export interface TextQuizState {
     quizData: any
   } | null
   isLoading: boolean
+  status?: string
 }
 
 // Define the text quiz state with persist partial

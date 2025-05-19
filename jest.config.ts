@@ -43,18 +43,14 @@ const config: Config = {
     // Transform ES modules in node_modules
     "node_modules/(?!(nanoid)/)",
   ],
-  // Add testMatch to explicitly find tests
+  // Update testMatch to catch all test files in any directory
   testMatch: [
-    "<rootDir>/__tests__/**/*.test.[jt]s?(x)",
-    "<rootDir>/__tests__/**/*.spec.[jt]s?(x)",
-    "<rootDir>/src/**/?(*.)+(spec|test).[jt]s?(x)",
-    "<rootDir>/app/**/?(*.)+(spec|test).[jt]s?(x)"
+    "<rootDir>/**/*.test.[jt]s?(x)",
+    "<rootDir>/**/*.spec.[jt]s?(x)"
   ],
-  // Add roots to specify test locations
+  // Add roots to specify test locations - make sure all folders are included
   roots: [
-    "<rootDir>",
-    "<rootDir>/__tests__",
-    "<rootDir>/app"
+    "<rootDir>"
   ],
   moduleDirectories: [
     "node_modules",

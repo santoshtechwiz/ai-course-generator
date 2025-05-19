@@ -10,7 +10,7 @@ import { Loader2, HelpCircle, AlertCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { type RootState, useAppDispatch, useAppSelector } from "@/store"
-import { submitAnswer } from "@/app/store/slices/textQuizSlice"
+import { submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
 
 interface BlanksQuizProps {
   question: {
@@ -137,7 +137,7 @@ function BlanksQuizComponent({
           isCorrect: userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase(),
         }
 
-        await dispatch(submitAnswer(answer)).unwrap()
+        await dispatch(submitAnswerLocally(answer));
 
         // Call onQuestionComplete to move to the next question
         onQuestionComplete?.()

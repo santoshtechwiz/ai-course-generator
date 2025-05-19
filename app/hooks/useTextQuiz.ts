@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useSession } from 'next-auth/react';
-import { initializeQuiz, submitAnswer, submitTextQuizResults } from '../store/slices/textQuizSlice';
+import { initializeQuiz, submitAnswerLocally, submitTextQuizResults } from '../store/slices/textQuizSlice';
 
 export function useTextQuiz(type: 'blanks' | 'openended', slug: string) {
   const dispatch = useAppDispatch();
@@ -15,7 +15,7 @@ export function useTextQuiz(type: 'blanks' | 'openended', slug: string) {
 
   // Handle answer submission
   const handleAnswer = useCallback((answer: any) => {
-    dispatch(submitAnswer(answer));
+    dispatch(submitAnswerLocally(answer));
   }, [dispatch]);
 
   // Submit quiz results
@@ -32,7 +32,7 @@ export function useTextQuiz(type: 'blanks' | 'openended', slug: string) {
 
     await dispatch(submitTextQuizResults({
       answers,
-      quizId: quizState.quizData?.id,
+      quizId: quizState.quizData?.id || '',
       type,
       slug
     })).unwrap();
