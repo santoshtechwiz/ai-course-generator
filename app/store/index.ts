@@ -12,7 +12,7 @@ export const store = configureStore({
 });
 
 // Re-export the types and actions
-export type { TextQuizState } from './slices/textQuizSlice';
+export type { TextQuizState } from '@/app/types/slice-type';
 export {
   initializeQuiz,
   submitAnswer,

@@ -146,21 +146,6 @@ export interface AddOnPackage {
   features: string[]
 }
 
-export interface MultipleChoiceQuestion {
-  question: string
-  options: string[]
-  correctAnswer: string
-}
-export interface CodeChallenge {
-  quizId?: string | number
-  question: string
-  options: string[]
-  correctAnswer: string
-  codeSnippet?: string
-  language?: string
-  explanation?: string
-}
-
 // Import quiz-related types to avoid duplication
 import type {
   QuizListItem,
@@ -172,6 +157,20 @@ import type {
   Question,
   McqQuizProps,
   QuizType,
+  MultipleChoiceQuestion,
+  CodeChallenge,
+  BaseQuestion,
+  MCQQuestion,
+  CodeQuizQuestion,
+  BlankQuestion,
+  OpenEndedQuestion,
+  QuizQuestion,
+  UserAnswer,
+  QuizData,
+  QuizResult,
+  QuizHistoryItem,
+  QuizState,
+  QuizAnswerResult
 } from "./quiz-types"
 
 // Re-export quiz-related types for backward compatibility
@@ -185,4 +184,34 @@ export type {
   Question,
   McqQuizProps,
   QuizType,
+  MultipleChoiceQuestion,
+  CodeChallenge,
+  BaseQuestion,
+  MCQQuestion,
+  CodeQuizQuestion,
+  BlankQuestion,
+  OpenEndedQuestion,
+  QuizQuestion,
+  UserAnswer,
+  QuizData,
+  QuizResult,
+  QuizHistoryItem,
+  QuizState,
+  QuizAnswerResult
+}
+
+// Import user-related types
+import type { DashboardUser, UserStats, Course, CourseProgress, 
+  UserSubscription, Favorite, UserQuizAttempt, TopicPerformance } from "./user-types"
+
+// Re-export user-related types
+export type {
+  DashboardUser,
+  UserStats,
+  Course,
+  CourseProgress,
+  UserSubscription,
+  Favorite,
+  UserQuizAttempt,
+  TopicPerformance
 }

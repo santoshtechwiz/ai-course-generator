@@ -1,5 +1,5 @@
 import type React from "react"
-import { QuizQuestion, QuizData, QuizType } from "./quiz-types";
+import { QuizType } from "./quiz-types"
 
 // API response structure from code-quiz endpoint
 export interface CodeQuizApiResponse {
@@ -91,77 +91,7 @@ export interface CodingQuizProps {
 
 // Props for the CodeQuizResult component
 export interface CodeQuizResultProps {
-  title: string
-  onRestart: () => void
-  quizId: string
-  questions?: CodeQuizQuestion[]
-  answers?: Array<{
-    answer: string
-    timeSpent: number
-    isCorrect: boolean
-    userAnswer?: string
-    language?: string
-  } | null>
-  score?: number
-  isGuestMode?: boolean
-}
-
-// Props for the CodeQuizEditor component
-export interface CodeQuizEditorProps {
-  value: string
-  language: string
-  readOnly?: boolean
-  onChange?: (value: string | undefined) => void
-}
-
-// Props for the CodeQuizOptions component
-export interface CodeQuizOptionsProps {
-  options: string[]
-  selectedOption: string | null
-  onSelect: (option: string) => void
-  disabled?: boolean
-  renderOptionContent?: (option: string) => React.ReactNode
-}
-
-// Props for the CodeQuizContent component
-export interface CodeQuizContentProps {
-  quizData: {
-    id: string
-    title: string
-    slug: string
-    isPublic: boolean
-    isFavorite: boolean
-    userId?: string
-    ownerId?: string
-    difficulty?: string
-    questions: CodeQuizQuestion[]
-  }
-  slug: string
-  userId?: string
-  quizId: string
-  isPublic?: boolean
-  isFavorite?: boolean
-  ownerId?: string
-}
-
-export interface CodeQuizResultData {
-  quizId: string
-  slug: string
   score: number
-  totalQuestions: number
-  correctAnswers: number
-  incorrectAnswers: number
-  totalTimeSpent: number
-  formattedTimeSpent: string
-  completedAt: string,
-  answers: Array<{
-    questionId: string
-    question: string
-    userAnswer?: string
-    correctAnswer?: string
-    isCorrect: boolean
-    timeSpent: number
-    codeSnippet?: string
-    language?: string
-  }>
+  maxScore: number
+  onRetry?: () => void
 }

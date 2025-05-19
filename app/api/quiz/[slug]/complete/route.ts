@@ -1,10 +1,25 @@
 import { prisma } from "@/lib/db"
 import { getAuthSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
-import type { QuizType, QuizAnswer, BlanksQuizAnswer, CodeQuizAnswer } from "@/app/types/quiz-types"
+import type { QuizType, UserAnswer } from "@/app/types/quiz-types"
 
 // Improve the type definitions for quiz answers
-export type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer
+export interface QuizAnswer extends UserAnswer {
+  isCorrect: boolean;
+  timeSpent: number;
+}
+
+export interface BlanksQuizAnswer extends UserAnswer {
+  userAnswer: string | string[];
+  timeSpent: number;
+  isCorrect?: boolean;
+}
+
+export interface CodeQuizAnswer extends UserAnswer {
+  answer: string;
+  timeSpent: number;
+  isCorrect?: boolean;
+}
 
 // Create a properly typed interface for quiz submissions
 export interface QuizSubmission {

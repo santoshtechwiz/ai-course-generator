@@ -38,6 +38,24 @@ export interface OpenEndedQuestion extends BaseQuestion {
   modelAnswer?: string;
 }
 
+// Multiple choice question (legacy format)
+export interface MultipleChoiceQuestion {
+  question: string
+  options: string[]
+  correctAnswer: string
+}
+
+// Code challenge format
+export interface CodeChallenge {
+  quizId?: string | number
+  question: string
+  options: string[]
+  correctAnswer: string
+  codeSnippet?: string
+  language?: string
+  explanation?: string
+}
+
 // Union type for all question types
 export type QuizQuestion = MCQQuestion | CodeQuizQuestion | BlankQuestion | OpenEndedQuestion;
 
@@ -123,29 +141,74 @@ export interface QuizState {
   error?: string | null;
 }
 
+// Additional types for API responses and UI props
 export interface QuizAnswerResult {
-  questionId: string | number;
-  question: string;
-  answer: string;
-  userAnswer: string;
-  correctAnswer: string;
   isCorrect: boolean;
-  timeSpent: number;
-  similarity?: number;
-  hintsUsed?: boolean;
-  index: number;
+  correctAnswer: string;
+  explanation?: string;
+  similarityScore?: number;
 }
 
-export interface QuizResultProps {
-  result: {
-    quizId: string;
-    slug: string;
-    score: number;
-    totalQuestions: number;
-    correctAnswers: number;
-    totalTimeSpent: number;
-    formattedTimeSpent?: string;
-    completedAt: string;
-    answers: QuizAnswerResult[];
+// List item for quizzes
+export interface QuizListItem {
+  id: string;
+  title: string;
+  type: QuizType;
+  questionsCount: number;
+  lastAttempted?: string;
+  score?: number;
+  slug: string;
+  isPublic: boolean;
+}
+
+// Props for MCQ quiz component
+export interface McqQuizProps {
+  quizData: {
+    id: string;
+    title: string;
+    questions: MultipleChoiceQuestion[];
   };
+}
+
+// Query parameters interface
+export interface QueryParams {
+  [key: string]: string | string[] | undefined;
+}
+
+// Breadcrumb item
+export interface BreadcrumbItem {
+  name: string;
+  href: string;
+}
+
+// Quiz details page props
+export interface QuizDetailsPageProps {
+  params: {
+    slug: string;
+  };
+  searchParams?: {
+    [key: string]: string | string[] | undefined;
+  };
+}
+
+// Flashcard interface
+export interface FlashCard {
+  id: string;
+  front: string;
+  back: string;
+  userQuizId?: string | number;
+}
+
+// Question interface for backwards compatibility
+export interface Question {
+  id: string;
+  question: string;
+  answer: string;
+  options?: string[];
+  userQuizId?: number;
+  type?: string;
+  questionType?: string;
+  codeSnippet?: string;
+  language?: string;
+  [key: string]: any;
 }

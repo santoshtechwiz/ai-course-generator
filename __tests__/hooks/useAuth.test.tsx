@@ -1,8 +1,9 @@
 import { renderHook, act } from '@testing-library/react' // Updated import
-import { useAuth, _createMockUseAuth } from '../useAuth'
+
 import { useSession, signIn } from 'next-auth/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
+import { useAuth, _createMockUseAuth } from '@/hooks'
 
 // Mock next-auth
 jest.mock('next-auth/react', () => ({

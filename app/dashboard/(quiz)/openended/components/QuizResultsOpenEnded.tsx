@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAppSelector, useAppDispatch } from "@/store"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
-import { saveResults, completeQuiz } from "@/store/slices/textQuizSlice" 
+import { completeQuiz } from "@/app/store/slices/textQuizSlice"
 import type { QuizResult, QuizAnswer } from "@/types/quiz"
 
 interface QuizResultsOpenEndedProps {
@@ -17,7 +17,7 @@ interface QuizResultsOpenEndedProps {
 }
 
 interface AnswerWithSimilarity extends QuizAnswer {
-  similarity: number;
+  similarity: number
 }
 
 export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedProps) {
@@ -25,83 +25,38 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
   const dispatch = useAppDispatch()
   const [isRestarting, setIsRestarting] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const [resultsProcessed, setResultsProcessed] = useState(false)
+
   const quizState = useAppSelector((state) => state.textQuiz)
 
-  // Check for errors in result data and ensure state is properly saved
-  useEffect(() => {
-    try {
-      if (!result?.answers?.length || !result?.questions?.length) {
-        setHasError(true);
-        return;
-      }
-      
-      console.log('Quiz state in results:', {
-        status: quizState.status,
-        isCompleted: quizState.isCompleted,
-        resultsSaved: quizState.resultsSaved,
-        answersCount: quizState.answers.length,
-      });
-      
-      // Save results if they haven't been saved yet
-      if ((!quizState.resultsSaved || !quizState.isCompleted) && 
-          (quizState.status !== 'succeeded' && quizState.status !== 'completed')) {
-        
-        // Calculate the average score and save it
-        const answers = calculateAnswerScores(result.answers, result.questions);
-        const avgScore = calculateAverageScore(answers);
-        
-        // Dispatch both complete and save actions to ensure state is properly updated
-        dispatch(completeQuiz({
-          answers: result.answers,
-          completedAt: result.completedAt || new Date().toISOString(),
-        }));
-        
-        // Then save the results with the calculated score
-        setTimeout(() => {
-          dispatch(saveResults({ score: avgScore }));
-        }, 300);
-      }
-    } catch (error) {
-      console.error('Error initializing results:', error);
-      setHasError(true);
-    }
-  }, [result, quizState, dispatch])
+  // Calculate similarity scores
+  const calculateAnswerScores = useCallback(
+    (answers: QuizAnswer[], questions: any[]): AnswerWithSimilarity[] => {
+      return answers.map((answer, index) => {
+        try {
+          const question = questions[index] || {}
+          const similarity = getBestSimilarityScore(answer.answer || "", question.answer || "")
+          return { ...answer, similarity }
+        } catch {
+          return { ...answer, similarity: 0 }
+        }
+      })
+    },
+    []
+  )
 
-  // Handle restart quiz
-  const handleRestart = useCallback(() => {
-    setIsRestarting(true)
-    router.replace(`/dashboard/openended/${result.slug}?reset=true`)
-  }, [result.slug, router])
-
-  // Helper function to calculate similarity scores
-  const calculateAnswerScores = (answers: QuizAnswer[], questions: any[]): AnswerWithSimilarity[] => {
-    return answers.map((answer, index) => {
-      try {
-        const question = questions[index] || {}
-        const similarity = getBestSimilarityScore(
-          answer.answer || '',
-          question.answer || ''
-        )
-        return { ...answer, similarity }
-      } catch (error) {
-        console.warn('Error calculating similarity:', error)
-        return { ...answer, similarity: 0 }
-      }
-    })
-  }
-
-  // Helper function to calculate average score
-  const calculateAverageScore = (answerScores: AnswerWithSimilarity[]): number => {
-    const validScores = answerScores.filter(score => !isNaN(score.similarity))
+  const calculateAverageScore = useCallback((answerScores: AnswerWithSimilarity[]) => {
+    const validScores = answerScores.filter((score) => !isNaN(score.similarity))
     return validScores.length
-      ? Math.round(validScores.reduce((sum, answer) => sum + answer.similarity, 0) / validScores.length)
+      ? Math.round(validScores.reduce((sum, ans) => sum + ans.similarity, 0) / validScores.length)
       : 0
-  }
+  }, [])
 
-  // Calculate stats
   const stats = useMemo(() => {
     try {
-      if (!result.answers.length) {
+      const totalAnswers = result.answers?.length || 0
+
+      if (totalAnswers === 0) {
         return {
           totalTime: 0,
           averageTime: 0,
@@ -111,10 +66,10 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
         }
       }
 
-      const totalTime = result.answers.reduce((sum, answer) => sum + (answer.timeSpent || 0), 0)
-      const averageTime = result.answers.length ? Math.round(totalTime / result.answers.length) : 0
-      const completionRate = Math.round((result.answers.length / Math.max(1, result.totalQuestions)) * 100)
-      
+      const totalTime = result.answers.reduce((sum, a) => sum + (a.timeSpent || 0), 0)
+      const averageTime = totalAnswers ? Math.round(totalTime / totalAnswers) : 0
+      const completionRate = Math.round((totalAnswers / Math.max(1, result.totalQuestions)) * 100)
+
       const answers = calculateAnswerScores(result.answers, result.questions)
       const averageScore = calculateAverageScore(answers)
 
@@ -125,8 +80,8 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
         averageScore,
         answers,
       }
-    } catch (error) {
-      console.error('Error calculating stats:', error)
+    } catch (err) {
+      console.error("Error calculating stats", err)
       setHasError(true)
       return {
         totalTime: 0,
@@ -136,7 +91,41 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
         answers: [] as AnswerWithSimilarity[],
       }
     }
-  }, [result])
+  }, [result, calculateAnswerScores, calculateAverageScore])
+
+  useEffect(() => {
+    if (!result?.questions?.length) {
+      console.error("Missing questions in result:", result);
+      setHasError(true);
+      return;
+    }
+
+    if (!resultsProcessed) {
+      const answers = result.answers?.length
+        ? calculateAnswerScores(result.answers, result.questions)
+        : [];
+      const avgScore = answers.length ? calculateAverageScore(answers) : 0;
+
+      dispatch(
+        completeQuiz({
+          answers: result.answers || [],
+          completedAt: result.completedAt || new Date().toISOString(),
+          score: avgScore,
+          quizId: result.quizId || "",
+          title: result.title || "Open Ended Quiz",
+          questions: result.questions, // Store questions in state for future reference
+          slug: result.slug // Store slug for validation
+        })
+      );
+
+      setResultsProcessed(true);
+    }
+  }, [dispatch, result, resultsProcessed, calculateAnswerScores, calculateAverageScore])
+
+  const handleRestart = useCallback(() => {
+    setIsRestarting(true)
+    router.replace(`/dashboard/openended/${result.slug}?reset=true`)
+  }, [result.slug, router])
 
   if (hasError) {
     return (
@@ -154,11 +143,7 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Quiz Results</CardTitle>
         <p className="text-muted-foreground">
@@ -166,7 +151,7 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
         </p>
       </CardHeader>
 
-      {/* Stats Overview */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -185,7 +170,7 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
             <div className="flex items-center gap-2">
               <Clock className="text-primary h-5 w-5" />
               <div>
-                <p className="text-sm font-medium">Average Time per Question</p>
+                <p className="text-sm font-medium">Avg Time per Question</p>
                 <p className="text-2xl font-bold">{formatQuizTime(stats.averageTime)}</p>
               </div>
             </div>
@@ -217,11 +202,7 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
       {/* Actions */}
       <div className="flex justify-between">
         <Button onClick={() => router.push("/dashboard/quizzes")}>Return to Quizzes</Button>
-        <Button
-          onClick={handleRestart}
-          disabled={isRestarting}
-          variant="outline"
-        >
+        <Button onClick={handleRestart} disabled={isRestarting} variant="outline">
           <RefreshCw className="mr-2 h-4 w-4" />
           {isRestarting ? "Restarting..." : "Try Again"}
         </Button>

@@ -44,7 +44,7 @@ export default async function OpenEndedQuizPage({ params }: PageProps) {
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
   const quizData = await getQuiz<OpenEndedQuizData>(slug)
-
+console.log("Quiz Data:", quizData);
   if (!quizData) {
     notFound()
   }

@@ -2,13 +2,7 @@
 import prisma from "@/lib/db"
 // Add proper import for Metadata type
 import type { Metadata } from "next"
-
-export interface ProcessedQuestion {
-  id: string
-  question: string
-  answer: string
-  options: string[]
-}
+import type { ProcessedQuestion } from "@/app/types/quiz-types"
 
 export interface McqQuestionsResponse {
   id: string
@@ -18,8 +12,8 @@ export interface McqQuestionsResponse {
   isFavorite: boolean
   userId: string
   difficulty?: string
-
   questions: ProcessedQuestion[]
+  result?: any
 }
 
 export default async function getMcqQuestions(slug: string): Promise<McqQuestionsResponse> {

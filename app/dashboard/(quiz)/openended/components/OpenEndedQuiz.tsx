@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/tailwindUtils"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
-import { submitAnswer } from "@/app/store/slices/textQuizSlice"
+import { submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
 
 
 
@@ -103,7 +103,7 @@ function OpenEndedQuizQuestionComponent({
 
     try {
       dispatch(
-        submitAnswer({
+        submitAnswerLocally({
           questionId: question.id,
           question: question.question,
           answer: answer,
@@ -212,7 +212,7 @@ function OpenEndedQuizQuestionComponent({
                 transition={{ duration: 0.3 }}
               >
                 <Alert
-                  variant="danger"
+                  variant="default"
                   className="bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/30"
                 >
                   <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
