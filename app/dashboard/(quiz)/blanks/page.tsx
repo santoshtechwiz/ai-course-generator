@@ -94,7 +94,7 @@ const BlanksPage = async ({ params }: { params: Promise<{ slug: string }> }) => 
         title={result.title}
         description={`Test your coding knowledge on ${result.title} with fill in the blanks questions`}
         slug={slug}
-        quizType="fill-blanks"
+        quizType="blanks"
         questionCount={questionCount}
         estimatedTime={estimatedTime}
         breadcrumbItems={breadcrumbItems}

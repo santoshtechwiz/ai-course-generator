@@ -5,14 +5,27 @@ export interface BlanksQuizContentProps {
   quizId: string
 }
 
+export interface QuizData {
+  id: string | number;  // Allow both string and number
+  title: string;
+  questions: Array<{
+    id: string;
+    question: string;
+    answer?: string;
+    hints?: string[];
+  }>;
+  userId?: string;
+  type?: string;
+  slug?: string;
+}
+
 export interface BlanksQuizWrapperProps {
-  quizData?: any
-  slug: string
-  userId?: string
-  quizId?: string
+  quizData: QuizData;
+  slug: string;
+  userId?: string | null;
+  quizId?: string;
   isPublic?: boolean
   isFavorite?: boolean
-  ownerId?: string
 }
 
 export interface BlanksQuestion {
@@ -45,4 +58,30 @@ export interface BlanksQuizResult {
   formattedTimeSpent?: string
   completedAt: string
   answers: BlanksAnswer[]
+}
+
+export interface BlanksQuizProps {
+  question: {
+    id: string;
+    question: string;
+    answer?: string;
+    hints?: string[];
+  };
+  questionNumber: number;
+  totalQuestions: number;
+  isLastQuestion: boolean;
+  onQuestionComplete?: () => void;
+}
+
+// Add result types
+export interface BlanksQuizResultData {
+  answers: Array<{
+    questionId: string;
+    answer: string;
+    isCorrect: boolean;
+    timeSpent: number;
+  }>;
+  totalTimeSpent: number;
+  score: number;
+  completedAt: string;
 }

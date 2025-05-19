@@ -60,7 +60,7 @@ export function similarityScore(a: string, b: string): number {
 /**
  * Helper to get similarity result with metadata.
  */
-export function getSimilarityResult(userAnswer: string, correctAnswer: string) {
+export function getTextSimilarity(userAnswer: string, correctAnswer: string) {
   const similarity = similarityScore(userAnswer, correctAnswer);
 
   return {

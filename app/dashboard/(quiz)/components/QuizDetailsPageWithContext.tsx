@@ -31,7 +31,8 @@ import QuizActions from "./QuizActions"
 
 import { useQuiz } from "@/hooks/useQuizState"
 import { DIFFICULTY_STYLES, QUIZ_TYPE_STYLES } from "@/lib/constants/quiz-constants"
-import { QuizType } from "@/app/types/slice-type"
+import { QuizType } from "@/app/types/quiz-types"
+
 
 interface QuizDetailsPageProps {
   title: string

@@ -1,8 +1,8 @@
 import type { Question } from "@/lib/quiz-store"
 import type { PersistPartial } from "redux-persist/es/persistReducer"
+import { QuizType } from "./quiz-types"
 
-// Define the quiz types
-export type QuizType = "code" | "multiple-choice" | "text" | "mixed"
+
 
 // Define the animation states
 export type AnimationState = "idle" | "answering" | "completed"
@@ -110,3 +110,36 @@ export interface UseQuizReturn {
   requireAuthentication: (redirectUrl: string) => void
   restoreState: () => (() => void) | undefined
 }
+
+// Define the text quiz state
+export interface TextQuizState {
+  quizId: string
+  slug: string
+  title: string
+  quizType: QuizType | string
+  questions: Question[]
+  currentQuestionIndex: number
+  answers: Answer[]
+  timeSpent: number[]
+  isCompleted: boolean
+  score: number
+  requiresAuth: boolean
+  pendingAuthRequired: boolean
+  authCheckComplete: boolean
+  error: string | null
+  animationState: AnimationState
+  isSavingResults: boolean
+  resultsSaved: boolean
+  completedAt: string | null
+  startTime: number
+  savedState: {
+    answers: any[]
+    currentQuestionIndex: number
+    isCompleted: boolean
+    quizData: any
+  } | null
+  isLoading: boolean
+}
+
+// Define the text quiz state with persist partial
+export type PersistedTextQuizState = TextQuizState & PersistPartial
