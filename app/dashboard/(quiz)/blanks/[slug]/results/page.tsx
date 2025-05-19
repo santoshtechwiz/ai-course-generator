@@ -1,52 +1,105 @@
 "use client"
 
-import { use } from "react"
-import { useEffect } from "react"
+import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAppSelector } from "@/store"
+import { useAuth } from "@/hooks/useAuth"
+import { Card, CardContent } from "@/components/ui/card"
+import type { TextQuizState, QuizResult } from "@/types/quiz"
+import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
+import { LoadingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import BlankQuizResults from "../../components/BlankQuizResults"
 
-export default function BlanksResultsPage({ params }: { params: Promise<{ slug: string }> }) {
+interface PageProps {
+  params: Promise<{ slug: string }> | { slug: string }
+}
+
+export default function BlanksResultsPage({ params }: PageProps) {
+  const { slug } = use(params)
   const router = useRouter()
-  const resolvedParams = use(params)
-  const { slug } = resolvedParams
-  
-  const quizState = useAppSelector((state) => state.textQuiz)
+  const { isAuthenticated } = useAuth()
+  const quizState = useAppSelector((state) => state.textQuiz) as TextQuizState
 
-  // If no quiz state or not completed, redirect back to quiz
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
-    if (!quizState.quizData || !quizState.isCompleted) {
-      router.replace(`/dashboard/blanks/${slug}`)
-    }
-  }, [quizState, router, slug])
+    const timer = setTimeout(() => {
+      console.log("Validating quiz state:", quizState)
 
-  // Show loading while checking state
-  if (!quizState.quizData || !quizState.isCompleted) {
+      // Check for required fields
+      const hasQuizId = Boolean(quizState?.quizId)
+      const hasQuestions = Boolean(quizState?.questions && Array.isArray(quizState.questions) && quizState.questions.length > 0)
+
+      if (!hasQuizId || !hasQuestions) {
+        console.error("Invalid quiz state:", { hasQuizId, hasQuestions, quizState })
+        setError("Quiz data not found or invalid.")
+        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
+        return
+      }
+
+      // Validate slug if available
+      if (quizState.slug && quizState.slug !== slug) {
+        console.error("Quiz slug mismatch:", { stateSlug: quizState.slug, pageSlug: slug })
+        setError("Quiz slug does not match.")
+        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
+        return
+      }
+
+      setIsLoading(false)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [quizState, slug, router])
+
+  if (isLoading) {
+    return <LoadingDisplay message="Loading quiz results..." />
+  }
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-center">
-          <div className="h-8 w-8 mb-4 mx-auto rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-          <p className="text-muted-foreground">Loading results...</p>
-        </div>
-      </div>
+      <ErrorDisplay
+        error={error}
+        onRetry={() => router.refresh()}
+        onReturn={() => router.push("/dashboard/quizzes")}
+      />
     )
   }
 
-  // Format result data for the results component
-  const result = {
-    quizId: quizState.quizData.id,
-    slug: slug,
+  if (!isAuthenticated) {
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        quizType="blanks"
+        message="Sign in to save your results and track your progress"
+        previewData={{
+          score: quizState.answers.filter(a => a.isCorrect).length,
+          maxScore: quizState.questions?.length || 0,
+          percentage: Math.round((quizState.answers.filter(a => a.isCorrect).length / Math.max(1, quizState.questions?.length || 0)) * 100),
+        }}
+        returnPath={`/dashboard/blanks/${slug}/results`}
+      />
+    )
+  }
+
+  const quizResult: QuizResult = {
+    quizId: quizState.quizId!,
+    slug,
+    answers: quizState.answers || [], // Ensure answers is never undefined
+    questions: quizState.questions || [], // Use questions from state
+    totalQuestions: quizState.questions?.length || 0,
+    correctAnswers: quizState.answers.filter(a => a.isCorrect).length || 0,
     score: quizState.score,
-    totalQuestions: quizState.quizData.questions.length,
-    correctAnswers: quizState.answers.filter(a => a.isCorrect).length,
-    totalTimeSpent: quizState.answers.reduce((total, a) => total + (a.timeSpent || 0), 0),
-    completedAt: new Date().toISOString(),
-    answers: quizState.answers
+    completedAt: quizState.completedAt || new Date().toISOString(),
+    title: quizState.title || quizState.quizData?.title || "Fill in the Blanks Quiz",
   }
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8">
-      <BlankQuizResults result={result} />
+    <div className="container mx-auto max-w-5xl py-6">
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <BlankQuizResults result={quizResult} />
+        </CardContent>
+      </Card>
     </div>
   )
 }
