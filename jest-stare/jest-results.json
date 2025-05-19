@@ -26,7 +26,7 @@
     "unmatched": 0,
     "updated": 0
   },
-  "startTime": 1747654218245,
+  "startTime": 1747654843754,
   "success": false,
   "testResults": [
     {
@@ -37,10 +37,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747654220823,
-        "runtime": 1013,
-        "slow": false,
-        "start": 1747654219810
+        "end": 1747654855521,
+        "runtime": 6210,
+        "slow": true,
+        "start": 1747654849311
       },
       "skipped": false,
       "snapshot": {
@@ -52,112 +52,119 @@
         "unmatched": 0,
         "updated": 0
       },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\slices\\textQuizSlice.test.ts",
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx",
       "testResults": [
         {
           "ancestorTitles": [
-            "textQuizSlice"
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
           ],
-          "duration": 7,
+          "duration": 923,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "textQuizSlice should initialize quiz correctly",
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete quiz and see immediate results",
           "invocations": 1,
           "location": null,
-          "numPassingAsserts": 5,
+          "numPassingAsserts": 6,
           "retryReasons": [],
           "status": "passed",
-          "title": "should initialize quiz correctly"
+          "title": "should allow user to complete quiz and see immediate results"
         },
         {
           "ancestorTitles": [
-            "textQuizSlice"
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
           ],
-          "duration": 1,
+          "duration": 551,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "textQuizSlice should submit an answer locally",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should submit an answer locally"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should replace existing answer when submitting for same question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should replace existing answer when submitting for same question"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 1,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should complete quiz properly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should complete quiz properly"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 1,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should update current question index",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should update current question index"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 1,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should save and restore quiz state",
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should handle quiz with empty answers",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 2,
           "retryReasons": [],
           "status": "passed",
-          "title": "should save and restore quiz state"
+          "title": "should handle quiz with empty answers"
         },
         {
           "ancestorTitles": [
-            "textQuizSlice"
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
           ],
-          "duration": 1,
+          "duration": 575,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "textQuizSlice should clear saved state",
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should properly reset quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 861,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow unauthenticated users to take the quiz"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should clear saved state"
+          "title": "should show sign-in prompt on results page for unauthenticated users"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz data loading errors"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 578,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle network errors during quiz submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle network errors during quiz submission"
         }
       ],
       "failureMessage": null
