@@ -1,7 +1,8 @@
 "use server"
 
 import { prisma } from "@/lib/db"
-import { OpenEndedQuestion, BaseQuestion, QuizType } from "../types/quiz-types"
+import type { OpenEndedQuizData } from "@/types/quiz"
+import { OpenEndedQuestion, QuizType } from "../types/quiz-types"
 
 // Define a proper interface that represents the quiz data returned by this action
 interface QuizResult {
@@ -14,81 +15,13 @@ interface QuizResult {
   slug: string
 }
 
-export async function getQuiz(slug: string): Promise<QuizResult | null> {
+export async function getQuiz<T = OpenEndedQuizData>(slug: string): Promise<T | null> {
   try {
-    if (!slug) {
-      return null
-    }
-
-    // Fetch quiz metadata
-    const quiz = await prisma.userQuiz.findFirst({
-      where: { slug },
-      select: { isPublic: true, userId: true },
-    })
-
-    if (!quiz) {
-      return null
-    }
-
-    // Fetch full quiz details
-    const result = await prisma.userQuiz.findFirst({
-      where: {
-        slug,
-        OR: [{ isPublic: true }, { userId: quiz.userId }],
-      },
-      select: {
-        id: true,
-        title: true,
-        userId: true,
-        questions: {
-          select: {
-            id: true,
-            question: true,
-            answer: true,
-            openEndedQuestion: {
-              select: {
-                hints: true,
-                difficulty: true,
-                tags: true,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (!result) {
-      return null
-    }
-
-    // Transform questions
-    const transformedQuestions: OpenEndedQuestion[] = result.questions.map((question) => ({
-      id: question.id.toString(),
-      type: "openended" as const,
-      question: question.question,
-      explanation: undefined, // Optional in BaseQuestion
-      points: null,
-      answer: question.answer,
-      questions: question.openEndedQuestion
-        ? {
-            hints: question.openEndedQuestion.hints.split("|"),
-            difficulty: question.openEndedQuestion.difficulty,
-            tags: question.openEndedQuestion.tags.split("|"),
-          }
-        : { hints: [], difficulty: "", tags: [] },
-    }))
-
-    // Return structured response
-    return {
-      id: result.id,
-      userId: result.userId,
-      title: result.title,
-      type: "openended", // Set the appropriate quiz type
-      questions: transformedQuestions,
-      slug: slug,
-    }
+    const response = await fetch(`${process.env.API_URL||'http://localhost:3000'}/api/quizzes/openended/${slug}`)
+    if (!response.ok) return null
+    return response.json()
   } catch (error) {
-    console.error("Error fetching quiz:", error)
+    console.error('Error fetching quiz:', error)
     return null
   }
 }

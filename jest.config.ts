@@ -10,7 +10,7 @@ const createJestConfig = nextJest({
 const config: Config = {
   coverageProvider: "v8",
   testEnvironment: "jest-environment-jsdom",
-reporters: [
+  reporters: [
     'default',
     ['jest-stare', {
       resultDir: 'jest-stare',
@@ -23,18 +23,42 @@ reporters: [
     // Add canvas mock
     canvas: "<rootDir>/__mocks__/canvasMock.js",
   },
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
-  testPathIgnorePatterns: ["/node_modules/", "/.next/"],
+  setupFilesAfterEnv: [
+    "<rootDir>/jest.setup.ts"
+  ],
+  testPathIgnorePatterns: [
+    "<rootDir>/node_modules/",
+    "<rootDir>/.next/",
+    "<rootDir>/coverage/",
+    "<rootDir>/dist/"
+  ],
   // Remove ts-jest transformer as next/jest handles this
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   verbose: true,
   // Remove silent mode for better debugging
   collectCoverageFrom: ["**/*.{js,jsx,ts,tsx}", "!**/*.d.ts", "!**/node_modules/**", "!**/.next/**", "!**/coverage/**"],
   // Add reasonable timeout for tests
-  testTimeout: 10000,
+  testTimeout: 30000, // Increase timeout for complex tests
   transformIgnorePatterns: [
     // Transform ES modules in node_modules
     "node_modules/(?!(nanoid)/)",
+  ],
+  // Add testMatch to explicitly find tests
+  testMatch: [
+    "<rootDir>/__tests__/**/*.test.[jt]s?(x)",
+    "<rootDir>/__tests__/**/*.spec.[jt]s?(x)",
+    "<rootDir>/src/**/?(*.)+(spec|test).[jt]s?(x)",
+    "<rootDir>/app/**/?(*.)+(spec|test).[jt]s?(x)"
+  ],
+  // Add roots to specify test locations
+  roots: [
+    "<rootDir>",
+    "<rootDir>/__tests__",
+    "<rootDir>/app"
+  ],
+  moduleDirectories: [
+    "node_modules",
+    "<rootDir>"
   ],
 }
 

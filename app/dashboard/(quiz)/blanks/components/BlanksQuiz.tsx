@@ -9,22 +9,21 @@ import { Input } from "@/components/ui/input"
 import { Loader2, HelpCircle, AlertCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { RootState, useAppDispatch, useAppSelector } from "@/store"
+import { type RootState, useAppDispatch, useAppSelector } from "@/store"
 import { submitAnswer } from "@/app/store/slices/textQuizSlice"
-
 
 interface BlanksQuizProps {
   question: {
-    id: string;
-    question: string;
-    answer?: string;
-    hints?: string[];
-  };
-  questionNumber: number;
-  totalQuestions: number;
-  isLastQuestion: boolean;
-  onQuestionComplete?: () => void;
-  [key: string]: any;
+    id: string
+    question: string
+    answer?: string
+    hints?: string[]
+  }
+  questionNumber: number
+  totalQuestions: number
+  isLastQuestion: boolean
+  onQuestionComplete?: () => void
+  [key: string]: any
 }
 
 function BlanksQuizComponent({
@@ -42,6 +41,7 @@ function BlanksQuizComponent({
   const [showHint, setShowHint] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   const dispatch = useAppDispatch()
   const quizState = useAppSelector((state: RootState) => state.textQuiz)
@@ -120,10 +120,10 @@ function BlanksQuizComponent({
   // Handle form submission
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (isSubmitting || !userAnswer.trim()) return;
+      e.preventDefault()
+      if (isSubmitting || !userAnswer.trim()) return
 
-      setIsSubmitting(true);
+      setIsSubmitting(true)
 
       try {
         const answer = {
@@ -134,20 +134,22 @@ function BlanksQuizComponent({
           timeSpent: Math.floor((Date.now() - startTime) / 1000),
           hintsUsed,
           index: questionNumber - 1,
-          isCorrect: userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
-        };
+          isCorrect: userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase(),
+        }
 
-        await dispatch(submitAnswer(answer)).unwrap();
-        onQuestionComplete?.();
-        setUserAnswer("");
-        setShowHint(false);
+        await dispatch(submitAnswer(answer)).unwrap()
+
+        // Call onQuestionComplete to move to the next question
+        onQuestionComplete?.()
       } catch (error) {
-        console.error("Error submitting answer:", error);
+        console.error("Error submitting answer:", error)
       } finally {
-        setIsSubmitting(false);
+        setIsSubmitting(false)
+        setUserAnswer("")
+        setShowHint(false)
       }
     },
-    [userAnswer, dispatch, question, startTime, hintsUsed, correctAnswer, questionNumber, onQuestionComplete]
+    [userAnswer, dispatch, question, startTime, hintsUsed, correctAnswer, questionNumber, onQuestionComplete],
   )
 
   // Handle hint display
@@ -155,6 +157,27 @@ function BlanksQuizComponent({
     setShowHint(true)
     setHintsUsed(true)
   }, [])
+
+  // Add this useEffect for keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Submit on Enter if the answer is valid
+      if (e.key === "Enter" && userAnswer.trim() && !isSubmitting && !e.shiftKey) {
+        handleSubmit(new Event("submit") as any)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [handleSubmit, userAnswer, isSubmitting])
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return null // Or a loading indicator
+  }
 
   // If no question is provided, show a loading state
   if (!question) {
@@ -191,11 +214,11 @@ function BlanksQuizComponent({
             <h3 className="text-lg font-medium mb-4" data-testid="question-text">
               {formattedQuestion}
             </h3>
-            <form 
-              onSubmit={handleSubmit} 
-              id="blanks-form" 
+            <form
+              onSubmit={handleSubmit}
+              id="blanks-form"
               className="space-y-4"
-              data-testid="blanks-form"  // Add this test ID
+              data-testid="blanks-form" // Add this test ID
             >
               <div className="space-y-2">
                 <label htmlFor="answer" className="text-sm font-medium">
@@ -258,10 +281,12 @@ function BlanksQuizComponent({
             form="blanks-form"
             disabled={!userAnswer.trim() || isSubmitting}
             data-testid="submit-button"
+            className="transition-all duration-300"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isLastQuestion ? "Finishing Quiz..." : "Submitting..."}
               </>
             ) : isLastQuestion ? (
               "Finish Quiz"
