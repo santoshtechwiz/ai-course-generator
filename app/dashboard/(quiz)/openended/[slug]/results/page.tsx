@@ -76,6 +76,7 @@ export default function OpenEndedQuizResultsPage({ params }: PageProps) {
           maxScore: quizState.questions?.length || 0,
           percentage: Math.round((quizState.answers.length / Math.max(1, quizState.questions?.length || 0)) * 100),
         }}
+        returnPath={`/dashboard/openended/${slug}/results`}
       />
     )
   }
@@ -87,14 +88,16 @@ export default function OpenEndedQuizResultsPage({ params }: PageProps) {
     questions: quizState.questions || [], // Use questions from state
     totalQuestions: quizState.questions?.length || 0,
     completedAt: quizState.completedAt || new Date().toISOString(),
-    title: quizState.title,
+    title: quizState.title || quizState.quizData?.title || "Open Ended Quiz",
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <QuizResultsOpenEnded result={quizResult} />
-      </CardContent>
-    </Card>
+    <div className="container mx-auto max-w-5xl py-6">
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <QuizResultsOpenEnded result={quizResult} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

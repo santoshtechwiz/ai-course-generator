@@ -9,27 +9,110 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useAppSelector } from "@/store"
 import { selectSubscription } from "@/store/slices/subscription-slice"
-import type { ButtonProps } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/tailwindUtils"
+import { Loader2 } from "lucide-react"
 
-interface PlanAwareButtonProps extends ButtonProps {
-  requiredPlan?: "FREE" | "BASIC" | "PRO" | "ULTIMATE"
-  fallbackHref?: string
-  onPlanRequired?: () => void
-  children: React.ReactNode
+interface CustomButtonStates {
+  default?: {
+    label?: string
+    tooltip?: string
+  }
+  notEnabled?: {
+    label?: string
+    tooltip?: string
+  }
+  noCredits?: {
+    label?: string
+    tooltip?: string
+  }
+  notLoggedIn?: {
+    label?: string
+    tooltip?: string
+  }
+}
+
+interface PlanAwareButtonProps {
+  label: string
+  onClick: () => void
+  isLoggedIn: boolean
+  isLoading?: boolean
+  isEnabled?: boolean
+  hasCredits?: boolean
+  loadingLabel?: string
+  className?: string
+  customStates?: CustomButtonStates
 }
 
 export default function PlanAwareButton({
-  requiredPlan = "FREE",
-  fallbackHref = "/dashboard/subscription",
-  onPlanRequired,
-  children,
-  ...props
+  label,
+  onClick,
+  isLoggedIn,
+  isLoading = false,
+  isEnabled = true,
+  hasCredits = true,
+  loadingLabel = "Processing...",
+  className = "",
+  customStates,
 }: PlanAwareButtonProps) {
   const { data: session } = useSession()
   const subscription = useAppSelector(selectSubscription)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingState, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
+
+  // Extract the button states based on conditions
+  const getButtonState = () => {
+    if (isLoading) {
+      return {
+        label: loadingLabel,
+        tooltip: "Please wait while we process your request",
+        disabled: true,
+        onClick: () => {},
+      }
+    }
+
+    if (!isLoggedIn) {
+      const notLoggedInState = customStates?.notLoggedIn ?? {}
+      return {
+        label: notLoggedInState.label ?? "Sign in to continue",
+        tooltip: notLoggedInState.tooltip ?? "You need to be signed in to use this feature",
+        disabled: false,
+        onClick: () => router.push("/auth/signin?callbackUrl=/dashboard"),
+      }
+    }
+
+    if (!isEnabled) {
+      const notEnabledState = customStates?.notEnabled ?? {}
+      return {
+        label: notEnabledState.label ?? "Not available",
+        tooltip: notEnabledState.tooltip ?? "This option is not available right now",
+        disabled: true,
+        onClick: () => {},
+      }
+    }
+
+    if (!hasCredits) {
+      const noCreditsState = customStates?.noCredits ?? {}
+      return {
+        label: noCreditsState.label ?? "Upgrade plan",
+        tooltip: noCreditsState.tooltip ?? "You need more credits to use this feature",
+        disabled: false,
+        onClick: () => router.push("/dashboard/subscription"),
+      }
+    }
+
+    // Default state when everything is OK
+    const defaultState = customStates?.default ?? {}
+    return {
+      label: defaultState.label ?? label,
+      tooltip: defaultState.tooltip ?? "Click to proceed",
+      disabled: false,
+      onClick,
+    }
+  }
+
+  const state = getButtonState()
 
   // Function to check if the user's plan meets the requirements
   const meetsRequirement = () => {
@@ -102,8 +185,26 @@ export default function PlanAwareButton({
   }
 
   return (
-    <Button {...props} onClick={handleClick} disabled={isLoading || props.disabled}>
-      {children}
-    </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={state.onClick}
+            disabled={state.disabled}
+            className={cn(
+              "relative min-w-[120px] transition-all duration-200",
+              isLoadingState && "opacity-80 cursor-not-allowed",
+              className
+            )}
+          >
+            {isLoadingState && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {state.label}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{state.tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

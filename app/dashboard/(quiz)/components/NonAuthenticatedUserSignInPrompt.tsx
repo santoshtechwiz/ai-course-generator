@@ -12,6 +12,8 @@ interface NonAuthenticatedUserSignInPromptProps {
   previewData?: any
   message?: string
   'data-testid'?: string
+  // Add returnPath to specify where to return after auth
+  returnPath?: string
 }
 
 export default function NonAuthenticatedUserSignInPrompt({
@@ -20,7 +22,8 @@ export default function NonAuthenticatedUserSignInPrompt({
   showSaveMessage = true,
   previewData,
   message,
-  'data-testid': testId = 'non-authenticated-prompt'
+  'data-testid': testId = 'non-authenticated-prompt',
+  returnPath
 }: NonAuthenticatedUserSignInPromptProps) {
   const router = useRouter()
 
@@ -31,13 +34,32 @@ export default function NonAuthenticatedUserSignInPrompt({
       return
     }
     
+    // Save the current path to localStorage for returning after auth
+    if (typeof window !== 'undefined') {
+      try {
+        // Store the state we want to return to
+        localStorage.setItem('auth_return_state', JSON.stringify({
+          quizType,
+          path: returnPath || `/dashboard/${quizType}`,
+          timestamp: Date.now()
+        }));
+      } catch (err) {
+        console.error("Failed to save return state:", err);
+      }
+    }
+    
+    // Determine the callback URL
+    const callbackUrl = returnPath 
+      ? encodeURIComponent(returnPath)
+      : encodeURIComponent(`/dashboard/${quizType}`);
+    
     // Default routing behavior
     try {
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}`)}`);
+      router.push(`/auth/signin?callbackUrl=${callbackUrl}`);
     } catch (err) {
       console.error("Error during sign in:", err);
       // Fallback to basic redirect
-      window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}`)}`;
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
     }
   }
 
