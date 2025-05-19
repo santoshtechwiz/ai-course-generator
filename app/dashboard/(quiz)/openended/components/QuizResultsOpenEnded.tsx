@@ -3,638 +3,228 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { CheckCircle2, Clock, RefreshCw, Share2, MessageSquare, Zap, AlertTriangle } from "lucide-react"
+import { CheckCircle2, Clock, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
-import { submitQuizResults } from "@/store/slices/quizSlice"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { CircularProgress } from "@/components/ui/circular-progress"
-import { StatCard } from "@/components/ui/stat-card"
-import { ResultCard } from "@/components/ui/result-card"
-import { QuizResultHeader } from "@/components/ui/quiz-result-header"
-import { PerformanceChart } from "@/components/ui/performance-chart"
-
-// Add the import for getBestSimilarityScore at the top of the file
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useAppSelector, useAppDispatch } from "@/store"
+import { formatQuizTime } from "@/lib/utils/quiz-utils"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
-import { useResponsive } from "@/hooks"
+import { saveResults, completeQuiz } from "@/store/slices/textQuizSlice" 
+import type { QuizResult, QuizAnswer } from "@/types/quiz"
 
 interface QuizResultsOpenEndedProps {
-  result?: {
-    quizId?: string
-    slug?: string
-    title?: string
-    answers?: any[]
-    questions?: any[]
-    totalQuestions?: number
-    startTime?: number
-    score?: number
-    totalTimeSpent?: number
-    completedAt?: string
-  }
-  onRestart?: () => void
-  onSignIn?: () => void
-  [key: string]: any
+  result: QuizResult
 }
 
-export default function QuizResultsOpenEnded({ result, onRestart, onSignIn, ...props }: QuizResultsOpenEndedProps) {
+interface AnswerWithSimilarity extends QuizAnswer {
+  similarity: number;
+}
+
+export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedProps) {
   const router = useRouter()
-  const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const windowSize = useResponsive()
-
-  // Get state from Redux
-  const { isAuthenticated } = useAppSelector((state) => state.auth)
-  const quizState = useAppSelector((state) => state.quiz)
-
-  // Use props if provided, otherwise use Redux state
-  const answers = useMemo(() => result?.answers || quizState.answers || [], [result?.answers, quizState.answers])
-  const questions = useMemo(
-    () => result?.questions || quizState.questions || [],
-    [result?.questions, quizState.questions],
-  )
-  const quizId = result?.quizId || quizState.quizId
-  const title = result?.title || quizState.title
-  const slug = result?.slug || quizState.slug
-  const totalQuestions = result?.totalQuestions || questions.length
-  const score = result?.score || quizState.score || 100 // Open-ended quizzes typically don't have a score
-  const startTime = result?.startTime || quizState.startTime
-  const totalTimeSpent = result?.totalTimeSpent || 0
-  const completedAt = result?.completedAt || quizState.completedAt || new Date().toISOString()
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [activeTab, setActiveTab] = useState("summary")
   const [isRestarting, setIsRestarting] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
+  const [hasError, setHasError] = useState(false)
+  const quizState = useAppSelector((state) => state.textQuiz)
 
-  // Show confetti for high completion rates
+  // Check for errors in result data and ensure state is properly saved
   useEffect(() => {
-    if (answers.length >= totalQuestions * 0.8) {
-      const timer = setTimeout(() => {
-        setShowConfetti(true)
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [answers.length, totalQuestions])
-
-  // Calculate performance metrics
-  const stats = useMemo(() => {
-    // Ensure we have valid answers array
-    const validAnswers = Array.isArray(answers) ? answers.filter(Boolean) : []
-
-    // Calculate total time spent from answers or use provided totalTimeSpent
-    const calculatedTotalTimeSpent =
-      totalTimeSpent || validAnswers.reduce((total, answer) => total + (answer?.timeSpent || 0), 0)
-
-    // Calculate average time per question
-    const averageTimePerQuestion =
-      validAnswers.length > 0 ? Math.round(calculatedTotalTimeSpent / validAnswers.length) : 0
-
-    // Calculate total elapsed time
-    const endTime = Date.now()
-    const totalElapsedTime = startTime ? Math.floor((endTime - startTime) / 1000) : calculatedTotalTimeSpent
-
-    // Find fastest and slowest answers
-    let fastestAnswer = { timeSpent: Number.POSITIVE_INFINITY, index: -1 }
-    let slowestAnswer = { timeSpent: -1, index: -1 }
-    let longestAnswer = { length: -1, index: -1 }
-    let shortestAnswer = { length: Number.POSITIVE_INFINITY, index: -1 }
-
-    validAnswers.forEach((answer, index) => {
-      const answerLength = answer?.answer?.length || 0
-
-      if (answer.timeSpent < fastestAnswer.timeSpent) {
-        fastestAnswer = { timeSpent: answer.timeSpent, index }
-      }
-      if (answer.timeSpent > slowestAnswer.timeSpent) {
-        slowestAnswer = { timeSpent: answer.timeSpent, index }
-      }
-      if (answerLength > longestAnswer.length) {
-        longestAnswer = { length: answerLength, index }
-      }
-      if (answerLength < shortestAnswer.length && answerLength > 0) {
-        shortestAnswer = { length: answerLength, index }
-      }
-    })
-
-    // Calculate completion percentage
-    const completionPercentage = Math.round((validAnswers.length / totalQuestions) * 100)
-
-    // Calculate average answer length
-    const avgAnswerLength =
-      validAnswers.reduce((sum, answer) => sum + (answer?.answer?.length || 0), 0) / Math.max(1, validAnswers.length)
-
-    return {
-      totalTimeSpent: calculatedTotalTimeSpent,
-      averageTimePerQuestion,
-      totalElapsedTime,
-      answeredQuestions: validAnswers.length,
-      completionPercentage,
-      fastestAnswer,
-      slowestAnswer,
-      longestAnswer,
-      shortestAnswer,
-      avgAnswerLength,
-      chartData: [
-        { name: "Completion", value: completionPercentage },
-        { name: "Detail Level", value: Math.min(100, Math.max(0, avgAnswerLength / 10)) },
-        { name: "Time Efficiency", value: Math.min(100, Math.max(0, 100 - averageTimePerQuestion / 20)) },
-      ],
-    }
-  }, [answers, startTime, totalTimeSpent, totalQuestions])
-
-  // Process answers to add similarity scores if not already present
-  const processedAnswers = useMemo(() => {
-    return answers.map((answer, index) => {
-      if (answer && !answer.similarity && answer.answer && questions[index]?.answer) {
-        // Import and use the text similarity function
-        const similarity = getBestSimilarityScore(answer.answer, questions[index].answer)
-        return { ...answer, similarity }
-      }
-      return answer
-    })
-  }, [answers, questions])
-
-  // Format time function
-  const formatTime = useCallback((seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`
-  }, [])
-
-  // Get feedback message based on completion
-  const feedbackMessage = useMemo(() => {
-    const completion = stats.completionPercentage
-    if (completion >= 90) return "Excellent work! You've completed almost all questions with thoughtful responses."
-    if (completion >= 80) return "Great job! Your responses show good understanding of the material."
-    if (completion >= 70) return "Good work! You've provided answers to most of the questions."
-    if (completion >= 50) return "You've completed half of the quiz. Try to answer more questions next time."
-    return "You've made a start. Continue practicing and try to answer more questions next time."
-  }, [stats.completionPercentage])
-
-  // Save results if authenticated
-  useEffect(() => {
-    if (isAuthenticated && !quizState.resultsSaved && !isSubmitting && answers.length > 0) {
-      handleSaveResults()
-    }
-  }, [isAuthenticated, quizState.resultsSaved, answers.length])
-
-  // Handle save results
-  const handleSaveResults = useCallback(async () => {
-    if (isSubmitting || quizState.resultsSaved || !isAuthenticated) return
-
-    setIsSubmitting(true)
-
     try {
-      await dispatch(
-        submitQuizResults({
-          quizId,
-          slug,
-          quizType: "openended",
-          answers: processedAnswers,
-          score: 100, // Open-ended quizzes don't have a specific score
-          totalTime: stats.totalTimeSpent,
-          totalQuestions,
-        }),
-      ).unwrap()
-
-      toast({
-        title: "Results saved",
-        description: "Your quiz results have been saved successfully.",
-      })
+      if (!result?.answers?.length || !result?.questions?.length) {
+        setHasError(true);
+        return;
+      }
+      
+      console.log('Quiz state in results:', {
+        status: quizState.status,
+        isCompleted: quizState.isCompleted,
+        resultsSaved: quizState.resultsSaved,
+        answersCount: quizState.answers.length,
+      });
+      
+      // Save results if they haven't been saved yet
+      if ((!quizState.resultsSaved || !quizState.isCompleted) && 
+          (quizState.status !== 'succeeded' && quizState.status !== 'completed')) {
+        
+        // Calculate the average score and save it
+        const answers = calculateAnswerScores(result.answers, result.questions);
+        const avgScore = calculateAverageScore(answers);
+        
+        // Dispatch both complete and save actions to ensure state is properly updated
+        dispatch(completeQuiz({
+          answers: result.answers,
+          completedAt: result.completedAt || new Date().toISOString(),
+        }));
+        
+        // Then save the results with the calculated score
+        setTimeout(() => {
+          dispatch(saveResults({ score: avgScore }));
+        }, 300);
+      }
     } catch (error) {
-      console.error("Failed to save results:", error)
-      toast({
-        title: "Error saving results",
-        description: "There was a problem saving your results. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
+      console.error('Error initializing results:', error);
+      setHasError(true);
     }
-  }, [
-    isSubmitting,
-    quizState.resultsSaved,
-    isAuthenticated,
-    dispatch,
-    quizId,
-    slug,
-    processedAnswers,
-    stats,
-    totalQuestions,
-    toast,
-  ])
+  }, [result, quizState, dispatch])
 
-  // Handle restart
+  // Handle restart quiz
   const handleRestart = useCallback(() => {
-    if (isRestarting) return // Prevent multiple clicks
-
     setIsRestarting(true)
+    router.replace(`/dashboard/openended/${result.slug}?reset=true`)
+  }, [result.slug, router])
 
-    if (onRestart) {
-      onRestart()
-
-      // Reset the restarting state after a delay
-      setTimeout(() => {
-        setIsRestarting(false)
-      }, 3000)
-    } else {
-      // Add a timestamp parameter to force a fresh load
-      const timestamp = new Date().getTime()
-      const url = `/dashboard/openended/${slug}?reset=true&t=${timestamp}`
-
-      // Set a timeout to reset loading state if navigation takes too long
-      const timeoutId = setTimeout(() => {
-        setIsRestarting(false)
-      }, 3000)
-
-      // Navigate to the quiz page with reset parameters
-      router.push(url)
-
-      return () => clearTimeout(timeoutId)
-    }
-  }, [onRestart, router, slug, isRestarting])
-
-  // Handle sign in
-  const handleSignIn = useCallback(() => {
-    if (onSignIn) {
-      onSignIn()
-    }
-  }, [onSignIn])
-
-  // Handle export
-  const handleExport = useCallback(() => {
-    try {
-      const exportData = {
-        title,
-        slug,
-        completedAt,
-        totalQuestions,
-        answeredQuestions: stats.answeredQuestions,
-        totalTimeSpent: stats.totalTimeSpent,
-        answers: processedAnswers.map((answer, index) => ({
-          question: questions[index]?.question || `Question ${index + 1}`,
-          answer: answer?.answer || "",
-          timeSpent: answer?.timeSpent || 0,
-          similarity: answer?.similarity,
-        })),
+  // Helper function to calculate similarity scores
+  const calculateAnswerScores = (answers: QuizAnswer[], questions: any[]): AnswerWithSimilarity[] => {
+    return answers.map((answer, index) => {
+      try {
+        const question = questions[index] || {}
+        const similarity = getBestSimilarityScore(
+          answer.answer || '',
+          question.answer || ''
+        )
+        return { ...answer, similarity }
+      } catch (error) {
+        console.warn('Error calculating similarity:', error)
+        return { ...answer, similarity: 0 }
       }
-
-      const dataStr = JSON.stringify(exportData, null, 2)
-      const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`
-
-      const exportFileDefaultName = `${slug || "openended"}-quiz-results.json`
-
-      const linkElement = document.createElement("a")
-      linkElement.setAttribute("href", dataUri)
-      linkElement.setAttribute("download", exportFileDefaultName)
-      linkElement.click()
-
-      toast({
-        title: "Results exported",
-        description: "Your results have been downloaded as a JSON file.",
-      })
-    } catch (error) {
-      console.error("Error exporting results:", error)
-      toast({
-        title: "Export failed",
-        description: "There was a problem exporting your results.",
-        variant: "destructive",
-      })
-    }
-  }, [title, slug, completedAt, totalQuestions, stats, questions, toast, processedAnswers])
-
-  // Handle share
-  const handleShare = useCallback(async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: "My Open-Ended Quiz Results",
-          text: `I completed ${stats.answeredQuestions} of ${totalQuestions} questions on the ${title || slug} quiz!`,
-          url: window.location.href,
-        })
-        toast({
-          title: "Shared successfully!",
-          description: "Your results have been shared.",
-        })
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(window.location.href)
-        toast({
-          title: "Link copied!",
-          description: "Share your results with friends",
-        })
-      } else {
-        console.warn("Sharing is not supported in this browser.")
-      }
-    } catch (error) {
-      console.error("Error sharing:", error)
-    }
-  }, [stats.answeredQuestions, totalQuestions, title, slug, toast])
-
-  // Update the answer review section to show correct answers and similarity scores
-  const answerReview = useMemo(() => {
-    return questions.map((question, index) => {
-      const answer = processedAnswers[index]
-      if (!answer) return null
-
-      return (
-        <motion.div
-          key={question?.id || `question-${index}`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: Math.min(index * 0.05, 1) }}
-          className={`border rounded-lg overflow-hidden ${
-            answer.answer ? "border-green-200 dark:border-green-900" : "border-gray-200 dark:border-gray-800"
-          }`}
-          data-testid={`answer-item-${index}`}
-        >
-          <div className={`h-1 ${answer.answer ? "bg-green-500" : "bg-gray-300 dark:bg-gray-700"}`}></div>
-          <div className="p-4">
-            <div className="flex items-start gap-3">
-              <div
-                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  answer.answer
-                    ? "bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400"
-                    : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                }`}
-              >
-                {answer.answer ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
-              </div>
-
-              <div className="space-y-2 w-full">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-base">Question {index + 1}</h4>
-                  <span className="text-xs text-muted-foreground">Time: {formatTime(answer?.timeSpent || 0)}</span>
-                </div>
-
-                <p className="text-sm text-muted-foreground">{question.question}</p>
-
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <p className="text-sm font-medium mb-2">Your response:</p>
-                    <div
-                      className={`p-3 rounded-md text-sm ${
-                        answer.answer
-                          ? "bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900"
-                          : "bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800"
-                      }`}
-                    >
-                      {answer?.answer || "No response provided"}
-                    </div>
-                  </div>
-
-                  {question.answer && (
-                    <div>
-                      <p className="text-sm font-medium mb-2">Expected answer:</p>
-                      <div className="p-3 rounded-md text-sm bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900">
-                        {question.answer}
-                      </div>
-                    </div>
-                  )}
-
-                  {answer?.similarity !== undefined && (
-                    <div className="mt-2 flex items-center">
-                      <span className="text-xs font-medium mr-2">Similarity score:</span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          answer.similarity >= 80
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                            : answer.similarity >= 50
-                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                        }`}
-                      >
-                        {Math.round(answer.similarity)}%
-                      </span>
-                      <span className="text-xs ml-2 text-muted-foreground">(based on Levenshtein distance)</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )
     })
-  }, [questions, processedAnswers, formatTime])
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
   }
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
+  // Helper function to calculate average score
+  const calculateAverageScore = (answerScores: AnswerWithSimilarity[]): number => {
+    const validScores = answerScores.filter(score => !isNaN(score.similarity))
+    return validScores.length
+      ? Math.round(validScores.reduce((sum, answer) => sum + answer.similarity, 0) / validScores.length)
+      : 0
   }
 
-  // If no answers or questions, show a message
-  if (!processedAnswers.length || !questions.length) {
+  // Calculate stats
+  const stats = useMemo(() => {
+    try {
+      if (!result.answers.length) {
+        return {
+          totalTime: 0,
+          averageTime: 0,
+          completionRate: 0,
+          averageScore: 0,
+          answers: [] as AnswerWithSimilarity[],
+        }
+      }
+
+      const totalTime = result.answers.reduce((sum, answer) => sum + (answer.timeSpent || 0), 0)
+      const averageTime = result.answers.length ? Math.round(totalTime / result.answers.length) : 0
+      const completionRate = Math.round((result.answers.length / Math.max(1, result.totalQuestions)) * 100)
+      
+      const answers = calculateAnswerScores(result.answers, result.questions)
+      const averageScore = calculateAverageScore(answers)
+
+      return {
+        totalTime,
+        averageTime,
+        completionRate,
+        averageScore,
+        answers,
+      }
+    } catch (error) {
+      console.error('Error calculating stats:', error)
+      setHasError(true)
+      return {
+        totalTime: 0,
+        averageTime: 0,
+        completionRate: 0,
+        averageScore: 0,
+        answers: [] as AnswerWithSimilarity[],
+      }
+    }
+  }, [result])
+
+  if (hasError) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No Results Available</CardTitle>
-          <CardDescription>There are no quiz results to display.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Try taking the quiz again or return to the dashboard.</p>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={() => router.push("/dashboard")}>Return to Dashboard</Button>
-        </CardFooter>
-      </Card>
+      <div className="text-center py-10">
+        <h2 className="text-xl font-bold mb-4">Error Loading Results</h2>
+        <p className="text-muted-foreground mb-6">
+          We encountered an error while loading your quiz results. Please try again later.
+        </p>
+        <Button onClick={() => router.refresh()} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Try Again
+        </Button>
+      </div>
     )
   }
 
   return (
     <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       className="space-y-6"
-      data-testid="quiz-results-openended"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
     >
-      {/* Show confetti for high completion rates */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50">
-          <div className="absolute inset-0" id="confetti-canvas"></div>
-        </div>
-      )}
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl font-bold">Quiz Results</CardTitle>
+        <p className="text-muted-foreground">
+          You completed {result.answers.length} out of {result.totalQuestions} questions
+        </p>
+      </CardHeader>
 
-      <QuizResultHeader
-        title={title || "Open-Ended Quiz Results"}
-        completedAt={completedAt}
-        score={stats.completionPercentage}
-        feedbackMessage={feedbackMessage}
-        icon={<MessageSquare className="h-5 w-5 text-primary" />}
-        scoreLabel="Completion"
-      />
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="summary" data-testid="summary-tab">
-            Summary
-          </TabsTrigger>
-          <TabsTrigger value="answers" data-testid="answers-tab">
-            Your Answers
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="summary" className="pt-6 space-y-6" data-testid="summary-content">
-          {/* Completion Overview */}
-          <motion.div variants={itemVariants} className="flex flex-col md:flex-row gap-6 items-center">
-            <div className="w-40 h-40 flex-shrink-0">
-              <CircularProgress
-                value={stats.completionPercentage}
-                size={160}
-                strokeWidth={12}
-                label={`${stats.completionPercentage}%`}
-                sublabel="Completion"
-              />
-            </div>
-
-            <div className="flex-1 space-y-4">
-              <h3 className="text-lg font-medium">Completion Summary</h3>
-              <p className="text-muted-foreground">{feedbackMessage}</p>
-
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                  {stats.answeredQuestions} of {totalQuestions} questions
-                </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-300">
-                  {formatTime(stats.totalTimeSpent)} total time
-                </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-800/30 dark:text-purple-300">
-                  {Math.round(stats.avgAnswerLength)} chars/answer
-                </span>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="text-primary h-5 w-5" />
+              <div>
+                <p className="text-sm font-medium">Completion Rate</p>
+                <p className="text-2xl font-bold">{stats.completionRate}%</p>
               </div>
             </div>
-          </motion.div>
+          </CardContent>
+        </Card>
 
-          {/* Stats Grid */}
-          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <StatCard
-              title="Questions Answered"
-              value={`${stats.answeredQuestions}/${totalQuestions}`}
-              icon={<CheckCircle2 className="h-4 w-4" />}
-              description="Completion rate"
-              trend={stats.answeredQuestions >= totalQuestions * 0.7 ? "up" : "down"}
-            />
-
-            <StatCard
-              title="Avg. Time per Question"
-              value={formatTime(stats.averageTimePerQuestion)}
-              icon={<Clock className="h-4 w-4" />}
-              description="Response time"
-              trend={stats.averageTimePerQuestion < 60 ? "up" : "down"}
-            />
-
-            <StatCard
-              title="Avg. Response Length"
-              value={`${Math.round(stats.avgAnswerLength)} chars`}
-              icon={<MessageSquare className="h-4 w-4" />}
-              description="Detail level"
-              trend={stats.avgAnswerLength > 50 ? "up" : "down"}
-            />
-          </motion.div>
-
-          {/* Performance Chart */}
-          <motion.div variants={itemVariants} className="mt-6">
-            <ResultCard title="Performance Metrics">
-              <div className="h-64">
-                <PerformanceChart data={stats.chartData} />
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Clock className="text-primary h-5 w-5" />
+              <div>
+                <p className="text-sm font-medium">Average Time per Question</p>
+                <p className="text-2xl font-bold">{formatQuizTime(stats.averageTime)}</p>
               </div>
-            </ResultCard>
-          </motion.div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* Response Analysis */}
-          {processedAnswers.length > 0 && (
-            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stats.fastestAnswer.index >= 0 && (
-                <ResultCard title="Fastest Response" icon={<Zap className="h-4 w-4 text-yellow-500" />}>
-                  <div className="space-y-2">
-                    <p className="font-medium">Question {stats.fastestAnswer.index + 1}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {questions[stats.fastestAnswer.index]?.question}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Time: {formatTime(stats.fastestAnswer.timeSpent)}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {processedAnswers[stats.fastestAnswer.index]?.answer?.length || 0} characters
-                      </span>
-                    </div>
-                  </div>
-                </ResultCard>
-              )}
+      {/* Answer Review */}
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          {stats.answers.map((answer, index) => (
+            <div key={answer.questionId} className="border-b last:border-0 pb-4 last:pb-0">
+              <h3 className="font-medium mb-2">Question {index + 1}</h3>
+              <p className="text-muted-foreground mb-2">{result.questions[index].question}</p>
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm">{answer.answer}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs">Similarity Score:</span>
+                  <span className="text-xs font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+                    {answer.similarity}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-              {stats.longestAnswer.index >= 0 && (
-                <ResultCard title="Most Detailed Response" icon={<MessageSquare className="h-4 w-4 text-blue-500" />}>
-                  <div className="space-y-2">
-                    <p className="font-medium">Question {stats.longestAnswer.index + 1}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {questions[stats.longestAnswer.index]?.question}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Length: {stats.longestAnswer.length} characters</span>
-                      <span className="text-xs text-muted-foreground">
-                        Time: {formatTime(processedAnswers[stats.longestAnswer.index]?.timeSpent || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </ResultCard>
-              )}
-            </motion.div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="answers" className="space-y-4 pt-6" data-testid="answers-content">
-          {/* Answer review */}
-          {answerReview}
-        </TabsContent>
-      </Tabs>
-
-      <div className="flex flex-wrap justify-between gap-4 pt-4">
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="flex-1 sm:flex-initial"
-          >
-            Return to Quizzes
-          </Button>
-          <Button onClick={handleRestart} disabled={isRestarting} className="flex-1 sm:flex-initial">
-            {isRestarting ? (
-              <>
-                <span className="animate-spin mr-2">⟳</span> Restarting...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Restart Quiz
-              </>
-            )}
-          </Button>
-
-          {!isAuthenticated && (
-            <Button onClick={handleSignIn} variant="secondary" className="flex-1 sm:flex-initial">
-              Sign In to Save
-            </Button>
-          )}
-        </div>
-
-        {(navigator.share || navigator.clipboard) && (
-          <Button variant="ghost" size="sm" onClick={handleShare} className="flex items-center gap-1">
-            <Share2 className="h-4 w-4 mr-1" />
-            Share
-          </Button>
-        )}
+      {/* Actions */}
+      <div className="flex justify-between">
+        <Button onClick={() => router.push("/dashboard/quizzes")}>Return to Quizzes</Button>
+        <Button
+          onClick={handleRestart}
+          disabled={isRestarting}
+          variant="outline"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          {isRestarting ? "Restarting..." : "Try Again"}
+        </Button>
       </div>
     </motion.div>
   )

@@ -1,4 +1,5 @@
 import type { QuizQuestion, TestCase } from "@/app/types/quiz-types"
+import { getTextSimilarity } from "./text-similarity"
 
 /**
  * Formats time in seconds to a MM:SS format
@@ -375,63 +376,39 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
   }
 }
 export function formatQuizTime(seconds: number): string {
-  if (seconds < 60) {
-    return `${seconds} seconds`
-  } else if (seconds < 3600) {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes} minutes ${remainingSeconds} seconds`
-  } else {
-    const hours = Math.floor(seconds / 3600)
-    const remainingMinutes = Math.floor((seconds % 3600) / 60)
-    return `${hours} hours ${remainingMinutes} minutes`
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, "0")}`
+}
+
+export function checkQuizAccess(isAuthenticated: boolean, credits: number): {
+  canAccess: boolean
+  reason?: string
+} {
+  if (!isAuthenticated) {
+    return { canAccess: false, reason: "auth" }
   }
-}
-export function isTooFastAnswer(timeSpent: number, questionType: number): boolean {
-  const timeLimits: Record<string, number> = {
-    mcq: 5,
-    code: 10,
-    blanks: 15,
-    openended: 20,
+  if (credits < 1) {
+    return { canAccess: false, reason: "credits" }
   }
-
-  const limit = timeLimits[questionType] || 10 // Default to 10 seconds if type is unknown
-  return timeSpent < limit
+  return { canAccess: true }
 }
 
-export function getSimilarityLevel(similarity: number): string {
-  if (similarity >= 0.9) return "Very High"
-  if (similarity >= 0.7) return "High"
-  if (similarity >= 0.5) return "Medium"
-  if (similarity >= 0.3) return "Low"
-  return "Very Low"
-}
-
-export function calculatePerformanceLevel(score: number): string {
-  if (score >= 90) return "Excellent"
-  if (score >= 75) return "Good"
-  if (score >= 60) return "Satisfactory"
-  return "Needs Improvement"
-}
-export function isAnswerCorrect(userAnswer: string, correctAnswer: string): boolean {
-  // Normalize both answers to lowercase for case-insensitive comparison
-  const normalizedUserAnswer = userAnswer.trim().toLowerCase()
-  const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase()
-
-  // Check for exact match
-  if (normalizedUserAnswer === normalizedCorrectAnswer) {
-    return true
+export function validateQuizAnswer(
+  answer: string,
+  minLength: number = 10,
+  minTime: number = 5
+): {
+  isValid: boolean
+  reason?: string
+} {
+  if (answer.trim().length < minLength) {
+    return { isValid: false, reason: "length" }
   }
-
-  // Check for partial match (e.g., synonyms or similar phrases)
-  const similarityThreshold = 0.8 // Adjust this threshold as needed
-  const similarityScore = calculateStringSimilarity(normalizedUserAnswer, normalizedCorrectAnswer)
-
-  return similarityScore >= similarityThreshold
+  return { isValid: true }
 }
-export function calculateTotalTime(questions: QuizQuestion[]): number {
-  return questions.reduce((total, question) => {
-    const time = question.time || 0
-    return total + time
-  }, 0)
+
+export function calculateQuizScore(userAnswer: string, correctAnswer: string): number {
+  const { similarity } = getTextSimilarity(userAnswer, correctAnswer)
+  return Math.round(similarity * 100)
 }

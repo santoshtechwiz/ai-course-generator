@@ -9,6 +9,8 @@ import { useToast } from "@/hooks"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
 import { useAppDispatch } from "@/store"
 import type { QuizResultProps } from "@/app/types/quiz-types"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { resetQuizState } from "@/store/slices/quizSlice"
 
 export default function BlanksQuizResults({ result }: QuizResultProps) {
   const router = useRouter()
@@ -191,7 +193,7 @@ export default function BlanksQuizResults({ result }: QuizResultProps) {
     setIsLoading(true)
 
     // Reset the quiz state in Redux
-    dispatch(resetQuiz())
+    dispatch(resetQuizState())
 
     // Clear sessionStorage for this quiz
     try {

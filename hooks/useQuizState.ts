@@ -33,7 +33,7 @@ import {
   clearUserRedirectState,
 } from "@/store/slices/authSlice"
 
-import { loadPersistedQuizState, hasAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
+import { loadPersistedQuizState, hasAuthRedirectState, clearAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
 import type { QuizData, QuizType } from "@/app/types/quiz-types"
 
 // Define a cleaner, focused interface for the quiz hook

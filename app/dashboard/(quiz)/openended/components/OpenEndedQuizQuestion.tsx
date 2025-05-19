@@ -1,45 +1,26 @@
 "use client"
 
-import { useState, useEffect, useRef, memo, useCallback } from "react"
+import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { submitAnswer } from "@/store/slices/textQuizSlice"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  LightbulbIcon,
-  SendIcon,
-  CheckCircleIcon,
-  ChevronRightIcon,
-  AlertTriangle,
-  AlertCircle,
-  Clock,
-} from "lucide-react"
+import { LightbulbIcon, SendIcon, CheckCircleIcon, ChevronRightIcon, AlertTriangle, AlertCircle, Clock } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
-import { useAppDispatch, useAppSelector } from "@/store"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
-import { submitAnswer } from "@/app/store/slices/textQuizSlice"
-
-
+import type { OpenEndedQuestion, QuizAnswer } from "@/types/quiz"
 
 
 interface QuizQuestionProps {
-  question: {
-    id: number | string
-    question: string
-    answer: string
-    openEndedQuestion?: {
-      hints?: string | string[]
-      difficulty?: string
-      tags?: string | string[]
-      inputType?: string
-    }
-  }
-  onAnswer: (answer: string) => void
+  question: OpenEndedQuestion
   questionNumber: number
   totalQuestions: number
-  isLastQuestion?: boolean
+  isLastQuestion: boolean
+  onQuestionComplete: () => void
 }
 
 function OpenEndedQuizQuestionComponent({
@@ -47,98 +28,98 @@ function OpenEndedQuizQuestionComponent({
   questionNumber,
   totalQuestions,
   isLastQuestion,
+  onQuestionComplete,
 }: QuizQuestionProps) {
   const dispatch = useAppDispatch()
-  const quizState = useAppSelector((state) => state.textQuiz)
-  const currentQuestion = quizState?.currentQuestionIndex || 0
-
+  const quizState = useAppSelector(state => state.textQuiz)
+  
   const [answer, setAnswer] = useState("")
   const [showHints, setShowHints] = useState<boolean[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hintLevel, setHintLevel] = useState(0)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [startTime, setStartTime] = useState(Date.now())
-  const [showTooFastWarning, setShowTooFastWarning] = useState(false)
-  const [showGarbageWarning, setShowGarbageWarning] = useState(false)
+  const [startTime] = useState(Date.now())
+  const [showWarnings, setShowWarnings] = useState({
+    tooFast: false,
+    invalidAnswer: false
+  })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const minimumTimeThreshold = 5 // seconds for open-ended questions (longer than fill-in-the-blanks)
-  const minimumAnswerLength = 10 // characters
-
   // Parse hints from question data
-  const hints = Array.isArray(question?.openEndedQuestion?.hints)
-    ? question.openEndedQuestion.hints
-    : question?.openEndedQuestion?.hints?.split("|") || []
+  const hints = useMemo(() => {
+    if (!question?.openEndedQuestion?.hints) return []
+    return Array.isArray(question.openEndedQuestion.hints)
+      ? question.openEndedQuestion.hints
+      : question.openEndedQuestion.hints.split("|")
+  }, [question?.openEndedQuestion?.hints])
 
   // Reset state when question changes
   useEffect(() => {
     setShowHints(Array(hints.length).fill(false))
     setHintLevel(0)
-    setAnswer("") // Reset answer when question changes
+    setAnswer("")
     setElapsedTime(0)
-    setStartTime(Date.now())
-    setShowTooFastWarning(false)
-    setShowGarbageWarning(false)
+    setShowWarnings({ tooFast: false, invalidAnswer: false })
     setIsSubmitting(false)
 
-    // Focus the textarea when a new question is loaded
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus()
-      }
-    }, 300)
-  }, [question?.id, hints.length])
+    if (textareaRef.current) {
+      textareaRef.current.focus()
+    }
+  }, [question.id, hints.length])
 
   // Timer for elapsed time
   useEffect(() => {
-    const timer = setInterval(() => setElapsedTime((prev) => prev + 1), 1000)
+    const timer = setInterval(() => setElapsedTime(prev => prev + 1), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  // Improve the handleSubmit function to provide better feedback
   const handleSubmit = useCallback(async () => {
     if (!answer.trim() || isSubmitting) return
+
+    // Validate answer length
+    if (answer.trim().length < 10) {
+      setShowWarnings(prev => ({ ...prev, invalidAnswer: true }))
+      return
+    }
+
+    // Validate time spent
+    if (elapsedTime < 5) {
+      setShowWarnings(prev => ({ ...prev, tooFast: true }))
+      return
+    }
 
     setIsSubmitting(true)
 
     try {
-      dispatch(
-        submitAnswer({
-          questionId: question.id,
-          question: question.question,
-          answer: answer,
-          correctAnswer: question.answer,
-          timeSpent: Math.floor((Date.now() - startTime) / 1000),
-          hintsUsed: hintLevel > 0,
-          index: questionNumber - 1,
-        }),
-      )
+      // First, dispatch the answer to the redux store
+      const answerData: QuizAnswer = {
+        questionId: question.id,
+        question: question.question,
+        answer: answer.trim(),
+        timeSpent: elapsedTime,
+        hintsUsed: hintLevel > 0,
+      }
+      
+      dispatch(submitAnswer(answerData))
 
-      setAnswer("")
-      setShowHints(Array(hints.length).fill(false))
-      setHintLevel(0)
+      // Then call the callback to move to next question
+      await onQuestionComplete()
     } catch (error) {
       console.error("Error submitting answer:", error)
-    } finally {
       setIsSubmitting(false)
     }
-  }, [answer, dispatch, question, startTime, hintLevel, questionNumber])
+  }, [answer, isSubmitting, elapsedTime, question, hintLevel, onQuestionComplete, dispatch])
 
-  // Add a function to check if the answer is valid
-  const isAnswerValid = () => {
-    return answer.trim().length >= minimumAnswerLength && !isSubmitting
-  }
-
-  const handleProgressiveHint = () => {
+  const handleProgressiveHint = useCallback(() => {
     if (hintLevel < hints.length) {
-      setShowHints((prev) => {
+      setShowHints(prev => {
         const newHints = [...prev]
         newHints[hintLevel] = true
         return newHints
       })
-      setHintLevel((prev) => prev + 1)
+      setHintLevel(prev => prev + 1)
     }
-  }
+  }, [hintLevel, hints.length])
 
   const getDifficultyColor = (difficulty = "medium") => {
     switch (difficulty?.toLowerCase()) {
@@ -162,6 +143,15 @@ function OpenEndedQuizQuestionComponent({
       transition={{ duration: 0.5 }}
       data-testid="openended-quiz-question"
     >
+      {/* Debug indicator - remove in production */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="text-xs text-muted-foreground mb-2">
+          Current quiz state: {quizState?.status || 'initializing'}, 
+          Questions: {quizState?.questions?.length || 0}, 
+          Answers: {quizState?.answers?.length || 0}
+        </div>
+      )}
+
       <Card className="w-full max-w-4xl mx-auto shadow-lg border-t-4 border-primary">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -204,7 +194,7 @@ function OpenEndedQuizQuestionComponent({
         <CardContent className="space-y-4">
           {/* Warning Alerts */}
           <AnimatePresence>
-            {showTooFastWarning && (
+            {showWarnings.tooFast && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -225,7 +215,7 @@ function OpenEndedQuizQuestionComponent({
               </motion.div>
             )}
 
-            {showGarbageWarning && (
+            {showWarnings.invalidAnswer && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -252,8 +242,7 @@ function OpenEndedQuizQuestionComponent({
             value={answer}
             onChange={(e) => {
               setAnswer(e.target.value)
-              setShowGarbageWarning(false)
-              setShowTooFastWarning(false)
+              setShowWarnings({ tooFast: false, invalidAnswer: false })
             }}
             placeholder="Type your answer here..."
             className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary"
@@ -297,19 +286,21 @@ function OpenEndedQuizQuestionComponent({
         <CardFooter>
           <Button
             onClick={handleSubmit}
-            disabled={!isAnswerValid()}
-            className="w-full sm:w-auto ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
+            disabled={isSubmitting}
+            className={`w-full sm:w-auto ml-auto transition-all duration-300 ${
+              isSubmitting ? "bg-primary/80" : "bg-primary hover:bg-primary/90"
+            } text-primary-foreground`}
             data-testid="submit-button"
           >
             {isSubmitting ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Submitting...
+                {isLastQuestion ? "Finishing Quiz..." : "Submitting..."}
               </>
             ) : (
               <>
                 <SendIcon className="w-4 h-4 mr-2" />
-                Submit Answer
+                {isLastQuestion ? "Finish Quiz" : "Submit Answer"}
               </>
             )}
           </Button>
@@ -324,7 +315,8 @@ function arePropsEqual(prevProps: QuizQuestionProps, nextProps: QuizQuestionProp
   return (
     prevProps.question.id === nextProps.question.id &&
     prevProps.questionNumber === nextProps.questionNumber &&
-    prevProps.totalQuestions === nextProps.totalQuestions
+    prevProps.totalQuestions === nextProps.totalQuestions &&
+    prevProps.isLastQuestion === nextProps.isLastQuestion
   )
 }
 

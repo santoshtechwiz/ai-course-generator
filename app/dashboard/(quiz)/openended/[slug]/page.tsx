@@ -3,20 +3,22 @@ import { getServerSession } from "next-auth"
 import type { Metadata } from "next"
 import { authOptions } from "@/lib/auth"
 import { generatePageMetadata } from "@/lib/seo-utils"
-
 import { getQuiz } from "@/app/actions/getQuiz"
-import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
-import QuizDetailsPageWithContext from "../../components/QuizDetailsPageWithContext"
+import type { OpenEndedQuizData } from "@/types/quiz"
+import { ClientWrapper } from "./ClientWrapper"
 
-type Params = Promise<{ slug: string }>
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { slug } = await params
-  const quizData = await getQuiz(slug)
+interface PageProps {
+  params: Promise<{ slug: string }> | { slug: string }
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const slug = 'slug' in params ? params.slug : (await params).slug
+  const quizData = await getQuiz<OpenEndedQuizData>(slug)
+
   if (!quizData) {
     return generatePageMetadata({
       title: "Open-Ended Quiz Not Found | CourseAI",
-      description:
-        "The requested programming quiz could not be found. Explore our other coding challenges and assessments.",
+      description: "The requested programming quiz could not be found.",
       path: `/dashboard/openended/${slug}`,
       noIndex: true,
     })
@@ -37,44 +39,27 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   })
 }
 
-export default async function OpenEndedQuizPage({ params }: { params: Params }) {
-  const { slug } = await params
+export default async function OpenEndedQuizPage({ params }: PageProps) {
+  const slug = 'slug' in params ? params.slug : (await params).slug
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
-  const quizData = await getQuiz(slug)
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.dev"
+  const quizData = await getQuiz<OpenEndedQuizData>(slug)
 
   if (!quizData) {
     notFound()
   }
 
-  // Calculate estimated time based on question count
-  const questionCount = quizData.questions?.length || 3
-  const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 5))}M` // 5 minutes per question, minimum 10 minutes
-
   // Create breadcrumb items
   const breadcrumbItems = [
-    { name: "Home", href: baseUrl },
-    { name: "Dashboard", href: `${baseUrl}/dashboard` },
-    { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
-    { name: quizData.title, href: `${baseUrl}/dashboard/openended/${slug}` },
+    { name: "Dashboard", href: "/dashboard" },
+    { name: "Open-ended", href: "/dashboard/openended" },
+    { name: quizData.title || "Quiz", href: `/dashboard/openended/${slug}` },
   ]
 
+  // Add ClientWrapper with reset handling
   return (
-    <QuizDetailsPageWithContext
-      title={quizData.title}
-      description={`Test your problem-solving skills with open-ended questions about ${quizData.title}`}
-      slug={slug}
-      quizType="openended"
-      questionCount={questionCount}
-      estimatedTime={estimatedTime}
-      breadcrumbItems={breadcrumbItems}
-      quizId={quizData.id.toString()}
-      authorId={quizData.userId}
-      isPublic={false}
-      isFavorite={false}
-    >
-      <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
-    </QuizDetailsPageWithContext>
+    <div className="container mx-auto px-4 py-8">
+      <ClientWrapper slug={slug} quizData={quizData} />
+    </div>
   )
 }

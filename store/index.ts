@@ -58,7 +58,22 @@ const rootReducer = combineReducers({
   ),
   user: persistReducer(makePersistConfig("user", ["profile", "preferences", "statistics"]), userReducer),
   flashcard: flashcardReducer,
-  textQuiz: textQuizReducer, // Import as default export
+  textQuiz: persistReducer(
+    makePersistConfig("textQuiz", [
+      "quizId",
+      "title",
+      "slug",
+      "currentQuestionIndex",
+      "questions",
+      "answers",
+      "status",
+      "startTime", 
+      "completedAt",
+      "score",
+      "resultsSaved"
+    ]),
+    textQuizReducer
+  ),
 })
 
 // === STORE ===

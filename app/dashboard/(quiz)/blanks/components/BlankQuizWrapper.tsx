@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
 import BlanksQuiz from "./BlanksQuiz"
@@ -11,32 +11,47 @@ export default function BlankQuizWrapper({ quizData, slug }: BlanksQuizWrapperPr
   const router = useRouter()
   const dispatch = useAppDispatch()
   const quizState = useAppSelector((state) => state.textQuiz)
-  
+
   // Initialize quiz with safety check
   useEffect(() => {
     if (quizData?.id && quizData?.questions?.length > 0 && slug) {
-      dispatch(initializeQuiz({
-        ...quizData,
-        type: 'blanks',
-        slug,
-      }))
+      dispatch(
+        initializeQuiz({
+          ...quizData,
+          type: "blanks",
+          slug,
+        }),
+      )
     }
   }, [dispatch, quizData, slug])
 
   // Show loading state if data is not ready
   if (!quizData?.id || !quizData?.questions?.length) {
-    return <div className="text-center p-4">Loading quiz...</div>
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+          <p className="text-muted-foreground">Loading your fill-in-the-blank quiz...</p>
+        </div>
+      </div>
+    )
   }
 
   // Handle quiz completion
   const handleQuestionComplete = () => {
     if ((quizState?.currentQuestionIndex || 0) === quizData.questions.length - 1) {
       // Complete quiz before navigation
-      dispatch(completeQuiz({ 
-        answers: quizState.answers,
-        completedAt: new Date().toISOString()
-      }))
-      router.push(`/dashboard/blanks/${slug}/results`)
+      dispatch(
+        completeQuiz({
+          answers: quizState.answers,
+          completedAt: new Date().toISOString(),
+        }),
+      )
+
+      // Add a small delay before navigation for better UX
+      setTimeout(() => {
+        router.push(`/dashboard/blanks/${slug}/results`)
+      }, 300)
     } else {
       dispatch(setCurrentQuestion((quizState?.currentQuestionIndex || 0) + 1))
     }
