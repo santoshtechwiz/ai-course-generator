@@ -32,14 +32,11 @@ export interface McqAnswer {
   index: number
 }
 
-export interface McqQuizResult {
-  quizId: string
-  slug: string
-  score: number
-  totalQuestions: number
-  correctAnswers: number
-  totalTimeSpent: number
-  formattedTimeSpent?: string
-  completedAt: string
-  answers: McqAnswer[]
+// Add UserAnswer interface to match what the tests expect
+export interface UserAnswer {
+  questionId: string | number
+  questionIndex: number
+  answer: string
+  isCorrect: boolean
+  selectedOption?: string
 }

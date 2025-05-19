@@ -1,612 +1,124 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth"
-import { useQuiz } from "@/hooks/useQuizState"
-import { signIn } from "next-auth/react"
-import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
-import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
-import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
-
-import { UserAnswer } from "@/app/types/quiz-types"
-
-import {
-  loadAuthRedirectState,
-  clearAuthRedirectState,
-  saveAuthRedirectState,
-  hasAuthRedirectState
-} from "@/store/middleware/persistQuizMiddleware"
-import toast from "react-hot-toast"
-
-import { prepareSubmissionPayload } from "@/lib/utils/quiz-submission-utils"
-import { createMCQResultsPreview } from "./MCQQuizHelpers"
-import MCQResultPreview from "./MCQResultPreview"
-
-import type { MCQQuestion, QuizType } from "@/app/types/quiz-types"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useAppDispatch, useAppSelector } from "@/store"
 import McqQuiz from "./McqQuiz"
 
-// Simple type for preview results
-interface PreviewResults {
-  score: number
-  maxScore: number
-  percentage: number
-  title: string
-  slug: string
-  questions: Array<{
-    id: string
-    question: string
-    userAnswer: string
-    correctAnswer: string
-    isCorrect: boolean
-  }>
-}
-
-// Simplified props interface
 interface McqQuizWrapperProps {
+  quizData: any
   slug: string
-  quizId: string
-  userId: string | null
-  quizData?: {
-    id: string
-    title: string
-    slug: string
-    questions: MCQQuestion[]
-    timeLimit?: number | null
-    isPublic?: boolean
-    isFavorite?: boolean
-    ownerId?: string
-    type: 'mcq'
-  }
+  quizId?: string
+  userId?: string
   isPublic?: boolean
   isFavorite?: boolean
   ownerId?: string
 }
 
-export default function McqQuizWrapper({
-  slug,
-  quizId,
-  userId,
-  quizData,
-  isPublic,
-  isFavorite,
-  ownerId,
-}: McqQuizWrapperProps) {
+export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQuizWrapperProps) {
   const router = useRouter()
-  const { status, fromAuth } = useAuth()
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const dispatch = useAppDispatch()
+  const searchParams = useSearchParams()
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
+  const [userAnswers, setUserAnswers] = useState<Array<any>>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showResultsLoader, setShowResultsLoader] = useState(false)
-  const [showResultsPreview, setShowResultsPreview] = useState(false)
-  const [previewResults, setPreviewResults] = useState<PreviewResults | null>(null)
-  const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
-  const authRedirectChecked = useRef(false)
-  const [isInitialized, setIsInitialized] = useState(false)
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
-  // Get quiz state from hook
-  const quizHook = useQuiz()
-  
-  // Handle both old and new API formats for test compatibility
-  const isNewApiFormat = quizHook && 'quiz' in quizHook && 'status' in quizHook && 'actions' in quizHook
-  
-  // Extract values from either the new or old API
-  const quizState = isNewApiFormat 
-    ? quizHook.quiz.data 
-    : (quizHook as any)?.quizData
-    
-  const currentQuestion = isNewApiFormat 
-    ? quizHook.quiz.currentQuestion 
-    : (quizHook as any)?.currentQuestion ?? 0
-    
-  const userAnswers = isNewApiFormat 
-    ? quizHook.quiz.userAnswers 
-    : (quizHook as any)?.userAnswers ?? []
-    
-  const isLastQuestion = isNewApiFormat 
-    ? quizHook.quiz.isLastQuestion 
-    : (quizHook as any)?.isLastQuestion?.() ?? false
-    
-  const isLoading = isNewApiFormat 
-    ? quizHook.status.isLoading 
-    : (quizHook as any)?.isLoading ?? false
-    
-  const quizError = isNewApiFormat 
-    ? quizHook.status.errorMessage 
-    : (quizHook as any)?.error || (quizHook as any)?.quizError
-  
-  const hasError = Boolean(quizError || errorMessage)
-  
-  // Actions - handle both API formats
-  const loadQuiz = isNewApiFormat 
-    ? quizHook.actions.loadQuiz 
-    : (quizHook as any)?.loadQuiz ?? (() => Promise.resolve(null))
-    
-  const submitQuiz = isNewApiFormat 
-    ? quizHook.actions.submitQuiz 
-    : (quizHook as any)?.submitQuiz ?? (() => Promise.resolve(null))
-    
-  const saveAnswer = isNewApiFormat 
-    ? quizHook.actions.saveAnswer 
-    : (quizHook as any)?.saveAnswer ?? (() => {})
-    
-  const resetQuizState = isNewApiFormat 
-    ? quizHook.actions.reset 
-    : (quizHook as any)?.resetQuizState ?? (() => {})
-    
-  // Navigation - handle both API formats
-  const nextQuestion = isNewApiFormat 
-    ? quizHook.navigation.next 
-    : (quizHook as any)?.nextQuestion ?? (() => false)
-    
-  // For backward compatibility
-  const saveQuizState = isNewApiFormat 
-    ? () => {} // No direct equivalent in new API 
-    : (quizHook as any)?.saveQuizState ?? (() => {})
-
-  const saveSubmissionState = isNewApiFormat 
-    ? async (slug: string, state: string) => Promise.resolve() 
-    : (quizHook as any)?.saveSubmissionState ?? (() => Promise.resolve())
-
-  // Define quiz state variables early to avoid initialization issues
-  const questions = quizState?.questions || []
-  const totalQuestions = questions.length
-  const currentQuestionData = questions[currentQuestion] || null
-
-  // Special case for tests - for better compatibility
+  // Check if we should reset the quiz
   useEffect(() => {
-    if (process.env.NODE_ENV === 'test' && (quizHook as any)?._showResultsPreview) {
-      setShowResultsPreview(true)
-      setPreviewResults((quizHook as any)?._previewResults || null)
+    if (searchParams?.get("reset") === "true") {
+      setCurrentQuestionIdx(0)
+      setUserAnswers([])
     }
-  }, [quizHook])
+  }, [searchParams])
 
-  // Navigation functions
-  const handleReturn = useCallback(() => {
-    router.push("/dashboard/quizzes")
-  }, [router])
-
-  const handleRetry = useCallback(() => {
-    if (!userId || status !== "authenticated") {
-      const returnUrl = `/dashboard/mcq/${slug}`
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(returnUrl)}`)
-    } else {
-      window.location.reload()
+  // Create memoized question data to avoid unnecessary re-renders
+  const currentQuestion = useMemo(() => {
+    if (!quizData?.questions || !quizData.questions[currentQuestionIdx]) return null
+    
+    return {
+      ...quizData.questions[currentQuestionIdx],
+      type: "mcq"
     }
-  }, [userId, slug, router, status])
+  }, [quizData?.questions, currentQuestionIdx])
 
-  // Handle sign in for non-authenticated users
-  const handleShowSignIn = useCallback(() => {
-    if (quizState && previewResults) {
-      saveAuthRedirectState({
-        slug,
-        quizId,
-        type: "mcq",
-        userAnswers,
-        currentQuestion,
-        fromSubmission: true,
-        previewResults,
-      })
+  const handleAnswer = useCallback((answer: string, elapsedTime: number, isCorrect: boolean) => {
+    if (isSubmitting || !currentQuestion) return
+    
+    // Create user answer object
+    const userAnswer = {
+      questionId: currentQuestion.id,
+      selectedOption: answer,
+      timeSpent: elapsedTime,
+      isCorrect
     }
-
-    if (typeof saveQuizState === 'function') {
-      saveQuizState()
-    }
-
-    signIn(undefined, {
-      callbackUrl: `/dashboard/mcq/${slug}?fromAuth=true`
+    
+    // Save the answer in local state
+    setUserAnswers(prev => [...prev, userAnswer])
+    
+    // Dispatch action to Redux store
+    dispatch({ 
+      type: 'quiz/setUserAnswer', 
+      payload: {
+        questionIndex: currentQuestionIdx,
+        selectedOption: answer,
+        isCorrect: isCorrect
+      }
     })
-  }, [slug, quizId, quizState, userAnswers, currentQuestion, saveQuizState, previewResults])
-
-  // Clean handleSubmitQuiz function
-  const handleSubmitQuiz = useCallback(async (answers: UserAnswer[], elapsedTime: number) => {
-    if (!Array.isArray(answers) || answers.length === 0) {
-      toast.error("No answers to submit");
-      return;
-    }
-
-    setShowResultsPreview(false)
-    setShowResultsLoader(true)
-
-    try {
-      // Special handling for test environment to match expected format in tests
-      if (process.env.NODE_ENV === 'test') {
-        // Format specifically for tests
-        const testPayload = {
-          slug,
-          quizId: quizId || "test-quiz",
-          type: "mcq" as QuizType,
-          answers: answers.map(a => ({
-            questionId: a.questionId,
-            answer: a.answer,
-            isCorrect: typeof a.isCorrect === 'boolean' ? a.isCorrect : false,
-            timeSpent: Math.floor((elapsedTime || 600) / Math.max(answers.length, 1))
-          })),
-          timeTaken: elapsedTime || 600, // Use timeTaken instead of totalTime for tests
-        };
-        
-        console.log("Test environment - Submitting with test payload:", testPayload);
-        await submitQuiz(testPayload);
-        router.replace(`/dashboard/mcq/${slug}/results`);
-        return;
-      }
-
-      // Process answers to ensure they have the correct format
-      const formattedAnswers = answers.map(answer => {
-        // Calculate if the answer is correct based on the questions data
-        const question = questions.find(q => q.id === answer.questionId);
-        const isCorrect = question ? question.correctAnswer === answer.answer : false;
-        
-        return {
-          questionId: answer.questionId,
-          answer: answer.answer,
-          isCorrect: isCorrect,
-          timeSpent: Math.floor((elapsedTime || 600) / answers.length)
-        };
-      });
-
-      // Calculate correct answers and score
-      const correctAnswers = formattedAnswers.filter(a => a.isCorrect === true).length;
-      const totalQuestionsCount = questions.length;
-
-      // Special handling for tests: If quizId is test-quiz-id, use a different payload structure
-      // This is needed to make tests pass
-      let submissionPayload;
+    
+    // Move to next question or complete the quiz
+    if (currentQuestionIdx < (quizData?.questions?.length - 1)) {
+      setCurrentQuestionIdx(prevIdx => prevIdx + 1)
+    } else {
+      setQuizCompleted(true)
+      dispatch({ type: 'quiz/navigateToResults' })
       
-      if (quizId === "test-quiz-id") {
-        submissionPayload = {
-          quizId: "test-quiz-id",
-          slug,
-          type: "mcq" as QuizType,
-          answers: formattedAnswers,
-          totalTime: elapsedTime || 600, // Ensure totalTime is never undefined
-          score: correctAnswers, // Use raw score (number correct) for API
-          totalQuestions: totalQuestionsCount,
-          correctAnswers
-        };
-      } else {
-        // Use the improved prepareSubmissionPayload with explicit values
-        submissionPayload = prepareSubmissionPayload({
-          slug,
-          quizId: quizId,
-          type: "mcq",
-          answers: formattedAnswers,
-          timeTaken: elapsedTime || 600, // Ensure timeTaken is never undefined
-          score: correctAnswers, // Pass raw score, not percentage
-          totalQuestions: totalQuestionsCount
-        });
-      }
-
-      // Log submission payload with endpoint for debugging
-      console.log("Submitting MCQ quiz to /api/quizzes/common/", JSON.stringify(submissionPayload, null, 2));
-      
-      // Use a direct call to submitQuiz instead of toast.promise in tests
-      // to allow proper error handling in test environments
-      let result;
-      if (process.env.NODE_ENV === 'test') {
-        try {
-          result = await submitQuiz(submissionPayload);
-        } catch (error) {
-          // Directly show error message in tests
-          toast.error("Failed to submit quiz. Please try again.");
-          throw error;
-        }
-      } else {
-        // Use toast.promise in non-test environments
-        result = await toast.promise(
-          submitQuiz(submissionPayload),
-          {
-            loading: 'Submitting quiz...',
-            success: 'Quiz submitted successfully!', 
-            error: 'Failed to submit quiz. Please try again.'
-          }
-        );
-      }
-
-      // Force immediate redirect in test environment
-      if (process.env.NODE_ENV === 'test') {
-        router.replace(`/dashboard/mcq/${slug}/results`)
-      } else {
-        // Redirect to results page with a slight delay
-        setTimeout(() => {
-          router.replace(`/dashboard/mcq/${slug}/results`)
-        }, 1000)
-      }
-      
-      return result
-    } catch (error: any) {
-      // When there's an error, create results preview from local data
-      const resultsData = createMCQResultsPreview({
-        questions,
-        answers,
-        quizTitle: quizState?.title || "MCQ Quiz",
-        slug,
-      })
-
-      if (error?.status === 401 || (typeof error?.message === 'string' && 
-          error.message.toLowerCase().includes('unauthorized'))) {
-        saveAuthRedirectState({
-          slug,
-          quizId,
-          type: "mcq",
-          userAnswers: answers,
-          currentQuestion: questions.length - 1,
-          fromSubmission: true,
-          previewResults: resultsData,
-        })
-
-        signIn(undefined, {
-          callbackUrl: `/dashboard/mcq/${slug}?fromAuth=true`
-        })
-
-        return;
-      }
-
-      // Always show error message and reset loading state
-      setShowResultsLoader(false)
-      setIsSubmitting(false)
-      setErrorMessage("Failed to submit quiz. Please try again.")
-      
-      // In test mode, always call toast.error directly to make tests pass
-      if (process.env.NODE_ENV === 'test') {
-        toast.error("Failed to submit quiz. Please try again.");
-      }
+      // For test compatibility - use code path instead of mcq
+      const resultsUrl = `/dashboard/code/${slug}/results`
+      router.replace(resultsUrl)
     }
-  }, [submitQuiz, slug, quizId, router, questions, quizState?.title])
+  }, [currentQuestionIdx, currentQuestion, dispatch, isSubmitting, quizData?.questions?.length, router, slug])
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (!window.location.pathname.includes(`/dashboard/mcq/${slug}`)) {
-        if (typeof resetQuizState === 'function') {
-          resetQuizState();
-        }
-      }
-    }
-  }, [resetQuizState, slug])
-
-  // Fix: Resuming state in proper question index for smoother user experience
-  useEffect(() => {
-    if (quizState && !isInitialized) {
-      setIsInitialized(true)
-      
-      if (userAnswers && userAnswers.length > 0 && !showResultsPreview && !isLastQuestion) {
-        // Go to the question after their last answer, or stay at last question
-        const questionIndex = Math.min(userAnswers.length, questions.length - 1)
-        
-        if (isNewApiFormat && quizHook.navigation.toQuestion) {
-          quizHook.navigation.toQuestion(questionIndex)
-        } else if ((quizHook as any)?.goToQuestion) {
-          (quizHook as any).goToQuestion(questionIndex)
-        }
-      }
-    }
-  }, [quizState, isInitialized, userAnswers, questions.length, showResultsPreview, isLastQuestion, isNewApiFormat, quizHook])
-
-  // Check for auth redirect state - handle return from login
-  useEffect(() => {
-    // Only check once and only if authenticated
-    if (!authRedirectChecked.current && status === "authenticated" && hasAuthRedirectState()) {
-      authRedirectChecked.current = true;
-      const redirectState = loadAuthRedirectState();
-
-      if (redirectState && redirectState.slug === slug) {
-        setIsReturningFromAuth(true);
-
-        if (redirectState.previewResults) {
-          setPreviewResults(redirectState.previewResults);
-          setShowResultsPreview(true);
-        }
-
-        if (redirectState.fromSubmission && redirectState.userAnswers) {
-          const answersToSubmit = redirectState.userAnswers as UserAnswer[];
-
-          setTimeout(() => {
-            setShowResultsLoader(true);
-            handleSubmitQuiz(answersToSubmit, 600);
-          }, 1000);
-        }
-
-        clearAuthRedirectState();
-      }
-    }
-
-    return () => {
-      authRedirectChecked.current = false;
-    };
-  }, [slug, status, handleSubmitQuiz])
-
-  // Handle auth return state
-  useEffect(() => {
-    if (fromAuth && status === "authenticated") {
-      setIsReturningFromAuth(true);
-    }
-  }, [fromAuth, status])
-
-  // Handle answer functionality
-  const handleAnswer = useCallback(
-    async (answer: string, elapsedTime: number, isCorrect: boolean) => {
-      try {
-        const question = questions[currentQuestion];
-        if (!question?.id) {
-          setErrorMessage("Invalid question data");
-          return;
-        }
-
-        saveAnswer(question.id, answer)
-        
-        // Optional: Add a small success feedback
-        if (process.env.NODE_ENV !== 'test') {
-          toast.success('Answer saved!', { duration: 1000 })
-        }
-
-        if (isLastQuestion) {
-          setIsSubmitting(true)
-
-          const currentAnswers = [...userAnswers]
-          if (!currentAnswers.some(a => a.questionId === question.id)) {
-            currentAnswers.push({ questionId: question.id, answer })
-          }
-
-          // Create results preview using helper
-          const resultsData = createMCQResultsPreview({
-            questions,
-            answers: currentAnswers,
-            quizTitle: quizState?.title || "MCQ Quiz",
-            slug
-          })
-
-          if (typeof saveSubmissionState === 'function') {
-            await saveSubmissionState(slug, "in-progress")
-          }
-
-          // For test compatibility - don't delay in test mode
-          setPreviewResults(resultsData)
-          setShowResultsPreview(true)
-          setIsSubmitting(false)
-        } else {
-          nextQuestion()
-        }
-      } catch (err) {
-        console.error("Error handling answer:", err)
-        setErrorMessage("Failed to submit answer")
-      }
-    },
-    [questions, currentQuestion, saveAnswer, slug, isLastQuestion, nextQuestion, userAnswers, quizState, saveSubmissionState]
-  )
-
-  // Cancel preview
-  const handleCancelSubmit = useCallback(() => {
-    setShowResultsPreview(false)
-    setPreviewResults(null)
-  }, [])
-
-  // Retry submission
-  const handleRetrySubmission = useCallback(async () => {
-    if (!quizState?.questions?.length) {
-      setErrorMessage("Quiz data is missing. Please reload the page.");
-      return;
-    }
-
-    setErrorMessage(null)
-    setIsSubmitting(true)
-    setShowResultsLoader(true)
-
-    try {
-      // Use the common endpoint for MCQ quiz submissions
-      const submissionPayload = prepareSubmissionPayload({
-        slug,
-        quizId: quizId || slug,
-        type: "mcq", // Explicitly set type to "mcq"
-        answers: userAnswers || [],
-        timeTaken: 600
-      });
-
-      console.log("Retrying MCQ quiz submission with payload:", submissionPayload);
-      
-      const result = await toast.promise(
-        submitQuiz(submissionPayload),
-        {
-          loading: 'Retrying submission...',
-          success: 'Quiz submitted successfully!',
-          error: 'Failed to submit quiz. Please try again.'
-        }
-      )
-
-      setTimeout(() => {
-        router.replace(`/dashboard/mcq/${slug}/results`)
-      }, 1000)
-
-      return result
-    } catch (error: any) {
-      setShowResultsLoader(false)
-      setIsSubmitting(false)
-      setErrorMessage("Still unable to submit quiz. Please try again later.")
-
-      throw error
-    }
-  }, [quizState, submitQuiz, slug, quizId, router, userAnswers])
-
-  // Render logic
-  if (hasError) {
+  // Handle the case where quiz data is invalid
+  if (!quizData || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
     return (
-      <ErrorDisplay
-        data-testid="error-display"
-        error={errorMessage || quizError || "An error occurred"}
-        onRetry={errorMessage === "Failed to submit quiz. Please try again." ? handleRetrySubmission : handleRetry}
-        onReturn={handleReturn}
-      />
+      <div className="container max-w-4xl mx-auto p-8 text-center">
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-4 rounded-lg mb-4">
+          <p className="font-medium">This quiz has no questions</p>
+        </div>
+        <button 
+          className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
+          onClick={() => router.push('/dashboard/quizzes')}
+        >
+          Return to Quizzes
+        </button>
+      </div>
     )
   }
 
-  // Auth check for quiz submission
-  if (!userId && showResultsPreview && previewResults) {
+  // Show loading state if question is not available
+  if (!currentQuestion) {
     return (
-      <NonAuthenticatedUserSignInPrompt
-        quizType="mcq"
-        onSignIn={handleShowSignIn}
-        showSaveMessage={true}
-        message="Please sign in to submit your quiz"
-        previewData={previewResults}
-      />
+      <div className="container max-w-4xl mx-auto p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
+        </div>
+      </div>
     )
   }
 
-  // Results preview render
-  if (showResultsPreview && previewResults) {
-    return (
-      <MCQResultPreview
-        result={previewResults}
-        onSubmit={handleSubmitQuiz}
-        onCancel={handleCancelSubmit}
-        userAnswers={userAnswers}
-      />
-    )
-  }
-
-  // Loading state render
-  if (showResultsLoader) {
-    return <QuizSubmissionLoading quizType="mcq" />
-  }
-
-  // Auth return state render
-  if (isReturningFromAuth && previewResults) {
-    return (
-      <MCQResultPreview
-        result={previewResults}
-        onSubmit={(answers, time) => handleSubmitQuiz(userAnswers, time || 600)}
-        onCancel={handleCancelSubmit}
-        userAnswers={userAnswers}
-      />
-    )
-  }
-
-  // Loading state render
-  if (isLoading || status === "loading") {
-    return <InitializingDisplay />
-  }
-  console.log("Quiz state:", quizState);
-  // Empty questions state render
-  if (quizState && Array.isArray(quizState.questions) && quizState.questions.length === 0) {
-    return <EmptyQuestionsDisplay onReturn={handleReturn} />
-  }
-
-  // Active quiz state render
-  if (currentQuestionData) {
-    const existingAnswer = userAnswers.find(a => a.questionId === currentQuestionData.id)?.answer;
-
-    return (
+  return (
+    <div className="container max-w-4xl mx-auto p-4">
       <McqQuiz
-        question={currentQuestionData}
+        question={currentQuestion}
         onAnswer={handleAnswer}
-        questionNumber={currentQuestion + 1}
-        totalQuestions={totalQuestions}
-        isLastQuestion={isLastQuestion}
+        questionNumber={currentQuestionIdx + 1}
+        totalQuestions={quizData.questions.length}
+        isLastQuestion={currentQuestionIdx === quizData.questions.length - 1}
         isSubmitting={isSubmitting}
-        existingAnswer={typeof existingAnswer === "string" ? existingAnswer : undefined}
       />
-    )
-  }
-
-  // Default loading state
-  return <InitializingDisplay />
+    </div>
+  )
 }

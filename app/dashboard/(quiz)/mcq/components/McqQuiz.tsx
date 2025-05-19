@@ -15,6 +15,7 @@ interface McqQuizProps {
     id: string
     question: string
     options: string[]
+    answer?: string
     correctAnswer?: string
     type: "mcq"
   }
@@ -82,7 +83,8 @@ export default function McqQuiz({
     setInternalSubmitting(true)
 
     // Determine if the answer is correct
-    const isCorrect = selectedOption === question.correctAnswer
+    const correctAnswer = question.answer || question.correctAnswer || ""
+    const isCorrect = selectedOption === correctAnswer
 
     // Pass the isCorrect flag when submitting the answer
     onAnswer(selectedOption || "", answerTime, isCorrect)
@@ -124,7 +126,7 @@ export default function McqQuiz({
           <h3 className="text-lg font-medium mb-6" data-testid="question-text">
             {question.question}
           </h3>
-          <div className="mt-6 space-y-3" data-testid="options">
+          <div className="mt-6 space-y-3" data-testid="options-container">
             {question.options.map((option, index) => (
               <div
                 key={index}

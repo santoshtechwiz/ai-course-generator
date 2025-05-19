@@ -89,7 +89,7 @@
                 <canvas id="test-suites-canvas" width="100" height="100"></canvas>
                 <h2>Test Suites</h2>
                 <div class="list-group">
-                    <p id="test-suites-results" class="list-group-item list-group-item-action">1 passed, 1 total</p>
+                    <p id="test-suites-results" class="list-group-item list-group-item-action">0 passed, 1 total</p>
                 </div>
             </div>
             <!-- /.col-lg-4 -->
@@ -97,7 +97,7 @@
                 <canvas id="tests-canvas" width="100" height="100"></canvas>
                 <h2>Tests</h2>
                 <div class="list-group">
-                    <p id="tests-results" class="list-group-item list-group-item-action">7 passed, 7 total</p>
+                    <p id="tests-results" class="list-group-item list-group-item-action">6 passed, 8 total</p>
                 </div>
             </div>
             <!-- /.col-lg-4 -->
@@ -126,16 +126,16 @@
 }</div>
         <div id="accordion">
             <div class="d-none" id="test-results">{
-  &quot;numFailedTestSuites&quot;: 0,
-  &quot;numFailedTests&quot;: 0,
-  &quot;numPassedTestSuites&quot;: 1,
-  &quot;numPassedTests&quot;: 7,
+  &quot;numFailedTestSuites&quot;: 1,
+  &quot;numFailedTests&quot;: 2,
+  &quot;numPassedTestSuites&quot;: 0,
+  &quot;numPassedTests&quot;: 6,
   &quot;numPendingTestSuites&quot;: 0,
   &quot;numPendingTests&quot;: 0,
   &quot;numRuntimeErrorTestSuites&quot;: 0,
   &quot;numTodoTests&quot;: 0,
   &quot;numTotalTestSuites&quot;: 1,
-  &quot;numTotalTests&quot;: 7,
+  &quot;numTotalTests&quot;: 8,
   &quot;openHandles&quot;: [],
   &quot;snapshot&quot;: {
     &quot;added&quot;: 0,
@@ -153,21 +153,21 @@
     &quot;unmatched&quot;: 0,
     &quot;updated&quot;: 0
   },
-  &quot;startTime&quot;: 1747654843754,
+  &quot;startTime&quot;: 1747658197286,
   &quot;success&quot;: false,
   &quot;testResults&quot;: [
     {
       &quot;leaks&quot;: false,
-      &quot;numFailingTests&quot;: 0,
-      &quot;numPassingTests&quot;: 7,
+      &quot;numFailingTests&quot;: 2,
+      &quot;numPassingTests&quot;: 6,
       &quot;numPendingTests&quot;: 0,
       &quot;numTodoTests&quot;: 0,
       &quot;openHandles&quot;: [],
       &quot;perfStats&quot;: {
-        &quot;end&quot;: 1747654855521,
-        &quot;runtime&quot;: 6210,
+        &quot;end&quot;: 1747658214488,
+        &quot;runtime&quot;: 10404,
         &quot;slow&quot;: true,
-        &quot;start&quot;: 1747654849311
+        &quot;start&quot;: 1747658204084
       },
       &quot;skipped&quot;: false,
       &quot;snapshot&quot;: {
@@ -179,122 +179,156 @@
         &quot;unmatched&quot;: 0,
         &quot;updated&quot;: 0
       },
-      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx&quot;,
+      &quot;testFilePath&quot;: &quot;C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\mcq-quiz-flow.test.tsx&quot;,
       &quot;testResults&quot;: [
         {
           &quot;ancestorTitles&quot;: [
-            &quot;OpenEnded Quiz Flow End-to-End Test&quot;,
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
             &quot;Authenticated User Flow&quot;
           ],
-          &quot;duration&quot;: 923,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete quiz and see immediate results&quot;,
+          &quot;duration&quot;: 1412,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;matcherResult&quot;: {
+                &quot;message&quot;: &quot;\u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m0\u001b[39m&quot;,
+                &quot;pass&quot;: false
+              }
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;Error: \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m0\u001b[39m\n    at Object.&lt;anonymous&gt; (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\mcq-quiz-flow.test.tsx:300:30)&quot;
+          ],
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete MCQ quiz and see results&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 6,
+          &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should allow user to complete quiz and see immediate results&quot;
+          &quot;status&quot;: &quot;failed&quot;,
+          &quot;title&quot;: &quot;should allow user to complete MCQ quiz and see results&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;OpenEnded Quiz Flow End-to-End Test&quot;,
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
             &quot;Authenticated User Flow&quot;
           ],
-          &quot;duration&quot;: 551,
+          &quot;duration&quot;: 126,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should handle quiz with empty answers&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test Authenticated User Flow should track correct&#x2F;incorrect answers&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
           &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle quiz with empty answers&quot;
+          &quot;title&quot;: &quot;should track correct&#x2F;incorrect answers&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;OpenEnded Quiz Flow End-to-End Test&quot;,
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
             &quot;Authenticated User Flow&quot;
           ],
-          &quot;duration&quot;: 575,
+          &quot;duration&quot;: 28,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
+          &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should properly reset quiz state&quot;
+          &quot;title&quot;: &quot;should handle quiz reset when requested&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;OpenEnded Quiz Flow End-to-End Test&quot;,
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
             &quot;Unauthenticated User Flow&quot;
           ],
-          &quot;duration&quot;: 861,
-          &quot;failureDetails&quot;: [],
-          &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz&quot;,
+          &quot;duration&quot;: 32,
+          &quot;failureDetails&quot;: [
+            {
+              &quot;matcherResult&quot;: {
+                &quot;message&quot;: &quot;\u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m0\u001b[39m&quot;,
+                &quot;pass&quot;: false
+              }
+            }
+          ],
+          &quot;failureMessages&quot;: [
+            &quot;Error: \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results\&quot;\u001b[39m\n\nNumber of calls: \u001b[31m0\u001b[39m\n    at Object.&lt;anonymous&gt; (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\mcq-quiz-flow.test.tsx:529:30)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (&lt;anonymous&gt;)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at async _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at async _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at async _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at async _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at async run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at async runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at async jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at async runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at async runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)&quot;
+          ],
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
+          &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
-          &quot;status&quot;: &quot;passed&quot;,
+          &quot;status&quot;: &quot;failed&quot;,
           &quot;title&quot;: &quot;should allow unauthenticated users to take the quiz&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;OpenEnded Quiz Flow End-to-End Test&quot;,
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
             &quot;Unauthenticated User Flow&quot;
           ],
-          &quot;duration&quot;: 3,
+          &quot;duration&quot;: 53,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should show authentication prompt on certain actions&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
+          &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should show sign-in prompt on results page for unauthenticated users&quot;
+          &quot;title&quot;: &quot;should show authentication prompt on certain actions&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;OpenEnded Quiz Flow End-to-End Test&quot;,
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
             &quot;Error Handling&quot;
           ],
-          &quot;duration&quot;: 2,
+          &quot;duration&quot;: 122,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;OpenEnded Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 1,
+          &quot;numPassingAsserts&quot;: 2,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
           &quot;title&quot;: &quot;should handle quiz data loading errors&quot;
         },
         {
           &quot;ancestorTitles&quot;: [
-            &quot;OpenEnded Quiz Flow End-to-End Test&quot;,
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
             &quot;Error Handling&quot;
           ],
-          &quot;duration&quot;: 578,
+          &quot;duration&quot;: 9,
           &quot;failureDetails&quot;: [],
           &quot;failureMessages&quot;: [],
-          &quot;fullName&quot;: &quot;OpenEnded Quiz Flow End-to-End Test Error Handling should handle network errors during quiz submission&quot;,
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions&quot;,
           &quot;invocations&quot;: 1,
           &quot;location&quot;: null,
-          &quot;numPassingAsserts&quot;: 2,
+          &quot;numPassingAsserts&quot;: 1,
           &quot;retryReasons&quot;: [],
           &quot;status&quot;: &quot;passed&quot;,
-          &quot;title&quot;: &quot;should handle network errors during quiz submission&quot;
+          &quot;title&quot;: &quot;should handle invalid quiz data with missing questions&quot;
+        },
+        {
+          &quot;ancestorTitles&quot;: [
+            &quot;MCQ Quiz Flow End-to-End Test&quot;,
+            &quot;UI Features&quot;
+          ],
+          &quot;duration&quot;: 35,
+          &quot;failureDetails&quot;: [],
+          &quot;failureMessages&quot;: [],
+          &quot;fullName&quot;: &quot;MCQ Quiz Flow End-to-End Test UI Features should display correct question number and options&quot;,
+          &quot;invocations&quot;: 1,
+          &quot;location&quot;: null,
+          &quot;numPassingAsserts&quot;: 7,
+          &quot;retryReasons&quot;: [],
+          &quot;status&quot;: &quot;passed&quot;,
+          &quot;title&quot;: &quot;should display correct question number and options&quot;
         }
       ],
-      &quot;failureMessage&quot;: null
+      &quot;failureMessage&quot;: &quot;\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMCQ Quiz Flow End-to-End Test › Authenticated User Flow › should allow user to complete MCQ quiz and see results\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n    Expected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results\&quot;\u001b[39m\n\n    Number of calls: \u001b[31m0\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 298 |\u001b[39m       \u001b[22m\n\u001b[2m     \u001b[90m 299 |\u001b[39m       \u001b[90m&#x2F;&#x2F; Verify we&#39;re navigated to results after completing the quiz\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 300 |\u001b[39m       expect(router\u001b[33m.\u001b[39mreplace)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[32m&#39;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results&#39;\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 301 |\u001b[39m       expect(mockDispatch)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[22m\n\u001b[2m     \u001b[90m 302 |\u001b[39m         expect\u001b[33m.\u001b[39mobjectContaining({\u001b[22m\n\u001b[2m     \u001b[90m 303 |\u001b[39m           type\u001b[33m:\u001b[39m \u001b[32m&#39;quiz&#x2F;navigateToResults&#39;\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.&lt;anonymous&gt; (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__&#x2F;e2e&#x2F;mcq-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:300:30)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMCQ Quiz Flow End-to-End Test › Unauthenticated User Flow › should allow unauthenticated users to take the quiz\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n    Expected: \u001b[32m\&quot;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results\&quot;\u001b[39m\n\n    Number of calls: \u001b[31m0\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 527 |\u001b[39m       \u001b[22m\n\u001b[2m     \u001b[90m 528 |\u001b[39m       \u001b[90m&#x2F;&#x2F; Verify navigation to results\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m&gt;\u001b[22m\u001b[2m\u001b[39m\u001b[90m 529 |\u001b[39m       expect(router\u001b[33m.\u001b[39mreplace)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[32m&#39;&#x2F;dashboard&#x2F;code&#x2F;test-quiz&#x2F;results&#39;\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 530 |\u001b[39m     })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 531 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 532 |\u001b[39m     test(\u001b[32m&#39;should show authentication prompt on certain actions&#39;\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m&#x3D;&gt;\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.&lt;anonymous&gt; (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__&#x2F;e2e&#x2F;mcq-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:529:30)\u001b[22m\u001b[2m\u001b[22m\n&quot;
     }
   ],
   &quot;wasInterrupted&quot;: false
@@ -334,7 +368,7 @@
   &quot;maxWorkers&quot;: 11,
   &quot;noStackTrace&quot;: false,
   &quot;nonFlagArgs&quot;: [
-    &quot;c:\\\\Work\\\\Projects\\\\ai-learning\\\\__tests__\\\\e2e\\\\openended-quiz-flow\\.test\\.tsx&quot;
+    &quot;c:\\\\Work\\\\Projects\\\\ai-learning\\\\__tests__\\\\e2e\\\\mcq-quiz-flow\\.test\\.tsx&quot;
   ],
   &quot;notify&quot;: false,
   &quot;notifyMode&quot;: &quot;failure-change&quot;,
@@ -361,14 +395,14 @@
   ],
   &quot;rootDir&quot;: &quot;C:\\Work\\Projects\\ai-learning&quot;,
   &quot;runTestsByPath&quot;: false,
-  &quot;seed&quot;: 992664288,
+  &quot;seed&quot;: -586272494,
   &quot;skipFilter&quot;: false,
   &quot;snapshotFormat&quot;: {
     &quot;escapeString&quot;: false,
     &quot;printBasicPrototype&quot;: false
   },
   &quot;testFailureExitCode&quot;: 1,
-  &quot;testPathPattern&quot;: &quot;c:\\\\Work\\\\Projects\\\\ai-learning\\\\__tests__\\\\e2e\\\\openended-quiz-flow\\.test\\.tsx&quot;,
+  &quot;testPathPattern&quot;: &quot;c:\\\\Work\\\\Projects\\\\ai-learning\\\\__tests__\\\\e2e\\\\mcq-quiz-flow\\.test\\.tsx&quot;,
   &quot;testSequencer&quot;: &quot;C:\\Work\\Projects\\ai-learning\\node_modules\\@jest\\test-sequencer\\build\\index.js&quot;,
   &quot;testTimeout&quot;: 30000,
   &quot;updateSnapshot&quot;: &quot;new&quot;,

@@ -1,120 +1,159 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { Lock, CheckCircle, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, LogIn, Save } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks"
+import { signIn } from "next-auth/react"
+
+interface ScorePreview {
+  score: number
+  maxScore: number
+  percentage: number
+}
 
 interface NonAuthenticatedUserSignInPromptProps {
-  quizType: "mcq" | "code" | "openended" | "blanks"
+  quizType: "mcq" | "blanks" | "openended" | "code"
   onSignIn?: () => void
   showSaveMessage?: boolean
-  previewData?: any
   message?: string
-  'data-testid'?: string
-  // Add returnPath to specify where to return after auth
+  previewData?: ScorePreview
   returnPath?: string
 }
 
 export default function NonAuthenticatedUserSignInPrompt({
-  quizType,
+  quizType = "mcq",
   onSignIn,
   showSaveMessage = true,
+  message = "Sign in to save your progress and access more features",
   previewData,
-  message,
-  'data-testid': testId = 'non-authenticated-prompt',
-  returnPath
+  returnPath,
 }: NonAuthenticatedUserSignInPromptProps) {
-  const router = useRouter()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSignIn = () => {
-    // For tests, ensure we always call onSignIn when it's provided
-    if (typeof onSignIn === 'function') {
+  const handleSignIn = async () => {
+    setIsLoading(true)
+    
+    if (onSignIn) {
       onSignIn()
       return
     }
     
-    // Save the current path to localStorage for returning after auth
-    if (typeof window !== 'undefined') {
-      try {
-        // Store the state we want to return to
-        localStorage.setItem('auth_return_state', JSON.stringify({
-          quizType,
-          path: returnPath || `/dashboard/${quizType}`,
-          timestamp: Date.now()
-        }));
-      } catch (err) {
-        console.error("Failed to save return state:", err);
-      }
-    }
-    
-    // Determine the callback URL
-    const callbackUrl = returnPath 
-      ? encodeURIComponent(returnPath)
-      : encodeURIComponent(`/dashboard/${quizType}`);
-    
-    // Default routing behavior
     try {
-      router.push(`/auth/signin?callbackUrl=${callbackUrl}`);
-    } catch (err) {
-      console.error("Error during sign in:", err);
-      // Fallback to basic redirect
-      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
+      await signIn("google", {
+        callbackUrl: returnPath || `/dashboard/${quizType}`,
+      })
+    } catch (error) {
+      console.error("Sign in error:", error)
+      toast({
+        title: "Sign in failed",
+        description: "Please try again later",
+        variant: "destructive",
+      })
+      setIsLoading(false)
     }
   }
 
-  // Map quiz type to readable name
-  const quizTypeName = 
-    quizType === 'mcq' ? 'Multiple Choice Quiz' :
-    quizType === 'code' ? 'Coding Challenge' :
-    quizType === 'openended' ? 'Open Ended Quiz' :
-    'Fill in the Blanks Quiz'
+  const getQuizTypeName = () => {
+    switch (quizType) {
+      case "mcq":
+        return "Multiple Choice Quiz"
+      case "blanks":
+        return "Fill in the Blanks Quiz"
+      case "openended":
+        return "Open-Ended Quiz"
+      case "code":
+        return "Code Quiz"
+      default:
+        return "Quiz"
+    }
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-[50vh] p-4" data-testid={testId}>
-      <Card className="max-w-md w-full bg-background">
-        <CardHeader className="text-center pb-2">
-          <div className="mx-auto bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-            <Lock className="h-6 w-6 text-primary" />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="container max-w-lg mx-auto px-4 py-8"
+    >
+      <Card className="overflow-hidden border-2 border-primary/20">
+        <CardHeader className="bg-primary/5 border-b border-primary/10">
+          <div className="flex justify-center mb-4">
+            <motion.div
+              className="p-3 bg-primary/20 rounded-full"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Lock className="h-6 w-6 text-primary" />
+            </motion.div>
           </div>
-          <CardTitle className="text-2xl mb-1">Authentication Required</CardTitle>
-          <p className="text-muted-foreground">
-            {message || "Sign in to see your results and track your progress"}
-          </p>
+          <CardTitle className="text-2xl text-center">{getQuizTypeName()} Results</CardTitle>
+          <CardDescription className="text-center">{message}</CardDescription>
         </CardHeader>
-        <CardContent className="pb-2">
+
+        <CardContent className="p-6 space-y-6">
           {previewData && (
-            <div className="mb-6 p-4 bg-muted rounded-md">
-              <div className="font-medium text-center">Quiz Score Preview</div>
-              <div className="text-3xl font-bold text-center mt-2">
-                {previewData.score}/{previewData.maxScore} ({previewData.percentage}%)
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-3xl font-bold text-primary">{previewData.percentage}%</span>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <p className="text-lg font-medium">
+                  Your Score: {previewData.score} / {previewData.maxScore}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {previewData.percentage >= 70 ? (
+                    <span className="flex items-center justify-center gap-1 text-green-600">
+                      <CheckCircle className="h-4 w-4" /> Great job!
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-1 text-amber-600">
+                      <XCircle className="h-4 w-4" /> Room for improvement
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
           )}
 
           {showSaveMessage && (
-            <div className="flex items-center gap-2 p-4 bg-yellow-50 text-yellow-800 rounded-md">
-              <Save className="h-5 w-5 flex-shrink-0" />
-              <p className="text-sm" data-testid="save-message">
-                Your progress will be saved when you sign in so you can continue where you left off.
-              </p>
+            <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-3 rounded-lg text-sm">
+              <p>Your progress isn't saved. Sign in to save your results and track your progress.</p>
             </div>
           )}
+
+          <div className="pt-4 flex flex-col gap-2">
+            <Button
+              onClick={handleSignIn}
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in to Continue"
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.location.href = "/dashboard"}
+            >
+              Return to Dashboard
+            </Button>
+          </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4 pt-2">
-          <Button onClick={handleSignIn} className="w-full" data-testid="sign-in-button">
-            <LogIn className="mr-2 h-4 w-4" />
-            Sign In to Continue
-          </Button>
-          <Button
-            variant="link"
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="text-muted-foreground"
-          >
-            Return to Dashboard
-          </Button>
-        </CardFooter>
       </Card>
-    </div>
+    </motion.div>
   )
 }

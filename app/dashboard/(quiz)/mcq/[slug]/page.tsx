@@ -6,10 +6,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
 
 import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
-import McqQuizWrapper from "../components//McqQuizWrapper"
-
-
-
+import McqQuizWrapper from "../components/McqQuizWrapper"
 
 export default function McqQuizPage({
   params,
