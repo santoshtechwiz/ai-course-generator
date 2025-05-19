@@ -122,3 +122,30 @@ export interface QuizState {
   // For legacy/test compatibility
   error?: string | null;
 }
+
+export interface QuizAnswerResult {
+  questionId: string | number;
+  question: string;
+  answer: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  timeSpent: number;
+  similarity?: number;
+  hintsUsed?: boolean;
+  index: number;
+}
+
+export interface QuizResultProps {
+  result: {
+    quizId: string;
+    slug: string;
+    score: number;
+    totalQuestions: number;
+    correctAnswers: number;
+    totalTimeSpent: number;
+    formattedTimeSpent?: string;
+    completedAt: string;
+    answers: QuizAnswerResult[];
+  };
+}

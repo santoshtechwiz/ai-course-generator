@@ -42,14 +42,14 @@ const BlanksPage = async ({ params }: { params: Promise<{ slug: string }> }) => 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
 
   const session = await getServerSession(authOptions)
-  const currentUserId = session?.user?.id
+  const currentUserId = session?.user?.id || null
 
   const result = await getQuiz(slug)
-  if (!result) {
+  if (!result?.id) {
     notFound()
   }
 
-  const questionCount = result.questions?.length || 5
+  const questionCount = result.questions?.length || 0
   const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 2))}M`
 
   const breadcrumbItems = [
@@ -61,10 +61,10 @@ const BlanksPage = async ({ params }: { params: Promise<{ slug: string }> }) => 
 
   return (
     <QuizDetailsPageWithContext
-      title={result.title}
-      description={`Test your coding knowledge on ${result.title} with fill in the blanks questions`}
+      title={result.title || 'Untitled Quiz'}
+      description={`Test your coding knowledge on ${result.title || 'this topic'} with fill in the blanks questions`}
       slug={slug}
-      quizType="fill-blanks"
+      quizType="blanks"
       questionCount={questionCount}
       estimatedTime={estimatedTime}
       breadcrumbItems={breadcrumbItems}
@@ -73,7 +73,14 @@ const BlanksPage = async ({ params }: { params: Promise<{ slug: string }> }) => 
       isPublic={false}
       isFavorite={false}
     >
-      <BlankQuizWrapper quizData={result} slug={slug} />
+      <BlankQuizWrapper
+        quizData={result}
+        slug={slug}
+        userId={currentUserId}
+        quizId={result.id.toString()}
+        isPublic={false}
+        isFavorite={false}
+      />
     </QuizDetailsPageWithContext>
   )
 }

@@ -9,27 +9,30 @@ import { Input } from "@/components/ui/input"
 import { Loader2, HelpCircle, AlertCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { RootState, useAppDispatch, useAppSelector } from "@/store"
+import { submitAnswer } from "@/app/store/slices/textQuizSlice"
+
 
 interface BlanksQuizProps {
   question: {
-    id: string
-    question: string
-    answer?: string
-    hints?: string[]
-  }
-  onAnswer: (answer: string, timeSpent: number, hintsUsed: boolean) => void
-  questionNumber: number
-  totalQuestions: number
-  isLastQuestion: boolean
-  [key: string]: any
+    id: string;
+    question: string;
+    answer?: string;
+    hints?: string[];
+  };
+  questionNumber: number;
+  totalQuestions: number;
+  isLastQuestion: boolean;
+  onQuestionComplete?: () => void;
+  [key: string]: any;
 }
 
 function BlanksQuizComponent({
   question,
-  onAnswer,
   questionNumber,
   totalQuestions,
   isLastQuestion,
+  onQuestionComplete,
   ...props
 }: BlanksQuizProps) {
   const [userAnswer, setUserAnswer] = useState<string>("")
@@ -39,6 +42,9 @@ function BlanksQuizComponent({
   const [showHint, setShowHint] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const dispatch = useAppDispatch()
+  const quizState = useAppSelector((state: RootState) => state.textQuiz)
 
   // Animation variants
   const containerVariants = {
@@ -113,24 +119,35 @@ function BlanksQuizComponent({
 
   // Handle form submission
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault()
-      if (isSubmitting) return
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (isSubmitting || !userAnswer.trim()) return;
 
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
-      // Calculate time spent on this question
-      const timeSpent = Math.floor((Date.now() - startTime) / 1000)
+      try {
+        const answer = {
+          questionId: question.id,
+          question: question.question,
+          answer: userAnswer.trim(),
+          correctAnswer,
+          timeSpent: Math.floor((Date.now() - startTime) / 1000),
+          hintsUsed,
+          index: questionNumber - 1,
+          isCorrect: userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
+        };
 
-      // Call the onAnswer callback
-      setTimeout(() => {
-        onAnswer(userAnswer, timeSpent, hintsUsed)
-        setIsSubmitting(false)
-        setUserAnswer("")
-        setShowHint(false)
-      }, 300)
+        await dispatch(submitAnswer(answer)).unwrap();
+        onQuestionComplete?.();
+        setUserAnswer("");
+        setShowHint(false);
+      } catch (error) {
+        console.error("Error submitting answer:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [userAnswer, isSubmitting, onAnswer, startTime, hintsUsed],
+    [userAnswer, dispatch, question, startTime, hintsUsed, correctAnswer, questionNumber, onQuestionComplete]
   )
 
   // Handle hint display
@@ -174,7 +191,12 @@ function BlanksQuizComponent({
             <h3 className="text-lg font-medium mb-4" data-testid="question-text">
               {formattedQuestion}
             </h3>
-            <form onSubmit={handleSubmit} id="blanks-form" className="space-y-4">
+            <form 
+              onSubmit={handleSubmit} 
+              id="blanks-form" 
+              className="space-y-4"
+              data-testid="blanks-form"  // Add this test ID
+            >
               <div className="space-y-2">
                 <label htmlFor="answer" className="text-sm font-medium">
                   Your answer:
