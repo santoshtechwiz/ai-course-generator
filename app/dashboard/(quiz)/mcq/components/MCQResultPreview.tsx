@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardFooter, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Check, X, Send, ArrowLeft } from "lucide-react"
+import { ArrowLeft, CheckCircle, XCircle, Send } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
-import { UserAnswer } from "@/app/types/quiz-types"
+import { UserAnswer } from "./types"
 
 interface QuestionResult {
   id: string
@@ -65,7 +65,7 @@ export default function MCQResultPreview({
               ? "bg-green-100 text-green-700" 
               : "bg-amber-100 text-amber-700"
           )}>
-            {result.score}/{result.maxScore} ({result.percentage}%)
+            {result.score} / {result.maxScore} ({result.percentage}%)
           </span>
         </CardTitle>
       </CardHeader>
@@ -79,57 +79,32 @@ export default function MCQResultPreview({
           />
           
           <p className="mt-3 text-sm text-muted-foreground">
-            {result.percentage >= 90 ? 
-              "Excellent work! You've mastered this topic." :
-            result.percentage >= 70 ?
-              "Well done! You have a good understanding of the material." :
-            result.percentage >= 50 ?
-              "You're on the right track, but might need to review some concepts." :
-              "You might need to spend more time studying this topic."}
+            You answered {result.score} out of {result.maxScore} questions correctly.
           </p>
         </div>
         
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Question Summary</h3>
-          {result.questions.map((q, i) => (
-            <div 
-              key={q.id} 
-              className={cn(
-                "p-4 border rounded-lg",
-                q.isCorrect 
-                  ? "bg-green-50 border-green-200" 
-                  : "bg-red-50 border-red-200"
-              )}
-            >
-              <div className="flex gap-2">
-                <div className="mt-0.5">
-                  {q.isCorrect ? (
-                    <Check className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <X className="h-5 w-5 text-red-600" />
-                  )}
-                </div>
+          {result.questions.map((q, index) => (
+            <div key={q.id} className="p-3 border rounded-md">
+              <div className="flex gap-3">
+                {q.isCorrect ? (
+                  <CheckCircle className="text-green-500 h-5 w-5 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <XCircle className="text-red-500 h-5 w-5 flex-shrink-0 mt-0.5" />
+                )}
                 <div>
-                  <p className="font-medium">Question {i + 1}</p>
-                  <p className="text-sm mt-1">{q.question}</p>
-                  <div className="mt-2 text-sm">
-                    <div className="flex flex-col gap-1">
-                      <div>
-                        <span className="font-medium">Your answer: </span>
-                        <span className={q.isCorrect ? "text-green-600" : "text-red-600"}>
-                          {q.userAnswer || "(No answer provided)"}
-                        </span>
-                      </div>
-                      {!q.isCorrect && (
-                        <div>
-                          <span className="font-medium">Correct answer: </span>
-                          <span className="text-green-600">
-                            {q.correctAnswer}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <p className="font-medium mb-2">Q{index + 1}: {q.question}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your answer: <span className={q.isCorrect ? 'text-green-600' : 'text-red-600'}>
+                      {q.userAnswer}
+                    </span>
+                  </p>
+                  {!q.isCorrect && (
+                    <p className="text-sm text-green-600">
+                      Correct answer: {q.correctAnswer}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -146,7 +121,7 @@ export default function MCQResultPreview({
           data-testid="cancel-submit"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Go Back</span>
+          Return to Quiz
         </Button>
         <Button
           onClick={handleSubmit}
@@ -155,14 +130,11 @@ export default function MCQResultPreview({
           data-testid="submit-results"
         >
           {isSubmitting ? (
-            <>
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
-              <span>Submitting...</span>
-            </>
+            <>Submitting...</>
           ) : (
             <>
-              <Send className="h-4 w-4" />
-              <span>Submit Results</span>
+              <Send className="h-4 w-4 mr-1" />
+              Submit Results
             </>
           )}
         </Button>

@@ -1,5 +1,5 @@
 import { MCQQuestion } from "@/app/types/quiz-types";
-import { UserAnswer } from "@/app/types/quiz-types";
+import { UserAnswer } from "./types";
 import { getCorrectAnswer, isAnswerCorrect } from "@/lib/utils/quiz-type-utils";
 import { prepareSubmissionPayload } from "@/lib/utils/quiz-submission-utils";
 
@@ -62,7 +62,7 @@ export function createMCQResultsPreview({
       return false;
     }
     
-    return isAnswerCorrect(q, a.answer);
+    return a.isCorrect || (a.selectedOption === q.answer);
   }).length;
 
   // Format questions with answers
@@ -85,22 +85,24 @@ export function createMCQResultsPreview({
       }
       
       return false;
-    })?.answer || "";
+    });
     
-    const correctAns = getCorrectAnswer(question);
+    const userAnswer = userAns?.selectedOption || userAns?.answer || "";
+    const correctAns = question.answer;
+    const isCorrect = userAns?.isCorrect || userAnswer === correctAns;
     
     return {
       id: question.id,
       question: question.question,
-      userAnswer: typeof userAns === "string" ? userAns : JSON.stringify(userAns),
-      correctAnswer: typeof correctAns === "string" ? correctAns : JSON.stringify(correctAns),
-      isCorrect: isAnswerCorrect(question, userAns)
+      userAnswer: userAnswer,
+      correctAnswer: correctAns,
+      isCorrect: isCorrect
     };
   });
 
   // Calculate score percentage
   const maxScore = questions.length;
-  const percentage = Math.round((correctAnswers / maxScore) * 100);
+  const percentage = maxScore > 0 ? Math.round((correctAnswers / maxScore) * 100) : 0;
 
   // Return formatted results
   return {

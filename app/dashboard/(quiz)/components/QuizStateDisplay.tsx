@@ -1,8 +1,9 @@
 "use client"
 
+import { motion } from "framer-motion"
+import { Loader2, AlertCircle, RefreshCw, ArrowLeft, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, Loader2, RefreshCw, ChevronLeft, AlertTriangle } from "lucide-react"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface DisplayProps {
   className?: string
