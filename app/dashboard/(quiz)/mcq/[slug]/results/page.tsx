@@ -24,7 +24,7 @@ export default function ResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
   const { userId, isAuthenticated, status, requireAuth } = useAuth()
   
-  // Get quiz using the new hook API
+  // Get quiz using the hook API
   const { quiz, results, status: quizStatus, actions } = useQuiz()
   
   // Authentication and results loading
@@ -40,8 +40,11 @@ export default function ResultsPage({ params }: ResultsPageProps) {
         // Safely check if getResults exists and is a function
         if (actions?.getResults && typeof actions.getResults === 'function') {
           try {
+            // Use string slug to avoid [object Object] issues in API calls
+            const slugParam = typeof slug === 'string' ? slug : '';
+            
             // For MCQ quizzes, don't pass the second parameter to match test expectations
-            const fetchPromise = actions.getResults(slug);
+            const fetchPromise = actions.getResults(slugParam);
             if (fetchPromise && typeof fetchPromise.catch === 'function') {
               fetchPromise.catch(error => {
                 if (isMounted) {
