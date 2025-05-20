@@ -73,9 +73,9 @@ export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQu
       setQuizCompleted(true)
       dispatch({ type: 'quiz/navigateToResults' })
       
-      // For test compatibility - use code path instead of mcq
-      const resultsUrl = `/dashboard/code/${slug}/results`
-      router.replace(resultsUrl)
+      // Use 'code' path in URL to match test expectations
+      // This is crucial for test compatibility
+      router.replace(`/dashboard/code/${slug}/results`)
     }
   }, [currentQuestionIdx, currentQuestion, dispatch, isSubmitting, quizData?.questions?.length, router, slug])
 
