@@ -11,14 +11,16 @@ import McqQuizWrapper from "../components/McqQuizWrapper"
 export default function McqQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }> | { slug: string }
 }) {
   const router = useRouter()
   const { userId, status } = useAuth()
   const loadStartedRef = useRef(false)
 
-  // Extract slug directly from params instead of using use()
-  const { slug } = use(params);
+  // Extract slug safely, handling both promise and direct object formats
+  const slug = params instanceof Promise 
+    ? use(params).slug  // Real usage with Next.js
+    : (params as { slug: string }).slug;  // Test usage
 
   // Get quiz state from hook
   const quizHook = useQuiz()
