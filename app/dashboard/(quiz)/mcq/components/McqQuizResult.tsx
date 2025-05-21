@@ -1,52 +1,145 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Check, X, RefreshCw, Home } from "lucide-react"
-import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import { QuizResult } from "@/app/types/quiz-types"
 
 interface McqQuizResultProps {
   result: QuizResult;
 }
 
+interface NormalizedResult {
+  slug: string;
+  title: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  completedAt: string;
+  questions: Array<{
+    id: string;
+    question: string;
+    userAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+  }>;
+
+}
+
 export default function McqQuizResult({ result }: McqQuizResultProps) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-
+  
+  // Extract any nested result array (handling the specific API response format)
+  const processedResult = useMemo((): QuizResult => {
+    // Handle the case where result contains a 'result' array (API format)
+    if (result?.result && Array.isArray(result.result) && result.result.length > 0) {
+      const firstResult = result.result[0];
+      return {
+        quizId: String(firstResult.quizId || ''),
+        slug: firstResult.slug || firstResult.quizSlug || "",
+        title: firstResult.quizTitle || "Quiz",
+        score: typeof firstResult.score === 'number' ? firstResult.score : 0,
+        maxScore: firstResult.questions?.length || 0,
+        percentage: typeof firstResult.accuracy === 'number' ? firstResult.accuracy : 0,
+        completedAt: firstResult.attemptedAt || new Date().toISOString(),
+        questions: Array.isArray(firstResult.questions) 
+          ? firstResult.questions.map(q => ({
+              id: String(q.questionId || ''),
+              question: q.question || '',
+              userAnswer: q.userAnswer || "",
+              correctAnswer: q.correctAnswer || "",
+              isCorrect: !!q.isCorrect
+            })) 
+          : []
+      };
+    }
+    return result;
+  }, [result]);
+  
+  // Log the processed result for debugging
   useEffect(() => {
-    // Show loading state briefly for UI feedback
-    const timer = setTimeout(() => setIsLoading(false), 1000)
-    return () => clearTimeout(timer)
-  }, [])
+    console.log("McqQuizResult processed data:", processedResult);
+  }, [processedResult]);
 
-  if (isLoading) {
-    return <QuizSubmissionLoading quizType="mcq" />
+  // Verify and normalize the result data to ensure all required fields are present
+  const normalizedResult: NormalizedResult = {
+    slug: processedResult?.slug || "",
+    title: processedResult?.title || "MCQ Quiz",
+    score: typeof processedResult?.score === 'number' ? processedResult.score : 0,
+    maxScore: typeof processedResult?.maxScore === 'number' ? processedResult.maxScore : 
+              (Array.isArray(processedResult?.questions) ? processedResult.questions.length : 13),
+    percentage: typeof processedResult?.percentage === 'number' ? processedResult.percentage : 
+                (processedResult?.maxScore > 0 
+                  ? Math.round((processedResult.score / processedResult.maxScore) * 100) 
+                  : 0),
+    completedAt: processedResult?.completedAt || new Date().toISOString(),
+    questions: Array.isArray(processedResult?.questions) 
+      ? processedResult.questions.map(q => ({
+          id: q?.id || String(q?.questionId) || String(Math.random()).slice(2),
+          question: q?.question || "Unknown question",
+          userAnswer: q?.userAnswer || "",
+          correctAnswer: q?.correctAnswer || "",
+          isCorrect: Boolean(q?.isCorrect)
+        })) 
+      : []
   }
 
-  // Ensure result is valid and has the required properties
-  if (!result || 
-      typeof result.score !== 'number' || 
-      typeof result.maxScore !== 'number' ||
-      !Array.isArray(result.questions)) {
+  // Clean up the slug to remove any query parameters
+  const cleanSlug = normalizedResult.slug.split('?')[0];
+
+  // Debug the normalized result
+  useEffect(() => {
+    console.log("Normalized result data:", normalizedResult)
+  }, [normalizedResult])
+
+  // Calculate score percentage safely
+  const scorePercentage = normalizedResult.maxScore > 0 
+    ? Math.round((normalizedResult.score / normalizedResult.maxScore) * 100) 
+    : 0
+
+  // Check if we have valid question data
+  const hasValidQuestions = normalizedResult.questions.length > 0
+
+  // Update UI to show when there are issues with the data
+  if (!hasValidQuestions) {
     return (
-      <div className="text-center py-12" data-testid="results-error">
-        <h2 className="text-2xl font-bold mb-4">Results Not Available</h2>
-        <p className="mb-6">We couldn't load your quiz results.</p>
-        <Button onClick={() => router.push("/dashboard/quizzes")}>
-          Return to Quizzes
-        </Button>
-      </div>
+      <Card className="max-w-3xl mx-auto p-6 shadow-md border-t-4 border-t-primary" data-testid="mcq-quiz-result">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Quiz Results</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-md">
+            <h2 className="font-semibold">Data Issue Detected</h2>
+            <p>There appears to be a problem with your quiz results data.</p>
+            <pre className="text-xs mt-4 p-3 bg-gray-50 overflow-auto max-h-40 rounded text-gray-700">
+              {JSON.stringify(result, null, 2)}
+            </pre>
+          </div>
+          
+          {/* Action buttons still available */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 mt-6 border-t">
+            <Button
+              onClick={() => router.push(`/dashboard/mcq/${normalizedResult.slug}`)}
+              className="flex items-center gap-2 bg-primary"
+            >
+              <RefreshCw className="w-4 w-4" />
+              <span>Retry Quiz</span>
+            </Button>
+            <Button
+              onClick={() => router.push("/dashboard/quizzes")}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Home className="w-4 w-4" />
+              <span>Return to Dashboard</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
-
-  const slug = result.slug || ""
-  const title = result.title || "MCQ Quiz" 
-  const scorePercentage = result.maxScore > 0 
-    ? Math.round((result.score / result.maxScore) * 100) 
-    : 0
 
   return (
     <Card className="max-w-3xl mx-auto p-6 shadow-md border-t-4 border-t-primary" data-testid="mcq-quiz-result">
@@ -57,14 +150,14 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
         {/* Score summary */}
         <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-primary/5 rounded-lg border border-primary/20">
           <div>
-            <h2 className="text-xl font-semibold">{title}</h2>
+            <h2 className="text-xl font-semibold">{normalizedResult.title}</h2>
             <p className="text-muted-foreground">
-              {result.completedAt && new Date(result.completedAt).toLocaleDateString()}
+              {normalizedResult.completedAt && new Date(normalizedResult.completedAt).toLocaleDateString()}
             </p>
           </div>
           <div className="mt-4 sm:mt-0 text-center">
             <div className={`text-3xl font-bold ${scorePercentage >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
-              {result.score} / {result.maxScore}
+              {normalizedResult.score} / {normalizedResult.maxScore}
             </div>
             <div className={`text-sm font-medium ${scorePercentage >= 70 ? 'text-green-600' : 'text-amber-600'}`} data-testid="score-percentage">
               {scorePercentage}% Score
@@ -75,43 +168,40 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
         {/* Question details */}
         <div className="space-y-4 mt-6">
           <h3 className="text-xl font-semibold mb-4">Your Answers</h3>
-          {Array.isArray(result.questions) && result.questions.map((q, i) => {
-            if (!q) return null;
-            return (
-              <div key={q.id || i} className="mb-4 p-4 border rounded-md bg-background shadow-sm" data-testid={`question-result-${i}`}>
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 p-1 rounded-full ${q.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
-                    {q.isCorrect ? (
-                      <Check className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <X className="w-5 h-5 text-red-600" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Q{i + 1}: {q.question || 'Unknown question'}</p>
-                    <div className="text-sm mt-2 space-y-1">
-                      <p className="text-muted-foreground">
-                        Your answer: <span className={q.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                          {typeof q.userAnswer === 'string' ? q.userAnswer : 'No answer provided'}
-                        </span>
+          {normalizedResult.questions.map((q, i) => (
+            <div key={q.id || i} className="mb-4 p-4 border rounded-md bg-background shadow-sm" data-testid={`question-result-${i}`}>
+              <div className="flex items-start gap-3">
+                <div className={`mt-1 p-1 rounded-full ${q.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
+                  {q.isCorrect ? (
+                    <Check className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <X className="w-5 h-5 text-red-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Q{i + 1}: {q.question}</p>
+                  <div className="text-sm mt-2 space-y-1">
+                    <p className="text-muted-foreground">
+                      Your answer: <span className={q.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                        {q.userAnswer || 'No answer provided'}
+                      </span>
+                    </p>
+                    {!q.isCorrect && (
+                      <p className="text-green-700 font-medium">
+                        Correct answer: {q.correctAnswer || 'Unknown'}
                       </p>
-                      {!q.isCorrect && (
-                        <p className="text-green-700 font-medium">
-                          Correct answer: {typeof q.correctAnswer === 'string' ? q.correctAnswer : 'Unknown'}
-                        </p>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons - use the cleaned slug */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 mt-6 border-t">
           <Button
-            onClick={() => router.push(`/dashboard/mcq/${slug}`)}
+            onClick={() => router.push(`/dashboard/mcq/${cleanSlug}`)}
             className="flex items-center gap-2 bg-primary"
             data-testid="retry-quiz-button"
           >

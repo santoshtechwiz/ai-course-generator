@@ -1,14 +1,14 @@
 {
-  "numFailedTestSuites": 2,
-  "numFailedTests": 3,
+  "numFailedTestSuites": 5,
+  "numFailedTests": 8,
   "numPassedTestSuites": 11,
-  "numPassedTests": 81,
+  "numPassedTests": 95,
   "numPendingTestSuites": 0,
-  "numPendingTests": 0,
-  "numRuntimeErrorTestSuites": 0,
+  "numPendingTests": 1,
+  "numRuntimeErrorTestSuites": 1,
   "numTodoTests": 0,
-  "numTotalTestSuites": 13,
-  "numTotalTests": 84,
+  "numTotalTestSuites": 16,
+  "numTotalTests": 104,
   "openHandles": [],
   "snapshot": {
     "added": 0,
@@ -26,9 +26,821 @@
     "unmatched": 0,
     "updated": 0
   },
-  "startTime": 1747705467642,
+  "startTime": 1747833470598,
   "success": false,
   "testResults": [
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 9,
+      "numPendingTests": 1,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833509733,
+        "runtime": 13672,
+        "slow": true,
+        "start": 1747833496061
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\blanks-quiz-flow.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 2526,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete blanks quiz and see immediate results",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 7,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow user to complete blanks quiz and see immediate results"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 207,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should handle hint usage and track it in results",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle hint usage and track it in results"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 113,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should properly reset quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 248,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow unauthenticated users to take the quiz"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 11,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show sign-in prompt on results page for unauthenticated users"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 128,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should save answer with correct/incorrect status",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 6,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should save answer with correct/incorrect status"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 24,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz data loading errors"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 112,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test Error Handling should handle edge cases like empty questions array",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle edge cases like empty questions array"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "UI Features"
+          ],
+          "duration": 146,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test UI Features should show correct question number indicator",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show correct question number indicator"
+        },
+        {
+          "ancestorTitles": [
+            "Blanks Quiz Flow End-to-End Test",
+            "UI Features"
+          ],
+          "duration": null,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Blanks Quiz Flow End-to-End Test UI Features should change submit button text on last question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "pending",
+          "title": "should change submit button text on last question"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 9,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833509736,
+        "runtime": 13134,
+        "slow": true,
+        "start": 1747833496602
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\code-quiz-flow.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 193,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete code quiz and see results",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 6,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow user to complete code quiz and see results"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 30,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should track code submissions for each question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should track code submissions for each question"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 27,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz reset when requested"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 13,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow unauthenticated users to take the quiz"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 11,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test Unauthenticated User Flow should prompt for authentication when saving results",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should prompt for authentication when saving results"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 23,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz data loading errors"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle invalid quiz data with missing questions"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "UI and Interaction"
+          ],
+          "duration": 14,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test UI and Interaction should display code editor with initial code",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should display code editor with initial code"
+        },
+        {
+          "ancestorTitles": [
+            "Code Quiz Flow End-to-End Test",
+            "UI and Interaction"
+          ],
+          "duration": 20,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Code Quiz Flow End-to-End Test UI and Interaction should allow code typing and submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow code typing and submission"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "failureMessage": "  \u001b[1m● \u001b[22mTest suite failed to run\n\n      \u001b[31mx\u001b[0m Unexpected token `McqQuizWrapper`. Expected jsx identifier\n         ,-[\u001b[36;1;4mC:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\mcq-quiz-wrapper.test.tsx\u001b[0m:119:1]\n     \u001b[2m116\u001b[0m |   \n     \u001b[2m117\u001b[0m |   it(\"completes the quiz on last question and navigates to results\", () => {\n     \u001b[2m118\u001b[0m |     render(\n     \u001b[2m119\u001b[0m |       <McqQuizWrapper\n         : \u001b[35;1m       ^^^^^^^^^^^^^^\u001b[0m\n     \u001b[2m120\u001b[0m |         quizData={testQuizData}\n     \u001b[2m121\u001b[0m |         slug=\"test-quiz\"r actions first (twice, once for each question)\n     \u001b[2m121\u001b[0m |         quizId=\"quiz-123\"xpect.objectContaining({\r\n         `----\n\n\n    Caused by:\n        Syntax Error\n\n      \u001b[2mat Object.transformSync (\u001b[22mnode_modules/next/src/build/swc/index.ts\u001b[2m:1232:25)\u001b[22m\n      \u001b[2mat transformSync (\u001b[22mnode_modules/next/src/build/swc/index.ts\u001b[2m:1322:19)\u001b[22m\n      \u001b[2mat Object.process (\u001b[22mnode_modules/next/src/build/swc/jest-transformer.ts\u001b[2m:105:25)\u001b[22m\n      \u001b[2mat ScriptTransformer.transformSource (\u001b[22mnode_modules/@jest/transform/build/ScriptTransformer.js\u001b[2m:545:31)\u001b[22m\n      \u001b[2mat ScriptTransformer._transformAndBuildScript (\u001b[22mnode_modules/@jest/transform/build/ScriptTransformer.js\u001b[2m:674:40)\u001b[22m\n      \u001b[2mat ScriptTransformer.transform (\u001b[22mnode_modules/@jest/transform/build/ScriptTransformer.js\u001b[2m:726:19)\u001b[22m\n",
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 0,
+        "runtime": 0,
+        "slow": false,
+        "start": 0
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testExecError": "  \u001b[31mx\u001b[0m Unexpected token `McqQuizWrapper`. Expected jsx identifier\n     ,-[\u001b[36;1;4mC:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\mcq-quiz-wrapper.test.tsx\u001b[0m:119:1]\n \u001b[2m116\u001b[0m |   \n \u001b[2m117\u001b[0m |   it(\"completes the quiz on last question and navigates to results\", () => {\n \u001b[2m118\u001b[0m |     render(\n \u001b[2m119\u001b[0m |       <McqQuizWrapper\n     : \u001b[35;1m       ^^^^^^^^^^^^^^\u001b[0m\n \u001b[2m120\u001b[0m |         quizData={testQuizData}\n \u001b[2m121\u001b[0m |         slug=\"test-quiz\"r actions first (twice, once for each question)\n \u001b[2m121\u001b[0m |         quizId=\"quiz-123\"xpect.objectContaining({\r\n     `----\n\n\nCaused by:\n    Syntax Error",
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\mcq-quiz-wrapper.test.tsx",
+      "testResults": []
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 2,
+      "numPassingTests": 6,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833510811,
+        "runtime": 14335,
+        "slow": true,
+        "start": 1747833496476
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 124,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "actual": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "isCompleted": false,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "results": null,
+                  "tempResults": null,
+                  "quizHistory": [],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  }
+                },
+                "expected": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "results": null,
+                  "isCompleted": false,
+                  "quizHistory": [],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  }
+                },
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[33m@@ -17,9 +17,10 @@\u001b[39m\n\u001b[2m    \"quizHistory\": Array [],\u001b[22m\n\u001b[2m    \"results\": null,\u001b[22m\n\u001b[2m    \"resultsError\": null,\u001b[22m\n\u001b[2m    \"submissionError\": null,\u001b[22m\n\u001b[2m    \"submissionStateInProgress\": false,\u001b[22m\n\u001b[31m+   \"tempResults\": null,\u001b[39m\n\u001b[2m    \"timeRemaining\": null,\u001b[22m\n\u001b[2m    \"timerActive\": false,\u001b[22m\n\u001b[2m    \"userAnswers\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
+                "name": "toEqual",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[33m@@ -17,9 +17,10 @@\u001b[39m\n\u001b[2m    \"quizHistory\": Array [],\u001b[22m\n\u001b[2m    \"results\": null,\u001b[22m\n\u001b[2m    \"resultsError\": null,\u001b[22m\n\u001b[2m    \"submissionError\": null,\u001b[22m\n\u001b[2m    \"submissionStateInProgress\": false,\u001b[22m\n\u001b[31m+   \"tempResults\": null,\u001b[39m\n\u001b[2m    \"timeRemaining\": null,\u001b[22m\n\u001b[2m    \"timerActive\": false,\u001b[22m\n\u001b[2m    \"userAnswers\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at Object.toEqual (C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts:64:19)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "quizSlice should return the initial state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should return the initial state"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 9,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "actual": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "results": null,
+                  "isCompleted": false,
+                  "quizHistory": [
+                    {
+                      "id": "history-1",
+                      "quizTitle": "Past Quiz",
+                      "score": 10,
+                      "maxScore": 10
+                    }
+                  ],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  },
+                  "tempResults": null
+                },
+                "expected": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "results": null,
+                  "isCompleted": false,
+                  "quizHistory": [
+                    {
+                      "id": "history-1",
+                      "quizTitle": "Past Quiz",
+                      "score": 10,
+                      "maxScore": 10
+                    }
+                  ],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  }
+                },
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[33m@@ -24,9 +24,10 @@\u001b[39m\n\u001b[2m    ],\u001b[22m\n\u001b[2m    \"results\": null,\u001b[22m\n\u001b[2m    \"resultsError\": null,\u001b[22m\n\u001b[2m    \"submissionError\": null,\u001b[22m\n\u001b[2m    \"submissionStateInProgress\": false,\u001b[22m\n\u001b[31m+   \"tempResults\": null,\u001b[39m\n\u001b[2m    \"timeRemaining\": null,\u001b[22m\n\u001b[2m    \"timerActive\": false,\u001b[22m\n\u001b[2m    \"userAnswers\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
+                "name": "toEqual",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[33m@@ -24,9 +24,10 @@\u001b[39m\n\u001b[2m    ],\u001b[22m\n\u001b[2m    \"results\": null,\u001b[22m\n\u001b[2m    \"resultsError\": null,\u001b[22m\n\u001b[2m    \"submissionError\": null,\u001b[22m\n\u001b[2m    \"submissionStateInProgress\": false,\u001b[22m\n\u001b[31m+   \"tempResults\": null,\u001b[39m\n\u001b[2m    \"timeRemaining\": null,\u001b[22m\n\u001b[2m    \"timerActive\": false,\u001b[22m\n\u001b[2m    \"userAnswers\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at Object.toEqual (C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts:81:22)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "quizSlice should handle resetQuizState",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should handle resetQuizState"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setCurrentQuestion",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setCurrentQuestion"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for new answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for new answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for existing answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for existing answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle timer actions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle timer actions"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle markQuizCompleted",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle markQuizCompleted"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 293,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle submitQuiz action",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle submitQuiz action"
+        }
+      ],
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mquizSlice › should return the initial state\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n    \u001b[32m- Expected  - 0\u001b[39m\n    \u001b[31m+ Received  + 1\u001b[39m\n\n    \u001b[33m@@ -17,9 +17,10 @@\u001b[39m\n    \u001b[2m    \"quizHistory\": Array [],\u001b[22m\n    \u001b[2m    \"results\": null,\u001b[22m\n    \u001b[2m    \"resultsError\": null,\u001b[22m\n    \u001b[2m    \"submissionError\": null,\u001b[22m\n    \u001b[2m    \"submissionStateInProgress\": false,\u001b[22m\n    \u001b[31m+   \"tempResults\": null,\u001b[39m\n    \u001b[2m    \"timeRemaining\": null,\u001b[22m\n    \u001b[2m    \"timerActive\": false,\u001b[22m\n    \u001b[2m    \"userAnswers\": Array [],\u001b[22m\n    \u001b[2m  }\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 62 |\u001b[39m   test(\u001b[32m'should return the initial state'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[22m\n\u001b[2m     \u001b[90m 63 |\u001b[39m     \u001b[36mconst\u001b[39m state \u001b[33m=\u001b[39m quizReducer(undefined\u001b[33m,\u001b[39m { type\u001b[33m:\u001b[39m \u001b[32m'unknown'\u001b[39m })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 64 |\u001b[39m     expect(state)\u001b[33m.\u001b[39mtoEqual(initialState)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                   \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 65 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 66 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 67 |\u001b[39m   test(\u001b[32m'should handle resetQuizState'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toEqual (\u001b[22m\u001b[2m\u001b[0m\u001b[36mstore/slices/__tests__/quizSlice.test.ts\u001b[39m\u001b[0m\u001b[2m:64:19)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mquizSlice › should handle resetQuizState\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n    \u001b[32m- Expected  - 0\u001b[39m\n    \u001b[31m+ Received  + 1\u001b[39m\n\n    \u001b[33m@@ -24,9 +24,10 @@\u001b[39m\n    \u001b[2m    ],\u001b[22m\n    \u001b[2m    \"results\": null,\u001b[22m\n    \u001b[2m    \"resultsError\": null,\u001b[22m\n    \u001b[2m    \"submissionError\": null,\u001b[22m\n    \u001b[2m    \"submissionStateInProgress\": false,\u001b[22m\n    \u001b[31m+   \"tempResults\": null,\u001b[39m\n    \u001b[2m    \"timeRemaining\": null,\u001b[22m\n    \u001b[2m    \"timerActive\": false,\u001b[22m\n    \u001b[2m    \"userAnswers\": Array [],\u001b[22m\n    \u001b[2m  }\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 79 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 80 |\u001b[39m     \u001b[90m// History should be preserved, everything else reset\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 81 |\u001b[39m     expect(newState)\u001b[33m.\u001b[39mtoEqual({\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 82 |\u001b[39m       \u001b[33m...\u001b[39minitialState\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 83 |\u001b[39m       quizHistory\u001b[33m:\u001b[39m stateWithData\u001b[33m.\u001b[39mquizHistory\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 84 |\u001b[39m     })\u001b[33m;\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toEqual (\u001b[22m\u001b[2m\u001b[0m\u001b[36mstore/slices/__tests__/quizSlice.test.ts\u001b[39m\u001b[0m\u001b[2m:81:22)\u001b[22m\u001b[2m\u001b[22m\n"
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 7,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833511249,
+        "runtime": 14692,
+        "slow": true,
+        "start": 1747833496557
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 2361,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete quiz and see immediate results",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 8,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow user to complete quiz and see immediate results"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 557,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should handle quiz with empty answers",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz with empty answers"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 548,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should properly reset quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 961,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow unauthenticated users to take the quiz"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show sign-in prompt on results page for unauthenticated users"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz data loading errors"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 627,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle network errors during quiz submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle network errors during quiz submission"
+        }
+      ],
+      "failureMessage": null
+    },
     {
       "leaks": false,
       "numFailingTests": 0,
@@ -37,10 +849,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747705497842,
-        "runtime": 6511,
-        "slow": true,
-        "start": 1747705491331
+        "end": 1747833511497,
+        "runtime": 1381,
+        "slow": false,
+        "start": 1747833510116
       },
       "skipped": false,
       "snapshot": {
@@ -58,7 +870,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 368,
+          "duration": 308,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should handle MCQ quiz completion correctly",
@@ -73,7 +885,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 23,
+          "duration": 19,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should handle CODE quiz completion correctly",
@@ -88,7 +900,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 10,
+          "duration": 8,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should validate required fields",
@@ -103,7 +915,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 7,
+          "duration": 12,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should validate answer format",
@@ -118,7 +930,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 9,
+          "duration": 7,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should handle case where quiz is not found",
@@ -150,15 +962,391 @@
     {
       "leaks": false,
       "numFailingTests": 0,
+      "numPassingTests": 1,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833511942,
+        "runtime": 1072,
+        "slow": false,
+        "start": 1747833510870
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\api\\quiz\\quizRoutes.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "Quiz API Routes"
+          ],
+          "duration": 39,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Quiz API Routes should be set up for testing",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should be set up for testing"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 1,
+      "numPassingTests": 6,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833511921,
+        "runtime": 8923,
+        "slow": true,
+        "start": 1747833502998
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\slices\\textQuizSlice.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 52,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should initialize quiz correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should initialize quiz correctly"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 24,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "actual": {
+                  "questionId": "q1",
+                  "question": "What is React?",
+                  "answer": "A JavaScript library",
+                  "timeSpent": 30,
+                  "hintsUsed": false,
+                  "index": 0,
+                  "isCorrect": true,
+                  "correctAnswer": "A JavaScript library"
+                },
+                "expected": {
+                  "questionId": "q1",
+                  "question": "What is React?",
+                  "answer": "A JavaScript library",
+                  "timeSpent": 30,
+                  "hintsUsed": false,
+                  "index": 0
+                },
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 2\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"answer\": \"A JavaScript library\",\u001b[22m\n\u001b[31m+   \"correctAnswer\": \"A JavaScript library\",\u001b[39m\n\u001b[2m    \"hintsUsed\": false,\u001b[22m\n\u001b[2m    \"index\": 0,\u001b[22m\n\u001b[31m+   \"isCorrect\": true,\u001b[39m\n\u001b[2m    \"question\": \"What is React?\",\u001b[22m\n\u001b[2m    \"questionId\": \"q1\",\u001b[22m\n\u001b[2m    \"timeSpent\": 30,\u001b[22m\n\u001b[2m  }\u001b[22m",
+                "name": "toEqual",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 2\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"answer\": \"A JavaScript library\",\u001b[22m\n\u001b[31m+   \"correctAnswer\": \"A JavaScript library\",\u001b[39m\n\u001b[2m    \"hintsUsed\": false,\u001b[22m\n\u001b[2m    \"index\": 0,\u001b[22m\n\u001b[31m+   \"isCorrect\": true,\u001b[39m\n\u001b[2m    \"question\": \"What is React?\",\u001b[22m\n\u001b[2m    \"questionId\": \"q1\",\u001b[22m\n\u001b[2m    \"timeSpent\": 30,\u001b[22m\n\u001b[2m  }\u001b[22m\n    at Object.toEqual (C:\\Work\\Projects\\ai-learning\\__tests__\\slices\\textQuizSlice.test.ts:71:30)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "textQuizSlice should submit an answer locally",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should submit an answer locally"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should replace existing answer when submitting for same question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should replace existing answer when submitting for same question"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 7,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should complete quiz properly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should complete quiz properly"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should update current question index",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should update current question index"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should save and restore quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should save and restore quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should clear saved state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should clear saved state"
+        }
+      ],
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mtextQuizSlice › should submit an answer locally\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n    \u001b[32m- Expected  - 0\u001b[39m\n    \u001b[31m+ Received  + 2\u001b[39m\n\n    \u001b[2m  Object {\u001b[22m\n    \u001b[2m    \"answer\": \"A JavaScript library\",\u001b[22m\n    \u001b[31m+   \"correctAnswer\": \"A JavaScript library\",\u001b[39m\n    \u001b[2m    \"hintsUsed\": false,\u001b[22m\n    \u001b[2m    \"index\": 0,\u001b[22m\n    \u001b[31m+   \"isCorrect\": true,\u001b[39m\n    \u001b[2m    \"question\": \"What is React?\",\u001b[22m\n    \u001b[2m    \"questionId\": \"q1\",\u001b[22m\n    \u001b[2m    \"timeSpent\": 30,\u001b[22m\n    \u001b[2m  }\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 69 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 70 |\u001b[39m     expect(state\u001b[33m.\u001b[39manswers\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBe(\u001b[35m1\u001b[39m)\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 71 |\u001b[39m     expect(state\u001b[33m.\u001b[39manswers[\u001b[35m0\u001b[39m])\u001b[33m.\u001b[39mtoEqual(answer)\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 72 |\u001b[39m     \u001b[90m// Current question index is not automatically updated by submitAnswerLocally\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 73 |\u001b[39m     expect(state\u001b[33m.\u001b[39mcurrentQuestionIndex)\u001b[33m.\u001b[39mtoBe(\u001b[35m0\u001b[39m)\u001b[22m\n\u001b[2m     \u001b[90m 74 |\u001b[39m   })\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toEqual (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/slices/textQuizSlice.test.ts\u001b[39m\u001b[0m\u001b[2m:71:30)\u001b[22m\u001b[2m\u001b[22m\n"
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 9,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833512037,
+        "runtime": 2093,
+        "slow": false,
+        "start": 1747833509944
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\mcq-quiz-flow.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 62,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete MCQ quiz and see results",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 6,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow user to complete MCQ quiz and see results"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 24,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should track correct/incorrect answers",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should track correct/incorrect answers"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 14,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz reset when requested"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 39,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should verify quiz submission action is dispatched with correct payload",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should verify quiz submission action is dispatched with correct payload"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 13,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow unauthenticated users to take the quiz"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should show authentication prompt on certain actions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show authentication prompt on certain actions"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 11,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz data loading errors"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle invalid quiz data with missing questions"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "UI Features"
+          ],
+          "duration": 15,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test UI Features should display correct question number and options",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 7,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should display correct question number and options"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
       "numPassingTests": 2,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747705498451,
-        "runtime": 6233,
-        "slow": true,
-        "start": 1747705492218
+        "end": 1747833512315,
+        "runtime": 1158,
+        "slow": false,
+        "start": 1747833511157
       },
       "skipped": false,
       "snapshot": {
@@ -177,7 +1365,7 @@
             "QuizHelpers",
             "createResultsPreview"
           ],
-          "duration": 27,
+          "duration": 8,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "QuizHelpers createResultsPreview calculates scores correctly",
@@ -193,7 +1381,7 @@
             "QuizHelpers",
             "prepareSubmissionPayload"
           ],
-          "duration": 3,
+          "duration": 2,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "QuizHelpers prepareSubmissionPayload formats answers correctly",
@@ -215,10 +1403,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747705498469,
-        "runtime": 6353,
-        "slow": true,
-        "start": 1747705492116
+        "end": 1747833512675,
+        "runtime": 1015,
+        "slow": false,
+        "start": 1747833511660
       },
       "skipped": false,
       "snapshot": {
@@ -237,7 +1425,7 @@
             "Quiz Submission Utilities",
             "prepareSubmissionPayload"
           ],
-          "duration": 26,
+          "duration": 4,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Submission Utilities prepareSubmissionPayload should prepare a valid MCQ payload with all required fields",
@@ -269,7 +1457,7 @@
             "Quiz Submission Utilities",
             "prepareSubmissionPayload"
           ],
-          "duration": 1,
+          "duration": 2,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Submission Utilities prepareSubmissionPayload should handle missing isCorrect property gracefully",
@@ -285,7 +1473,7 @@
             "Quiz Submission Utilities",
             "prepareSubmissionPayload"
           ],
-          "duration": 2,
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Submission Utilities prepareSubmissionPayload should calculate score based on correct answers",
@@ -334,339 +1522,15 @@
     {
       "leaks": false,
       "numFailingTests": 0,
-      "numPassingTests": 8,
+      "numPassingTests": 13,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747705498868,
-        "runtime": 7205,
+        "end": 1747833513109,
+        "runtime": 14953,
         "slow": true,
-        "start": 1747705491663
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 35,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should return the initial state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should return the initial state"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 3,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle resetQuizState",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle resetQuizState"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 1,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setCurrentQuestion",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setCurrentQuestion"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setUserAnswer for new answer",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setUserAnswer for new answer"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setUserAnswer for existing answer",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setUserAnswer for existing answer"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 8,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle timer actions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle timer actions"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle markQuizCompleted",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle markQuizCompleted"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 468,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle submitQuiz action",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 4,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle submitQuiz action"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 7,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747705499329,
-        "runtime": 6510,
-        "slow": true,
-        "start": 1747705492819
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\slices\\textQuizSlice.test.ts",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 51,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should initialize quiz correctly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should initialize quiz correctly"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 7,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should submit an answer locally",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should submit an answer locally"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 7,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should replace existing answer when submitting for same question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should replace existing answer when submitting for same question"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 6,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should complete quiz properly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should complete quiz properly"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should update current question index",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should update current question index"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 5,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should save and restore quiz state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should save and restore quiz state"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 3,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should clear saved state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should clear saved state"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 1,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747705500286,
-        "runtime": 1552,
-        "slow": false,
-        "start": 1747705498734
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\api\\quiz\\quizRoutes.test.ts",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "Quiz API Routes"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Quiz API Routes should be set up for testing",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should be set up for testing"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 9,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747705500498,
-        "runtime": 9232,
-        "slow": true,
-        "start": 1747705491266
+        "start": 1747833498156
       },
       "skipped": false,
       "snapshot": {
@@ -684,7 +1548,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 693,
+          "duration": 178,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt renders with default props",
@@ -699,7 +1563,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 52,
+          "duration": 42,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt calls onSignIn when sign-in button is clicked",
@@ -714,7 +1578,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 22,
+          "duration": 9,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt displays save message when showSaveMessage is true",
@@ -729,7 +1593,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 74,
+          "duration": 10,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt does not display save message when showSaveMessage is false",
@@ -759,7 +1623,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 21,
+          "duration": 22,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt redirects to default route when onSignIn not provided",
@@ -774,7 +1638,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 43,
+          "duration": 19,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt shows quiz type specific title",
@@ -789,7 +1653,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 30,
+          "duration": 23,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt displays score preview when provided",
@@ -804,7 +1668,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 22,
+          "duration": 20,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt uses returnPath for custom callback when provided",
@@ -814,334 +1678,66 @@
           "retryReasons": [],
           "status": "passed",
           "title": "uses returnPath for custom callback when provided"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 9,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747705501088,
-        "runtime": 8557,
-        "slow": true,
-        "start": 1747705492531
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\code-quiz-flow.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 236,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete code quiz and see results",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 6,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should allow user to complete code quiz and see results"
         },
         {
           "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 23,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should track code submissions for each question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should track code submissions for each question"
-        },
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 17,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz reset when requested"
-        },
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 17,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should allow unauthenticated users to take the quiz"
-        },
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 15,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test Unauthenticated User Flow should prompt for authentication when saving results",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should prompt for authentication when saving results"
-        },
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 22,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 4,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz data loading errors"
-        },
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 8,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle invalid quiz data with missing questions"
-        },
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "UI and Interaction"
-          ],
-          "duration": 13,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test UI and Interaction should display code editor with initial code",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 4,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should display code editor with initial code"
-        },
-        {
-          "ancestorTitles": [
-            "Code Quiz Flow End-to-End Test",
-            "UI and Interaction"
+            "NonAuthenticatedUserSignInPrompt"
           ],
           "duration": 18,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "Code Quiz Flow End-to-End Test UI and Interaction should allow code typing and submission",
+          "fullName": "NonAuthenticatedUserSignInPrompt displays score preview correctly when provided",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "displays score preview correctly when provided"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 20,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt displays appropriate feedback for low scores",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "displays appropriate feedback for low scores"
+        },
+        {
+          "ancestorTitles": [
+            "NonAuthenticatedUserSignInPrompt"
+          ],
+          "duration": 22,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "NonAuthenticatedUserSignInPrompt handles sign in button click with loading state",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should allow code typing and submission"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 8,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747705501654,
-        "runtime": 8704,
-        "slow": true,
-        "start": 1747705492950
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\mcq-quiz-flow.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 260,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete MCQ quiz and see results",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 6,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should allow user to complete MCQ quiz and see results"
+          "title": "handles sign in button click with loading state"
         },
         {
           "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
+            "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 41,
+          "duration": 17,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should track correct/incorrect answers",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should track correct/incorrect answers"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 30,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested",
+          "fullName": "NonAuthenticatedUserSignInPrompt renders with custom return path",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should handle quiz reset when requested"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 24,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should allow unauthenticated users to take the quiz"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 12,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should show authentication prompt on certain actions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should show authentication prompt on certain actions"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 26,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz data loading errors"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 10,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle invalid quiz data with missing questions"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "UI Features"
-          ],
-          "duration": 34,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test UI Features should display correct question number and options",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 7,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should display correct question number and options"
+          "title": "renders with custom return path"
         }
       ],
       "failureMessage": null
@@ -1154,10 +1750,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747705501797,
-        "runtime": 3735,
-        "slow": false,
-        "start": 1747705498062
+        "end": 1747833513182,
+        "runtime": 9517,
+        "slow": true,
+        "start": 1747833503665
       },
       "skipped": false,
       "snapshot": {
@@ -1175,7 +1771,7 @@
           "ancestorTitles": [
             "Animation Provider Mock"
           ],
-          "duration": 105,
+          "duration": 91,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Animation Provider Mock should provide animation context with animations disabled by default",
@@ -1191,16 +1787,218 @@
     },
     {
       "leaks": false,
+      "numFailingTests": 3,
+      "numPassingTests": 7,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747833513341,
+        "runtime": 16980,
+        "slow": true,
+        "start": 1747833496361
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\components\\mcq-quiz.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 399,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component renders the question and options correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "renders the question and options correctly"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 75,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n    at Object.toBeTruthy (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\components\\mcq-quiz.test.tsx:56:96)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "McqQuiz Component allows selecting an option",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "allows selecting an option"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 50,
+          "failureDetails": [
+            {
+              "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).toBeInTheDocument()\u001b[22m\n\n\u001b[31mreceived\u001b[39m value must be an HTMLElement or an SVGElement.\nReceived has value: \u001b[31mnull\u001b[39m"
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).toBeInTheDocument()\u001b[22m\n\n\u001b[31mreceived\u001b[39m value must be an HTMLElement or an SVGElement.\nReceived has value: \u001b[31mnull\u001b[39m\n    at __EXTERNAL_MATCHER_TRAP__ (C:\\Work\\Projects\\ai-learning\\node_modules\\expect\\build\\index.js:325:30)\n    at Object.throwingMatcher [as toBeInTheDocument] (C:\\Work\\Projects\\ai-learning\\node_modules\\expect\\build\\index.js:326:15)\n    at Object.toBeInTheDocument (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\components\\mcq-quiz.test.tsx:65:53)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "McqQuiz Component shows warning when trying to submit without selecting an option",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "shows warning when trying to submit without selecting an option"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 54,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component handles correct answer submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles correct answer submission"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 43,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component handles incorrect answer submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles incorrect answer submission"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 35,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "pass": false,
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31melement\u001b[39m\u001b[2m).toBeDisabled()\u001b[22m\n\nReceived element is not disabled:\n  \u001b[31m<button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 h-10 py-2 px-8 bg-primary/70\" data-testid=\"submit-answer\" />\u001b[39m"
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31melement\u001b[39m\u001b[2m).toBeDisabled()\u001b[22m\n\nReceived element is not disabled:\n  \u001b[31m<button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 h-10 py-2 px-8 bg-primary/70\" data-testid=\"submit-answer\" />\u001b[39m\n    at Object.toBeDisabled (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\components\\mcq-quiz.test.tsx:116:49)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "McqQuiz Component shows submitting state when submitting an answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "shows submitting state when submitting an answer"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 13,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component shows \"Submit Quiz\" when on last question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "shows \"Submit Quiz\" when on last question"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 37,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component shows \"Submitting Quiz...\" when submitting last question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "shows \"Submitting Quiz...\" when submitting last question"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 25,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component disables multi-submission for the same question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "disables multi-submission for the same question"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 49,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component resets state when question changes",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "resets state when question changes"
+        }
+      ],
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMcqQuiz Component › allows selecting an option\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\n    Received: \u001b[31mfalse\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 54 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 55 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByText(\u001b[32m'A library'\u001b[39m))\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 56 |\u001b[39m     expect(screen\u001b[33m.\u001b[39mgetByText(\u001b[32m'A library'\u001b[39m)\u001b[33m.\u001b[39mclosest(\u001b[32m'div'\u001b[39m)\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mclassList\u001b[33m.\u001b[39mcontains(\u001b[32m'border-primary'\u001b[39m))\u001b[33m.\u001b[39mtoBeTruthy()\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                                                                                                \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 57 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 58 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 59 |\u001b[39m   it(\u001b[32m'shows warning when trying to submit without selecting an option'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toBeTruthy (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../mcq/components/mcq-quiz.test.tsx\u001b[2m:56:96)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMcqQuiz Component › shows warning when trying to submit without selecting an option\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).toBeInTheDocument()\u001b[22m\n\n    \u001b[31mreceived\u001b[39m value must be an HTMLElement or an SVGElement.\n    Received has value: \u001b[31mnull\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 63 |\u001b[39m     fireEvent\u001b[33m.\u001b[39mclick(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'submit-answer'\u001b[39m))\u001b[22m\n\u001b[2m     \u001b[90m 64 |\u001b[39m     \u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 65 |\u001b[39m     expect(container\u001b[33m.\u001b[39mquerySelector(\u001b[32m'.bg-amber-50'\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 66 |\u001b[39m     expect(mockOnAnswer)\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoHaveBeenCalled()\u001b[22m\n\u001b[2m     \u001b[90m 67 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 68 |\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat __EXTERNAL_MATCHER_TRAP__ (\u001b[22m\u001b[2mnode_modules/expect/build/index.js\u001b[2m:325:30)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.throwingMatcher [as toBeInTheDocument] (\u001b[22m\u001b[2mnode_modules/expect/build/index.js\u001b[2m:326:15)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toBeInTheDocument (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../mcq/components/mcq-quiz.test.tsx\u001b[2m:65:53)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMcqQuiz Component › shows submitting state when submitting an answer\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31melement\u001b[39m\u001b[2m).toBeDisabled()\u001b[22m\n\n    Received element is not disabled:\n      \u001b[31m<button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 h-10 py-2 px-8 bg-primary/70\" data-testid=\"submit-answer\" />\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 114 |\u001b[39m     \u001b[90m// Should show loading state\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 115 |\u001b[39m     expect(screen\u001b[33m.\u001b[39mgetByText(\u001b[32m'Submitting...'\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 116 |\u001b[39m     expect(screen\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'submit-answer'\u001b[39m))\u001b[33m.\u001b[39mtoBeDisabled()\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 117 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 118 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 119 |\u001b[39m   it(\u001b[32m'shows \"Submit Quiz\" when on last question'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toBeDisabled (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../mcq/components/mcq-quiz.test.tsx\u001b[2m:116:49)\u001b[22m\u001b[2m\u001b[22m\n"
+    },
+    {
+      "leaks": false,
       "numFailingTests": 0,
       "numPassingTests": 10,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747705503024,
-        "runtime": 11315,
+        "end": 1747833513401,
+        "runtime": 14102,
         "slow": true,
-        "start": 1747705491709
+        "start": 1747833499299
       },
       "skipped": false,
       "snapshot": {
@@ -1218,7 +2016,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 93,
+          "duration": 54,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should return authenticated status when session exists",
@@ -1233,7 +2031,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 11,
+          "duration": 6,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should return unauthenticated status when session is missing",
@@ -1248,7 +2046,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 11,
+          "duration": 5,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should detect fromAuth parameter in URL",
@@ -1263,7 +2061,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 9,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should not detect fromAuth when parameter is missing",
@@ -1278,7 +2076,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 18,
+          "duration": 6,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should call signIn when requireAuth is called and user is unauthenticated",
@@ -1293,7 +2091,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 6,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should not call signIn when requireAuth is called but user is authenticated",
@@ -1308,7 +2106,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 7,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should parse redirect info from URL",
@@ -1323,7 +2121,7 @@
           "ancestorTitles": [
             "useAuth hook"
           ],
-          "duration": 6,
+          "duration": 3,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "useAuth hook should handle missing redirect info",
@@ -1338,7 +2136,7 @@
           "ancestorTitles": [
             "_createMockUseAuth"
           ],
-          "duration": 4,
+          "duration": 2,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "_createMockUseAuth should create default mock",
@@ -1369,162 +2167,16 @@
     },
     {
       "leaks": false,
-      "numFailingTests": 1,
-      "numPassingTests": 6,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747705507174,
-        "runtime": 14612,
-        "slow": true,
-        "start": 1747705492562
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 1692,
-          "failureDetails": [
-            {
-              "name": "TestingLibraryElementError"
-            }
-          ],
-          "failureMessages": [
-            "TestingLibraryElementError: Unable to find an element with the text: /You completed 2 out of 2 questions/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"quiz-question\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mWhat is Redux?\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<p>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m of \u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</p>\u001b[39m\n        \u001b[36m<textarea\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"answer-textarea\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-button\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFinish Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"space-y-6\"\u001b[39m\n        \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0;\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"flex flex-col sm:flex-row justify-between items-center gap-4 mb-6\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div>\u001b[39m\n            \u001b[36m<h1\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"text-2xl font-bold\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mQuiz Results\u001b[0m\n            \u001b[36m</h1>\u001b[39m\n            \u001b[36m<p\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"text-muted-foreground\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mOpen Ended Quiz\u001b[0m\n              \u001b[0m • Completed \u001b[0m\n              \u001b[0m5/20/2025\u001b[0m\n            \u001b[36m</p>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"flex gap-2\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3\"\u001b[39m\n              \u001b[33mtitle\u001b[39m=\u001b[32m\"Save results\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<svg\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-download h-4 w-4 mr-2\"\u001b[39m\n                \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<path\u001b[39m\n                  \u001b[33md\u001b[39m=\u001b[32m\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"\u001b[39m\n                \u001b[36m/>\u001b[39m\n                \u001b[36m<polyline\u001b[39m\n                  \u001b[33mpoints\u001b[39m=\u001b[32m\"7 10 12 15 17 10\"\u001b[39m\n                \u001b[36m/>\u001b[39m\n                \u001b[36m<line\u001b[39m\n                  \u001b[33mx1\u001b[39m=\u001b[32m\"12\"\u001b[39m\n                  \u001b[33mx2\u001b[39m=\u001b[32m\"12\"\u001b[39m\n                  \u001b[33my1\u001b[39m=\u001b[32m\"15\"\u001b[39m\n                  \u001b[33my2\u001b[39m=\u001b[32m\"3\"\u001b[39m\n                \u001b[36m/>\u001b[39m\n              \u001b[36m</svg>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"hidden sm:inline\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mSave Results\u001b[0m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3\"\u001b[39m\n              \u001b[33mtitle\u001b[39m=\u001b[32m\"Try again\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<svg\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-refresh-cw h-4 w-4 mr-0 sm:mr-2\"\u001b[39m\n                \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<path\u001b[39m\n                  \u001b[33md\u001b[39m=\u001b[32m\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"\u001b[39m\n                \u001b[36m/>\u001b[39m\n                \u001b[36m<path\u001b[39m\n                  \u001b[33md\u001b[39m=\u001b[32m\"M21 3v5h-5\"\u001b[39m\n                \u001b[36m/>\u001b[39m\n                \u001b[36m<path\u001b[39m\n                  \u001b[33md\u001b[39m=\u001b[32m\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"\u001b[39m\n                \u001b[36m/>\u001b[39m\n                \u001b[36m<path\u001b[39m\n                  \u001b[33md\u001b[39m=\u001b[32m\"M8 16H3v5\"\u001b[39m\n                \u001b[36m/>\u001b[39m\n              \u001b[36m</svg>\u001b[39m\n              \u001b[36m<span\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"hidden sm:inline\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mTry Again\u001b[0m\n              \u001b[36m</span>\u001b[39m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"grid grid-cols-1 md:grid-cols-3 gap-4 mb-6\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"rounded-lg border bg-card text-card-foreground shadow-sm col-span-1\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"p-4 flex items-center gap-4\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"rounded-full w-16 h-16 flex items-center justify-center text-white text-xl font-bold bg-yellow-500\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0m60\u001b[0m\n                \u001b[0m%\u001b[0m\n              \u001b[36m</div>\u001b[39m\n              \u001b[36m<div>\u001b[39m\n                \u001b[36m<h3\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"font-medium\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0mAverage Score\u001b[0m\n                \u001b[36m</h3>\u001b[39m\n                \u001b[36m<p\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"text-sm text-muted-foreground\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0mBased on similarity to reference answers\u001b[0m\n                \u001b[36m</p>\u001b[39m\n              \u001b[36m</div>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"rounded-lg ...\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByText (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:231:21)"
-          ],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete quiz and see immediate results",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "failed",
-          "title": "should allow user to complete quiz and see immediate results"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 547,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should handle quiz with empty answers",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz with empty answers"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 565,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should properly reset quiz state"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 877,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should allow unauthenticated users to take the quiz"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 15,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should show sign-in prompt on results page for unauthenticated users"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 9,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz data loading errors"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 585,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle network errors during quiz submission",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle network errors during quiz submission"
-        }
-      ],
-      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Authenticated User Flow › should allow user to complete quiz and see immediate results\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element with the text: /You completed 2 out of 2 questions/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"quiz-question\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mWhat is Redux?\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<p>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m of \u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</p>\u001b[39m\n            \u001b[36m<textarea\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"answer-textarea\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFinish Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"space-y-6\"\u001b[39m\n            \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0;\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"flex flex-col sm:flex-row justify-between items-center gap-4 mb-6\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div>\u001b[39m\n                \u001b[36m<h1\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"text-2xl font-bold\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0mQuiz Results\u001b[0m\n                \u001b[36m</h1>\u001b[39m\n                \u001b[36m<p\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"text-muted-foreground\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0mOpen Ended Quiz\u001b[0m\n                  \u001b[0m • Completed \u001b[0m\n                  \u001b[0m5/20/2025\u001b[0m\n                \u001b[36m</p>\u001b[39m\n              \u001b[36m</div>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"flex gap-2\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<button\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3\"\u001b[39m\n                  \u001b[33mtitle\u001b[39m=\u001b[32m\"Save results\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<svg\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-download h-4 w-4 mr-2\"\u001b[39m\n                    \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                    \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                    \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                    \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                    \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                    \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                    \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                    \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                    \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<path\u001b[39m\n                      \u001b[33md\u001b[39m=\u001b[32m\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"\u001b[39m\n                    \u001b[36m/>\u001b[39m\n                    \u001b[36m<polyline\u001b[39m\n                      \u001b[33mpoints\u001b[39m=\u001b[32m\"7 10 12 15 17 10\"\u001b[39m\n                    \u001b[36m/>\u001b[39m\n                    \u001b[36m<line\u001b[39m\n                      \u001b[33mx1\u001b[39m=\u001b[32m\"12\"\u001b[39m\n                      \u001b[33mx2\u001b[39m=\u001b[32m\"12\"\u001b[39m\n                      \u001b[33my1\u001b[39m=\u001b[32m\"15\"\u001b[39m\n                      \u001b[33my2\u001b[39m=\u001b[32m\"3\"\u001b[39m\n                    \u001b[36m/>\u001b[39m\n                  \u001b[36m</svg>\u001b[39m\n                  \u001b[36m<span\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"hidden sm:inline\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[0mSave Results\u001b[0m\n                  \u001b[36m</span>\u001b[39m\n                \u001b[36m</button>\u001b[39m\n                \u001b[36m<button\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3\"\u001b[39m\n                  \u001b[33mtitle\u001b[39m=\u001b[32m\"Try again\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<svg\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-refresh-cw h-4 w-4 mr-0 sm:mr-2\"\u001b[39m\n                    \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                    \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                    \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                    \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                    \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                    \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                    \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                    \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                    \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<path\u001b[39m\n                      \u001b[33md\u001b[39m=\u001b[32m\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"\u001b[39m\n                    \u001b[36m/>\u001b[39m\n                    \u001b[36m<path\u001b[39m\n                      \u001b[33md\u001b[39m=\u001b[32m\"M21 3v5h-5\"\u001b[39m\n                    \u001b[36m/>\u001b[39m\n                    \u001b[36m<path\u001b[39m\n                      \u001b[33md\u001b[39m=\u001b[32m\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"\u001b[39m\n                    \u001b[36m/>\u001b[39m\n                    \u001b[36m<path\u001b[39m\n                      \u001b[33md\u001b[39m=\u001b[32m\"M8 16H3v5\"\u001b[39m\n                    \u001b[36m/>\u001b[39m\n                  \u001b[36m</svg>\u001b[39m\n                  \u001b[36m<span\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"hidden sm:inline\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[0mTry Again\u001b[0m\n                  \u001b[36m</span>\u001b[39m\n                \u001b[36m</button>\u001b[39m\n              \u001b[36m</div>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"grid grid-cols-1 md:grid-cols-3 gap-4 mb-6\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"rounded-lg border bg-card text-card-foreground shadow-sm col-span-1\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<div\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"p-4 flex items-center gap-4\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<div\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"rounded-full w-16 h-16 flex items-center justify-center text-white text-xl font-bold bg-yellow-500\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[0m60\u001b[0m\n                    \u001b[0m%\u001b[0m\n                  \u001b[36m</div>\u001b[39m\n                  \u001b[36m<div>\u001b[39m\n                    \u001b[36m<h3\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"font-medium\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mAverage Score\u001b[0m\n                    \u001b[36m</h3>\u001b[39m\n                    \u001b[36m<p\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"text-sm text-muted-foreground\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mBased on similarity to reference answers\u001b[0m\n                    \u001b[36m</p>\u001b[39m\n                  \u001b[36m</div>\u001b[39m\n                \u001b[36m</div>\u001b[39m\n              \u001b[36m</div>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"rounded-lg ...\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 229 |\u001b[39m       \u001b[90m// Check that results are shown\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 230 |\u001b[39m       expect(screen\u001b[33m.\u001b[39mgetByText(\u001b[35m/Quiz Results/i\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 231 |\u001b[39m       expect(screen\u001b[33m.\u001b[39mgetByText(\u001b[35m/You completed 2 out of 2 questions/i\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 232 |\u001b[39m     })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 233 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 234 |\u001b[39m     test(\u001b[32m'should handle quiz with empty answers'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByText (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:231:21)\u001b[22m\u001b[2m\u001b[22m\n"
-    },
-    {
-      "leaks": false,
       "numFailingTests": 2,
-      "numPassingTests": 8,
+      "numPassingTests": 3,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747705510832,
-        "runtime": 17941,
+        "end": 1747833514404,
+        "runtime": 11490,
         "slow": true,
-        "start": 1747705492891
+        "start": 1747833502914
       },
       "skipped": false,
       "snapshot": {
@@ -1536,194 +2188,100 @@
         "unmatched": 0,
         "updated": 0
       },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\blanks-quiz-flow.test.tsx",
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\results\\results-page.test.tsx",
       "testResults": [
         {
           "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
+            "McqResultsPage"
           ],
-          "duration": 1548,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete blanks quiz and see immediate results",
+          "duration": 369,
+          "failureDetails": [
+            {}
+          ],
+          "failureMessages": [
+            "TypeError: Cannot read properties of undefined (reading 'then')\n    at slug (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\results\\page.tsx:73:30)\n    at commitHookEffectListMount (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:23189:26)\n    at commitPassiveMountOnFiber (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:24970:11)\n    at commitPassiveMountEffects_complete (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:24930:9)\n    at commitPassiveMountEffects_begin (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:24917:7)\n    at commitPassiveMountEffects (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:24905:3)\n    at flushPassiveEffectsImpl (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27078:3)\n    at flushPassiveEffects (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27023:14)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26808:9\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\results\\results-page.test.tsx:78:11)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "McqResultsPage shows loading state when fetching results",
           "invocations": 1,
           "location": null,
-          "numPassingAsserts": 7,
+          "numPassingAsserts": 0,
           "retryReasons": [],
-          "status": "passed",
-          "title": "should allow user to complete blanks quiz and see immediate results"
+          "status": "failed",
+          "title": "shows loading state when fetching results"
         },
         {
           "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
+            "McqResultsPage"
           ],
-          "duration": 573,
+          "duration": 32,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should handle hint usage and track it in results",
+          "fullName": "McqResultsPage shows sign in prompt for unauthenticated users",
           "invocations": 1,
           "location": null,
-          "numPassingAsserts": 3,
+          "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should handle hint usage and track it in results"
+          "title": "shows sign in prompt for unauthenticated users"
         },
         {
           "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
+            "McqResultsPage"
           ],
-          "duration": 572,
+          "duration": 39,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
+          "fullName": "McqResultsPage shows saved results when available",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 2,
           "retryReasons": [],
           "status": "passed",
-          "title": "should properly reset quiz state"
+          "title": "shows saved results when available"
         },
         {
           "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
+            "McqResultsPage"
           ],
-          "duration": 962,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "duration": 1061,
+          "failureDetails": [
+            {},
+            {
+              "matcherResult": {
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected\u001b[39m\n\u001b[31m+ Received\u001b[39m\n\n  \u001b[2m\"test-quiz\"\u001b[22m,\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"correctAnswers\": 7,\u001b[22m\n\u001b[31m+   \"maxScore\": 10,\u001b[39m\n\u001b[2m    \"questionsAnswered\": 10,\u001b[22m\n\u001b[2m    \"score\": 70,\u001b[22m\n\u001b[2m    \"totalQuestions\": 10,\u001b[22m\n\u001b[2m  }\u001b[22m,\n\nNumber of calls: \u001b[31m1\u001b[39m",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: Rendered fewer hooks than expected. This may be caused by an accidental early return statement.\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15562:11)\n    at updateFunctionComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:19617:20)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21640:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at workLoop (C:\\Work\\Projects\\ai-learning\\node_modules\\scheduler\\cjs\\scheduler.development.js:266:34)\n    at flushWork (C:\\Work\\Projects\\ai-learning\\node_modules\\scheduler\\cjs\\scheduler.development.js:239:14)\n    at performWorkUntilDeadline (C:\\Work\\Projects\\ai-learning\\node_modules\\scheduler\\cjs\\scheduler.development.js:533:21)\n    at Timeout.task [as _onTimeout] (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-environment-jsdom\\node_modules\\jsdom\\lib\\jsdom\\browser\\Window.js:520:19)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)",
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected\u001b[39m\n\u001b[31m+ Received\u001b[39m\n\n  \u001b[2m\"test-quiz\"\u001b[22m,\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"correctAnswers\": 7,\u001b[22m\n\u001b[31m+   \"maxScore\": 10,\u001b[39m\n\u001b[2m    \"questionsAnswered\": 10,\u001b[22m\n\u001b[2m    \"score\": 70,\u001b[22m\n\u001b[2m    \"totalQuestions\": 10,\u001b[22m\n\u001b[2m  }\u001b[22m,\n\nNumber of calls: \u001b[31m1\u001b[39m\n\nIgnored nodes: comments, script, style\n\u001b[36m<html>\u001b[39m\n  \u001b[36m<head />\u001b[39m\n  \u001b[36m<body>\u001b[39m\n    \u001b[36m<div />\u001b[39m\n  \u001b[36m</body>\u001b[39m\n\u001b[36m</html>\u001b[39m\n    at toHaveBeenCalledWith (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\results\\results-page.test.tsx:148:31)\n    at runWithExpensiveErrorDiagnosticsDisabled (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:47:12)\n    at checkCallback (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\wait-for.js:124:77)\n    at checkRealTimersCallback (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\wait-for.js:118:16)\n    at Timeout.task [as _onTimeout] (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-environment-jsdom\\node_modules\\jsdom\\lib\\jsdom\\browser\\Window.js:520:19)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
+          ],
+          "fullName": "McqResultsPage shows temporary results with save button after quiz completion",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 2,
           "retryReasons": [],
-          "status": "passed",
-          "title": "should allow unauthenticated users to take the quiz"
-        },
-        {
-          "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 20,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should show sign-in prompt on results page for unauthenticated users"
-        },
-        {
-          "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 579,
-          "failureDetails": [
-            {
-              "matcherResult": {
-                "actual": 0,
-                "expected": 1,
-                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m",
-                "name": "toBe",
-                "pass": false
-              }
-            }
-          ],
-          "failureMessages": [
-            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\n    at Object.toBe (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\blanks-quiz-flow.test.tsx:472:36)"
-          ],
-          "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should save answer with correct/incorrect status",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
           "status": "failed",
-          "title": "should save answer with correct/incorrect status"
+          "title": "shows temporary results with save button after quiz completion"
         },
         {
           "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Error Handling"
+            "McqResultsPage"
           ],
-          "duration": 542,
+          "duration": 21,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "fullName": "McqResultsPage shows error message when results loading fails",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should handle quiz data loading errors"
-        },
-        {
-          "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 557,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test Error Handling should handle edge cases like empty questions array",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle edge cases like empty questions array"
-        },
-        {
-          "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "UI Features"
-          ],
-          "duration": 595,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "Blanks Quiz Flow End-to-End Test UI Features should show correct question number indicator",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should show correct question number indicator"
-        },
-        {
-          "ancestorTitles": [
-            "Blanks Quiz Flow End-to-End Test",
-            "UI Features"
-          ],
-          "duration": 554,
-          "failureDetails": [
-            {
-              "matcherResult": {
-                "actual": "Next Question",
-                "expected": "Finish Quiz",
-                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"Finish Quiz\"\u001b[39m\nReceived: \u001b[31m\"Next Question\"\u001b[39m",
-                "name": "toBe",
-                "pass": false
-              }
-            }
-          ],
-          "failureMessages": [
-            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"Finish Quiz\"\u001b[39m\nReceived: \u001b[31m\"Next Question\"\u001b[39m\n    at Object.toBe (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\blanks-quiz-flow.test.tsx:626:40)"
-          ],
-          "fullName": "Blanks Quiz Flow End-to-End Test UI Features should change submit button text on last question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "failed",
-          "title": "should change submit button text on last question"
+          "title": "shows error message when results loading fails"
         }
       ],
-      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mBlanks Quiz Flow End-to-End Test › Unauthenticated User Flow › should save answer with correct/incorrect status\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\n    Expected: \u001b[32m1\u001b[39m\n    Received: \u001b[31m0\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 470 |\u001b[39m       \u001b[90m// Check the store state to see if answer was stored with isCorrect=false\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 471 |\u001b[39m       \u001b[36mconst\u001b[39m state \u001b[33m=\u001b[39m store\u001b[33m.\u001b[39mgetState()\u001b[33m.\u001b[39mtextQuiz\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 472 |\u001b[39m       expect(state\u001b[33m.\u001b[39manswers\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBe(\u001b[35m1\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 473 |\u001b[39m       expect(state\u001b[33m.\u001b[39manswers[\u001b[35m0\u001b[39m]\u001b[33m.\u001b[39manswer)\u001b[33m.\u001b[39mtoBe(\u001b[32m'wrong answer'\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 474 |\u001b[39m       expect(state\u001b[33m.\u001b[39manswers[\u001b[35m0\u001b[39m]\u001b[33m.\u001b[39misCorrect)\u001b[33m.\u001b[39mtoBe(\u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 475 |\u001b[39m       \u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toBe (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/blanks-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:472:36)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mBlanks Quiz Flow End-to-End Test › UI Features › should change submit button text on last question\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\n    Expected: \u001b[32m\"Finish Quiz\"\u001b[39m\n    Received: \u001b[31m\"Next Question\"\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 624 |\u001b[39m       \u001b[90m// which means we are on the last question (index 1 of 2 questions)\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 625 |\u001b[39m       \u001b[36mconst\u001b[39m submitButton \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m screen\u001b[33m.\u001b[39mfindByTestId(\u001b[32m'submit-button'\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 626 |\u001b[39m       expect(submitButton\u001b[33m.\u001b[39mtextContent)\u001b[33m.\u001b[39mtoBe(\u001b[32m'Finish Quiz'\u001b[39m)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 627 |\u001b[39m       \u001b[22m\n\u001b[2m     \u001b[90m 628 |\u001b[39m       \u001b[90m// Restore the original mock for other tests\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 629 |\u001b[39m       jest\u001b[33m.\u001b[39mrequireMock(\u001b[32m'@/app/dashboard/(quiz)/blanks/components/BlanksQuiz'\u001b[39m)\u001b[33m.\u001b[39m\u001b[36mdefault\u001b[39m \u001b[33m=\u001b[39m originalMock\u001b[33m;\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toBe (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/blanks-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:626:40)\u001b[22m\u001b[2m\u001b[22m\n"
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMcqResultsPage › shows loading state when fetching results\u001b[39m\u001b[22m\n\n    TypeError: Cannot read properties of undefined (reading 'then')\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 71 |\u001b[39m         \u001b[36mif\u001b[39m (actions\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mgetResults) {\u001b[22m\n\u001b[2m     \u001b[90m 72 |\u001b[39m           console\u001b[33m.\u001b[39mlog(\u001b[32m\"MCQ Page: Calling getResults with:\"\u001b[39m\u001b[33m,\u001b[39m slug)\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 73 |\u001b[39m           actions\u001b[33m.\u001b[39mgetResults(slug)\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 74 |\u001b[39m             \u001b[33m.\u001b[39mthen(data \u001b[33m=>\u001b[39m {\u001b[22m\n\u001b[2m     \u001b[90m 75 |\u001b[39m               console\u001b[33m.\u001b[39mlog(\u001b[32m\"MCQ Page: Results fetched successfully:\"\u001b[39m\u001b[33m,\u001b[39m data)\u001b[22m\n\u001b[2m     \u001b[90m 76 |\u001b[39m             })\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat slug (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../mcq/[slug]/results/page.tsx\u001b[2m:73:30)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat commitHookEffectListMount (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:23189:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat commitPassiveMountOnFiber (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:24970:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat commitPassiveMountEffects_complete (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:24930:9)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat commitPassiveMountEffects_begin (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:24917:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat commitPassiveMountEffects (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:24905:3)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushPassiveEffectsImpl (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27078:3)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushPassiveEffects (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27023:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26808:9\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../mcq/[slug]/results/results-page.test.tsx\u001b[2m:78:11)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMcqResultsPage › shows temporary results with save button after quiz completion\u001b[39m\u001b[22m\n\n    Rendered fewer hooks than expected. This may be caused by an accidental early return statement.\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15562:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat updateFunctionComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:19617:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21640:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoop (\u001b[22m\u001b[2mnode_modules/scheduler/cjs/scheduler.development.js\u001b[2m:266:34)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushWork (\u001b[22m\u001b[2mnode_modules/scheduler/cjs/scheduler.development.js\u001b[2m:239:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performWorkUntilDeadline (\u001b[22m\u001b[2mnode_modules/scheduler/cjs/scheduler.development.js\u001b[2m:533:21)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mMcqResultsPage › shows temporary results with save button after quiz completion\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mjest.fn()\u001b[39m\u001b[2m).\u001b[22mtoHaveBeenCalledWith\u001b[2m(\u001b[22m\u001b[32m...expected\u001b[39m\u001b[2m)\u001b[22m\n\n    \u001b[32m- Expected\u001b[39m\n    \u001b[31m+ Received\u001b[39m\n\n      \u001b[2m\"test-quiz\"\u001b[22m,\n    \u001b[2m  Object {\u001b[22m\n    \u001b[2m    \"correctAnswers\": 7,\u001b[22m\n    \u001b[31m+   \"maxScore\": 10,\u001b[39m\n    \u001b[2m    \"questionsAnswered\": 10,\u001b[22m\n    \u001b[2m    \"score\": 70,\u001b[22m\n    \u001b[2m    \"totalQuestions\": 10,\u001b[22m\n    \u001b[2m  }\u001b[22m,\n\n    Number of calls: \u001b[31m1\u001b[39m\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<html>\u001b[39m\n      \u001b[36m<head />\u001b[39m\n      \u001b[36m<body>\u001b[39m\n        \u001b[36m<div />\u001b[39m\n      \u001b[36m</body>\u001b[39m\n    \u001b[36m</html>\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 146 |\u001b[39m     \u001b[22m\n\u001b[2m     \u001b[90m 147 |\u001b[39m     \u001b[36mawait\u001b[39m waitFor(() \u001b[33m=>\u001b[39m {\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 148 |\u001b[39m       expect(mockSaveResults)\u001b[33m.\u001b[39mtoHaveBeenCalledWith(\u001b[32m'test-quiz'\u001b[39m\u001b[33m,\u001b[39m mockTempResults)\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 149 |\u001b[39m     })\u001b[22m\n\u001b[2m     \u001b[90m 150 |\u001b[39m   })\u001b[22m\n\u001b[2m     \u001b[90m 151 |\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat toHaveBeenCalledWith (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../mcq/[slug]/results/results-page.test.tsx\u001b[2m:148:31)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat runWithExpensiveErrorDiagnosticsDisabled (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:47:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat checkCallback (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/wait-for.js\u001b[2m:124:77)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat checkRealTimersCallback (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/wait-for.js\u001b[2m:118:16)\u001b[22m\u001b[2m\u001b[22m\n"
     }
   ],
   "wasInterrupted": false

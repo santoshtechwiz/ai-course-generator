@@ -93,13 +93,38 @@ export interface QuizResult {
   score: number;
   maxScore: number;
   percentage?: number;
-  completedAt?: string;
+  completedAt: string;
   questions: Array<{
     id: string;
     question: string;
     userAnswer: string;
     correctAnswer: string;
     isCorrect: boolean;
+  }>;
+  totalQuestions?: number; 
+  totalTime?: number;
+  questionsAnswered?: number;
+  correctAnswers?: number;
+  type?: QuizType;
+  // Add API response format support
+  result?: Array<{
+    id?: number;
+    quizId?: string | number;
+    quizTitle?: string;
+    quizSlug?: string;
+    quizType?: QuizType;
+    score?: number;
+    accuracy?: number;
+    attemptedAt?: string;
+    questions?: Array<{
+      questionId: string | number;
+      question: string;
+      correctAnswer: string;
+      userAnswer: string;
+      isCorrect: boolean;
+      timeSpent?: number;
+      options?: string[];
+    }>;
   }>;
 }
 

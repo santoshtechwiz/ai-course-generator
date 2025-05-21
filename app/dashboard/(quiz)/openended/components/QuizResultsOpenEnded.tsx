@@ -1,19 +1,21 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { CheckCircle2, Clock, RefreshCw, Download, Share2, Award, BarChart3 } from "lucide-react"
+import { CheckCircle2, XCircle, Clock, RefreshCw, Download, Award, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { useAppSelector, useAppDispatch } from "@/store"
-import { formatQuizTime } from "@/lib/utils/quiz-utils"
-import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
-import { completeQuiz } from "@/app/store/slices/textQuizSlice"
+import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import type { QuizResult, QuizAnswer } from "@/types/quiz"
+
+import { useAppDispatch } from "@/store"
+import { completeQuiz } from "@/app/store/slices/textQuizSlice"
+import { formatQuizTime } from "@/lib/utils/quiz-utils"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { QuizResult } from "@/app/types/quiz-types"
+import { QuizAnswer } from "@/types/quiz"
 
 interface QuizResultsOpenEndedProps {
   result: QuizResult
@@ -30,8 +32,6 @@ export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedPro
   const [hasError, setHasError] = useState(false)
   const [resultsProcessed, setResultsProcessed] = useState(false)
   const [activeTab, setActiveTab] = useState("summary")
-
-  const quizState = useAppSelector((state) => state.textQuiz)
 
   // Calculate similarity scores
   const calculateAnswerScores = useCallback(
@@ -353,28 +353,28 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
                     <p className="text-xs text-muted-foreground">Excellent</p>
                     <div className="flex gap-1 items-baseline">
                       <p className="text-2xl font-bold">{stats.scoreRanges.excellent}</p>
-                      <span className="text-xs">questions</span>
+                      <span className="text-xs">answers</span>
                     </div>
                   </div>
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
                     <p className="text-xs text-muted-foreground">Good</p>
                     <div className="flex gap-1 items-baseline">
                       <p className="text-2xl font-bold">{stats.scoreRanges.good}</p>
-                      <span className="text-xs">questions</span>
+                      <span className="text-xs">answers</span>
                     </div>
                   </div>
                   <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
                     <p className="text-xs text-muted-foreground">Fair</p>
                     <div className="flex gap-1 items-baseline">
                       <p className="text-2xl font-bold">{stats.scoreRanges.fair}</p>
-                      <span className="text-xs">questions</span>
+                      <span className="text-xs">answers</span>
                     </div>
                   </div>
                   <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                     <p className="text-xs text-muted-foreground">Needs Work</p>
                     <div className="flex gap-1 items-baseline">
-                      <p className="text-2xl font-bold">{stats.scoreRanges.poor + stats.scoreRanges.unanswered}</p>
-                      <span className="text-xs">questions</span>
+                      <p className="text-2xl font-bold">{stats.scoreRanges.poor}</p>
+                      <span className="text-xs">answers</span>
                     </div>
                   </div>
                 </div>
@@ -397,29 +397,28 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
                 <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium">Question {index + 1}</h3>
-                    {qa.isAnswered ? getSimilarityBadge(qa.similarity) : (
-                      <Badge variant="outline" className="text-muted-foreground">Not answered</Badge>
-                    )}
+                    {qa.isAnswered && getSimilarityBadge(qa.similarity)}
                   </div>
                   <p className="text-muted-foreground mb-2">{qa.question.question}</p>
                   
                   {qa.isAnswered ? (
                     <div className="bg-muted p-3 rounded-md mt-2">
-                      <p className="text-sm whitespace-pre-wrap">{qa.answer?.answer}</p>
+                      <p className="text-sm font-medium mb-1">Your Answer:</p>
+                      <p className="text-sm">{qa.answer?.answer || "No answer provided"}</p>
                     </div>
                   ) : (
                     <div className="bg-muted/50 p-3 rounded-md mt-2 border border-dashed border-muted-foreground/30">
-                      <p className="text-sm italic text-muted-foreground">You didn't provide an answer for this question</p>
+                      <p className="text-sm italic text-muted-foreground">You didn't answer this question</p>
                     </div>
                   )}
                   
                   {/* Show reference answer button */}
                   <details className="mt-2">
-                    <summary className="text-xs text-primary cursor-pointer hover:underline">
+                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-primary">
                       View reference answer
                     </summary>
-                    <div className="bg-primary/5 p-3 rounded-md mt-2 text-sm">
-                      <p className="whitespace-pre-wrap">{qa.question.answer}</p>
+                    <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md">
+                      <p className="text-sm">{qa.question.answer}</p>
                     </div>
                   </details>
                 </div>
@@ -441,13 +440,23 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
               {questionsWithAnswers.filter(qa => qa.isAnswered).map((qa, index) => (
                 <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Question {index + 1}</h3>
+                    <h3 className="font-medium">Question {questionsWithAnswers.findIndex(q => q.question.id === qa.question.id) + 1}</h3>
                     {getSimilarityBadge(qa.similarity)}
                   </div>
                   <p className="text-muted-foreground mb-2">{qa.question.question}</p>
                   <div className="bg-muted p-3 rounded-md">
-                    <p className="text-sm whitespace-pre-wrap">{qa.answer?.answer}</p>
+                    <p className="text-sm font-medium mb-1">Your Answer:</p>
+                    <p className="text-sm">{qa.answer?.answer || "No answer provided"}</p>
                   </div>
+                  
+                  <details className="mt-2">
+                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-primary">
+                      View reference answer
+                    </summary>
+                    <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md">
+                      <p className="text-sm">{qa.question.answer}</p>
+                    </div>
+                  </details>
                 </div>
               ))}
               
@@ -477,8 +486,17 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
                   </div>
                   <p className="text-muted-foreground mb-2">{qa.question.question}</p>
                   <div className="bg-muted/50 p-3 rounded-md mt-2 border border-dashed border-muted-foreground/30">
-                    <p className="text-sm italic text-muted-foreground">You didn't provide an answer for this question</p>
+                    <p className="text-sm italic text-muted-foreground">You didn't answer this question</p>
                   </div>
+                  
+                  <details className="mt-2">
+                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-primary">
+                      View reference answer
+                    </summary>
+                    <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md">
+                      <p className="text-sm">{qa.question.answer}</p>
+                    </div>
+                  </details>
                 </div>
               ))}
               
