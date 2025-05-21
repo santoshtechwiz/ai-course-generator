@@ -62,6 +62,8 @@ describe("textQuizSlice", () => {
       timeSpent: 30,
       hintsUsed: false,
       index: 0,
+      isCorrect: true,
+      correctAnswer: "A JavaScript library",
     }
 
     store.dispatch(submitAnswerLocally(answer))
@@ -84,6 +86,8 @@ describe("textQuizSlice", () => {
       timeSpent: 30,
       hintsUsed: false,
       index: 0,
+      isCorrect: false,
+      correctAnswer: "A JavaScript library",
     }
 
     const updatedAnswer = {
@@ -93,6 +97,8 @@ describe("textQuizSlice", () => {
       timeSpent: 45,
       hintsUsed: false,
       index: 0,
+      isCorrect: true,
+      correctAnswer: "A JavaScript library",
     }
 
     store.dispatch(submitAnswerLocally(firstAnswer))

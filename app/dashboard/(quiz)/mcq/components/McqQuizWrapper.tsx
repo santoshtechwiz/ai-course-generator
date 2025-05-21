@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAppDispatch } from "@/store"
+import { toast } from "sonner"
 import McqQuiz from "./McqQuiz"
 import { useQuiz } from "@/hooks/useQuizState"
 import { UserAnswer, QuizQuestion, MCQQuestion } from "@/app/types/quiz-types"
+import { submitCompletedQuiz } from "@/lib/utils/quiz-answer-utils"
 
 interface McqQuizWrapperProps {
   quizData: {
@@ -74,7 +76,7 @@ export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQu
   }, [currentQuestionIdx, quizData?.questions?.length, userAnswers.length, isSubmitting, quizCompleted])
 
   const handleAnswer = useCallback(
-    (answer: string, elapsedTime: number, isCorrect: boolean) => {
+    async (answer: string, elapsedTime: number, isCorrect: boolean) => {
       // Don't process answers if we're already submitting
       if (isSubmitting || !currentQuestion) return
 
@@ -159,11 +161,18 @@ export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQu
             }
           });
           
+          // Skip the database submission and just use the Redux state
+          
           // Then use saveTempResults if available
           if (actions?.saveTempResults) {
             console.log("Saving temp results locally");
             actions.saveTempResults(submissionData)
           }
+
+          // Show success message
+          toast.success("Quiz completed! Viewing your results...", {
+            duration: 3000
+          })
 
           // Navigate to results page
           setTimeout(() => {
@@ -173,6 +182,11 @@ export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQu
           console.error("Failed to handle quiz completion:", error)
           setIsSubmitting(false)
           setSubmitError("Failed to process quiz results")
+          
+          // Show error toast
+          toast.error("Error submitting quiz. Please try again.", {
+            duration: 5000
+          })
         }
       }
     },
