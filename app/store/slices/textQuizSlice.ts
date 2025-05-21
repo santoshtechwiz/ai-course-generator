@@ -50,6 +50,9 @@ export interface TextQuizState {
     isCompleted: boolean
     quizData: QuizData | null
   } | null
+  lastSubmittedAnswer?: AnswerType
+  lastLoadedQuiz?: string
+  hasUnsavedChanges: boolean
 }
 
 // === INITIAL STATE ===
@@ -63,6 +66,9 @@ const initialState: TextQuizState = {
   score: 0,
   resultsSaved: false,
   savedState: null,
+  lastSubmittedAnswer: undefined,
+  lastLoadedQuiz: undefined,
+  hasUnsavedChanges: false,
 }
 
 // === THUNKS ===
@@ -167,14 +173,30 @@ export const textQuizSlice = createSlice({
 
     submitAnswerLocally: (state, action: PayloadAction<AnswerType>) => {
       const incoming = action.payload
+      // Ensure required fields are present
+      if (!incoming.answer || !incoming.questionId) return
+
       const index = state.answers.findIndex(
         a => a.index === incoming.index || a.questionId === incoming.questionId
       )
-      if (index >= 0) {
-        state.answers[index] = incoming
-      } else {
-        state.answers.push(incoming)
+
+      // Check answer correctness against question's answer
+      const question = state.quizData?.questions.find(q => q.id === incoming.questionId)
+      const isCorrect = question?.answer?.toLowerCase() === incoming.answer.toLowerCase()
+
+      const updatedAnswer = {
+        ...incoming,
+        isCorrect,
+        correctAnswer: question?.answer || '',
       }
+
+      if (index >= 0) {
+        state.answers[index] = updatedAnswer
+      } else {
+        state.answers.push(updatedAnswer)
+      }
+      state.lastSubmittedAnswer = updatedAnswer
+      state.hasUnsavedChanges = true
     },
 
     setCurrentQuestion: (state, action: PayloadAction<number>) => {
@@ -214,6 +236,21 @@ export const textQuizSlice = createSlice({
         quizData
       };
     },
+
+    // Add new reducer to handle quiz loading state
+    setQuizLoadingState: (state, action: PayloadAction<'idle' | 'loading' | 'succeeded' | 'failed'>) => {
+      state.status = action.payload
+    },
+
+    // Add reducer to clear unsaved changes flag
+    clearUnsavedChanges: (state) => {
+      state.hasUnsavedChanges = false
+    },
+
+    // Add reducer to update last loaded quiz
+    setLastLoadedQuiz: (state, action: PayloadAction<string>) => {
+      state.lastLoadedQuiz = action.payload
+    }
   },
 
   extraReducers: (builder) => {
@@ -256,6 +293,9 @@ export const {
   restoreQuizState,
   clearSavedState,
   resetQuiz,
+  setQuizLoadingState,
+  clearUnsavedChanges,
+  setLastLoadedQuiz,
 } = textQuizSlice.actions
 
 export const textQuizReducer = textQuizSlice.reducer

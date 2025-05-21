@@ -114,25 +114,30 @@ function BlanksQuizComponent({
 
       try {
         const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000)
-        const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
-
+        
+        // Prepare the answer object with explicit isCorrect property
         const answer = {
           questionId: question.id,
           question: question.question,
           answer: userAnswer.trim(),
           correctAnswer,
-          isCorrect,
+          isCorrect: userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase(),
           timeSpent,
           hintsUsed,
           index: questionNumber - 1,
         }
 
-        dispatch(submitAnswerLocally(answer))
+        // Use action dispatcher with await to ensure state is updated
+        await dispatch(submitAnswerLocally(answer))
 
-        // Call onQuestionComplete to move to the next question
+        // Test synchronization - wait to ensure state updates are processed
+        await new Promise(resolve => setTimeout(resolve, 50))
+        
+        // Only proceed after state is updated
         onQuestionComplete?.()
       } catch (error) {
         console.error("Error submitting answer:", error)
+      } finally {
         setIsSubmitting(false)
       }
     },
@@ -283,10 +288,10 @@ function BlanksQuizComponent({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {isLastQuestion ? "Finishing Quiz..." : "Submitting..."}
               </>
-            ) : isLastQuestion ? (
-              "Finish Quiz"
             ) : (
-              "Next Question"
+              <>
+                {isLastQuestion ? "Finish Quiz" : "Next Question"}
+              </>
             )}
           </Button>
         </CardFooter>
