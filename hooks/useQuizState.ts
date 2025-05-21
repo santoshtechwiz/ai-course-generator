@@ -26,6 +26,8 @@ import {
   setSubmissionInProgress,
   clearErrors,
   submitQuiz,
+  setTempResults,
+  clearTempResults,
 } from "@/store/slices/quizSlice"
 
 import {
@@ -34,7 +36,7 @@ import {
 } from "@/store/slices/authSlice"
 
 import { loadPersistedQuizState, hasAuthRedirectState, clearAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
-import type { QuizData, QuizType } from "@/app/types/quiz-types"
+import type { QuizData, QuizType, QuizResult } from "@/app/types/quiz-types"
 
 // Define a cleaner, focused interface for the quiz hook
 export interface QuizHook {
@@ -58,7 +60,8 @@ export interface QuizHook {
   };
   
   // Results
-  results: any;
+  results: QuizResult | null;
+  tempResults: QuizResult | null;
   history: any[];
   
   // Core actions
@@ -67,6 +70,9 @@ export interface QuizHook {
     submitQuiz: (payload: any) => Promise<any>;
     saveAnswer: (questionId: string, answer: any) => void;
     getResults: (slug: string) => Promise<any>;
+    saveResults: (slug: string, results: QuizResult) => Promise<any>;
+    saveTempResults: (results: QuizResult) => void;
+    clearTempResults: () => void;
     reset: () => void;
   };
   
@@ -401,8 +407,11 @@ export function useQuiz() {
   // Fetch quiz results
   const fetchResults = useCallback(
     (slug: string, type?: QuizType) => {
+      // Clean the slug from any query parameters
+      const cleanSlug = slug.split('?')[0];
+      
       // If we already have results for this quiz, return them
-      if (quizState.results && quizState.quizData?.slug === slug) {
+      if (quizState.results && quizState.quizData?.slug === cleanSlug) {
         return Promise.resolve(quizState.results)
       }
       
@@ -412,13 +421,53 @@ export function useQuiz() {
       
       // Special case for tests that expect slug to be called directly
       if (process.env.NODE_ENV === 'test') {
-        return dispatch(getQuizResults(slug)).unwrap();
+        return dispatch(getQuizResults(cleanSlug)).unwrap();
       }
       
       // Normal case - include type in query params
-      return dispatch(getQuizResults(`${slug}?type=${quizType}`)).unwrap()
+      return dispatch(getQuizResults(`${cleanSlug}?type=${quizType}`)).unwrap()
     },
     [dispatch, quizState.results, quizState.quizData?.slug, quizState.quizData?.type]
+  )
+
+  // Save quiz results
+  const saveResults = useCallback(
+    async (slug: string, results: QuizResult) => {
+      try {
+        // Use the submitQuiz thunk with the results data
+        return await dispatch(submitQuiz({
+          slug,
+          type: "mcq",
+          answers: results.questions.map(q => ({
+            questionId: q.id,
+            answer: q.userAnswer,
+            isCorrect: q.isCorrect
+          })),
+          score: results.score,
+          totalQuestions: results.maxScore || results.questions.length
+        })).unwrap();
+      } catch (error) {
+        console.error("Failed to save results:", error);
+        throw error;
+      }
+    },
+    [dispatch]
+  )
+  
+  // Save temporary results
+  const saveTempResults = useCallback(
+    (results: QuizResult) => {
+      dispatch(setTempResults(results));
+    },
+    [dispatch]
+  )
+  
+  // Clear temporary results
+  const clearTempResultsAction = useCallback(
+    () => {
+      dispatch(clearTempResults());
+    },
+    [dispatch]
   )
 
   // Timer control functions
@@ -480,6 +529,7 @@ export function useQuiz() {
     },
     
     results: quizState.results,
+    tempResults: quizState.tempResults, // Add tempResults to the API
     history: quizState.quizHistory,
     
     actions: {
@@ -487,6 +537,9 @@ export function useQuiz() {
       submitQuiz: submitQuizToServer,
       saveAnswer,
       getResults: fetchResults,
+      saveResults, // Add saveResults to the API
+      saveTempResults, // Add saveTempResults to the API
+      clearTempResults: clearTempResultsAction, // Add clearTempResults to the API
       reset: () => dispatch(resetQuizState())
     },
     
@@ -522,6 +575,7 @@ export function useQuiz() {
     resultsError: quizState.errors?.results || null,
     historyError: quizState.errors?.history || null,
     results: quizState.results,
+    tempResults: quizState.tempResults, // Add tempResults to old API
     isCompleted: quizState.isCompleted,
     quizHistory: quizState.quizHistory,
     currentQuizId: quizState.quizData?.id || null,
@@ -544,6 +598,9 @@ export function useQuiz() {
     pauseTimer: pauseQuizTimer,
     resumeTimer: resumeQuizTimer,
     getResults: fetchResults,
+    saveResults, // Add saveResults to old API
+    saveTempResults, // Add saveTempResults to old API
+    clearTempResults: clearTempResultsAction, // Add clearTempResults to old API
     loadQuizHistory: () => dispatch(fetchQuizHistory()),
     requireAuthentication,
     isAuthenticated: () => true, // stub for tests

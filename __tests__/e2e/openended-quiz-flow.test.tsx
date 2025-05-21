@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { SessionProvider } from 'next-auth/react';
@@ -172,7 +172,7 @@ describe('OpenEnded Quiz Flow End-to-End Test', () => {
     });
 
     test('should allow user to complete quiz and see immediate results', async () => {
-      const router = useRouter() as jest.Mocked<any>;
+      const router = useRouter();
       const store = createStore();
       
       // Render quiz wrapper component
@@ -186,12 +186,12 @@ describe('OpenEnded Quiz Flow End-to-End Test', () => {
         </Provider>
       );
       
-      // Wait for initialization to complete and quiz to render
+      // Wait for initialization to complete
       await waitFor(() => {
         expect(screen.queryByText(/initializing your quiz/i)).not.toBeInTheDocument();
       });
-
-      // Complete the quiz (answer both questions)
+      
+      // Complete the quiz by answering both questions
       for (let i = 0; i < mockQuizData.questions.length; i++) {
         const questionElement = await screen.findByTestId('question-text');
         const textareaElement = await screen.findByTestId('answer-textarea');
@@ -200,35 +200,64 @@ describe('OpenEnded Quiz Flow End-to-End Test', () => {
         expect(questionElement).toBeInTheDocument();
         
         // Enter an answer
-        fireEvent.change(textareaElement, { target: { value: `Answer to question ${i+1}` } });
+        fireEvent.change(textareaElement, { target: { value: `This is my answer to question ${i + 1}` } });
         
-        // Submit the answer
-        fireEvent.click(submitButton);
-        
-        // If last question, wait for navigation to results page
-        if (i === mockQuizData.questions.length - 1) {
-          await waitFor(() => {
-            expect(router.replace).toHaveBeenCalledWith(
-              expect.stringContaining('/dashboard/openended/test-quiz/results')
-            );
-          });
-        }
+        // Submit the answer with proper waiting
+        await act(async () => {
+          fireEvent.click(submitButton);
+          // Allow time for state updates to propagate
+          await new Promise(resolve => setTimeout(resolve, 50));
+        });
       }
+      
+      // Wait for navigation to results page
+      await waitFor(() => {
+        expect(router.replace).toHaveBeenCalledWith(
+          expect.stringContaining('/dashboard/openended/test-quiz/results')
+        );
+      });
+      
+      // Mock result data for the results page
+      const mockResult = {
+        quizId: 'test-quiz',
+        slug: 'test-quiz',
+        title: 'Open Ended Quiz',
+        totalQuestions: 2,
+        questions: mockQuizData.questions,
+        answers: [
+          { questionId: 'q1', answer: 'This is my answer to question 1', timeSpent: 30, index: 0 },
+          { questionId: 'q2', answer: 'This is my answer to question 2', timeSpent: 30, index: 1 }
+        ],
+        completedAt: new Date().toISOString()
+      };
+      
+      // Reset document to ensure clean rendering
+      cleanup();
       
       // Simulate navigation to results page
       render(
         <Provider store={store}>
           <RecoilRoot>
             <SessionProvider session={mockAuthenticatedSession.data}>
-              <QuizResultsOpenEnded result={mockQuizResult} />
+              <QuizResultsOpenEnded result={mockResult} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
       );
       
-      // Check that results are shown
-      expect(screen.getByText(/Quiz Results/i)).toBeInTheDocument();
-      expect(screen.getByText(/You completed 2 out of 2 questions/i)).toBeInTheDocument();
+      // Check that results are shown - use waitFor to ensure component has time to render
+      await waitFor(() => {
+        expect(screen.getByText(/Quiz Results/i)).toBeInTheDocument();
+      });
+      
+      // Check for the completion rate section which should be present
+      await waitFor(() => {
+        expect(screen.getByText(/Completion Rate/i)).toBeInTheDocument();
+        
+        // Look for specific text patterns in the results page
+        expect(screen.getByText(/2\/2 questions/i)).toBeInTheDocument();
+        expect(screen.getByText(/Average Score/i)).toBeInTheDocument();
+      });
     });
 
     test('should handle quiz with empty answers', async () => {
