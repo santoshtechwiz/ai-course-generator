@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
+import { toast } from "react-hot-toast"
 
 import { Card, CardContent } from "@/components/ui/card"
 import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
@@ -103,6 +104,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     
     try {
       console.log("Saving results to database:", tempResults)
+      toast.loading("Saving your results...");
       
       // Ensure required fields are present for saving
       const dataToSave = {
@@ -113,14 +115,23 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       
       await actions.saveResults(slug, dataToSave);
       console.log("Results saved successfully");
+      toast.dismiss();
+      toast.success("Results saved successfully!");
       setSaveSuccess(true)
       
       // Refresh results after saving to get the officially saved version
       if (actions.getResults) {
-        actions.getResults(slug).catch(err => console.error("Error refreshing results:", err))
+        try {
+          await actions.getResults(slug);
+        } catch (err) {
+          console.error("Error refreshing results:", err);
+          // Don't show error for this since it's not critical
+        }
       }
     } catch (error) {
       console.error("Failed to save results:", error);
+      toast.dismiss();
+      toast.error("Failed to save your results");
       setLoadError("Failed to save your results");
     }
   };

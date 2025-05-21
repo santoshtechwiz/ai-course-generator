@@ -4,8 +4,36 @@ import type { RootState } from "@/store"
 
 const STORAGE_KEY = "quiz_state"
 const AUTH_REDIRECT_KEY = "quiz_auth_redirect"
-// Update the key for tracking completed quizzes
 const COMPLETED_QUIZZES_KEY = "completed_quizzes"
+
+// Define a wrapper for storage to facilitate testing and SSR
+const storage = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return sessionStorage.getItem(key);
+    } catch (err) {
+      console.error('Error accessing sessionStorage:', err);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (err) {
+      console.error('Error setting sessionStorage item:', err);
+    }
+  },
+  removeItem: (key: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.removeItem(key);
+    } catch (err) {
+      console.error('Error removing sessionStorage item:', err);
+    }
+  }
+};
 
 // Create the middleware instance
 const persistQuizMiddleware = createListenerMiddleware()
@@ -60,21 +88,21 @@ startAppListening({
 
       // For tests, use direct approach to avoid async issues
       if (process.env.NODE_ENV === "test") {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+        storage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
         return
       }
 
       // Normal production code
       try {
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          ;(window as any).requestIdleCallback(() => {
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+          (window as any).requestIdleCallback(() => {
+            storage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
           })
         } else {
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+          storage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
         }
       } catch (e) {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+        storage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
       }
     } catch (error) {
       console.error("Error saving quiz state:", error)
@@ -90,7 +118,7 @@ startAppListening({
     try {
       // For tests, use direct approach to avoid async issues
       if (process.env.NODE_ENV === "test") {
-        sessionStorage.removeItem(STORAGE_KEY)
+        storage.removeItem(STORAGE_KEY)
         
         // Mark the quiz as completed if we have a slug
         if (action.payload?.slug || (action.meta?.arg?.slug)) {
@@ -102,8 +130,8 @@ startAppListening({
 
       try {
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          ;(window as any).requestIdleCallback(() => {
-            sessionStorage.removeItem(STORAGE_KEY)
+          (window as any).requestIdleCallback(() => {
+            storage.removeItem(STORAGE_KEY)
 
             // Mark the quiz as completed if we have a slug
             if (action.payload?.slug || (action.meta?.arg?.slug)) {
@@ -112,7 +140,7 @@ startAppListening({
             }
           })
         } else {
-          sessionStorage.removeItem(STORAGE_KEY)
+          storage.removeItem(STORAGE_KEY)
 
           // Mark the quiz as completed if we have a slug
           if (action.payload?.slug || (action.meta?.arg?.slug)) {
@@ -121,7 +149,7 @@ startAppListening({
           }
         }
       } catch (e) {
-        sessionStorage.removeItem(STORAGE_KEY)
+        storage.removeItem(STORAGE_KEY)
 
         // Mark the quiz as completed if we have a slug
         if (action.payload?.slug || (action.meta?.arg?.slug)) {
@@ -152,7 +180,7 @@ startAppListening({
         fromSubmission: action.payload?.fromSubmission || false,
       }
 
-      sessionStorage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(redirectInfo))
+      storage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(redirectInfo))
     } catch (error) {
       console.error("Error saving auth redirect state:", error)
     }
@@ -164,7 +192,7 @@ export const loadPersistedQuizState = (): PersistableQuizState | null => {
   try {
     // Direct access for tests to avoid timing issues
     if (process.env.NODE_ENV === "test") {
-      const savedState = sessionStorage.getItem(STORAGE_KEY)
+      const savedState = storage.getItem(STORAGE_KEY)
       // Return minimal test state if nothing is saved
       if (!savedState) {
         return {
@@ -178,7 +206,7 @@ export const loadPersistedQuizState = (): PersistableQuizState | null => {
     }
 
     // Normal behavior for production
-    const savedState = sessionStorage.getItem(STORAGE_KEY)
+    const savedState = storage.getItem(STORAGE_KEY)
     return savedState ? (JSON.parse(savedState) as PersistableQuizState) : null
   } catch (e) {
     return null
@@ -186,7 +214,7 @@ export const loadPersistedQuizState = (): PersistableQuizState | null => {
 }
 
 export const clearPersistedQuizState = (): void => {
-  sessionStorage.removeItem(STORAGE_KEY)
+  storage.removeItem(STORAGE_KEY)
 }
 
 // Update the saveAuthRedirectState function to include more comprehensive data
@@ -198,7 +226,7 @@ export const saveAuthRedirectState = (data: AuthRedirectState): void => {
       timestamp: Date.now(),
       isFromResults: data.type === "results",
     }
-    sessionStorage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(enhancedData))
+    storage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(enhancedData))
   } catch (error) {
     console.error("Error saving auth redirect state:", error)
   }
@@ -211,7 +239,7 @@ export const checkResultsAlreadySaved = (slug: string): boolean => {
 
 export const loadAuthRedirectState = (): AuthRedirectState | null => {
   try {
-    const state = sessionStorage.getItem(AUTH_REDIRECT_KEY)
+    const state = storage.getItem(AUTH_REDIRECT_KEY)
     return state ? (JSON.parse(state) as AuthRedirectState) : null
   } catch {
     return null
@@ -219,7 +247,7 @@ export const loadAuthRedirectState = (): AuthRedirectState | null => {
 }
 
 export const clearAuthRedirectState = (): void => {
-  sessionStorage.removeItem(AUTH_REDIRECT_KEY)
+  storage.removeItem(AUTH_REDIRECT_KEY)
 }
 
 // Make auth redirect handling more test-friendly
@@ -228,8 +256,8 @@ export const hasAuthRedirectState = (): boolean => {
     // For tests, always return consistent value so behaviors are predictable
     if (process.env.NODE_ENV === "test") {
       // Make sure existing code can still access a consistent object
-      if (typeof window !== "undefined" && sessionStorage.getItem(AUTH_REDIRECT_KEY) === null) {
-        sessionStorage.setItem(
+      if (typeof window !== "undefined" && storage.getItem(AUTH_REDIRECT_KEY) === null) {
+        storage.setItem(
           AUTH_REDIRECT_KEY,
           JSON.stringify({
             slug: "test-quiz",
@@ -240,7 +268,7 @@ export const hasAuthRedirectState = (): boolean => {
         )
       }
     }
-    return Boolean(sessionStorage.getItem(AUTH_REDIRECT_KEY))
+    return Boolean(storage.getItem(AUTH_REDIRECT_KEY))
   } catch (e) {
     // Safely handle localStorage errors
     return false
@@ -256,13 +284,13 @@ export const saveResultsAuthRedirectState = (slug: string): void => {
     timestamp: Date.now(),
   }
 
-  sessionStorage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(redirectInfo))
+  storage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(redirectInfo))
 }
 
 // Add this to your existing helpers
 export const getRedirectPath = (): string | null => {
   try {
-    const state = sessionStorage.getItem(AUTH_REDIRECT_KEY)
+    const state = storage.getItem(AUTH_REDIRECT_KEY)
     if (!state) return null
 
     const redirectInfo = JSON.parse(state) as AuthRedirectState
@@ -284,7 +312,7 @@ export const isQuizCompleted = (slug: string): boolean => {
   try {
     if (!slug || typeof slug !== 'string') return false;
     
-    const completedQuizzes = sessionStorage.getItem(COMPLETED_QUIZZES_KEY)
+    const completedQuizzes = storage.getItem(COMPLETED_QUIZZES_KEY)
     if (!completedQuizzes) return false
 
     const quizzes = JSON.parse(completedQuizzes) as string[]
@@ -300,7 +328,7 @@ export const markQuizCompleted = (slug: string): void => {
   try {
     if (!slug || typeof slug !== 'string') return;
     
-    const completedQuizzes = sessionStorage.getItem(COMPLETED_QUIZZES_KEY)
+    const completedQuizzes = storage.getItem(COMPLETED_QUIZZES_KEY)
     let quizzes: string[] = []
 
     if (completedQuizzes) {
@@ -314,7 +342,7 @@ export const markQuizCompleted = (slug: string): void => {
 
     if (!quizzes.includes(slug)) {
       quizzes.push(slug)
-      sessionStorage.setItem(COMPLETED_QUIZZES_KEY, JSON.stringify(quizzes))
+      storage.setItem(COMPLETED_QUIZZES_KEY, JSON.stringify(quizzes))
     }
   } catch (error) {
     console.error("Error marking quiz as completed:", error)

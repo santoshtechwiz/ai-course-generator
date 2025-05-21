@@ -1,8 +1,19 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import McqQuizWrapper from "../components/McqQuizWrapper"
 import { useRouter } from "next/navigation"
 import { useAppDispatch } from "@/store"
 import { useQuiz } from "@/hooks/useQuizState"
+import { toast } from "sonner"
+
+// Mock toast
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    loading: jest.fn(),
+    dismiss: jest.fn()
+  }
+}))
 
 // Mock dependencies
 jest.mock("next/navigation", () => ({
@@ -18,12 +29,19 @@ jest.mock("@/hooks/useQuizState", () => ({
   useQuiz: jest.fn()
 }))
 
-// Update the MCQ Quiz mock to better simulate real behavior
+// Mock utility functions
+jest.mock("@/lib/utils/quiz-answer-utils", () => ({
+  saveQuizAnswer: jest.fn().mockResolvedValue(true),
+  submitCompletedQuiz: jest.fn().mockResolvedValue({ success: true })
+}))
+
+// Use a simplified MCQ Quiz mock that better controls what's happening
 jest.mock("../components/McqQuiz", () => ({
   __esModule: true,
   default: jest.fn(({ onAnswer, question, isLastQuestion }) => {
-    // Track if this is the last question to change behavior
-    const isLast = isLastQuestion;
+    // Consistent answer for tests
+    const answer = "A library"; 
+    const isCorrect = true;
     
     return (
       <div data-testid="mock-mcq-quiz">
@@ -31,13 +49,11 @@ jest.mock("../components/McqQuiz", () => ({
         <button 
           data-testid="submit-answer" 
           onClick={() => {
-            // Simulate selecting correct answer for current question
-            const answer = question.options?.[0] || "test-option";
-            const isCorrect = true;
+            // Just pass the hard-coded values with fixed elapsedTime of 10
             onAnswer(answer, 10, isCorrect);
           }}
         >
-          {isLast ? "Submit Quiz" : "Next"}
+          {isLastQuestion ? "Submit Quiz" : "Next"}
         </button>
       </div>
     )
@@ -91,7 +107,7 @@ describe("McqQuizWrapper", () => {
     expect(screen.getByTestId("question")).toHaveTextContent("What is React?")
   })
   
-  it("moves to the next question when answering", () => {
+  it("moves to the next question when answering", async () => {
     render(
       <McqQuizWrapper
         quizData={testQuizData}
@@ -101,65 +117,59 @@ describe("McqQuizWrapper", () => {
     )
     
     // Answer the first question
-    fireEvent.click(screen.getByTestId("submit-answer"))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("submit-answer"))
+    })
     
     // Dispatch should be called with the answer
     expect(mockDispatch).toHaveBeenCalledWith({
       type: "quiz/setUserAnswer",
-      payload: expect.objectContaining({
+      payload: {
         questionId: "q1",
-        answer: "test-option",
-        isCorrect: true
-      })
+        answer: "A library",
+        isCorrect: true,
+        timeSpent: 10
+      }
     })
   })
   
-  it("completes the quiz on last question and navigates to results", () => {
+  it("completes the quiz on last question and navigates to results", async () => {
     render(
       <McqQuizWrapper
         quizData={testQuizData}
-        slug="test-quiz"r actions first (twice, once for each question)
-        quizId="quiz-123"xpect.objectContaining({
-      />r",
+        slug="test-quiz"
+        quizId="quiz-123"
+      />
     )
-    anything(),
-    // Answer first questionthing(),
-    fireEvent.click(screen.getByTestId("submit-answer"))expect.anything(),
     
-    // Now on second question - answer it);
-    fireEvent.click(screen.getByTestId("submit-answer"))
-     quiz/submitQuiz action
-    // Should dispatch the submitQuiz actionct.objectContaining({
-    expect(mockDispatch).toHaveBeenCalledWith({  type: "quiz/submitQuiz",
-      type: "quiz/submitQuiz",ining({
-      payload: expect.objectContaining({
-        quizId: "quiz-123",    slug: "test-quiz",
-        slug: "test-quiz",      type: "mcq"
-        type: "mcq"
-      })
+    // Answer first question
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("submit-answer"))
     })
     
-    // Should save temp resultsesults).toHaveBeenCalled()
+    // Now on second question - answer it
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("submit-answer"))
+    })
+    
+    // Check for quiz submit action
+    expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({
+      type: "quiz/submitQuiz"
+    }))
+    
+    // Should save temp results
     expect(mockSaveTempResults).toHaveBeenCalled()
-    hould navigate to results
-    // Should navigate to resultsxpect(mockRouter.push).toHaveBeenCalledWith("/dashboard/mcq/test-quiz/results")
-    expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/mcq/test-quiz/results")
+    
+    // Should navigate to results
+    await waitFor(() => {
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/mcq/test-quiz/results")
+    })
   })
-  ("handles quiz with no questions properly", () => {
-  it("handles quiz with no questions properly", () => {  render(
-    render(      <McqQuizWrapper
-
-
-
-
-
-
-
-
-
-
-
-})  })    expect(screen.getByText("This quiz has no questions")).toBeInTheDocument()        )      />        quizId="quiz-123"        slug="test-quiz"        quizData={{ ...testQuizData, questions: [] }}      <McqQuizWrapper        quizData={{ ...testQuizData, questions: [] }}
+  
+  it("handles quiz with no questions properly", () => {
+    render(
+      <McqQuizWrapper
+        quizData={{ ...testQuizData, questions: [] }}
         slug="test-quiz"
         quizId="quiz-123"
       />

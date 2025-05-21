@@ -1,11 +1,12 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Check, X, RefreshCw, Home } from "lucide-react"
 import { QuizResult } from "@/app/types/quiz-types"
+import { toast } from "sonner"
 
 interface McqQuizResultProps {
   result: QuizResult;
@@ -60,7 +61,9 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
   
   // Log the processed result for debugging
   useEffect(() => {
-    console.log("McqQuizResult processed data:", processedResult);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log("McqQuizResult processed data:", processedResult);
+    }
   }, [processedResult]);
 
   // Verify and normalize the result data to ensure all required fields are present
@@ -141,6 +144,15 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
     )
   }
 
+  const handleRetryQuiz = useCallback(() => {
+    toast.loading("Loading quiz...");
+    router.push(`/dashboard/mcq/${cleanSlug}`);
+  }, [cleanSlug, router]);
+
+  const handleReturnToDashboard = useCallback(() => {
+    router.push("/dashboard/quizzes");
+  }, [router]);
+
   return (
     <Card className="max-w-3xl mx-auto p-6 shadow-md border-t-4 border-t-primary" data-testid="mcq-quiz-result">
       <CardHeader className="text-center">
@@ -201,7 +213,7 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
         {/* Action buttons - use the cleaned slug */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 mt-6 border-t">
           <Button
-            onClick={() => router.push(`/dashboard/mcq/${cleanSlug}`)}
+            onClick={handleRetryQuiz}
             className="flex items-center gap-2 bg-primary"
             data-testid="retry-quiz-button"
           >
@@ -209,7 +221,7 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
             <span>Retry Quiz</span>
           </Button>
           <Button
-            onClick={() => router.push("/dashboard/quizzes")}
+            onClick={handleReturnToDashboard}
             variant="outline"
             className="flex items-center gap-2"
             data-testid="return-dashboard-button"

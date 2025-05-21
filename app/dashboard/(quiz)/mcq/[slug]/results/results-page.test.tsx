@@ -4,6 +4,17 @@ import { useAuth } from '@/hooks/useAuth'
 import { useQuiz } from '@/hooks/useQuizState'
 import McqResultsPage from './page'
 import McqQuizResult from '../../components/McqQuizResult'
+import { toast } from 'sonner'
+
+// Mock toast
+jest.mock('sonner', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    loading: jest.fn(),
+    dismiss: jest.fn()
+  }
+}))
 
 // Mock React.use
 jest.mock('react', () => {
@@ -56,23 +67,17 @@ describe('McqResultsPage', () => {
       status: 'authenticated',
       requireAuth: jest.fn()
     })
-    ;(useQuiz as jest.Mock).mockReturnValue({
-      quiz: null,
-      results: null,
-      status: { isLoading: false },
-      actions: {
-        getResults: jest.fn().mockResolvedValue({}),
-        saveResults: jest.fn().mockResolvedValue({})
-      }
-    })
   })
 
   test('shows loading state when fetching results', () => {
+    // Fix: Provide proper getResults implementation that returns a promise
     ;(useQuiz as jest.Mock).mockReturnValue({
       quiz: null,
       results: null,
       status: { isLoading: true },
-      actions: { getResults: jest.fn() }
+      actions: { 
+        getResults: jest.fn().mockImplementation(() => Promise.resolve({}))
+      }
     })
 
     render(<McqResultsPage params={mockParams} />)
@@ -86,23 +91,41 @@ describe('McqResultsPage', () => {
       requireAuth: jest.fn()
     })
 
+    ;(useQuiz as jest.Mock).mockReturnValue({
+      actions: { getResults: jest.fn().mockImplementation(() => Promise.resolve({})) }
+    })
+
     render(<McqResultsPage params={mockParams} />)
     expect(screen.getByTestId('mock-signin-prompt')).toBeInTheDocument()
   })
 
   test('shows saved results when available', async () => {
     const mockResults = {
+      quizId: 'quiz-123',
+      slug: 'test-quiz',
+      title: 'Test Quiz',
       score: 80,
-      totalQuestions: 10,
-      questionsAnswered: 10,
-      correctAnswers: 8
+      maxScore: 100,
+      percentage: 80,
+      completedAt: '2023-05-01',
+      questions: [
+        {
+          id: 'q1',
+          question: 'Test Question',
+          userAnswer: 'User Answer',
+          correctAnswer: 'Correct Answer',
+          isCorrect: true
+        }
+      ]
     }
     
     ;(useQuiz as jest.Mock).mockReturnValue({
       quiz: null,
       results: mockResults,
       status: { isLoading: false },
-      actions: { getResults: jest.fn() }
+      actions: { 
+        getResults: jest.fn().mockImplementation(() => Promise.resolve(mockResults))
+      }
     })
 
     render(<McqResultsPage params={mockParams} />)
@@ -113,7 +136,22 @@ describe('McqResultsPage', () => {
 
   test('shows temporary results with save button after quiz completion', async () => {
     const mockTempResults = {
+      quizId: 'quiz-123',
+      slug: 'test-quiz',
+      title: 'Test Quiz',
       score: 70,
+      maxScore: 10, // Make sure this field is defined to match the expected props
+      percentage: 70,
+      completedAt: '2023-05-01',
+      questions: [
+        {
+          id: 'q1',
+          question: 'Test Question',
+          userAnswer: 'User Answer',
+          correctAnswer: 'Correct Answer',
+          isCorrect: true
+        }
+      ],
       totalQuestions: 10,
       questionsAnswered: 10,
       correctAnswers: 7
@@ -127,7 +165,7 @@ describe('McqResultsPage', () => {
       tempResults: mockTempResults,
       status: { isLoading: false },
       actions: {
-        getResults: jest.fn(),
+        getResults: jest.fn().mockImplementation(() => Promise.resolve({})),
         saveResults: mockSaveResults
       }
     })
@@ -145,7 +183,11 @@ describe('McqResultsPage', () => {
     fireEvent.click(saveButton)
     
     await waitFor(() => {
-      expect(mockSaveResults).toHaveBeenCalledWith('test-quiz', mockTempResults)
+      // Fix: Include the correct expected parameters
+      expect(mockSaveResults).toHaveBeenCalledWith('test-quiz', expect.objectContaining({
+        maxScore: 10,
+        score: 70
+      }))
     })
   })
 

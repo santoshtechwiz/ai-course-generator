@@ -56,30 +56,38 @@ const initialState = {
     results: null,
     history: null,
   },
+  tempResults: null, // Add this field to match the current state shape
 };
 
 describe('quizSlice', () => {
   test('should return the initial state', () => {
     const state = quizReducer(undefined, { type: 'unknown' });
-    expect(state).toEqual(initialState);
+    // Update expected state to include tempResults
+    const expectedInitialState = {
+      ...initialState,
+      tempResults: null, // Add this field to match the current state shape
+    };
+    expect(state).toEqual(expectedInitialState);
   });
 
   test('should handle resetQuizState', () => {
-    // Setup state with some data
+    // Create a state with some data
     const stateWithData = {
       ...initialState,
-      quizData: sampleQuizData,
-      currentQuestion: 2,
-      userAnswers: [{ questionId: 'q1', answer: '2' }],
-      quizHistory: [{ id: 'history-1', quizTitle: 'Past Quiz', score: 10, maxScore: 10 }],
+      quizData: { id: '123', title: 'Test Quiz', questions: [] },
+      currentQuestion: 3,
+      userAnswers: [{ questionId: 'q1', answer: 'test', isCorrect: true }],
+      quizHistory: [{ id: '1', quizTitle: 'Past Quiz', completedAt: '2023-01-01' }],
+      tempResults: { quizId: 'test', score: 10, maxScore: 10 }, // Add tempResults
     };
 
-    // Reset state
     const newState = quizReducer(stateWithData, resetQuizState());
 
     // History should be preserved, everything else reset
+    // Update expected state to include tempResults: null
     expect(newState).toEqual({
       ...initialState,
+      tempResults: null, // Ensure this is included
       quizHistory: stateWithData.quizHistory,
     });
   });
