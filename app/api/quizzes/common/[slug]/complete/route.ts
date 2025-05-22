@@ -244,8 +244,17 @@ function calculatePercentageScore(score: number, totalQuestions: number, type: Q
 // Database operations
 async function getQuizWithQuestions(quizId: string) {
   try {
+    // Ensure quizId is converted to a Number
+    const numericId = Number(quizId);
+    
+    // Validate that it's actually a valid number
+    if (isNaN(numericId)) {
+      console.error("Invalid quiz ID format:", quizId);
+      throw new Error(`Invalid quiz ID format: ${quizId}`);
+    }
+    
     return await prisma.userQuiz.findUnique({
-      where: { id: Number(quizId) },
+      where: { id: numericId },
       include: { questions: true },
     })
   } catch (error) {
@@ -330,92 +339,138 @@ async function processQuestionAnswers(
   quizType: QuizType,
 ) {
   try {
-    // If no questions or answers, return early
+    // If no questions or answers, return early with warning
     if (!questions || questions.length === 0 || !answers || answers.length === 0) {
       console.warn("No questions or answers to process")
       return []
     }
 
+    // Map answers to questions, handling the case when question count and answer count differ
     const questionPromises = questions.map((question, index) => {
-      if (index >= answers.length) {
-        console.warn(`Answer missing for question at index ${index}`)
-        return Promise.resolve() // Skip this question if no answer
-      }
-
-      const answer = answers[index]
-      if (!answer) {
-        console.warn(`Null or undefined answer at index ${index}`)
-        return Promise.resolve() // Skip this question if answer is null/undefined
-      }
-
-      const userAnswer = extractUserAnswer(answer)
-      let isCorrect = false
-
-      // Handle different quiz types
-      if (quizType === "mcq") {
-        // For MCQ, try to read isCorrect directly from the answer if available
-        if (typeof (answer as any).isCorrect === 'boolean') {
-          isCorrect = (answer as any).isCorrect;
-        } else {
-          // If isCorrect is not provided, try to determine based on the question
-          const correctAnswer = question.answer || question.correctAnswer;
-          const userAns = (answer as any).answer || (answer as any).userAnswer;
-          isCorrect = correctAnswer === userAns;
+      // Find matching answer for this question
+      const answer = answers.find(a => {
+        // Handle both string and number question IDs
+        if (typeof a.questionId === typeof question.id) {
+          return a.questionId === question.id;
+        } else if (typeof a.questionId === 'string' && typeof question.id === 'number') {
+          return a.questionId === String(question.id);
+        } else if (typeof a.questionId === 'number' && typeof question.id === 'string') {
+          try {
+            return a.questionId === parseInt(question.id);
+          } catch (e) {
+            return false;
+          }
         }
-      } else if (quizType === "code") {
-        // For code quizzes, isCorrect might be undefined or have a different format
-        isCorrect = (answer as any).isCorrect === true
+        return false;
+      });
+      
+      if (!answer) {
+        console.warn(`No answer found for question ID ${question.id}`);
+        return Promise.resolve(); // Skip questions without answers
       }
 
-      // Convert userAnswer to string, handling arrays and null/undefined values
-      const userAnswerString = Array.isArray(userAnswer)
-        ? userAnswer.join(", ")
-        : userAnswer === null || userAnswer === undefined
-          ? ""
-          : String(userAnswer)
+      // Extract user's answer consistently
+      let userAnswer: string;
+      if (typeof answer.answer === 'string') {
+        userAnswer = answer.answer;
+      } else if (typeof answer.userAnswer === 'string') {
+        userAnswer = answer.userAnswer;
+      } else if (answer.answer !== undefined) {
+        userAnswer = String(answer.answer);
+      } else if (answer.userAnswer !== undefined) {
+        userAnswer = String(answer.userAnswer);
+      } else {
+        userAnswer = '';
+      }
 
-      // Add additional logging for debugging
-      console.log(`Processing answer for question ${question.id}:`, {
-        attemptId,
-        questionId: question.id,
-        userAnswer: userAnswerString,
-        isCorrect,
-        timeSpent: Math.round(answer.timeSpent || 0),
-      })
+      // Determine if answer is correct
+      let isCorrect = false;
+      if (typeof answer.isCorrect === 'boolean') {
+        // Trust client-side judgment if provided
+        isCorrect = answer.isCorrect;
+      } else {
+        // Determine correctness based on quiz type
+        switch (quizType) {
+          case 'mcq':
+          case 'code':
+            // For multiple choice, simple string comparison
+            const correctAnswer = question.answer || question.correctAnswer;
+            isCorrect = correctAnswer === userAnswer;
+            break;
+            
+          case 'openended':
+            // For open-ended, we'd ideally do more sophisticated matching
+            // This is simplified for now - in reality would use better comparison
+            const modelAnswer = question.answer || question.correctAnswer || question.modelAnswer;
+            if (modelAnswer && userAnswer) {
+              isCorrect = userAnswer.toLowerCase().includes(modelAnswer.toLowerCase()) || 
+                          modelAnswer.toLowerCase().includes(userAnswer.toLowerCase());
+            }
+            break;
+            
+          case 'blanks':
+            // For blanks, exact match expected
+            const expectedAnswer = question.answer || question.correctAnswer;
+            isCorrect = expectedAnswer === userAnswer;
+            break;
+            
+          default:
+            isCorrect = false;
+        }
+      }
 
-      return tx.userQuizAttemptQuestion
-        .upsert({
-          where: {
-            attemptId_questionId: {
-              attemptId: attemptId,
-              questionId: question.id,
+      // Ensure userAnswer is a string and not too long
+      const userAnswerString = typeof userAnswer === 'string' ? 
+          userAnswer.substring(0, 1000) : // Limit length
+          String(userAnswer).substring(0, 1000); // Convert to string and limit length
+
+      const timeSpent = parseInt(String(answer.timeSpent), 10) || 0;
+      
+      try {
+        // Use a unified structure for storing all quiz types
+        return tx.userQuizAttemptQuestion
+          .upsert({
+            where: {
+              attemptId_questionId: {
+                attemptId,
+                questionId: question.id,
+              },
             },
-          },
-          update: {
-            userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
-            isCorrect: isCorrect,
-            timeSpent: Math.round(answer.timeSpent || 0),
-          },
-          create: {
-            attemptId,
-            questionId: question.id,
-            userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
-            isCorrect: isCorrect,
-            timeSpent: Math.round(answer.timeSpent || 0),
-          },
-        })
-        .catch((error) => {
-          console.error("Error in upsert transaction:", error, {
-            attemptId,
-            questionId: question.id,
-            userAnswer: userAnswerString,
-            timeSpent: answer.timeSpent,
+            update: {
+              userAnswer: userAnswerString,
+              isCorrect,
+              timeSpent: Math.round(timeSpent),
+            },
+            create: {
+              attemptId,
+              questionId: question.id,
+              userAnswer: userAnswerString,
+              isCorrect,
+              timeSpent: Math.round(timeSpent),
+            },
           })
-          throw error
-        })
-    })
+          .catch((error) => {
+            console.error("Database upsert error:", error, {
+              attemptId,
+              questionId: question.id,
+              userAnswer: userAnswerString,
+              timeSpent,
+            });
+            // Continue with other questions despite this error
+            return Promise.resolve();
+          });
+      } catch (error) {
+        console.error("Error processing question:", error, { questionId: question.id });
+        // Continue with other questions despite this error
+        return Promise.resolve();
+      }
+    });
 
-    return Promise.all(questionPromises)
+    // Continue even if some questions fail
+    const results = await Promise.allSettled(questionPromises);
+    console.log(`Processed ${results.length} questions, ${results.filter(r => r.status === 'fulfilled').length} successful`);
+    
+    return results;
   } catch (error) {
     console.error("Error processing question answers:", error)
     throw error
@@ -498,7 +553,7 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
     const submission = body as QuizSubmission
 
     // Normalize the quiz type to handle case differences
-    submission.type = submission.type.toLowerCase() as QuizType
+    submission.type = (submission.type || "mcq").toLowerCase() as QuizType
 
     const answerFormatResult = validateAnswersFormat(submission.answers, submission.type)
 
@@ -513,7 +568,21 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
       )
     }
 
-    const quiz = await getQuizWithQuestions(submission.quizId)
+    // Add debug logging for the quizId
+    console.log("Quiz submission - quizId value:", submission.quizId, "type:", typeof submission.quizId);
+    
+    // Attempt to get the quiz, with better error handling for invalid IDs
+    let quiz;
+    try {
+      quiz = await getQuizWithQuestions(submission.quizId);
+    } catch (error) {
+      console.error("Error getting quiz with questions:", error);
+      return NextResponse.json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to fetch quiz data",
+        details: { quizId: submission.quizId, type: typeof submission.quizId } 
+      }, { status: 400 });
+    }
 
     if (!quiz) {
       return NextResponse.json({ success: false, error: "Quiz not found" }, { status: 404 })

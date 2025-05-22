@@ -146,8 +146,10 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
 
   const handleRetryQuiz = useCallback(() => {
     toast.loading("Loading quiz...");
-    router.push(`/dashboard/mcq/${cleanSlug}`);
-  }, [cleanSlug, router]);
+    // Make sure the slug is clean before navigation
+    const navSlug = cleanSlug || normalizedResult.slug.split('?')[0];
+    router.push(`/dashboard/mcq/${navSlug}?reset=true`); // Add reset=true to ensure quiz is reset
+  }, [cleanSlug, normalizedResult.slug, router]);
 
   const handleReturnToDashboard = useCallback(() => {
     router.push("/dashboard/quizzes");
@@ -164,7 +166,15 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
           <div>
             <h2 className="text-xl font-semibold">{normalizedResult.title}</h2>
             <p className="text-muted-foreground">
-              {normalizedResult.completedAt && new Date(normalizedResult.completedAt).toLocaleDateString()}
+              {normalizedResult.completedAt && 
+                new Date(normalizedResult.completedAt).toLocaleDateString(undefined, {
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              }
             </p>
           </div>
           <div className="mt-4 sm:mt-0 text-center">

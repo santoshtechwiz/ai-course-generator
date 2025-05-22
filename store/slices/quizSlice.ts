@@ -141,7 +141,7 @@ export const submitQuiz = createAsyncThunk(
   async (
     payload: {
       slug: string
-      quizId?: string
+      quizId?: string | number
       type: QuizType
       answers: UserAnswer[]
       timeTaken?: number
@@ -160,8 +160,23 @@ export const submitQuiz = createAsyncThunk(
       const correctAnswers = payload.answers.filter((a) => a.isCorrect === true).length
       const totalQuestions = payload.totalQuestions || payload.answers.length
 
+      // Ensure quizId is numeric when submitting
+      let numericQuizId: number | undefined;
+      if (payload.quizId) {
+        if (typeof payload.quizId === 'number') {
+          numericQuizId = payload.quizId;
+        } else if (typeof payload.quizId === 'string' && /^\d+$/.test(payload.quizId)) {
+          numericQuizId = parseInt(payload.quizId, 10);
+        } else {
+          console.warn("Invalid quizId format, might cause backend issues:", payload.quizId);
+        }
+      }
+      
+      // Log the processed quizId for debugging
+      console.log("Processed quizId for submission:", numericQuizId);
+
       const submissionData = {
-        quizId: payload.quizId || payload.slug,
+        quizId: numericQuizId || payload.quizId,
         answers: payload.answers.map((a) => ({
           questionId: a.questionId,
           answer: a.answer,

@@ -339,7 +339,15 @@ async function processQuestionAnswers(
 
       // Handle different quiz types
       if (quizType === "mcq") {
-        isCorrect = (answer as QuizAnswer).isCorrect === true
+        // For MCQ, try to read isCorrect directly from the answer if available
+        if (typeof (answer as any).isCorrect === 'boolean') {
+          isCorrect = (answer as any).isCorrect;
+        } else {
+          // If isCorrect is not provided, try to determine based on the question
+          const correctAnswer = question.answer || question.correctAnswer;
+          const userAns = (answer as any).answer || (answer as any).userAnswer;
+          isCorrect = correctAnswer === userAns;
+        }
       } else if (quizType === "code") {
         // For code quizzes, isCorrect might be undefined or have a different format
         isCorrect = (answer as any).isCorrect === true
@@ -361,36 +369,41 @@ async function processQuestionAnswers(
         timeSpent: Math.round(answer.timeSpent || 0),
       })
 
-      return tx.userQuizAttemptQuestion
-        .upsert({
-          where: {
-            attemptId_questionId: {
-              attemptId: attemptId,
-              questionId: question.id,
+      try {
+        return tx.userQuizAttemptQuestion
+          .upsert({
+            where: {
+              attemptId_questionId: {
+                attemptId: attemptId,
+                questionId: question.id,
+              },
             },
-          },
-          update: {
-            userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
-            isCorrect: isCorrect,
-            timeSpent: Math.round(answer.timeSpent || 0),
-          },
-          create: {
-            attemptId,
-            questionId: question.id,
-            userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
-            isCorrect: isCorrect,
-            timeSpent: Math.round(answer.timeSpent || 0),
-          },
-        })
-        .catch((error) => {
-          console.error("Error in upsert transaction:", error, {
-            attemptId,
-            questionId: question.id,
-            userAnswer: userAnswerString,
-            timeSpent: answer.timeSpent,
+            update: {
+              userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
+              isCorrect: isCorrect,
+              timeSpent: Math.round(answer.timeSpent || 0),
+            },
+            create: {
+              attemptId,
+              questionId: question.id,
+              userAnswer: userAnswerString.substring(0, 1000), // Limit string length to avoid DB errors
+              isCorrect: isCorrect,
+              timeSpent: Math.round(answer.timeSpent || 0),
+            },
           })
-          throw error
-        })
+          .catch((error) => {
+            console.error("Error in upsert transaction:", error, {
+              attemptId,
+              questionId: question.id,
+              userAnswer: userAnswerString,
+              timeSpent: answer.timeSpent,
+            })
+            throw error
+          })
+      } catch (error) {
+        console.error("Error processing question answer:", error, { questionId: question.id })
+        return Promise.resolve() // Continue with other questions despite this error
+      }
     })
 
     return Promise.all(questionPromises)

@@ -1,27 +1,21 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
+import { useAppDispatch } from "@/store"
+import { toast } from "sonner"
 import { signIn } from "next-auth/react"
 import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import CodingQuiz from "./CodingQuiz"
 import QuizResultPreview from "./QuizResultPreview"
-import { CodeQuizQuestion } from "@/app/types/code-quiz-types"
-import { UserAnswer } from "@/app/types/quiz-types"
-import { getCorrectAnswer, isAnswerCorrect } from "@/lib/utils/quiz-type-utils"
-import {
-  loadAuthRedirectState,
-  clearAuthRedirectState,
-  saveAuthRedirectState,
-  hasAuthRedirectState
-} from "@/store/middleware/persistQuizMiddleware"
-import toast from "react-hot-toast"
+import type { CodeQuizQuestion } from "@/app/types/code-quiz-types"
+import type { UserAnswer } from "@/app/types/quiz-types"
 import { createResultsPreview } from "./QuizHelpers"
-import { prepareSubmissionPayload } from "@/lib/utils/quiz-submission-utils"
+import { submitCompletedQuiz } from "@/lib/utils/quiz-answer-utils"
 
 // Simple type for preview results
 interface PreviewResults {
@@ -42,10 +36,10 @@ interface PreviewResults {
 // Simplified props interface
 interface CodeQuizWrapperProps {
   slug: string
-  quizId: string
+  quizId: string | number
   userId: string | null
   quizData?: {
-    id: string
+    id: string | number
     title: string
     slug: string
     questions: CodeQuizQuestion[]
@@ -53,7 +47,7 @@ interface CodeQuizWrapperProps {
     isPublic?: boolean
     isFavorite?: boolean
     ownerId?: string
-    type: 'code'
+    type: "code"
   }
   isPublic?: boolean
   isFavorite?: boolean
@@ -70,6 +64,7 @@ export default function CodeQuizWrapper({
   ownerId,
 }: CodeQuizWrapperProps) {
   const router = useRouter()
+  const dispatch = useAppDispatch()
   const { status, fromAuth } = useAuth()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -79,83 +74,77 @@ export default function CodeQuizWrapper({
   const [isReturningFromAuth, setIsReturningFromAuth] = useState(false)
   const authRedirectChecked = useRef(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([])
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
   // Get quiz state from hook
   const quizHook = useQuiz()
-  
-  // Handle both old and new API formats for test compatibility
-  const isNewApiFormat = quizHook && 'quiz' in quizHook && 'status' in quizHook && 'actions' in quizHook
-  
-  // Extract values from either the new or old API
-  const quizState = isNewApiFormat 
-    ? quizHook.quiz.data 
-    : (quizHook as any)?.quizData
-    
-  const currentQuestion = isNewApiFormat 
-    ? quizHook.quiz.currentQuestion 
-    : (quizHook as any)?.currentQuestion ?? 0
-    
-  const userAnswers = isNewApiFormat 
-    ? quizHook.quiz.userAnswers 
-    : (quizHook as any)?.userAnswers ?? []
-    
-  const isLastQuestion = isNewApiFormat 
-    ? quizHook.quiz.isLastQuestion 
-    : (quizHook as any)?.isLastQuestion?.() ?? false
-    
-  const isLoading = isNewApiFormat 
-    ? quizHook.status.isLoading 
-    : (quizHook as any)?.isLoading ?? false
-    
-  const quizError = isNewApiFormat 
-    ? quizHook.status.errorMessage 
-    : (quizHook as any)?.error || (quizHook as any)?.quizError
-  
-  const hasError = Boolean(quizError || errorMessage)
-  
-  // Actions - handle both API formats
-  const loadQuiz = isNewApiFormat 
-    ? quizHook.actions.loadQuiz 
-    : (quizHook as any)?.loadQuiz ?? (() => Promise.resolve(null))
-    
-  const submitQuiz = isNewApiFormat 
-    ? quizHook.actions.submitQuiz 
-    : (quizHook as any)?.submitQuiz ?? (() => Promise.resolve(null))
-    
-  const saveAnswer = isNewApiFormat 
-    ? quizHook.actions.saveAnswer 
-    : (quizHook as any)?.saveAnswer ?? (() => {})
-    
-  const resetQuizState = isNewApiFormat 
-    ? quizHook.actions.reset 
-    : (quizHook as any)?.resetQuizState ?? (() => {})
-    
-  // Navigation - handle both API formats
-  const nextQuestion = isNewApiFormat 
-    ? quizHook.navigation.next 
-    : (quizHook as any)?.nextQuestion ?? (() => false)
-    
-  // For backward compatibility
-  const saveQuizState = isNewApiFormat 
-    ? () => {} // No direct equivalent in new API 
-    : (quizHook as any)?.saveQuizState ?? (() => {})
+  const { actions } = quizHook
 
-  const saveSubmissionState = isNewApiFormat 
-    ? async (slug: string, state: string) => Promise.resolve() 
-    : (quizHook as any)?.saveSubmissionState ?? (() => Promise.resolve())
-
-  // Define quiz state variables early to avoid initialization issues
-  const questions = quizState?.questions || []
-  const totalQuestions = questions.length
-  const currentQuestionData = questions[currentQuestion] || null
-
-  // Special case for tests - for better compatibility
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'test' && (quizHook as any)?._showResultsPreview) {
-      setShowResultsPreview(true)
-      setPreviewResults((quizHook as any)?._previewResults || null)
+  // Get the numeric quiz ID if available
+  const numericQuizId = useMemo(() => {
+    // First try the explicitly provided quizId
+    if (quizId !== undefined) {
+      if (typeof quizId === "number") return quizId
+      if (typeof quizId === "string" && /^\d+$/.test(quizId)) return Number(quizId)
     }
-  }, [quizHook])
+
+    // Then try the quizData.id
+    if (quizData?.id !== undefined) {
+      if (typeof quizData.id === "number") return quizData.id
+      if (typeof quizData.id === "string" && /^\d+$/.test(quizData.id)) return Number(quizData.id)
+    }
+
+    // If no numeric ID is available, return null
+    return null
+  }, [quizId, quizData?.id])
+
+  // Create memoized question data to avoid unnecessary re-renders
+  const currentQuestion = useMemo(() => {
+    if (!quizData?.questions || !quizData.questions[currentQuestionIdx]) return null
+
+    return {
+      ...quizData.questions[currentQuestionIdx],
+      type: "code" as const,
+    }
+  }, [quizData?.questions, currentQuestionIdx])
+
+  // Debug quiz state
+  useEffect(() => {
+    console.log("CodeQuizWrapper state:", {
+      currentQuestionIdx,
+      totalQuestions: quizData?.questions?.length,
+      answersCollected: userAnswers.length,
+      isSubmitting,
+      quizCompleted,
+      numericQuizId,
+      slug,
+    })
+  }, [
+    currentQuestionIdx,
+    quizData?.questions?.length,
+    userAnswers.length,
+    isSubmitting,
+    quizCompleted,
+    numericQuizId,
+    slug,
+  ])
+
+  // Format answers for API submission
+  const formatAnswersForSubmission = useCallback((answers: UserAnswer[]) => {
+    return answers.map((answer) => ({
+      questionId:
+        typeof answer.questionId === "string"
+          ? /^\d+$/.test(answer.questionId)
+            ? Number(answer.questionId)
+            : answer.questionId
+          : answer.questionId,
+      answer: answer.answer,
+      timeSpent: answer.timeSpent,
+      isCorrect: answer.isCorrect,
+    }))
+  }, [])
 
   // Navigation functions
   const handleReturn = useCallback(() => {
@@ -173,273 +162,279 @@ export default function CodeQuizWrapper({
 
   // Handle sign in for non-authenticated users
   const handleShowSignIn = useCallback(() => {
-    if (quizState && previewResults) {
-      saveAuthRedirectState({
-        slug,
-        quizId,
-        type: "code",
-        userAnswers,
-        currentQuestion,
-        fromSubmission: true,
-        previewResults,
-      })
-    }
-
-    if (typeof saveQuizState === 'function') {
-      saveQuizState()
-    }
-
-    signIn(undefined, {
-      callbackUrl: `/dashboard/code/${slug}?fromAuth=true`
-    })
-  }, [slug, quizId, quizState, userAnswers, currentQuestion, saveQuizState, previewResults])
-
-  // Clean handleSubmitQuiz function
-  const handleSubmitQuiz = useCallback(async (answers: UserAnswer[], elapsedTime: number) => {
-    if (!Array.isArray(answers) || answers.length === 0) {
-      toast.error("No answers to submit");
-      return;
-    }
-
-    setShowResultsPreview(false)
-    setShowResultsLoader(true)
-
-    try {
-      // Calculate correct answers and score
-      const correctAnswers = answers.filter(a => a.isCorrect === true).length;
-      const totalQuestionsCount = questions.length;
-      
-      // Special handling for tests: If quizId is test-quiz-id, use a different payload structure
-      // This is needed to make tests pass
-      let submissionPayload;
-      
-      if (quizId === "test-quiz-id") {
-        submissionPayload = {
-          quizId: "test-quiz-id",
-          slug,
-          type: "code" as QuizType,
-          answers: answers.map(a => ({
-            questionId: a.questionId,
-            answer: a.answer,
-            isCorrect: typeof a.isCorrect === 'boolean' ? a.isCorrect : undefined,
-            timeSpent: Math.floor((elapsedTime || 600) / answers.length)
-          })),
-          totalTime: elapsedTime || 600, // Ensure totalTime is never undefined
-          score: correctAnswers, // Use raw score (number correct)
-          totalQuestions: totalQuestionsCount,
-          correctAnswers
-        };
-      } else {
-        // Use the improved prepareSubmissionPayload with explicit values
-        submissionPayload = prepareSubmissionPayload({
-          slug,
-          quizId: quizId,
-          type: "code",
-          answers,
-          timeTaken: elapsedTime || 600, // Ensure timeTaken is never undefined
-          score: correctAnswers, // Pass raw score, not percentage 
-          totalQuestions: totalQuestionsCount
-        });
-      }
-
-      // Log submission payload for debugging in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Submitting quiz with payload:", JSON.stringify(submissionPayload, null, 2));
-      }
-
-      // Use a direct call to submitQuiz instead of toast.promise in tests
-      // to allow proper error handling in test environments
-      let result;
-      if (process.env.NODE_ENV === 'test') {
-        try {
-          result = await submitQuiz(submissionPayload);
-        } catch (error) {
-          // Directly show error message in tests
-          toast.error("Failed to submit quiz. Please try again.");
-          throw error;
-        }
-      } else {
-        // Use toast.promise in non-test environments
-        result = await toast.promise(
-          submitQuiz(submissionPayload),
-          {
-            loading: 'Submitting quiz...',
-            success: 'Quiz submitted successfully!', 
-            error: 'Failed to submit quiz. Please try again.'
-          }
-        );
-      }
-
-      // Force immediate redirect in test environment
-      if (process.env.NODE_ENV === 'test') {
-        router.replace(`/dashboard/code/${slug}/results`)
-      } else {
-        // Redirect to results page with a slight delay
-        setTimeout(() => {
-          router.replace(`/dashboard/code/${slug}/results`)
-        }, 1000)
-      }
-      
-      return result
-    } catch (error: any) {
-      // When there's an error, create results preview from local data
-      const resultsData = createResultsPreview({
-        questions,
-        answers,
-        quizTitle: quizState?.title || "Code Quiz",
-        slug,
-      })
-
-      if (error?.status === 401 || (typeof error?.message === 'string' && 
-          error.message.toLowerCase().includes('unauthorized'))) {
-        saveAuthRedirectState({
+    if (quizData && previewResults) {
+      // Save state for after authentication
+      localStorage.setItem(
+        `code_quiz_${slug}`,
+        JSON.stringify({
           slug,
           quizId,
           type: "code",
-          userAnswers: answers,
-          currentQuestion: questions.length - 1,
+          userAnswers,
+          currentQuestion: currentQuestionIdx,
           fromSubmission: true,
-          previewResults: resultsData,
+          previewResults,
+        }),
+      )
+    }
+
+    signIn(undefined, {
+      callbackUrl: `/dashboard/code/${slug}?fromAuth=true`,
+    })
+  }, [slug, quizId, quizData, userAnswers, currentQuestionIdx, previewResults])
+
+  // Clean handleSubmitQuiz function
+  const handleSubmitQuiz = useCallback(
+    async (answers: UserAnswer[], elapsedTime: number) => {
+      if (!Array.isArray(answers) || answers.length === 0) {
+        toast.error("No answers to submit")
+        return
+      }
+
+      setShowResultsPreview(false)
+      setShowResultsLoader(true)
+      setIsSubmitting(true)
+
+      try {
+        // Calculate correct answers and score
+        const correctAnswers = answers.filter((a) => a.isCorrect === true).length
+        const totalQuestionsCount = quizData?.questions?.length || 0
+
+        // Format answers for submission
+        const formattedAnswers = formatAnswersForSubmission(answers)
+
+        // Dispatch action to Redux store with proper payload structure
+        dispatch({
+          type: "quiz/submitQuiz",
+          payload: {
+            slug,
+            quizId: numericQuizId || quizId || quizData?.id,
+            type: "code",
+            answers: formattedAnswers,
+            totalQuestions: totalQuestionsCount,
+            score: correctAnswers,
+          },
         })
 
-        signIn(undefined, {
-          callbackUrl: `/dashboard/code/${slug}?fromAuth=true`
+        // Prepare submission data for the API
+        const apiSubmissionData = {
+          slug, // This is used for the URL path
+          quizId: numericQuizId || quizData?.id || quizId || slug, // Use numeric ID if available
+          type: "code",
+          answers: formattedAnswers,
+          score: correctAnswers,
+          totalQuestions: totalQuestionsCount,
+          totalTime: elapsedTime || 600, // Ensure totalTime is never undefined
+        }
+
+        // Log the submission data for debugging
+        console.log("Quiz submission data:", apiSubmissionData)
+
+        // Use the shared utility to handle submission with proper error handling
+        if (numericQuizId) {
+          // Only submit to API if we have a numeric ID
+          await submitCompletedQuiz(apiSubmissionData).catch((error) => {
+            console.error("Error submitting quiz:", error)
+            throw error // Re-throw to be caught by the outer catch
+          })
+        } else {
+          console.warn("No numeric quiz ID available, skipping API submission")
+        }
+
+        // Make sure we include all required fields for the results page
+        const submissionData = {
+          quizId: numericQuizId || quizId || quizData?.id || slug,
+          slug: slug,
+          type: "code",
+          title: quizData?.title || "Code Quiz",
+          answers: answers,
+          score: correctAnswers,
+          correctAnswers: correctAnswers,
+          maxScore: totalQuestionsCount,
+          totalQuestions: totalQuestionsCount,
+          percentage: Math.round((correctAnswers / totalQuestionsCount) * 100),
+          questions:
+            quizData?.questions?.map((q) => {
+              const userAns = answers.find((a) => String(a.questionId) === String(q.id))
+              return {
+                id: q.id || String(Math.random()).slice(2),
+                question: q.question || "Unknown question",
+                userAnswer: userAns?.answer || "",
+                correctAnswer: q.answer || q.correctAnswer || "",
+                isCorrect: userAns?.isCorrect || false,
+                codeSnippet: q.codeSnippet || "",
+              }
+            }) || [],
+          totalTime: elapsedTime,
+          questionsAnswered: totalQuestionsCount,
+          completedAt: new Date().toISOString(),
+        }
+
+        // Then use saveTempResults if available
+        if (actions?.saveTempResults) {
+          console.log("Saving temp results locally")
+          actions.saveTempResults(submissionData)
+        }
+
+        // Show success toast
+        toast.success("Quiz completed!")
+
+        // Navigate to results page (with slight delay to allow toasts to show)
+        setTimeout(() => {
+          router.replace(`/dashboard/code/${slug}/results`)
+        }, 800)
+
+        return true
+      } catch (error: any) {
+        console.error("Failed to handle quiz completion:", error)
+
+        // Show a single error toast - reduced from multiple notifications
+        toast.error("Could not save results to server. Viewing local results.")
+
+        // When there's an error, create results preview from local data
+        const resultsData = createResultsPreview({
+          questions: quizData?.questions || [],
+          answers,
+          quizTitle: quizData?.title || "Code Quiz",
+          slug,
         })
 
-        return;
-      }
-
-      // Always show error message and reset loading state
-      setShowResultsLoader(false)
-      setIsSubmitting(false)
-      setErrorMessage("Failed to submit quiz. Please try again.")
-      
-      // In test mode, always call toast.error directly to make tests pass
-      if (process.env.NODE_ENV === 'test') {
-        toast.error("Failed to submit quiz. Please try again.");
-      }
-    }
-  }, [submitQuiz, slug, quizId, router, questions, quizState?.title])
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (!window.location.pathname.includes(`/dashboard/code/${slug}`)) {
-        if (typeof resetQuizState === 'function') {
-          resetQuizState();
-        }
-      }
-    }
-  }, [resetQuizState, slug])
-
-  // Fix: Resuming state in proper question index for smoother user experience
-  useEffect(() => {
-    if (quizState && !isInitialized) {
-      setIsInitialized(true)
-      
-      if (userAnswers && userAnswers.length > 0 && !showResultsPreview && !isLastQuestion) {
-        // Go to the question after their last answer, or stay at last question
-        const questionIndex = Math.min(userAnswers.length, questions.length - 1)
-        
-        if (isNewApiFormat && quizHook.navigation.toQuestion) {
-          quizHook.navigation.toQuestion(questionIndex)
-        } else if ((quizHook as any)?.goToQuestion) {
-          (quizHook as any).goToQuestion(questionIndex)
-        }
-      }
-    }
-  }, [quizState, isInitialized, userAnswers, questions.length, showResultsPreview, isLastQuestion, isNewApiFormat, quizHook])
-
-  // Check for auth redirect state - handle return from login
-  useEffect(() => {
-    // Only check once and only if authenticated
-    if (!authRedirectChecked.current && status === "authenticated" && hasAuthRedirectState()) {
-      authRedirectChecked.current = true;
-      const redirectState = loadAuthRedirectState();
-
-      if (redirectState && redirectState.slug === slug) {
-        setIsReturningFromAuth(true);
-
-        if (redirectState.previewResults) {
-          setPreviewResults(redirectState.previewResults);
-          setShowResultsPreview(true);
+        if (
+          error?.status === 401 ||
+          (typeof error?.message === "string" && error.message.toLowerCase().includes("unauthorized"))
+        ) {
+          // Handle unauthorized error - prompt for sign in
+          setPreviewResults(resultsData)
+          setShowResultsPreview(true)
+          setShowResultsLoader(false)
+          setIsSubmitting(false)
+          return false
         }
 
-        if (redirectState.fromSubmission && redirectState.userAnswers) {
-          const answersToSubmit = redirectState.userAnswers as UserAnswer[];
-
-          setTimeout(() => {
-            setShowResultsLoader(true);
-            handleSubmitQuiz(answersToSubmit, 600);
-          }, 1000);
+        // Save results locally anyway so user doesn't lose their work
+        if (actions?.saveTempResults) {
+          actions.saveTempResults({
+            quizId: numericQuizId || quizId || quizData?.id || slug,
+            slug: slug,
+            type: "code",
+            title: quizData?.title || "Code Quiz",
+            answers: answers,
+            score: resultsData.score,
+            totalQuestions: resultsData.maxScore,
+            totalTime: elapsedTime,
+            completedAt: new Date().toISOString(),
+            isOffline: true, // Mark as offline result
+          })
         }
 
-        clearAuthRedirectState();
+        // Navigate to results page anyway since we have local results
+        setTimeout(() => {
+          router.replace(`/dashboard/code/${slug}/results`)
+        }, 1000)
+
+        // Always reset loading states
+        setShowResultsLoader(false)
+        setIsSubmitting(false)
+        return false
       }
-    }
-
-    return () => {
-      authRedirectChecked.current = false;
-    };
-  }, [slug, status, handleSubmitQuiz])
-
-  // Handle auth return state
-  useEffect(() => {
-    if (fromAuth && status === "authenticated") {
-      setIsReturningFromAuth(true);
-    }
-  }, [fromAuth, status])
+    },
+    [slug, quizId, router, quizData, actions, numericQuizId, formatAnswersForSubmission, dispatch],
+  )
 
   // Handle answer functionality
   const handleAnswer = useCallback(
     async (answer: string, elapsedTime: number, isCorrect: boolean) => {
+      // Don't process answers if we're already submitting
+      if (isSubmitting || !currentQuestion) return
+
+      // Set submitting state to prevent multiple submissions
+      setIsSubmitting(true)
+
       try {
-        const question = questions[currentQuestion];
-        if (!question?.id) {
-          setErrorMessage("Invalid question data");
-          return;
+        // Create user answer object with correct structure
+        const userAnswer: UserAnswer = {
+          questionId: currentQuestion.id,
+          answer: answer,
+          timeSpent: elapsedTime,
+          isCorrect,
         }
 
-        saveAnswer(question.id, answer)
-        
-        // Optional: Add a small success feedback
-        if (process.env.NODE_ENV !== 'test') {
-          toast.success('Answer saved!', { duration: 1000 })
-        }
+        // Log the answer for debugging
+        console.log("Adding answer:", userAnswer)
 
-        if (isLastQuestion) {
-          setIsSubmitting(true)
-
-          const currentAnswers = [...userAnswers]
-          if (!currentAnswers.some(a => a.questionId === question.id)) {
-            currentAnswers.push({ questionId: question.id, answer })
+        // Update answers atomically to ensure state consistency
+        setUserAnswers((prev) => {
+          // Check if this answer already exists and update it
+          const exists = prev.some((a) => String(a.questionId) === String(currentQuestion.id))
+          if (exists) {
+            return prev.map((a) => (String(a.questionId) === String(currentQuestion.id) ? userAnswer : a))
           }
+          // Otherwise add as new answer
+          return [...prev, userAnswer]
+        })
 
-          // Create results preview using helper
+        // Dispatch action to Redux store with proper payload structure
+        dispatch({
+          type: "quiz/setUserAnswer",
+          payload: {
+            questionId: currentQuestion.id,
+            answer: answer,
+            isCorrect: isCorrect,
+            timeSpent: elapsedTime,
+          },
+        })
+
+        // Check if we're on the last question
+        const isLastQuestion = currentQuestionIdx >= (quizData?.questions?.length || 0) - 1
+
+        if (!isLastQuestion) {
+          // Move to the next question after a short delay to allow state to update
+          setTimeout(() => {
+            setIsSubmitting(false) // Reset submission state before changing question
+            setCurrentQuestionIdx((prevIdx) => prevIdx + 1)
+          }, 300)
+        } else {
+          // This is the last question - handle quiz completion
+          setQuizCompleted(true)
+
+          // Get updated answers including the current one
+          const allAnswers = [...userAnswers, userAnswer]
+
+          // Calculate score - count only correct answers
+          const correctAnswers = allAnswers.filter((a) => a.isCorrect).length
+          const totalQuestions = quizData?.questions?.length || 0
+          const totalTime = allAnswers.reduce((total, a) => total + (a.timeSpent || 0), 0)
+
+          // Create results preview
           const resultsData = createResultsPreview({
-            questions,
-            answers: currentAnswers,
-            quizTitle: quizState?.title || "Code Quiz",
-            slug
+            questions: quizData?.questions || [],
+            answers: allAnswers,
+            quizTitle: quizData?.title || "Code Quiz",
+            slug,
           })
 
-          if (typeof saveSubmissionState === 'function') {
-            await saveSubmissionState(slug, "in-progress")
-          }
-
-          // For test compatibility - don't delay in test mode
+          // Show results preview
           setPreviewResults(resultsData)
           setShowResultsPreview(true)
           setIsSubmitting(false)
-        } else {
-          nextQuestion()
         }
-      } catch (err) {
-        console.error("Error handling answer:", err)
-        setErrorMessage("Failed to submit answer")
+      } catch (error) {
+        console.error("Error in answer handling:", error)
+        setIsSubmitting(false)
+        toast.error("Failed to process your answer. Please try again.")
       }
     },
-    [questions, currentQuestion, saveAnswer, slug, isLastQuestion, nextQuestion, userAnswers, quizState, saveSubmissionState]
+    [
+      currentQuestionIdx,
+      currentQuestion,
+      dispatch,
+      isSubmitting,
+      quizData?.questions,
+      quizData?.title,
+      router,
+      slug,
+      userAnswers,
+    ],
   )
 
   // Cancel preview
@@ -448,56 +443,68 @@ export default function CodeQuizWrapper({
     setPreviewResults(null)
   }, [])
 
-  // Retry submission
-  const handleRetrySubmission = useCallback(async () => {
-    if (!quizState?.questions?.length) {
-      setErrorMessage("Quiz data is missing. Please reload the page.");
-      return;
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (!window.location.pathname.includes(`/dashboard/code/${slug}`)) {
+        // Clear any saved state
+        localStorage.removeItem(`code_quiz_${slug}`)
+      }
     }
+  }, [slug])
 
-    setErrorMessage(null)
-    setIsSubmitting(true)
-    setShowResultsLoader(true)
+  // Check for auth redirect state - handle return from login
+  useEffect(() => {
+    // Only check once and only if authenticated
+    if (!authRedirectChecked.current && status === "authenticated" && fromAuth) {
+      authRedirectChecked.current = true
 
-    try {
-      const result = await toast.promise(
-        submitQuiz({
-          slug,
-          quizId: quizId || slug, // Use slug as fallback
-          type: "code",
-          answers: userAnswers || [],
-          timeTaken: 600
-        }),
-        {
-          loading: 'Retrying submission...',
-          success: 'Quiz submitted successfully!',
-          error: 'Failed to submit quiz. Please try again.'
+      // Try to load saved state
+      const savedState = localStorage.getItem(`code_quiz_${slug}`)
+
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState)
+
+          if (parsedState.slug === slug) {
+            setIsReturningFromAuth(true)
+
+            if (parsedState.previewResults) {
+              setPreviewResults(parsedState.previewResults)
+              setShowResultsPreview(true)
+            }
+
+            if (parsedState.userAnswers) {
+              setUserAnswers(parsedState.userAnswers)
+            }
+
+            if (typeof parsedState.currentQuestion === "number") {
+              setCurrentQuestionIdx(parsedState.currentQuestion)
+            }
+
+            if (parsedState.fromSubmission && parsedState.userAnswers) {
+              // If returning from auth after trying to submit, show the submission preview
+              const answersToSubmit = parsedState.userAnswers
+
+              setTimeout(() => {
+                setShowResultsPreview(true)
+              }, 500)
+            }
+          }
+
+          // Clear saved state
+          localStorage.removeItem(`code_quiz_${slug}`)
+        } catch (error) {
+          console.error("Error parsing saved state:", error)
         }
-      )
-
-      setTimeout(() => {
-        router.replace(`/dashboard/code/${slug}/results`)
-      }, 1000)
-
-      return result
-    } catch (error: any) {
-      setShowResultsLoader(false)
-      setIsSubmitting(false)
-      setErrorMessage("Still unable to submit quiz. Please try again later.")
-
-      throw error
+      }
     }
-  }, [quizState, submitQuiz, slug, quizId, router, userAnswers])
+  }, [slug, status, fromAuth])
 
   // Render logic
-  if (hasError) {
+  if (errorMessage) {
     return (
-      <ErrorDisplay
-        data-testid="error-display"
-        error={errorMessage || quizError || "An error occurred"}
-        onRetry={errorMessage === "Failed to submit quiz. Please try again." ? handleRetrySubmission : handleRetry}
-        onReturn={handleReturn}
-      />
+      <ErrorDisplay data-testid="error-display" error={errorMessage} onRetry={handleRetry} onReturn={handleReturn} />
     )
   }
 
@@ -531,39 +538,27 @@ export default function CodeQuizWrapper({
     return <QuizSubmissionLoading quizType="code" />
   }
 
-  // Auth return state render
-  if (isReturningFromAuth && previewResults) {
-    return (
-      <QuizResultPreview
-        result={previewResults}
-        onSubmit={(answers, time) => handleSubmitQuiz(userAnswers, time || 600)}
-        onCancel={handleCancelSubmit}
-        userAnswers={userAnswers}
-      />
-    )
-  }
-
   // Loading state render
-  if (isLoading || status === "loading") {
+  if (status === "loading") {
     return <InitializingDisplay />
   }
 
   // Empty questions state render
-  if (quizState && Array.isArray(quizState.questions) && quizState.questions.length === 0) {
+  if (quizData && Array.isArray(quizData.questions) && quizData.questions.length === 0) {
     return <EmptyQuestionsDisplay onReturn={handleReturn} />
   }
 
   // Active quiz state render
-  if (currentQuestionData) {
-    const existingAnswer = userAnswers.find(a => a.questionId === currentQuestionData.id)?.answer;
+  if (currentQuestion) {
+    const existingAnswer = userAnswers.find((a) => a.questionId === currentQuestion.id)?.answer
 
     return (
       <CodingQuiz
-        question={currentQuestionData}
+        question={currentQuestion}
         onAnswer={handleAnswer}
-        questionNumber={currentQuestion + 1}
-        totalQuestions={totalQuestions}
-        isLastQuestion={isLastQuestion}
+        questionNumber={currentQuestionIdx + 1}
+        totalQuestions={quizData?.questions?.length || 0}
+        isLastQuestion={currentQuestionIdx === (quizData?.questions?.length || 0) - 1}
         isSubmitting={isSubmitting}
         existingAnswer={typeof existingAnswer === "string" ? existingAnswer : undefined}
       />
