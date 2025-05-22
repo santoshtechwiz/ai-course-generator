@@ -128,7 +128,8 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
       // Refresh results after saving to get the officially saved version
       if (actions.getResults) {
         try {
-          await actions.getResults(slug)
+          // Fix: Use code-specific type parameter
+          await actions.getResults(slug, "code")
         } catch (err) {
           console.error("Error refreshing results:", err)
           // Don't show error for this since it's not critical
@@ -232,6 +233,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
         <p>We couldn't find your results for this quiz.</p>
         <div className="mt-6">
           <button
+            // Fix: Use code-specific path
             onClick={() => router.push(`/dashboard/code/${slug}`)}
             className="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded"
           >
