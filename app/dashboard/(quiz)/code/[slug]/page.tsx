@@ -10,46 +10,42 @@ import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDis
 export default function CodeQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }> | { slug: string }
 }) {
   const router = useRouter()
   const { userId, status } = useAuth()
 
-  // Extract slug directly from params instead of using use()
-  const { slug } = use(params);
+  // Extract slug in a way that works in tests and in real usage
+  const slug =
+    params instanceof Promise
+      ? use(params).slug // Real usage with Next.js
+      : (params as { slug: string }).slug // Test usage
 
   // Get quiz state from hook
   const quizHook = useQuiz()
 
   // Handle both old and new API formats for compatibility
-  const isNewApiFormat = quizHook && 'quiz' in quizHook && 'actions' in quizHook
+  const isNewApiFormat = quizHook && "quiz" in quizHook && "actions" in quizHook
 
   // Extract values from either the new or old API
-  const quizData = isNewApiFormat
-    ? quizHook.quiz.data
-    : (quizHook as any)?.quizData
+  const quizData = isNewApiFormat ? quizHook.quiz.data : (quizHook as any)?.quizData
 
-  const isLoading = isNewApiFormat
-    ? quizHook.status.isLoading
-    : (quizHook as any)?.isLoading
+  const isLoading = isNewApiFormat ? quizHook.status.isLoading : (quizHook as any)?.isLoading
 
   const errorMessage = isNewApiFormat
     ? quizHook.status.errorMessage
     : (quizHook as any)?.error || (quizHook as any)?.quizError
 
   // Get loadQuiz function from either API format
-  const loadQuiz = isNewApiFormat
-    ? quizHook.actions.loadQuiz
-    : (quizHook as any)?.loadQuiz
+  const loadQuiz = isNewApiFormat ? quizHook.actions.loadQuiz : (quizHook as any)?.loadQuiz
 
   // Load quiz from Redux state or API
   useEffect(() => {
-    if (!isLoading && !quizData && typeof slug === 'string' && slug && loadQuiz) {
-      console.log("Loading quiz with slug:", slug);
-      loadQuiz(slug, "code")
-        .catch(error => {
-          console.error("Error loading quiz:", error)
-        })
+    if (!isLoading && !quizData && typeof slug === "string" && slug && loadQuiz) {
+      console.log("Loading quiz with slug:", slug)
+      loadQuiz(slug, "code").catch((error) => {
+        console.error("Error loading quiz:", error)
+      })
     }
   }, [slug, loadQuiz, isLoading, quizData])
 

@@ -6,18 +6,18 @@ import { useAppDispatch } from "@/store"
 import { toast } from "sonner"
 import McqQuiz from "./McqQuiz"
 import { useQuiz } from "@/hooks/useQuizState"
-import { UserAnswer, QuizQuestion, MCQQuestion } from "@/app/types/quiz-types"
+import type { MCQQuestion } from "@/app/types/quiz-types"
 import { submitCompletedQuiz } from "@/lib/utils/quiz-answer-utils"
 
 interface McqQuizWrapperProps {
   quizData: {
-    id: string;
-    title: string;
-    questions: MCQQuestion[];
-    slug: string;
+    id: string | number
+    title: string
+    questions: MCQQuestion[]
+    slug: string
   }
   slug: string
-  quizId?: string
+  quizId?: string | number
   userId?: string
   isPublic?: boolean
   isFavorite?: boolean
@@ -25,10 +25,10 @@ interface McqQuizWrapperProps {
 }
 
 interface AnswerData {
-  questionId: string;
-  answer: string;
-  timeSpent: number;
-  isCorrect: boolean;
+  questionId: string | number
+  answer: string
+  timeSpent: number
+  isCorrect: boolean
 }
 
 export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQuizWrapperProps) {
@@ -64,6 +64,24 @@ export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQu
     }
   }, [quizData?.questions, currentQuestionIdx])
 
+  // Get the numeric quiz ID if available
+  const numericQuizId = useMemo(() => {
+    // First try the explicitly provided quizId
+    if (quizId !== undefined) {
+      if (typeof quizId === "number") return quizId
+      if (typeof quizId === "string" && /^\d+$/.test(quizId)) return parseInt(quizId, 10)
+    }
+
+    // Then try the quizData.id
+    if (quizData?.id !== undefined) {
+      if (typeof quizData.id === "number") return quizData.id
+      if (typeof quizData.id === "string" && /^\d+$/.test(quizData.id)) return parseInt(quizData.id, 10)
+    }
+
+    // If no numeric ID is available, return null
+    return null
+  }, [quizId, quizData?.id])
+
   // Debug quiz state
   useEffect(() => {
     console.log("McqQuizWrapper state:", {
@@ -72,122 +90,217 @@ export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQu
       answersCollected: userAnswers.length,
       isSubmitting,
       quizCompleted,
+      numericQuizId,
+      slug,
+      quizId,
+      quizDataId: quizData?.id,
     })
-  }, [currentQuestionIdx, quizData?.questions?.length, userAnswers.length, isSubmitting, quizCompleted])
+  }, [
+    currentQuestionIdx,
+    quizData?.questions?.length,
+    userAnswers.length,
+    isSubmitting,
+    quizCompleted,
+    numericQuizId,
+    slug,
+    quizId,
+    quizData?.id,
+  ])
+
+  // Format answers for API submission
+  const formatAnswersForSubmission = useCallback((answers: AnswerData[]) => {
+    return answers.map((answer) => ({
+      questionId:
+        typeof answer.questionId === "string"
+          ? /^\d+$/.test(answer.questionId)
+            ? Number(answer.questionId)
+            : answer.questionId
+          : answer.questionId,
+      answer: answer.answer,
+      timeSpent: answer.timeSpent,
+      isCorrect: answer.isCorrect,
+    }))
+  }, [])
 
   const handleAnswer = useCallback(
     async (answer: string, elapsedTime: number, isCorrect: boolean) => {
       // Don't process answers if we're already submitting
       if (isSubmitting || !currentQuestion) return
 
-      // Create user answer object with correct structure
-      const userAnswer = {
-        questionId: currentQuestion.id,
-        answer: answer,
-        timeSpent: elapsedTime,
-        isCorrect,
-      }
+      // Set submitting state to prevent multiple submissions
+      setIsSubmitting(true)
 
-      // Save the answer in local state
-      setUserAnswers((prev) => [...prev, userAnswer])
-
-      // Dispatch action to Redux store with proper payload structure
-      dispatch({
-        type: "quiz/setUserAnswer",
-        payload: {
+      try {
+        // Create user answer object with correct structure
+        const userAnswer: AnswerData = {
           questionId: currentQuestion.id,
           answer: answer,
-          isCorrect: isCorrect,
           timeSpent: elapsedTime,
-        },
-      })
-
-      // Check if we're on the last question
-      const isLastQuestion = currentQuestionIdx >= quizData?.questions?.length - 1
-
-      if (!isLastQuestion) {
-        // Move to the next question
-        setCurrentQuestionIdx((prevIdx) => prevIdx + 1)
-      } else {
-        // This is the last question - handle quiz completion
-        setQuizCompleted(true)
-        setIsSubmitting(true)
-
-        // Calculate score - count only correct answers
-        const correctAnswers = userAnswers.filter((a) => a.isCorrect).length + (isCorrect ? 1 : 0)
-        const totalQuestions = quizData.questions.length
-        
-        // Make sure we include all required fields for the results page
-        const submissionData = {
-          quizId: quizId || quizData.id || slug,
-          slug: slug,
-          type: "mcq",
-          title: quizData.title || "MCQ Quiz",
-          answers: [...userAnswers, userAnswer],
-          score: correctAnswers, // Use the actual correct answers count
-          correctAnswers: correctAnswers, // For backward compatibility
-          maxScore: totalQuestions, // This is required for percentage calculation
-          totalQuestions: totalQuestions, // Explicit property for results page
-          percentage: Math.round((correctAnswers / totalQuestions) * 100), // Calculate percentage
-          questions: quizData.questions.map((q) => {
-            const userAns = [...userAnswers, userAnswer].find((a) => a.questionId === q.id)
-            return {
-              id: q.id || String(Math.random()).slice(2), // Ensure ID is always present
-              question: q.question || "Unknown question",
-              userAnswer: userAns?.answer || "",
-              correctAnswer: q.answer || q.correctAnswer || "",
-              isCorrect: userAns?.isCorrect || false,
-            }
-          }),
-          totalTime: userAnswers.reduce((total, a) => total + (a.timeSpent || 0), 0) + elapsedTime,
-          questionsAnswered: totalQuestions,
-          completedAt: new Date().toISOString(),
+          isCorrect,
         }
 
-        // Log data for debugging
-        console.log("Final quiz submission data:", JSON.stringify(submissionData, null, 2));
-
-        try {
-          // First dispatch a submitQuiz action for test compatibility
-          dispatch({ 
-            type: "quiz/submitQuiz", 
-            payload: {
-              slug,
-              quizId: quizId || quizData.id,
-              type: "mcq",
-              answers: [...userAnswers, userAnswer],
-              totalQuestions,
-              score: correctAnswers
-            }
-          });
-          
-          // Skip the database submission and just use the Redux state
-          
-          // Then use saveTempResults if available
-          if (actions?.saveTempResults) {
-            console.log("Saving temp results locally");
-            actions.saveTempResults(submissionData)
+        // Update answers atomically to ensure state consistency
+        setUserAnswers((prev) => {
+          // Check if this answer already exists and update it
+          const exists = prev.some((a) => String(a.questionId) === String(currentQuestion.id))
+          if (exists) {
+            return prev.map((a) => (String(a.questionId) === String(currentQuestion.id) ? userAnswer : a))
           }
+          // Otherwise add as new answer
+          return [...prev, userAnswer]
+        })
 
-          // Show success message
-          toast.success("Quiz completed! Viewing your results...", {
-            duration: 3000
-          })
+        // Dispatch action to Redux store with proper payload structure
+        dispatch({
+          type: "quiz/setUserAnswer",
+          payload: {
+            questionId: currentQuestion.id,
+            answer: answer,
+            isCorrect: isCorrect,
+            timeSpent: elapsedTime,
+          },
+        })
 
-          // Navigate to results page
+        // Check if we're on the last question
+        const isLastQuestion = currentQuestionIdx >= quizData?.questions?.length - 1
+
+        if (!isLastQuestion) {
+          // Move to the next question after a short delay to allow state to update
           setTimeout(() => {
-            router.push(`/dashboard/mcq/${slug}/results`)
-          }, 500)
-        } catch (error) {
-          console.error("Failed to handle quiz completion:", error)
-          setIsSubmitting(false)
-          setSubmitError("Failed to process quiz results")
-          
-          // Show error toast
-          toast.error("Error submitting quiz. Please try again.", {
-            duration: 5000
-          })
+            setIsSubmitting(false) // Reset submission state before changing question
+            setCurrentQuestionIdx((prevIdx) => prevIdx + 1)
+          }, 300)
+        } else {
+          // This is the last question - handle quiz completion
+          setQuizCompleted(true)
+
+          // Get updated answers including the current one
+          const allAnswers = [...userAnswers, userAnswer]
+
+          // Calculate score - count only correct answers
+          const correctAnswers = allAnswers.filter((a) => a.isCorrect).length
+          const totalQuestions = quizData.questions.length
+          const totalTime = allAnswers.reduce((total, a) => total + (a.timeSpent || 0), 0)
+
+          // Format answers for submission
+          const formattedAnswers = formatAnswersForSubmission(allAnswers)
+
+          try {
+            // First dispatch a submitQuiz action for test compatibility
+            dispatch({
+              type: "quiz/submitQuiz",
+              payload: {
+                slug,
+                quizId: numericQuizId, // IMPORTANT: Send the numeric ID, not string
+                type: "mcq",
+                answers: formattedAnswers,
+                totalQuestions,
+                score: correctAnswers,
+              },
+            })
+
+            // CRITICAL FIX: We need to use the slug for the URL path, not the quizId
+            // The submitCompletedQuiz function is using the first parameter for the URL path
+            // Make sure we include all required fields for the results page
+            const submissionData = {
+              quizId: numericQuizId, // Use the numeric ID here
+              type: "mcq",
+              answers: formattedAnswers,
+              score: correctAnswers,
+              totalQuestions,
+              totalTime,
+            }
+
+            // Log the submission data for debugging
+            console.log("Quiz submission data:", submissionData)
+
+            // Use the shared utility to handle submission with proper error handling
+            // CRITICAL FIX: Pass the slug as the first parameter for URL construction
+            if (numericQuizId) {
+              // Only submit to API if we have a numeric ID
+              await submitCompletedQuiz({
+                slug, // This is used for the URL path
+                ...submissionData, // This includes the quizId for the request body
+              }).catch((error) => {
+                console.error("Error submitting quiz:", error)
+                throw error // Re-throw to be caught by the outer catch
+              })
+            } else {
+              console.warn("No numeric quiz ID available, skipping API submission")
+            }
+
+            // Then use saveTempResults if available
+            if (actions?.saveTempResults) {
+              console.log("Saving temp results locally")
+              actions.saveTempResults({
+                quizId: numericQuizId || quizId || quizData.id || slug,
+                slug: slug,
+                type: "mcq",
+                title: quizData.title || "MCQ Quiz",
+                answers: allAnswers,
+                score: correctAnswers,
+                correctAnswers: correctAnswers,
+                maxScore: totalQuestions,
+                totalQuestions: totalQuestions,
+                percentage: Math.round((correctAnswers / totalQuestions) * 100),
+                questions: quizData.questions.map((q) => {
+                  const userAns = allAnswers.find((a) => String(a.questionId) === String(q.id))
+                  return {
+                    id: q.id || String(Math.random()).slice(2),
+                    question: q.question || "Unknown question",
+                    userAnswer: userAns?.answer || "",
+                    correctAnswer: q.answer || q.correctAnswer || "",
+                    isCorrect: userAns?.isCorrect || false,
+                  }
+                }),
+                totalTime,
+                questionsAnswered: totalQuestions,
+                completedAt: new Date().toISOString(),
+              })
+            }
+
+            // Show a single success toast - reduced from multiple notifications
+            toast.success("Quiz completed!")
+
+            // Navigate to results page (with slight delay to allow toasts to show)
+            setTimeout(() => {
+              router.push(`/dashboard/mcq/${slug}/results`)
+            }, 800)
+          } catch (error) {
+            console.error("Failed to handle quiz completion:", error)
+
+            // Show a single error toast - reduced from multiple notifications
+            toast.error("Could not save results to server. Viewing local results.")
+
+            // Save results locally anyway so user doesn't lose their work
+            if (actions?.saveTempResults) {
+              actions.saveTempResults({
+                quizId: numericQuizId || quizId || quizData.id || slug,
+                slug: slug,
+                type: "mcq",
+                title: quizData.title || "MCQ Quiz",
+                answers: allAnswers,
+                score: correctAnswers,
+                totalQuestions: totalQuestions,
+                totalTime,
+                completedAt: new Date().toISOString(),
+                isOffline: true, // Mark as offline result
+              })
+            }
+
+            // Navigate to results page anyway since we have local results
+            setTimeout(() => {
+              router.push(`/dashboard/mcq/${slug}/results`)
+            }, 1000)
+          } finally {
+            // Reset submitting state in case we stay on this page
+            setIsSubmitting(false)
+          }
         }
+      } catch (error) {
+        console.error("Error in answer handling:", error)
+        setIsSubmitting(false)
+        toast.error("Failed to process your answer. Please try again.")
       }
     },
     [
@@ -198,11 +311,14 @@ export default function McqQuizWrapper({ quizData, slug, quizId, userId }: McqQu
       quizData?.questions,
       quizData?.title,
       quizId,
+      numericQuizId,
       router,
       slug,
       userAnswers,
       actions,
-    ]
+      formatAnswersForSubmission,
+      quizData?.id,
+    ],
   )
 
   // Handle the case where quiz data is invalid

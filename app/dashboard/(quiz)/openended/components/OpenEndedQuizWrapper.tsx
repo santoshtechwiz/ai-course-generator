@@ -3,9 +3,12 @@
 import { useEffect, useCallback, useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { initializeQuiz, completeQuiz, setCurrentQuestion } from "@/app/store/slices/textQuizSlice"
+import { initializeQuiz, completeQuiz, setCurrentQuestion, submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
 import type { OpenEndedQuizData } from "@/types/quiz"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
+
+import { toast } from "react-hot-toast"
+import { saveQuizAnswer } from "@/lib/utils/quiz-answer-utils"
 
 interface OpenEndedQuizWrapperProps {
   quizData: OpenEndedQuizData
@@ -17,6 +20,9 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   const dispatch = useAppDispatch()
   const quizState = useAppSelector((state) => state.textQuiz)
   const [isInitializing, setIsInitializing] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [userAnswers, setUserAnswers] = useState<any[]>([])
   const navigatingRef = useRef(false)
   const quizCompletedRef = useRef(false)
 
@@ -86,6 +92,124 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     }
   }, [quizState, quizInfo.questionCount, router, slug, dispatch, quizData])
 
+  const handleAnswerSubmit = useCallback(
+    async (answer: string, elapsedTime: number, hintsUsed: boolean) => {
+      // Don't process answers if we're already submitting
+      if (isSubmitting || !currentQuestion) return
+
+      // Create user answer object
+      const userAnswer = {
+        questionId: currentQuestion.id,
+        answer,
+        timeSpent: elapsedTime,
+        hintsUsed,
+        index: currentQuestionIdx,
+        // Use the isCorrect field for consistency with other quiz types
+        // This might come from the API verification or be left undefined for server-side evaluation
+        isCorrect: undefined
+      };
+
+      // Save the answer in local state
+      setUserAnswers((prev) => {
+        // Check if this answer already exists and update it
+        const exists = prev.some(a => a.questionId === currentQuestion.id);
+        if (exists) {
+          return prev.map(a => a.questionId === currentQuestion.id ? userAnswer : a);
+        }
+        // Otherwise add as new answer
+        return [...prev, userAnswer];
+      });
+
+      // Dispatch to Redux store
+      dispatch(submitAnswerLocally(userAnswer));
+
+      // For text-based quizzes, we can also save each answer to the database
+      // But use the saveQuizAnswer utility for consistent handling
+      try {
+        await saveQuizAnswer({
+          slug,
+          questionId: currentQuestion.id,
+          answer,
+          type: "openended",
+          timeSpent: elapsedTime,
+          showToast: true
+        });
+      } catch (error) {
+        console.warn("Failed to save answer to database:", error);
+        // We continue with local storage, no need to block progression
+      }
+
+      // Check if we're on the last question
+      const isLastQuestion = currentQuestionIdx >= quizData.questions.length - 1;
+
+      if (!isLastQuestion) {
+        // Move to the next question with a short delay for state updates
+        setTimeout(() => {
+          setCurrentQuestionIdx((prevIdx) => prevIdx + 1);
+        }, 50);
+      } else {
+        // This is the last question - handle quiz completion
+        setQuizCompleted(true);
+        setIsSubmitting(true);
+
+        try {
+          // First dispatch action to Redux
+          dispatch(completeQuiz({
+            quizId: quizData.id,
+            title: quizData.title,
+            completedAt: new Date().toISOString(),
+            score: score
+          }));
+
+          // Calculate total time spent
+          const totalTime = userAnswers.reduce((total, a) => total + (a.timeSpent || 0), 0) + elapsedTime;
+          
+          // Use the shared utility for submission
+          await submitCompletedQuiz({
+            slug,
+            type: "openended",
+            answers: [...userAnswers, userAnswer],
+            score: score || 0,  // Text quizzes may not have immediate scoring
+            totalQuestions: quizData.questions.length,
+            totalTime
+          });
+          
+          // Show success message
+          toast.success("Quiz completed! Viewing your results...", {
+            duration: 3000
+          });
+
+          // Navigate to results page
+          setTimeout(() => {
+            router.push(`/dashboard/openended/${slug}/results`);
+          }, 800);
+        } catch (error) {
+          console.error("Failed to handle quiz completion:", error);
+          setIsSubmitting(false);
+          setSubmitError("Failed to process quiz results");
+          
+          // Continue to results page anyway since we have local data
+          setTimeout(() => {
+            router.push(`/dashboard/openended/${slug}/results`);
+          }, 1500);
+        }
+      }
+    },
+    [
+      isSubmitting,
+      currentQuestion,
+      dispatch,
+      slug,
+      quizData.id,
+      quizData.title,
+      userAnswers,
+      router,
+      score,
+      currentQuestionIdx,
+      elapsedTime
+    ]
+  );
+  
   if (isInitializing) {
     return (
       <div className="flex items-center justify-center p-8">

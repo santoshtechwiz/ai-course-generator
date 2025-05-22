@@ -1,13 +1,11 @@
 "use client"
 
-import { useCallback, useMemo, useState, useEffect, memo } from "react"
+import { useCallback, useMemo, useState, useEffect, memo, useRef } from "react"
 import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
-import { useAnimation } from "@/providers/animation-provider"
-import { MotionWrapper, MotionTransition } from "@/components/ui/animations/motion-wrapper"
 import CodeQuizEditor from "./CodeQuizEditor"
 import { cn } from "@/lib/tailwindUtils"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
@@ -21,7 +19,7 @@ interface CodingQuizProps {
     answer?: string
     correctAnswer?: string
     language?: string
-    type: 'code'
+    type: "code"
   }
   onAnswer: (answer: string, elapsedTime: number, isCorrect: boolean) => void
   questionNumber: number
@@ -40,16 +38,8 @@ function CodingQuizComponent({
   isSubmitting = false,
   existingAnswer,
 }: CodingQuizProps) {
-  // Safely check for animation context
-  let animationsEnabled = false
-  try {
-    // Use optional chaining to prevent errors in test environment
-    const { animationsEnabled: enabled } = useAnimation?.() || { animationsEnabled: false }
-    animationsEnabled = enabled
-  } catch (error) {
-    // In test environment, animations are disabled by default
-    animationsEnabled = false
-  }
+  // Track the question ID to detect changes
+  const prevQuestionIdRef = useRef<string | null>(null)
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [userCode, setUserCode] = useState<string>("")
@@ -58,62 +48,101 @@ function CodingQuizComponent({
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [tooFastWarning, setTooFastWarning] = useState<boolean>(false)
 
+  // Add a ref to track if the component is mounted
+  const isMountedRef = useRef(true)
+
   // Combined submitting state
   const effectivelySubmitting = isSubmitting || internalSubmitting
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Initialize state when question changes
   useEffect(() => {
     if (question?.id) {
+      console.log(`Question changed to ${question.id}`)
+      prevQuestionIdRef.current = question.id
+
       setUserCode(existingAnswer || question.codeSnippet || "")
       setSelectedOption(existingAnswer && question.options?.includes(existingAnswer) ? existingAnswer : null)
       setTooFastWarning(false)
       setStartTime(Date.now())
       setElapsedTime(0)
+      setInternalSubmitting(false) // Reset submitting state on question change
     }
   }, [question?.id, question.codeSnippet, question.options, existingAnswer])
 
   // Track elapsed time
   useEffect(() => {
     const timer = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
+      if (isMountedRef.current && !effectivelySubmitting) {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
+      }
     }, 1000)
     return () => clearInterval(timer)
-  }, [startTime])
+  }, [startTime, effectivelySubmitting])
 
   // Memoized options
   const options = useMemo(() => question?.options || [], [question?.options])
 
   // Handler functions
-  const handleSelectOption = useCallback((option: string) => {
-    setSelectedOption(option)
-    setTooFastWarning(false)
-  }, [])
-
-  const handleCodeChange = useCallback((code: string | undefined) => {
-    if (code !== undefined) {
-      setUserCode(code)
+  const handleSelectOption = useCallback(
+    (option: string) => {
+      if (effectivelySubmitting) return
+      setSelectedOption(option)
       setTooFastWarning(false)
+    },
+    [effectivelySubmitting],
+  )
+
+  const handleCodeChange = useCallback(
+    (code: string | undefined) => {
+      if (code !== undefined && !effectivelySubmitting) {
+        setUserCode(code)
+        setTooFastWarning(false)
+      }
+    },
+    [effectivelySubmitting],
+  )
+
+  // Debug function
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "test") {
+      console.log("CodingQuiz rendering:", {
+        questionId: question?.id,
+        questionNumber,
+        totalQuestions,
+        isLastQuestion,
+        selectedOption,
+        effectivelySubmitting,
+      })
     }
-  }, [])
+  }, [question?.id, questionNumber, totalQuestions, isLastQuestion, selectedOption, effectivelySubmitting])
 
   const handleSubmit = useCallback(() => {
+    // Prevent submission if already in progress
     if (effectivelySubmitting) return
 
     const answerTime = Math.floor((Date.now() - startTime) / 1000)
 
-    // Validate input (skip in tests)
-    if (process.env.NODE_ENV !== 'test') {
+    // Skip validation in test environment
+    if (process.env.NODE_ENV !== "test") {
       if (answerTime < 1) {
         setTooFastWarning(true)
         return
       }
-      
+
       if ((options.length > 0 && !selectedOption) || (!options.length && !userCode.trim())) {
         setTooFastWarning(true)
         return
       }
     }
 
+    // Mark as submitting immediately to prevent double clicks
     setInternalSubmitting(true)
 
     // Determine answer and correctness
@@ -122,26 +151,21 @@ function CodingQuizComponent({
 
     if (question.answer || question.correctAnswer) {
       const correctAnswer = question.answer || question.correctAnswer || ""
-      
+
       if (options.length > 0) {
         // Multiple choice matching
         isCorrect = selectedOption === correctAnswer
       } else {
         // Code answer matching
-        const normalizeCode = (code: string) => code.trim().replace(/\s+/g, ' ').toLowerCase()
-        isCorrect = normalizeCode(userCode).includes(normalizeCode(correctAnswer)) || 
-                   correctAnswer.includes(userCode.trim())
+        const normalizeCode = (code: string) => code.trim().replace(/\s+/g, " ").toLowerCase()
+        isCorrect =
+          normalizeCode(userCode).includes(normalizeCode(correctAnswer)) || correctAnswer.includes(userCode.trim())
       }
     }
 
-    // Submit answer
+    // Call the onAnswer callback
     onAnswer(answer, answerTime, isCorrect)
-
-    // Reset submission state if not the last question
-    if (!isLastQuestion) {
-      setTimeout(() => setInternalSubmitting(false), 300)
-    }
-  }, [userCode, question, onAnswer, startTime, effectivelySubmitting, options, selectedOption, isLastQuestion])
+  }, [userCode, question, onAnswer, startTime, effectivelySubmitting, options, selectedOption])
 
   // Render code with syntax highlighting
   const renderCode = useCallback((code: string, language = "javascript") => {
@@ -279,15 +303,16 @@ function CodingQuizComponent({
       </CardContent>
 
       {/* Warning message */}
-      {tooFastWarning && (
-        <div className="mb-4 p-2 mx-6 bg-amber-50 border border-amber-200 rounded text-amber-600 text-sm">
-          {options.length > 0 && !selectedOption 
-            ? "Please select an option before proceeding."
-            : !options.length && !userCode.trim() 
-              ? "Please write your code answer before submitting."
-              : "Please take time to read the question carefully before answering."}
-        </div>
-      )}
+      <div
+        className={`mb-4 mx-6 p-2 bg-amber-50 border border-amber-200 rounded text-amber-600 text-sm ${tooFastWarning ? "" : "hidden"}`}
+        data-testid="warning-message"
+      >
+        {options.length > 0 && !selectedOption
+          ? "Please select an option before proceeding."
+          : !options.length && !userCode.trim()
+            ? "Please write your code answer before submitting."
+            : "Please take time to read the question carefully before answering."}
+      </div>
 
       {/* Footer with timer and submit button */}
       <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 p-6">
@@ -298,11 +323,10 @@ function CodingQuizComponent({
 
         <Button
           onClick={handleSubmit}
-          disabled={process.env.NODE_ENV !== 'test' && (
-            effectivelySubmitting || 
-            (options.length > 0 && !selectedOption) || 
-            (!options.length && !userCode.trim())
-          )}
+          disabled={
+            process.env.NODE_ENV !== "test" &&
+            (effectivelySubmitting || (options.length > 0 && !selectedOption) || (!options.length && !userCode.trim()))
+          }
           className={cn("px-8", effectivelySubmitting ? "bg-primary/70" : "")}
           data-testid="submit-answer"
         >

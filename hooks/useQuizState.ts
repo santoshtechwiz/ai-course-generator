@@ -236,6 +236,9 @@ export function useQuiz() {
         // Remove failed request from cache
         requestCache.delete(cacheKey);
         
+        // Better error handling with more detailed logging
+        console.error(`Error loading ${type} quiz with slug "${slug}":`, error);
+        
         if (
           error === "Unauthorized" ||
           (typeof error === "string" && error.includes("auth")) ||
@@ -537,7 +540,7 @@ export function useQuiz() {
       submitQuiz: submitQuizToServer,
       saveAnswer,
       getResults: fetchResults,
-      saveResults, // Add saveResults to the API
+      saveResults: saveResults, // Add saveResults to the API
       saveTempResults, // Add saveTempResults to the API
       clearTempResults: clearTempResultsAction, // Add clearTempResults to the API
       reset: () => dispatch(resetQuizState())

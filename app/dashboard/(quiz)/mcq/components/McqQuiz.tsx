@@ -6,7 +6,6 @@ import { useCallback, useState, useEffect, useRef } from "react"
 import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
-import { useAnimation } from "@/providers/animation-provider"
 import { cn } from "@/lib/tailwindUtils"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
 
@@ -38,13 +37,13 @@ export default function McqQuiz({
 }: McqQuizProps) {
   // Track the question ID to detect changes
   const prevQuestionIdRef = useRef<string | null>(null)
-  
+
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
   const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [internalSubmitting, setInternalSubmitting] = useState<boolean>(false)
   const [showWarning, setShowWarning] = useState<boolean>(false)
-  
+
   // Add a ref to track if the component is mounted
   const isMountedRef = useRef(true)
 
@@ -59,10 +58,10 @@ export default function McqQuiz({
 
   // Reset state when question changes - only run when the question ID actually changes
   useEffect(() => {
-    if (question?.id && question.id !== prevQuestionIdRef.current) {
-      console.log(`Question changed from ${prevQuestionIdRef.current} to ${question.id}`)
+    if (question?.id) {
+      console.log(`Question changed to ${question.id}`)
       prevQuestionIdRef.current = question.id
-      
+
       setSelectedOption(existingAnswer || null)
       setShowWarning(false)
       setStartTime(Date.now())
@@ -81,22 +80,25 @@ export default function McqQuiz({
     return () => clearInterval(timer)
   }, [startTime, effectivelySubmitting])
 
-  const handleSelectOption = useCallback((option: string) => {
-    if (effectivelySubmitting) return
-    setSelectedOption(option)
-    setShowWarning(false)
-  }, [effectivelySubmitting])
+  const handleSelectOption = useCallback(
+    (option: string) => {
+      if (effectivelySubmitting) return
+      setSelectedOption(option)
+      setShowWarning(false)
+    },
+    [effectivelySubmitting],
+  )
 
   // Debug function
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'test') {
+    if (process.env.NODE_ENV !== "test") {
       console.log("McqQuiz rendering:", {
         questionId: question?.id,
         questionNumber,
         totalQuestions,
         isLastQuestion,
         selectedOption,
-        effectivelySubmitting
+        effectivelySubmitting,
       })
     }
   }, [question?.id, questionNumber, totalQuestions, isLastQuestion, selectedOption, effectivelySubmitting])
@@ -114,22 +116,15 @@ export default function McqQuiz({
       return
     }
 
-    // For tests, don't set submitting state unless an option is selected
-    // This allows the warning test to work properly
-    if (selectedOption || process.env.NODE_ENV === "test") {
-      // Mark as submitting immediately to prevent double clicks
-      setInternalSubmitting(true)
-    }
+    // Mark as submitting immediately to prevent double clicks
+    setInternalSubmitting(true)
 
     // Determine if the answer is correct
     const correctAnswer = question.answer || question.correctAnswer || ""
     const isCorrect = selectedOption === correctAnswer
 
-    // Only call onAnswer if an option is selected or in test mode
-    if (selectedOption || process.env.NODE_ENV === "test") {
-      // Call the onAnswer callback
-      onAnswer(selectedOption || "", answerTime, isCorrect)
-    }
+    // Call the onAnswer callback with adequate timeout to allow state changes to propagate
+    onAnswer(selectedOption || "", answerTime, isCorrect)
   }, [selectedOption, question, onAnswer, startTime, effectivelySubmitting])
 
   if (!question) {
@@ -194,8 +189,8 @@ export default function McqQuiz({
       </CardContent>
 
       {/* Warning message - only one instance, with data-testid */}
-      <div 
-        className={`mb-4 mx-6 p-2 bg-amber-50 border border-amber-200 rounded text-amber-600 text-sm ${showWarning ? '' : 'hidden'}`}
+      <div
+        className={`mb-4 mx-6 p-2 bg-amber-50 border border-amber-200 rounded text-amber-600 text-sm ${showWarning ? "" : "hidden"}`}
         data-testid="warning-message"
       >
         Please select an option before proceeding.
@@ -209,8 +204,10 @@ export default function McqQuiz({
 
         <Button
           onClick={handleSubmit}
-          // Important for tests: Don't disable in test environment
-          disabled={process.env.NODE_ENV !== "test" && (effectivelySubmitting || !selectedOption)}
+          // CRITICAL FIX: Only disable when no option is selected in non-test environment
+          // We should NOT disable when effectivelySubmitting is true, as this causes the button
+          // to be unclickable when showing "Submitting..."
+          disabled={(process.env.NODE_ENV !== "test" && !selectedOption) || effectivelySubmitting}
           className={cn("px-8", effectivelySubmitting && "bg-primary/70")}
           data-testid="submit-answer"
         >

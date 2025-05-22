@@ -7,6 +7,12 @@ import { NavigationEvents } from "./NavigationEvents"
 import { FullPageLoader } from "@/components/ui/loader"
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1
+};
+
 export default async function DashboardLayout({
   children,
 }: {
