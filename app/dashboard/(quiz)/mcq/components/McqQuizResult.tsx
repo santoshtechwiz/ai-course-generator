@@ -146,7 +146,7 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
 
   const handleRetryQuiz = useCallback(() => {
     toast.loading("Loading quiz...");
-    // Make sure the slug is clean before navigation
+    // Fix: Make sure to use mcq path, not code path
     const navSlug = cleanSlug || normalizedResult.slug.split('?')[0];
     router.push(`/dashboard/mcq/${navSlug}?reset=true`); // Add reset=true to ensure quiz is reset
   }, [cleanSlug, normalizedResult.slug, router]);

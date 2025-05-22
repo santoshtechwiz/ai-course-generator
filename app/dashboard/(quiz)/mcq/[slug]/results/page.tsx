@@ -1,9 +1,7 @@
 "use client"
 
-// Fix the viewport metadata warning by moving it to viewport export
-import { useRouter } from "next/navigation"
-// Remove any viewport configuration from metadata export
 import { use, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
 import { toast } from "react-hot-toast"
@@ -30,24 +28,26 @@ interface ProcessedResult extends QuizResult {
 }
 
 export default function McqResultsPage({ params }: ResultsPageProps) {
-  // Extract slug in a way that works in tests and in real usage
-  const slug =
-    params instanceof Promise
-      ? use(params).slug // Real usage with Next.js
-      : (params as { slug: string }).slug // Test usage
-
+  // HOOKS SECTION - All hooks must be called at the top level and in the same order on every render
   const router = useRouter()
   const { isAuthenticated, status, requireAuth } = useAuth()
+  
+  // Extract slug in a way that works in tests and in real usage
+  const slug = params instanceof Promise
+    ? use(params).slug // Real usage with Next.js
+    : (params as { slug: string }).slug // Test usage
+  
+  // State hooks - call these unconditionally
   const [loadError, setLoadError] = useState<string | null>(null)
   const [fetchAttempted, setFetchAttempted] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [resultData, setResultData] = useState<QuizResult | null>(null)
-
-  // Get quiz using the hook API
+  
+  // Get quiz using the hook API - must be called unconditionally before any conditional logic
   const { quiz, results, tempResults, status: quizStatus, actions } = useQuiz()
 
-  // Log for debugging
+  // Log for debugging - No conditional logic
   useEffect(() => {
     console.log("Results page mounted with:", {
       tempResults,
@@ -57,9 +57,9 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     })
   }, [tempResults, results, quizStatus, slug])
 
-  // Authentication and results loading
+  // Authentication and results loading - No conditional logic
   useEffect(() => {
-    // Skip if we're still loading auth status
+    // Skip if we're still loading auth status, but don't wrap the hook itself in conditionals
     if (status === "loading") return
 
     let isMounted = true
@@ -77,9 +77,11 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
         if (actions?.getResults) {
           console.log("MCQ Page: Calling getResults with:", slug)
           actions
-            .getResults(slug, "mcq") // Added quiz type parameter here
+            .getResults(slug, "mcq")
             .then((data) => {
-              console.log("MCQ Page: Results fetched successfully:", data)
+              if (isMounted) {
+                console.log("MCQ Page: Results fetched successfully:", data)
+              }
             })
             .catch((error) => {
               if (isMounted) {
@@ -100,6 +102,55 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       isMounted = false
     }
   }, [slug, isAuthenticated, actions, results, tempResults, status, fetchAttempted])
+
+  // Process result data when it changes - hook is called unconditionally
+  useEffect(() => {
+    const initialResultData: QuizResult | null = results || tempResults;
+    
+    if (initialResultData) {
+      console.log("About to process results data:", {
+        rawData: initialResultData,
+        hasResultArray: Array.isArray(initialResultData.result),
+        score: initialResultData.score,
+        maxScore: initialResultData.maxScore,
+        questionsLength: initialResultData.questions?.length || 0,
+      });
+
+      // Check if we have a nested result array (API response format)
+      if (Array.isArray(initialResultData.result) && initialResultData.result.length > 0) {
+        console.log("Found nested result array, extracting first item");
+
+        // Extract the first result from the array and use its data
+        const firstResult = initialResultData.result[0];
+
+        // Create a properly formatted result object
+        const processedData = {
+          quizId: String(firstResult.quizId || ""),
+          slug: firstResult.slug || firstResult.quizSlug || slug,
+          title: firstResult.quizTitle || "Quiz",
+          score: typeof firstResult.score === "number" ? firstResult.score : 0,
+          maxScore: firstResult.questions?.length || 13,
+          percentage: typeof firstResult.accuracy === "number" ? firstResult.accuracy : 0,
+          completedAt: firstResult.attemptedAt || initialResultData.completedAt || new Date().toISOString(),
+          questions: Array.isArray(firstResult.questions)
+            ? firstResult.questions.map((q) => ({
+                id: String(q.questionId || ""),
+                question: q.question || "",
+                userAnswer: q.userAnswer || "",
+                correctAnswer: q.correctAnswer || "",
+                isCorrect: !!q.isCorrect,
+                options: Array.isArray(q.options) ? q.options : [],
+              }))
+            : [],
+        } as ProcessedResult;
+
+        console.log("Normalized result data:", processedData);
+        setResultData(processedData);
+      } else {
+        setResultData(initialResultData);
+      }
+    }
+  }, [results, tempResults, slug]);
 
   // Function to save temporary results to database
   const handleSaveResults = async () => {
@@ -128,9 +179,10 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       setSaveSuccess(true)
 
       // Refresh results after saving to get the officially saved version
+      // Fix: Use mcq-specific type parameter
       if (actions.getResults) {
         try {
-          await actions.getResults(slug)
+          await actions.getResults(slug, "mcq")
         } catch (err) {
           console.error("Error refreshing results:", err)
           // Don't show error for this since it's not critical
@@ -145,6 +197,8 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       setIsSaving(false)
     }
   }
+
+  // RENDER LOGIC - All conditional rendering goes here, after all hooks are called
 
   // First check auth to maintain correct test behavior
   if (!isAuthenticated && status !== "loading") {
@@ -195,55 +249,6 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // Display results - either permanent or temporary ones
-  const initialResultData: QuizResult | null = results || tempResults
-
-  useEffect(() => {
-    if (initialResultData) {
-      console.log("About to render results page with data:", {
-        rawData: initialResultData,
-        hasResultArray: Array.isArray(initialResultData.result),
-        score: initialResultData.score,
-        maxScore: initialResultData.maxScore,
-        questionsLength: initialResultData.questions?.length || 0,
-      })
-
-      // Check if we have a nested result array (API response format)
-      if (Array.isArray(initialResultData.result) && initialResultData.result.length > 0) {
-        console.log("Found nested result array, extracting first item")
-
-        // Extract the first result from the array and use its data
-        const firstResult = initialResultData.result[0]
-
-        // Create a properly formatted result object
-        const processedData = {
-          quizId: String(firstResult.quizId || ""),
-          slug: firstResult.slug || firstResult.quizSlug || slug,
-          title: firstResult.quizTitle || "Quiz",
-          score: typeof firstResult.score === "number" ? firstResult.score : 0,
-          maxScore: firstResult.questions?.length || 13,
-          percentage: typeof firstResult.accuracy === "number" ? firstResult.accuracy : 0,
-          completedAt: firstResult.attemptedAt || initialResultData.completedAt || new Date().toISOString(),
-          questions: Array.isArray(firstResult.questions)
-            ? firstResult.questions.map((q) => ({
-                id: String(q.questionId || ""),
-                question: q.question || "",
-                userAnswer: q.userAnswer || "",
-                correctAnswer: q.correctAnswer || "",
-                isCorrect: !!q.isCorrect,
-                options: Array.isArray(q.options) ? q.options : [],
-              }))
-            : [],
-        } as ProcessedResult
-
-        console.log("Normalized result data:", processedData)
-        setResultData(processedData)
-      } else {
-        setResultData(initialResultData)
-      }
-    }
-  }, [initialResultData, slug])
-
   return resultData ? (
     <div className="container max-w-4xl py-6">
       <Card>
@@ -281,8 +286,6 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   )
 }
 //would go in a layout.tsx file if not here)
-//
-//
 //
 //
 //

@@ -58,7 +58,7 @@ export default function McqQuiz({
 
   // Reset state when question changes - only run when the question ID actually changes
   useEffect(() => {
-    if (question?.id) {
+    if (question?.id && question.id !== prevQuestionIdRef.current) {
       console.log(`Question changed to ${question.id}`)
       prevQuestionIdRef.current = question.id
 
@@ -137,6 +137,10 @@ export default function McqQuiz({
     )
   }
 
+  // Sanitize question text to ensure we don't display duplicate content
+  // This removes any duplicate occurrences of the question text that might appear
+  const sanitizedQuestion = question.question.replace(/(.+?)(\1)+/g, "$1")
+
   return (
     <Card className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-sm border" data-testid="mcq-quiz">
       <CardHeader className="space-y-4">
@@ -157,10 +161,11 @@ export default function McqQuiz({
       <CardContent className="p-6 space-y-6">
         <div className="space-y-4">
           <h3 className="text-lg font-medium mb-6" data-testid="question-text">
-            {question.question}
+            {sanitizedQuestion}
           </h3>
           <div className="mt-6 space-y-3" data-testid="options-container">
-            {question.options.map((option, index) => (
+            {/* Deduplicate options in case they were accidentally duplicated */}
+            {Array.from(new Set(question.options)).map((option, index) => (
               <div
                 key={index}
                 className={cn(

@@ -55,10 +55,11 @@ export default function McqQuizPage({
     // 4. We haven't started loading yet (using ref)
     if (loadQuiz && !isLoading && !quizData && !loadStartedRef.current && slug) {
       loadStartedRef.current = true;
-      console.log("Loading quiz with slug:", slug);
+      console.log("Loading MCQ quiz with slug:", slug);  // Add clear indication it's an MCQ quiz
+      // Fix: Ensure we explicitly specify "mcq" as the quiz type
       loadQuiz(slug, "mcq")
         .catch(error => {
-          console.error("Error loading quiz:", error)
+          console.error("Error loading MCQ quiz:", error)
           loadStartedRef.current = false; // Reset flag if error occurred to allow retry
         })
     }
