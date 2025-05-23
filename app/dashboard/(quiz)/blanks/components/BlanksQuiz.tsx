@@ -30,6 +30,7 @@ function BlanksQuizComponent({
   const [hintsUsed, setHintsUsed] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const startTimeRef = useRef<number>(Date.now())
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   // Animation variants
   const containerVariants = {

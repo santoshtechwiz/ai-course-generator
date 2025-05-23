@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Loader2, CheckCircle, Brain, Trophy, Zap } from "lucide-react"
+import { Loader, CheckCircle, Brain, Trophy, Zap } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 
 interface QuizSubmissionLoadingProps {
@@ -113,7 +113,7 @@ export function QuizSubmissionLoading({ quizType, message, onComplete }: QuizSub
           transition={{ delay: 0.3 }}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-sm font-medium text-primary"
         >
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader className="w-4 h-4 animate-spin" />
           {quizTypeNames[quizType]}
         </motion.div>
 

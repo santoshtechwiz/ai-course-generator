@@ -22,7 +22,7 @@ import {
   Terminal,
 } from "lucide-react"
 import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
-import type { QuizResult } from "@/app/types/quiz-types"
+import { QuizResult } from "@/types/quiz"
 import { toast } from "sonner"
 
 interface CodeQuizResultProps {

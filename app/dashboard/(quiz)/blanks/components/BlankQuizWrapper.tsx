@@ -21,6 +21,7 @@ export default function BlankQuizWrapper({ quizData, slug }: BlanksQuizWrapperPr
   const [initializationError, setInitializationError] = useState<string | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
 
   // Validate quiz data and initialize
   useEffect(() => {
@@ -211,12 +212,18 @@ export default function BlankQuizWrapper({ quizData, slug }: BlanksQuizWrapperPr
 
   // Render quiz
   return (
-    <BlanksQuiz
-      question={currentQuestion}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={quizData.questions.length}
-      isLastQuestion={currentQuestionIndex >= quizData.questions.length - 1}
-      onQuestionComplete={handleQuestionComplete}
-    />
+    <div data-testid="blanks-quiz-wrapper">
+      {!isCompleted ? (
+        <BlanksQuiz
+          question={currentQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={quizData.questions.length}
+          isLastQuestion={currentQuestionIndex >= quizData.questions.length - 1}
+          onQuestionComplete={handleQuestionComplete}
+        />  
+      ) : (
+        <div data-testid="quiz-results">Quiz Results</div>
+      )}
+    </div>
   )
 }

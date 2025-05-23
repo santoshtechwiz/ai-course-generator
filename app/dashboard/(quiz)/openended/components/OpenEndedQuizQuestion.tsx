@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { submitAnswer } from "@/app/store/slices/textQuizSlice"
@@ -31,7 +31,7 @@ interface QuizQuestionProps {
   onQuestionComplete: () => void
 }
 
-export  function OpenEndedQuizQuestion({
+export function OpenEndedQuizQuestion({
   question,
   questionNumber,
   totalQuestions,
@@ -45,7 +45,7 @@ export  function OpenEndedQuizQuestion({
   const [timer, setTimer] = useState(0)
   const [isFocused, setIsFocused] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const answerRef = useRef<HTMLTextAreaElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Parse hints from question data
   const hints = useMemo(() => {
@@ -61,8 +61,8 @@ export  function OpenEndedQuizQuestion({
     setTimer(0)
     setIsSubmitting(false)
 
-    if (answerRef.current) {
-      answerRef.current.focus()
+    if (textareaRef.current) {
+      textareaRef.current.focus()
     }
   }, [question.id])
 
@@ -185,7 +185,7 @@ export  function OpenEndedQuizQuestion({
 
         <CardContent className="space-y-4">
           <Textarea
-            ref={answerRef}
+            ref={textareaRef}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="Type your answer here..."
@@ -230,4 +230,4 @@ function arePropsEqual(prevProps: QuizQuestionProps, nextProps: QuizQuestionProp
   )
 }
 
-export default memo(OpenEndedQuizQuestion);
+export default memo(OpenEndedQuizQuestion)

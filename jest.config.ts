@@ -11,12 +11,16 @@ const config: Config = {
   coverageProvider: "v8",
   testEnvironment: "jest-environment-jsdom",
   reporters: [
-    'default',
-    ['jest-stare', {
-      resultDir: 'jest-stare',
-      reportTitle: 'Test Report',
-    }]
-  ],
+  "default",
+  ["jest-html-reporter", {
+    pageTitle: "Test Report",
+    outputPath: "test-report.html",
+    includeFailureMsg: true,
+    includeSuiteFailure: true,
+    theme: "defaultTheme", // other options: 'darkTheme', 'bootstrapTheme'
+    sort: "status" // groups by pass/fail
+  }]
+],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
     "^.+\\.(svg)$": "<rootDir>/__mocks__/svgMock.js",
@@ -34,11 +38,12 @@ const config: Config = {
   ],
   // Remove ts-jest transformer as next/jest handles this
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
-  verbose: true,
-  // Remove silent mode for better debugging
-  collectCoverageFrom: ["**/*.{js,jsx,ts,tsx}", "!**/*.d.ts", "!**/node_modules/**", "!**/.next/**", "!**/coverage/**"],
+  verbose: false, // Reduce noise
+  silent: false, // Allow console output for debugging
+  noStackTrace: true, // Disable stack traces
+  collectCoverage: false, // Disable coverage by default
   // Add reasonable timeout for tests
-  testTimeout: 30000, // Increase timeout for complex tests
+  testTimeout: 10000, // Reduce timeout to catch hanging tests faster
   transformIgnorePatterns: [
     // Transform ES modules in node_modules
     "node_modules/(?!(nanoid)/)",

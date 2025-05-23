@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -13,6 +13,7 @@ import QuizResultsOpenEnded from '@/app/dashboard/(quiz)/openended/components/Qu
 import textQuizReducer from '@/app/store/slices/textQuizSlice';
 import * as auth from '@/hooks/useAuth';
 import * as nextAuth from 'next-auth/react';
+import quizReducer from '@/store/slices/quizSlice';
 
 // Mock the router
 jest.mock('next/navigation', () => ({
@@ -136,7 +137,8 @@ const mockQuizResult = {
 const createStore = (preloadedState = {}) => {
   return configureStore({
     reducer: {
-      textQuiz: textQuizReducer
+      textQuiz: textQuizReducer,
+      quiz: quizReducer
     },
     preloadedState
   });
@@ -489,6 +491,67 @@ describe('OpenEnded Quiz Flow End-to-End Test', () => {
       
       // The error would be handled internally without crashing the component
       expect(screen.queryByTestId('quiz-question')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('OpenEnded Quiz Flow', () => {
+  const mockQuizData = {
+    id: 'test-quiz',
+    title: 'Test Quiz',
+    questions: [
+      {
+        id: 'q1',
+        question: 'What is React?',
+        answer: 'A JavaScript library for building user interfaces'
+      }
+    ]
+  };
+
+  const renderWithRedux = (component: React.ReactNode) => {
+    const store = configureStore({
+      reducer: {
+        quiz: (state = {}, action) => state
+      }
+    });
+    
+    return render(
+      <Provider store={store}>
+        {component}
+      </Provider>
+    );
+  };
+
+  beforeEach(() => {
+    // Reset mocks and local storage
+    localStorage.clear();
+    jest.clearAllMocks();
+  });
+
+  it('should allow user to complete quiz and see immediate results', async () => {
+    renderWithRedux(
+      <OpenEndedQuizWrapper 
+        quizData={mockQuizData}
+        slug="test-quiz"
+      />
+    );
+
+    // Wait for quiz to load
+    await waitFor(() => {
+      expect(screen.getByTestId('question-text')).toBeInTheDocument();
+    });
+
+    // Answer question
+    fireEvent.change(screen.getByTestId('answer-textarea'), {
+      target: { value: 'React is a JavaScript library' }
+    });
+
+    // Submit answer
+    fireEvent.click(screen.getByTestId('submit-button'));
+
+    // Verify results page
+    await waitFor(() => {
+      expect(screen.getByText(/quiz completed/i)).toBeInTheDocument();
     });
   });
 });

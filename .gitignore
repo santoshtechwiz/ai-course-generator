@@ -32,3 +32,14 @@ jest-stare/jest-results.json
 
 jest-stare/index.html
 jest-stare/jest-results.json
+__azurite_db_blob__.json
+__azurite_db_blob_extent__.json
+__azurite_db_table__.json
+.gitignore
+__azurite_db_queue_extent__.json
+__azurite_db_queue__.json
+__blobstorage__/b4fd400b-b0ae-412a-a790-8b3b8e4ac65a
+__blobstorage__/65444090-a8bf-49ee-9b0a-a31349dd9c37
+__blobstorage__/307f81c3-cbe1-47f7-ac74-594630628c48
+__blobstorage__/16b5db44-44f3-4a13-a442-e87b2ff8882b
+__blobstorage__/9b3e2aa8-9b77-4aef-b506-fd2575f675f8
