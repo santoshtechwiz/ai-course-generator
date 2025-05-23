@@ -22,7 +22,6 @@ interface UserAnswer {
 
 /**
  * Prepares a standardized submission payload for any quiz type.
- * Compatible with legacy test format that passes quiz and answers separately.
  */
 export function prepareSubmissionPayload(
   quiz: QuizMeta,
@@ -38,7 +37,7 @@ export function prepareSubmissionPayload(
     isCorrect: a.isCorrect ?? false,
   }))
 
-  const correctCount = formattedAnswers.filter((a) => a.isCorrect).length
+  const correctCount = formattedAnswers.filter((a) => a.isCorrect === true).length
 
   return {
     quizId: normalizeQuizId(quiz.id),
@@ -52,6 +51,9 @@ export function prepareSubmissionPayload(
   }
 }
 
+/**
+ * Validates a submission payload structure
+ */
 export function validateQuizSubmission(payload: any) {
   if (!payload) {
     return {
@@ -70,6 +72,7 @@ export function validateQuizSubmission(payload: any) {
     "totalQuestions",
     "correctAnswers",
   ]
+
   const errors: string[] = []
 
   for (const field of requiredFields) {
