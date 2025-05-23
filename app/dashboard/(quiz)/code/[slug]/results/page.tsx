@@ -28,6 +28,17 @@ interface ProcessedResult extends QuizResult {
   }>
 }
 
+interface QueryError {
+  message: string;
+  code?: string;
+  status?: number;
+}
+
+interface ResultData {
+  data?: QuizResult;
+  error?: QueryError;
+}
+
 export default function CodeResultsPage({ params }: ResultsPageProps) {
   // Extract slug in a way that works in tests and in real usage
   const slug =
@@ -189,7 +200,33 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
         console.log("Normalized result data:", processedData)
         setResultData(processedData)
       } else {
-        setResultData(initialResultData)
+        // Update error handling
+        try {
+          const processedData = {
+            quizId: String(initialResultData.quizId || ""),
+            slug: initialResultData.slug || slug, // Ensure slug exists
+            title: initialResultData.title || "Quiz",
+            score: typeof initialResultData.score === "number" ? initialResultData.score : 0,
+            maxScore: initialResultData.questions?.length || 0,
+            percentage: typeof initialResultData.accuracy === "number" ? initialResultData.accuracy : 0,
+            completedAt: initialResultData.attemptedAt || new Date().toISOString(),
+            questions: Array.isArray(initialResultData.questions)
+              ? initialResultData.questions.map((q) => ({
+                  id: String(q.questionId || ""),
+                  question: q.question || "",
+                  userAnswer: q.userAnswer || "",
+                  correctAnswer: q.correctAnswer || "",
+                  isCorrect: !!q.isCorrect,
+                  codeSnippet: q.codeSnippet || "",
+                }))
+              : [],
+          } as ProcessedResult
+
+          console.log("Normalized result data:", processedData)
+          setResultData(processedData)
+        } catch (err: unknown) {
+          handleQueryError(err as QueryError)
+        }
       }
     }
   }, [results, tempResults, slug])

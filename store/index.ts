@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux"
 import type { PersistPartial } from "redux-persist/es/persistReducer"
 
 // Middlewares
-import persistQuizMiddleware from "./middleware/persistQuizMiddleware"
+import persistQuizMiddleware, { checkStoredAuthRedirectState } from "./middleware/persistQuizMiddleware"
 
 // Reducers
 import authReducer from "./slices/authSlice"
@@ -86,12 +86,16 @@ export const store = configureStore({
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     })
-      .prepend(persistQuizMiddleware.middleware)
-     ,
+    .prepend(persistQuizMiddleware.middleware),
   devTools: process.env.NODE_ENV !== "production",
 })
 
 export const persistor = persistStore(store)
+
+// Only check for stored state on client side
+if (typeof window !== 'undefined') {
+  checkStoredAuthRedirectState(store)
+}
 
 // === TYPES ===
 export type RootState = ReturnType<RootReducerType>

@@ -2,7 +2,6 @@ import {
   createSlice,
   createAsyncThunk,
   PayloadAction,
-  createAction,
 } from "@reduxjs/toolkit"
 import type {
   QuizData,
@@ -11,24 +10,18 @@ import type {
   QuizType,
   UserAnswer,
 } from "@/app/types/quiz-types"
-
-// -------------------- Constants --------------------
+import type { CodeQuizRedirectState } from "@/app/types/code-quiz-types"
 
 const API_ENDPOINTS: Record<QuizType, string> = {
   mcq: "/api/quizzes/mcq",
   code: "/api/quizzes/code",
   blanks: "/api/quizzes/blanks",
   openended: "/api/quizzes/openended",
+  flashcard: ""
 }
 
-// -------------------- Utils --------------------
-
-const normalizeQuizData = (
-  raw: any,
-  slug: string,
-  type: QuizType,
-): QuizData => {
-  const quizUniqueId = raw.quizId || raw.id || `${type}-${slug}-${Date.now()}`
+const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => {
+  const quizUniqueId = raw.quizId
   return {
     id: quizUniqueId,
     title: raw.quizData?.title || "Quiz",
@@ -57,12 +50,6 @@ const normalizeQuizData = (
     timeLimit: raw.quizData?.timeLimit || null,
   }
 }
-
-function getCorrectAnswer(q: any): string {
-  return q.correctAnswer || q.answer || ""
-}
-
-// -------------------- State --------------------
 
 interface ErrorMap {
   quiz: string | null
@@ -94,6 +81,14 @@ export interface QuizState {
   currentQuizType: QuizType | null
   currentQuizSlug: string | null
   hasMoreHistory: boolean
+  authRedirectState: {
+    slug: string | null
+    quizId: string | null
+    type: QuizType | null
+    userAnswers: UserAnswer[]
+    currentQuestion: number
+    tempResults: QuizResult | null
+  } | null
 }
 
 export const initialState: QuizState = {
@@ -124,6 +119,7 @@ export const initialState: QuizState = {
   currentQuizType: null,
   currentQuizSlug: null,
   hasMoreHistory: true,
+  authRedirectState: null,
 }
 
 // -------------------- Async Thunks --------------------
@@ -335,10 +331,40 @@ export const quizSlice = createSlice({
       state.isSubmitting = false
       state.timerActive = false
     },
+    // Add new reducer to handle saving quiz state
+    saveQuizState: (state, action) => {
+      const { currentQuestion, userAnswers, quizData } = action.payload
+      state.currentQuestion = currentQuestion
+      state.userAnswers = userAnswers
+      state.quizData = quizData
+    },
+    saveAuthRedirectState: (state, action: PayloadAction<CodeQuizRedirectState>) => {
+      state.authRedirectState = action.payload
+      // Also persist the current quiz state
+      state.currentQuizType = action.payload.type
+      state.currentQuizSlug = action.payload.slug
+    },
+    restoreFromAuthRedirect: (state) => {
+      if (state.authRedirectState) {
+        state.currentQuizSlug = state.authRedirectState.slug
+        state.currentQuizId = state.authRedirectState.quizId
+        state.currentQuizType = state.authRedirectState.type
+        state.userAnswers = state.authRedirectState.userAnswers
+        state.currentQuestion = state.authRedirectState.currentQuestion
+        state.tempResults = state.authRedirectState.tempResults
+        state.authRedirectState = null
+      }
+    },
+    clearAuthRedirectState: (state) => {
+      state.authRedirectState = null
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchQuiz.pending, (state) => {
+      .addCase(fetchQuiz.pending, (state, action) => {
+        const { slug, type } = action.meta.arg
+        state.currentQuizSlug = slug.replace(/Question$/, "")
+        state.currentQuizType = type
         state.isLoading = true
         state.errors.quiz = null
       })
@@ -362,7 +388,7 @@ export const quizSlice = createSlice({
         state.isSubmitting = false
         state.isCompleted = true
         state.results = action.payload
-        state.tempResults = action.payload
+        state.tempResults = null
       })
       .addCase(submitQuiz.rejected, (state, action) => {
         state.isSubmitting = false
@@ -390,9 +416,11 @@ export const {
   clearTempResults,
   clearQuizStateAfterSubmission,
   storeQuizResults,
+  saveQuizState,
+  saveAuthRedirectState,
+  restoreFromAuthRedirect,
+  clearAuthRedirectState,
 } = quizSlice.actions
-
-// Removed redundant export block for fetchQuiz and submitQuiz
 
 export const quizInitialState = initialState
 export default quizSlice.reducer

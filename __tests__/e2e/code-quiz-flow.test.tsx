@@ -726,3 +726,13 @@ describe('Code Quiz Flow End-to-End Test', () => {
     });
   });
 });
+
+// Add types to test functions and mocks
+interface MockHandlerProps {
+  onAnswer: (code: string, time: number, isCorrect: boolean) => void;
+}
+
+// Type the mock handlers
+const mockHandler = (props: MockHandlerProps) => {
+  // ...existing code...
+};
