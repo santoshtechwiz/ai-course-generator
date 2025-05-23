@@ -175,12 +175,15 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
           });
           
           // Show success message
-          toast.success("Quiz completed! Viewing your results...", {
-            duration: 3000
+          const toastId = toast.success("Quiz completed! Viewing your results...", {
+            duration: 3000,
+            id: "quiz-completed-toast"
           });
 
           // Navigate to results page
           setTimeout(() => {
+            // Ensure toast is dismissed before navigation
+            toast.dismiss(toastId);
             router.push(`/dashboard/openended/${slug}/results`);
           }, 800);
         } catch (error) {
