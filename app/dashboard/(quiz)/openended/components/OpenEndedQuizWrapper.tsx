@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback, useMemo, useState, useRef } from "react"
+import { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { initializeQuiz, completeQuiz, setCurrentQuestion, submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
@@ -23,6 +23,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [userAnswers, setUserAnswers] = useState<any[]>([])
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
   const navigatingRef = useRef(false)
   const quizCompletedRef = useRef(false)
 
@@ -92,10 +93,14 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     }
   }, [quizState, quizInfo.questionCount, router, slug, dispatch, quizData])
 
+  // Get current question safely
+  const currentQuestion = useMemo(() => {
+    return quizData?.questions?.[currentQuestionIdx] || null;
+  }, [quizData?.questions, currentQuestionIdx]);
+
   const handleAnswerSubmit = useCallback(
     async (answer: string, elapsedTime: number, hintsUsed: boolean) => {
-      // Don't process answers if we're already submitting
-      if (isSubmitting || !currentQuestion) return
+      if (isSubmitting || !currentQuestion) return;
 
       // Create user answer object
       const userAnswer = {
@@ -199,8 +204,10 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       }
     },
     [
-      isSubmitting,
       currentQuestion,
+      isSubmitting,
+      quizData.questions,
+      currentQuestionIdx,
       dispatch,
       slug,
       quizData.id,
@@ -208,7 +215,6 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       userAnswers,
       router,
       score,
-      currentQuestionIdx,
       elapsedTime
     ]
   );

@@ -1,4 +1,4 @@
-import { QuizType, UserAnswer } from "@/app/types/quiz-types";
+import { QuizType } from "@/types/quiz"
 
 /**
  * Ensures that quiz IDs are properly formatted as numbers when needed
@@ -25,48 +25,48 @@ export function normalizeQuizId(id: string | number | undefined): number | strin
  * Prepares a standardized submission payload for any quiz type
  */
 export function prepareSubmissionPayload({
-  answers,
+  answers = [],
   quizId,
   slug,
   type,
-  timeTaken = 600
+  timeTaken
 }: {
-  answers: UserAnswer[],
+  answers: any[],
   quizId?: string | number,
   slug: string,
   type: QuizType,
   timeTaken?: number
 }) {
-  // Normalize quizId
-  const normalizedId = normalizeQuizId(quizId);
-  
-  // Count correct answers
-  const correctAnswers = answers.filter(a => Boolean(a.isCorrect)).length;
-  const totalQuestions = answers.length;
-  
-  // Calculate average time per question
-  const timePerQuestion = Math.floor(timeTaken / Math.max(totalQuestions, 1));
-  
-  // Format answers according to API expectations
-  const formattedAnswers = answers.map(answer => ({
-    questionId: typeof answer.questionId === 'string' && /^\d+$/.test(answer.questionId) 
-      ? parseInt(answer.questionId, 10) 
-      : answer.questionId,
-    answer: answer.answer,
-    isCorrect: Boolean(answer.isCorrect),
-    timeSpent: answer.timeSpent || timePerQuestion
-  }));
-  
+  // Use provided timeTaken or calculate from answers
+  const totalTime = timeTaken || answers.reduce((sum, a) => sum + (a.timeSpent || 0), 0)
+
+  // Format answers consistently
+  const formattedAnswers = answers.map(a => {
+    const base = {
+      questionId: String(a.questionId || ""),
+      answer: a.answer || a.selectedOption || "",
+      timeSpent: a.timeSpent || Math.round(totalTime / answers.length),
+      isCorrect: a.isCorrect === undefined ? false : Boolean(a.isCorrect)
+    }
+    // Remove undefined/null values
+    return Object.fromEntries(
+      Object.entries(base).filter(([_, v]) => v !== undefined && v !== null)
+    )
+  })
+
+  // Calculate score and correctAnswers
+  const correctCount = formattedAnswers.filter(a => a.isCorrect === true).length
+
   return {
-    quizId: normalizedId,
+    quizId: quizId ? String(quizId) : undefined,
     slug,
     type,
     answers: formattedAnswers,
-    score: correctAnswers,
-    totalQuestions,
-    totalTime: timeTaken,
-    correctAnswers
-  };
+    score: correctCount,
+    totalQuestions: answers.length,
+    totalTime: totalTime || 600, // Default to 600 if no time provided
+    correctAnswers: correctCount
+  }
 }
 
 /**
@@ -82,4 +82,43 @@ export function isValidQuizId(id: any): boolean {
   }
   
   return false;
+}
+
+/**
+ * Validates the quiz submission payload
+ */
+export function validateQuizSubmission(payload: any) {
+  if (!payload) {
+    return { 
+      isValid: false,
+      errors: ["Missing required fields"],
+      error: "Missing required fields: quizId, slug, type, answers"
+    }
+  }
+
+  const errors: string[] = []
+  const requiredFields = ["slug", "type"]
+  const missingFields = requiredFields.filter(field => !payload[field])
+
+  if (missingFields.length > 0) {
+    errors.push("Missing required fields")
+  }
+
+  if (!Array.isArray(payload.answers)) {
+    errors.push("Invalid answers format")
+  }
+
+  // For valid payloads, return just isValid: true
+  if (errors.length === 0) {
+    return { isValid: true }
+  }
+
+  // For invalid payloads, include error details
+  return {
+    isValid: false,
+    errors,
+    error: missingFields.length > 0 
+      ? `Missing required fields: ${missingFields.join(", ")}`
+      : errors[0]
+  }
 }

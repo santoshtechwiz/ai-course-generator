@@ -181,3 +181,42 @@ window.requestIdleCallback = jest.fn((callback) => {
   callback({} as IdleDeadline)
   return 0
 })
+
+// Extend Jest matchers
+expect.extend({
+  toHaveBeenCalledWithMatch(received, ...expected) {
+    const pass = received.mock.calls.some((call) =>
+      expected.every((arg, i) => {
+        if (typeof arg === "object") {
+          return expect.objectContaining(arg).asymmetricMatch(call[i])
+        }
+        return arg === call[i]
+      }),
+    )
+
+    return {
+      pass,
+      message: () => `expected ${received.mock.calls} to match ${expected}`,
+    }
+  },
+})
+
+// Add better async error handling
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled Promise Rejection in tests:", error)
+})
+
+// Increase heap size for memory-intensive tests
+if (typeof global.gc === "function") {
+  global.gc()
+}
+
+// Mock console to reduce noise but keep errors
+const originalConsole = console
+global.console = {
+  ...console,
+  log: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: originalConsole.error, // Keep error logging
+}
