@@ -1,11 +1,68 @@
-import { createSlice, createAsyncThunk, createAction, PayloadAction } from "@reduxjs/toolkit"
+import {
+  createSlice,
+  createAsyncThunk,
+  PayloadAction,
+  createAction,
+} from "@reduxjs/toolkit"
 import type {
   QuizData,
-  UserAnswer,
-  QuizResult,
   QuizHistoryItem,
+  QuizResult,
   QuizType,
+  UserAnswer,
 } from "@/app/types/quiz-types"
+
+// -------------------- Constants --------------------
+
+const API_ENDPOINTS: Record<QuizType, string> = {
+  mcq: "/api/quizzes/mcq",
+  code: "/api/quizzes/code",
+  blanks: "/api/quizzes/blanks",
+  openended: "/api/quizzes/openended",
+}
+
+// -------------------- Utils --------------------
+
+const normalizeQuizData = (
+  raw: any,
+  slug: string,
+  type: QuizType,
+): QuizData => {
+  const quizUniqueId = raw.quizId || raw.id || `${type}-${slug}-${Date.now()}`
+  return {
+    id: quizUniqueId,
+    title: raw.quizData?.title || "Quiz",
+    slug,
+    type,
+    questions: Array.isArray(raw.quizData?.questions)
+      ? raw.quizData.questions.map((q: any, index: number) => ({
+          id:
+            q.id ||
+            q.questionId ||
+            `${quizUniqueId}-q-${index}-${Math.random()
+              .toString(36)
+              .substring(2, 8)}`,
+          question: q.question || "",
+          codeSnippet: q.codeSnippet || "",
+          options: Array.isArray(q.options) ? [...q.options] : [],
+          answer: q.answer || q.correctAnswer || "",
+          correctAnswer: q.correctAnswer || q.answer || "",
+          language: q.language || "javascript",
+          type,
+        }))
+      : [],
+    isPublic: !!raw.isPublic,
+    isFavorite: !!raw.isFavorite,
+    ownerId: raw.ownerId || "",
+    timeLimit: raw.quizData?.timeLimit || null,
+  }
+}
+
+function getCorrectAnswer(q: any): string {
+  return q.correctAnswer || q.answer || ""
+}
+
+// -------------------- State --------------------
 
 interface ErrorMap {
   quiz: string | null
@@ -69,27 +126,116 @@ export const initialState: QuizState = {
   hasMoreHistory: true,
 }
 
+// -------------------- Async Thunks --------------------
+
+export const fetchQuiz = createAsyncThunk(
+  "quiz/fetchQuiz",
+  async (
+    { slug, type }: { slug: string; type: QuizType },
+    { rejectWithValue },
+  ) => {
+    try {
+      const cleanSlug = slug.replace(/Question$/, "")
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
+      const endpoint = API_ENDPOINTS[type]
+      const url = new URL(`${endpoint}/${cleanSlug}`, baseUrl).toString()
+      const response = await fetch(url)
+      if (!response.ok) {
+        const err = await response.json()
+        return rejectWithValue(err.message || "Failed to fetch quiz")
+      }
+      const data = await response.json()
+      return normalizeQuizData(data, cleanSlug, type)
+    } catch (error) {
+      return rejectWithValue("Network error loading quiz")
+    }
+  },
+)
+
+export const submitQuiz = createAsyncThunk(
+  "quiz/submitQuiz",
+  async (
+    {
+      slug,
+      quizId,
+      type,
+      answers,
+      timeTaken,
+      score,
+      totalQuestions,
+    }: {
+      slug: string
+      quizId?: string | number
+      type: QuizType
+      answers: UserAnswer[]
+      timeTaken?: number
+      score?: number
+      totalQuestions?: number
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const cleanSlug = slug.replace(/Question$/, "")
+      const endpoint = `/api/quizzes/common/${cleanSlug}/complete`
+
+      const correctAnswers = answers.filter((a) => a.isCorrect).length
+      const submissionData = {
+        quizId,
+        answers: answers.map((a) => ({
+          questionId: a.questionId,
+          answer: a.answer,
+          isCorrect: a.isCorrect,
+          timeSpent: Math.floor((timeTaken || 600) / answers.length),
+        })),
+        type,
+        score: score ?? correctAnswers,
+        totalTime: timeTaken || 600,
+        totalQuestions: totalQuestions || answers.length,
+        correctAnswers,
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(submissionData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        return rejectWithValue(errorData || response.statusText)
+      }
+
+      return await response.json()
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Unexpected submission error")
+    }
+  },
+)
+
+// -------------------- Slice --------------------
+
 export const quizSlice = createSlice({
   name: "quiz",
   initialState,
   reducers: {
     resetQuizState: (state) => {
-      const { quizHistory } = state
       return {
         ...initialState,
-        quizHistory,
+        quizHistory: state.quizHistory,
       }
     },
     setCurrentQuestion: (state, action: PayloadAction<number>) => {
       state.currentQuestion = action.payload
     },
     setUserAnswer: (state, action: PayloadAction<UserAnswer>) => {
-      const existing = state.userAnswers.findIndex((a) => a.questionId === action.payload.questionId)
-      if (existing >= 0) {
-        state.userAnswers[existing] = action.payload
-      } else {
-        state.userAnswers.push(action.payload)
-      }
+      const i = state.userAnswers.findIndex(
+        (a) => a.questionId === action.payload.questionId,
+      )
+      if (i >= 0) state.userAnswers[i] = action.payload
+      else state.userAnswers.push(action.payload)
     },
     startTimer: (state) => {
       const limit = state.quizData?.timeLimit
@@ -119,21 +265,22 @@ export const quizSlice = createSlice({
       state,
       action: PayloadAction<{ type: keyof ErrorMap; message: string }>,
     ) => {
-      state.errors[action.payload.type] = action.payload.message
-      switch (action.payload.type) {
+      const { type, message } = action.payload
+      state.errors[type] = message
+      switch (type) {
         case "quiz":
-          state.quizError = action.payload.message
-          state.error = action.payload.message
+          state.quizError = message
+          state.error = message
           break
         case "submission":
-          state.submissionError = action.payload.message
-          state.error = action.payload.message
+          state.submissionError = message
+          state.error = message
           break
         case "results":
-          state.resultsError = action.payload.message
+          state.resultsError = message
           break
         case "history":
-          state.historyError = action.payload.message
+          state.historyError = message
           break
       }
     },
@@ -189,7 +336,43 @@ export const quizSlice = createSlice({
       state.timerActive = false
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchQuiz.pending, (state) => {
+        state.isLoading = true
+        state.errors.quiz = null
+      })
+      .addCase(fetchQuiz.fulfilled, (state, action) => {
+        state.quizData = action.payload
+        state.currentQuizId = action.payload.id
+        state.currentQuizSlug = action.payload.slug
+        state.currentQuizType = action.payload.type
+        state.isLoading = false
+      })
+      .addCase(fetchQuiz.rejected, (state, action) => {
+        state.isLoading = false
+        state.quizError = action.payload as string
+        state.errors.quiz = action.payload as string
+      })
+      .addCase(submitQuiz.pending, (state) => {
+        state.isSubmitting = true
+        state.errors.submission = null
+      })
+      .addCase(submitQuiz.fulfilled, (state, action) => {
+        state.isSubmitting = false
+        state.isCompleted = true
+        state.results = action.payload
+        state.tempResults = action.payload
+      })
+      .addCase(submitQuiz.rejected, (state, action) => {
+        state.isSubmitting = false
+        state.submissionError = action.payload as string
+        state.errors.submission = action.payload as string
+      })
+  },
 })
+
+// -------------------- Exports --------------------
 
 export const {
   resetQuizState,
@@ -208,6 +391,8 @@ export const {
   clearQuizStateAfterSubmission,
   storeQuizResults,
 } = quizSlice.actions
+
+// Removed redundant export block for fetchQuiz and submitQuiz
 
 export const quizInitialState = initialState
 export default quizSlice.reducer
