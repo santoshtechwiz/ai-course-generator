@@ -6,34 +6,31 @@ const STORAGE_KEY = "quiz_state"
 const AUTH_REDIRECT_KEY = "quiz_auth_redirect"
 const COMPLETED_QUIZZES_KEY = "completed_quizzes"
 
-// Define a wrapper for storage to facilitate testing and SSR
-const storage = {
+// Remove localStorage/sessionStorage usage and replace with Redux-only state management
+
+// Replace the storage object with a memory-based implementation
+const memoryStorage = {
+  data: new Map<string, string>(),
+
   getItem: (key: string): string | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-      return sessionStorage.getItem(key);
-    } catch (err) {
-      console.error('Error accessing sessionStorage:', err);
-      return null;
-    }
+    return memoryStorage.data.get(key) || null
   },
+
   setItem: (key: string, value: string): void => {
-    if (typeof window === 'undefined') return;
-    try {
-      sessionStorage.setItem(key, value);
-    } catch (err) {
-      console.error('Error setting sessionStorage item:', err);
-    }
+    memoryStorage.data.set(key, value)
   },
+
   removeItem: (key: string): void => {
-    if (typeof window === 'undefined') return;
-    try {
-      sessionStorage.removeItem(key);
-    } catch (err) {
-      console.error('Error removing sessionStorage item:', err);
-    }
-  }
-};
+    memoryStorage.data.delete(key)
+  },
+
+  clear: (): void => {
+    memoryStorage.data.clear()
+  },
+}
+
+// Update all storage references to use memoryStorage instead of sessionStorage
+const storage = memoryStorage
 
 // Create the middleware instance
 const persistQuizMiddleware = createListenerMiddleware()
@@ -95,7 +92,7 @@ startAppListening({
       // Normal production code
       try {
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(() => {
+          ;(window as any).requestIdleCallback(() => {
             storage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
           })
         } else {
@@ -112,16 +109,15 @@ startAppListening({
 
 // Clear state on quiz completion
 startAppListening({
-  predicate: (action: Action) => action.type === "quiz/submitQuiz/fulfilled" || 
-                                action.type === "textQuiz/completeQuiz",
+  predicate: (action: Action) => action.type === "quiz/submitQuiz/fulfilled" || action.type === "textQuiz/completeQuiz",
   effect: (action: any, listenerApi: ListenerEffectAPI<RootState>) => {
     try {
       // For tests, use direct approach to avoid async issues
       if (process.env.NODE_ENV === "test") {
         storage.removeItem(STORAGE_KEY)
-        
+
         // Mark the quiz as completed if we have a slug
-        if (action.payload?.slug || (action.meta?.arg?.slug)) {
+        if (action.payload?.slug || action.meta?.arg?.slug) {
           const slug = action.payload?.slug || action.meta?.arg?.slug
           markQuizCompleted(slug)
         }
@@ -130,11 +126,11 @@ startAppListening({
 
       try {
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(() => {
+          ;(window as any).requestIdleCallback(() => {
             storage.removeItem(STORAGE_KEY)
 
             // Mark the quiz as completed if we have a slug
-            if (action.payload?.slug || (action.meta?.arg?.slug)) {
+            if (action.payload?.slug || action.meta?.arg?.slug) {
               const slug = action.payload?.slug || action.meta?.arg?.slug
               markQuizCompleted(slug)
             }
@@ -143,7 +139,7 @@ startAppListening({
           storage.removeItem(STORAGE_KEY)
 
           // Mark the quiz as completed if we have a slug
-          if (action.payload?.slug || (action.meta?.arg?.slug)) {
+          if (action.payload?.slug || action.meta?.arg?.slug) {
             const slug = action.payload?.slug || action.meta?.arg?.slug
             markQuizCompleted(slug)
           }
@@ -152,7 +148,7 @@ startAppListening({
         storage.removeItem(STORAGE_KEY)
 
         // Mark the quiz as completed if we have a slug
-        if (action.payload?.slug || (action.meta?.arg?.slug)) {
+        if (action.payload?.slug || action.meta?.arg?.slug) {
           const slug = action.payload?.slug || action.meta?.arg?.slug
           markQuizCompleted(slug)
         }
@@ -183,6 +179,89 @@ startAppListening({
       storage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(redirectInfo))
     } catch (error) {
       console.error("Error saving auth redirect state:", error)
+    }
+  },
+})
+
+// Improve the persistence of quiz state to ensure results are available
+// Add this new listener after the existing listeners:
+
+// Save results when they're available
+startAppListening({
+  predicate: (action: Action) => action.type === "quiz/markQuizCompleted" || action.type === "quiz/setTempResults",
+  effect: (action: any, listenerApi: ListenerEffectAPI<RootState>) => {
+    try {
+      const state = listenerApi.getState().quiz
+
+      // Get the results from the action or state
+      const results = action.payload || state.results || state.tempResults
+
+      if (results) {
+        // Save results to session storage for recovery
+        const resultsToSave = {
+          ...results,
+          timestamp: Date.now(),
+          quizId: results.quizId || state.quizData?.id,
+          slug: results.slug || state.quizData?.slug,
+        }
+
+        // Use a separate key for results to avoid conflicts
+        storage.setItem("quiz_results", JSON.stringify(resultsToSave))
+
+        // Also mark the quiz as completed
+        if (results.slug) {
+          markQuizCompleted(results.slug)
+        }
+      }
+    } catch (error) {
+      console.error("Error saving quiz results:", error)
+    }
+  },
+})
+
+// Add a new listener to clear quiz state after successful submission
+startAppListening({
+  predicate: (action: Action) => action.type === "quiz/submitQuiz/fulfilled",
+  effect: (action: any, listenerApi: ListenerEffectAPI<RootState>) => {
+    try {
+      const state = listenerApi.getState().quiz
+
+      // Clear the persisted quiz state after successful submission
+      storage.removeItem(STORAGE_KEY)
+
+      // Mark quiz as completed
+      if (action.payload?.slug || action.meta?.arg?.slug) {
+        const slug = action.payload?.slug || action.meta?.arg?.slug
+        markQuizCompleted(slug)
+      }
+
+      // Dispatch action to clear quiz state after a short delay
+      setTimeout(() => {
+        listenerApi.dispatch({ type: "quiz/clearQuizStateAfterSubmission" })
+      }, 1000) // Give time for results to be displayed
+    } catch (error) {
+      console.error("Error handling quiz submission completion:", error)
+    }
+  },
+})
+
+// Add listener to clear state when navigating to a different quiz
+startAppListening({
+  predicate: (action: Action) => action.type === "quiz/fetchQuiz/pending",
+  effect: (action: any, listenerApi: ListenerEffectAPI<RootState>) => {
+    try {
+      const state = listenerApi.getState().quiz
+      const { arg } = action.meta
+      const newType = arg.type
+      const newSlug = arg.slug.includes("Question") ? arg.slug.split("Question")[0] : arg.slug
+
+      // Clear state if we're loading a different quiz
+      if (state.currentQuizType !== newType || state.currentQuizSlug !== newSlug) {
+        storage.clear() // Clear all persisted data
+        console.log(`Clearing state for new quiz: ${newType}/${newSlug}`)
+      }
+    } catch (error) {
+      console.error("Error clearing state for new quiz:", error)
     }
   },
 })
@@ -310,8 +389,8 @@ export const getRedirectPath = (): string | null => {
 // Improve the isQuizCompleted function to better handle edge cases
 export const isQuizCompleted = (slug: string): boolean => {
   try {
-    if (!slug || typeof slug !== 'string') return false;
-    
+    if (!slug || typeof slug !== "string") return false
+
     const completedQuizzes = storage.getItem(COMPLETED_QUIZZES_KEY)
     if (!completedQuizzes) return false
 
@@ -326,8 +405,8 @@ export const isQuizCompleted = (slug: string): boolean => {
 // Enhance markQuizCompleted to be more robust
 export const markQuizCompleted = (slug: string): void => {
   try {
-    if (!slug || typeof slug !== 'string') return;
-    
+    if (!slug || typeof slug !== "string") return
+
     const completedQuizzes = storage.getItem(COMPLETED_QUIZZES_KEY)
     let quizzes: string[] = []
 
@@ -368,6 +447,34 @@ export const isResultsPage = (path: string): boolean => {
 // Add this function to convert a results page path to a quiz page path
 export const resultsPathToQuizPath = (path: string): string => {
   return path.replace("/results", "")
+}
+
+// Add this new function to load persisted results
+export const loadPersistedResults = (): any => {
+  try {
+    const savedResults = storage.getItem("quiz_results")
+    return savedResults ? JSON.parse(savedResults) : null
+  } catch (e) {
+    console.error("Error loading persisted results:", e)
+    return null
+  }
+}
+
+// Update the loadPersistedQuizState function to work with memory storage
+// export const loadPersistedQuizState = (): PersistableQuizState | null => {
+//   try {
+//     const savedState = storage.getItem(STORAGE_KEY)
+//     return savedState ? (JSON.parse(savedState) as PersistableQuizState) : null
+//   } catch (e) {
+//     console.error("Error loading persisted quiz state:", e)
+//     return null
+//   }
+// }
+
+// Add function to clear all quiz-related storage
+export const clearAllQuizStorage = (): void => {
+  storage.clear()
+  console.log("Cleared all quiz storage")
 }
 
 export default persistQuizMiddleware

@@ -2,8 +2,22 @@
 
 import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { CheckCircle, XCircle, Clock, Share2, RefreshCw, Download, Award, BarChart3, CheckCircle2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Share2,
+  RefreshCw,
+  Download,
+  Award,
+  BarChart3,
+  CheckCircle2,
+  Target,
+  TrendingUp,
+  Star,
+  Lightbulb,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,9 +25,7 @@ import { useToast } from "@/hooks"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
 import { useAppDispatch } from "@/store"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
 import type { QuizResultProps } from "@/app/types/quiz-types"
-import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { resetQuiz } from "@/app/store/slices/textQuizSlice"
 
 export default function BlankQuizResults({ result }: QuizResultProps) {
@@ -29,7 +41,7 @@ export default function BlankQuizResults({ result }: QuizResultProps) {
       ...result,
       answers: result.answers.map((answer) => ({
         ...answer,
-        userAnswer: answer.answer, // Map answer to userAnswer
+        userAnswer: answer.answer,
         correctAnswer: answer.correctAnswer || answer.answer || "",
         isCorrect: answer.isCorrect || false,
         timeSpent: answer.timeSpent || 0,
@@ -61,22 +73,22 @@ export default function BlankQuizResults({ result }: QuizResultProps) {
   // Create question-answer mapping for display
   const questionsWithAnswers = useMemo(() => {
     try {
-      // Create a list of all questions, answered or not
-      const allQuestionsWithAnswers = safeResult.questions?.map((question, index) => {
-        const matchingAnswer = safeResult.answers.find(a => a.questionId === question.id);
-        
-        return {
-          question,
-          answer: matchingAnswer || null,
-          isAnswered: !!matchingAnswer,
-          isCorrect: matchingAnswer?.isCorrect || false
-        };
-      }) || [];
-      
-      return allQuestionsWithAnswers;
+      const allQuestionsWithAnswers =
+        safeResult.questions?.map((question, index) => {
+          const matchingAnswer = safeResult.answers.find((a) => a.questionId === question.id)
+
+          return {
+            question,
+            answer: matchingAnswer || null,
+            isAnswered: !!matchingAnswer,
+            isCorrect: matchingAnswer?.isCorrect || false,
+          }
+        }) || []
+
+      return allQuestionsWithAnswers
     } catch (err) {
-      console.error("Error creating question-answer mapping:", err);
-      return [];
+      console.error("Error creating question-answer mapping:", err)
+      return []
     }
   }, [safeResult.questions, safeResult.answers])
 
@@ -85,7 +97,7 @@ export default function BlankQuizResults({ result }: QuizResultProps) {
     const validAnswers = safeResult.answers.filter((a) => a && typeof a === "object")
     const hintsUsedCount = validAnswers.filter((a) => a.hintsUsed).length
     const correctAnswers = validAnswers.filter((a) => a.isCorrect).length
-    
+
     const fastestAnswer =
       validAnswers.length > 0
         ? validAnswers.reduce(
@@ -93,7 +105,7 @@ export default function BlankQuizResults({ result }: QuizResultProps) {
             validAnswers[0],
           )
         : null
-        
+
     const slowestAnswer =
       validAnswers.length > 0
         ? validAnswers.reduce(
@@ -104,18 +116,14 @@ export default function BlankQuizResults({ result }: QuizResultProps) {
 
     const totalTime = validAnswers.reduce((sum, answer) => sum + answer.timeSpent, 0)
     const averageTimePerQuestion = validAnswers.length > 0 ? Math.round(totalTime / validAnswers.length) : 0
-    
-    // Calculate accuracy for the quiz
-    const accuracy = safeResult.totalQuestions > 0
-      ? Math.round((correctAnswers / safeResult.totalQuestions) * 100)
-      : 0
-      
-    // Calculate score ranges
+
+    const accuracy = safeResult.totalQuestions > 0 ? Math.round((correctAnswers / safeResult.totalQuestions) * 100) : 0
+
     const scoreRanges = {
       correct: correctAnswers,
       incorrect: validAnswers.length - correctAnswers,
       unanswered: safeResult.totalQuestions - validAnswers.length,
-      hintsUsed: hintsUsedCount
+      hintsUsed: hintsUsedCount,
     }
 
     return {
@@ -127,31 +135,25 @@ export default function BlankQuizResults({ result }: QuizResultProps) {
       slowestAnswer,
       totalTime,
       averageTimePerQuestion,
-      scoreRanges
+      scoreRanges,
     }
   }, [safeResult.answers, safeResult.totalQuestions])
 
-  // Optimize the handleTryAgain function
   const handleTryAgain = useCallback(() => {
     if (isRestarting) return
 
     setIsRestarting(true)
-
-    // Reset the quiz state in Redux
     dispatch(resetQuiz())
 
-    // Add a timestamp parameter to force a fresh load
     const timestamp = new Date().getTime()
     const url = `/dashboard/blanks/${safeResult.slug}?reset=true&t=${timestamp}`
 
-    // Navigate to the quiz page with reset=true parameter
     setTimeout(() => {
       router.replace(url)
     }, 200)
   }, [dispatch, router, safeResult.slug, isRestarting])
 
   const handleSaveResults = useCallback(() => {
-    // Create summary text for download
     const summaryText = `
 Fill in the Blanks Quiz Results: ${safeResult.title}
 Date: ${new Date(safeResult.completedAt).toLocaleString()}
@@ -159,20 +161,27 @@ Score: ${safeResult.correctAnswers}/${safeResult.totalQuestions} (${Math.round((
 Time: ${formatQuizTime(stats.totalTime)}
 
 Questions and Answers:
-${questionsWithAnswers.map((qa, i) => `
-Question ${i+1}: ${qa.question.question.replace(/\[\[(.*?)\]\]/g, "________")}
-${qa.isAnswered ? `Your Answer: ${qa.answer?.answer}
+${questionsWithAnswers
+  .map(
+    (qa, i) => `
+Question ${i + 1}: ${qa.question.question.replace(/\[\[(.*?)\]\]/g, "________")}
+${
+  qa.isAnswered
+    ? `Your Answer: ${qa.answer?.answer}
 Correct Answer: ${qa.answer?.correctAnswer}
-Result: ${qa.isCorrect ? 'Correct ✓' : 'Incorrect ✗'}` : 'Not answered'}
-`).join('\n')}
+Result: ${qa.isCorrect ? "Correct ✓" : "Incorrect ✗"}`
+    : "Not answered"
+}
+`,
+  )
+  .join("\n")}
     `.trim()
-    
-    // Create and download file
-    const blob = new Blob([summaryText], { type: 'text/plain' })
+
+    const blob = new Blob([summaryText], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const a = document.createElement("a")
     a.href = url
-    a.download = `quiz-results-${safeResult.slug || 'blanks'}.txt`
+    a.download = `quiz-results-${safeResult.slug || "blanks"}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -203,334 +212,437 @@ Result: ${qa.isCorrect ? 'Correct ✓' : 'Incorrect ✗'}` : 'Not answered'}
     }
   }, [safeResult, toast])
 
-  // Format question text to show the blank
   const formatQuestionText = useCallback((questionText: string) => {
     return questionText.replace(/\[\[(.*?)\]\]/g, (_, p1) => {
       return `<span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">________</span>`
     })
   }, [])
 
-  // Determine badge color based on result
   const getResultBadge = (isCorrect: boolean) => {
-    return isCorrect ? 
-      <Badge className="bg-green-500">Correct</Badge> : 
-      <Badge className="bg-red-500">Incorrect</Badge>;
+    return isCorrect ? <Badge className="bg-green-500">Correct</Badge> : <Badge className="bg-red-500">Incorrect</Badge>
   }
 
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Quiz Results</h1>
-          <p className="text-muted-foreground">
-            {safeResult.title} • Completed {new Date(safeResult.completedAt).toLocaleDateString()}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleSaveResults} title="Save results">
-            <Download className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Save Results</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleTryAgain} disabled={isRestarting} title="Try again">
-            <RefreshCw className="h-4 w-4 mr-0 sm:mr-2" />
-            <span className="hidden sm:inline">{isRestarting ? "Restarting..." : "Try Again"}</span>
-          </Button>
-        </div>
-      </div>
+  const getPerformanceLevel = (accuracy: number) => {
+    if (accuracy >= 90) return { label: "Excellent", color: "text-green-600", icon: Star }
+    if (accuracy >= 80) return { label: "Great", color: "text-blue-600", icon: TrendingUp }
+    if (accuracy >= 70) return { label: "Good", color: "text-yellow-600", icon: Target }
+    return { label: "Keep Practicing", color: "text-orange-600", icon: Lightbulb }
+  }
 
-      {/* Score Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="col-span-1">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className={`rounded-full w-16 h-16 flex items-center justify-center text-white text-xl font-bold ${
-              stats.accuracy >= 80 ? "bg-green-500" : 
-              stats.accuracy >= 60 ? "bg-yellow-500" : 
-              stats.accuracy >= 40 ? "bg-orange-500" : "bg-red-500"
-            }`}>
+  const performance = getPerformanceLevel(stats.accuracy)
+  const PerformanceIcon = performance.icon
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6"
+    >
+      {/* Hero Section */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}
+        className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 rounded-2xl p-8 border"
+      >
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="text-center lg:text-left">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center gap-2 justify-center lg:justify-start mb-2"
+            >
+              <PerformanceIcon className={`h-6 w-6 ${performance.color}`} />
+              <span className={`text-lg font-semibold ${performance.color}`}>{performance.label}</span>
+            </motion.div>
+            <h1 className="text-3xl font-bold mb-2">Quiz Completed!</h1>
+            <p className="text-muted-foreground text-lg">
+              {safeResult.title} • {new Date(safeResult.completedAt).toLocaleDateString()}
+            </p>
+          </div>
+
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.4, type: "spring" }}
+            className="relative"
+          >
+            <div
+              className={`w-32 h-32 rounded-full flex items-center justify-center text-white text-3xl font-bold ${
+                stats.accuracy >= 80
+                  ? "bg-gradient-to-br from-green-500 to-green-600"
+                  : stats.accuracy >= 60
+                    ? "bg-gradient-to-br from-yellow-500 to-yellow-600"
+                    : stats.accuracy >= 40
+                      ? "bg-gradient-to-br from-orange-500 to-orange-600"
+                      : "bg-gradient-to-br from-red-500 to-red-600"
+              }`}
+            >
               {stats.accuracy}%
             </div>
-            <div>
-              <h3 className="font-medium">Accuracy</h3>
-              <p className="text-sm text-muted-foreground">
-                {safeResult.correctAnswers} of {safeResult.totalQuestions} correct
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.6 }}
+              className="absolute -top-2 -right-2 bg-background border-4 border-background rounded-full p-2"
+            >
+              <Award className="h-6 w-6 text-primary" />
+            </motion.div>
+          </motion.div>
+        </div>
 
-        <Card className="col-span-1">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="text-primary h-5 w-5" />
-              <div>
-                <p className="text-sm font-medium">Completion Rate</p>
-                <div className="mt-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm">{Math.round((safeResult.answers.length / Math.max(1, safeResult.totalQuestions)) * 100)}%</span>
-                    <span className="text-xs text-muted-foreground">
-                      {safeResult.answers.length}/{safeResult.totalQuestions} questions
-                    </span>
-                  </div>
-                  <Progress value={(safeResult.answers.length / Math.max(1, safeResult.totalQuestions)) * 100} className="h-2" />
+        <div className="flex flex-wrap gap-2 justify-center lg:justify-start mt-6">
+          <Button variant="outline" size="sm" onClick={handleSaveResults} className="gap-2">
+            <Download className="h-4 w-4" />
+            Save Results
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+            <Share2 className="h-4 w-4" />
+            Share
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleTryAgain} disabled={isRestarting} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
+            {isRestarting ? "Restarting..." : "Try Again"}
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Accuracy</p>
+                  <p className="text-2xl font-bold">{stats.accuracy}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    {safeResult.correctAnswers} of {safeResult.totalQuestions} correct
+                  </p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="col-span-1">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="text-primary h-5 w-5" />
-              <div>
-                <p className="text-sm font-medium">Time Stats</p>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <div>
-                    <span className="text-xs text-muted-foreground">Total</span>
-                    <p className="font-mono text-sm">{formatQuizTime(stats.totalTime)}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Average</span>
-                    <p className="font-mono text-sm">{formatQuizTime(stats.averageTimePerQuestion)}/q</p>
-                  </div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                  <Target className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Completion</p>
+                  <p className="text-2xl font-bold">
+                    {Math.round((safeResult.answers.length / Math.max(1, safeResult.totalQuestions)) * 100)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {safeResult.answers.length}/{safeResult.totalQuestions} questions
+                  </p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                  <Clock className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Time Spent</p>
+                  <p className="text-2xl font-bold">{formatQuizTime(stats.totalTime)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Avg: {formatQuizTime(stats.averageTimePerQuestion)}/question
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
-      {/* Tabs for viewing different aspects */}
-      <Tabs defaultValue="summary" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="mb-6 w-full grid grid-cols-2 sm:grid-cols-4 h-auto p-1 gap-1">
-          <TabsTrigger value="summary" className="flex items-center gap-2 py-2">
-            <BarChart3 className="h-4 w-4" />
-            <span>Summary</span>
-          </TabsTrigger>
-          <TabsTrigger value="questions" className="flex items-center gap-2 py-2">
-            <Award className="h-4 w-4" />
-            <span>All Questions</span>
-          </TabsTrigger>
-          <TabsTrigger value="correct" className="flex items-center gap-2 py-2">
-            <CheckCircle className="h-4 w-4" />
-            <span>Correct</span>
-          </TabsTrigger>
-          <TabsTrigger value="incorrect" className="flex items-center gap-2 py-2">
-            <XCircle className="h-4 w-4" />
-            <span>Incorrect</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Detailed Results Tabs */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
+        <Tabs defaultValue="summary" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-4 h-12">
+            <TabsTrigger value="summary" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Summary
+            </TabsTrigger>
+            <TabsTrigger value="questions" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              All Questions
+            </TabsTrigger>
+            <TabsTrigger value="correct" className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Correct
+            </TabsTrigger>
+            <TabsTrigger value="incorrect" className="flex items-center gap-2">
+              <XCircle className="h-4 w-4" />
+              Review
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Summary Tab */}
-        <TabsContent value="summary">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Summary</CardTitle>
-              <CardDescription>
-                Overview of your performance in this quiz
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Correct</p>
-                    <div className="flex gap-1 items-baseline">
-                      <p className="text-2xl font-bold">{stats.scoreRanges.correct}</p>
-                      <span className="text-xs">questions</span>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* Summary Tab */}
+              <TabsContent value="summary" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Performance Summary</CardTitle>
+                    <CardDescription>Overview of your performance in this quiz</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Correct</p>
+                        <p className="text-3xl font-bold text-green-600">{stats.scoreRanges.correct}</p>
+                      </div>
+                      <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Incorrect</p>
+                        <p className="text-3xl font-bold text-red-600">{stats.scoreRanges.incorrect}</p>
+                      </div>
+                      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Hints Used</p>
+                        <p className="text-3xl font-bold text-amber-600">{stats.scoreRanges.hintsUsed}</p>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Unanswered</p>
+                        <p className="text-3xl font-bold text-slate-600">{stats.scoreRanges.unanswered}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Incorrect</p>
-                    <div className="flex gap-1 items-baseline">
-                      <p className="text-2xl font-bold">{stats.scoreRanges.incorrect}</p>
-                      <span className="text-xs">questions</span>
-                    </div>
-                  </div>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Hints Used</p>
-                    <div className="flex gap-1 items-baseline">
-                      <p className="text-2xl font-bold">{stats.scoreRanges.hintsUsed}</p>
-                      <span className="text-xs">questions</span>
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-900/20 p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Unanswered</p>
-                    <div className="flex gap-1 items-baseline">
-                      <p className="text-2xl font-bold">{stats.scoreRanges.unanswered}</p>
-                      <span className="text-xs">questions</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-        {/* All Questions Tab */}
-        <TabsContent value="questions">
-          <Card>
-            <CardHeader>
-              <CardTitle>All Questions</CardTitle>
-              <CardDescription>
-                {safeResult.totalQuestions} questions total
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {questionsWithAnswers.map((qa, index) => (
-                <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Question {index + 1}</h3>
-                    {qa.isAnswered ? getResultBadge(qa.isCorrect) : (
-                      <Badge variant="outline" className="text-muted-foreground">Not answered</Badge>
+              {/* Questions Tab */}
+              <TabsContent value="questions" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>All Questions</CardTitle>
+                    <CardDescription>Review all {safeResult.totalQuestions} questions from this quiz</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {questionsWithAnswers.map((qa, index) => (
+                      <motion.div
+                        key={qa.question.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="border rounded-lg p-4 bg-card"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold">Question {index + 1}</h3>
+                          {qa.isAnswered ? (
+                            getResultBadge(qa.isCorrect)
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Not answered
+                            </Badge>
+                          )}
+                        </div>
+                        <p
+                          className="text-muted-foreground mb-3"
+                          dangerouslySetInnerHTML={{ __html: formatQuestionText(qa.question.question) }}
+                        ></p>
+
+                        {qa.isAnswered ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-xs font-medium text-muted-foreground">Your Answer:</span>
+                              <div className="bg-muted p-3 rounded-md mt-1">
+                                <p className="text-sm">{qa.answer?.answer || "No answer provided"}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-xs font-medium text-muted-foreground">Correct Answer:</span>
+                              <div
+                                className={`p-3 rounded-md mt-1 ${qa.isCorrect ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"}`}
+                              >
+                                <p className="text-sm">{qa.answer?.correctAnswer || qa.question.answer}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-muted/50 p-3 rounded-md border border-dashed">
+                            <p className="text-sm italic text-muted-foreground">
+                              You didn't provide an answer for this question
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Correct answer: <span className="font-medium">{qa.question.answer}</span>
+                            </p>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Correct Tab */}
+              <TabsContent value="correct" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      Correct Answers
+                    </CardTitle>
+                    <CardDescription>
+                      {stats.scoreRanges.correct} of {safeResult.totalQuestions} questions answered correctly
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {questionsWithAnswers
+                      .filter((qa) => qa.isAnswered && qa.isCorrect)
+                      .map((qa, index) => (
+                        <motion.div
+                          key={qa.question.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="border-l-4 border-green-500 pl-4 py-2"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium">
+                              Question {questionsWithAnswers.findIndex((q) => q.question.id === qa.question.id) + 1}
+                            </h3>
+                            <Badge className="bg-green-500">Correct</Badge>
+                          </div>
+                          <p
+                            className="text-muted-foreground mb-2"
+                            dangerouslySetInnerHTML={{ __html: formatQuestionText(qa.question.question) }}
+                          ></p>
+                          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+                            <p className="text-sm font-medium">Your Answer: {qa.answer?.answer}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+
+                    {questionsWithAnswers.filter((qa) => qa.isAnswered && qa.isCorrect).length === 0 && (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <XCircle className="mx-auto h-12 w-12 mb-4 text-red-500" />
+                        <p className="text-lg font-medium mb-2">No correct answers yet</p>
+                        <p>Keep practicing to improve your performance!</p>
+                      </div>
                     )}
-                  </div>
-                  <p className="text-muted-foreground mb-2" 
-                     dangerouslySetInnerHTML={{ __html: formatQuestionText(qa.question.question) }}></p>
-                  
-                  {qa.isAnswered ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                      <div>
-                        <span className="text-xs text-muted-foreground">Your Answer:</span>
-                        <div className="bg-muted p-3 rounded-md mt-1">
-                          <p className="text-sm">{qa.answer?.answer || "No answer provided"}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Correct Answer:</span>
-                        <div className={`p-3 rounded-md mt-1 ${qa.isCorrect ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
-                          <p className="text-sm">{qa.answer?.correctAnswer || qa.question.answer}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-muted/50 p-3 rounded-md mt-2 border border-dashed border-muted-foreground/30">
-                      <p className="text-sm italic text-muted-foreground">You didn't provide an answer for this question</p>
-                      <p className="text-xs text-muted-foreground mt-2">Correct answer: <span className="font-medium">{qa.question.answer}</span></p>
-                    </div>
-                  )}
-                  
-                  {qa.answer?.hintsUsed && (
-                    <div className="mt-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 rounded text-xs">
-                      <span>Hint was used</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-        {/* Correct Tab */}
-        <TabsContent value="correct">
-          <Card>
-            <CardHeader>
-              <CardTitle>Correct Answers</CardTitle>
-              <CardDescription>
-                {stats.scoreRanges.correct} of {safeResult.totalQuestions} questions answered correctly
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {questionsWithAnswers.filter(qa => qa.isAnswered && qa.isCorrect).map((qa, index) => (
-                <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Question {questionsWithAnswers.findIndex(q => q.question.id === qa.question.id) + 1}</h3>
-                    <Badge className="bg-green-500">Correct</Badge>
-                  </div>
-                  <p className="text-muted-foreground mb-2"
-                     dangerouslySetInnerHTML={{ __html: formatQuestionText(qa.question.question) }}></p>
-                  <div className="grid grid-cols-1 gap-4 mt-2">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Your Answer:</span>
-                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-md mt-1">
-                        <p className="text-sm">{qa.answer?.answer}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {questionsWithAnswers.filter(qa => qa.isAnswered && qa.isCorrect).length === 0 && (
-                <div className="text-center py-10 text-muted-foreground">
-                  <XCircle className="mx-auto h-8 w-8 mb-2 text-red-500" />
-                  <p>You didn't answer any questions correctly. Try again!</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              {/* Incorrect Tab */}
+              <TabsContent value="incorrect" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <XCircle className="h-5 w-5 text-red-600" />
+                      Review Needed
+                    </CardTitle>
+                    <CardDescription>
+                      {stats.scoreRanges.incorrect + stats.scoreRanges.unanswered} questions need review
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {questionsWithAnswers
+                      .filter((qa) => !qa.isCorrect)
+                      .map((qa, index) => (
+                        <motion.div
+                          key={qa.question.id}
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="border-l-4 border-red-500 pl-4 py-2"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium">
+                              Question {questionsWithAnswers.findIndex((q) => q.question.id === qa.question.id) + 1}
+                            </h3>
+                            {qa.isAnswered ? (
+                              <Badge className="bg-red-500">Incorrect</Badge>
+                            ) : (
+                              <Badge variant="outline">Not answered</Badge>
+                            )}
+                          </div>
+                          <p
+                            className="text-muted-foreground mb-3"
+                            dangerouslySetInnerHTML={{ __html: formatQuestionText(qa.question.question) }}
+                          ></p>
 
-        {/* Incorrect Tab */}
-        <TabsContent value="incorrect">
-          <Card>
-            <CardHeader>
-              <CardTitle>Incorrect Answers</CardTitle>
-              <CardDescription>
-                {stats.scoreRanges.incorrect + stats.scoreRanges.unanswered} of {safeResult.totalQuestions} questions answered incorrectly or skipped
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {questionsWithAnswers.filter(qa => !qa.isCorrect).map((qa, index) => (
-                <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Question {questionsWithAnswers.findIndex(q => q.question.id === qa.question.id) + 1}</h3>
-                    {qa.isAnswered ? (
-                      <Badge className="bg-red-500">Incorrect</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">Not answered</Badge>
+                          {qa.isAnswered ? (
+                            <div className="space-y-3">
+                              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
+                                <p className="text-sm">
+                                  <span className="font-medium">Your Answer:</span> {qa.answer?.answer}
+                                </p>
+                              </div>
+                              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+                                <p className="text-sm">
+                                  <span className="font-medium">Correct Answer:</span>{" "}
+                                  {qa.answer?.correctAnswer || qa.question.answer}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="bg-muted/50 p-3 rounded-md border border-dashed">
+                                <p className="text-sm italic text-muted-foreground">You didn't answer this question</p>
+                              </div>
+                              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+                                <p className="text-sm">
+                                  <span className="font-medium">Correct Answer:</span> {qa.question.answer}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+
+                    {questionsWithAnswers.filter((qa) => !qa.isCorrect).length === 0 && (
+                      <div className="text-center py-10 text-green-600">
+                        <CheckCircle2 className="mx-auto h-12 w-12 mb-4" />
+                        <p className="text-lg font-medium mb-2">Perfect Score!</p>
+                        <p>You answered all questions correctly!</p>
+                      </div>
                     )}
-                  </div>
-                  <p className="text-muted-foreground mb-2"
-                     dangerouslySetInnerHTML={{ __html: formatQuestionText(qa.question.question) }}></p>
-                  
-                  {qa.isAnswered ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                      <div>
-                        <span className="text-xs text-muted-foreground">Your Answer:</span>
-                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md mt-1">
-                          <p className="text-sm">{qa.answer?.answer}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Correct Answer:</span>
-                        <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-md mt-1">
-                          <p className="text-sm">{qa.answer?.correctAnswer || qa.question.answer}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-muted/50 p-3 rounded-md mt-2 border border-dashed border-muted-foreground/30">
-                      <p className="text-sm italic text-muted-foreground">You didn't provide an answer for this question</p>
-                      <div className="mt-2">
-                        <span className="text-xs text-muted-foreground">Correct answer:</span>
-                        <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-md mt-1">
-                          <p className="text-sm">{qa.question.answer}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {questionsWithAnswers.filter(qa => !qa.isCorrect).length === 0 && (
-                <div className="text-center py-10 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="mx-auto h-8 w-8 mb-2" />
-                  <p>Great job! You answered all questions correctly!</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </motion.div>
+          </AnimatePresence>
+        </Tabs>
+      </motion.div>
 
       {/* Actions */}
-      <div className="flex justify-between mt-8">
-        <Button onClick={() => router.push("/dashboard/quizzes")}>Return to Quizzes</Button>
-        <Button onClick={handleTryAgain} disabled={isRestarting} variant="outline">
-          <RefreshCw className="mr-2 h-4 w-4" />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1 }}
+        className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t"
+      >
+        <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")} className="gap-2">
+          <BarChart3 className="h-4 w-4" />
+          View All Quizzes
+        </Button>
+        <Button onClick={handleTryAgain} disabled={isRestarting} className="gap-2">
+          <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
           {isRestarting ? "Restarting..." : "Try Again"}
         </Button>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }

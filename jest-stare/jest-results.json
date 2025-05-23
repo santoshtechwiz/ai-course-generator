@@ -1,8 +1,8 @@
 {
-  "numFailedTestSuites": 3,
-  "numFailedTests": 12,
-  "numPassedTestSuites": 13,
-  "numPassedTests": 95,
+  "numFailedTestSuites": 5,
+  "numFailedTests": 15,
+  "numPassedTestSuites": 11,
+  "numPassedTests": 92,
   "numPendingTestSuites": 0,
   "numPendingTests": 1,
   "numRuntimeErrorTestSuites": 0,
@@ -26,290 +26,9 @@
     "unmatched": 0,
     "updated": 0
   },
-  "startTime": 1747915922811,
+  "startTime": 1747974287572,
   "success": false,
   "testResults": [
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 7,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747915973757,
-        "runtime": 10472,
-        "slow": true,
-        "start": 1747915963285
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\slices\\textQuizSlice.test.ts",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 214,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should initialize quiz correctly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should initialize quiz correctly"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 3,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should submit an answer locally",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should submit an answer locally"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should replace existing answer when submitting for same question",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should replace existing answer when submitting for same question"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should complete quiz properly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should complete quiz properly"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should update current question index",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should update current question index"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 15,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should save and restore quiz state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should save and restore quiz state"
-        },
-        {
-          "ancestorTitles": [
-            "textQuizSlice"
-          ],
-          "duration": 5,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "textQuizSlice should clear saved state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should clear saved state"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 8,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747915975003,
-        "runtime": 11658,
-        "slow": true,
-        "start": 1747915963345
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 168,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should return the initial state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should return the initial state"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 6,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle resetQuizState",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle resetQuizState"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 1,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setCurrentQuestion",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setCurrentQuestion"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 3,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setUserAnswer for new answer",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setUserAnswer for new answer"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 3,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle setUserAnswer for existing answer",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle setUserAnswer for existing answer"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 5,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle timer actions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 5,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle timer actions"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle markQuizCompleted",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle markQuizCompleted"
-        },
-        {
-          "ancestorTitles": [
-            "quizSlice"
-          ],
-          "duration": 682,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "quizSlice should handle submitQuiz action",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 4,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle submitQuiz action"
-        }
-      ],
-      "failureMessage": null
-    },
     {
       "leaks": false,
       "numFailingTests": 6,
@@ -318,10 +37,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915976713,
-        "runtime": 11090,
+        "end": 1747974333152,
+        "runtime": 13847,
         "slow": true,
-        "start": 1747915965623
+        "start": 1747974319305
       },
       "skipped": false,
       "snapshot": {
@@ -340,7 +59,7 @@
             "Quiz Submission Utilities",
             "prepareSubmissionPayload"
           ],
-          "duration": 159,
+          "duration": 63,
           "failureDetails": [
             {}
           ],
@@ -360,7 +79,7 @@
             "Quiz Submission Utilities",
             "prepareSubmissionPayload"
           ],
-          "duration": 27,
+          "duration": 1,
           "failureDetails": [
             {}
           ],
@@ -420,7 +139,7 @@
             "Quiz Submission Utilities",
             "validateQuizSubmission"
           ],
-          "duration": 2,
+          "duration": 31,
           "failureDetails": [
             {}
           ],
@@ -461,15 +180,58 @@
     {
       "leaks": false,
       "numFailingTests": 0,
+      "numPassingTests": 1,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747974335007,
+        "runtime": 15607,
+        "slow": true,
+        "start": 1747974319400
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\mocks\\mockAnimationProvider.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "Animation Provider Mock"
+          ],
+          "duration": 166,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Animation Provider Mock should provide animation context with animations disabled by default",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should provide animation context with animations disabled by default"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
       "numPassingTests": 13,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915977463,
-        "runtime": 17331,
+        "end": 1747974335462,
+        "runtime": 16805,
         "slow": true,
-        "start": 1747915960132
+        "start": 1747974318657
       },
       "skipped": false,
       "snapshot": {
@@ -487,7 +249,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 587,
+          "duration": 337,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt renders with default props",
@@ -502,7 +264,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 126,
+          "duration": 68,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt calls onSignIn when sign-in button is clicked",
@@ -517,7 +279,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 21,
+          "duration": 14,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt displays save message when showSaveMessage is true",
@@ -532,7 +294,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 23,
+          "duration": 16,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt does not display save message when showSaveMessage is false",
@@ -547,7 +309,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 39,
+          "duration": 15,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt displays custom message when provided",
@@ -562,7 +324,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 55,
+          "duration": 32,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt redirects to default route when onSignIn not provided",
@@ -577,7 +339,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 53,
+          "duration": 31,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt shows quiz type specific title",
@@ -592,7 +354,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 45,
+          "duration": 26,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt displays score preview when provided",
@@ -607,7 +369,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 44,
+          "duration": 23,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt uses returnPath for custom callback when provided",
@@ -622,7 +384,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 74,
+          "duration": 21,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt displays score preview correctly when provided",
@@ -637,7 +399,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 38,
+          "duration": 58,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt displays appropriate feedback for low scores",
@@ -652,7 +414,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 223,
+          "duration": 22,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt handles sign in button click with loading state",
@@ -667,7 +429,7 @@
           "ancestorTitles": [
             "NonAuthenticatedUserSignInPrompt"
           ],
-          "duration": 101,
+          "duration": 18,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "NonAuthenticatedUserSignInPrompt renders with custom return path",
@@ -689,10 +451,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915979655,
-        "runtime": 16053,
+        "end": 1747974335506,
+        "runtime": 16047,
         "slow": true,
-        "start": 1747915963602
+        "start": 1747974319459
       },
       "skipped": false,
       "snapshot": {
@@ -710,7 +472,7 @@
           "ancestorTitles": [
             "McqQuizWrapper"
           ],
-          "duration": 1671,
+          "duration": 227,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "McqQuizWrapper renders the current question",
@@ -725,7 +487,7 @@
           "ancestorTitles": [
             "McqQuizWrapper"
           ],
-          "duration": 110,
+          "duration": 46,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "McqQuizWrapper moves to the next question when answering",
@@ -740,7 +502,7 @@
           "ancestorTitles": [
             "McqQuizWrapper"
           ],
-          "duration": 52,
+          "duration": 27,
           "failureDetails": [
             {
               "matcherResult": {
@@ -764,7 +526,7 @@
           "ancestorTitles": [
             "McqQuizWrapper"
           ],
-          "duration": 34,
+          "duration": 24,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "McqQuizWrapper handles quiz with no questions properly",
@@ -781,15 +543,15 @@
     {
       "leaks": false,
       "numFailingTests": 0,
-      "numPassingTests": 10,
+      "numPassingTests": 9,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915980765,
-        "runtime": 16863,
+        "end": 1747974335939,
+        "runtime": 17399,
         "slow": true,
-        "start": 1747915963902
+        "start": 1747974318540
       },
       "skipped": false,
       "snapshot": {
@@ -801,157 +563,387 @@
         "unmatched": 0,
         "updated": 0
       },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\components\\mcq-quiz.test.tsx",
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\mcq-quiz-flow.test.tsx",
       "testResults": [
         {
           "ancestorTitles": [
-            "McqQuiz Component"
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
           ],
-          "duration": 1111,
+          "duration": 290,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "McqQuiz Component renders the question and options correctly",
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete MCQ quiz and see results",
           "invocations": 1,
           "location": null,
-          "numPassingAsserts": 4,
+          "numPassingAsserts": 6,
           "retryReasons": [],
           "status": "passed",
-          "title": "renders the question and options correctly"
+          "title": "should allow user to complete MCQ quiz and see results"
         },
         {
           "ancestorTitles": [
-            "McqQuiz Component"
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
           ],
-          "duration": 126,
+          "duration": 32,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "McqQuiz Component allows selecting an option",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "allows selecting an option"
-        },
-        {
-          "ancestorTitles": [
-            "McqQuiz Component"
-          ],
-          "duration": 150,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqQuiz Component shows warning when trying to submit without selecting an option",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 4,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "shows warning when trying to submit without selecting an option"
-        },
-        {
-          "ancestorTitles": [
-            "McqQuiz Component"
-          ],
-          "duration": 105,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqQuiz Component handles correct answer submission",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "handles correct answer submission"
-        },
-        {
-          "ancestorTitles": [
-            "McqQuiz Component"
-          ],
-          "duration": 54,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqQuiz Component handles incorrect answer submission",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "handles incorrect answer submission"
-        },
-        {
-          "ancestorTitles": [
-            "McqQuiz Component"
-          ],
-          "duration": 52,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqQuiz Component shows submitting state when submitting an answer",
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should track correct/incorrect answers",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 2,
           "retryReasons": [],
           "status": "passed",
-          "title": "shows submitting state when submitting an answer"
+          "title": "should track correct/incorrect answers"
         },
         {
           "ancestorTitles": [
-            "McqQuiz Component"
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
           ],
-          "duration": 26,
+          "duration": 25,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "McqQuiz Component shows \"Submit Quiz\" when on last question",
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "shows \"Submit Quiz\" when on last question"
+          "title": "should handle quiz reset when requested"
         },
         {
           "ancestorTitles": [
-            "McqQuiz Component"
+            "MCQ Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
           ],
-          "duration": 52,
+          "duration": 24,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "McqQuiz Component shows \"Submitting Quiz...\" when submitting last question",
+          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should verify quiz submission action is dispatched with correct payload",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should verify quiz submission action is dispatched with correct payload"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 19,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should allow unauthenticated users to take the quiz"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 12,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should show authentication prompt on certain actions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show authentication prompt on certain actions"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 38,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz data loading errors"
+        },
+        {
+          "ancestorTitles": [
+            "MCQ Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 17,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "shows \"Submitting Quiz...\" when submitting last question"
+          "title": "should handle invalid quiz data with missing questions"
         },
         {
           "ancestorTitles": [
-            "McqQuiz Component"
+            "MCQ Quiz Flow End-to-End Test",
+            "UI Features"
           ],
-          "duration": 70,
+          "duration": 19,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "McqQuiz Component disables multi-submission for the same question",
+          "fullName": "MCQ Quiz Flow End-to-End Test UI Features should display correct question number and options",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 7,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should display correct question number and options"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 5,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747974336104,
+        "runtime": 18572,
+        "slow": true,
+        "start": 1747974317532
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\results\\results-page.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "McqResultsPage"
+          ],
+          "duration": 991,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqResultsPage shows loading state when fetching results",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "disables multi-submission for the same question"
+          "title": "shows loading state when fetching results"
         },
         {
           "ancestorTitles": [
-            "McqQuiz Component"
+            "McqResultsPage"
           ],
-          "duration": 79,
+          "duration": 19,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "McqQuiz Component resets state when question changes",
+          "fullName": "McqResultsPage shows sign in prompt for unauthenticated users",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "shows sign in prompt for unauthenticated users"
+        },
+        {
+          "ancestorTitles": [
+            "McqResultsPage"
+          ],
+          "duration": 108,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqResultsPage shows saved results when available",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "shows saved results when available"
+        },
+        {
+          "ancestorTitles": [
+            "McqResultsPage"
+          ],
+          "duration": 187,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqResultsPage shows temporary results with save button after quiz completion",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 3,
           "retryReasons": [],
           "status": "passed",
-          "title": "resets state when question changes"
+          "title": "shows temporary results with save button after quiz completion"
+        },
+        {
+          "ancestorTitles": [
+            "McqResultsPage"
+          ],
+          "duration": 18,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqResultsPage shows error message when results loading fails",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "shows error message when results loading fails"
+        }
+      ],
+      "failureMessage": null
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 7,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747974337257,
+        "runtime": 2047,
+        "slow": false,
+        "start": 1747974335210
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\slices\\textQuizSlice.test.ts",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 38,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should initialize quiz correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should initialize quiz correctly"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should submit an answer locally",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should submit an answer locally"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should replace existing answer when submitting for same question",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should replace existing answer when submitting for same question"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should complete quiz properly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should complete quiz properly"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should update current question index",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should update current question index"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 24,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should save and restore quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should save and restore quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "textQuizSlice"
+          ],
+          "duration": 18,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "textQuizSlice should clear saved state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should clear saved state"
         }
       ],
       "failureMessage": null
@@ -964,10 +956,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915980730,
-        "runtime": 16005,
+        "end": 1747974336687,
+        "runtime": 17133,
         "slow": true,
-        "start": 1747915964725
+        "start": 1747974319554
       },
       "skipped": false,
       "snapshot": {
@@ -986,7 +978,7 @@
             "Code Quiz Flow End-to-End Test",
             "Authenticated User Flow"
           ],
-          "duration": 403,
+          "duration": 214,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete code quiz and see results",
@@ -1002,7 +994,7 @@
             "Code Quiz Flow End-to-End Test",
             "Authenticated User Flow"
           ],
-          "duration": 33,
+          "duration": 27,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should track code submissions for each question",
@@ -1018,7 +1010,7 @@
             "Code Quiz Flow End-to-End Test",
             "Authenticated User Flow"
           ],
-          "duration": 23,
+          "duration": 19,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested",
@@ -1034,7 +1026,7 @@
             "Code Quiz Flow End-to-End Test",
             "Unauthenticated User Flow"
           ],
-          "duration": 30,
+          "duration": 18,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
@@ -1050,7 +1042,7 @@
             "Code Quiz Flow End-to-End Test",
             "Unauthenticated User Flow"
           ],
-          "duration": 27,
+          "duration": 13,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test Unauthenticated User Flow should prompt for authentication when saving results",
@@ -1066,7 +1058,7 @@
             "Code Quiz Flow End-to-End Test",
             "Error Handling"
           ],
-          "duration": 59,
+          "duration": 27,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
@@ -1082,7 +1074,7 @@
             "Code Quiz Flow End-to-End Test",
             "Error Handling"
           ],
-          "duration": 27,
+          "duration": 11,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions",
@@ -1098,7 +1090,7 @@
             "Code Quiz Flow End-to-End Test",
             "UI and Interaction"
           ],
-          "duration": 14,
+          "duration": 18,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test UI and Interaction should display code editor with initial code",
@@ -1114,7 +1106,7 @@
             "Code Quiz Flow End-to-End Test",
             "UI and Interaction"
           ],
-          "duration": 18,
+          "duration": 25,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Code Quiz Flow End-to-End Test UI and Interaction should allow code typing and submission",
@@ -1136,10 +1128,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915981256,
-        "runtime": 16603,
+        "end": 1747974337200,
+        "runtime": 17430,
         "slow": true,
-        "start": 1747915964653
+        "start": 1747974319770
       },
       "skipped": false,
       "snapshot": {
@@ -1151,173 +1143,173 @@
         "unmatched": 0,
         "updated": 0
       },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\hooks\\useAuth.test.tsx",
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\components\\mcq-quiz.test.tsx",
       "testResults": [
         {
           "ancestorTitles": [
-            "useAuth hook"
+            "McqQuiz Component"
           ],
-          "duration": 117,
+          "duration": 672,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "useAuth hook should return authenticated status when session exists",
+          "fullName": "McqQuiz Component renders the question and options correctly",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "renders the question and options correctly"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 81,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component allows selecting an option",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "allows selecting an option"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 153,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component shows warning when trying to submit without selecting an option",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "shows warning when trying to submit without selecting an option"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 72,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component handles correct answer submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles correct answer submission"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 69,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component handles incorrect answer submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "handles incorrect answer submission"
+        },
+        {
+          "ancestorTitles": [
+            "McqQuiz Component"
+          ],
+          "duration": 64,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "McqQuiz Component shows submitting state when submitting an answer",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 2,
           "retryReasons": [],
           "status": "passed",
-          "title": "should return authenticated status when session exists"
+          "title": "shows submitting state when submitting an answer"
         },
         {
           "ancestorTitles": [
-            "useAuth hook"
+            "McqQuiz Component"
           ],
-          "duration": 10,
+          "duration": 17,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "useAuth hook should return unauthenticated status when session is missing",
+          "fullName": "McqQuiz Component shows \"Submit Quiz\" when on last question",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should return unauthenticated status when session is missing"
+          "title": "shows \"Submit Quiz\" when on last question"
         },
         {
           "ancestorTitles": [
-            "useAuth hook"
+            "McqQuiz Component"
           ],
-          "duration": 13,
+          "duration": 42,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "useAuth hook should detect fromAuth parameter in URL",
+          "fullName": "McqQuiz Component shows \"Submitting Quiz...\" when submitting last question",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should detect fromAuth parameter in URL"
+          "title": "shows \"Submitting Quiz...\" when submitting last question"
         },
         {
           "ancestorTitles": [
-            "useAuth hook"
+            "McqQuiz Component"
           ],
-          "duration": 7,
+          "duration": 60,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "useAuth hook should not detect fromAuth when parameter is missing",
+          "fullName": "McqQuiz Component disables multi-submission for the same question",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "should not detect fromAuth when parameter is missing"
+          "title": "disables multi-submission for the same question"
         },
         {
           "ancestorTitles": [
-            "useAuth hook"
+            "McqQuiz Component"
           ],
-          "duration": 15,
+          "duration": 111,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "useAuth hook should call signIn when requireAuth is called and user is unauthenticated",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should call signIn when requireAuth is called and user is unauthenticated"
-        },
-        {
-          "ancestorTitles": [
-            "useAuth hook"
-          ],
-          "duration": 10,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useAuth hook should not call signIn when requireAuth is called but user is authenticated",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should not call signIn when requireAuth is called but user is authenticated"
-        },
-        {
-          "ancestorTitles": [
-            "useAuth hook"
-          ],
-          "duration": 8,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useAuth hook should parse redirect info from URL",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should parse redirect info from URL"
-        },
-        {
-          "ancestorTitles": [
-            "useAuth hook"
-          ],
-          "duration": 7,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "useAuth hook should handle missing redirect info",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle missing redirect info"
-        },
-        {
-          "ancestorTitles": [
-            "_createMockUseAuth"
-          ],
-          "duration": 13,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "_createMockUseAuth should create default mock",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 8,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should create default mock"
-        },
-        {
-          "ancestorTitles": [
-            "_createMockUseAuth"
-          ],
-          "duration": 2,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "_createMockUseAuth should override defaults",
+          "fullName": "McqQuiz Component resets state when question changes",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 3,
           "retryReasons": [],
           "status": "passed",
-          "title": "should override defaults"
+          "title": "resets state when question changes"
         }
       ],
       "failureMessage": null
     },
     {
       "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 9,
+      "numFailingTests": 2,
+      "numPassingTests": 6,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915981757,
-        "runtime": 15396,
-        "slow": true,
-        "start": 1747915966361
+        "end": 1747974337508,
+        "runtime": 4021,
+        "slow": false,
+        "start": 1747974333487
       },
       "skipped": false,
       "snapshot": {
@@ -1329,151 +1321,327 @@
         "unmatched": 0,
         "updated": 0
       },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\mcq-quiz-flow.test.tsx",
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts",
       "testResults": [
         {
           "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
+            "quizSlice"
           ],
-          "duration": 441,
+          "duration": 32,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "actual": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "isCompleted": false,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "results": null,
+                  "tempResults": null,
+                  "quizHistory": [],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  },
+                  "currentQuizType": null,
+                  "currentQuizSlug": null
+                },
+                "expected": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "results": null,
+                  "isCompleted": false,
+                  "quizHistory": [],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  },
+                  "tempResults": null
+                },
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 2\u001b[39m\n\n\u001b[33m@@ -1,8 +1,10 @@\u001b[39m\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"currentQuestion\": 0,\u001b[22m\n\u001b[2m    \"currentQuizId\": null,\u001b[22m\n\u001b[31m+   \"currentQuizSlug\": null,\u001b[39m\n\u001b[31m+   \"currentQuizType\": null,\u001b[39m\n\u001b[2m    \"error\": null,\u001b[22m\n\u001b[2m    \"errors\": Object {\u001b[22m\n\u001b[2m      \"history\": null,\u001b[22m\n\u001b[2m      \"quiz\": null,\u001b[22m\n\u001b[2m      \"results\": null,\u001b[22m",
+                "name": "toEqual",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 2\u001b[39m\n\n\u001b[33m@@ -1,8 +1,10 @@\u001b[39m\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"currentQuestion\": 0,\u001b[22m\n\u001b[2m    \"currentQuizId\": null,\u001b[22m\n\u001b[31m+   \"currentQuizSlug\": null,\u001b[39m\n\u001b[31m+   \"currentQuizType\": null,\u001b[39m\n\u001b[2m    \"error\": null,\u001b[22m\n\u001b[2m    \"errors\": Object {\u001b[22m\n\u001b[2m      \"history\": null,\u001b[22m\n\u001b[2m      \"quiz\": null,\u001b[22m\n\u001b[2m      \"results\": null,\u001b[22m\n    at Object.toEqual (C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts:70:19)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "quizSlice should return the initial state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should return the initial state"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 6,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "actual": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "results": null,
+                  "isCompleted": false,
+                  "quizHistory": [
+                    {
+                      "id": "1",
+                      "quizTitle": "Past Quiz",
+                      "completedAt": "2023-01-01"
+                    }
+                  ],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  },
+                  "tempResults": null,
+                  "currentQuizType": null,
+                  "currentQuizSlug": null
+                },
+                "expected": {
+                  "quizData": null,
+                  "currentQuestion": 0,
+                  "userAnswers": [],
+                  "isLoading": false,
+                  "isSubmitting": false,
+                  "error": null,
+                  "quizError": null,
+                  "submissionError": null,
+                  "resultsError": null,
+                  "historyError": null,
+                  "results": null,
+                  "isCompleted": false,
+                  "quizHistory": [
+                    {
+                      "id": "1",
+                      "quizTitle": "Past Quiz",
+                      "completedAt": "2023-01-01"
+                    }
+                  ],
+                  "currentQuizId": null,
+                  "timeRemaining": null,
+                  "timerActive": false,
+                  "submissionStateInProgress": false,
+                  "errors": {
+                    "quiz": null,
+                    "submission": null,
+                    "results": null,
+                    "history": null
+                  },
+                  "tempResults": null
+                },
+                "message": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 2\u001b[39m\n\n\u001b[33m@@ -1,8 +1,10 @@\u001b[39m\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"currentQuestion\": 0,\u001b[22m\n\u001b[2m    \"currentQuizId\": null,\u001b[22m\n\u001b[31m+   \"currentQuizSlug\": null,\u001b[39m\n\u001b[31m+   \"currentQuizType\": null,\u001b[39m\n\u001b[2m    \"error\": null,\u001b[22m\n\u001b[2m    \"errors\": Object {\u001b[22m\n\u001b[2m      \"history\": null,\u001b[22m\n\u001b[2m      \"quiz\": null,\u001b[22m\n\u001b[2m      \"results\": null,\u001b[22m",
+                "name": "toEqual",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 0\u001b[39m\n\u001b[31m+ Received  + 2\u001b[39m\n\n\u001b[33m@@ -1,8 +1,10 @@\u001b[39m\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"currentQuestion\": 0,\u001b[22m\n\u001b[2m    \"currentQuizId\": null,\u001b[22m\n\u001b[31m+   \"currentQuizSlug\": null,\u001b[39m\n\u001b[31m+   \"currentQuizType\": null,\u001b[39m\n\u001b[2m    \"error\": null,\u001b[22m\n\u001b[2m    \"errors\": Object {\u001b[22m\n\u001b[2m      \"history\": null,\u001b[22m\n\u001b[2m      \"quiz\": null,\u001b[22m\n\u001b[2m      \"results\": null,\u001b[22m\n    at Object.toEqual (C:\\Work\\Projects\\ai-learning\\store\\slices\\__tests__\\quizSlice.test.ts:88:22)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "quizSlice should handle resetQuizState",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should handle resetQuizState"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 1,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete MCQ quiz and see results",
+          "fullName": "quizSlice should handle setCurrentQuestion",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setCurrentQuestion"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 1,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for new answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for new answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle setUserAnswer for existing answer",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle setUserAnswer for existing answer"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 3,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle timer actions",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 5,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle timer actions"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle markQuizCompleted",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle markQuizCompleted"
+        },
+        {
+          "ancestorTitles": [
+            "quizSlice"
+          ],
+          "duration": 683,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "quizSlice should handle submitQuiz action",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle submitQuiz action"
+        }
+      ],
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mquizSlice › should return the initial state\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n    \u001b[32m- Expected  - 0\u001b[39m\n    \u001b[31m+ Received  + 2\u001b[39m\n\n    \u001b[33m@@ -1,8 +1,10 @@\u001b[39m\n    \u001b[2m  Object {\u001b[22m\n    \u001b[2m    \"currentQuestion\": 0,\u001b[22m\n    \u001b[2m    \"currentQuizId\": null,\u001b[22m\n    \u001b[31m+   \"currentQuizSlug\": null,\u001b[39m\n    \u001b[31m+   \"currentQuizType\": null,\u001b[39m\n    \u001b[2m    \"error\": null,\u001b[22m\n    \u001b[2m    \"errors\": Object {\u001b[22m\n    \u001b[2m      \"history\": null,\u001b[22m\n    \u001b[2m      \"quiz\": null,\u001b[22m\n    \u001b[2m      \"results\": null,\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 68 |\u001b[39m       tempResults\u001b[33m:\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m,\u001b[39m \u001b[90m// Add this field to match the current state shape\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 69 |\u001b[39m     }\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 70 |\u001b[39m     expect(state)\u001b[33m.\u001b[39mtoEqual(expectedInitialState)\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                   \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 71 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 72 |\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 73 |\u001b[39m   test(\u001b[32m'should handle resetQuizState'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toEqual (\u001b[22m\u001b[2m\u001b[0m\u001b[36mstore/slices/__tests__/quizSlice.test.ts\u001b[39m\u001b[0m\u001b[2m:70:19)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mquizSlice › should handle resetQuizState\u001b[39m\u001b[22m\n\n    \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n    \u001b[32m- Expected  - 0\u001b[39m\n    \u001b[31m+ Received  + 2\u001b[39m\n\n    \u001b[33m@@ -1,8 +1,10 @@\u001b[39m\n    \u001b[2m  Object {\u001b[22m\n    \u001b[2m    \"currentQuestion\": 0,\u001b[22m\n    \u001b[2m    \"currentQuizId\": null,\u001b[22m\n    \u001b[31m+   \"currentQuizSlug\": null,\u001b[39m\n    \u001b[31m+   \"currentQuizType\": null,\u001b[39m\n    \u001b[2m    \"error\": null,\u001b[22m\n    \u001b[2m    \"errors\": Object {\u001b[22m\n    \u001b[2m      \"history\": null,\u001b[22m\n    \u001b[2m      \"quiz\": null,\u001b[22m\n    \u001b[2m      \"results\": null,\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 86 |\u001b[39m     \u001b[90m// History should be preserved, everything else reset\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 87 |\u001b[39m     \u001b[90m// Update expected state to include tempResults: null\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 88 |\u001b[39m     expect(newState)\u001b[33m.\u001b[39mtoEqual({\u001b[22m\n\u001b[2m     \u001b[90m    |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 89 |\u001b[39m       \u001b[33m...\u001b[39minitialState\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 90 |\u001b[39m       tempResults\u001b[33m:\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m,\u001b[39m \u001b[90m// Ensure this is included\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 91 |\u001b[39m       quizHistory\u001b[33m:\u001b[39m stateWithData\u001b[33m.\u001b[39mquizHistory\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.toEqual (\u001b[22m\u001b[2m\u001b[0m\u001b[36mstore/slices/__tests__/quizSlice.test.ts\u001b[39m\u001b[0m\u001b[2m:88:22)\u001b[22m\u001b[2m\u001b[22m\n"
+    },
+    {
+      "leaks": false,
+      "numFailingTests": 0,
+      "numPassingTests": 2,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747974337985,
+        "runtime": 2206,
+        "slow": false,
+        "start": 1747974335779
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\utils\\QuizHelpers.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "QuizHelpers",
+            "createResultsPreview"
+          ],
+          "duration": 13,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "QuizHelpers createResultsPreview calculates scores correctly",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 6,
           "retryReasons": [],
           "status": "passed",
-          "title": "should allow user to complete MCQ quiz and see results"
+          "title": "calculates scores correctly"
         },
         {
           "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
+            "QuizHelpers",
+            "prepareSubmissionPayload"
           ],
-          "duration": 72,
+          "duration": 4,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should track correct/incorrect answers",
+          "fullName": "QuizHelpers prepareSubmissionPayload formats answers correctly",
           "invocations": 1,
           "location": null,
-          "numPassingAsserts": 2,
+          "numPassingAsserts": 6,
           "retryReasons": [],
           "status": "passed",
-          "title": "should track correct/incorrect answers"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 42,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should handle quiz reset when requested",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz reset when requested"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 35,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Authenticated User Flow should verify quiz submission action is dispatched with correct payload",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should verify quiz submission action is dispatched with correct payload"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 26,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should allow unauthenticated users to take the quiz"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 19,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Unauthenticated User Flow should show authentication prompt on certain actions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should show authentication prompt on certain actions"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 35,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 2,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz data loading errors"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 20,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test Error Handling should handle invalid quiz data with missing questions",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle invalid quiz data with missing questions"
-        },
-        {
-          "ancestorTitles": [
-            "MCQ Quiz Flow End-to-End Test",
-            "UI Features"
-          ],
-          "duration": 18,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "MCQ Quiz Flow End-to-End Test UI Features should display correct question number and options",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 7,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should display correct question number and options"
+          "title": "formats answers correctly"
         }
       ],
       "failureMessage": null
@@ -1486,10 +1654,10 @@
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915982678,
-        "runtime": 4059,
+        "end": 1747974338047,
+        "runtime": 2432,
         "slow": false,
-        "start": 1747915978619
+        "start": 1747974335615
       },
       "skipped": false,
       "snapshot": {
@@ -1507,7 +1675,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 243,
+          "duration": 239,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should handle MCQ quiz completion correctly",
@@ -1522,7 +1690,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 23,
+          "duration": 17,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should handle CODE quiz completion correctly",
@@ -1537,7 +1705,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 6,
+          "duration": 10,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should validate required fields",
@@ -1552,7 +1720,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 5,
+          "duration": 9,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should validate answer format",
@@ -1567,7 +1735,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 9,
+          "duration": 12,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should handle case where quiz is not found",
@@ -1582,7 +1750,7 @@
           "ancestorTitles": [
             "Quiz Complete API Route"
           ],
-          "duration": 2,
+          "duration": 14,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Quiz Complete API Route should require authentication",
@@ -1598,16 +1766,176 @@
     },
     {
       "leaks": false,
+      "numFailingTests": 5,
+      "numPassingTests": 2,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "openHandles": [],
+      "perfStats": {
+        "end": 1747974338368,
+        "runtime": 18982,
+        "slow": true,
+        "start": 1747974319386
+      },
+      "skipped": false,
+      "snapshot": {
+        "added": 0,
+        "fileDeleted": false,
+        "matched": 0,
+        "unchecked": 0,
+        "uncheckedKeys": [],
+        "unmatched": 0,
+        "updated": 0
+      },
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx",
+      "testResults": [
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 792,
+          "failureDetails": [
+            {}
+          ],
+          "failureMessages": [
+            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:179:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete quiz and see immediate results",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should allow user to complete quiz and see immediate results"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 63,
+          "failureDetails": [
+            {}
+          ],
+          "failureMessages": [
+            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:267:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should handle quiz with empty answers",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should handle quiz with empty answers"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Authenticated User Flow"
+          ],
+          "duration": 65,
+          "failureDetails": [
+            {}
+          ],
+          "failureMessages": [
+            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:309:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should properly reset quiz state"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 48,
+          "failureDetails": [
+            {}
+          ],
+          "failureMessages": [
+            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:341:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should allow unauthenticated users to take the quiz"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Unauthenticated User Flow"
+          ],
+          "duration": 48,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should show sign-in prompt on results page for unauthenticated users"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 15,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle quiz data loading errors"
+        },
+        {
+          "ancestorTitles": [
+            "OpenEnded Quiz Flow End-to-End Test",
+            "Error Handling"
+          ],
+          "duration": 50,
+          "failureDetails": [
+            {}
+          ],
+          "failureMessages": [
+            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:469:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle network errors during quiz submission",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "should handle network errors during quiz submission"
+        }
+      ],
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Authenticated User Flow › should allow user to complete quiz and see immediate results\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:179:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Authenticated User Flow › should handle quiz with empty answers\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:267:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Authenticated User Flow › should properly reset quiz state\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:309:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Unauthenticated User Flow › should allow unauthenticated users to take the quiz\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:341:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Error Handling › should handle network errors during quiz submission\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:469:13)\u001b[22m\u001b[2m\u001b[22m\n"
+    },
+    {
+      "leaks": false,
       "numFailingTests": 0,
       "numPassingTests": 1,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915982753,
-        "runtime": 2609,
+        "end": 1747974338343,
+        "runtime": 1803,
         "slow": false,
-        "start": 1747915980144
+        "start": 1747974336540
       },
       "skipped": false,
       "snapshot": {
@@ -1642,75 +1970,15 @@
     {
       "leaks": false,
       "numFailingTests": 0,
-      "numPassingTests": 2,
+      "numPassingTests": 10,
       "numPendingTests": 0,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915983172,
-        "runtime": 1657,
-        "slow": false,
-        "start": 1747915981515
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\utils\\QuizHelpers.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "QuizHelpers",
-            "createResultsPreview"
-          ],
-          "duration": 4,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "QuizHelpers createResultsPreview calculates scores correctly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 6,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "calculates scores correctly"
-        },
-        {
-          "ancestorTitles": [
-            "QuizHelpers",
-            "prepareSubmissionPayload"
-          ],
-          "duration": 3,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "QuizHelpers prepareSubmissionPayload formats answers correctly",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 6,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "formats answers correctly"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 1,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747915983433,
-        "runtime": 9260,
+        "end": 1747974337751,
+        "runtime": 18361,
         "slow": true,
-        "start": 1747915974173
+        "start": 1747974319390
       },
       "skipped": false,
       "snapshot": {
@@ -1722,301 +1990,173 @@
         "unmatched": 0,
         "updated": 0
       },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\mocks\\mockAnimationProvider.test.tsx",
+      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\hooks\\useAuth.test.tsx",
       "testResults": [
         {
           "ancestorTitles": [
-            "Animation Provider Mock"
+            "useAuth hook"
           ],
-          "duration": 68,
+          "duration": 137,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "Animation Provider Mock should provide animation context with animations disabled by default",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should provide animation context with animations disabled by default"
-        }
-      ],
-      "failureMessage": null
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 5,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747915984208,
-        "runtime": 9001,
-        "slow": true,
-        "start": 1747915975207
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\mcq\\[slug]\\results\\results-page.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "McqResultsPage"
-          ],
-          "duration": 77,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqResultsPage shows loading state when fetching results",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "shows loading state when fetching results"
-        },
-        {
-          "ancestorTitles": [
-            "McqResultsPage"
-          ],
-          "duration": 11,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqResultsPage shows sign in prompt for unauthenticated users",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "shows sign in prompt for unauthenticated users"
-        },
-        {
-          "ancestorTitles": [
-            "McqResultsPage"
-          ],
-          "duration": 53,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqResultsPage shows saved results when available",
+          "fullName": "useAuth hook should return authenticated status when session exists",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 2,
           "retryReasons": [],
           "status": "passed",
-          "title": "shows saved results when available"
+          "title": "should return authenticated status when session exists"
         },
         {
           "ancestorTitles": [
-            "McqResultsPage"
+            "useAuth hook"
           ],
-          "duration": 123,
+          "duration": 11,
           "failureDetails": [],
           "failureMessages": [],
-          "fullName": "McqResultsPage shows temporary results with save button after quiz completion",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 3,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "shows temporary results with save button after quiz completion"
-        },
-        {
-          "ancestorTitles": [
-            "McqResultsPage"
-          ],
-          "duration": 38,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "McqResultsPage shows error message when results loading fails",
+          "fullName": "useAuth hook should return unauthenticated status when session is missing",
           "invocations": 1,
           "location": null,
           "numPassingAsserts": 1,
           "retryReasons": [],
           "status": "passed",
-          "title": "shows error message when results loading fails"
+          "title": "should return unauthenticated status when session is missing"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 13,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should detect fromAuth parameter in URL",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should detect fromAuth parameter in URL"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should not detect fromAuth when parameter is missing",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should not detect fromAuth when parameter is missing"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 17,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should call signIn when requireAuth is called and user is unauthenticated",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should call signIn when requireAuth is called and user is unauthenticated"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 8,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should not call signIn when requireAuth is called but user is authenticated",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should not call signIn when requireAuth is called but user is authenticated"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should parse redirect info from URL",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should parse redirect info from URL"
+        },
+        {
+          "ancestorTitles": [
+            "useAuth hook"
+          ],
+          "duration": 9,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "useAuth hook should handle missing redirect info",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should handle missing redirect info"
+        },
+        {
+          "ancestorTitles": [
+            "_createMockUseAuth"
+          ],
+          "duration": 4,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "_createMockUseAuth should create default mock",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 8,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should create default mock"
+        },
+        {
+          "ancestorTitles": [
+            "_createMockUseAuth"
+          ],
+          "duration": 2,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "_createMockUseAuth should override defaults",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 3,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "should override defaults"
         }
       ],
       "failureMessage": null
     },
     {
       "leaks": false,
-      "numFailingTests": 5,
-      "numPassingTests": 2,
-      "numPendingTests": 0,
-      "numTodoTests": 0,
-      "openHandles": [],
-      "perfStats": {
-        "end": 1747915984496,
-        "runtime": 17537,
-        "slow": true,
-        "start": 1747915966959
-      },
-      "skipped": false,
-      "snapshot": {
-        "added": 0,
-        "fileDeleted": false,
-        "matched": 0,
-        "unchecked": 0,
-        "uncheckedKeys": [],
-        "unmatched": 0,
-        "updated": 0
-      },
-      "testFilePath": "C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx",
-      "testResults": [
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 397,
-          "failureDetails": [
-            {}
-          ],
-          "failureMessages": [
-            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:179:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
-          ],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete quiz and see immediate results",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 0,
-          "retryReasons": [],
-          "status": "failed",
-          "title": "should allow user to complete quiz and see immediate results"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 93,
-          "failureDetails": [
-            {}
-          ],
-          "failureMessages": [
-            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:267:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
-          ],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should handle quiz with empty answers",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 0,
-          "retryReasons": [],
-          "status": "failed",
-          "title": "should handle quiz with empty answers"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Authenticated User Flow"
-          ],
-          "duration": 64,
-          "failureDetails": [
-            {}
-          ],
-          "failureMessages": [
-            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:309:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
-          ],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 0,
-          "retryReasons": [],
-          "status": "failed",
-          "title": "should properly reset quiz state"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 47,
-          "failureDetails": [
-            {}
-          ],
-          "failureMessages": [
-            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:341:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
-          ],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 0,
-          "retryReasons": [],
-          "status": "failed",
-          "title": "should allow unauthenticated users to take the quiz"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Unauthenticated User Flow"
-          ],
-          "duration": 38,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should show sign-in prompt on results page for unauthenticated users"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 8,
-          "failureDetails": [],
-          "failureMessages": [],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 1,
-          "retryReasons": [],
-          "status": "passed",
-          "title": "should handle quiz data loading errors"
-        },
-        {
-          "ancestorTitles": [
-            "OpenEnded Quiz Flow End-to-End Test",
-            "Error Handling"
-          ],
-          "duration": 39,
-          "failureDetails": [
-            {}
-          ],
-          "failureMessages": [
-            "ReferenceError: Cannot access 'currentQuestion' before initialization\n    at currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\\openended\\components\\OpenEndedQuizWrapper.tsx:200:7)\n    at renderWithHooks (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:20103:13)\n    at beginWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:21626:16)\n    at beginWork$1 (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:27465:14)\n    at performUnitOfWork (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26599:12)\n    at workLoopSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26505:5)\n    at renderRootSync (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:26473:7)\n    at recoverFromConcurrentError (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25889:20)\n    at performConcurrentWorkOnRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\react-dom\\cjs\\react-dom.development.js:25789:22)\n    at flushActQueue (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2667:24)\n    at act (C:\\Work\\Projects\\ai-learning\\node_modules\\react\\cjs\\react.development.js:2582:11)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\act-compat.js:47:25\n    at renderRoot (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:190:26)\n    at render (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\react\\dist\\pure.js:292:10)\n    at Object.<anonymous> (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\openended-quiz-flow.test.tsx:469:13)\n    at Promise.then.completed (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Work\\Projects\\ai-learning\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
-          ],
-          "fullName": "OpenEnded Quiz Flow End-to-End Test Error Handling should handle network errors during quiz submission",
-          "invocations": 1,
-          "location": null,
-          "numPassingAsserts": 0,
-          "retryReasons": [],
-          "status": "failed",
-          "title": "should handle network errors during quiz submission"
-        }
-      ],
-      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Authenticated User Flow › should allow user to complete quiz and see immediate results\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:179:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Authenticated User Flow › should handle quiz with empty answers\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:267:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Authenticated User Flow › should properly reset quiz state\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:309:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Unauthenticated User Flow › should allow unauthenticated users to take the quiz\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:341:13)\u001b[22m\u001b[2m\u001b[22m\n\n\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mOpenEnded Quiz Flow End-to-End Test › Error Handling › should handle network errors during quiz submission\u001b[39m\u001b[22m\n\n    ReferenceError: Cannot access 'currentQuestion' before initialization\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 198 |\u001b[39m     [\u001b[22m\n\u001b[2m     \u001b[90m 199 |\u001b[39m       isSubmitting\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 200 |\u001b[39m       currentQuestion\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 201 |\u001b[39m       dispatch\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 202 |\u001b[39m       slug\u001b[33m,\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 203 |\u001b[39m       quizData\u001b[33m.\u001b[39mid\u001b[33m,\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat currentQuestion (C:\\Work\\Projects\\ai-learning\\app\\dashboard\\(quiz)\u001b[22m\u001b[2m../../../openended/components/OpenEndedQuizWrapper.tsx\u001b[2m:200:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderWithHooks (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:15486:18)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat mountIndeterminateComponent (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:20103:13)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:21626:16)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat beginWork$1 (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:27465:14)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performUnitOfWork (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26599:12)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat workLoopSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26505:5)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRootSync (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:26473:7)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat recoverFromConcurrentError (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25889:20)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat performConcurrentWorkOnRoot (\u001b[22m\u001b[2mnode_modules/react-dom/cjs/react-dom.development.js\u001b[2m:25789:22)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat flushActQueue (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2667:24)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat act (\u001b[22m\u001b[2mnode_modules/react/cjs/react.development.js\u001b[2m:2582:11)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/act-compat.js\u001b[2m:47:25\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat renderRoot (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:190:26)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat render (\u001b[22m\u001b[2mnode_modules/@testing-library/react/dist/pure.js\u001b[2m:292:10)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.<anonymous> (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/openended-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:469:13)\u001b[22m\u001b[2m\u001b[22m\n"
-    },
-    {
-      "leaks": false,
-      "numFailingTests": 0,
-      "numPassingTests": 9,
+      "numFailingTests": 1,
+      "numPassingTests": 8,
       "numPendingTests": 1,
       "numTodoTests": 0,
       "openHandles": [],
       "perfStats": {
-        "end": 1747915985157,
-        "runtime": 16383,
+        "end": 1747974339313,
+        "runtime": 20646,
         "slow": true,
-        "start": 1747915968774
+        "start": 1747974318667
       },
       "skipped": false,
       "snapshot": {
@@ -2035,15 +2175,21 @@
             "Blanks Quiz Flow End-to-End Test",
             "Authenticated User Flow"
           ],
-          "duration": 758,
-          "failureDetails": [],
-          "failureMessages": [],
+          "duration": 1090,
+          "failureDetails": [
+            {
+              "name": "TestingLibraryElementError"
+            }
+          ],
+          "failureMessages": [
+            "TestingLibraryElementError: Unable to find an element with the text: /quiz results/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mdata-testid\u001b[39m=\u001b[32m\"blanks-quiz-component\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<h2\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mReact is a [[library]] for building user interfaces.\u001b[0m\n        \u001b[36m</h2>\u001b[39m\n        \u001b[36m<p>\u001b[39m\n          \u001b[0mQuestion \u001b[0m\n          \u001b[0m2\u001b[0m\n          \u001b[0m of \u001b[0m\n          \u001b[0m2\u001b[0m\n        \u001b[36m</p>\u001b[39m\n        \u001b[36m<input\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"answer-input\"\u001b[39m\n          \u001b[33mplaceholder\u001b[39m=\u001b[32m\"Type your answer here...\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"hint-button\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mNeed a hint?\u001b[0m\n        \u001b[36m</button>\u001b[39m\n        \u001b[36m<button\u001b[39m\n          \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-button\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[0mFinish Quiz\u001b[0m\n        \u001b[36m</button>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n  \u001b[36m<div>\u001b[39m\n    \u001b[36m<div>\u001b[39m\n      \u001b[36m<div\u001b[39m\n        \u001b[33mclass\u001b[39m=\u001b[32m\"space-y-6\"\u001b[39m\n        \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0; transform: translateY(20px);\"\u001b[39m\n      \u001b[36m>\u001b[39m\n        \u001b[36m<div\u001b[39m\n          \u001b[33mclass\u001b[39m=\u001b[32m\"bg-gradient-to-br from-primary/10 via-background to-secondary/10 rounded-2xl p-8 border\"\u001b[39m\n          \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0; transform: scale(0.95);\"\u001b[39m\n        \u001b[36m>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"flex flex-col lg:flex-row justify-between items-center gap-6\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"text-center lg:text-left\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"flex items-center gap-2 justify-center lg:justify-start mb-2\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0; transform: translateY(10px);\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<svg\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-star h-6 w-6 text-green-600\"\u001b[39m\n                  \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                  \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                  \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                  \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                  \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                  \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                  \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                  \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                  \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<path\u001b[39m\n                    \u001b[33md\u001b[39m=\u001b[32m\"M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z\"\u001b[39m\n                  \u001b[36m/>\u001b[39m\n                \u001b[36m</svg>\u001b[39m\n                \u001b[36m<span\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"text-lg font-semibold text-green-600\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[0mExcellent\u001b[0m\n                \u001b[36m</span>\u001b[39m\n              \u001b[36m</div>\u001b[39m\n              \u001b[36m<h1\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"text-3xl font-bold mb-2\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mQuiz Completed!\u001b[0m\n              \u001b[36m</h1>\u001b[39m\n              \u001b[36m<p\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"text-muted-foreground text-lg\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0mTest Blanks Quiz\u001b[0m\n                \u001b[0m • \u001b[0m\n                \u001b[0m5/23/2025\u001b[0m\n              \u001b[36m</p>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"relative\"\u001b[39m\n              \u001b[33mstyle\u001b[39m=\u001b[32m\"transform: scale(0);\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"w-32 h-32 rounded-full flex items-center justify-center text-white text-3xl font-bold bg-gradient-to-br from-green-500 to-green-600\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[0m100\u001b[0m\n                \u001b[0m%\u001b[0m\n              \u001b[36m</div>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"absolute -top-2 -right-2 bg-background border-4 border-background rounded-full p-2\"\u001b[39m\n                \u001b[33mstyle\u001b[39m=\u001b[32m\"transform: scale(0);\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<svg\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-award h-6 w-6 text-primary\"\u001b[39m\n                  \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                  \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                  \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                  \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                  \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                  \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                  \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                  \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                  \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<path\u001b[39m\n                    \u001b[33md\u001b[39m=\u001b[32m\"m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526\"\u001b[39m\n                  \u001b[36m/>\u001b[39m\n                  \u001b[36m<circle\u001b[39m\n                    \u001b[33mcx\u001b[39m=\u001b[32m\"12\"\u001b[39m\n                    \u001b[33mcy\u001b[39m=\u001b[32m\"8\"\u001b[39m\n                    \u001b[33mr\u001b[39m=\u001b[32m\"6\"\u001b[39m\n                  \u001b[36m/>\u001b[39m\n                \u001b[36m</svg>\u001b[39m\n              \u001b[36m</div>\u001b[39m\n            \u001b[36m</div>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"flex flex-wrap gap-2 justify-center lg:justify-start mt-6\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 gap-2\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<svg\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-download h-4 w-4\"\u001b[39m\n                \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b...\n    at Object.getElementError (C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\config.js:37:19)\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:76:38\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:52:17\n    at C:\\Work\\Projects\\ai-learning\\node_modules\\@testing-library\\dom\\dist\\query-helpers.js:95:19\n    at Object.getByText (C:\\Work\\Projects\\ai-learning\\__tests__\\e2e\\blanks-quiz-flow.test.tsx:288:21)\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at listOnTimeout (node:internal/timers:549:9)\n    at processTimers (node:internal/timers:523:7)"
+          ],
           "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should allow user to complete blanks quiz and see immediate results",
           "invocations": 1,
           "location": null,
-          "numPassingAsserts": 7,
+          "numPassingAsserts": 4,
           "retryReasons": [],
-          "status": "passed",
+          "status": "failed",
           "title": "should allow user to complete blanks quiz and see immediate results"
         },
         {
@@ -2051,7 +2197,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "Authenticated User Flow"
           ],
-          "duration": 82,
+          "duration": 134,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should handle hint usage and track it in results",
@@ -2067,7 +2213,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "Authenticated User Flow"
           ],
-          "duration": 32,
+          "duration": 56,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test Authenticated User Flow should properly reset quiz state",
@@ -2083,7 +2229,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "Unauthenticated User Flow"
           ],
-          "duration": 223,
+          "duration": 245,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should allow unauthenticated users to take the quiz",
@@ -2099,7 +2245,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "Unauthenticated User Flow"
           ],
-          "duration": 9,
+          "duration": 14,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should show sign-in prompt on results page for unauthenticated users",
@@ -2115,7 +2261,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "Unauthenticated User Flow"
           ],
-          "duration": 133,
+          "duration": 139,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test Unauthenticated User Flow should save answer with correct/incorrect status",
@@ -2131,7 +2277,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "Error Handling"
           ],
-          "duration": 11,
+          "duration": 21,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test Error Handling should handle quiz data loading errors",
@@ -2147,7 +2293,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "Error Handling"
           ],
-          "duration": 51,
+          "duration": 96,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test Error Handling should handle edge cases like empty questions array",
@@ -2163,7 +2309,7 @@
             "Blanks Quiz Flow End-to-End Test",
             "UI Features"
           ],
-          "duration": 125,
+          "duration": 93,
           "failureDetails": [],
           "failureMessages": [],
           "fullName": "Blanks Quiz Flow End-to-End Test UI Features should show correct question number indicator",
@@ -2191,7 +2337,7 @@
           "title": "should change submit button text on last question"
         }
       ],
-      "failureMessage": null
+      "failureMessage": "\u001b[1m\u001b[31m  \u001b[1m● \u001b[22m\u001b[1mBlanks Quiz Flow End-to-End Test › Authenticated User Flow › should allow user to complete blanks quiz and see immediate results\u001b[39m\u001b[22m\n\n    TestingLibraryElementError: Unable to find an element with the text: /quiz results/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.\n\n    Ignored nodes: comments, script, style\n    \u001b[36m<body>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mdata-testid\u001b[39m=\u001b[32m\"blanks-quiz-component\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<h2\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"question-text\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mReact is a [[library]] for building user interfaces.\u001b[0m\n            \u001b[36m</h2>\u001b[39m\n            \u001b[36m<p>\u001b[39m\n              \u001b[0mQuestion \u001b[0m\n              \u001b[0m2\u001b[0m\n              \u001b[0m of \u001b[0m\n              \u001b[0m2\u001b[0m\n            \u001b[36m</p>\u001b[39m\n            \u001b[36m<input\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"answer-input\"\u001b[39m\n              \u001b[33mplaceholder\u001b[39m=\u001b[32m\"Type your answer here...\"\u001b[39m\n            \u001b[36m/>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"hint-button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mNeed a hint?\u001b[0m\n            \u001b[36m</button>\u001b[39m\n            \u001b[36m<button\u001b[39m\n              \u001b[33mdata-testid\u001b[39m=\u001b[32m\"submit-button\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[0mFinish Quiz\u001b[0m\n            \u001b[36m</button>\u001b[39m\n          \u001b[36m</div>\u001b[39m\n        \u001b[36m</div>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n      \u001b[36m<div>\u001b[39m\n        \u001b[36m<div>\u001b[39m\n          \u001b[36m<div\u001b[39m\n            \u001b[33mclass\u001b[39m=\u001b[32m\"space-y-6\"\u001b[39m\n            \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0; transform: translateY(20px);\"\u001b[39m\n          \u001b[36m>\u001b[39m\n            \u001b[36m<div\u001b[39m\n              \u001b[33mclass\u001b[39m=\u001b[32m\"bg-gradient-to-br from-primary/10 via-background to-secondary/10 rounded-2xl p-8 border\"\u001b[39m\n              \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0; transform: scale(0.95);\"\u001b[39m\n            \u001b[36m>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"flex flex-col lg:flex-row justify-between items-center gap-6\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<div\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"text-center lg:text-left\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<div\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"flex items-center gap-2 justify-center lg:justify-start mb-2\"\u001b[39m\n                    \u001b[33mstyle\u001b[39m=\u001b[32m\"opacity: 0; transform: translateY(10px);\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<svg\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-star h-6 w-6 text-green-600\"\u001b[39m\n                      \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                      \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                      \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                      \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                      \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                      \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                      \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                      \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                      \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[36m<path\u001b[39m\n                        \u001b[33md\u001b[39m=\u001b[32m\"M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z\"\u001b[39m\n                      \u001b[36m/>\u001b[39m\n                    \u001b[36m</svg>\u001b[39m\n                    \u001b[36m<span\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"text-lg font-semibold text-green-600\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[0mExcellent\u001b[0m\n                    \u001b[36m</span>\u001b[39m\n                  \u001b[36m</div>\u001b[39m\n                  \u001b[36m<h1\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"text-3xl font-bold mb-2\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[0mQuiz Completed!\u001b[0m\n                  \u001b[36m</h1>\u001b[39m\n                  \u001b[36m<p\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"text-muted-foreground text-lg\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[0mTest Blanks Quiz\u001b[0m\n                    \u001b[0m • \u001b[0m\n                    \u001b[0m5/23/2025\u001b[0m\n                  \u001b[36m</p>\u001b[39m\n                \u001b[36m</div>\u001b[39m\n                \u001b[36m<div\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"relative\"\u001b[39m\n                  \u001b[33mstyle\u001b[39m=\u001b[32m\"transform: scale(0);\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<div\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"w-32 h-32 rounded-full flex items-center justify-center text-white text-3xl font-bold bg-gradient-to-br from-green-500 to-green-600\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[0m100\u001b[0m\n                    \u001b[0m%\u001b[0m\n                  \u001b[36m</div>\u001b[39m\n                  \u001b[36m<div\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"absolute -top-2 -right-2 bg-background border-4 border-background rounded-full p-2\"\u001b[39m\n                    \u001b[33mstyle\u001b[39m=\u001b[32m\"transform: scale(0);\"\u001b[39m\n                  \u001b[36m>\u001b[39m\n                    \u001b[36m<svg\u001b[39m\n                      \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-award h-6 w-6 text-primary\"\u001b[39m\n                      \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                      \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                      \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                      \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                      \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                      \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                      \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b[39m\n                      \u001b[33mwidth\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                      \u001b[33mxmlns\u001b[39m=\u001b[32m\"http://www.w3.org/2000/svg\"\u001b[39m\n                    \u001b[36m>\u001b[39m\n                      \u001b[36m<path\u001b[39m\n                        \u001b[33md\u001b[39m=\u001b[32m\"m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526\"\u001b[39m\n                      \u001b[36m/>\u001b[39m\n                      \u001b[36m<circle\u001b[39m\n                        \u001b[33mcx\u001b[39m=\u001b[32m\"12\"\u001b[39m\n                        \u001b[33mcy\u001b[39m=\u001b[32m\"8\"\u001b[39m\n                        \u001b[33mr\u001b[39m=\u001b[32m\"6\"\u001b[39m\n                      \u001b[36m/>\u001b[39m\n                    \u001b[36m</svg>\u001b[39m\n                  \u001b[36m</div>\u001b[39m\n                \u001b[36m</div>\u001b[39m\n              \u001b[36m</div>\u001b[39m\n              \u001b[36m<div\u001b[39m\n                \u001b[33mclass\u001b[39m=\u001b[32m\"flex flex-wrap gap-2 justify-center lg:justify-start mt-6\"\u001b[39m\n              \u001b[36m>\u001b[39m\n                \u001b[36m<button\u001b[39m\n                  \u001b[33mclass\u001b[39m=\u001b[32m\"inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 gap-2\"\u001b[39m\n                \u001b[36m>\u001b[39m\n                  \u001b[36m<svg\u001b[39m\n                    \u001b[33mclass\u001b[39m=\u001b[32m\"lucide lucide-download h-4 w-4\"\u001b[39m\n                    \u001b[33mfill\u001b[39m=\u001b[32m\"none\"\u001b[39m\n                    \u001b[33mheight\u001b[39m=\u001b[32m\"24\"\u001b[39m\n                    \u001b[33mstroke\u001b[39m=\u001b[32m\"currentColor\"\u001b[39m\n                    \u001b[33mstroke-linecap\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                    \u001b[33mstroke-linejoin\u001b[39m=\u001b[32m\"round\"\u001b[39m\n                    \u001b[33mstroke-width\u001b[39m=\u001b[32m\"2\"\u001b[39m\n                    \u001b[33mviewBox\u001b[39m=\u001b[32m\"0 0 24 24\"\u001b...\n\u001b[2m\u001b[22m\n\u001b[2m    \u001b[0m \u001b[90m 286 |\u001b[39m       \u001b[22m\n\u001b[2m     \u001b[90m 287 |\u001b[39m       \u001b[90m// Check that results are shown\u001b[39m\u001b[22m\n\u001b[2m    \u001b[31m\u001b[1m>\u001b[22m\u001b[2m\u001b[39m\u001b[90m 288 |\u001b[39m       expect(screen\u001b[33m.\u001b[39mgetByText(\u001b[35m/quiz results/i\u001b[39m\u001b[33m,\u001b[39m { exact\u001b[33m:\u001b[39m \u001b[36mfalse\u001b[39m }))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m     |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[2m\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 289 |\u001b[39m       expect(screen\u001b[33m.\u001b[39mgetByText(\u001b[35m/accuracy/i\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 290 |\u001b[39m       expect(screen\u001b[33m.\u001b[39mgetByText(\u001b[35m/completion rate/i\u001b[39m))\u001b[33m.\u001b[39mtoBeInTheDocument()\u001b[33m;\u001b[39m\u001b[22m\n\u001b[2m     \u001b[90m 291 |\u001b[39m     })\u001b[33m;\u001b[39m\u001b[0m\u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getElementError (\u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/config.js\u001b[2m:37:19)\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:76:38\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:52:17\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat \u001b[22m\u001b[2mnode_modules/@testing-library/dom/dist/query-helpers.js\u001b[2m:95:19\u001b[22m\u001b[2m\u001b[22m\n\u001b[2m      \u001b[2mat Object.getByText (\u001b[22m\u001b[2m\u001b[0m\u001b[36m__tests__/e2e/blanks-quiz-flow.test.tsx\u001b[39m\u001b[0m\u001b[2m:288:21)\u001b[22m\u001b[2m\u001b[22m\n"
     }
   ],
   "wasInterrupted": false

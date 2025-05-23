@@ -23,78 +23,78 @@ import {
   saveQuizSubmissionState,
   clearQuizSubmissionState,
   getQuizSubmissionState,
-  setSubmissionInProgress,
   clearErrors,
   submitQuiz,
   setTempResults,
   clearTempResults,
 } from "@/store/slices/quizSlice"
 
-import {
-  setUserRedirectState,
-  clearUserRedirectState,
-} from "@/store/slices/authSlice"
+import { setUserRedirectState, clearUserRedirectState } from "@/store/slices/authSlice"
 
-import { loadPersistedQuizState, hasAuthRedirectState, clearAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
+import {
+  loadPersistedQuizState,
+  hasAuthRedirectState,
+  clearAuthRedirectState,
+} from "@/store/middleware/persistQuizMiddleware"
 import type { QuizData, QuizType, QuizResult } from "@/app/types/quiz-types"
 
 // Define a cleaner, focused interface for the quiz hook
 export interface QuizHook {
   // Core state
   quiz: {
-    data: QuizData | null;
-    currentQuestion: number;
-    userAnswers: Array<{ questionId: string; answer: any }>;
-    isLastQuestion: boolean;
-    progress: number;
-    remainingTimeFormatted: string;
-  };
-  
+    data: QuizData | null
+    currentQuestion: number
+    userAnswers: Array<{ questionId: string; answer: any }>
+    isLastQuestion: boolean
+    progress: number
+    remainingTimeFormatted: string
+  }
+
   // Quiz status
   status: {
-    isLoading: boolean;
-    isSubmitting: boolean;
-    isCompleted: boolean;
-    hasError: boolean;
-    errorMessage: string | null;
-  };
-  
+    isLoading: boolean
+    isSubmitting: boolean
+    isCompleted: boolean
+    hasError: boolean
+    errorMessage: string | null
+  }
+
   // Results
-  results: QuizResult | null;
-  tempResults: QuizResult | null;
-  history: any[];
-  
+  results: QuizResult | null
+  tempResults: QuizResult | null
+  history: any[]
+
   // Core actions
   actions: {
-    loadQuiz: (slug: string, type?: QuizType, initialData?: any) => Promise<any>;
-    submitQuiz: (payload: any) => Promise<any>;
-    saveAnswer: (questionId: string, answer: any) => void;
-    getResults: (slug: string) => Promise<any>;
-    saveResults: (slug: string, results: QuizResult) => Promise<any>;
-    saveTempResults: (results: QuizResult) => void;
-    clearTempResults: () => void;
-    reset: () => void;
-  };
-  
+    loadQuiz: (slug: string, type?: QuizType, initialData?: any) => Promise<any>
+    submitQuiz: (payload: any) => Promise<any>
+    saveAnswer: (questionId: string, answer: any) => void
+    getResults: (slug: string) => Promise<any>
+    saveResults: (slug: string, results: QuizResult) => Promise<any>
+    saveTempResults: (results: QuizResult) => void
+    clearTempResults: () => void
+    reset: () => void
+  }
+
   // Navigation
   navigation: {
-    next: () => boolean;
-    previous: () => boolean;
-    toQuestion: (index: number) => boolean;
-  };
-  
+    next: () => boolean
+    previous: () => boolean
+    toQuestion: (index: number) => boolean
+  }
+
   // Timer controls
   timer: {
-    start: () => void;
-    pause: () => void;
-    resume: () => void;
-  };
-  
+    start: () => void
+    pause: () => void
+    resume: () => void
+  }
+
   // Authentication
   auth: {
-    requireAuthentication: (callbackUrl?: string) => void;
-    saveRedirectState: (state: any) => void;
-  };
+    requireAuthentication: (callbackUrl?: string) => void
+    saveRedirectState: (state: any) => void
+  }
 }
 
 /**
@@ -105,9 +105,21 @@ export function useQuiz() {
   const router = useRouter()
   const quizState = useAppSelector((state) => state.quiz)
   const authState = useAppSelector((state) => state.auth)
-  
+
   const [isAuthRedirect, setIsAuthRedirect] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const currentQuizRef = useRef<{ type: QuizType | null; slug: string | null }>({
+    type: null,
+    slug: null,
+  })
+
+  // Update the current quiz ref when quiz type or slug changes
+  useEffect(() => {
+    currentQuizRef.current = {
+      type: quizState.currentQuizType,
+      slug: quizState.currentQuizSlug,
+    }
+  }, [quizState.currentQuizType, quizState.currentQuizSlug])
 
   // Timer management
   useEffect(() => {
@@ -122,7 +134,7 @@ export function useQuiz() {
       clearInterval(timerRef.current)
       timerRef.current = null
     }
-    
+
     // Clean up timer on unmount
     return () => {
       if (timerRef.current) {
@@ -130,6 +142,17 @@ export function useQuiz() {
       }
     }
   }, [quizState.timerActive, quizState.timeRemaining, dispatch])
+
+  // Handle cleanup more carefully
+  useEffect(() => {
+    return () => {
+      // Only clear timer when unmounting
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
+  }, [])
 
   // Auto-submit when time runs out
   useEffect(() => {
@@ -145,7 +168,7 @@ export function useQuiz() {
         type: quizState.quizData.type,
         answers: quizState.userAnswers,
       }
-      
+
       dispatch(submitQuiz(payload))
     }
   }, [quizState.timeRemaining, quizState.isCompleted, quizState.quizData, quizState.userAnswers, dispatch])
@@ -154,31 +177,31 @@ export function useQuiz() {
   useEffect(() => {
     if (typeof window !== "undefined" && hasAuthRedirectState()) {
       setIsAuthRedirect(true)
-      
+
       // Restore persisted state if available
       const persisted = loadPersistedQuizState()
       if (persisted?.quizData) {
-        dispatch(fetchQuiz.fulfilled(persisted.quizData, '', {} as any))
-        
+        dispatch(fetchQuiz.fulfilled(persisted.quizData, "", {} as any))
+
         if (typeof persisted.currentQuestion === "number") {
           dispatch(setCurrentQuestion(persisted.currentQuestion))
         }
-        
+
         if (Array.isArray(persisted.userAnswers)) {
           persisted.userAnswers.forEach((answer) => {
             dispatch(setUserAnswer(answer))
           })
         }
-        
+
         if (persisted.timeRemaining) {
           dispatch(startTimer())
-          
+
           if (!persisted.timerActive) {
             dispatch(pauseTimer())
           }
         }
       }
-      
+
       setIsAuthRedirect(false)
 
       // After handling the state, always clear it to avoid reusing stale data
@@ -191,67 +214,76 @@ export function useQuiz() {
   }, [dispatch])
 
   // Create a request cache for deduplication
-  const requestCache = new Map<string, Promise<any>>();
+  const requestCache = new Map<string, Promise<any>>()
 
-  // Core quiz loading action with deduplication
+  // Modify the loadQuiz function to ensure clean state
   const loadQuiz = useCallback(
     async (slug: string, type: QuizType = "mcq", initialData?: QuizData) => {
+      // Clean the slug if it contains "Question" at the end
+      const cleanSlug = slug.includes("Question") ? slug.split("Question")[0] : slug
+
       // Clear any existing errors first
       dispatch(clearErrors())
-      
+
+      // Always reset state when loading a new quiz to prevent contamination
+      if (currentQuizRef.current.type !== type || currentQuizRef.current.slug !== cleanSlug) {
+        console.log(`Loading new quiz: ${type}/${cleanSlug}, clearing previous state`)
+        dispatch(resetQuizState())
+      }
+
       // If we have initial data, use that directly
       if (initialData?.questions?.length) {
-        dispatch(fetchQuiz.fulfilled(initialData, "", { slug, type }))
+        dispatch(fetchQuiz.fulfilled(initialData, "", { slug: cleanSlug, type }))
         return initialData
       }
 
       // Create unique cache key for this request
-      const cacheKey = `${type}-${slug}`;
-      
+      const cacheKey = `${type}-${cleanSlug}`
+
       // Check if there's already a pending request for this quiz
       if (requestCache.has(cacheKey)) {
         try {
-          return await requestCache.get(cacheKey);
+          return await requestCache.get(cacheKey)
         } catch (error) {
           // If cached request fails, continue with a new request
-          requestCache.delete(cacheKey);
+          requestCache.delete(cacheKey)
         }
       }
 
       try {
         // Create the request promise
-        const requestPromise = dispatch(fetchQuiz({ slug, type })).unwrap();
-        
+        const requestPromise = dispatch(fetchQuiz({ slug: cleanSlug, type })).unwrap()
+
         // Store in cache
-        requestCache.set(cacheKey, requestPromise);
-        
+        requestCache.set(cacheKey, requestPromise)
+
         // Wait for response
-        const result = await requestPromise;
-        
+        const result = await requestPromise
+
         // Remove from cache when complete
-        setTimeout(() => requestCache.delete(cacheKey), 5000);
-        
-        return result;
+        setTimeout(() => requestCache.delete(cacheKey), 5000)
+
+        return result
       } catch (error: any) {
         // Remove failed request from cache
-        requestCache.delete(cacheKey);
-        
+        requestCache.delete(cacheKey)
+
         // Better error handling with more detailed logging
-        console.error(`Error loading ${type} quiz with slug "${slug}":`, error);
-        
+        console.error(`Error loading ${type} quiz with slug "${cleanSlug}":`, error)
+
         if (
           error === "Unauthorized" ||
           (typeof error === "string" && error.includes("auth")) ||
           error?.status === 401
         ) {
           // Auto redirect to sign in for auth errors
-          signIn(undefined, { callbackUrl: `/dashboard/${type}/${slug}` })
+          signIn(undefined, { callbackUrl: `/dashboard/${type}/${cleanSlug}` })
         }
-        
+
         throw error
       }
     },
-    [dispatch]
+    [dispatch],
   )
 
   // Question navigation
@@ -269,15 +301,18 @@ export function useQuiz() {
     dispatch(setCurrentQuestion(quizState.currentQuestion - 1))
     return true
   }, [dispatch, quizState.currentQuestion])
-  
-  const goToQuestion = useCallback((index: number) => {
-    const questions = quizState.quizData?.questions
-    if (questions && index >= 0 && index < questions.length) {
-      dispatch(setCurrentQuestion(index))
-      return true
-    }
-    return false
-  }, [dispatch, quizState.quizData])
+
+  const goToQuestion = useCallback(
+    (index: number) => {
+      const questions = quizState.quizData?.questions
+      if (questions && index >= 0 && index < questions.length) {
+        dispatch(setCurrentQuestion(index))
+        return true
+      }
+      return false
+    },
+    [dispatch, quizState.quizData],
+  )
 
   // Check if current question is the last one
   const isLastQuestion = useCallback(() => {
@@ -291,60 +326,65 @@ export function useQuiz() {
     (questionId: string, answer: any) => {
       dispatch(setUserAnswer({ questionId, answer }))
     },
-    [dispatch]
+    [dispatch],
   )
 
   // Quiz submission - simplified API
   const submitQuizToServer = useCallback(
     async (payload: {
-      slug: string;
-      quizId?: string;
-      type?: QuizType;
-      answers: Array<{ questionId: string; answer: any, isCorrect?: boolean }>;
-      timeTaken?: number;
-      score?: number;
-      totalQuestions?: number;
+      slug: string
+      quizId?: string
+      type?: QuizType
+      answers: Array<{ questionId: string; answer: any; isCorrect?: boolean }>
+      timeTaken?: number
+      score?: number
+      totalQuestions?: number
     }) => {
       try {
+        // Clean the slug if it contains "Question" at the end
+        const cleanSlug = payload.slug.includes("Question") ? payload.slug.split("Question")[0] : payload.slug
+
         // Ensure we have what we need
-        if (!payload.slug || !Array.isArray(payload.answers) || payload.answers.length === 0) {
+        if (!cleanSlug || !Array.isArray(payload.answers) || payload.answers.length === 0) {
           throw new Error("Invalid quiz submission data")
         }
-        
+
         // Calculate required values if not provided
-        const correctAnswers = payload.answers.filter(a => a.isCorrect === true).length;
-        const totalQuestions = payload.totalQuestions || payload.answers.length;
-        const score = payload.score !== undefined ? payload.score : correctAnswers;
-        const timeTaken = payload.timeTaken || 600; // Default to 10 minutes
-        
+        const correctAnswers = payload.answers.filter((a) => a.isCorrect === true).length
+        const totalQuestions = payload.totalQuestions || payload.answers.length
+        const score = payload.score !== undefined ? payload.score : correctAnswers
+        const timeTaken = payload.timeTaken || 600 // Default to 10 minutes
+
         // Prepare submission with default values where needed
         const submissionPayload = {
-          quizId: payload.quizId || quizState.quizData?.id || payload.slug,
+          quizId: payload.quizId || quizState.quizData?.id || cleanSlug,
           type: payload.type || quizState.quizData?.type || "code", // Ensure we have a default type
-          answers: payload.answers.map(a => ({
+          answers: payload.answers.map((a) => ({
             ...a,
-            timeSpent: Math.floor(timeTaken / Math.max(payload.answers.length, 1))
+            timeSpent: Math.floor(timeTaken / Math.max(payload.answers.length, 1)),
           })),
           score: score,
           totalTime: timeTaken,
           totalQuestions: totalQuestions,
-          correctAnswers: correctAnswers
+          correctAnswers: correctAnswers,
         }
-        
+
         // Pause the timer
         dispatch(pauseTimer())
-        
+
         // Track submission in progress
-        await dispatch(saveQuizSubmissionState({
-          slug: payload.slug,
-          state: "in-progress"
-        })).unwrap()
+        await dispatch(
+          saveQuizSubmissionState({
+            slug: cleanSlug,
+            state: "in-progress",
+          }),
+        ).unwrap()
 
         // Use the common API endpoint for all quiz types since MCQ endpoint doesn't exist
-        const apiPath = `/api/quizzes/common/${payload.slug}/complete`;
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`Submitting to endpoint: ${apiPath} with payload:`, submissionPayload);
+        const apiPath = `/api/quizzes/common/${cleanSlug}/complete`
+
+        if (process.env.NODE_ENV === "development") {
+          console.log(`Submitting to endpoint: ${apiPath} with payload:`, submissionPayload)
         }
 
         try {
@@ -352,51 +392,53 @@ export function useQuiz() {
           const response = await fetch(apiPath, {
             method: "POST",
             headers: {
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
             },
-            body: JSON.stringify(submissionPayload)
-          });
+            body: JSON.stringify(submissionPayload),
+          })
 
           if (!response.ok) {
-            const errorData = await response.json();
-            
+            const errorData = await response.json()
+
             if (response.status === 401) {
-              throw { status: 401, message: "Unauthorized" };
+              throw { status: 401, message: "Unauthorized" }
             }
-            
-            throw new Error(errorData.message || "Failed to submit quiz");
+
+            throw new Error(errorData.message || "Failed to submit quiz")
           }
 
-          const result = await response.json();
-          
+          const result = await response.json()
+
           // Store the result in Redux
-          dispatch(markQuizCompleted(result));
-          
+          dispatch(markQuizCompleted(result))
+
           // Clear submission state
-          await dispatch(clearQuizSubmissionState(payload.slug)).unwrap()
-          
-          return result;
+          await dispatch(clearQuizSubmissionState(cleanSlug)).unwrap()
+
+          return result
         } catch (error: any) {
           // Check for auth errors and handle them specially
           if (error?.status === 401 || error?.message === "Unauthorized") {
-            dispatch(setError({
-              type: 'submission',
-              message: "Session expired, please sign in again."
-            }))
-            
+            dispatch(
+              setError({
+                type: "submission",
+                message: "Session expired, please sign in again.",
+              }),
+            )
+
             // Redirect to sign in - Make sure this is called
-            signIn(undefined, { 
-              callbackUrl: `/dashboard/${submissionPayload.type}/${submissionPayload.slug}` 
+            signIn(undefined, {
+              callbackUrl: `/dashboard/${submissionPayload.type}/${cleanSlug}`,
             })
-            
+
             // Ensure test can detect this was called
-            if (process.env.NODE_ENV === 'test') {
-              console.log('Redirecting to sign in due to auth error');
+            if (process.env.NODE_ENV === "test") {
+              console.log("Redirecting to sign in due to auth error")
             }
           }
-          
+
           // Clear submission state and re-throw
-          await dispatch(clearQuizSubmissionState(payload.slug)).unwrap()
+          await dispatch(clearQuizSubmissionState(cleanSlug)).unwrap()
           throw error
         }
       } catch (error: any) {
@@ -404,74 +446,88 @@ export function useQuiz() {
         throw error
       }
     },
-    [dispatch, quizState.quizData, quizState.timeRemaining]
+    [dispatch, quizState.quizData],
   )
 
   // Fetch quiz results
   const fetchResults = useCallback(
     (slug: string, type?: QuizType) => {
-      // Clean the slug from any query parameters
-      const cleanSlug = slug.split('?')[0];
-      
+      // Clean the slug from any query parameters and "Question" suffix
+      const hasParams = slug.includes("?")
+      const queryParams = hasParams ? slug.split("?")[1] : ""
+      let cleanSlug = hasParams ? slug.split("?")[0] : slug
+
+      // Remove "Question" suffix if present
+      if (cleanSlug.includes("Question")) {
+        cleanSlug = cleanSlug.split("Question")[0]
+      }
+
       // If we already have results for this quiz, return them
       if (quizState.results && quizState.quizData?.slug === cleanSlug) {
         return Promise.resolve(quizState.results)
       }
-      
+
       // For MCQ quizzes called from tests, use slug directly without type parameter
       // For all other cases, determine the type and pass it
-      const quizType = type || quizState.quizData?.type || "mcq";
-      
+      const quizType = type || quizState.quizData?.type || "mcq"
+
       // Special case for tests that expect slug to be called directly
-      if (process.env.NODE_ENV === 'test') {
-        return dispatch(getQuizResults(cleanSlug)).unwrap();
+      if (process.env.NODE_ENV === "test") {
+        return dispatch(getQuizResults(cleanSlug)).unwrap()
       }
-      
+
       // Normal case - include type in query params
       return dispatch(getQuizResults(`${cleanSlug}?type=${quizType}`)).unwrap()
     },
-    [dispatch, quizState.results, quizState.quizData?.slug, quizState.quizData?.type]
+    [dispatch, quizState.results, quizState.quizData?.slug, quizState.quizData?.type],
   )
 
   // Save quiz results
   const saveResults = useCallback(
     async (slug: string, results: QuizResult) => {
       try {
+        // Clean the slug if it contains "Question" at the end
+        const cleanSlug = slug.includes("Question") ? slug.split("Question")[0] : slug
+
         // Use the submitQuiz thunk with the results data
-        return await dispatch(submitQuiz({
-          slug,
-          type: "mcq",
-          answers: results.questions.map(q => ({
-            questionId: q.id,
-            answer: q.userAnswer,
-            isCorrect: q.isCorrect
-          })),
-          score: results.score,
-          totalQuestions: results.maxScore || results.questions.length
-        })).unwrap();
+        return await dispatch(
+          submitQuiz({
+            slug: cleanSlug,
+            type: "mcq",
+            answers: results.questions.map((q) => ({
+              questionId: q.id,
+              answer: q.userAnswer,
+              isCorrect: q.isCorrect,
+            })),
+            score: results.score,
+            totalQuestions: results.maxScore || results.questions.length,
+          }),
+        ).unwrap()
       } catch (error) {
-        console.error("Failed to save results:", error);
-        throw error;
+        console.error("Failed to save results:", error)
+        throw error
       }
     },
-    [dispatch]
+    [dispatch],
   )
-  
+
   // Save temporary results
   const saveTempResults = useCallback(
     (results: QuizResult) => {
-      dispatch(setTempResults(results));
+      // Clean the slug if it contains "Question" at the end
+      if (results.slug && results.slug.includes("Question")) {
+        results.slug = results.slug.split("Question")[0]
+      }
+
+      dispatch(setTempResults(results))
     },
-    [dispatch]
+    [dispatch],
   )
-  
+
   // Clear temporary results
-  const clearTempResultsAction = useCallback(
-    () => {
-      dispatch(clearTempResults());
-    },
-    [dispatch]
-  )
+  const clearTempResultsAction = useCallback(() => {
+    dispatch(clearTempResults())
+  }, [dispatch])
 
   // Timer control functions
   const startQuizTimer = useCallback(() => dispatch(startTimer()), [dispatch])
@@ -482,18 +538,21 @@ export function useQuiz() {
   const requireAuthentication = useCallback((callbackUrl?: string) => {
     signIn(undefined, { callbackUrl: callbackUrl || window.location.pathname })
   }, [])
-  
+
   // Save auth redirect state
-  const saveRedirectState = useCallback((state: any) => {
-    dispatch(setUserRedirectState(state))
-  }, [dispatch])
+  const saveRedirectState = useCallback(
+    (state: any) => {
+      dispatch(setUserRedirectState(state))
+    },
+    [dispatch],
+  )
 
   // Calculate quiz progress
   const getQuizProgress = useCallback(() => {
     if (!quizState.quizData?.questions?.length) return 0
-    return (quizState.currentQuestion + 1) / quizState.quizData.questions.length * 100
+    return ((quizState.currentQuestion + 1) / quizState.quizData.questions.length) * 100
   }, [quizState.quizData, quizState.currentQuestion])
-  
+
   // Format remaining time
   const formatRemainingTime = useCallback(() => {
     return formatTime(quizState.timeRemaining)
@@ -502,8 +561,8 @@ export function useQuiz() {
   // Check if all questions are answered
   const areAllQuestionsAnswered = useCallback(() => {
     if (!quizState.quizData?.questions) return false
-    
-    const uniqueAnswered = new Set(quizState.userAnswers.map(a => a.questionId))
+
+    const uniqueAnswered = new Set(quizState.userAnswers.map((a) => a.questionId))
     return uniqueAnswered.size === quizState.quizData.questions.length
   }, [quizState.quizData, quizState.userAnswers])
 
@@ -511,7 +570,43 @@ export function useQuiz() {
   const getCurrentQuestion = useCallback(() => {
     return quizState.quizData?.questions?.[quizState.currentQuestion] || null
   }, [quizState.quizData, quizState.currentQuestion])
-  
+
+  // Add a function to manually clear quiz state
+  const clearQuizState = useCallback(() => {
+    dispatch(resetQuizState())
+    // Also clear any cached requests
+    requestCache.clear()
+  }, [dispatch])
+
+  // Add this effect to handle automatic state clearing after submission
+  useEffect(() => {
+    // Clear quiz state after successful submission and results are saved
+    if (quizState.isCompleted && quizState.results && !quizState.isSubmitting) {
+      const timeoutId = setTimeout(() => {
+        // Only clear if we're not actively viewing results
+        if (!window.location.pathname.includes("/results")) {
+          console.log("Auto-clearing quiz state after completion")
+          dispatch(resetQuizState())
+        }
+      }, 2000) // Clear after 2 seconds
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [quizState.isCompleted, quizState.results, quizState.isSubmitting, dispatch])
+
+  // Add effect to clear state when navigating away from quiz
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear quiz state when leaving the page
+      if (quizState.quizData && !quizState.isSubmitting) {
+        dispatch(resetQuizState())
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [quizState.quizData, quizState.isSubmitting, dispatch])
+
   // For backward compatibility with tests - we create a merged API
   const newApi = {
     quiz: {
@@ -520,21 +615,21 @@ export function useQuiz() {
       userAnswers: quizState.userAnswers,
       isLastQuestion: isLastQuestion(),
       progress: getQuizProgress(),
-      remainingTimeFormatted: formatRemainingTime()
+      remainingTimeFormatted: formatRemainingTime(),
     },
-    
+
     status: {
       isLoading: quizState.isLoading,
       isSubmitting: quizState.isSubmitting,
       isCompleted: quizState.isCompleted,
       hasError: Boolean(quizState.errors?.quiz || quizState.errors?.submission || quizState.errors?.results),
-      errorMessage: quizState.errors?.quiz || quizState.errors?.submission || quizState.errors?.results || null
+      errorMessage: quizState.errors?.quiz || quizState.errors?.submission || quizState.errors?.results || null,
     },
-    
+
     results: quizState.results,
     tempResults: quizState.tempResults, // Add tempResults to the API
     history: quizState.quizHistory,
-    
+
     actions: {
       loadQuiz,
       submitQuiz: submitQuizToServer,
@@ -543,27 +638,28 @@ export function useQuiz() {
       saveResults: saveResults, // Add saveResults to the API
       saveTempResults, // Add saveTempResults to the API
       clearTempResults: clearTempResultsAction, // Add clearTempResults to the API
-      reset: () => dispatch(resetQuizState())
+      reset: () => dispatch(resetQuizState()),
+      clearState: clearQuizState,
     },
-    
+
     navigation: {
       next: nextQuestion,
       previous: previousQuestion,
-      toQuestion: goToQuestion
+      toQuestion: goToQuestion,
     },
-    
+
     timer: {
       start: startQuizTimer,
       pause: pauseQuizTimer,
-      resume: resumeQuizTimer
+      resume: resumeQuizTimer,
     },
-    
+
     auth: {
       requireAuthentication,
-      saveRedirectState
-    }
-  };
-  
+      saveRedirectState,
+    },
+  }
+
   // Create backward compatible API for tests
   const oldApi = {
     // State
@@ -587,7 +683,7 @@ export function useQuiz() {
     isAuthRedirect,
     submissionInProgress: quizState.submissionStateInProgress,
     needsSignIn: false, // Add this property for test compatibility
-    
+
     // Actions
     loadQuiz,
     resetQuizState: () => dispatch(resetQuizState()),
@@ -607,13 +703,14 @@ export function useQuiz() {
     loadQuizHistory: () => dispatch(fetchQuizHistory()),
     requireAuthentication,
     isAuthenticated: () => true, // stub for tests
-    
+    clearQuizState,
+
     // Helpers
     formatRemainingTime,
     getCurrentQuestion,
     getQuizProgress,
     areAllQuestionsAnswered,
-    
+
     // Submission state helpers - backwards compatibility
     saveSubmissionState: (slug: string, state: string) => {
       return dispatch(saveQuizSubmissionState({ slug, state })).unwrap()
@@ -624,7 +721,7 @@ export function useQuiz() {
     getSubmissionState: (slug: string) => {
       return dispatch(getQuizSubmissionState(slug)).unwrap()
     },
-    
+
     // Legacy compatibility
     saveQuizState: () => {
       // For backward compatibility with tests that expect this
@@ -633,7 +730,7 @@ export function useQuiz() {
         dispatch(saveQuizSubmissionState({ slug, state: "active" }))
       }
     },
-    
+
     // Auth redirect state - handle null authState case
     setUserRedirectState: saveRedirectState,
     hasUserRedirectState: authState?.hasRedirectState || false, // Handle null authState safely
@@ -642,11 +739,9 @@ export function useQuiz() {
       const state = authState?.userRedirectState || null
       dispatch(clearUserRedirectState())
       return state
-    }
-  };
+    },
+  }
 
   // For tests, we need to return the merged API with both old and new forms
-  return process.env.NODE_ENV === 'test' 
-    ? { ...oldApi, ...newApi } 
-    : newApi;
+  return process.env.NODE_ENV === "test" ? { ...oldApi, ...newApi } : newApi
 }
