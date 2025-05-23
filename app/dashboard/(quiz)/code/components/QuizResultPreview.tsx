@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Check, X, Send, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
-import { UserAnswer } from "@/app/types/quiz-types"
+import type { QuizResult } from "@/app/types/quiz-results"
+import type { UserAnswer } from "@/app/types/quiz-types"
 
 interface QuestionResult {
   id: string
@@ -17,15 +18,8 @@ interface QuestionResult {
 }
 
 interface QuizResultPreviewProps {
-  result: {
-    title: string
-    score: number
-    maxScore: number
-    percentage: number
-    questions: QuestionResult[]
-    slug: string
-  }
-  onSubmit: (answers: UserAnswer[], elapsedTime: number) => void
+  result: QuizResult
+  onSubmit: () => void
   onCancel: () => void
   userAnswers: UserAnswer[]
 }

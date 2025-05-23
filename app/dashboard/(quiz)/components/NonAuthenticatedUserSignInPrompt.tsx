@@ -7,19 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks"
 import { signIn } from "next-auth/react"
-
-interface ScorePreview {
-  score: number
-  maxScore: number
-  percentage: number
-}
+import type { QuizType } from "@/app/types/quiz-types"
+import type { BaseQuizPreview } from "@/app/types/quiz-base"
 
 interface NonAuthenticatedUserSignInPromptProps {
-  quizType: "mcq" | "blanks" | "openended" | "code"
-  onSignIn?: () => void
+  quizType: QuizType
+  onSignIn: () => void
   showSaveMessage?: boolean
   message?: string
-  previewData?: ScorePreview
+  previewData: BaseQuizPreview
   returnPath?: string
 }
 

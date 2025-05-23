@@ -1,5 +1,5 @@
 import type React from "react"
-import { QuizType } from "./quiz-types"
+import type { QuizType, QuizData, CodeQuizQuestion } from './quiz-types'
 
 // API response structure from code-quiz endpoint
 export interface CodeQuizApiResponse {
@@ -23,21 +23,8 @@ export interface CodeQuizQuestion {
 }
 
 // Structure for code quiz data
-export interface CodeQuizData {
-  id: string
-  title: string
-  description?: string
-  slug: string
-  type: 'code'
-  questions: CodeQuizQuestion[]
-  timeLimit?: number | null
-  isPublic?: boolean
-  isFavorite?: boolean
-  userId?: string
-  ownerId?: string
-  difficulty?: string
-  createdAt?: string
-  updatedAt?: string
+export interface CodeQuizData extends QuizData<CodeQuizQuestion> {
+  type: 'code';
 }
 
 // Define CodeQuizSubmission interface

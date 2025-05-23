@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth, AuthState } from "@/hooks/useAuth"
 import { useQuiz } from "@/hooks/useQuizState"
 import { toast } from "sonner"
 import { signIn } from "next-auth/react"
@@ -14,11 +14,23 @@ import QuizResultPreview from "./QuizResultPreview"
 import { createResultsPreview } from "./QuizHelpers"
 import type { CodeQuizWrapperProps } from "@/app/types/code-quiz-types"
 import { saveAuthRedirectState } from "@/store/slices/quizSlice"
+import { QuizResultFactory } from "@/app/types/quiz-results"
+
+export interface CodeQuizWrapperProps {
+  slug: string
+  quizId: string
+  userId?: string | null
+  quizData: {
+    questions: CodeQuizQuestion[]
+    title: string
+    // ...other properties...
+  }
+}
 
 export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: CodeQuizWrapperProps) {
   const router = useRouter()
-  const { status, fromAuth } = useAuth()
-  const quiz = useQuiz()
+  const { status, fromAuth }: AuthState = useAuth()
+  const quiz = useQuiz() // Specify the question type
   const currentQuestion = quiz.quiz.currentQuestionData
 
   // Handle initial quiz loading with auth state
@@ -73,19 +85,17 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
       if (last) {
         const preview = createResultsPreview({
           questions: quiz.quiz.data?.questions || [],
-          answers: [...quiz.quiz.userAnswers, { questionId: currentQuestion.id, answer, isCorrect }],
+          answers: [...quiz.quiz.userAnswers, { 
+            questionId: currentQuestion.id, 
+            answer, 
+            isCorrect 
+          }],
           quizTitle: quiz.quiz.data?.title || "",
           slug,
+          type: "code" // Explicitly pass type
         })
 
-        // Use the actions API to set temp results
-        quiz.actions.setTempResults({
-          ...preview,
-          slug,
-          quizId,
-          type: "code",
-          answers: quiz.quiz.userAnswers,
-        })
+        quiz.actions.setTempResults(preview)
       } else {
         quiz.navigation.next()
       }
@@ -147,25 +157,30 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
   }
 
   if (!userId && quiz.tempResults) {
+    const previewData: BaseQuizPreview = {
+      title: quiz.tempResults.title || quizData.title,
+      score: quiz.tempResults.score,
+      maxScore: quiz.tempResults.maxScore,
+      percentage: quiz.tempResults.percentage || 0,
+      slug
+    }
+
     return (
       <NonAuthenticatedUserSignInPrompt
         quizType="code"
         onSignIn={handleShowSignIn}
         showSaveMessage
         message="Please sign in to submit your quiz"
-        previewData={quiz.tempResults}
+        previewData={previewData}
       />
     )
   }
 
-  if (quiz.status.isSubmitting) {
-    return <QuizSubmissionLoading quizType="code" />
-  }
-
   if (quiz.tempResults) {
+    const resultData = QuizResultFactory.createResult('code', quiz.tempResults)
     return (
       <QuizResultPreview
-        result={quiz.tempResults}
+        result={resultData.toFullResult()}
         onSubmit={handleSubmitQuiz}
         onCancel={() => quiz.actions.clearTempResults()}
         userAnswers={quiz.quiz.userAnswers}

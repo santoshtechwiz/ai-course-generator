@@ -11,22 +11,17 @@ export interface AuthRedirectInfo {
   path: string
 }
 
-export interface AuthHook {
-  userId: string | null
-  isAuthenticated: boolean
-  status: AuthStatus
-  fromAuth: boolean
-  signIn: (provider?: string, options?: any) => Promise<any>
-  signOut: () => Promise<any>
-  requireAuth: (callbackUrl?: string) => void
-  getAuthRedirectInfo: () => AuthRedirectInfo | null
-  clearAuthRedirectInfo?: () => void
+export interface AuthState {
+  status: 'loading' | 'authenticated' | 'unauthenticated'
+  fromAuth?: boolean
+  userId?: string | null
+  requireAuth: (redirectUrl?: string) => void
 }
 
 /**
  * Hook for managing authentication state and handling authentication flow
  */
-export function useAuth(): AuthHook {
+export function useAuth(): AuthState {
   const { data: session, status } = useSession()
   const dispatch = useAppDispatch()
   const authState = useAppSelector(state => state.auth)
@@ -87,7 +82,7 @@ export function useAuth(): AuthHook {
 }
 
 // Helper function for testing
-export function _createMockUseAuth(overrides: Partial<AuthHook> = {}): AuthHook {
+export function _createMockUseAuth(overrides: Partial<AuthState> = {}): AuthState {
   return {
     userId: 'test-user-id',
     isAuthenticated: true,

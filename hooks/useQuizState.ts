@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useMemo } from "react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { signIn } from "next-auth/react"
 import {
@@ -15,16 +15,17 @@ import {
   setTempResults,
   clearTempResults,
 } from "@/store/slices/quizSlice"
-import type { QuizData, QuizType, QuizResult } from "@/app/types/quiz-types"
+import type { QuizData, QuizType, QuizResult, QuizQuestion } from "@/app/types/quiz-types"
 import type { CodeQuizQuestion } from "@/app/types/code-quiz-types"
+import { CodeQuiz, MCQQuiz, BlanksQuiz } from '@/app/types/quiz-implementations';
 
-export function useQuiz() {
+export function useQuiz<T extends QuizQuestion = QuizQuestion>() {
   const dispatch = useAppDispatch()
   const quizState = useAppSelector((state) => state.quiz)
 
   // Core quiz loading
   const loadQuiz = useCallback(
-    async (slug: string, type: QuizType = "mcq", initialData?: QuizData) => {
+    async (slug: string, type: QuizType = "mcq", initialData?: QuizData<T>) => {
       const cleanSlug = slug.replace(/Question$/, "")
       dispatch(clearErrors())
 
@@ -46,14 +47,28 @@ export function useQuiz() {
     [dispatch],
   )
 
+  const quizInstance = useMemo(() => {
+    switch(quizState.currentQuizType) {
+      case 'code':
+        return new CodeQuiz();
+      case 'mcq':
+        return new MCQQuiz();
+      case 'blanks':
+        return new BlanksQuiz();
+      default:
+        return new CodeQuiz();
+    }
+  }, [quizState.currentQuizType]);
+
   return {
     quiz: {
-      data: quizState.quizData,
+      data: quizState.quizData as QuizData<T> | null,
       currentQuestion: quizState.currentQuestion,
       userAnswers: quizState.userAnswers,
       isLastQuestion: quizState.currentQuestion === (quizState.quizData?.questions.length || 0) - 1,
       progress: ((quizState.currentQuestion + 1) / (quizState.quizData?.questions.length || 1)) * 100,
       currentQuestionData: quizState.quizData?.questions?.[quizState.currentQuestion] || null,
+      instance: quizInstance,
     },
     status: {
       isLoading: quizState.isLoading,

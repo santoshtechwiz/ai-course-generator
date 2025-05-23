@@ -22,11 +22,13 @@ import {
   Terminal,
 } from "lucide-react"
 import { QuizSubmissionLoading } from "../../components"
-import { QuizResult } from "@/types/quiz"
+import type { QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
 import { toast } from "sonner"
 
 interface CodeQuizResultProps {
-  result: QuizResult
+  result: QuizResult & {
+    questions: QuizQuestionResult[]
+  }
 }
 
 export default function CodeQuizResult({ result }: CodeQuizResultProps) {
