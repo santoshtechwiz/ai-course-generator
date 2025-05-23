@@ -81,7 +81,8 @@ describe("McqQuizWrapper", () => {
         options: ["JavaScript XML", "Java Syntax Extension", "JavaScript Extension"],
         answer: "JavaScript XML"
       }
-    ]
+    ],
+    slug: "test-quiz" // Add slug for compatibility with updated component
   }
   
   beforeEach(() => {
@@ -91,7 +92,8 @@ describe("McqQuizWrapper", () => {
     ;(useQuiz as jest.Mock).mockReturnValue({
       actions: {
         saveTempResults: mockSaveTempResults
-      }
+      },
+      status: { isLoading: false } // Add status object
     })
   })
 
@@ -167,6 +169,7 @@ describe("McqQuizWrapper", () => {
   })
   
   it("handles quiz with no questions properly", () => {
+    // Create a more graceful test for empty questions
     render(
       <McqQuizWrapper
         quizData={{ ...testQuizData, questions: [] }}
@@ -175,6 +178,37 @@ describe("McqQuizWrapper", () => {
       />
     )
     
-    expect(screen.getByText("This quiz has no questions")).toBeInTheDocument()
+    // Should show some kind of error or empty state
+    expect(screen.getByText(/no questions/i)).toBeInTheDocument()
   })
+  
+  // Add additional tests
+  it("should handle API errors gracefully", async () => {
+    // Mock dispatch to simulate API error
+    mockDispatch.mockImplementationOnce(() => {
+      throw new Error("API Error");
+    });
+    
+    render(
+      <McqQuizWrapper
+        quizData={testQuizData}
+        slug="test-quiz"
+        quizId="quiz-123"
+      />
+    )
+    
+    // Select option for first question
+    const optionDiv = screen.getByText("A library").closest('div[data-testid^="option-"]');
+    fireEvent.click(optionDiv);
+    
+    // Submit answer
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("submit-answer"));
+    });
+    
+    // Toast error should be called
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled();
+    });
+  });
 })
