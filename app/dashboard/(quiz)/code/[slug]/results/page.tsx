@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
 import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import CodeQuizResult from "../../components/CodeQuizResult"
+import { QuizSubmissionLoading } from "../../../components"
 import type { QuizResult } from "@/app/types/quiz-types"
 
 interface ResultsPageProps {

@@ -21,7 +21,7 @@ import {
   Lightbulb,
   Terminal,
 } from "lucide-react"
-import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
+import { QuizSubmissionLoading } from "../../components"
 import { QuizResult } from "@/types/quiz"
 import { toast } from "sonner"
 
