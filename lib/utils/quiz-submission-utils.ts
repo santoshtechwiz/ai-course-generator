@@ -1,124 +1,101 @@
 import { QuizType } from "@/types/quiz"
 
-/**
- * Ensures that quiz IDs are properly formatted as numbers when needed
- */
 export function normalizeQuizId(id: string | number | undefined): number | string | undefined {
-  if (id === undefined) return undefined;
-  
-  if (typeof id === 'number') return id;
-  
-  if (typeof id === 'string') {
-    // If it's a numeric string, convert to number
-    if (/^\d+$/.test(id)) {
-      return parseInt(id, 10);
-    }
-    // Otherwise keep it as a string
-    return id;
-  }
-  
-  // Fallback
-  return id;
+  if (id === undefined) return undefined
+  if (typeof id === "number") return id
+  if (/^\d+$/.test(id)) return parseInt(id, 10)
+  return id
+}
+
+interface QuizMeta {
+  id: string | number
+  slug: string
+  type: QuizType
+}
+
+interface UserAnswer {
+  questionId: string
+  answer: string
+  isCorrect?: boolean
+  timeSpent?: number
 }
 
 /**
- * Prepares a standardized submission payload for any quiz type
+ * Prepares a standardized submission payload for any quiz type.
+ * Compatible with legacy test format that passes quiz and answers separately.
  */
-export function prepareSubmissionPayload({
-  answers = [],
-  quizId,
-  slug,
-  type,
-  timeTaken
-}: {
-  answers: any[],
-  quizId?: string | number,
-  slug: string,
-  type: QuizType,
+export function prepareSubmissionPayload(
+  quiz: QuizMeta,
+  userAnswers: UserAnswer[],
   timeTaken?: number
-}) {
-  // Use provided timeTaken or calculate from answers
-  const totalTime = timeTaken || answers.reduce((sum, a) => sum + (a.timeSpent || 0), 0)
+) {
+  const totalTime = timeTaken ?? userAnswers.reduce((sum, a) => sum + (a.timeSpent || 0), 0)
 
-  // Format answers consistently
-  const formattedAnswers = answers.map(a => {
-    const base = {
-      questionId: String(a.questionId || ""),
-      answer: a.answer || a.selectedOption || "",
-      timeSpent: a.timeSpent || Math.round(totalTime / answers.length),
-      isCorrect: a.isCorrect === undefined ? false : Boolean(a.isCorrect)
-    }
-    // Remove undefined/null values
-    return Object.fromEntries(
-      Object.entries(base).filter(([_, v]) => v !== undefined && v !== null)
-    )
-  })
+  const formattedAnswers = userAnswers.map((a) => ({
+    questionId: String(a.questionId ?? ""),
+    answer: a.answer ?? "",
+    timeSpent: a.timeSpent ?? Math.floor(totalTime / userAnswers.length),
+    isCorrect: a.isCorrect ?? false,
+  }))
 
-  // Calculate score and correctAnswers
-  const correctCount = formattedAnswers.filter(a => a.isCorrect === true).length
+  const correctCount = formattedAnswers.filter((a) => a.isCorrect).length
 
   return {
-    quizId: quizId ? String(quizId) : undefined,
-    slug,
-    type,
+    quizId: normalizeQuizId(quiz.id),
+    slug: quiz.slug,
+    type: quiz.type,
     answers: formattedAnswers,
     score: correctCount,
-    totalQuestions: answers.length,
-    totalTime: totalTime || 600, // Default to 600 if no time provided
-    correctAnswers: correctCount
+    totalQuestions: formattedAnswers.length,
+    totalTime: totalTime || 600,
+    correctAnswers: correctCount,
   }
 }
 
-/**
- * Validates that a quiz ID is properly formatted
- */
-export function isValidQuizId(id: any): boolean {
-  if (id === undefined || id === null) return false;
-  
-  if (typeof id === 'number') return true;
-  
-  if (typeof id === 'string') {
-    return /^\d+$/.test(id);
-  }
-  
-  return false;
-}
-
-/**
- * Validates the quiz submission payload
- */
 export function validateQuizSubmission(payload: any) {
   if (!payload) {
-    return { 
+    return {
       isValid: false,
       errors: ["Missing required fields"],
-      error: "Missing required fields: quizId, slug, type, answers"
+      error: "Missing required fields",
     }
   }
 
+  const requiredFields = [
+    "slug",
+    "type",
+    "answers",
+    "score",
+    "totalTime",
+    "totalQuestions",
+    "correctAnswers",
+  ]
   const errors: string[] = []
-  const requiredFields = ["slug", "type"]
-  const missingFields = requiredFields.filter(field => !payload[field])
 
-  if (missingFields.length > 0) {
-    errors.push("Missing required fields")
+  for (const field of requiredFields) {
+    if (payload[field] === undefined || payload[field] === null) {
+      errors.push(`Missing required field: ${field}`)
+    }
   }
 
   if (!Array.isArray(payload.answers)) {
-    errors.push("Invalid answers format")
+    errors.push("Answers must be an array")
+  } else if (payload.answers.length === 0) {
+    errors.push("No answers provided")
+  } else {
+    for (const ans of payload.answers) {
+      if (!ans.questionId || ans.answer == null || ans.timeSpent == null) {
+        errors.push("Invalid answer format")
+        break
+      }
+    }
   }
 
-  // For valid payloads, return just isValid: true
-  if (errors.length === 0) {
-    return { isValid: true }
-  }
-
-  // For invalid payloads, include error details
-  return {
-    isValid: false,
-    errors,
-    error: missingFields.length > 0 
-      ? `Missing required fields: ${missingFields.join(", ")}`
-      : errors[0]
-  }
+  return errors.length === 0
+    ? { isValid: true }
+    : {
+        isValid: false,
+        errors,
+        error: errors[0],
+      }
 }
