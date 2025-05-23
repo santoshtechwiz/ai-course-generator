@@ -1,10 +1,12 @@
-import type { QuizResult, QuizQuestion, UserAnswer } from "@/app/types/quiz-types"
+import type { QuizType, UserAnswer, QuizQuestionResult } from "@/app/types/quiz-types"
+import type { BaseQuizResultData } from "@/app/types/quiz-base"
 
-interface ResultsPreviewParams {
-  questions: QuizQuestion[]
+interface ResultsPreviewParams<T = any> {
+  questions: T[]
   answers: UserAnswer[]
   quizTitle: string
   slug: string
+  type: QuizType
 }
 
 export function createResultsPreview({
@@ -12,24 +14,33 @@ export function createResultsPreview({
   answers,
   quizTitle,
   slug,
-}: ResultsPreviewParams): QuizResult {
-  const correctAnswers = answers.filter(a => a.isCorrect).length
-  
+  type,
+}: ResultsPreviewParams): BaseQuizResultData {
+  if (!Array.isArray(questions) || !Array.isArray(answers)) {
+    throw new Error("Invalid questions or answers array")
+  }
+
+  const processedQuestions: QuizQuestionResult[] = questions.map((q) => ({
+    id: q.id,
+    question: q.question,
+    userAnswer: answers.find((a) => a.questionId === q.id)?.answer || "",
+    correctAnswer: "correctAnswer" in q ? q.correctAnswer : 
+                  "answer" in q ? q.answer : "",
+    isCorrect: Boolean(answers.find((a) => a.questionId === q.id)?.isCorrect),
+    codeSnippet: "codeSnippet" in q ? q.codeSnippet : undefined,
+    type
+  }))
+
   return {
     quizId: slug,
     slug,
     title: quizTitle,
-    score: correctAnswers,
+    score: answers.filter((a) => a.isCorrect).length,
     maxScore: questions.length,
-    percentage: (correctAnswers / questions.length) * 100,
-    questions: questions.map(q => ({
-      id: q.id,
-      question: q.question,
-      userAnswer: answers.find(a => a.questionId === q.id)?.answer || '',
-      correctAnswer: q.correctAnswer || q.answer || '',
-      isCorrect: answers.find(a => a.questionId === q.id)?.isCorrect || false,
-      codeSnippet: q.codeSnippet,
-    })),
-    completedAt: new Date().toISOString()
+    percentage: (answers.filter((a) => a.isCorrect).length / questions.length) * 100,
+    questions: processedQuestions,
+    answers,
+    completedAt: new Date().toISOString(),
+    type
   }
 }

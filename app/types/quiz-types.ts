@@ -7,22 +7,23 @@ export interface BaseQuestion {
   id: string;
   question: string;
   type: QuizType;
+  answer?: string;
+  correctAnswer?: string;
 }
 
 // Specific question types
 export interface MCQQuestion extends BaseQuestion {
   type: 'mcq';
   options: string[];
-  correctAnswer?: string;
-  answer?: string;
+  correctAnswer: string; // Required for MCQ
 }
 
 export interface CodeQuizQuestion extends BaseQuestion {
   type: 'code';
   codeSnippet?: string;
   options?: string[];
-  answer?: string;
-  correctAnswer?: string;
+  answer: string; // Make this required
+  correctAnswer: string; // Make this required
   language?: string;
 }
 
@@ -30,7 +31,8 @@ export interface BlankQuestion extends BaseQuestion {
   type: 'blanks';
   text: string;
   blanks: Record<string, string>;
-  correctAnswers?: Record<string, string>;
+  answer: string; // Required for blanks
+  correctAnswer: string; // Required for blanks
 }
 
 export interface OpenEndedQuestion extends BaseQuestion {
@@ -68,12 +70,12 @@ export interface UserAnswer {
 }
 
 // Quiz data structure
-export interface QuizData {
+export interface QuizData<T extends QuizQuestion = QuizQuestion> {
   id: string;
   title: string;
   slug: string;
   type: QuizType;
-  questions: QuizQuestion[];
+  questions: T[];
   isPublic?: boolean;
   isFavorite?: boolean;
   userId?: string;
@@ -82,29 +84,31 @@ export interface QuizData {
   description?: string;
 }
 
-// Quiz result
+// Make QuizQuestion more generic
+export interface QuizQuestionResult {
+  id: string
+  question: string
+  userAnswer: string
+  correctAnswer: string
+  isCorrect: boolean
+  codeSnippet?: string
+  type: QuizType
+}
+
 /**
  * Interface for quiz result details
  */
 export interface QuizResult {
   quizId: string;
   slug: string;
-  title?: string;
+  title: string; // Make required
   score: number;
   maxScore: number;
-  questions: QuizQuestion[];
-  completedAt?: string;
-  percentage?: number;
-  answers?: any[]; // Add if needed by existing code
-}
-
-export interface QuizQuestion {
-  id: string;
-  question: string;
-  userAnswer?: string;
-  correctAnswer?: string;
-  isCorrect?: boolean;
-  codeSnippet?: string;
+  questions: QuizQuestionResult[];
+  completedAt: string; // Make required
+  percentage: number; // Make required
+  answers: UserAnswer[];
+  type: QuizType; // Make required
 }
 
 // Quiz history item
