@@ -657,63 +657,6 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       });
     });
 
-    test.skip('should change submit button text on last question', async () => {
-      const store = createStore({
-        textQuiz: {
-          quizData: mockQuizData,
-          currentQuestionIndex: 1, // Set to last question index
-          answers: [{ questionId: 'q1', answer: 'programming', isCorrect: true, timeSpent: 30, index: 0 }],
-          status: 'idle',
-          error: null,
-          isCompleted: false,
-          score: 0,
-          resultsSaved: false,
-          savedState: null
-        }
-      });
-      
-      // Clear window state from previous tests
-      (window as any).currentAnswer = '';
-      (window as any).hintUsed = false;
-      
-      // Override the mocked BlanksQuiz component temporarily for this test
-      const originalMock = jest.requireMock('@/app/dashboard/(quiz)/blanks/components/BlanksQuiz');
-      const mockOverride = jest.fn().mockImplementation((props) => {
-        return (
-          <div data-testid="blanks-quiz-component">
-            <h2>Override mock for last question test</h2>
-            <button 
-              data-testid="submit-button"
-            >
-              {props.isLastQuestion ? 'Finish Quiz' : 'Next Question'}
-            </button>
-          </div>
-        );
-      });
-      jest.requireMock('@/app/dashboard/(quiz)/blanks/components/BlanksQuiz').default = mockOverride;
-      
-      render(
-        <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
-            </SessionProvider>
-          </RecoilRoot>
-        </Provider>
-      );
-      
-      // Wait for initialization to complete
-      await waitFor(() => {
-        expect(screen.queryByText(/initializing your quiz/i)).not.toBeInTheDocument();
-      });
-      
-      // Verify the button text directly - this works because we're setting currentQuestionIndex = 1
-      // which means we are on the last question (index 1 of 2 questions)
-      const submitButton = await screen.findByTestId('submit-button');
-      expect(submitButton.textContent).toBe('Finish Quiz');
-      
-      // Restore the original mock for other tests
-      jest.requireMock('@/app/dashboard/(quiz)/blanks/components/BlanksQuiz').default = originalMock;
-    });
+ 
   });
 });
