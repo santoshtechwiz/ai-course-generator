@@ -12,14 +12,14 @@ export interface CodeQuizApiResponse {
 
 // Structure for a code quiz question
 export interface CodeQuizQuestion {
-  id: string;
-  question: string;
-  codeSnippet?: string;
-  options?: string[];
-  answer?: string;
-  correctAnswer?: string;
-  language?: string;
-  type: 'code';
+  id: string
+  question: string
+  codeSnippet?: string
+  options?: string[]
+  answer?: string
+  correctAnswer?: string
+  language?: string
+  type: 'code'
 }
 
 // Structure for code quiz data
@@ -28,34 +28,34 @@ export interface CodeQuizData {
   title: string
   description?: string
   slug: string
-  type: 'code';
-  questions: CodeQuizQuestion[];
-  timeLimit?: number | null;
-  isPublic?: boolean;
-  isFavorite?: boolean;
-  userId?: string;
-  ownerId?: string;
+  type: 'code'
+  questions: CodeQuizQuestion[]
+  timeLimit?: number | null
+  isPublic?: boolean
+  isFavorite?: boolean
+  userId?: string
+  ownerId?: string
   difficulty?: string
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string
+  updatedAt?: string
 }
 
 // Define CodeQuizSubmission interface
 export interface CodeQuizSubmission {
-  id?: string;
-  quizId: string;
-  userId?: string;
-  score: number;
-  maxScore: number;
-  percentage: number;
+  id?: string
+  quizId: string
+  userId?: string
+  score: number
+  maxScore: number
+  percentage: number
   answers: Array<{
-    questionId: string;
-    answer: string;
-    isCorrect?: boolean;
-  }>;
-  completed: boolean;
-  completedAt?: string;
-  timeTaken?: number;
+    questionId: string
+    answer: string
+    isCorrect?: boolean
+  }>
+  completed: boolean
+  completedAt?: string
+  timeTaken?: number
 }
 
 // Props for the CodeQuizWrapper component
@@ -94,4 +94,44 @@ export interface CodeQuizResultProps {
   score: number
   maxScore: number
   onRetry?: () => void
+}
+
+// Add the interface for CodeQuizOptions
+export interface CodeQuizOptionsProps {
+  options: string[]
+  selectedOption: string | null
+  onSelect: (option: string) => void
+  disabled?: boolean
+  renderOptionContent?: (option: string) => React.ReactNode
+}
+
+// Code quiz state management interfaces
+export interface CodeQuizState {
+  quiz: {
+    data: QuizData | null
+    currentQuestion: number
+    userAnswers: UserAnswer[]
+    isLastQuestion: boolean
+    progress: number
+    currentQuestionData: CodeQuizQuestion | null
+  }
+  status: {
+    isLoading: boolean
+    isSubmitting: boolean
+    isCompleted: boolean
+    hasError: boolean
+    errorMessage: string | null
+  }
+  auth: {
+    redirectState: CodeQuizRedirectState | null
+  }
+}
+
+export interface CodeQuizRedirectState {
+  slug: string
+  quizId: string
+  type: QuizType
+  userAnswers: UserAnswer[]
+  currentQuestion: number
+  tempResults: any | null
 }

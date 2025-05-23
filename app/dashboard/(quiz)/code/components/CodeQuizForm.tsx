@@ -43,6 +43,13 @@ interface CodeQuizFormProps {
   params?: QueryParams
 }
 
+// Add toast type definition
+interface ToastOptions {
+  title?: string
+  description: string
+  variant?: "default" | "destructive"
+}
+
 const PROGRAMMING_LANGUAGES = [
   "JavaScript",
   "TypeScript",
@@ -74,7 +81,8 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session, status } = useSession()
 
-  const { status: subscriptionStatus } = useSubscription()
+  // Type the status
+  const { data: subscriptionData, status: subStatus } = useSubscription()
 
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
 
@@ -126,16 +134,17 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
 
   const { mutateAsync: createCodeQuizMutation } = useMutation({
     mutationFn: async (data: CodeQuizFormData) => {
-      data.userType = subscriptionStatus?.subscriptionPlan
+      data.userType = subscriptionData?.subscriptionPlan
       const response = await axios.post("/api/code-quiz", data)
       return response.data
     },
     onError: (error) => {
       console.error("Error creating code quiz:", error)
       toast({
+        title: "Error",
         description: "Failed to create code quiz. Please try again.",
         variant: "destructive",
-      })
+      } as ToastOptions)
     },
   })
 
@@ -172,7 +181,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         language: formValues.language,
-        userType: subscriptionStatus?.subscriptionPlan,
+        userType: subscriptionData?.subscriptionPlan,
       })
       const userQuizId = response?.userQuizId
 
@@ -189,7 +198,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
     } finally {
       setIsLoading(false)
     }
-  }, [createCodeQuizMutation, watch, toast, router, subscriptionStatus?.subscriptionPlan])
+  }, [createCodeQuizMutation, watch, toast, router, subscriptionData?.subscriptionPlan])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")

@@ -89,43 +89,22 @@ export interface QuizData {
 export interface QuizResult {
   quizId: string;
   slug: string;
-  title: string;
+  title?: string;
   score: number;
   maxScore: number;
+  questions: QuizQuestion[];
+  completedAt?: string;
   percentage?: number;
-  completedAt: string;
-  questions: Array<{
-    id: string;
-    question: string;
-    userAnswer: string;
-    correctAnswer: string;
-    isCorrect: boolean;
-  }>;
-  totalQuestions?: number; 
-  totalTime?: number;
-  questionsAnswered?: number;
-  correctAnswers?: number;
-  type?: QuizType;
-  // Add API response format support
-  result?: Array<{
-    id?: number;
-    quizId?: string | number;
-    quizTitle?: string;
-    quizSlug?: string;
-    quizType?: QuizType;
-    score?: number;
-    accuracy?: number;
-    attemptedAt?: string;
-    questions?: Array<{
-      questionId: string | number;
-      question: string;
-      correctAnswer: string;
-      userAnswer: string;
-      isCorrect: boolean;
-      timeSpent?: number;
-      options?: string[];
-    }>;
-  }>;
+  answers?: any[]; // Add if needed by existing code
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  userAnswer?: string;
+  correctAnswer?: string;
+  isCorrect?: boolean;
+  codeSnippet?: string;
 }
 
 // Quiz history item
