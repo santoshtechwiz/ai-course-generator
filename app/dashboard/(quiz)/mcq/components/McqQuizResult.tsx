@@ -116,7 +116,14 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
   const hasValidQuestions = normalizedResult.questions.length > 0
 
   const handleRetryQuiz = useCallback(() => {
-    toast.loading("Loading quiz...")
+    // Create a unique ID for this toast so we can dismiss it later
+    const toastId = toast.loading("Loading quiz...", { id: "quiz-loading-toast" })
+    
+    // Dismiss any existing toasts to prevent stacking
+    setTimeout(() => {
+      toast.dismiss(toastId)
+    }, 1500)
+    
     const navSlug = cleanSlug || normalizedResult.slug.split("?")[0]
     router.push(`/dashboard/mcq/${navSlug}?reset=true`)
   }, [cleanSlug, normalizedResult.slug, router])

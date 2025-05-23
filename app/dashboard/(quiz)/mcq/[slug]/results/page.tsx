@@ -162,8 +162,15 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     try {
       console.log("Saving results to database:", tempResults)
       setIsSaving(true)
-      // Only show one toast at a time
-      toast.loading("Saving your results...")
+      
+      // Dismiss any existing toasts first
+      toast.dismiss()
+      
+      // Create a new toast with an ID
+      const toastId = toast.loading("Saving your results...", {
+        id: "save-results-toast",
+        duration: 3000
+      })
 
       // Ensure required fields are present for saving
       const dataToSave = {
@@ -174,7 +181,9 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
       await actions.saveResults(slug, dataToSave)
       console.log("Results saved successfully")
-      toast.dismiss()
+      
+      // Dismiss the loading toast before showing success toast
+      toast.dismiss(toastId)
       toast.success("Results saved successfully!")
       setSaveSuccess(true)
 
