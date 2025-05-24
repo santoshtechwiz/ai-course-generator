@@ -15,6 +15,7 @@ import subscriptionReducer from "./slices/subscription-slice"
 import userReducer from "./slices/userSlice"
 import flashcardReducer from "./slices/flashcardSlice"
 import textQuizReducer from "@/app/store/slices/textQuizSlice"
+import { useQuiz } from "@/hooks"
 
 // Define types for persist config
 interface PersistConfig {
@@ -39,7 +40,7 @@ const rootReducer = combineReducers({
       "userAnswers",
       "isLoading",
       "isSubmitting",
-      "error",
+      "errors",
       "results",
       "isCompleted",
       "quizHistory",
@@ -93,8 +94,11 @@ export const store = configureStore({
 export const persistor = persistStore(store)
 
 // Only check for stored state on client side
-if (typeof window !== 'undefined') {
-  checkStoredAuthRedirectState(store)
+if (typeof window !== "undefined") {
+ 
+  checkStoredAuthRedirectState(store).catch((error) =>
+    console.error("Error checking stored auth redirect state:", error),
+  )
 }
 
 // === TYPES ===
@@ -105,13 +109,8 @@ export type AppDispatch = typeof store.dispatch
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
-// === SLICE SELECTORS WITH PERSIST TYPES ===
-// Generic function to create typed selectors for persisted slices
-const createTypedSliceSelector = <T,>(selector: (state: RootState) => T): T & PersistPartial =>
-  useAppSelector(selector) as T & PersistPartial
+// Export all selectors from the quiz slice
+export * from './slices/quizSlice'
 
-// Typed selectors for each slice
-export const useQuizState = () => createTypedSliceSelector((state) => state.quiz)
-export const useAuthState = () => createTypedSliceSelector((state) => state.auth)
-export const useSubscriptionState = () => createTypedSliceSelector((state) => state.subscription)
-export const useUserState = () => createTypedSliceSelector((state) => state.user)
+// Export the useQuiz hook
+export { useQuiz } from "@/hooks/useQuizState"

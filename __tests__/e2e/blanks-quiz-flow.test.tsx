@@ -9,7 +9,7 @@ import { RecoilRoot } from 'recoil';
 import BlanksQuizWrapper from '@/app/dashboard/(quiz)/blanks/components/BlankQuizWrapper';
 import BlanksQuiz from '@/app/dashboard/(quiz)/blanks/components/BlanksQuiz';
 import BlankQuizResults from '@/app/dashboard/(quiz)/blanks/components/BlankQuizResults';
-import textQuizReducer, { initialState } from '@/app/store/slices/textQuizSlice'; // Import initialState
+import textQuizReducer, {  } from '@/app/store/slices/textQuizSlice'; // Import initialState
 import * as auth from '@/hooks/useAuth';
 import * as nextAuth from 'next-auth/react';
 

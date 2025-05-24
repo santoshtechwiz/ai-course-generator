@@ -99,6 +99,9 @@ export interface QuizQuestionResult {
  * Interface for quiz result details
  */
 export interface QuizResult {
+  totalTime: number;
+  correctAnswers: number;
+  totalQuestions: number;
   quizId: string;
   slug: string;
   title: string; // Make required

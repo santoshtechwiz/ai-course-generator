@@ -9,23 +9,15 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 import CodeQuizEditor from "./CodeQuizEditor"
 import { cn } from "@/lib/tailwindUtils"
 import { formatQuizTime } from "@/lib/utils/quiz-utils"
+import { CodeQuizQuestion } from "@/app/types/code-quiz-types"
 
 interface CodingQuizProps {
-  question: {
-    id: string
-    question: string
-    codeSnippet?: string
-    options?: string[]
-    answer?: string
-    correctAnswer?: string
-    language?: string
-    type: "code"
-  }
-  onAnswer: (answer: string, elapsedTime: number, isCorrect: boolean) => void
+  question: CodeQuizQuestion
+  onAnswer: (answer: string, timeSpent: number, isCorrect: boolean) => void
   questionNumber: number
   totalQuestions: number
   isLastQuestion: boolean
-  isSubmitting?: boolean
+  isSubmitting: boolean
   existingAnswer?: string
 }
 
