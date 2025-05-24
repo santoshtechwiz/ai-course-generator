@@ -13,7 +13,7 @@ export * from "./use-form"
 
 // Export these hooks directly, not via the conditional block
 export { useAuth } from "./useAuth"
-export { useQuiz } from "./useQuizState"
+
 export { _createMockUseAuth } from "./useAuth"
 
 // Don't try to modify module.exports in test mode

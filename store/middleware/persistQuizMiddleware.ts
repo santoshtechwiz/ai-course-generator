@@ -1,4 +1,42 @@
-import type { Middleware } from "@reduxjs/toolkit"
+import type { Middleware, AnyAction } from "@reduxjs/toolkit"
+
+// Define proper types
+interface QuizState {
+  currentQuestion: number
+  currentQuizSlug: string
+  currentQuizId: string
+  currentQuizType: "code" | "multiple-choice" | "essay"
+  userAnswers: any[]
+  quizData: any
+  tempResults: any
+  [key: string]: any
+}
+
+interface RootState {
+  quiz: QuizState
+}
+
+interface QuizCompletedAction extends AnyAction {
+  type: "quiz/markQuizCompleted"
+  payload: {
+    quizId: string
+    slug: string
+    score: number
+    totalQuestions: number
+    correctAnswers: number
+    totalTime: number
+    type: "code" | "multiple-choice" | "essay"
+    results: any
+  }
+}
+
+interface AuthRequiredAction extends AnyAction {
+  type: "quiz/authenticationRequired"
+  payload: {
+    fromSubmission?: boolean
+    type?: "code" | "multiple-choice" | "essay"
+  }
+}
 
 const QUIZ_STATE_KEY_PREFIX = "quiz_state_"
 const QUIZ_RESULTS_KEY_PREFIX = "quiz_results_"
@@ -11,27 +49,38 @@ const VERSION = "1.0.0"
 let debounceTimerId: NodeJS.Timeout | null = null
 let authDebounceTimerId: NodeJS.Timeout | null = null
 let visibilityChangeListener: (() => void) | null = null
+let currentStore: any = null
 
-const persistQuizMiddleware: Middleware = (store) => (next) => (action) => {
-  const result = next(action)
+const persistQuizMiddleware: Middleware<{}, RootState> = (store) => {
+  // Store reference for visibility change handler
+  currentStore = store
 
-  if (action.type === "quiz/setCurrentQuestion" || action.type === "quiz/markAnswer") {
-    debounceSaveState(store.getState().quiz, store.getState().quiz.currentQuizSlug)
+  return (next) => (action: AnyAction) => {
+    const result = next(action)
+
+    if (action.type === "quiz/setCurrentQuestion" || action.type === "quiz/markAnswer") {
+      const state = store.getState()
+      debounceSaveState(state.quiz, state.quiz.currentQuizSlug)
+    }
+
+    if (action.type === "quiz/markQuizCompleted") {
+      const state = store.getState()
+      const completedAction = action as QuizCompletedAction
+      saveQuizResults(state.quiz.currentQuizSlug, completedAction.payload)
+      clearQuizState(state.quiz.currentQuizSlug)
+    }
+
+    if (action.type === "quiz/authenticationRequired") {
+      const state = store.getState()
+      const authAction = action as AuthRequiredAction
+      debounceSaveAuthState(state.quiz, authAction.payload)
+    }
+
+    return result
   }
-
-  if (action.type === "quiz/markQuizCompleted") {
-    saveQuizResults(store.getState().quiz.currentQuizSlug, action.payload)
-    clearQuizState(store.getState().quiz.currentQuizSlug)
-  }
-
-  if (action.type === "quiz/authenticationRequired") {
-    debounceSaveAuthState(store.getState().quiz, action.payload)
-  }
-
-  return result
 }
 
-const debounceSaveState = (quizState: any, quizSlug: string) => {
+const debounceSaveState = (quizState: QuizState, quizSlug: string) => {
   if (debounceTimerId) {
     clearTimeout(debounceTimerId)
   }
@@ -41,7 +90,7 @@ const debounceSaveState = (quizState: any, quizSlug: string) => {
   }, DEBOUNCE_INTERVAL)
 }
 
-const debounceSaveAuthState = (quizState: any, authData: any) => {
+const debounceSaveAuthState = (quizState: QuizState, authData: any) => {
   if (authDebounceTimerId) {
     clearTimeout(authDebounceTimerId)
   }
@@ -51,7 +100,7 @@ const debounceSaveAuthState = (quizState: any, authData: any) => {
   }, AUTH_DEBOUNCE_INTERVAL)
 }
 
-const saveQuizState = (quizState: any, quizSlug: string) => {
+const saveQuizState = (quizState: QuizState, quizSlug: string) => {
   try {
     const stateToSave = {
       currentQuestion: quizState.currentQuestion,
@@ -61,7 +110,9 @@ const saveQuizState = (quizState: any, quizSlug: string) => {
       version: VERSION,
     }
 
-    window.sessionStorage.setItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`, JSON.stringify(stateToSave))
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.setItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`, JSON.stringify(stateToSave))
+    }
   } catch (error) {
     console.error("Error saving quiz state:", error)
   }
@@ -74,13 +125,16 @@ const saveQuizResults = (quizSlug: string, results: any) => {
       timestamp: Date.now(),
       version: VERSION,
     }
-    window.sessionStorage.setItem(`${QUIZ_RESULTS_KEY_PREFIX}${quizSlug}`, JSON.stringify(resultsToSave))
+
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.setItem(`${QUIZ_RESULTS_KEY_PREFIX}${quizSlug}`, JSON.stringify(resultsToSave))
+    }
   } catch (error) {
     console.error("Error saving quiz results:", error)
   }
 }
 
-const saveAuthRedirect = (quizState: any, authData: any) => {
+const saveAuthRedirect = (quizState: QuizState, authData: any) => {
   try {
     const authState = {
       slug: quizState.currentQuizSlug,
@@ -94,14 +148,30 @@ const saveAuthRedirect = (quizState: any, authData: any) => {
       version: VERSION,
     }
 
-    window.sessionStorage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(authState))
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.setItem(AUTH_REDIRECT_KEY, JSON.stringify(authState))
+    }
   } catch (error) {
     console.error("Error saving auth redirect state:", error)
   }
 }
 
+const forceSavePendingChanges = () => {
+  if (debounceTimerId && currentStore) {
+    clearTimeout(debounceTimerId)
+    debounceTimerId = null
+
+    const state = currentStore.getState()
+    saveQuizState(state.quiz, state.quiz.currentQuizSlug)
+  }
+}
+
 export const loadPersistedQuizState = async (quizSlug: string): Promise<any | null> => {
   try {
+    if (typeof window === "undefined" || !window.sessionStorage) {
+      return null
+    }
+
     const serializedState = window.sessionStorage.getItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`)
 
     if (!serializedState) {
@@ -138,13 +208,19 @@ export const loadPersistedQuizState = async (quizSlug: string): Promise<any | nu
     return state
   } catch (error) {
     console.error("Error loading quiz state:", error)
-    window.sessionStorage.removeItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`)
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.removeItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`)
+    }
     return null
   }
 }
 
 export const loadPersistedQuizResults = async (quizSlug: string): Promise<any | null> => {
   try {
+    if (typeof window === "undefined" || !window.sessionStorage) {
+      return null
+    }
+
     const serializedResults = window.sessionStorage.getItem(`${QUIZ_RESULTS_KEY_PREFIX}${quizSlug}`)
 
     if (!serializedResults) {
@@ -160,13 +236,19 @@ export const loadPersistedQuizResults = async (quizSlug: string): Promise<any | 
     return results
   } catch (error) {
     console.error("Error loading quiz results:", error)
-    window.sessionStorage.removeItem(`${QUIZ_RESULTS_KEY_PREFIX}${quizSlug}`)
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.removeItem(`${QUIZ_RESULTS_KEY_PREFIX}${quizSlug}`)
+    }
     return null
   }
 }
 
 export const checkStoredAuthRedirectState = async (store: any) => {
   try {
+    if (typeof window === "undefined" || !window.sessionStorage) {
+      return
+    }
+
     const serializedState = window.sessionStorage.getItem(AUTH_REDIRECT_KEY)
 
     if (!serializedState) {
@@ -195,15 +277,23 @@ export const checkStoredAuthRedirectState = async (store: any) => {
     window.sessionStorage.removeItem(AUTH_REDIRECT_KEY)
   } catch (error) {
     console.error("Error checking auth redirect state:", error)
-    window.sessionStorage.removeItem(AUTH_REDIRECT_KEY)
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.removeItem(AUTH_REDIRECT_KEY)
+    }
   }
 }
 
 const clearQuizState = (quizSlug: string) => {
-  window.sessionStorage.removeItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`)
+  if (typeof window !== "undefined" && window.sessionStorage) {
+    window.sessionStorage.removeItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`)
+  }
 }
 
 export const clearPersistedQuizState = async (quizSlug?: string) => {
+  if (typeof window === "undefined" || !window.sessionStorage) {
+    return
+  }
+
   if (quizSlug) {
     window.sessionStorage.removeItem(`${QUIZ_STATE_KEY_PREFIX}${quizSlug}`)
     window.sessionStorage.removeItem(`${QUIZ_RESULTS_KEY_PREFIX}${quizSlug}`)
@@ -222,22 +312,17 @@ export const cleanup = () => {
     authDebounceTimerId = null
   }
 
-  if (visibilityChangeListener) {
+  if (visibilityChangeListener && typeof window !== "undefined") {
     window.removeEventListener("visibilitychange", visibilityChangeListener)
     visibilityChangeListener = null
   }
 }
 
-// Force save on visibility change
+// Setup visibility change handler
 if (typeof document !== "undefined" && typeof window !== "undefined") {
   visibilityChangeListener = () => {
     if (document.visibilityState === "hidden") {
-      // Force save pending changes
-      if (debounceTimerId) {
-        clearTimeout(debounceTimerId)
-        // @ts-ignore
-        saveQuizState(window.__store__.getState().quiz, window.__store__.getState().quiz.currentQuizSlug)
-      }
+      forceSavePendingChanges()
     }
   }
 
