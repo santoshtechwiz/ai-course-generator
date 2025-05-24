@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useMemo } from "react"
+import React, { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
 import {
@@ -23,9 +23,16 @@ import { toast } from "react-hot-toast"
 interface OpenEndedQuizWrapperProps {
   quizData: OpenEndedQuizData
   slug: string
+  currentUserId?: string | null
+  breadcrumbItems?: Array<{ name: string; href: string }>
 }
 
-export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
+export default function OpenEndedQuizWrapper({
+  quizData,
+  slug,
+  currentUserId,
+  breadcrumbItems,
+}: OpenEndedQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useAppDispatch()
 

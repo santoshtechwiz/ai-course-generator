@@ -1,19 +1,19 @@
 "use client"
 
-import { useRef, useEffect, useState } from "react"
-import { Editor } from "@monaco-editor/react"
+import React, { useRef, useEffect, useState } from "react"
+import Editor from "@monaco-editor/react"
 import { cn } from "@/lib/tailwindUtils"
 
 interface CodeQuizEditorProps {
   value: string
   onChange: (value: string | undefined) => void
   language?: string
-  height?: string
+  height?: string | number
   placeholder?: string
   readOnly?: boolean
   disabled?: boolean
   className?: string
-  [key: string]: any // For data-testid and other props
+  [key: string]: any
 }
 
 export default function CodeQuizEditor({

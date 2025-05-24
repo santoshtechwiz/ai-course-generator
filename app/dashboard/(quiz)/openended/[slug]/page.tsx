@@ -5,7 +5,8 @@ import { authOptions } from "@/lib/auth"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getQuiz } from "@/app/actions/getQuiz"
 import type { OpenEndedQuizData } from "@/types/quiz"
-import { ClientWrapper } from "./ClientWrapper"
+import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
+
 
 interface PageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -59,7 +60,12 @@ console.log("Quiz Data:", quizData);
   // Add ClientWrapper with reset handling
   return (
     <div className="container mx-auto px-4 py-8">
-      <ClientWrapper slug={slug} quizData={quizData} />
+      <OpenEndedQuizWrapper 
+        quizData={quizData}
+        currentUserId={currentUserId}
+        slug={slug}
+        breadcrumbItems={breadcrumbItems}
+      />
     </div>
   )
 }
