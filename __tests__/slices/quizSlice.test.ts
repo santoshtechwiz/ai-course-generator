@@ -16,6 +16,9 @@ import quizReducer, {
   selectCurrentQuestionData,
   selectQuizProgress,
   selectIsLastQuestion,
+  QuizState,
+  FetchQuizParams,
+  SubmitQuizParams
 } from '@/store/slices/quizSlice';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -51,7 +54,7 @@ describe('Quiz Slice', () => {
         isCompleted: true,
       };
 
-      const newState = quizReducer(state, resetQuizState());
+      const newState = quizReducer(state as QuizState, resetQuizState());
       expect(newState).toEqual({
         ...initialState,
         quizHistory,
@@ -66,7 +69,7 @@ describe('Quiz Slice', () => {
         } as any,
       };
 
-      const newState = quizReducer(state, setCurrentQuestion(1));
+      const newState = quizReducer(state as QuizState, setCurrentQuestion(1));
       expect(newState.currentQuestion).toBe(1);
     });
 
@@ -80,11 +83,11 @@ describe('Quiz Slice', () => {
       };
 
       // Test negative index
-      let newState = quizReducer(state, setCurrentQuestion(-1));
+      let newState = quizReducer(state as QuizState, setCurrentQuestion(-1));
       expect(newState.currentQuestion).toBe(0);
 
       // Test out of bounds index
-      newState = quizReducer(state, setCurrentQuestion(5));
+      newState = quizReducer(state as QuizState, setCurrentQuestion(5));
       expect(newState.currentQuestion).toBe(0);
     });
 
@@ -102,7 +105,7 @@ describe('Quiz Slice', () => {
         userAnswers: [initialAnswer],
       };
 
-      const newState = quizReducer(state, setUserAnswer(updatedAnswer));
+      const newState = quizReducer(state as QuizState, setUserAnswer(updatedAnswer));
       expect(newState.userAnswers).toEqual([updatedAnswer]);
     });
 
@@ -112,7 +115,7 @@ describe('Quiz Slice', () => {
         ...initialState,
         quizData: { timeLimit: 10 } as any,
       };
-      let newState = quizReducer(state, startTimer());
+      let newState = quizReducer(state as QuizState, startTimer());
       expect(newState.timeRemaining).toBe(600); // 10 minutes in seconds
       expect(newState.timerActive).toBe(true);
 
@@ -200,7 +203,7 @@ describe('Quiz Slice', () => {
         type: 'mcq',
       }));
 
-      const state = store.getState().quiz;
+      const state = (store.getState() as { quiz: QuizState }).quiz;
       expect(state.quizData).toEqual(result.payload);
       expect(state.currentQuizId).toBe('123');
       expect(state.isLoading).toBe(false);

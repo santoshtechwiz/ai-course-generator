@@ -10,6 +10,7 @@ import type {
 
 import type { CodeQuizRedirectState } from "@/app/types/code-quiz-types"
 
+// Define API endpoints by quiz type
 const API_ENDPOINTS: Record<QuizType, string> = {
   mcq: "/api/quizzes/mcq",
   code: "/api/quizzes/code",
@@ -20,6 +21,10 @@ const API_ENDPOINTS: Record<QuizType, string> = {
 
 /**
  * Normalizes raw quiz data into a consistent format
+ * @param raw - Raw quiz data from API
+ * @param slug - Quiz slug
+ * @param type - Quiz type
+ * @returns Normalized quiz data
  */
 const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => {
   const quizUniqueId = raw.quizId
@@ -50,6 +55,7 @@ const normalizeQuizData = (raw: any, slug: string, type: QuizType): QuizData => 
   }
 }
 
+// Define error state interface
 export interface ErrorState {
   quiz: string | null
   submission: string | null
@@ -57,6 +63,18 @@ export interface ErrorState {
   history: string | null
 }
 
+// Define auth redirect state interface
+export interface AuthRedirectState {
+  slug: string | null
+  quizId: string | null
+  type: QuizType | null
+  userAnswers: UserAnswer[]
+  currentQuestion: number
+  tempResults: QuizResult | null
+  fromSubmission?: boolean
+}
+
+// Define quiz state interface
 export interface QuizState {
   quizData: QuizData | null
   currentQuestion: number
@@ -75,16 +93,10 @@ export interface QuizState {
   currentQuizType: QuizType | null
   currentQuizSlug: string | null
   hasMoreHistory: boolean
-  authRedirectState: {
-    slug: string | null
-    quizId: string | null
-    type: QuizType | null
-    userAnswers: UserAnswer[]
-    currentQuestion: number
-    tempResults: QuizResult | null
-  } | null
+  authRedirectState: AuthRedirectState | null
 }
 
+// Define initial state
 export const initialState: QuizState = {
   quizData: null,
   currentQuestion: 0,
@@ -111,14 +123,35 @@ export const initialState: QuizState = {
   authRedirectState: null,
 }
 
+// Define fetch quiz parameters interface
+export interface FetchQuizParams {
+  slug: string
+  type: QuizType
+}
+
+// Define submit quiz parameters interface
+export interface SubmitQuizParams {
+  slug: string
+  quizId?: string | number
+  type: QuizType
+  answers: UserAnswer[]
+  timeTaken?: number
+  score?: number
+  totalQuestions?: number
+}
+
 // -------------------- Async Thunks --------------------
 
-export const fetchQuiz = createAsyncThunk(
+/**
+ * Fetch quiz data from API
+ */
+export const fetchQuiz = createAsyncThunk<
+  QuizData,
+  FetchQuizParams,
+  { rejectValue: string }
+>(
   "quiz/fetchQuiz",
-  async (
-    { slug, type }: { slug: string; type: QuizType },
-    { rejectWithValue }
-  ) => {
+  async ({ slug, type }, { rejectWithValue }) => {
     try {
       const cleanSlug = slug.replace(/Question$/, "")
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ""
@@ -134,19 +167,29 @@ export const fetchQuiz = createAsyncThunk(
 
       const data = await response.json()
       return normalizeQuizData(data, cleanSlug, type)
-    } catch (error: any) {
-      if (error.name === "AbortError") {
-        return rejectWithValue("Quiz fetch was aborted")
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          return rejectWithValue("Quiz fetch was aborted")
+        }
+        if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+          return rejectWithValue("Network error: Please check your connection")
+        }
+        return rejectWithValue(error.message || "Unexpected error loading quiz")
       }
-      if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-        return rejectWithValue("Network error: Please check your connection")
-      }
-      return rejectWithValue(error.message || "Unexpected error loading quiz")
+      return rejectWithValue("Unknown error occurred")
     }
   }
 )
 
-export const submitQuiz = createAsyncThunk(
+/**
+ * Submit quiz answers to API
+ */
+export const submitQuiz = createAsyncThunk<
+  QuizResult,
+  SubmitQuizParams,
+  { rejectValue: string }
+>(
   "quiz/submitQuiz",
   async (
     {
@@ -157,14 +200,6 @@ export const submitQuiz = createAsyncThunk(
       timeTaken,
       score,
       totalQuestions,
-    }: {
-      slug: string
-      quizId?: string | number
-      type: QuizType
-      answers: UserAnswer[]
-      timeTaken?: number
-      score?: number
-      totalQuestions?: number
     },
     { rejectWithValue }
   ) => {
@@ -201,14 +236,17 @@ export const submitQuiz = createAsyncThunk(
       }
 
       return await response.json()
-    } catch (error: any) {
-      if (error.name === "AbortError") {
-        return rejectWithValue("Quiz submission was aborted")
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          return rejectWithValue("Quiz submission was aborted")
+        }
+        if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+          return rejectWithValue("Network error: Please check your connection")
+        }
+        return rejectWithValue(error.message || "Unexpected submission error")
       }
-      if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-        return rejectWithValue("Network error: Please check your connection")
-      }
-      return rejectWithValue(error.message || "Unexpected submission error")
+      return rejectWithValue("Unknown error occurred")
     }
   }
 )
@@ -220,16 +258,19 @@ export const quizSlice = createSlice({
   initialState,
   reducers: {
     resetQuizState: (state) => ({ ...initialState, quizHistory: state.quizHistory }),
+    
     setCurrentQuestion: (state, action: PayloadAction<number>) => {
       if (action.payload >= 0 && (!state.quizData || action.payload < state.quizData.questions.length)) {
         state.currentQuestion = action.payload
       }
     },
+    
     setUserAnswer: (state, action: PayloadAction<UserAnswer>) => {
       const i = state.userAnswers.findIndex((a) => a.questionId === action.payload.questionId)
       if (i >= 0) state.userAnswers[i] = action.payload
       else state.userAnswers.push(action.payload)
     },
+    
     startTimer: (state) => {
       const limit = state.quizData?.timeLimit
       if (limit) {
@@ -237,35 +278,45 @@ export const quizSlice = createSlice({
         state.timerActive = true
       }
     },
+    
     pauseTimer: (state) => { state.timerActive = false },
+    
     resumeTimer: (state) => { state.timerActive = true },
+    
     decrementTimer: (state) => {
       if (state.timeRemaining && state.timeRemaining > 0) {
         state.timeRemaining -= 1
       }
     },
+    
     markQuizCompleted: (state, action: PayloadAction<QuizResult>) => {
       state.results = action.payload
       state.isCompleted = true
       state.timerActive = false
       state.timeRemaining = 0
     },
+    
     setError: (state, action: PayloadAction<{ type: keyof ErrorState; message: string }>) => {
       const { type, message } = action.payload
       state.errors[type] = message
     },
+    
     clearErrors: (state) => {
       state.errors = { quiz: null, submission: null, results: null, history: null }
     },
+    
     setSubmissionInProgress: (state, action: PayloadAction<boolean>) => {
       state.submissionStateInProgress = action.payload
     },
+    
     setTempResults: (state, action: PayloadAction<QuizResult>) => {
       state.tempResults = action.payload
     },
+    
     clearTempResults: (state) => {
       state.tempResults = null
     },
+    
     clearQuizStateAfterSubmission: (state) => {
       state.quizData = null
       state.currentQuestion = 0
@@ -278,6 +329,7 @@ export const quizSlice = createSlice({
       state.submissionStateInProgress = false
       state.errors = { quiz: null, submission: null, results: null, history: null }
     },
+    
     storeQuizResults: (state, action: PayloadAction<QuizResult>) => {
       state.results = action.payload
       state.tempResults = action.payload
@@ -285,17 +337,24 @@ export const quizSlice = createSlice({
       state.isSubmitting = false
       state.timerActive = false
     },
-    saveQuizState: (state, action: PayloadAction<{ currentQuestion: number; userAnswers: UserAnswer[]; quizData: QuizData | null }>) => {
+    
+    saveQuizState: (state, action: PayloadAction<{ 
+      currentQuestion: number; 
+      userAnswers: UserAnswer[]; 
+      quizData: QuizData | null 
+    }>) => {
       const { currentQuestion, userAnswers, quizData } = action.payload
       state.currentQuestion = currentQuestion
       state.userAnswers = userAnswers
       state.quizData = quizData
     },
+    
     saveAuthRedirectState: (state, action: PayloadAction<CodeQuizRedirectState>) => {
       state.authRedirectState = action.payload
       state.currentQuizType = action.payload.type
       state.currentQuizSlug = action.payload.slug
     },
+    
     restoreFromAuthRedirect: (state) => {
       if (state.authRedirectState) {
         state.currentQuizSlug = state.authRedirectState.slug || null
@@ -307,6 +366,7 @@ export const quizSlice = createSlice({
         state.authRedirectState = null
       }
     },
+    
     clearAuthRedirectState: (state) => {
       state.authRedirectState = null
     },
@@ -371,7 +431,7 @@ export const {
   clearAuthRedirectState,
 } = quizSlice.actions
 
-// Selectors
+// Selectors with proper typing
 export const selectCurrentQuestionData = createSelector(
   [(state: { quiz: QuizState }) => state.quiz.quizData, (state: { quiz: QuizState }) => state.quiz.currentQuestion],
   (quizData, currentQuestion) => {
@@ -398,3 +458,7 @@ export const selectIsLastQuestion = createSelector(
 
 // Reducer
 export default quizSlice.reducer
+function uuidv4() {
+  throw new Error("Function not implemented.")
+}
+
