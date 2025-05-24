@@ -1,10 +1,9 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Loader2, AlertCircle, Home, RefreshCw, ClipboardX } from "lucide-react"
+import { Loader2, AlertCircle, Home, RefreshCcw, ClipboardX } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface DisplayProps {
   className?: string
@@ -17,21 +16,34 @@ interface ErrorDisplayProps extends DisplayProps {
   error: string
 }
 
-export function InitializingDisplay({ message = "Loading quiz...", className }: DisplayProps) {
+export function InitializingDisplay({ message = "Initializing quiz...", className }: DisplayProps) {
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className={`flex items-center justify-center min-h-[300px] ${className || ""}`}
     >
-      <Card className="w-full max-w-xl mx-auto">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-lg font-medium text-muted-foreground">{message}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <h2 className="text-xl font-semibold mb-2">{message}</h2>
+        <p className="text-muted-foreground">Please wait while we load the quiz content.</p>
+      </div>
+    </motion.div>
+  )
+}
+
+export function LoadingDisplay({ message = "Loading quiz...", className }: DisplayProps) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`flex items-center justify-center min-h-[300px] ${className || ""}`}
+    >
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <h2 className="text-xl font-semibold mb-2">{message}</h2>
+        <p className="text-muted-foreground">This may take a moment...</p>
+      </div>
     </motion.div>
   )
 }
@@ -43,42 +55,37 @@ export function ErrorDisplay({ error, onRetry, onReturn, className }: ErrorDispl
       animate={{ opacity: 1, y: 0 }}
       className={`flex items-center justify-center min-h-[300px] ${className || ""}`}
     >
-      <Card className="w-full max-w-xl mx-auto">
+      <Card className="max-w-md mx-auto mt-8">
         <CardHeader>
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 rounded-full bg-destructive/10">
-              <AlertCircle className="h-6 w-6 text-destructive" />
-            </div>
-          </div>
-          <CardTitle className="text-xl text-center">Error Loading Quiz</CardTitle>
-          <CardDescription className="text-center">{error}</CardDescription>
+          <CardTitle className="flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2 text-destructive" />
+            Error Loading Quiz
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            {onReturn && (
-              <Button
-                variant="outline"
-                onClick={onReturn}
-                className="flex items-center gap-2"
-              >
-                <Home className="h-4 w-4" />
-                Return to Dashboard
-              </Button>
-            )}
-            {onRetry && (
-              <Button 
-                onClick={onRetry}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Try Again
-              </Button>
-            )}
-          </div>
+          <p className="mb-4">{error}</p>
+          <p className="text-muted-foreground text-sm">
+            Please try again or return to the dashboard.
+          </p>
         </CardContent>
+        <CardFooter className="flex justify-between gap-4">
+          {onRetry && (
+            <Button variant="outline" onClick={onRetry} className="flex-1">
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          )}
+          {onReturn && (
+            <Button 
+              onClick={onReturn} 
+              className="flex-1"
+              variant={onRetry ? "default" : "outline"}
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Return to Dashboard
+            </Button>
+          )}
+        </CardFooter>
       </Card>
     </motion.div>
   )
@@ -91,32 +98,24 @@ export function EmptyQuestionsDisplay({ onReturn, className }: DisplayProps) {
       animate={{ opacity: 1, y: 0 }}
       className={`flex items-center justify-center min-h-[300px] ${className || ""}`}
     >
-      <Card className="w-full max-w-xl mx-auto">
+      <Card className="max-w-md mx-auto mt-8">
         <CardHeader>
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 rounded-full bg-muted">
-              <ClipboardX className="h-6 w-6 text-muted-foreground" />
-            </div>
-          </div>
-          <CardTitle className="text-xl text-center">No Questions Available</CardTitle>
-          <CardDescription className="text-center">
-            This quiz doesn't have any questions yet.
-          </CardDescription>
+          <CardTitle className="flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2 text-yellow-500" />
+            No Questions Available
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {onReturn && (
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                onClick={onReturn}
-                className="flex items-center gap-2"
-              >
-                <Home className="h-4 w-4" />
-                Return to Dashboard
-              </Button>
-            </div>
-          )}
+          <p>This quiz doesn't have any questions yet, or we couldn't load them.</p>
         </CardContent>
+        <CardFooter>
+          {onReturn && (
+            <Button onClick={onReturn} className="w-full">
+              <Home className="h-4 w-4 mr-2" />
+              Return to Dashboard
+            </Button>
+          )}
+        </CardFooter>
       </Card>
     </motion.div>
   )

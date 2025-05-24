@@ -1,149 +1,68 @@
 "use client"
 
-import { useEffect, useCallback, useState } from "react"
+import type React from "react"
+import { useEffect } from "react"
+
 import { useRouter } from "next/navigation"
+import { BlanksQuiz } from "./BlanksQuiz"
+import {
+  fetchQuiz,
+  setQuizId,
+  setQuizType,
+  submitQuiz,
+  selectQuestions,
+  selectAnswers,
+  selectQuizStatus,
+  selectQuizError,
+  selectIsQuizComplete,
+  selectQuizResults,
+} from "@/store/slices/quizSlice"
+import { ErrorDisplay } from "../../components/QuizStateDisplay"
 import { useAppDispatch, useAppSelector } from "@/store"
-import BlanksQuiz from "./BlanksQuiz"
-import type { BlanksQuizWrapperProps } from "../blanks-quiz-types"
-import { 
-  initializeQuiz, 
-  completeQuiz, 
-  setCurrentQuestion,
-  setQuizLoadingState,
-  setLastLoadedQuiz,
-  clearUnsavedChanges
-} from "@/app/store/slices/textQuizSlice"
 
-export default function BlankQuizWrapper({ quizData, slug }: BlanksQuizWrapperProps) {
-  const router = useRouter()
+interface BlankQuizWrapperProps {
+  quizData: {
+    id: string
+    slug: string
+    title: string
+    description?: string
+    questions: any[]
+  }
+  slug: string
+}
+
+export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, slug }) => {
   const dispatch = useAppDispatch()
-  const quizState = useAppSelector((state) => state.textQuiz)
-  const [initializationError, setInitializationError] = useState<string | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isNavigating, setIsNavigating] = useState(false)
-  const [isCompleted, setIsCompleted] = useState(false)
+  const router = useRouter()
 
-  // Validate quiz data and initialize
+  const questions = useAppSelector(selectQuestions)
+  const answers = useAppSelector(selectAnswers)
+  const status = useAppSelector(selectQuizStatus)
+  const error = useAppSelector(selectQuizError)
+  const isQuizComplete = useAppSelector(selectIsQuizComplete)
+  const results = useAppSelector(selectQuizResults)
+
+  // Initialize quiz data
   useEffect(() => {
-    const initializeQuizData = () => {
-      // Clear any previous errors
-      setInitializationError(null)
-
-      // Check for valid quiz data
-      if (!quizData?.id || !slug) {
-        console.error("Invalid quiz data:", { quizData, slug })
-        setInitializationError("Invalid quiz data")
-        dispatch(setQuizLoadingState('failed'))
-        return false
-      }
-
-      // Check for questions array
-      if (!Array.isArray(quizData.questions) || quizData.questions.length === 0) {
-        console.error("No questions available:", { quizData })
-        setInitializationError("No questions available for this quiz")
-        dispatch(setQuizLoadingState('failed'))
-        // Fix: Return false here since this is an error condition
-        return false 
-      }
-
-      // Success case
-      return true
+    if (quizData) {
+      dispatch(setQuizId(quizData.id))
+      dispatch(setQuizType("blanks"))
+      dispatch(fetchQuiz(quizData.id))
     }
+  }, [dispatch, quizData])
 
-    // Only proceed with initialization if not already initialized
-    if (!isInitialized) {
-      const isValid = initializeQuizData()
-      
-      if (isValid) {
-        try {
-          // Check if we need to reinitialize based on slug change
-          const needsInit = quizState.lastLoadedQuiz !== slug || !quizState.quizData
-          
-          if (needsInit) {
-            dispatch(setQuizLoadingState('loading'))
-            dispatch(initializeQuiz({
-              ...quizData,
-              type: "blanks",
-              slug,
-            }))
-            dispatch(setLastLoadedQuiz(slug))
-          }
-          
-          dispatch(setQuizLoadingState('succeeded'))
-          setIsInitialized(true)
-        } catch (error) {
-          console.error("Error initializing quiz:", error)
-          setInitializationError("Failed to initialize quiz")
-          dispatch(setQuizLoadingState('failed'))
-        }
-      }
+  // Handle quiz submission
+  const handleSubmitQuiz = async () => {
+    if (isQuizComplete) {
+      await dispatch(submitQuiz())
+      router.push(`/dashboard/blanks/${slug}/results`)
     }
-  }, [quizData, slug, dispatch, quizState.lastLoadedQuiz, quizState.quizData, isInitialized])
+  }
 
-  // Handle question completion
-  const handleQuestionComplete = useCallback(() => {
-    if (quizState.isCompleted || isNavigating) return
-
-    // Make sure quizData exists
-    if (!quizData || !quizData.questions) {
-      console.error("Cannot complete question: quiz data missing")
-      return
-    }
-
-    const currentIndex = quizState.currentQuestionIndex
-    const totalQuestions = quizData.questions.length
-    const isLastQuestion = currentIndex >= totalQuestions - 1
-
-    if (isLastQuestion) {
-      // Set flag to prevent multiple calls
-      setIsNavigating(true)
-      
-      try {
-        dispatch(
-          completeQuiz({
-            completedAt: new Date().toISOString(),
-            quizId: quizData.id,
-            title: quizData.title,
-            questions: quizData.questions,
-            slug: slug,
-            answers: quizState.answers,
-          })
-        )
-        dispatch(clearUnsavedChanges())
-
-        // Add a small delay to ensure state updates have time to propagate
-        // This helps with test reliability
-        setTimeout(() => {
-          const resultsPath = `/dashboard/blanks/${slug}/results`
-          console.log("Navigating to results:", resultsPath)
-          router.replace(resultsPath)
-        }, 10)
-      } catch (error) {
-        console.error("Error completing quiz:", error)
-        setIsNavigating(false)
-      }
-    } else {
-      dispatch(setCurrentQuestion(currentIndex + 1))
-    }
-  }, [quizState, quizData, slug, dispatch, router, isNavigating])
-
-  // Handle unsaved changes warning
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (quizState.hasUnsavedChanges && !quizState.isCompleted) {
-        e.preventDefault()
-        e.returnValue = ''
-      }
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [quizState.hasUnsavedChanges, quizState.isCompleted])
-
-  // Loading state
-  if (quizState.status === 'loading') {
+  // Show loading state
+  if (status === "loading") {
     return (
-      <div className="flex items-center justify-center p-8" data-testid="loading-quiz">
+      <div className="flex items-center justify-center p-8">
         <div className="text-center space-y-4">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
           <p className="text-muted-foreground">Loading quiz...</p>
@@ -152,78 +71,50 @@ export default function BlankQuizWrapper({ quizData, slug }: BlanksQuizWrapperPr
     )
   }
 
-  // Error state
-  if (initializationError || quizState.status === 'failed' || !quizData) {
+  // Show error state
+  if (status === "error" || !quizData) {
     return (
-      <div className="flex items-center justify-center p-8" data-testid="quiz-error-container">
-        <div className="text-center space-y-4">
-          <p className="text-destructive" data-testid="quiz-error">
-            {initializationError || quizState.error || "Failed to load quiz"}
-          </p>
-          <button
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
-            data-testid="return-button"
-          >
-            Return to Quizzes
-          </button>
-        </div>
-      </div>
+      <ErrorDisplay
+        error={error || "Failed to load quiz"}
+        onRetry={() => dispatch(fetchQuiz(quizData?.id ))}
+        onReturn={() => router.push("/dashboard/quizzes")}
+      />
     )
   }
 
-  // No questions
-  if (!quizData.questions || quizData.questions.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-8" data-testid="empty-questions">
-        <div className="text-center space-y-4">
-          <p className="text-destructive">No questions available for this quiz</p>
-          <button
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
-          >
-            Return to Quizzes
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Safely access the current question
-  const currentQuestionIndex = quizState.currentQuestionIndex || 0;
-  const currentQuestion = quizData.questions[currentQuestionIndex];
-  
-  // No question found
-  if (!currentQuestion) {
-    return (
-      <div className="flex items-center justify-center p-8" data-testid="question-not-found">
-        <div className="text-center space-y-4">
-          <p className="text-destructive">Question not found</p>
-          <button
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
-          >
-            Return to Quizzes
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Render quiz
   return (
-    <div data-testid="blanks-quiz-wrapper">
-      {!isCompleted ? (
-        <BlanksQuiz
-          question={currentQuestion}
-          questionNumber={currentQuestionIndex + 1}
-          totalQuestions={quizData.questions.length}
-          isLastQuestion={currentQuestionIndex >= quizData.questions.length - 1}
-          onQuestionComplete={handleQuestionComplete}
-        />  
-      ) : (
-        <div data-testid="quiz-results">Quiz Results</div>
-      )}
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">{quizData.title}</h1>
+
+      {quizData.description && <p className="text-gray-600 mb-8">{quizData.description}</p>}
+
+      <div className="mb-6">
+        <div className="bg-gray-100 rounded-full h-2 mb-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full"
+            style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+          ></div>
+        </div>
+        <div className="text-sm text-gray-600 text-right">
+          {Object.keys(answers).length}/{questions.length} questions answered
+        </div>
+      </div>
+
+      <BlanksQuiz quizId={quizData.id} questions={[]} currentQuestionIndex={0} answers={undefined} />
+
+      <div className="mt-8 text-center">
+        <button
+          onClick={handleSubmitQuiz}
+          disabled={!isQuizComplete}
+          className={`px-6 py-3 rounded-lg ${
+            isQuizComplete
+              ? "bg-green-600 text-white hover:bg-green-700"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+        >
+          Submit Quiz
+        </button>
+      </div>
     </div>
   )
 }

@@ -1,90 +1,27 @@
-"use client"
-
-import { memo } from "react"
-import { Progress } from "@/components/ui/progress"
-import { Timer } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
-
-import { MotionWrapper } from "@/components/ui/animations/motion-wrapper"
-// import { formatQuizTime } from "@/lib/utils"
-const formatQuizTime = (time: number): string => {
-  const hours = Math.floor(time / 3600)
-  const minutes = Math.floor((time % 3600) / 60)
-  const seconds = time % 60
-
-  return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m ` : ""}${seconds}s`
-}
+import React from 'react';
 
 interface QuizProgressProps {
-  currentQuestionIndex: number
-  totalQuestions: number
-  timeSpent: number[]
-  title?: string
-  quizType?: string
-  animate?: boolean
+  current: number;
+  total: number;
 }
 
-function QuizProgressComponent({
-  currentQuestionIndex,
-  totalQuestions,
-  timeSpent,
-  title,
-  quizType,
-  animate = true,
-}: QuizProgressProps) {
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100
-  const totalTimeSpent = timeSpent.reduce((a, b) => a + b, 0)
-
+const QuizProgress: React.FC<QuizProgressProps> = ({ current, total }) => {
+  const percentage = total > 0 ? (current / total) * 100 : 0;
+  
   return (
-    <div className="space-y-4">
-      <MotionWrapper animate={animate} variant="slide" direction="down" duration={0.4}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex items-center gap-2">
-            {quizType && (
-              <Badge variant="outline" className="bg-primary/10 text-primary font-medium px-3 py-1">
-                {quizType}
-              </Badge>
-            )}
-            {title && <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>}
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-help">
-                  <Timer className="w-4 h-4" />
-                  {formatQuizTime(totalTimeSpent)}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Total time spent on the quiz</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </MotionWrapper>
-      <MotionWrapper animate={animate} variant="slide" direction="up" duration={0.4} delay={0.1}>
-        <div className="space-y-2">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Progress: {Math.round(progress)}%</span>
-            <span>
-              Question {currentQuestionIndex + 1} of {totalQuestions}
-            </span>
-          </div>
-        </div>
-      </MotionWrapper>
+    <div className="mb-8">
+      <div className="flex justify-between mb-2">
+        <span className="text-sm font-medium text-gray-700">Progress</span>
+        <span className="text-sm font-medium text-gray-700">{current}/{total} questions answered</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div 
+          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-// Memoize the component with a custom comparison function
-export const QuizProgress = memo(QuizProgressComponent, (prevProps, nextProps) => {
-  // Only re-render if these specific props change
-  return (
-    prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
-    prevProps.totalQuestions === nextProps.totalQuestions &&
-    prevProps.timeSpent.length === nextProps.timeSpent.length &&
-    prevProps.timeSpent.every((time, i) => time === nextProps.timeSpent[i])
-  )
-})
+export default QuizProgress;

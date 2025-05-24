@@ -15,6 +15,8 @@ import SubscriptionProvider from "./SubscriptionProvider"
 import { SessionSync } from "./session-provider"
 import { LoadingProvider } from "@/components/ui/loading/loading-provider"
 
+import { TooltipProvider } from "@/components/ui/tooltip"
+
 // Create a query client with optimized settings
 const createQueryClient = () =>
   new QueryClient({
@@ -52,34 +54,36 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
 
   return (
     <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
+      <SessionProvider session={session}>
         <ReduxProvider>
-          <SessionProvider session={session}>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem={true}
-              disableTransitionOnChange
-              // Add these props to fix hydration issues
-              storageKey="course-ai-theme"
-              enableColorScheme={true}
-            >
-              <SubscriptionProvider>
-                <LoadingProvider>
-                  <AnimationProvider>
-                    {sessionSync}
-                    {navbar}
-                    <Suspense fallback={<div>Loading...</div>}></Suspense>
-                    {jsonLd}
-                    <Toaster position="top-right" closeButton richColors />
-                    {mounted && children}
-                  </AnimationProvider>
-                </LoadingProvider>
-              </SubscriptionProvider>
-            </ThemeProvider>
-          </SessionProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem={true}
+            disableTransitionOnChange
+            // Add these props to fix hydration issues
+            storageKey="course-ai-theme"
+            enableColorScheme={true}
+          >
+            <QueryClientProvider client={queryClient}>
+              <TooltipProvider>
+                <SubscriptionProvider>
+                  <LoadingProvider>
+                    <AnimationProvider>
+                      {sessionSync}
+                      {navbar}
+                      <Suspense fallback={<div>Loading...</div>}></Suspense>
+                      {jsonLd}
+                      <Toaster position="top-right" closeButton richColors />
+                      {mounted && children}
+                    </AnimationProvider>
+                  </LoadingProvider>
+                </SubscriptionProvider>
+              </TooltipProvider>
+            </QueryClientProvider>
+          </ThemeProvider>
         </ReduxProvider>
-      </QueryClientProvider>
+      </SessionProvider>
     </React.StrictMode>
   )
 }

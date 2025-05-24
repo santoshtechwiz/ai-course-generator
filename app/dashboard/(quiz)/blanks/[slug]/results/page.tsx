@@ -1,103 +1,86 @@
 "use client"
 
-import { use, useEffect, useState } from "react"
+import { use, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAppSelector } from "@/store"
-import { useAuth } from "@/hooks/useAuth"
+import { useAppSelector } from "@/store/hooks"
 import { Card, CardContent } from "@/components/ui/card"
-import type { TextQuizState, QuizResult } from "@/types/quiz"
-import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
-import { LoadingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
-import BlankQuizResults from "../../components/BlankQuizResults"
+import { ErrorDisplay } from "../../../components/QuizStateDisplay"
+import CodeQuizResult from "../../components/CodeQuizResult"
+import { selectQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
+import type { QuizResult } from "@/app/types/quiz-types"
 
-interface PageProps {
+interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
 }
 
-export default function BlanksResultsPage({ params }: PageProps) {
-  const { slug } = use(params)
+export default function CodeResultsPage({ params }: ResultsPageProps) {
+  // Extract slug in a way that works in tests and in real usage
+  const slug =
+    params instanceof Promise
+      ? use(params).slug // Real usage with Next.js
+      : (params as { slug: string }).slug // Test usage
+
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
-  const quizState = useAppSelector((state) => state.textQuiz) as TextQuizState
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Redux selectors
+  const results = useAppSelector(selectQuizResults)
+  const questions = useAppSelector(selectQuestions)
+  const answers = useAppSelector(selectAnswers)
+  const title = useAppSelector(selectQuizTitle)
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log("Validating quiz state:", quizState)
-
-      // Check for required fields
-      const hasQuizId = Boolean(quizState?.quizId)
-      const hasQuestions = Boolean(quizState?.questions && Array.isArray(quizState.questions) && quizState.questions.length > 0)
-
-      if (!hasQuizId || !hasQuestions) {
-        console.error("Invalid quiz state:", { hasQuizId, hasQuestions, quizState })
-        setError("Quiz data not found or invalid.")
-        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
-        return
-      }
-
-      // Validate slug if available
-      if (quizState.slug && quizState.slug !== slug) {
-        console.error("Quiz slug mismatch:", { stateSlug: quizState.slug, pageSlug: slug })
-        setError("Quiz slug does not match.")
-        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
-        return
-      }
-
-      setIsLoading(false)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [quizState, slug, router])
-
-  if (isLoading) {
-    return <LoadingDisplay message="Loading quiz results..." />
-  }
-
-  if (error) {
+  // Error state
+  if (loadError) {
     return (
       <ErrorDisplay
-        error={error}
-        onRetry={() => router.refresh()}
+        error={loadError}
+        onRetry={() => setLoadError(null)}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
   }
 
-  if (!isAuthenticated) {
+  // No results found
+  if (!results && !questions.length) {
     return (
-      <NonAuthenticatedUserSignInPrompt
-        quizType="blanks"
-        message="Sign in to save your results and track your progress"
-        previewData={{
-          score: quizState.answers.filter(a => a.isCorrect).length,
-          maxScore: quizState.questions?.length || 0,
-          percentage: Math.round((quizState.answers.filter(a => a.isCorrect).length / Math.max(1, quizState.questions?.length || 0)) * 100),
-        }}
-        returnPath={`/dashboard/blanks/${slug}/results`}
-      />
+      <div className="container max-w-4xl py-10 text-center">
+        <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
+        <p>We couldn't find your results for this quiz.</p>
+        <div className="mt-6">
+          <button
+            onClick={() => router.push(`/dashboard/code/${slug}`)}
+            className="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded"
+          >
+            Take the Quiz
+          </button>
+        </div>
+      </div>
     )
   }
 
-  const quizResult: QuizResult = {
-    quizId: quizState.quizId!,
+  // Create quiz result from Redux state
+  const quizResult: QuizResult = results || {
+    quizId: slug,
     slug,
-    answers: quizState.answers || [], // Ensure answers is never undefined
-    questions: quizState.questions || [], // Use questions from state
-    totalQuestions: quizState.questions?.length || 0,
-    correctAnswers: quizState.answers.filter(a => a.isCorrect).length || 0,
-    score: quizState.score,
-    completedAt: quizState.completedAt || new Date().toISOString(),
-    title: quizState.title || quizState.quizData?.title || "Fill in the Blanks Quiz",
+    title: title || "Code Quiz",
+    score: results?.score || 0,
+    maxScore: questions.length,
+    percentage: results?.percentage || 0,
+    completedAt: new Date().toISOString(),
+    questions: questions.map((q) => ({
+      id: q.id,
+      question: q.text,
+      userAnswer: answers[q.id]?.code || "",
+      correctAnswer: "",
+      isCorrect: true, // Code questions are typically marked as correct when submitted
+    })),
   }
 
   return (
-    <div className="container mx-auto max-w-5xl py-6">
+    <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <BlankQuizResults result={quizResult} />
+          <CodeQuizResult result={quizResult} />
         </CardContent>
       </Card>
     </div>

@@ -2,102 +2,122 @@
 
 import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAppSelector } from "@/store"
+import { useSelector } from "react-redux"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent } from "@/components/ui/card"
-import type { TextQuizState, QuizResult } from "@/types/quiz"
+import { selectQuizResults, selectQuizId } from "@/store/slices/quizSlice"
 import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
-import { LoadingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
+import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import QuizResultsOpenEnded from "../../components/QuizResultsOpenEnded"
 
-interface PageProps {
+interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
 }
 
-export default function OpenEndedQuizResultsPage({ params }: PageProps) {
-  const { slug } = use(params)
+export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
+  // Extract slug in a way that works in tests and in real usage
+  const slug =
+    params instanceof Promise
+      ? use(params).slug // Real usage with Next.js
+      : (params as { slug: string }).slug // Test usage
+
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
-  const quizState = useAppSelector((state) => state.textQuiz) as unknown as TextQuizState
+  const { isAuthenticated, status, requireAuth } = useAuth()
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [fetchAttempted, setFetchAttempted] = useState(false)
+  
+  // Get results from Redux store
+  const quizResults = useSelector(selectQuizResults)
+  const quizId = useSelector(selectQuizId)
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
+  // Load results if not already in store
   useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log("Validating quiz state:", quizState)
-
-      // Check for required fields
-      const hasQuizId = Boolean(quizState?.quizId)
-      const hasQuestions = Boolean(quizState?.questions && Array.isArray(quizState.questions) && quizState.questions.length > 0)
-
-      if (!hasQuizId || !hasQuestions) {
-        console.error("Invalid quiz state:", { hasQuizId, hasQuestions, quizState })
-        setError("Quiz data not found or invalid.")
-        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
-        return
+    if (isAuthenticated && !quizResults && !fetchAttempted) {
+      setFetchAttempted(true)
+      
+      const fetchResults = async () => {
+        try {
+          const response = await fetch(`/api/quizzes/openended/${slug}/results`)
+          
+          if (!response.ok) {
+            throw new Error('Failed to load results')
+          }
+          
+          // In a real app, you would dispatch an action to store these results
+          const data = await response.json()
+          console.log("Results fetched:", data)
+          
+          // Here we would dispatch to store the data
+          // dispatch(setQuizResults(data))
+        } catch (error) {
+          console.error("Error loading results:", error)
+          setLoadError("Failed to load quiz results")
+        }
       }
-
-      // Validate slug if available
-      if (quizState.slug && quizState.slug !== slug) {
-        console.error("Quiz slug mismatch:", { stateSlug: quizState.slug, pageSlug: slug })
-        setError("Quiz slug does not match.")
-        setTimeout(() => router.replace("/dashboard/quizzes"), 2000)
-        return
-      }
-
-      setIsLoading(false)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [quizState, slug, router])
-
-  if (isLoading) {
-    return <LoadingDisplay message="Loading quiz results..." />
+      
+      fetchResults()
+    }
+  }, [isAuthenticated, quizResults, fetchAttempted, slug])
+  
+  // Authentication check
+  if (!isAuthenticated && status !== "loading") {
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        quizType="openended"
+        onSignIn={() => requireAuth(`/dashboard/openended/${slug}/results`)}
+        showSaveMessage={false}
+        message="Please sign in to view your quiz results"
+      />
+    )
   }
 
-  if (error) {
+  // Loading state
+  if (status === "loading") {
+    return <InitializingDisplay />
+  }
+
+  // Error state
+  if (loadError) {
     return (
       <ErrorDisplay
-        error={error}
-        onRetry={() => router.refresh()}
+        error={loadError}
+        onRetry={() => {
+          setFetchAttempted(false)
+          setLoadError(null)
+        }}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
   }
 
-  if (!isAuthenticated) {
+  // No results found
+  if (!quizResults && isAuthenticated && fetchAttempted) {
     return (
-      <NonAuthenticatedUserSignInPrompt
-        quizType="openended"
-        message="Sign in to save your results and track your progress"
-        previewData={{
-          score: quizState.answers.length,
-          maxScore: quizState.questions?.length || 0,
-          percentage: Math.round((quizState.answers.length / Math.max(1, quizState.questions?.length || 0)) * 100),
-        }}
-        returnPath={`/dashboard/openended/${slug}/results`}
-      />
+      <div className="container max-w-4xl py-10 text-center">
+        <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
+        <p>We couldn't find your results for this quiz.</p>
+        <div className="mt-6">
+          <button
+            onClick={() => router.push(`/dashboard/openended/${slug}`)}
+            className="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded"
+          >
+            Take the Quiz
+          </button>
+        </div>
+      </div>
     )
   }
 
-  const quizResult: QuizResult = {
-    quizId: quizState.quizId!,
-    slug,
-    answers: quizState.answers || [], // Ensure answers is never undefined
-    questions: quizState.questions || [], // Use questions from state
-    totalQuestions: quizState.questions?.length || 0,
-    completedAt: quizState.completedAt || new Date().toISOString(),
-    title: quizState.title || quizState.quizData?.title || "Open Ended Quiz",
-  }
-
-  return (
-    <div className="container mx-auto max-w-5xl py-6">
+  // Display results if we have them
+  return quizResults ? (
+    <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <QuizResultsOpenEnded result={quizResult} />
+          <QuizResultsOpenEnded result={quizResults} />
         </CardContent>
       </Card>
     </div>
+  ) : (
+    <InitializingDisplay message="Preparing your quiz results..." />
   )
 }

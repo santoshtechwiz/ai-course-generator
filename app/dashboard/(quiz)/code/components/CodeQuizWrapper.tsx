@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
-import { useQuiz } from "@/hooks/useQuizState"
+
 import { useAppDispatch } from "@/store" // Import dispatch directly
 import { toast } from "sonner"
 import { signIn } from "next-auth/react"

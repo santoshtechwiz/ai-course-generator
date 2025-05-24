@@ -1,26 +1,25 @@
 "use client"
 
-import { useAppDispatch } from "@/store"
-import { resetQuiz } from "@/app/store/slices/textQuizSlice" // Import the action from textQuizSlice
+import { useSelector, useDispatch } from "react-redux"
+import { resetQuiz } from "@/store/slices/quizSlice" 
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
+import OpenEndedQuizWrapperRedux from "../components/OpenEndedQuizWrapperRedux"
 import { LoadingDisplay } from "../../components/QuizStateDisplay"
 import type { OpenEndedQuizData } from "@/types/quiz"
 import { ErrorBoundary } from "react-error-boundary"
 import { ErrorDisplay } from "../../components/QuizStateDisplay"
-import { Provider } from "react-redux"
-import { store } from "@/store"
+import { AppDispatch } from "@/store"
 
 export function ClientWrapper({ slug, quizData }: { slug: string; quizData: OpenEndedQuizData }) {
-  const dispatch = useAppDispatch()
+  const dispatch = useDispatch<AppDispatch>()
   const searchParams = useSearchParams()
   const reset = searchParams.get("reset")
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     if (reset === "true") {
-      // Reset the text quiz state when reset param is present
+      // Reset the quiz state when reset param is present
       dispatch(resetQuiz())
     }
 
@@ -55,9 +54,11 @@ export function ClientWrapper({ slug, quizData }: { slug: string; quizData: Open
         />
       )}
     >
-      <Provider store={store}>
-        <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
-      </Provider>
+      <OpenEndedQuizWrapperRedux 
+        slug={slug}
+        quizData={quizData} 
+        quizId={quizData.id}
+      />
     </ErrorBoundary>
   )
 }

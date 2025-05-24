@@ -1,14 +1,24 @@
 "use client"
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { initializeQuiz, completeQuiz, setCurrentQuestion, submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
+import {
+  fetchQuiz,
+  setQuizId,
+  setQuizType,
+  submitQuiz,
+  setCurrentQuestionIndex,
+  saveAnswer,
+  selectQuestions,
+  selectCurrentQuestion,
+  selectCurrentQuestionIndex,
+  selectQuizStatus,
+  selectQuizError,
+} from "@/store/slices/quizSlice"
 import type { OpenEndedQuizData } from "@/types/quiz"
 import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
-
 import { toast } from "react-hot-toast"
-import { saveQuizAnswer } from "@/lib/utils/quiz-answer-utils"
 
 interface OpenEndedQuizWrapperProps {
   quizData: OpenEndedQuizData
@@ -18,41 +28,43 @@ interface OpenEndedQuizWrapperProps {
 export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const quizState = useAppSelector((state) => state.textQuiz)
+
+  // Redux selectors
+  const questions = useAppSelector(selectQuestions)
+  const currentQuestion = useAppSelector(selectCurrentQuestion)
+  const currentQuestionIndex = useAppSelector(selectCurrentQuestionIndex)
+  const quizStatus = useAppSelector(selectQuizStatus)
+  const error = useAppSelector(selectQuizError)
+
   const [isInitializing, setIsInitializing] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [userAnswers, setUserAnswers] = useState<any[]>([])
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
-  const navigatingRef = useRef(false)
-  const quizCompletedRef = useRef(false)
 
   const isValidQuizData = useMemo(() => {
     return Boolean(
       quizData?.id &&
-      Array.isArray(quizData.questions) &&
-      quizData.questions.length > 0 &&
-      quizData.questions.every((q) => q.question && q.answer)
+        Array.isArray(quizData.questions) &&
+        quizData.questions.length > 0 &&
+        quizData.questions.every((q) => q.question && q.answer),
     )
   }, [quizData])
 
-  const quizInfo = useMemo(() => ({
-    id: quizData?.id,
-    questionCount: quizData?.questions?.length || 0,
-    hasQuestions: Boolean(quizData?.questions?.length),
-    isValid: isValidQuizData,
-  }), [quizData?.id, quizData?.questions?.length, isValidQuizData])
+  const quizInfo = useMemo(
+    () => ({
+      id: quizData?.id,
+      questionCount: quizData?.questions?.length || 0,
+      hasQuestions: Boolean(quizData?.questions?.length),
+      isValid: isValidQuizData,
+    }),
+    [quizData?.id, quizData?.questions?.length, isValidQuizData],
+  )
 
   useEffect(() => {
     const initTimer = setTimeout(() => {
       if (quizInfo.id && quizInfo.hasQuestions && slug) {
-        dispatch(
-          initializeQuiz({
-            ...quizData,
-            type: "openended",
-            slug,
-          })
-        )
+        dispatch(setQuizId(quizInfo.id.toString()))
+        dispatch(setQuizType("openended"))
+        dispatch(fetchQuiz({ id: quizInfo.id.toString(), data: quizData }))
       }
       setIsInitializing(false)
     }, 500)
@@ -60,165 +72,61 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     return () => clearTimeout(initTimer)
   }, [dispatch, quizInfo.id, quizInfo.hasQuestions, slug, quizData])
 
-  const handleQuestionComplete = useCallback(() => {
-    if (navigatingRef.current || quizCompletedRef.current) return
-
-    const currentIndex = quizState?.currentQuestionIndex ?? 0
-
-    if (currentIndex === quizInfo.questionCount - 1) {
-      navigatingRef.current = true
-      quizCompletedRef.current = true
-
-      const completionTimestamp = new Date().toISOString()
-      const currentAnswers = quizState?.answers ?? []
-
-      dispatch(
-        completeQuiz({
-          answers: currentAnswers,
-          completedAt: completionTimestamp,
-          quizId: quizData?.id || quizState?.quizData?.id,
-          title: quizData?.title || quizState?.quizData?.title || "Open Ended Quiz",
-          score: 0, // Will be calculated on results page
-          questions: quizData.questions, // Include questions for result page
-          slug: slug // Include slug for validation
-        })
-      )
-
-      // Small delay to ensure state is updated before navigation
-      setTimeout(() => {
-        router.replace(`/dashboard/openended/${slug}/results`)
-      }, 200)
-    } else {
-      dispatch(setCurrentQuestion(currentIndex + 1))
-    }
-  }, [quizState, quizInfo.questionCount, router, slug, dispatch, quizData])
-
-  // Get current question safely
-  const currentQuestion = useMemo(() => {
-    return quizData?.questions?.[currentQuestionIdx] || null;
-  }, [quizData?.questions, currentQuestionIdx]);
-
   const handleAnswerSubmit = useCallback(
     async (answer: string, elapsedTime: number, hintsUsed: boolean) => {
-      if (isSubmitting || !currentQuestion) return;
+      if (isSubmitting || !currentQuestion) return
 
-      // Create user answer object
-      const userAnswer = {
-        questionId: currentQuestion.id,
-        answer,
-        timeSpent: elapsedTime,
-        hintsUsed,
-        index: currentQuestionIdx,
-        // Use the isCorrect field for consistency with other quiz types
-        // This might come from the API verification or be left undefined for server-side evaluation
-        isCorrect: undefined
-      };
+      setIsSubmitting(true)
 
-      // Save the answer in local state
-      setUserAnswers((prev) => {
-        // Check if this answer already exists and update it
-        const exists = prev.some(a => a.questionId === currentQuestion.id);
-        if (exists) {
-          return prev.map(a => a.questionId === currentQuestion.id ? userAnswer : a);
-        }
-        // Otherwise add as new answer
-        return [...prev, userAnswer];
-      });
-
-      // Dispatch to Redux store
-      dispatch(submitAnswerLocally(userAnswer));
-
-      // For text-based quizzes, we can also save each answer to the database
-      // But use the saveQuizAnswer utility for consistent handling
       try {
-        await saveQuizAnswer({
-          slug,
-          questionId: currentQuestion.id,
-          answer,
-          type: "openended",
-          timeSpent: elapsedTime,
-          showToast: true
-        });
-      } catch (error) {
-        console.warn("Failed to save answer to database:", error);
-        // We continue with local storage, no need to block progression
-      }
+        // Save answer to Redux
+        await dispatch(
+          saveAnswer({
+            questionId: currentQuestion.id,
+            answer: {
+              questionId: currentQuestion.id,
+              text: answer,
+              timestamp: Date.now(),
+            },
+          }),
+        ).unwrap()
 
-      // Check if we're on the last question
-      const isLastQuestion = currentQuestionIdx >= quizData.questions.length - 1;
+        // Check if we're on the last question
+        const isLastQuestion = currentQuestionIndex >= questions.length - 1
 
-      if (!isLastQuestion) {
-        // Move to the next question with a short delay for state updates
-        setTimeout(() => {
-          setCurrentQuestionIdx((prevIdx) => prevIdx + 1);
-        }, 50);
-      } else {
-        // This is the last question - handle quiz completion
-        setQuizCompleted(true);
-        setIsSubmitting(true);
-
-        try {
-          // First dispatch action to Redux
-          dispatch(completeQuiz({
-            quizId: quizData.id,
-            title: quizData.title,
-            completedAt: new Date().toISOString(),
-            score: score
-          }));
-
-          // Calculate total time spent
-          const totalTime = userAnswers.reduce((total, a) => total + (a.timeSpent || 0), 0) + elapsedTime;
-          
-          // Use the shared utility for submission
-          await submitCompletedQuiz({
-            slug,
-            type: "openended",
-            answers: [...userAnswers, userAnswer],
-            score: score || 0,  // Text quizzes may not have immediate scoring
-            totalQuestions: quizData.questions.length,
-            totalTime
-          });
-          
-          // Show success message
-          const toastId = toast.success("Quiz completed! Viewing your results...", {
-            duration: 3000,
-            id: "quiz-completed-toast"
-          });
-
-          // Navigate to results page
+        if (!isLastQuestion) {
+          // Move to the next question
           setTimeout(() => {
-            // Ensure toast is dismissed before navigation
-            toast.dismiss(toastId);
-            router.push(`/dashboard/openended/${slug}/results`);
-          }, 800);
-        } catch (error) {
-          console.error("Failed to handle quiz completion:", error);
-          setIsSubmitting(false);
-          setSubmitError("Failed to process quiz results");
-          
-          // Continue to results page anyway since we have local data
-          setTimeout(() => {
-            router.push(`/dashboard/openended/${slug}/results`);
-          }, 1500);
+            setIsSubmitting(false)
+            dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+          }, 50)
+        } else {
+          // This is the last question - handle quiz completion
+          try {
+            await dispatch(submitQuiz()).unwrap()
+
+            toast.success("Quiz completed! Viewing your results...")
+            router.push(`/dashboard/openended/${slug}/results`)
+          } catch (error) {
+            console.error("Failed to handle quiz completion:", error)
+            setIsSubmitting(false)
+            setSubmitError("Failed to process quiz results")
+
+            // Continue to results page anyway since we have local data
+            setTimeout(() => {
+              router.push(`/dashboard/openended/${slug}/results`)
+            }, 1500)
+          }
         }
+      } catch (error) {
+        console.error("Error in answer handling:", error)
+        setIsSubmitting(false)
+        toast.error("Failed to process your answer. Please try again.")
       }
     },
-    [
-      currentQuestion,
-      isSubmitting,
-      quizData.questions,
-      currentQuestionIdx,
-      dispatch,
-      slug,
-      quizData.id,
-      quizData.title,
-      userAnswers,
-      router,
-      score,
-      elapsedTime
-    ]
-  );
-  
+    [currentQuestion, isSubmitting, questions.length, currentQuestionIndex, dispatch, slug, router],
+  )
+
   if (isInitializing) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -246,9 +154,6 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
     )
   }
 
-  const currentQuestionIndex = quizState?.currentQuestionIndex ?? 0
-  const currentQuestion = quizData.questions[currentQuestionIndex]
-
   if (!currentQuestion) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -271,7 +176,7 @@ export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWr
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={quizInfo.questionCount}
       isLastQuestion={currentQuestionIndex === quizInfo.questionCount - 1}
-      onQuestionComplete={handleQuestionComplete}
+      onAnswer={handleAnswerSubmit}
     />
   )
 }
