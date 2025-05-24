@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast"
 
 import { Card, CardContent } from "@/components/ui/card"
 import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
-import { LoadingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
+import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import McqQuizResult from "../../components/McqQuizResult"
 import type { QuizResult } from "@/app/types/quiz-types"
 
@@ -223,7 +223,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   // Keep loading after auth check for test compatibility
   if ((quizStatus?.isLoading || status === "loading") && !results && !tempResults) {
-    return <LoadingDisplay message="Loading your quiz results..." />
+    return <InitializingDisplay message="Loading your quiz results..." />
   }
 
   // Error state
@@ -291,7 +291,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       </Card>
     </div>
   ) : (
-    <LoadingDisplay message="Preparing your quiz results..." />
+    <InitializingDisplay message="Preparing your quiz results..." />
   )
 }
 //would go in a layout.tsx file if not here)
