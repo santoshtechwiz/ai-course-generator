@@ -3,10 +3,7 @@ import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, 
 import storage from "redux-persist/lib/storage"
 import type { TypedUseSelectorHook } from "react-redux"
 import { useDispatch, useSelector } from "react-redux"
-import type { PersistPartial } from "redux-persist/es/persistReducer"
 
-// Middlewares
-import persistQuizMiddleware, { checkStoredAuthRedirectState } from "./middleware/persistQuizMiddleware"
 
 // Reducers
 import authReducer from "./slices/authSlice"
@@ -15,7 +12,6 @@ import subscriptionReducer from "./slices/subscription-slice"
 import userReducer from "./slices/userSlice"
 import flashcardReducer from "./slices/flashcardSlice"
 import textQuizReducer from "@/app/store/slices/textQuizSlice"
-import { useQuiz } from "@/hooks"
 
 // Define types for persist config
 interface PersistConfig {
@@ -81,25 +77,21 @@ type RootReducerType = typeof rootReducer
 // === STORE ===
 export const store = configureStore({
   reducer: rootReducer,
+  // Add middleware configuration to ignore non-serializable values for Redux Persist actions
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        // Add any specific paths that might contain non-serializable values
+        ignoredActionPaths: ['register', 'meta.arg', 'payload.timestamp', 'payload.startedTimeStamp'],
+        ignoredPaths: ['register'],
       },
-    })
-    .prepend(persistQuizMiddleware.middleware),
+    }),
   devTools: process.env.NODE_ENV !== "production",
 })
 
 export const persistor = persistStore(store)
 
-// Only check for stored state on client side
-if (typeof window !== "undefined") {
- 
-  checkStoredAuthRedirectState(store).catch((error) =>
-    console.error("Error checking stored auth redirect state:", error),
-  )
-}
 
 // === TYPES ===
 export type RootState = ReturnType<RootReducerType>
@@ -108,9 +100,4 @@ export type AppDispatch = typeof store.dispatch
 // === HOOKS ===
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
-
-// Export all selectors from the quiz slice
-export * from './slices/quizSlice'
-
-// Export the useQuiz hook
-export { useQuiz } from "@/hooks/useQuizState"
+export const RoootState: RootState = store.getState()

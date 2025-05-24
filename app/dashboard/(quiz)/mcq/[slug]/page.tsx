@@ -1,10 +1,10 @@
 "use client"
 
-import { use, useEffect, useRef } from "react"
+import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useDispatch } from "react-redux"
 import { useAuth } from "@/hooks/useAuth"
-import { useQuiz } from "@/hooks/useQuizState"
-
+import { AppDispatch } from "@/store"
 import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 import McqQuizWrapper from "../components/McqQuizWrapper"
 
@@ -15,94 +15,78 @@ export default function McqQuizPage({
 }) {
   const router = useRouter()
   const { userId, status } = useAuth()
-  const loadStartedRef = useRef(false)
+  const dispatch = useDispatch<AppDispatch>()
+  const [quizData, setQuizData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Extract slug safely, handling both promise and direct object formats
-  const slug = params instanceof Promise 
-    ? use(params).slug  // Real usage with Next.js
-    : (params as { slug: string }).slug;  // Test usage
+  // Extract slug in a way that works in tests and in real usage
+  const slug =
+    params instanceof Promise
+      ? use(params).slug // Real usage with Next.js
+      : (params as { slug: string }).slug // Test usage
 
-  // Get quiz state from hook
-  const quizHook = useQuiz()
-
-  // Handle both old and new API formats for compatibility
-  const isNewApiFormat = quizHook && 'quiz' in quizHook && 'actions' in quizHook
-
-  // Extract values from either the new or old API
-  const quizData = isNewApiFormat
-    ? quizHook.quiz.data
-    : (quizHook as any)?.quizData
-
-  const isLoading = isNewApiFormat
-    ? quizHook.status.isLoading
-    : (quizHook as any)?.isLoading
-
-  const errorMessage = isNewApiFormat
-    ? quizHook.status.errorMessage
-    : (quizHook as any)?.error || (quizHook as any)?.quizError
-
-  // Get loadQuiz function from either API format
-  const loadQuiz = isNewApiFormat
-    ? quizHook.actions.loadQuiz
-    : (quizHook as any)?.loadQuiz
-
-  // Load quiz from Redux state or API - prevent duplicate calls
+  // Load quiz data
   useEffect(() => {
-    // Only load if:
-    // 1. We have loadQuiz function
-    // 2. We're not already loading
-    // 3. We don't have quiz data yet
-    // 4. We haven't started loading yet (using ref)
-    if (loadQuiz && !isLoading && !quizData && !loadStartedRef.current && slug) {
-      loadStartedRef.current = true;
-      console.log("Loading MCQ quiz with slug:", slug);  // Add clear indication it's an MCQ quiz
-      // Fix: Ensure we explicitly specify "mcq" as the quiz type
-      loadQuiz(slug, "mcq")
-        .catch(error => {
-          console.error("Error loading MCQ quiz:", error)
-          loadStartedRef.current = false; // Reset flag if error occurred to allow retry
-        })
+    const loadQuizData = async () => {
+      try {
+        // Fetch quiz data from API
+        const response = await fetch(`/api/quizzes/mcq/${slug}`)
+        
+        if (!response.ok) {
+          throw new Error('Quiz not found')
+        }
+        
+        const data = await response.json()
+        setQuizData(data)
+      } catch (error: any) {
+        console.error("Error loading quiz:", error)
+        setError(error.message || 'Failed to load quiz')
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [slug, loadQuiz, isLoading, quizData])
+    
+    if (slug) {
+      loadQuizData()
+    }
+  }, [slug])
 
   // If still loading or waiting for auth status, show loading
   if (isLoading || status === "loading") {
     return <InitializingDisplay />
   }
 
-  // Error state
-  if (errorMessage) {
+  // Show error if any
+  if (error) {
     return (
-      <ErrorDisplay
-        error={errorMessage}
-        onRetry={() => {
-          // Reset load flag to allow retry
-          loadStartedRef.current = false;
-          // Then reload page
-          window.location.reload();
-        }}
-        onReturn={() => router.push("/dashboard/quizzes")}
+      <ErrorDisplay 
+        error={error}
+        onRetry={() => window.location.reload()}
+        onReturn={() => router.push("/dashboard")}
       />
     )
   }
 
-  // Quiz found - render the wrapper
-  if (quizData) {
+  // No quiz data
+  if (!quizData) {
     return (
-      <div className="container max-w-4xl py-6">
-        <McqQuizWrapper
-          slug={slug}
-          quizId={quizData.id}
-          userId={userId}
-          quizData={quizData}
-          isPublic={quizData.isPublic}
-          isFavorite={quizData.isFavorite}
-          ownerId={quizData.ownerId}
-        />
-      </div>
+      <ErrorDisplay 
+        error="Quiz not found"
+        onRetry={() => window.location.reload()}
+        onReturn={() => router.push("/dashboard")}
+      />
     )
   }
 
-  // Default loading state
-  return <InitializingDisplay />
+  return (
+    <div className="container max-w-4xl py-6">
+      <McqQuizWrapper
+        slug={slug}
+        quizId={quizData.id}
+        userId={userId}
+        quizData={quizData}
+      />
+    </div>
+  )
 }

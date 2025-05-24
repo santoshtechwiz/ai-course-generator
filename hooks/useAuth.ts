@@ -1,98 +1,43 @@
-"use client"
+// src/hooks/useAuth.ts
+import { useSession, signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { useCallback } from "react";
 
-import { useCallback, useMemo } from 'react'
-import { useSession, signIn, signOut } from 'next-auth/react'
-import { useAppDispatch, useAppSelector } from '@/store'
-import { setUserRedirectState, clearUserRedirectState } from '@/store/slices/authSlice'
+export function useAuth() {
+  const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const fromAuth = searchParams?.get("fromAuth") === "true";
 
-export type AuthStatus = 'authenticated' | 'unauthenticated' | 'loading'
+  // Extract userId for convenience
+  const userId = session?.user?.id;
 
-export interface AuthRedirectInfo {
-  path: string
-}
+  // Check if user is authenticated
+  const isAuthenticated = status === "authenticated" && !!session?.user;
 
-export interface AuthState {
-  status: 'loading' | 'authenticated' | 'unauthenticated'
-  fromAuth?: boolean
-  userId?: string | null
-  requireAuth: (redirectUrl?: string) => void
-}
+  // Function to require authentication with redirect
+  const requireAuth = useCallback(
+    (callbackUrl?: string) => {
+      // If already authenticated, no need to sign in
+      if (isAuthenticated) return true;
 
-/**
- * Hook for managing authentication state and handling authentication flow
- */
-export function useAuth(): AuthState {
-  const { data: session, status } = useSession()
-  const dispatch = useAppDispatch()
-  const authState = useAppSelector(state => state.auth)
-  
-  // Get the fromAuth parameter from URL
-  const fromAuth = useMemo(() => {
-    if (typeof window === 'undefined') return false
-    
-    // Use URLSearchParams to properly parse URL parameters
-    const searchParams = new URLSearchParams(window.location.search)
-    return searchParams.has('fromAuth') && searchParams.get('fromAuth') === 'true'
-  }, [])
-  
-  // Get the auth redirect info from URL
-  const getAuthRedirectInfo = useCallback((): AuthRedirectInfo | null => {
-    if (typeof window === 'undefined') return null
-    
-    // Parse redirect path from URL parameters
-    const searchParams = new URLSearchParams(window.location.search)
-    const redirectPath = searchParams.get('redirect')
-    
-    if (redirectPath) {
-      return { path: redirectPath }
-    }
-    
-    return null
-  }, [])
-  
-  // Clear auth redirect info
-  const clearAuthRedirectInfo = useCallback(() => {
-    dispatch(clearUserRedirectState())
-  }, [dispatch])
-  
-  // Set auth redirect info
-  const setAuthRedirectInfo = useCallback((info: any) => {
-    dispatch(setUserRedirectState(info))
-  }, [dispatch])
-  
-  // Require authentication
-  const requireAuth = useCallback((callbackUrl?: string) => {
-    if (status === 'unauthenticated') {
-      signIn(undefined, { callbackUrl: callbackUrl || window.location.pathname })
-    }
-  }, [status])
-  
+      // Sign in with optional callback URL
+      signIn(undefined, {
+        callbackUrl: callbackUrl || window.location.pathname,
+      });
+
+      return false;
+    },
+    [isAuthenticated]
+  );
+
   return {
-    userId: session?.user?.id || null,
-    isAuthenticated: status === 'authenticated',
+    isAuthenticated,
+    user: session?.user,
     status,
+    isLoading: status === "loading",
+    isError: status === "unauthenticated" && !session,
+    userId,
     fromAuth,
-    signIn,
-    signOut,
     requireAuth,
-    getAuthRedirectInfo,
-    clearAuthRedirectInfo,
-    setAuthRedirectInfo
-  }
-}
-
-// Helper function for testing
-export function _createMockUseAuth(overrides: Partial<AuthState> = {}): AuthState {
-  return {
-    userId: 'test-user-id',
-    isAuthenticated: true,
-    status: 'authenticated',
-    fromAuth: false,
-    signIn: async () => null,
-    signOut: async () => null,
-    requireAuth: () => {},
-    getAuthRedirectInfo: () => null,
-    clearAuthRedirectInfo: () => {},
-    ...overrides
-  }
+  };
 }

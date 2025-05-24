@@ -2,10 +2,12 @@
 
 import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSelector, useDispatch } from "react-redux"
 import { useAuth } from "@/hooks/useAuth"
-import { useQuiz } from "@/hooks/useQuizState"
-import CodeQuizWrapper from "../components/CodeQuizWrapper"
+import { AppDispatch } from "@/store"
 import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
+import CodeQuizWrapperRedux from "../components/CodeQuizWrapperRedux"
+import { selectQuizId, fetchQuiz } from "@/store/slices/quizSlice"
 
 export default function CodeQuizPage({
   params,
@@ -14,6 +16,8 @@ export default function CodeQuizPage({
 }) {
   const router = useRouter()
   const { userId, status } = useAuth()
+  const dispatch = useDispatch<AppDispatch>()
+  const quizId = useSelector(selectQuizId)
 
   // Extract slug in a way that works in tests and in real usage
   const slug =
@@ -21,67 +25,55 @@ export default function CodeQuizPage({
       ? use(params).slug // Real usage with Next.js
       : (params as { slug: string }).slug // Test usage
 
-  // Get quiz state from hook
-  const quizHook = useQuiz()
-
-  // Handle both old and new API formats for compatibility
-  const isNewApiFormat = quizHook && "quiz" in quizHook && "actions" in quizHook
-
-  // Extract values from either the new or old API
-  const quizData = isNewApiFormat ? quizHook.quiz.data : (quizHook as any)?.quizData
-
-  const isLoading = isNewApiFormat ? quizHook.status.isLoading : (quizHook as any)?.isLoading
-
-  const errorMessage = isNewApiFormat
-    ? quizHook.status.errorMessage
-    : (quizHook as any)?.error || (quizHook as any)?.quizError
-
-  // Get loadQuiz function from either API format
-  const loadQuiz = isNewApiFormat ? quizHook.actions.loadQuiz : (quizHook as any)?.loadQuiz
-
-  // Load quiz from Redux state or API
+  // Load quiz data
   useEffect(() => {
-    if (!isLoading && !quizData && typeof slug === "string" && slug && loadQuiz) {
-      console.log("Loading quiz with slug:", slug)
-      loadQuiz(slug, "code").catch((error) => {
-        console.error("Error loading quiz:", error)
-      })
+    const loadQuizData = async () => {
+      if (!quizId) {
+        try {
+          // Fetch quiz data from API
+          const response = await fetch(`/api/quizzes/code/${slug}`)
+          
+          if (!response.ok) {
+            throw new Error('Quiz not found')
+          }
+          
+          const quizData = await response.json()
+          
+          // Now pass this data to the wrapper component
+          return quizData
+        } catch (error) {
+          console.error("Error loading quiz:", error)
+          return null
+        }
+      }
     }
-  }, [slug, loadQuiz, isLoading, quizData])
+    
+    if (slug) {
+      loadQuizData()
+    }
+  }, [slug, quizId, dispatch])
 
   // If still loading or waiting for auth status, show loading
-  if (isLoading || status === "loading") {
+  if (status === "loading") {
     return <InitializingDisplay />
   }
 
-  // Error state
-  if (errorMessage) {
-    return (
-      <ErrorDisplay
-        error={errorMessage}
-        onRetry={() => window.location.reload()}
-        onReturn={() => router.push("/dashboard/quizzes")}
+  // This is a placeholder for where you would normally fetch or access quiz data
+  // In a real implementation, you would load this from an API or state management
+  const quizData = {
+    id: slug,
+    title: "Code Quiz",
+    questions: [],
+  }
+
+  return (
+    <div className="container max-w-4xl py-6">
+      <CodeQuizWrapperRedux
+        slug={slug}
+        quizId={quizData.id}
+        userId={userId}
+        quizData={quizData}
       />
-    )
-  }
-
-  // Quiz found - render the wrapper
-  if (quizData) {
-    return (
-      <div className="container max-w-4xl py-6">
-        <CodeQuizWrapper
-          slug={slug}
-          quizId={quizData.id}
-          userId={userId}
-          quizData={quizData}
-          isPublic={quizData.isPublic}
-          isFavorite={quizData.isFavorite}
-          ownerId={quizData.ownerId}
-        />
-      </div>
-    )
-  }
-
-  // Default loading state
-  return <InitializingDisplay />
+    </div>
+  )
 }

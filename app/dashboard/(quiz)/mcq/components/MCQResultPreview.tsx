@@ -25,34 +25,20 @@ interface MCQResultPreviewProps {
     questions: QuestionResult[]
     slug: string
   }
-  onSubmit: (answers: UserAnswer[], elapsedTime: number) => void
+  onSubmit: () => void
   onCancel: () => void
   userAnswers: UserAnswer[]
+  isSubmitting?: boolean
 }
 
 export default function MCQResultPreview({ 
   result, 
   onSubmit, 
   onCancel,
-  userAnswers
+  userAnswers,
+  isSubmitting = false
 }: MCQResultPreviewProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  const handleSubmit = () => {
-    setIsSubmitting(true)
-    // Calculate approximate time spent based on number of questions
-    const approximateTimePerQuestion = 30 // seconds per question
-    const elapsedTime = result.questions.length * approximateTimePerQuestion
-    
-    // Make sure we preserve the original question ID format (string or number)
-    const processedAnswers = userAnswers.map(answer => ({
-      ...answer,
-      // Ensure questionId maintains its original format (don't convert to string)
-      questionId: answer.questionId
-    }));
-    
-    onSubmit(processedAnswers, elapsedTime)
-  }
+  // Use the existing isSubmitting prop
   
   return (
     <Card className="max-w-3xl mx-auto" data-testid="mcq-quiz-result-preview">
@@ -124,13 +110,16 @@ export default function MCQResultPreview({
           Return to Quiz
         </Button>
         <Button
-          onClick={handleSubmit}
+          onClick={onSubmit}
           disabled={isSubmitting}
           className="flex items-center gap-2"
           data-testid="submit-results"
         >
           {isSubmitting ? (
-            <>Submitting...</>
+            <>
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              <span>Submitting...</span>
+            </>
           ) : (
             <>
               <Send className="h-4 w-4 mr-1" />
