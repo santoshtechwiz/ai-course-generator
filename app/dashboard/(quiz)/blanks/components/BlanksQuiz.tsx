@@ -1,106 +1,112 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/store';
-import { saveAnswer, setCurrentQuestionIndex } from '@/store/slices/quizSlice';
+"use client"
 
-
-interface Blank {
-  id: string;
-  correctAnswer: string;
-}
-
-interface BlanksQuestion {
-  id: string;
-  type: 'blanks';
-  textWithBlanks: string;
-  blanks: Blank[];
-  question?: string;
-  text?: string;
-}
-
-interface BlanksAnswer {
-  questionId: string;
-  filledBlanks: Record<string, string>;
-  timestamp: number;
-}
+import { useState, useEffect, useCallback } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { AppDispatch } from "@/store"
+import { 
+  saveAnswer,
+  setCurrentQuestionIndex,
+  selectQuestions,
+  selectCurrentQuestionIndex,
+  selectAnswers,
+  selectCurrentQuestion
+} from "@/store/slices/quizSlice"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { AlertTriangle } from "lucide-react"
 
 interface BlanksQuizProps {
-  questions: any[];
-  currentQuestionIndex: number;
-  answers: Record<string, any>;
   quizId: string;
 }
 
-export const BlanksQuiz: React.FC<BlanksQuizProps> = ({
-  questions,
-  currentQuestionIndex: initialQuestionIndex,
-  answers,
-  quizId
-}) => {
+export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const [currentQuestionIndex, setCurrentIndex] = useState(initialQuestionIndex);
   
-  // Ensure questions exist and are valid
-  if (!questions || questions.length === 0) {
-    return (
-      <div className="p-6 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-amber-800">No questions available for this quiz.</p>
-      </div>
-    );
-  }
+  // Get data from Redux store
+  const questions = useSelector(selectQuestions);
+  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
+  const answers = useSelector(selectAnswers);
+  const currentQuestion = useSelector(selectCurrentQuestion);
   
-  // Get current question (safely)
-  const currentQuestion = questions[currentQuestionIndex] as BlanksQuestion;
+  // Track input changes before saving to Redux
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
   
-  if (!currentQuestion) {
-    return (
-      <div className="p-6 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-amber-800">Question not found.</p>
-      </div>
-    );
-  }
-  
-  // Get current answer if exists
-  const currentAnswer = answers[currentQuestion.id] as BlanksAnswer | undefined;
+  // Initialize inputValues from existing answers when component mounts or question changes
+  useEffect(() => {
+    if (currentQuestion?.id && answers[currentQuestion.id]?.filledBlanks) {
+      setInputValues(answers[currentQuestion.id].filledBlanks || {});
+    } else {
+      setInputValues({});
+    }
+  }, [currentQuestion, answers]);
   
   // Handle blank change
-  const handleBlankChange = (blankId: string, value: string) => {
+  const handleBlankChange = useCallback((blankId: string, value: string) => {
     if (!currentQuestion) return;
     
+    // Update local state first for responsive UI
+    setInputValues(prev => ({
+      ...prev,
+      [blankId]: value
+    }));
+    
+    // Then dispatch to Redux
     const filledBlanks = {
-      ...(currentAnswer?.filledBlanks || {}),
+      ...(answers[currentQuestion.id]?.filledBlanks || {}),
       [blankId]: value
     };
     
-    const answer: BlanksAnswer = {
-      questionId: currentQuestion.id,
-      filledBlanks,
-      timestamp: Date.now()
-    };
-    
-    dispatch(saveAnswer({ questionId: currentQuestion.id, answer }));
-  };
+    dispatch(saveAnswer({ 
+      questionId: currentQuestion.id, 
+      answer: {
+        questionId: currentQuestion.id,
+        filledBlanks,
+        timestamp: Date.now()
+      }
+    }));
+  }, [currentQuestion, answers, dispatch]);
   
   // Handle navigation
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {
-      setCurrentIndex(currentQuestionIndex - 1);
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1));
     }
-  };
+  }, [currentQuestionIndex, dispatch]);
   
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentIndex(currentQuestionIndex + 1);
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
     }
-  };
+  }, [currentQuestionIndex, questions.length, dispatch]);
+  
+  if (!currentQuestion || questions.length === 0) {
+    return (
+      <Card className="p-6">
+        <div className="text-center py-8">
+          <h2 className="text-xl font-bold mb-2">No Questions Available</h2>
+          <p className="text-gray-600">This quiz doesn't have any questions yet, or we couldn't load them.</p>
+        </div>
+      </Card>
+    );
+  }
+  
+  // Check if question format is valid
+  const isValidFormat = currentQuestion.textWithBlanks && 
+                       currentQuestion.textWithBlanks.includes("{{") && 
+                       currentQuestion.textWithBlanks.includes("}}");
   
   // Parse text with blanks and render inputs
-  const renderTextWithBlanks = () => {
-    if (!currentQuestion.textWithBlanks) {
-      return <p className="text-red-500">Error: Question format is invalid</p>;
+  const renderTextWithBlanks = useCallback(() => {
+    if (!isValidFormat) {
+      return (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>Question format is invalid</AlertDescription>
+        </Alert>
+      );
     }
     
     const parts = currentQuestion.textWithBlanks.split(/\{\{([^}]+)\}\}/g);
@@ -111,56 +117,62 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({
         return <span key={index}>{part}</span>;
       } else {
         const blankId = part;
+        const currentValue = inputValues[blankId] || 
+                           answers[currentQuestion.id]?.filledBlanks?.[blankId] || 
+                           '';
+        
         return (
           <input
             key={index}
             type="text"
-            className="mx-1 px-2 py-1 border-b-2 border-blue-500 focus:outline-none focus:border-blue-700 min-w-[100px] inline-block"
-            value={(currentAnswer?.filledBlanks?.[blankId] || '')}
+            className="mx-1 px-2 py-1 border-b-2 border-primary/50 focus:outline-none focus:border-primary bg-transparent min-w-[100px] inline-block"
+            value={currentValue}
             onChange={(e) => handleBlankChange(blankId, e.target.value)}
             placeholder="..."
           />
         );
       }
     });
-  };
+  }, [currentQuestion, inputValues, answers, isValidFormat, handleBlankChange]);
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">Question {currentQuestionIndex + 1}</h2>
-        <p className="text-gray-800">Fill in the blanks:</p>
+    <Card className="bg-card shadow-md p-6">
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-bold">Question {currentQuestionIndex + 1} of {questions.length}</h2>
+          <span className="text-sm text-muted-foreground">
+            {Math.floor((currentQuestionIndex / questions.length) * 100)}% complete
+          </span>
+        </div>
+        <Progress value={(currentQuestionIndex / questions.length) * 100} className="h-2" />
       </div>
       
-      <div className="mb-8 text-lg leading-relaxed">
-        {renderTextWithBlanks()}
+      <div className="mb-8">
+        <p className="text-foreground mb-3">Fill in the blanks:</p>
+        <div className="text-lg leading-relaxed">
+          {renderTextWithBlanks()}
+        </div>
       </div>
       
       <div className="flex justify-between">
-        <button
+        <Button
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
-          className={`px-4 py-2 rounded-lg ${
-            currentQuestionIndex === 0
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-          }`}
+          variant="outline"
         >
           Previous
-        </button>
+        </Button>
         
-        <button
+        <Button
           onClick={handleNext}
           disabled={currentQuestionIndex === questions.length - 1}
-          className={`px-4 py-2 rounded-lg ${
-            currentQuestionIndex === questions.length - 1
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
+          variant={currentQuestionIndex === questions.length - 1 ? "outline" : "default"}
         >
-          Next
-        </button>
+          {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 };
+
+export default BlanksQuiz;

@@ -57,41 +57,31 @@ const BlanksPage = async ({ params }: { params: Promise<{ slug: string }> }) => 
   const session = await getServerSession(authOptions)
   const currentUserId = session?.user?.id
 
-  // Fetch quiz data
-  const quizData = await getQuiz(slug)
-
-  // Handle 404 case
-  if (!quizData) {
+  const result = await getQuiz(slug)
+  if (!result) {
     notFound()
   }
-  
-  // Make sure quizData has the required structure and ensure questions is an array
-  const processedQuizData = {
-    ...quizData,
-    id: quizData.id || slug,
-    slug: slug,
-    title: quizData.title || "Fill in the Blanks Quiz",
-    questions: Array.isArray(quizData.questions) ? quizData.questions : []
-  }
 
-  const questionCount = processedQuizData.questions?.length || 0
+  const questionCount = result.questions?.length || 5
   const estimatedTime = `PT${Math.max(10, Math.ceil(questionCount * 2))}M`
 
   const breadcrumbItems = [
     { name: "Home", href: baseUrl },
     { name: "Dashboard", href: `${baseUrl}/dashboard` },
     { name: "Quizzes", href: `${baseUrl}/dashboard/quizzes` },
-    { name: processedQuizData.title, href: `${baseUrl}/dashboard/blanks/${slug}` },
+    { name: result.title, href: `${baseUrl}/dashboard/blanks/${slug}` },
   ]
 
   // Generate structured data for SEO
   const quizStructuredData = generateQuizStructuredData({
-    title: processedQuizData.title,
-    description: `Test your coding knowledge on ${processedQuizData.title} with fill in the blanks questions`,
+    title: result.title,
+    description: `Test your coding knowledge on ${result.title} with fill in the blanks questions`,
     url: `${baseUrl}/dashboard/blanks/${slug}`,
     questionCount,
     timeRequired: estimatedTime,
     author: "CourseAI",
+    // datePublished: result.,
+    // dateModified: result.updatedAt,
     quizType: "fill-blanks",
   })
 
@@ -102,19 +92,19 @@ const BlanksPage = async ({ params }: { params: Promise<{ slug: string }> }) => 
       <JsonLd type="quiz" data={quizStructuredData} />
       <JsonLd type="breadcrumb" data={breadcrumbStructuredData} />
       <QuizDetailsPageWithContext
-        title={processedQuizData.title}
-        description={`Test your coding knowledge on ${processedQuizData.title} with fill in the blanks questions`}
+        title={result.title}
+        description={`Test your coding knowledge on ${result.title} with fill in the blanks questions`}
         slug={slug}
         quizType="blanks"
         questionCount={questionCount}
         estimatedTime={estimatedTime}
         breadcrumbItems={breadcrumbItems}
-        quizId={processedQuizData.id.toString()}
-        authorId={processedQuizData.userId || currentUserId || "anonymous"}
+        quizId={result.id.toString()}
+        authorId={result.userId}
         isPublic={false}
         isFavorite={false}
       >
-        <BlankQuizWrapper quizData={processedQuizData} slug={slug} />
+        <BlankQuizWrapper quizData={result} slug={slug} />
       </QuizDetailsPageWithContext>
     </>
   )

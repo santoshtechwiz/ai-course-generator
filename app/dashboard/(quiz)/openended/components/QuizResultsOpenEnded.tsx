@@ -1,224 +1,142 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { CheckCircle2, XCircle, Clock, RefreshCw, Download, Award, BarChart3 } from "lucide-react"
+import { CheckCircle2, RefreshCw, Download, Award, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 
-import { useAppDispatch } from "@/store"
-import { completeQuiz } from "@/app/store/slices/textQuizSlice"
-import { formatQuizTime } from "@/lib/utils/quiz-utils"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { resetQuiz, selectQuestions, selectAnswers } from "@/store/slices/quizSlice"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
-import { QuizResult } from "@/app/types/quiz-types"
-import { QuizAnswer } from "@/types/quiz"
 
 interface QuizResultsOpenEndedProps {
-  result: QuizResult
-}
-
-interface AnswerWithSimilarity extends QuizAnswer {
-  similarity: number
+  result: {
+    quizId: string
+    slug: string
+    answers: any[]
+    questions: any[]
+    totalQuestions: number
+    completedAt: string
+    title: string
+  }
 }
 
 export default function QuizResultsOpenEnded({ result }: QuizResultsOpenEndedProps) {
   const router = useRouter()
   const dispatch = useAppDispatch()
+
+  // Get data from Redux store
+  const questions = useAppSelector(selectQuestions)
+  const answers = useAppSelector(selectAnswers)
+
   const [isRestarting, setIsRestarting] = useState(false)
-  const [hasError, setHasError] = useState(false)
-  const [resultsProcessed, setResultsProcessed] = useState(false)
   const [activeTab, setActiveTab] = useState("summary")
 
-  // Calculate similarity scores
-  const calculateAnswerScores = useCallback(
-    (answers: QuizAnswer[], questions: any[]): AnswerWithSimilarity[] => {
-      return answers.map((answer, index) => {
-        try {
-          const question = questions[index] || {}
-          const similarity = getBestSimilarityScore(answer.answer || "", question.answer || "")
-          return { ...answer, similarity }
-        } catch {
-          return { ...answer, similarity: 0 }
-        }
-      })
-    },
-    []
-  )
+  // Calculate similarity scores using Redux data
+  const calculateAnswerScores = useCallback(() => {
+    return Object.entries(answers).map(([questionId, answer]) => {
+      try {
+        const question = questions.find((q) => q.id === questionId)
+        if (!question) return { questionId, similarity: 0, answer }
 
-  const calculateAverageScore = useCallback((answerScores: AnswerWithSimilarity[]) => {
-    const validScores = answerScores.filter((score) => !isNaN(score.similarity))
-    return validScores.length
-      ? Math.round(validScores.reduce((sum, ans) => sum + ans.similarity, 0) / validScores.length)
-      : 0
-  }, [])
+        const answerText = (answer as any).text || ""
+        const modelAnswer = (question as any).modelAnswer || ""
+        const similarity = getBestSimilarityScore(answerText, modelAnswer)
 
-  // Create arrays of all questions and matching answers
-  const questionsWithAnswers = useMemo(() => {
-    try {
-      // Create a list of all questions, answered or not
-      const allQuestionsWithAnswers = result.questions.map((question, index) => {
-        const matchingAnswer = result.answers.find(a => a.questionId === question.id)
-        
-        let similarity = 0
-        if (matchingAnswer) {
-          try {
-            similarity = getBestSimilarityScore(matchingAnswer.answer || "", question.answer || "")
-          } catch {
-            similarity = 0
-          }
-        }
-        
-        return {
-          question,
-          answer: matchingAnswer || null,
-          similarity,
-          isAnswered: !!matchingAnswer
-        }
-      })
-      
-      return allQuestionsWithAnswers
-    } catch (err) {
-      console.error("Error creating question-answer mapping:", err)
-      setHasError(true)
-      return []
-    }
-  }, [result.questions, result.answers])
+        return { questionId, similarity, answer, question }
+      } catch {
+        return { questionId, similarity: 0, answer }
+      }
+    })
+  }, [answers, questions])
 
   const stats = useMemo(() => {
     try {
-      const totalAnswers = result.answers?.length || 0
-      const totalQuestions = result.questions?.length || 0
+      const answerScores = calculateAnswerScores()
+      const totalAnswers = answerScores.length
+      const totalQuestions = questions.length
 
-      // Calculate total time spent
-      const totalTime = totalAnswers > 0 
-        ? result.answers.reduce((sum, a) => sum + (a.timeSpent || 0), 0) 
-        : 0
-        
-      const averageTime = totalAnswers > 0 ? Math.round(totalTime / totalAnswers) : 0
+      // Calculate average score
+      const averageScore =
+        totalAnswers > 0 ? Math.round(answerScores.reduce((sum, ans) => sum + ans.similarity, 0) / totalAnswers) : 0
+
       const completionRate = Math.round((totalAnswers / Math.max(1, totalQuestions)) * 100)
 
-      // Calculate scores only for submitted answers
-      const answers = calculateAnswerScores(result.answers, result.questions)
-      const averageScore = calculateAverageScore(answers)
-      
       // Count questions by score ranges
       const scoreRanges = {
-        excellent: answers.filter(a => a.similarity >= 80).length,
-        good: answers.filter(a => a.similarity >= 60 && a.similarity < 80).length,
-        fair: answers.filter(a => a.similarity >= 40 && a.similarity < 60).length,
-        poor: answers.filter(a => a.similarity < 40).length,
-        unanswered: totalQuestions - totalAnswers
+        excellent: answerScores.filter((a) => a.similarity >= 80).length,
+        good: answerScores.filter((a) => a.similarity >= 60 && a.similarity < 80).length,
+        fair: answerScores.filter((a) => a.similarity >= 40 && a.similarity < 60).length,
+        poor: answerScores.filter((a) => a.similarity < 40).length,
+        unanswered: totalQuestions - totalAnswers,
       }
 
       return {
-        totalTime,
-        averageTime,
+        totalTime: 0, // Not tracking time in Redux currently
+        averageTime: 0,
         completionRate,
         averageScore,
-        answers,
+        answerScores,
         totalAnswers,
         totalQuestions,
-        scoreRanges
+        scoreRanges,
       }
     } catch (err) {
       console.error("Error calculating stats", err)
-      setHasError(true)
       return {
         totalTime: 0,
         averageTime: 0,
         completionRate: 0,
         averageScore: 0,
-        answers: [] as AnswerWithSimilarity[],
+        answerScores: [],
         totalAnswers: 0,
         totalQuestions: 0,
-        scoreRanges: { excellent: 0, good: 0, fair: 0, poor: 0, unanswered: 0 }
+        scoreRanges: { excellent: 0, good: 0, fair: 0, poor: 0, unanswered: 0 },
       }
     }
-  }, [result, calculateAnswerScores, calculateAverageScore])
-
-  useEffect(() => {
-    if (!result?.questions?.length) {
-      console.error("Missing questions in result:", result);
-      setHasError(true);
-      return;
-    }
-
-    if (!resultsProcessed) {
-      const answers = result.answers?.length
-        ? calculateAnswerScores(result.answers, result.questions)
-        : [];
-      const avgScore = answers.length ? calculateAverageScore(answers) : 0;
-
-      dispatch(
-        completeQuiz({
-          answers: result.answers || [],
-          completedAt: result.completedAt || new Date().toISOString(),
-          score: avgScore,
-          quizId: result.quizId || "",
-          title: result.title || "Open Ended Quiz",
-          questions: result.questions,
-          slug: result.slug
-        })
-      );
-
-      setResultsProcessed(true);
-    }
-  }, [dispatch, result, resultsProcessed, calculateAnswerScores, calculateAverageScore])
+  }, [calculateAnswerScores, questions.length])
 
   const handleRestart = useCallback(() => {
     setIsRestarting(true)
-    router.replace(`/dashboard/openended/${result.slug}?reset=true`)
-  }, [result.slug, router])
+    dispatch(resetQuiz())
+    router.replace(`/dashboard/openended/${result.slug}`)
+  }, [result.slug, router, dispatch])
 
   const handleSaveResults = useCallback(() => {
-    // Create summary text for download
     const summaryText = `
 Quiz Results: ${result.title || "Open Ended Quiz"}
 Date: ${new Date(result.completedAt).toLocaleString()}
 Score: ${stats.averageScore}%
 Completion: ${stats.completionRate}%
-Time: ${formatQuizTime(stats.totalTime)}
 
 Questions and Answers:
-${questionsWithAnswers.map((qa, i) => `
-Question ${i+1}: ${qa.question.question}
-${qa.isAnswered ? `Your Answer: ${qa.answer?.answer}
-Similarity Score: ${qa.similarity}%` : 'Not answered'}
-`).join('\n')}
+${stats.answerScores
+  .map(
+    (qa, i) => `
+Question ${i + 1}: ${qa.question?.text || "Unknown question"}
+Your Answer: ${(qa.answer as any)?.text || "No answer"}
+Similarity Score: ${qa.similarity}%
+`,
+  )
+  .join("\n")}
     `.trim()
-    
-    // Create and download file
-    const blob = new Blob([summaryText], { type: 'text/plain' })
+
+    const blob = new Blob([summaryText], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const a = document.createElement("a")
     a.href = url
-    a.download = `quiz-results-${result.slug || 'openended'}.txt`
+    a.download = `quiz-results-${result.slug || "openended"}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-  }, [result, stats, questionsWithAnswers])
+  }, [result, stats])
 
-  if (hasError) {
-    return (
-      <div className="text-center py-10">
-        <h2 className="text-xl font-bold mb-4">Error Loading Results</h2>
-        <p className="text-muted-foreground mb-6">
-          We encountered an error while loading your quiz results. Please try again later.
-        </p>
-        <Button onClick={() => router.refresh()} variant="outline">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Try Again
-        </Button>
-      </div>
-    )
-  }
-
-  // Get background color based on score
   const getScoreColor = (score: number) => {
     if (score >= 80) return "bg-green-500"
     if (score >= 60) return "bg-yellow-500"
@@ -226,7 +144,6 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
     return "bg-red-500"
   }
 
-  // Determine badge color based on similarity score
   const getSimilarityBadge = (score: number) => {
     if (score >= 80) {
       return <Badge className="bg-green-500">Excellent ({score}%)</Badge>
@@ -264,7 +181,9 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="col-span-1">
           <CardContent className="p-4 flex items-center gap-4">
-            <div className={`rounded-full w-16 h-16 flex items-center justify-center text-white text-xl font-bold ${getScoreColor(stats.averageScore)}`}>
+            <div
+              className={`rounded-full w-16 h-16 flex items-center justify-center text-white text-xl font-bold ${getScoreColor(stats.averageScore)}`}
+            >
               {stats.averageScore}%
             </div>
             <div>
@@ -297,17 +216,17 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
         <Card className="col-span-1">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Clock className="text-primary h-5 w-5" />
+              <Award className="text-primary h-5 w-5" />
               <div>
-                <p className="text-sm font-medium">Time Stats</p>
+                <p className="text-sm font-medium">Performance</p>
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   <div>
-                    <span className="text-xs text-muted-foreground">Total</span>
-                    <p className="font-mono text-sm">{formatQuizTime(stats.totalTime)}</p>
+                    <span className="text-xs text-muted-foreground">Excellent</span>
+                    <p className="font-mono text-sm">{stats.scoreRanges.excellent}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-muted-foreground">Average</span>
-                    <p className="font-mono text-sm">{formatQuizTime(stats.averageTime)}/q</p>
+                    <span className="text-xs text-muted-foreground">Good</span>
+                    <p className="font-mono text-sm">{stats.scoreRanges.good}</p>
                   </div>
                 </div>
               </div>
@@ -318,22 +237,14 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
 
       {/* Tabs for viewing different aspects */}
       <Tabs defaultValue="summary" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="mb-6 w-full grid grid-cols-2 sm:grid-cols-4 h-auto p-1 gap-1">
+        <TabsList className="mb-6 w-full grid grid-cols-2 h-auto p-1 gap-1">
           <TabsTrigger value="summary" className="flex items-center gap-2 py-2">
             <BarChart3 className="h-4 w-4" />
             <span>Summary</span>
           </TabsTrigger>
-          <TabsTrigger value="questions" className="flex items-center gap-2 py-2">
-            <Award className="h-4 w-4" />
-            <span>All Questions</span>
-          </TabsTrigger>
-          <TabsTrigger value="answered" className="flex items-center gap-2 py-2">
+          <TabsTrigger value="answers" className="flex items-center gap-2 py-2">
             <CheckCircle2 className="h-4 w-4" />
-            <span>Answered</span>
-          </TabsTrigger>
-          <TabsTrigger value="unanswered" className="flex items-center gap-2 py-2">
-            <Clock className="h-4 w-4" />
-            <span>Unanswered</span>
+            <span>Your Answers</span>
           </TabsTrigger>
         </TabsList>
 
@@ -342,9 +253,7 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
           <Card>
             <CardHeader>
               <CardTitle>Performance Summary</CardTitle>
-              <CardDescription>
-                Overview of your performance in this quiz
-              </CardDescription>
+              <CardDescription>Overview of your performance in this quiz</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -383,127 +292,42 @@ Similarity Score: ${qa.similarity}%` : 'Not answered'}
           </Card>
         </TabsContent>
 
-        {/* Questions Tab */}
-        <TabsContent value="questions">
+        {/* Answers Tab */}
+        <TabsContent value="answers">
           <Card>
             <CardHeader>
-              <CardTitle>All Questions</CardTitle>
-              <CardDescription>
-                {result.questions.length} questions total
-              </CardDescription>
+              <CardTitle>Your Answers</CardTitle>
+              <CardDescription>{stats.totalAnswers} answers submitted</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {questionsWithAnswers.map((qa, index) => (
-                <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
+              {stats.answerScores.map((qa, index) => (
+                <div key={qa.questionId} className="border-b last:border-0 pb-4 last:pb-0">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium">Question {index + 1}</h3>
-                    {qa.isAnswered && getSimilarityBadge(qa.similarity)}
-                  </div>
-                  <p className="text-muted-foreground mb-2">{qa.question.question}</p>
-                  
-                  {qa.isAnswered ? (
-                    <div className="bg-muted p-3 rounded-md mt-2">
-                      <p className="text-sm font-medium mb-1">Your Answer:</p>
-                      <p className="text-sm">{qa.answer?.answer || "No answer provided"}</p>
-                    </div>
-                  ) : (
-                    <div className="bg-muted/50 p-3 rounded-md mt-2 border border-dashed border-muted-foreground/30">
-                      <p className="text-sm italic text-muted-foreground">You didn't answer this question</p>
-                    </div>
-                  )}
-                  
-                  {/* Show reference answer button */}
-                  <details className="mt-2">
-                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-primary">
-                      View reference answer
-                    </summary>
-                    <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md">
-                      <p className="text-sm">{qa.question.answer}</p>
-                    </div>
-                  </details>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Answered Tab */}
-        <TabsContent value="answered">
-          <Card>
-            <CardHeader>
-              <CardTitle>Answered Questions</CardTitle>
-              <CardDescription>
-                {stats.totalAnswers} questions answered out of {stats.totalQuestions}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {questionsWithAnswers.filter(qa => qa.isAnswered).map((qa, index) => (
-                <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Question {questionsWithAnswers.findIndex(q => q.question.id === qa.question.id) + 1}</h3>
                     {getSimilarityBadge(qa.similarity)}
                   </div>
-                  <p className="text-muted-foreground mb-2">{qa.question.question}</p>
-                  <div className="bg-muted p-3 rounded-md">
-                    <p className="text-sm font-medium mb-1">Your Answer:</p>
-                    <p className="text-sm">{qa.answer?.answer || "No answer provided"}</p>
-                  </div>
-                  
-                  <details className="mt-2">
-                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-primary">
-                      View reference answer
-                    </summary>
-                    <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md">
-                      <p className="text-sm">{qa.question.answer}</p>
-                    </div>
-                  </details>
-                </div>
-              ))}
-              
-              {questionsWithAnswers.filter(qa => qa.isAnswered).length === 0 && (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p>You haven't answered any questions yet.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  <p className="text-muted-foreground mb-2">{qa.question?.text || "Question text not available"}</p>
 
-        {/* Unanswered Tab */}
-        <TabsContent value="unanswered">
-          <Card>
-            <CardHeader>
-              <CardTitle>Unanswered Questions</CardTitle>
-              <CardDescription>
-                {stats.totalQuestions - stats.totalAnswers} questions unanswered
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {questionsWithAnswers.filter(qa => !qa.isAnswered).map((qa, index) => (
-                <div key={qa.question.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Question {questionsWithAnswers.findIndex(q => q.question.id === qa.question.id) + 1}</h3>
+                  <div className="bg-muted p-3 rounded-md mt-2">
+                    <p className="text-sm font-medium mb-1">Your Answer:</p>
+                    <p className="text-sm">{(qa.answer as any)?.text || "No answer provided"}</p>
                   </div>
-                  <p className="text-muted-foreground mb-2">{qa.question.question}</p>
-                  <div className="bg-muted/50 p-3 rounded-md mt-2 border border-dashed border-muted-foreground/30">
-                    <p className="text-sm italic text-muted-foreground">You didn't answer this question</p>
-                  </div>
-                  
+
+                  {/* Show reference answer */}
                   <details className="mt-2">
                     <summary className="text-xs text-muted-foreground cursor-pointer hover:text-primary">
                       View reference answer
                     </summary>
                     <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md">
-                      <p className="text-sm">{qa.question.answer}</p>
+                      <p className="text-sm">{(qa.question as any)?.modelAnswer || "Reference answer not available"}</p>
                     </div>
                   </details>
                 </div>
               ))}
-              
-              {questionsWithAnswers.filter(qa => !qa.isAnswered).length === 0 && (
-                <div className="text-center py-10 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="mx-auto h-8 w-8 mb-2" />
-                  <p>Great job! You've answered all the questions.</p>
+
+              {stats.answerScores.length === 0 && (
+                <div className="text-center py-10 text-muted-foreground">
+                  <p>No answers found.</p>
                 </div>
               )}
             </CardContent>

@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
-
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { BlanksQuiz } from "./BlanksQuiz"
+import { useAppDispatch, useAppSelector } from "@/store"
 import {
   fetchQuiz,
   setQuizId,
@@ -16,9 +15,11 @@ import {
   selectQuizError,
   selectIsQuizComplete,
   selectQuizResults,
+  selectCurrentQuestionIndex
 } from "@/store/slices/quizSlice"
 import { ErrorDisplay } from "../../components/QuizStateDisplay"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { BlanksQuiz } from "./BlanksQuiz"
+import { Button } from "@/components/ui/button"
 
 interface BlankQuizWrapperProps {
   quizData: {
@@ -34,6 +35,7 @@ interface BlankQuizWrapperProps {
 export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, slug }) => {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const questions = useAppSelector(selectQuestions)
   const answers = useAppSelector(selectAnswers)
@@ -41,21 +43,32 @@ export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, sl
   const error = useAppSelector(selectQuizError)
   const isQuizComplete = useAppSelector(selectIsQuizComplete)
   const results = useAppSelector(selectQuizResults)
+  const currentQuestionIndex = useAppSelector(selectCurrentQuestionIndex)
 
   // Initialize quiz data
   useEffect(() => {
     if (quizData) {
       dispatch(setQuizId(quizData.id))
       dispatch(setQuizType("blanks"))
-      dispatch(fetchQuiz(quizData.id))
+      dispatch(fetchQuiz({
+        id: quizData.id,
+        data: quizData
+      }))
     }
   }, [dispatch, quizData])
 
   // Handle quiz submission
   const handleSubmitQuiz = async () => {
     if (isQuizComplete) {
-      await dispatch(submitQuiz())
-      router.push(`/dashboard/blanks/${slug}/results`)
+      setIsSubmitting(true)
+      try {
+        await dispatch(submitQuiz()).unwrap()
+        router.push(`/dashboard/blanks/${slug}/results`)
+      } catch (error) {
+        console.error("Error submitting quiz:", error)
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -76,7 +89,7 @@ export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, sl
     return (
       <ErrorDisplay
         error={error || "Failed to load quiz"}
-        onRetry={() => dispatch(fetchQuiz(quizData?.id ))}
+        onRetry={() => dispatch(fetchQuiz({ id: quizData?.id, data: quizData }))}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
@@ -100,20 +113,24 @@ export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, sl
         </div>
       </div>
 
-      <BlanksQuiz quizId={quizData.id} questions={[]} currentQuestionIndex={0} answers={undefined} />
+      <BlanksQuiz quizId={quizData.id} />
 
       <div className="mt-8 text-center">
-        <button
+        <Button
           onClick={handleSubmitQuiz}
-          disabled={!isQuizComplete}
-          className={`px-6 py-3 rounded-lg ${
-            isQuizComplete
-              ? "bg-green-600 text-white hover:bg-green-700"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+          disabled={!isQuizComplete || isSubmitting}
+          variant={isQuizComplete ? "default" : "outline"}
+          className="px-6 py-3"
         >
-          Submit Quiz
-        </button>
+          {isSubmitting ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              <span>Submitting...</span>
+            </>
+          ) : (
+            "Submit Quiz"
+          )}
+        </Button>
       </div>
     </div>
   )

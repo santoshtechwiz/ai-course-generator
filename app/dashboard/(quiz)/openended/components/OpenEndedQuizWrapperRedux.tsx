@@ -1,308 +1,201 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useDispatch, useSelector } from "react-redux"
-import { signIn } from "next-auth/react"
-import { toast } from "sonner"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-
-import { AppDispatch } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/store"
 import {
   fetchQuiz,
   setQuizId,
   setQuizType,
+  submitQuiz,
+  setCurrentQuestionIndex,
+  saveAnswer,
   selectQuestions,
-  selectAnswers,
+  selectCurrentQuestion,
   selectCurrentQuestionIndex,
   selectQuizStatus,
   selectQuizError,
-  selectIsQuizComplete,
-  selectCurrentQuestion,
-  saveAnswer,
-  submitQuiz,
-  setCurrentQuestionIndex,
-  selectQuizResults,
-  saveAuthRedirectState
 } from "@/store/slices/quizSlice"
-
-import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
-import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
-import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
-import OpenEndedQuiz from "./OpenEndedQuiz"
-import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import type { OpenEndedQuizData } from "@/types/quiz"
+import OpenEndedQuizQuestion from "./OpenEndedQuizQuestion"
+import { toast } from "react-hot-toast"
 
 interface OpenEndedQuizWrapperProps {
+  quizData: OpenEndedQuizData
   slug: string
-  quizId: string | number
-  userId?: string | null
-  quizData: any
-  isPublic?: boolean
-  isFavorite?: boolean
-  ownerId?: string
 }
 
-export default function OpenEndedQuizWrapperRedux({ 
-  slug, 
-  quizId, 
-  userId, 
-  quizData 
-}: OpenEndedQuizWrapperProps) {
+export default function OpenEndedQuizWrapper({ quizData, slug }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [tempResults, setTempResults] = useState<any>(null)
-  
-  // Get quiz data from Redux store
-  const questions = useSelector(selectQuestions)
-  const answers = useSelector(selectAnswers)
-  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
-  const currentQuestion = useSelector(selectCurrentQuestion)
-  const status = useSelector(selectQuizStatus)
-  const error = useSelector(selectQuizError)
-  const isQuizComplete = useSelector(selectIsQuizComplete)
-  const results = useSelector(selectQuizResults)
-  
-  const isLoading = status === 'loading'
-  const hasError = status === 'error'
+  const dispatch = useAppDispatch()
 
-  // Initialize quiz data
+  // Redux selectors
+  const questions = useAppSelector(selectQuestions)
+  const currentQuestion = useAppSelector(selectCurrentQuestion)
+  const currentQuestionIndex = useAppSelector(selectCurrentQuestionIndex)
+  const quizStatus = useAppSelector(selectQuizStatus)
+  const error = useAppSelector(selectQuizError)
+
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  const isValidQuizData = useMemo(() => {
+    return Boolean(
+      quizData?.id &&
+        Array.isArray(quizData.questions) &&
+        quizData.questions.length > 0 &&
+        quizData.questions.every((q) => q.question),
+    )
+  }, [quizData])
+
+  const quizInfo = useMemo(
+    () => ({
+      id: quizData?.id,
+      questionCount: quizData?.questions?.length || 0,
+      hasQuestions: Boolean(quizData?.questions?.length),
+      isValid: isValidQuizData,
+    }),
+    [quizData?.id, quizData?.questions?.length, isValidQuizData],
+  )
+
   useEffect(() => {
-    if (quizData && quizId) {
-      console.log("Initializing quiz with ID:", quizId, "and slug:", slug)
-      dispatch(setQuizId(quizId.toString()))
-      dispatch(setQuizType('openended'))
-      
-      // If we have the quiz data already, use it directly
-      dispatch(fetchQuiz({
-        id: quizId.toString(),
-        data: quizData
-      }))
-    }
-  }, [dispatch, quizData, quizId, slug])
-
-  // Handle retry action
-  const handleRetry = useCallback(() => {
-    if (!userId) {
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/openended/${slug}`)}`)
-    } else {
-      window.location.reload()
-    }
-  }, [userId, slug, router])
-
-  // Handle answer submission
-  const handleAnswer = useCallback(
-    (answer: string, timeSpent: number, hintsUsed: boolean) => {
-      if (!currentQuestion) return
-
-      // Create user answer object with basic similarity scoring
-      const similarity = currentQuestion.answer 
-        ? getBestSimilarityScore(answer, currentQuestion.answer || "") 
-        : 50; // Default value if no reference answer
-      
-      const isCorrect = similarity >= 70; // Set threshold for "correct" answers
-
-      // Save the answer to Redux state
-      dispatch(saveAnswer({ 
-        questionId: currentQuestion.id, 
-        answer: {
-          questionId: currentQuestion.id,
-          answer,
-          isCorrect,
-          timeSpent,
-          similarity,
-          hintsUsed,
-          timestamp: Date.now()
-        }
-      }))
-
-      // Check if this is the last question
-      if (currentQuestionIndex === questions.length - 1) {
-        // Create a preview of results for the last question
-        const allAnswers = [...Object.values(answers)]
-        
-        // Add the current answer
-        allAnswers.push({
-          questionId: currentQuestion.id,
-          answer,
-          isCorrect,
-          similarity,
-          timeSpent
-        })
-        
-        // Create results preview
-        const preview = {
-          score: allAnswers.reduce((sum, a) => sum + (a.similarity || 0) / 100, 0),
-          maxScore: questions.length,
-          percentage: Math.round(allAnswers.reduce((sum, a) => sum + (a.similarity || 0), 0) / questions.length),
-          title: quizData?.title || "Open Ended Quiz",
-          slug,
-          questions: questions.map(q => {
-            const ans = allAnswers.find(a => a.questionId === q.id)
-            return {
-              id: q.id,
-              question: q.question,
-              userAnswer: ans?.answer || "",
-              correctAnswer: q.answer || "",
-              isCorrect: ans?.isCorrect || false,
-              similarity: ans?.similarity || 0
-            }
-          })
-        }
-
-        // Store temporary results
-        setTempResults(preview)
-        
-        // For signed-in users, automatically submit
-        if (userId) {
-          handleSubmitQuiz()
-        }
-      } else {
-        // Navigate to next question
-        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-      }
-    },
-    [currentQuestion, currentQuestionIndex, questions, answers, quizData, slug, userId, dispatch]
-  )
-
-  // Handle quiz submission
-  const handleSubmitQuiz = useCallback(
-    async () => {
-      try {
-        setIsSubmitting(true)
-        
-        // Calculate total time spent
-        const totalTime = Object.values(answers).reduce(
-          (sum, a: any) => sum + (a.timeSpent || 0), 
-          0
+    const initTimer = setTimeout(() => {
+      if (quizInfo.id && quizInfo.hasQuestions && slug) {
+        dispatch(setQuizId(quizInfo.id.toString()))
+        dispatch(setQuizType("openended"))
+        // Pass the quiz data directly to avoid API call
+        dispatch(
+          fetchQuiz({
+            id: quizInfo.id.toString(),
+            data: {
+              id: quizData.id,
+              type: "openended",
+              title: quizData.title,
+              questions: quizData.questions.map((q) => ({
+                id: q.id,
+                text: q.question,
+                type: "openended" as const,
+                modelAnswer: q.answer,
+                keywords: q.hints || [],
+              })),
+            },
+          }),
         )
+      }
+      setIsInitializing(false)
+    }, 500)
 
-        // Submit quiz to backend
-        await dispatch(submitQuiz({
-          slug,
-          quizId,
-          type: "openended",
-          timeTaken: totalTime
-        })).unwrap()
+    return () => clearTimeout(initTimer)
+  }, [dispatch, quizInfo.id, quizInfo.hasQuestions, slug, quizData])
 
-        // Navigate to results page
-        router.replace(`/dashboard/openended/${slug}/results`)
+  const handleAnswerSubmit = useCallback(
+    async (answer: string, elapsedTime: number, hintsUsed: boolean) => {
+      if (quizStatus === "submitting" || !currentQuestion) return
+
+      try {
+        // Save answer to Redux
+        await dispatch(
+          saveAnswer({
+            questionId: currentQuestion.id,
+            answer: {
+              questionId: currentQuestion.id,
+              text: answer,
+              timestamp: Date.now(),
+            } as any,
+          }),
+        ).unwrap()
+
+        // Check if we're on the last question
+        const isLastQuestion = currentQuestionIndex >= questions.length - 1
+
+        if (!isLastQuestion) {
+          // Move to the next question
+          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+        } else {
+          // This is the last question - handle quiz completion
+          try {
+            await dispatch(submitQuiz()).unwrap()
+            toast.success("Quiz completed! Viewing your results...")
+            router.push(`/dashboard/openended/${slug}/results`)
+          } catch (error) {
+            console.error("Failed to handle quiz completion:", error)
+            // Continue to results page anyway since we have local data
+            router.push(`/dashboard/openended/${slug}/results`)
+          }
+        }
       } catch (error) {
-        console.error("Error submitting quiz:", error)
-        toast.error("Failed to submit quiz. Please try again.")
-      } finally {
-        setIsSubmitting(false)
+        console.error("Error in answer handling:", error)
+        toast.error("Failed to process your answer. Please try again.")
       }
     },
-    [dispatch, answers, slug, quizId, router]
+    [currentQuestion, questions.length, currentQuestionIndex, dispatch, slug, router, quizStatus],
   )
 
-  // Handle sign-in action for non-authenticated users
-  const handleShowSignIn = useCallback(() => {
-    // Save quiz state to Redux before redirect
-    dispatch(saveAuthRedirectState({
-      slug,
-      quizId: quizId.toString(),
-      type: "openended",
-      answers,
-      currentQuestionIndex,
-      tempResults
-    }))
-
-    // Redirect to sign-in page
-    signIn(undefined, {
-      callbackUrl: `/dashboard/openended/${slug}?fromAuth=true`,
-    })
-  }, [slug, quizId, answers, currentQuestionIndex, tempResults, dispatch])
-
-  // Loading state
-  if (isLoading || isSubmitting) {
-    return isSubmitting ? 
-      <QuizSubmissionLoading quizType="openended" /> : 
-      <InitializingDisplay />
-  }
-
-  // Error state
-  if (hasError) {
+  if (isInitializing) {
     return (
-      <ErrorDisplay 
-        error={error || "Failed to load quiz"} 
-        onRetry={handleRetry} 
-        onReturn={() => router.push("/dashboard")} 
-      />
-    )
-  }
-
-  // Empty questions state
-  if (questions.length === 0) {
-    return <EmptyQuestionsDisplay onReturn={() => router.push("/dashboard")} />
-  }
-
-  // Non-authenticated user with completed quiz
-  if (!userId && tempResults) {
-    return (
-      <NonAuthenticatedUserSignInPrompt
-        quizType="openended"
-        onSignIn={handleShowSignIn}
-        showSaveMessage
-        message="Please sign in to submit your quiz and save your results"
-        previewData={tempResults}
-      />
-    )
-  }
-
-  // Authenticated user with completed quiz (preview before submission)
-  if (userId && tempResults) {
-    return (
-      <div className="container max-w-4xl mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Quiz Completed</CardTitle>
-            <CardDescription>Your responses have been recorded</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">
-              You've completed all {questions.length} questions.
-            </p>
-            <div className="space-y-4">
-              <Button onClick={handleSubmitQuiz} disabled={isSubmitting} className="w-full">
-                {isSubmitting ? (
-                  <>
-                    <div className="h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    <span>Submitting...</span>
-                  </>
-                ) : (
-                  'View Results'
-                )}
-              </Button>
-              <Button variant="outline" onClick={() => setTempResults(null)} disabled={isSubmitting} className="w-full">
-                Return to Quiz
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="text-muted-foreground">Initializing your quiz...</p>
+        </div>
       </div>
     )
   }
 
-  // Quiz in progress
-  if (currentQuestion) {
-    const userAnswer = answers[currentQuestion.id]?.answer
-    
+  if (!quizInfo.isValid) {
     return (
-      <OpenEndedQuiz
-        question={currentQuestion}
-        onAnswer={handleAnswer}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        isLastQuestion={currentQuestionIndex === questions.length - 1}
-        isSubmitting={status === 'submitting' || isSubmitting}
-        existingAnswer={typeof userAnswer === "string" ? userAnswer : undefined}
-      />
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <p className="text-destructive">Invalid quiz data. Please try again later.</p>
+          <button
+            onClick={() => router.push("/dashboard/quizzes")}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
+          >
+            Return to Quizzes
+          </button>
+        </div>
+      </div>
     )
   }
 
-  // Default loading state
-  return <InitializingDisplay />
+  if (quizStatus === "error") {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <p className="text-destructive">Error: {error}</p>
+          <button
+            onClick={() => router.push("/dashboard/quizzes")}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
+          >
+            Return to Quizzes
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <p className="text-destructive">Failed to load quiz question.</p>
+          <button
+            onClick={() => router.push("/dashboard/quizzes")}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
+          >
+            Return to Quizzes
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <OpenEndedQuizQuestion
+      question={currentQuestion}
+      questionNumber={currentQuestionIndex + 1}
+      totalQuestions={quizInfo.questionCount}
+      isLastQuestion={currentQuestionIndex === quizInfo.questionCount - 1}
+      onAnswer={handleAnswerSubmit}
+    />
+  )
 }
