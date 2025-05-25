@@ -1,129 +1,74 @@
-'use client'
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { LogIn, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+"use client"
 
-export interface NonAuthenticatedUserSignInPromptProps {
-  quizType: "mcq" | "code" | "blanks" | "openended" | "quiz";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Spinner } from "@/hooks/spinner";
+import { selectAuthStatus, selectIsAuthenticated } from "@/store/slices/authSlice";
+import React, { useState, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+
+
+interface AuthPromptProps {
+  onSignIn: () => void;
+  title?: string;
   message?: string;
-  previewData?: {
-    score?: number;
-    maxScore?: number;
-    percentage?: number;
-  };
-  showSaveMessage?: boolean;
-  returnPath?: string;
-  onSignIn?: () => void;
 }
 
-export default function NonAuthenticatedUserSignInPrompt({
-  quizType,
-  message = "Sign in to save your progress and continue",
-  previewData,
-  showSaveMessage = false,
-  returnPath,
-  onSignIn
-}: NonAuthenticatedUserSignInPromptProps) {
+export const NonAuthenticatedUserSignInPrompt: React.FC<AuthPromptProps> = ({
+  onSignIn,
+  title = "Sign In Required",
+  message = "Please sign in to view and save your quiz progress."
+}) => {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const authStatus = useSelector(selectAuthStatus);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Handle sign in click
   const handleSignIn = () => {
-    if (onSignIn) {
-      onSignIn();
-      return;
-    }
-    
-    // Use default sign in behavior if no custom handler
     setIsLoading(true);
-    const callbackUrl = returnPath || window.location.pathname;
-    signIn(undefined, { callbackUrl });
+    onSignIn();
   };
 
-  const quizTypeName = 
-    quizType === "mcq" ? "Multiple Choice" :
-    quizType === "code" ? "Code Challenge" :
-    quizType === "blanks" ? "Fill in the Blanks" :
-    quizType === "openended" ? "Open Ended" : "Quiz";
+  // Reset loading state if auth status changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
 
   return (
-    <Card className="max-w-md mx-auto shadow-lg border-t-4 border-primary">
-      <CardHeader className="space-y-1">
-        <div className="flex items-center gap-2">
-          {/* <QuizTypeIcon type={quizType} className="w-5 h-5" /> */}
-          <CardTitle className="text-xl">{quizTypeName} Quiz</CardTitle>
-        </div>
-        <CardDescription>{message}</CardDescription>
+    <Card className="w-full max-w-md mx-auto shadow-lg">
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl font-bold">{title}</CardTitle>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {showSaveMessage && (
-          <div className="flex items-center p-3 text-sm bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50 rounded-md">
-            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2 flex-shrink-0" />
-            <p>Sign in to save your answers and see your results.</p>
-          </div>
-        )}
-        
-        {previewData && (
-          <div className="space-y-3 bg-muted/40 p-4 rounded-md border">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Your score</span>
-                <span className="font-medium">
-                  {previewData.score}/{previewData.maxScore}
-                </span>
-              </div>
-              
-              <Progress 
-                value={previewData.percentage} 
-                className="h-2" 
-              />
-              
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>
-                  {previewData.percentage !== undefined && previewData.percentage < 40 && (
-                    <span className="flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-red-500" />
-                      Needs improvement
-                    </span>
-                  )}
-                  {previewData.percentage !== undefined && previewData.percentage >= 40 && previewData.percentage < 70 && (
-                    <span>Good effort</span>
-                  )}
-                  {previewData.percentage !== undefined && previewData.percentage >= 70 && (
-                    <span className="flex items-center gap-1">
-                      <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                      Well done!
-                    </span>
-                  )}
-                </span>
-                <span className="font-medium">{previewData.percentage}%</span>
-              </div>
-            </div>
-          </div>
-        )}
+      <CardContent className="text-center">
+        <div className="mb-6">
+          <p className="text-muted-foreground">{message}</p>
+        </div>
+        <div className="flex flex-col space-y-4">
+          <Button 
+            onClick={handleSignIn} 
+            disabled={isLoading || authStatus === 'loading'}
+            className="w-full"
+            size="lg"
+          >
+            {isLoading || authStatus === 'loading' ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                <span>Signing in...</span>
+              </>
+            ) : (
+              "Sign In"
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Your progress will be saved once you sign in.
+          </p>
+        </div>
       </CardContent>
-      
-      <CardFooter>
-        <Button 
-          className="w-full" 
-          onClick={handleSignIn}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
-              Signing in...
-            </>
-          ) : (
-            <>
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In to Continue
-            </>
-          )}
-        </Button>
+      <CardFooter className="flex justify-center text-xs text-muted-foreground">
+        <p>This helps us track your progress and save your results.</p>
       </CardFooter>
     </Card>
   );
-}
+};

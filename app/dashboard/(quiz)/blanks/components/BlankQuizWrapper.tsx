@@ -3,33 +3,28 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import {
-  fetchQuiz,
-  setQuizId,
-  setQuizType,
-  submitQuiz,
-  selectQuestions,
-  selectAnswers,
-  selectQuizStatus,
-  selectQuizError,
-  selectIsQuizComplete,
-  selectQuizResults
-} from "@/store/slices/quizSlice"
-import { ErrorDisplay, InitializingDisplay } from "../../components/QuizStateDisplay"
-import { BlanksQuiz } from "./BlanksQuiz"
-
-import { Button } from "@/components/ui/button"
-import { BlankQuizData } from "@/app/types/types"
+import { BlankQuizData } from "@/app/types/quiz-types";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/hooks/spinner";
+import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice";
+import { selectQuestions, selectAnswers, selectQuizStatus, selectQuizError, selectIsQuizComplete, selectQuizResults, setQuizId, setQuizType, fetchQuiz, submitQuiz } from "@/store/slices/quizSlice";
+import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt";
+import { BlanksQuiz } from "./BlanksQuiz";
 
 
 interface BlankQuizWrapperProps {
   slug: string;
-  userId?: string | null;
 }
 
-export default function BlankQuizWrapper({ slug, userId }: BlankQuizWrapperProps) {
+export default function BlankQuizWrapper({ slug }: BlankQuizWrapperProps) {
   const dispatch = useDispatch();
   const router = useRouter();
+  
+  // Authentication state
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userId = useSelector(selectUserId);
+  
+  // Quiz state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +82,12 @@ export default function BlankQuizWrapper({ slug, userId }: BlankQuizWrapperProps
       setIsSubmitting(true);
       try {
         await dispatch(submitQuiz()).unwrap();
-        router.push(`/dashboard/blanks/${slug}/results`);
+        
+        // If authenticated, go directly to results
+        if (isAuthenticated) {
+          router.push(`/dashboard/blanks/${slug}/results`);
+        }
+        // Otherwise, show auth prompt (handled in render)
       } catch (error) {
         setError("Failed to submit quiz. Please try again.");
       } finally {
@@ -96,19 +96,58 @@ export default function BlankQuizWrapper({ slug, userId }: BlankQuizWrapperProps
     }
   };
 
+  // Handle sign in
+  const handleSignIn = () => {
+    // In a real app, this would redirect to your auth provider
+    router.push(`/api/auth/signin?callbackUrl=/dashboard/blanks/${slug}/results`);
+  };
+
   // Show loading state
   if (isLoading || status === "loading") {
-    return <InitializingDisplay />;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <Spinner size="lg" />
+          <p className="text-muted-foreground">Loading quiz...</p>
+        </div>
+      </div>
+    );
   }
 
   // Show error state
   if (error || status === "error" || !quizData) {
     return (
-      <ErrorDisplay
-        error={error || storeError || "Failed to load quiz"}
-        onRetry={() => window.location.reload()}
-        onReturn={() => router.push("/dashboard/quizzes")}
-      />
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <p className="text-destructive">{error || storeError || "Failed to load quiz"}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="mr-2"
+          >
+            Try Again
+          </Button>
+          <Button
+            onClick={() => router.push("/dashboard/quizzes")}
+            variant="default"
+          >
+            Return to Quizzes
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If quiz is complete and user is not authenticated, show sign in prompt
+  if (isQuizComplete && !isAuthenticated && !isSubmitting) {
+    return (
+      <div className="max-w-md mx-auto my-8">
+        <NonAuthenticatedUserSignInPrompt 
+          onSignIn={handleSignIn}
+          title="Sign In to See Results"
+          message="Your quiz is complete! Sign in to view your results and save your progress."
+        />
+      </div>
     );
   }
 
@@ -136,15 +175,12 @@ export default function BlankQuizWrapper({ slug, userId }: BlankQuizWrapperProps
         <Button
           onClick={handleSubmitQuiz}
           disabled={!isQuizComplete || isSubmitting}
-          className={`px-6 py-3 transition-all duration-300 ${
-            isQuizComplete 
-              ? "bg-primary text-white hover:bg-primary/90" 
-              : "bg-gray-100 text-gray-400"
-          }`}
+          className="px-6 py-3 transition-all duration-300"
+          variant={isQuizComplete ? "default" : "outline"}
         >
           {isSubmitting ? (
             <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              <Spinner className="mr-2" size="sm" />
               <span>Submitting...</span>
             </>
           ) : (
