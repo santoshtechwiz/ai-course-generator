@@ -13,7 +13,8 @@ import {
   selectQuizTitle,
   selectQuizId
 } from "@/store/slices/quizSlice"
-import { QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
+import { CodeQuizQuestion, QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
+import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -53,13 +54,33 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
 
   const router = useRouter()
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  // Redux selectors
+  // Redux selectors with proper types
   const results = useSelector(selectQuizResults)
-  const questions = useSelector(selectQuestions)
-  const answers = useSelector(selectAnswers)
+  const questions = useSelector(selectQuestions) as CodeQuizQuestion[]
+  const answers = useSelector(selectAnswers) as Record<string | number, any>
   const title = useSelector(selectQuizTitle)
   const quizId = useSelector(selectQuizId)
+
+  // Simulate loading to avoid flash
+  useState(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 300)
+    return () => clearTimeout(timer)
+  })
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "Loading quiz results", status: "loading" },
+        ]}
+      />
+    )
+  }
 
   // Error state
   if (loadError) {
@@ -90,25 +111,28 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // Create quiz result from Redux state
+  // Build quiz result from Redux state
   const quizResult: QuizResult & { questions: QuizQuestionResult[] } = {
     quizId: quizId || slug,
     slug,
     title: title || "Code Quiz",
     score: results?.score ?? 0,
     maxScore: results?.maxScore ?? questions.length,
-    percentage: results?.percentage ?? 0,
+    percentage: results?.percentage ?? 
+      (questions.length > 0 ? Math.round((Object.values(answers).filter(a => a.isCorrect).length / questions.length) * 100) : 0),
     completedAt: results?.submittedAt ?? new Date().toISOString(),
     questions: results?.questionResults?.map((qr: any) => {
+        // Map from API results format
         const question = questions.find((q) => q.id === qr.questionId)
         return {
           id: qr.questionId,
           question: question?.question || question?.text || "",
           userAnswer: qr.userAnswer || qr.answer || "",
-          correctAnswer: qr.correctAnswer || question?.answer || "",
+          correctAnswer: qr.correctAnswer || question?.answer || question?.correctAnswer || "",
           isCorrect: qr.isCorrect ?? false,
         }
       }) || 
+      // Build from current Redux state
       questions.map((q) => {
         const answer = answers[q.id]
         return {
@@ -121,11 +145,16 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
       }),
   }
 
+  // Handle quiz retake
+  const handleRetake = () => {
+    router.push(`/dashboard/code/${slug}?reset=true`)
+  }
+
   return (
     <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <CodeQuizResult result={quizResult} />
+          <CodeQuizResult result={quizResult} onRetake={handleRetake} />
         </CardContent>
       </Card>
     </div>

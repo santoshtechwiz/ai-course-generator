@@ -2,17 +2,20 @@
 import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import { useAuth } from "@/hooks/useAuth"
+import { AppDispatch } from "@/store"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
   selectQuizResults, 
   selectQuizId,
   selectQuizStatus,
+  selectQuizTitle,
+  selectQuestions,
+  selectAnswers,
   fetchQuizResults
 } from "@/store/slices/quizSlice"
 import McqQuizResult from "../../components/McqQuizResult"
-import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthenticatedUserSignInPrompt"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
+import { QuizResult, McqQuestion } from "@/app/types/quiz-types"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -26,34 +29,40 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       : (params as { slug: string }).slug // Test usage
 
   const router = useRouter()
-  const { isAuthenticated, status, requireAuth } = useAuth()
-  const dispatch = useDispatch()
+  const dispatch = useDispatch<AppDispatch>()
   
-  // Get results and status from Redux store
+  // Get results and state from Redux store
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
+  const quizTitle = useSelector(selectQuizTitle)
+  const questions = useSelector(selectQuestions) as McqQuestion[]
+  const answers = useSelector(selectAnswers)
 
   // Load results if not already in store
   useEffect(() => {
-    if (isAuthenticated && !quizResults && quizStatus !== 'loading' && quizStatus !== 'error') {
+    if (!quizResults && quizStatus !== 'loading' && quizStatus !== 'submitting' && quizStatus !== 'error') {
+      // Try to fetch results if we don't have them
       dispatch(fetchQuizResults(slug))
     }
-  }, [isAuthenticated, quizResults, quizStatus, slug, dispatch])
+  }, [quizResults, quizStatus, slug, dispatch])
 
-  // Authentication check
-  if (!isAuthenticated && status !== "loading") {
-    return (
-      <NonAuthenticatedUserSignInPrompt
-       
-        onSignIn={() => requireAuth(`/dashboard/mcq/${slug}/results`)}
-      
-        message="Please sign in to view your quiz results"
-      />
-    )
-  }
+  // Generate results from Redux state if no server results
+  const generatedResults = !quizResults && questions.length > 0 ? {
+    quizId: slug,
+    slug,
+    title: quizTitle || "Multiple Choice Quiz",
+    questions: questions,
+    answers: Object.values(answers || {}),
+    score: Object.values(answers || {}).filter(a => a.isCorrect).length,
+    maxScore: questions.length,
+    percentage: Math.round(
+      (Object.values(answers || {}).filter(a => a.isCorrect).length / questions.length) * 100
+    ),
+    completedAt: new Date().toISOString()
+  } : null
 
   // Loading state
-  if (status === "loading" || quizStatus === 'loading') {
+  if (quizStatus === 'loading') {
     return (
       <QuizLoadingSteps
         steps={[
@@ -63,8 +72,8 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // No results found
-  if (!quizResults && isAuthenticated && quizStatus !== 'submitting' && quizStatus !== 'idle') {
+  // No results found and no questions to generate from
+  if (!quizResults && !generatedResults && quizStatus !== 'submitting' && quizStatus !== 'idle') {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
@@ -82,11 +91,12 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   }
 
   // Display results if we have them
-  return quizResults ? (
+  const resultsToShow = quizResults || generatedResults
+  return resultsToShow ? (
     <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <McqQuizResult result={quizResults} />
+          <McqQuizResult result={resultsToShow as QuizResult} />
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,5 @@
 "use client"
 
-import { signIn } from "next-auth/react"
 import { useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
@@ -22,8 +21,6 @@ import {
   saveAnswer,
   submitQuiz
 } from "@/store/slices/quizSlice"
-import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice"
-import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
 
@@ -33,11 +30,12 @@ interface McqQuizWrapperProps {
   quizData?: any
 }
 
-type MCQAnswer = {
-  questionId: string
+interface MCQAnswer {
+  questionId: string | number
   selectedOptionId: string
   timestamp: number
   type: "mcq"
+  isCorrect?: boolean
 }
 
 export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) {
@@ -47,24 +45,24 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
 
   // Memoized Redux selectors for performance
   const questions = useSelector(selectQuestions) as McqQuestion[]
-  const answers = useSelector(selectAnswers) as Record<string, MCQAnswer>
+  const answers = useSelector(selectAnswers) as Record<string | number, MCQAnswer>
   const status = useSelector(selectQuizStatus)
   const error = useSelector(selectQuizError)
   const isQuizComplete = useSelector(selectIsQuizComplete)
   const results = useSelector(selectQuizResults)
-  const isAuthenticated = useSelector(selectIsAuthenticated)
-  const userId = useSelector(selectUserId)
   const currentQuestionIndex = useSelector((state: RootState) => state.quiz.currentQuestionIndex)
   const quizId = useSelector((state: RootState) => state.quiz.quizId)
-  const currentQuestion = questions[currentQuestionIndex]
+  const currentQuestion: McqQuestion | undefined = questions[currentQuestionIndex]
+
+  // Submission tracking
+  const submittingRef = useRef(false)
 
   // Memoized computed states
   const isLoading = status === "loading"
-  const isSubmitting = status === "submitting"
+  const isSubmitting = status === "submitting" || submittingRef.current
   const hasError = status === "error"
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   const hasValidQuestions = Array.isArray(questions) && questions.length > 0
-  const shouldShowSignIn = !isAuthenticated && isQuizComplete
 
   // Only reset quiz state on initial mount for this slug
   const didInitRef = useRef(false)
@@ -73,15 +71,14 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
       dispatch({ type: "quiz/resetQuiz" })
       didInitRef.current = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, slug])
+  }, [dispatch])
 
   // Initialize quiz
   useEffect(() => {
-    if (slug && !quizId) {
+    if (slug && !quizId && questions.length === 0 && status === "idle") {
       dispatch(fetchQuiz({ id: slug, data: quizData, type: "mcq" }))
     }
-  }, [dispatch, slug, quizId, quizData])
+  }, [dispatch, slug, quizId, questions.length, status, quizData])
 
   // Handle reset parameter
   useEffect(() => {
@@ -95,66 +92,54 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     (selectedOption: string) => {
       if (!currentQuestion) return
 
+      // Determine if the answer is correct
+      const isCorrect = selectedOption === currentQuestion.correctOptionId || 
+                        selectedOption === currentQuestion.correctAnswer
+
       const answer: MCQAnswer = {
         questionId: currentQuestion.id,
         selectedOptionId: selectedOption,
         timestamp: Date.now(),
-        type: "mcq"
+        type: "mcq",
+        isCorrect
       }
 
+      // Save answer to Redux
       dispatch(saveAnswer({ questionId: currentQuestion.id, answer }))
+      
+      // Navigate to next question with a slight delay for state update
       if (currentQuestionIndex < questions.length - 1) {
-        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+        requestAnimationFrame(() => {
+          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+        })
       }
     },
     [currentQuestion, currentQuestionIndex, questions.length, dispatch],
   )
 
-  // Handle quiz submission
-  const submittingRef = useRef(false)
+  // Handle quiz submission with debounce
   const handleSubmitQuiz = useCallback(async () => {
     if (submittingRef.current) return
     submittingRef.current = true
+    
     try {
-      await dispatch(submitQuiz()).unwrap()
+      const result = await dispatch(submitQuiz()).unwrap()
+      console.log("Quiz submitted successfully:", result)
       router.push(`/dashboard/mcq/${slug}/results`)
-    } catch {
+    } catch (error) {
+      console.error("Failed to submit quiz:", error)
       toast.error("Failed to submit quiz. Please try again.")
     } finally {
       submittingRef.current = false
     }
   }, [dispatch, router, slug])
 
-  // Handle sign-in for unauthenticated users
-  const handleSignIn = useCallback(() => {
-    signIn(undefined, {
-      callbackUrl: `/dashboard/mcq/${slug}?fromAuth=true`,
-    })
-  }, [slug])
-
-  // Handle retry
-  const handleRetry = useCallback(() => {
-    if (!userId) {
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/mcq/${slug}`)}`)
-    } else if (slug) {
-      dispatch(fetchQuiz({ id: slug }))
-    }
-  }, [userId, slug, router, dispatch])
-
-  // Memoized current question answer
-  const currentQuestionAnswer = useMemo(() => {
-    if (!currentQuestion) return undefined
-    const answer = answers[currentQuestion.id]
-    return answer?.selectedOptionId
-  }, [currentQuestion, answers])
-
-  // Auto-submit for authenticated users when quiz is complete
+  // Auto-submit when quiz is complete
   useEffect(() => {
-    if (userId && isQuizComplete && status === "idle" && !results) {
+    if (isQuizComplete && status === "idle" && !results && !submittingRef.current) {
       handleSubmitQuiz()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, isQuizComplete, status, results])
+  }, [isQuizComplete, status, results, handleSubmitQuiz])
 
   // Loading state
   if (isLoading) {
@@ -163,17 +148,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
         steps={[
           { label: "Fetching quiz data", status: "loading" },
           { label: "Preparing questions", status: "pending" },
-        ]}
-      />
-    )
-  }
-
-  // Submitting state
-  if (isSubmitting) {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Submitting your answers", status: "loading" }
         ]}
       />
     )
@@ -201,69 +175,66 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     )
   }
 
-  // Show sign-in prompt for completed quiz (unauthenticated users)
-  if (shouldShowSignIn) {
-    // Create a preview of the results
-    const questionResults = questions.map(q => {
-      const answer = answers[q.id]
-      const selectedOption = q.options?.find(
-        o => (typeof o === "string" ? o === answer?.selectedOptionId : o.id === answer?.selectedOptionId)
-      )
-      const correctOption = q.options?.find(
-        o => (typeof o === "string"
-          ? o === q.correctOptionId || o === q.correctAnswer
-          : o.id === q.correctOptionId || o.text === q.correctAnswer)
-      )
-      const isCorrect = answer?.selectedOptionId === q.correctOptionId || answer?.selectedOptionId === q.correctAnswer
-      return {
-        id: q.id,
-        question: q.text || q.question || "",
-        userAnswer: typeof selectedOption === "string"
-          ? selectedOption
-          : selectedOption?.text || answer?.selectedOptionId || "Not answered",
-        correctAnswer: typeof correctOption === "string"
-          ? correctOption
-          : correctOption?.text || q.correctAnswer || q.correctOptionId || "",
-        isCorrect: !!isCorrect
-      }
-    })
-    const score = questionResults.filter(q => q.isCorrect).length
-    const preview: QuizResultsPreview = {
-      title: quizData?.title || "",
-      score,
-      maxScore: questions.length,
-      percentage: Math.round((score / questions.length) * 100),
-      questions: questionResults,
-      slug
-    }
-    return (
-      <NonAuthenticatedUserSignInPrompt
-        onSignIn={handleSignIn}
-        message="Please sign in to submit your quiz and save your results"
-        previewData={preview}
-        onDontSave={() => {
-          // User chooses not to save: just show results page using Redux state
-          router.push(`/dashboard/mcq/${slug}/results`)
-        }}
-      />
-    )
-  }
-
   // Show current question
   if (currentQuestion) {
+    // Calculate the existing answer for this question
+    const currentAnswerId = answers[currentQuestion.id]?.selectedOptionId
+
     return (
-      <McqQuiz
-        question={currentQuestion}
-        onAnswer={handleAnswer}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        isLastQuestion={isLastQuestion}
-        isSubmitting={isSubmitting}
-        existingAnswer={currentQuestionAnswer}
-      />
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">{currentQuestion.title || "Multiple Choice Quiz"}</h1>
+        
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="bg-gray-100 rounded-full h-2 mb-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
+              style={{ width: `${(currentQuestionIndex / questions.length) * 100}%` }}
+            ></div>
+          </div>
+          <div className="text-sm text-gray-600 text-right">
+            Question {currentQuestionIndex + 1} of {questions.length}
+          </div>
+        </div>
+        
+        <McqQuiz
+          question={currentQuestion}
+          onAnswer={handleAnswer}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          isLastQuestion={isLastQuestion}
+          isSubmitting={isSubmitting}
+          existingAnswer={currentAnswerId}
+        />
+        
+        {isQuizComplete && (
+          <div className="mt-8 text-center">
+            <Button
+              onClick={handleSubmitQuiz}
+              disabled={isSubmitting}
+              className="px-6 py-3 transition-all duration-300"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                "Submit Quiz"
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
     )
   }
 
   // Fallback
-  return <div>Initializing...</div>
+  return (
+    <QuizLoadingSteps
+      steps={[
+        { label: "Initializing quiz", status: "loading" }
+      ]}
+    />
+  )
 }
