@@ -94,8 +94,8 @@ jest.mock('@/lib/db', () => ({
   },
 }));
 
-// Helper function to log additional debugging if test fails
-const expectWithDebug = async (response, statusCode) => {
+// Add proper type definition for the expectWithDebug function
+const expectWithDebug = async (response: any, statusCode: number) => {
   if (response.status !== statusCode) {
     console.log('Response status:', response.status);
     console.log('Response body:', await response.text?.());

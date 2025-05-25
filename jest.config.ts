@@ -22,10 +22,12 @@ const config: Config = {
   }]
 ],
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/$1",
+    '^@/(.*)$': '<rootDir>/$1',
     "^.+\\.(svg)$": "<rootDir>/__mocks__/svgMock.js",
     // Add canvas mock
     canvas: "<rootDir>/__mocks__/canvasMock.js",
+    // Handle paths with parentheses
+    "^@/app/dashboard/\\(quiz\\)/(.*)$": "<rootDir>/app/dashboard/(quiz)/$1",
   },
   setupFilesAfterEnv: [
     "<rootDir>/jest.setup.ts"

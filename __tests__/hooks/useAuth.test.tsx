@@ -14,7 +14,10 @@ jest.mock('next-auth/react', () => ({
 
 // Save original location and properly mock it
 const originalLocation = window.location
-delete window.location
+Object.defineProperty(window, 'location', {
+  configurable: true,
+  value: undefined,
+});
 
 // Add proper URL mocking with a more complete implementation
 const mockWindowLocation = {

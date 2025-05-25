@@ -1,8 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { useAuth } from '@/hooks/useAuth'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import NonAuthenticatedUserSignInPrompt from '@/app/dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt'
+import { useAuth } from '@/hooks/useAuth'
+import { NonAuthenticatedUserSignInPrompt } from '@/app/dashboard/(quiz)/components/NonAuthenticatedUserSignInPrompt'
 import McqResultsPage from '@/app/dashboard/(quiz)/mcq/[slug]/results/page'
 
 // Mock next-auth
