@@ -1,5 +1,6 @@
 // Redux slice for quiz state management with improved authentication handling
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 import { RootState } from "../index";
 import { BlankQuizQuestion, OpenEndedQuizQuestion, QuizAnswer } from "@/app/types/quiz-types";
@@ -255,19 +256,68 @@ export const {
 } = quizSlice.actions;
 
 // Selectors
-export const selectQuizId = (state: RootState) => state.quiz.quizId;
-export const selectQuizType = (state: RootState) => state.quiz.quizType;
-export const selectQuizTitle = (state: RootState) => state.quiz.title;
-export const selectQuestions = (state: RootState) => state.quiz.questions;
-export const selectCurrentQuestionIndex = (state: RootState) => state.quiz.currentQuestionIndex;
-export const selectCurrentQuestion = (state: RootState) => 
-  state.quiz.questions[state.quiz.currentQuestionIndex];
-export const selectAnswers = (state: RootState) => state.quiz.answers;
-export const selectQuizStatus = (state: RootState) => state.quiz.status;
-export const selectQuizError = (state: RootState) => state.quiz.error;
-export const selectIsQuizComplete = (state: RootState) => state.quiz.isQuizComplete;
-export const selectQuizResults = (state: RootState) => state.quiz.results;
-export const selectQuizSessionId = (state: RootState) => 
-  state.quiz.quizId ? `quiz_${state.quiz.quizId}` : null;
+export const selectQuizState = (state: RootState) => state.quiz;
+
+export const selectQuestions = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.questions || []
+);
+
+export const selectAnswers = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.answers || {}
+);
+
+export const selectQuizStatus = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.status || 'idle'
+);
+
+export const selectQuizError = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.error || null
+);
+
+export const selectQuizTitle = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.quizData?.title || ''
+);
+
+export const selectCurrentQuestionIndex = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.currentQuestionIndex || 0
+);
+
+export const selectCurrentQuestion = createSelector(
+  [selectQuestions, selectCurrentQuestionIndex], 
+  (questions, currentIndex) => questions[currentIndex] || null
+);
+
+export const selectIsQuizComplete = createSelector(
+  [selectQuestions, selectAnswers], 
+  (questions, answers) => {
+    if (!Array.isArray(questions) || questions.length === 0) return false;
+    return questions.every(q => answers[q.id]);
+  }
+);
+
+export const selectQuizId = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.quizId || null
+);
+
+export const selectQuizResults = createSelector(
+  [selectQuizState], 
+  (quizState) => quizState.results || null
+);
+
+export const selectQuizInProgress = createSelector(
+  [selectQuizState, selectQuestions], 
+  (quizState, questions) => {
+    const answeredCount = Object.keys(quizState.answers || {}).length;
+    const totalCount = (questions || []).length;
+    return answeredCount > 0 && answeredCount < totalCount;
+  }
+);
 
 export default quizSlice.reducer;

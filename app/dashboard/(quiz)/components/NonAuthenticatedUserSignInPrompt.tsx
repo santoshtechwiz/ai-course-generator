@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Spinner } from "@/hooks/spinner";
 import { selectAuthStatus, selectIsAuthenticated } from "@/store/slices/authSlice";
-import React, { useState, useEffect } from "react"
-import { useDispatch, useSelector } from "react-redux"
-
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 
 interface AuthPromptProps {
   onSignIn: () => void;
@@ -20,16 +19,14 @@ export const NonAuthenticatedUserSignInPrompt: React.FC<AuthPromptProps> = ({
   message = "Please sign in to view and save your quiz progress."
 }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const authStatus = useSelector(selectAuthStatus);
+  const { loading } = useSelector(selectAuthStatus); // ✅ now safe
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handle sign in click
   const handleSignIn = () => {
     setIsLoading(true);
     onSignIn();
   };
 
-  // Reset loading state if auth status changes
   useEffect(() => {
     if (isAuthenticated) {
       setIsLoading(false);
@@ -46,13 +43,13 @@ export const NonAuthenticatedUserSignInPrompt: React.FC<AuthPromptProps> = ({
           <p className="text-muted-foreground">{message}</p>
         </div>
         <div className="flex flex-col space-y-4">
-          <Button 
-            onClick={handleSignIn} 
-            disabled={isLoading || authStatus === 'loading'}
+          <Button
+            onClick={handleSignIn}
+            disabled={isLoading || loading}
             className="w-full"
             size="lg"
           >
-            {isLoading || authStatus === 'loading' ? (
+            {isLoading || loading ? (
               <>
                 <Spinner className="mr-2 h-4 w-4" />
                 <span>Signing in...</span>
