@@ -1,16 +1,28 @@
 "use client"
 
-import { useCallback, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { toast } from "sonner"
-import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
 import CodingQuiz from "./CodingQuiz"
 
-import { selectQuestions, selectAnswers, selectQuizStatus, selectQuizError, selectIsQuizComplete, selectQuizResults, setCurrentQuestionIndex, fetchQuiz, saveAnswer, submitQuiz } from "@/store/slices/quizSlice"
+import { 
+  selectQuestions, 
+  selectAnswers, 
+  selectQuizStatus, 
+  selectQuizError, 
+  selectIsQuizComplete, 
+  selectQuizResults, 
+  setCurrentQuestionIndex, 
+  fetchQuiz, 
+  saveAnswer, 
+  submitQuiz 
+} from "@/store/slices/quizSlice"
 import { selectIsAuthenticated } from "@/store/slices/authSlice"
 import { signIn } from "next-auth/react"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import React from 'react'
+
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -22,7 +34,6 @@ interface CodeQuizWrapperProps {
 export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrapperProps) {
   const dispatch = useDispatch()
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   // Redux state
   const questions = useSelector(selectQuestions)
@@ -35,19 +46,23 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
   const currentQuestionIndex = useSelector((state: any) => state.quiz.currentQuestionIndex)
   const currentQuestion = questions[currentQuestionIndex]
 
-  // Fetch quiz data from API via slice
+  // Only reset quiz state on initial mount for this slug/quizId
+  const didInitRef = useRef(false)
   useEffect(() => {
-    if (slug && !quizId) {
+    if (!didInitRef.current) {
+      dispatch({ type: "quiz/resetQuiz" })
+      didInitRef.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, slug, quizId])
+
+  // Fetch quiz data from API via slice (only if not already loaded)
+  useEffect(() => {
+    if (slug && !quizId && questions.length === 0 && status === "idle") {
       dispatch(fetchQuiz({ id: slug, data: quizData, type: "code" }))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, slug, quizId, quizData])
-
-  // Handle reset parameter
-  useEffect(() => {
-    if (searchParams?.get("reset") === "true") {
-      dispatch(setCurrentQuestionIndex(0))
-    }
-  }, [searchParams, dispatch])
 
   // Handle answer submission
   const handleAnswer = useCallback(
@@ -76,12 +91,17 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
   )
 
   // Handle quiz submission
+  const submittingRef = useRef(false)
   const handleSubmitQuiz = useCallback(async () => {
+    if (submittingRef.current) return
+    submittingRef.current = true
     try {
       await dispatch(submitQuiz()).unwrap()
       router.push(`/dashboard/code/${slug}/results`)
     } catch {
       toast.error("Failed to submit quiz. Please try again.")
+    } finally {
+      submittingRef.current = false
     }
   }, [dispatch, router, slug])
 
@@ -91,6 +111,14 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
       callbackUrl: `/dashboard/code/${slug}?fromAuth=true`,
     })
   }, [slug])
+
+  // Auto-submit for authenticated users when quiz is complete and not already submitting/results
+  useEffect(() => {
+    if (isAuthenticated && isQuizComplete && status === "idle" && !results) {
+      handleSubmitQuiz()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isQuizComplete, status, results])
 
   // Loading state
   if (status === "loading") {
@@ -126,18 +154,55 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
     )
   }
 
-  // Non-authenticated user with completed quiz
-  if (!isAuthenticated && results) {
+  // Show sign-in prompt for completed quiz (unauthenticated users)
+  if (!isAuthenticated && isQuizComplete) {
+    // Create a preview of the results
+    const questionResults = questions.map(q => {
+      const answer = answers[q.id]
+      return {
+        id: q.id,
+        question: q.text || q.question || "",
+        userAnswer: answer?.answer || "",
+        correctAnswer: q.correctAnswer || q.answer || "",
+        isCorrect: answer?.isCorrect ?? false
+      }
+    })
+    const score = questionResults.filter(q => q.isCorrect).length
+    const preview = {
+      title: quizData?.title || "",
+      score,
+      maxScore: questions.length,
+      percentage: Math.round((score / questions.length) * 100),
+      questions: questionResults,
+      slug
+    }
     return (
-      <NonAuthenticatedUserSignInPrompt
-        onSignIn={handleShowSignIn}
-        
-        message="Please sign in to submit your quiz and save your results"
-      />
+      <div className="py-8">
+        <div className="mb-4">
+          <strong>Please sign in to submit your quiz and save your results.</strong>
+        </div>
+        <button
+          className="bg-primary text-white px-4 py-2 rounded"
+          onClick={handleShowSignIn}
+        >
+          Sign In to Save Results
+        </button>
+        {/* Optionally show preview */}
+        <div className="mt-6">
+          <h3 className="font-semibold mb-2">Quiz Preview</h3>
+          <ul className="text-sm">
+            {questionResults.map((q, i) => (
+              <li key={q.id}>
+                Q{i + 1}: {q.question} <br />
+                Your answer: {q.userAnswer} <br />
+                Correct: {q.isCorrect ? "Yes" : "No"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     )
   }
-
-  // Authenticated user with completed quiz (preview before submission)
 
   // Quiz in progress
   if (currentQuestion) {

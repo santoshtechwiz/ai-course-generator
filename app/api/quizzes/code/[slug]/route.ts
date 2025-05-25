@@ -68,11 +68,11 @@ export async function GET(_: Request, props: { params: Promise<{ slug: string }>
       quizId: result.id.toString(),
       userId: result.userId,
       ownerId: result.userId, // Assuming the owner is the same as the user who created the quiz
-      quizData: {
-        id: result.id.toString(),
-        title: result.title,
-        questions: processedQuestions,
-      },
+
+      id: result.id.toString(),
+      title: result.title,
+      questions: processedQuestions,
+
     }
 
     return NextResponse.json(quizData)

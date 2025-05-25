@@ -1,4 +1,3 @@
-
 'use client'
 import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -9,19 +8,15 @@ import {
   selectQuizResults, 
   selectQuizId,
   selectQuizStatus,
-  selectQuizError,
   fetchQuizResults
 } from "@/store/slices/quizSlice"
-import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
-import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import McqQuizResult from "../../components/McqQuizResult"
-import { Metadata } from "next"
+import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthenticatedUserSignInPrompt"
+import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
 }
-
-
 
 export default function McqResultsPage({ params }: ResultsPageProps) {
   // Extract slug in a way that works in tests and in real usage
@@ -36,14 +31,11 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   
   // Get results and status from Redux store
   const quizResults = useSelector(selectQuizResults)
-  const quizId = useSelector(selectQuizId)
   const quizStatus = useSelector(selectQuizStatus)
-  const quizError = useSelector(selectQuizError)
 
   // Load results if not already in store
   useEffect(() => {
     if (isAuthenticated && !quizResults && quizStatus !== 'loading' && quizStatus !== 'error') {
-      // Use the Redux thunk to fetch results
       dispatch(fetchQuizResults(slug))
     }
   }, [isAuthenticated, quizResults, quizStatus, slug, dispatch])
@@ -52,9 +44,9 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   if (!isAuthenticated && status !== "loading") {
     return (
       <NonAuthenticatedUserSignInPrompt
-        quizType="mcq"
+       
         onSignIn={() => requireAuth(`/dashboard/mcq/${slug}/results`)}
-        showSaveMessage={false}
+      
         message="Please sign in to view your quiz results"
       />
     )
@@ -62,13 +54,17 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   // Loading state
   if (status === "loading" || quizStatus === 'loading') {
-    return <InitializingDisplay message="Loading your results..." />
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "Loading your results...", status: "loading" }
+        ]}
+      />
+    )
   }
 
- 
-
   // No results found
-  if (!quizResults && isAuthenticated && quizStatus !== 'loading' && quizStatus !== 'submitting') {
+  if (!quizResults && isAuthenticated && quizStatus !== 'submitting' && quizStatus !== 'idle') {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
@@ -95,6 +91,10 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       </Card>
     </div>
   ) : (
-    <InitializingDisplay message="Preparing your quiz results..." />
+    <QuizLoadingSteps
+      steps={[
+        { label: "Preparing your quiz results...", status: "loading" }
+      ]}
+    />
   )
 }

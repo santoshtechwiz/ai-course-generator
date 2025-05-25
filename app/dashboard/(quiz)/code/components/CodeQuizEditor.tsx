@@ -29,22 +29,60 @@ export default function CodeQuizEditor({
 }: CodeQuizEditorProps) {
   const editorRef = useRef(null)
   const [isMounted, setIsMounted] = useState(false)
+  const [editorError, setEditorError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  if (!isMounted) {
+  const handleEditorDidMount = (editor: any) => {
+    editorRef.current = editor
+    setIsLoading(false)
+    setEditorError(null)
+  }
+
+  const handleEditorError = (error: any) => {
+    console.error("Monaco editor error:", error)
+    setEditorError("Editor failed to load")
+    setIsLoading(false)
+  }
+
+  if (!isMounted || isLoading) {
     return (
       <div
         className={cn(
-          "border rounded-md bg-muted/50 w-full p-4 font-mono text-sm overflow-auto whitespace-pre",
+          "border rounded-md bg-muted/50 w-full p-4 font-mono text-sm overflow-auto whitespace-pre flex items-center justify-center",
           disabled && "opacity-70 pointer-events-none",
           className,
         )}
         style={{ height }}
       >
-        {value || placeholder}
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Loading editor...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (editorError) {
+    return (
+      <div
+        className={cn(
+          "border rounded-md bg-destructive/10 w-full p-4 text-destructive text-sm",
+          className,
+        )}
+        style={{ height }}
+      >
+        <p>Code editor failed to load. Please refresh the page.</p>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full h-full mt-2 p-2 border rounded resize-none font-mono text-sm"
+          disabled={disabled || readOnly}
+        />
       </div>
     )
   }
@@ -57,6 +95,8 @@ export default function CodeQuizEditor({
         value={value}
         onChange={onChange}
         theme="vs-dark"
+        onMount={handleEditorDidMount}
+        onError={handleEditorError}
         options={{
           minimap: { enabled: false },
           fontSize: 14,
@@ -68,6 +108,7 @@ export default function CodeQuizEditor({
           domReadOnly: readOnly || disabled,
           contextmenu: !readOnly && !disabled,
           cursorStyle: readOnly || disabled ? "line-thin" : "line",
+          automaticLayout: true,
         }}
         {...rest}
       />

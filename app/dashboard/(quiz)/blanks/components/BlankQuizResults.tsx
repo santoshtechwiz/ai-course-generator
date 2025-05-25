@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { useSelector } from "react-redux"
 import {
   selectQuizResults,
@@ -75,6 +75,7 @@ const getFeedback = (percentage: number) => {
 
 export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
   const [showAnswers, setShowAnswers] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const storeResults = useSelector(selectQuizResults)
   const questions = useSelector(selectQuestions)
@@ -82,36 +83,83 @@ export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
 
   const quizResult = result || storeResults
 
+  // Add loading effect
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 300)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Memoize answer mapping to prevent unnecessary recalculations
   const answerMap = useMemo(() => {
     const map: Record<number, any> = {}
 
     if (quizResult?.answers && typeof quizResult.answers === "object") {
       Object.entries(quizResult.answers).forEach(([key, val]) => {
-        map[parseInt(key)] = val
+        const numKey = parseInt(key)
+        if (!isNaN(numKey)) {
+          map[numKey] = val
+        }
       })
     }
 
     if (Array.isArray(quizResult?.questionResults)) {
       quizResult.questionResults.forEach((res) => {
-        map[res.questionId] = res
+        if (res && res.questionId !== undefined) {
+          map[res.questionId] = res
+        }
       })
     }
 
     return map
   }, [quizResult])
 
-  const score = quizResult?.score ?? quizResult?.correctAnswers ?? 0
-  const maxScore =
-    quizResult?.maxScore ?? quizResult?.totalQuestions ?? questions.length
-  const percentage =
-    quizResult?.percentage ??
-    (maxScore > 0 ? Math.round((score / maxScore) * 100) : 0)
+  // Memoize score calculations
+  const { score, maxScore, percentage } = useMemo(() => {
+    const calculatedScore = quizResult?.score ?? quizResult?.correctAnswers ?? 0
+    const calculatedMaxScore = quizResult?.maxScore ?? quizResult?.totalQuestions ?? (questions?.length || 0)
+    const calculatedPercentage = quizResult?.percentage ?? 
+      (calculatedMaxScore > 0 ? Math.round((calculatedScore / calculatedMaxScore) * 100) : 0)
+    
+    return {
+      score: Math.max(0, calculatedScore),
+      maxScore: Math.max(1, calculatedMaxScore),
+      percentage: Math.min(100, Math.max(0, calculatedPercentage))
+    }
+  }, [quizResult, questions])
 
-  if (!quizResult) {
+  // Memoize toggle function to prevent unnecessary re-renders
+  const toggleAnswers = useCallback(() => {
+    setShowAnswers(prev => !prev)
+  }, [])
+
+  // Clean up state on unmount
+  useEffect(() => {
+    return () => {
+      setShowAnswers(false)
+    }
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading results...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!quizResult && (!questions || questions.length === 0)) {
     return (
       <div className="text-center py-8">
         <h2 className="text-xl font-bold mb-2">No Results Available</h2>
-        <p className="text-gray-600">We couldn't find your quiz results.</p>
+        <p className="text-gray-600 mb-4">We couldn't find your quiz results.</p>
+        {onRetake && (
+          <Button onClick={onRetake} variant="outline">
+            Try Again
+          </Button>
+        )}
       </div>
     )
   }
@@ -146,7 +194,7 @@ export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
       </Card>
 
       <div className="flex justify-center">
-        <Button onClick={() => setShowAnswers((prev) => !prev)} variant="outline">
+        <Button onClick={toggleAnswers} variant="outline">
           {showAnswers ? "Hide Answers" : "Show Answers"}
         </Button>
       </div>
