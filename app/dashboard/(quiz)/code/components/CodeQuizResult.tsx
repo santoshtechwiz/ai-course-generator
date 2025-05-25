@@ -36,40 +36,6 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("summary")
 
-  // IMPORTANT: Move all useCallback declarations before any useEffect to maintain consistent hook order
-  const handleShare = useCallback(async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: "My Quiz Results",
-          text: `I scored ${scorePercentage}% on the ${title} coding quiz!`,
-          url: window.location.href,
-        })
-        toast.success("Shared successfully!")
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(window.location.href)
-        toast.success("Link copied to clipboard!")
-      }
-    } catch (error) {
-      console.error("Error sharing:", error)
-    }
-  }, []) // We'll update the dependencies after initializing required variables
-
-  const handleSaveResults = useCallback(() => {
-    // Implementation will be updated after initializing required variables
-    // This is just a placeholder to maintain hook order
-  }, [])
-
-  // Now the useEffect comes after all useCallback declarations
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (isLoading) {
-    return <QuizSubmissionLoading quizType="code" />
-  }
-
   // Ensure result is valid and has the required properties
   if (
     !result ||
@@ -90,9 +56,38 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
   const title = result.title || "Code Quiz"
   const scorePercentage = result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : 0
 
-  // Update the useCallback dependencies now that we have the variables
-  // We won't actually modify these hooks again - we're just showing what would be needed
-  // The actual fix is moving the hook declarations above the conditional return statements
+  // FIXED: Now these hooks come after the variable declarations they depend on
+  const handleShare = useCallback(async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "My Quiz Results",
+          text: `I scored ${scorePercentage}% on the ${title} coding quiz!`,
+          url: window.location.href,
+        })
+        toast.success("Shared successfully!")
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href)
+        toast.success("Link copied to clipboard!")
+      }
+    } catch (error) {
+      console.error("Error sharing:", error)
+    }
+  }, [scorePercentage, title]) // Updated dependencies
+
+  const handleSaveResults = useCallback(() => {
+    // Implementation goes here
+  }, [])
+
+  // Now the useEffect comes after all useCallback declarations
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (isLoading) {
+    return <QuizSubmissionLoading quizType="code" />
+  }
 
   const getPerformanceLevel = (percentage: number) => {
     if (percentage >= 90) return { label: "Outstanding", color: "text-green-600", icon: Star }

@@ -1,12 +1,11 @@
 "use client"
 
-import { use, useState } from "react"
+import { use } from "react"
 import { useRouter } from "next/navigation"
-import { useAppSelector } from "@/store"
+import { useSelector } from "react-redux"
 import { Card, CardContent } from "@/components/ui/card"
-import { ErrorDisplay } from "../../../components/QuizStateDisplay"
+
 import { selectQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
-import type { QuizResult } from "@/app/types/quiz-types"
 import { BlankQuizResults } from "../../components/BlankQuizResults"
 
 interface ResultsPageProps {
@@ -15,30 +14,15 @@ interface ResultsPageProps {
 
 export default function BlanksResultsPage({ params }: ResultsPageProps) {
   // Extract slug in a way that works in tests and in real usage
-  const slug =
-    params instanceof Promise
-      ? use(params).slug // Real usage with Next.js
-      : (params as { slug: string }).slug // Test usage
+  const slug = params instanceof Promise ? use(params).slug : params.slug
 
   const router = useRouter()
-  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Redux selectors
-  const results = useAppSelector(selectQuizResults)
-  const questions = useAppSelector(selectQuestions)
-  const answers = useAppSelector(selectAnswers)
-  const title = useAppSelector(selectQuizTitle)
-
-  // Error state
-  if (loadError) {
-    return (
-      <ErrorDisplay
-        error={loadError}
-        onRetry={() => setLoadError(null)}
-        onReturn={() => router.push("/dashboard/quizzes")}
-      />
-    )
-  }
+  const results = useSelector(selectQuizResults)
+  const questions = useSelector(selectQuestions)
+  const answers = useSelector(selectAnswers)
+  const title = useSelector(selectQuizTitle)
 
   // No results found
   if (!results && !questions.length) {
@@ -58,6 +42,17 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
     )
   }
 
+  // Create quiz result object from Redux state
+  const quizResult = {
+    score: results?.score || 0,
+    maxScore: questions.length,
+    totalQuestions: questions.length,
+    correctAnswers: results?.score || 0,
+    completedAt: results?.submittedAt ? new Date(results.submittedAt).toISOString() : new Date().toISOString(),
+    title: title || 'Fill in the Blanks Quiz',
+    slug,
+    quizId: slug
+  }
 
   return (
     <div className="container max-w-4xl py-6">

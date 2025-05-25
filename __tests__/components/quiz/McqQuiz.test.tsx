@@ -2,10 +2,9 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import McqQuiz from '@/app/dashboard/(quiz)/mcq/components/McqQuiz';
-import { vi } from 'vitest';
 
 // Mock the framer-motion module
-vi.mock('framer-motion', () => ({
+jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: React.ComponentProps<'div'>) => 
       <div data-testid="motion-div" {...props}>{children}</div>,
@@ -17,7 +16,7 @@ vi.mock('framer-motion', () => ({
 }));
 
 describe('McqQuiz Component', () => {
-  const mockOnAnswer = vi.fn();
+  const mockOnAnswer = jest.fn();
   const defaultProps = {
     question: {
       id: 'q1',
@@ -38,7 +37,7 @@ describe('McqQuiz Component', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('renders the question text correctly', () => {

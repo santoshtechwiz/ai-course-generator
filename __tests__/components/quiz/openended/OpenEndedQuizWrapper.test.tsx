@@ -4,14 +4,13 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import quizReducer from '@/store/slices/quizSlice';
 import OpenEndedQuizWrapper from '@/app/dashboard/(quiz)/openended/components/OpenEndedQuizWrapper';
-import { vi } from 'vitest';
 
 // Mock next/navigation
-vi.mock('next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn()
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn()
   })
 }));
 

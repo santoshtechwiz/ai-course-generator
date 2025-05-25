@@ -6,12 +6,11 @@ import { SessionProvider } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { RecoilRoot } from 'recoil';
 
-import BlanksQuizWrapper from '@/app/dashboard/(quiz)/blanks/components/BlankQuizWrapper';
-import BlanksQuiz from '@/app/dashboard/(quiz)/blanks/components/BlanksQuiz';
-import BlankQuizResults from '@/app/dashboard/(quiz)/blanks/components/BlankQuizResults';
 import textQuizReducer, {  } from '@/app/store/slices/textQuizSlice'; // Import initialState
 import * as auth from '@/hooks/useAuth';
 import * as nextAuth from 'next-auth/react';
+import { BlankQuizWrapper } from '@/app/dashboard/(quiz)/blanks/components/BlankQuizWrapper';
+import { BlankQuizResults } from '@/app/dashboard/(quiz)/blanks/components/BlankQuizResults';
 
 // Mock the router
 jest.mock('next/navigation', () => ({
@@ -203,7 +202,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={store}>
           <RecoilRoot>
             <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
+              <BlankQuizWrapper slug="test-quiz" quizData={mockQuizData} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
@@ -304,7 +303,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={store}>
           <RecoilRoot>
             <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
+              <BlankQuizWrapper slug="test-quiz" quizData={mockQuizData} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
@@ -357,7 +356,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={store}>
           <RecoilRoot>
             <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
+              <BlankQuizWrapper slug="test-quiz" quizData={mockQuizData} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
@@ -412,7 +411,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={store}>
           <RecoilRoot>
             <SessionProvider session={null}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
+              <BlankQuizWrapper slug="test-quiz" quizData={mockQuizData} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
@@ -515,7 +514,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={store}>
           <RecoilRoot>
             <SessionProvider session={null}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
+              <BlankQuizWrapper slug="test-quiz" quizData={mockQuizData} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
@@ -587,7 +586,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={store}>
           <RecoilRoot>
             <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={null as any} />
+              <BlankQuizWrapper slug="test-quiz" quizData={null as any} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
@@ -612,7 +611,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={createStore()}>
           <RecoilRoot>
             <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={emptyQuizData} />
+              <BlankQuizWrapper slug="test-quiz" quizData={emptyQuizData} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>
@@ -631,7 +630,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
         <Provider store={createStore()}>
           <RecoilRoot>
             <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
+              <BlankQuizWrapper slug="test-quiz" quizData={mockQuizData} />
             </SessionProvider>
           </RecoilRoot>
         </Provider>

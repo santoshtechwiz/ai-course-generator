@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useDispatch, useSelector } from "react-redux"
+import React from "react"
 import { 
   saveAnswer,
   setCurrentQuestionIndex,
@@ -16,33 +17,18 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react"
 import { motion } from "framer-motion"
-import React from "react"
+import { BlankQuizQuestion } from "../types/blanks-quiz"
 
-interface BlankQuestion {
-  id: string | number;
-  question?: string;
-  textWithBlanks?: string;
-  text?: string;
-  blanks?: {
-    id: string;
-    correctAnswer: string;
-  }[];
-}
-
-interface BlanksQuizProps {
-  quizId: string;
-}
-
-export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
-  const dispatch = useAppDispatch();
+export function BlanksQuiz() {
+  const dispatch = useDispatch();
   
   // Get data from Redux store
-  const questions = useAppSelector(selectQuestions);
-  const currentQuestionIndex = useAppSelector(selectCurrentQuestionIndex);
-  const answers = useAppSelector(selectAnswers);
-  const currentQuestion = useAppSelector(selectCurrentQuestion) as BlankQuestion;
+  const questions = useSelector(selectQuestions);
+  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
+  const answers = useSelector(selectAnswers);
+  const currentQuestion = useSelector(selectCurrentQuestion) as BlankQuizQuestion;
   
-  // Track input changes before saving to Redux
+  // Track input values before saving to Redux
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   
   // Initialize inputValues from existing answers when component mounts or question changes
@@ -104,23 +90,20 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
     );
   }
   
-  // Parse text with blanks - support both formats:
-  // 1. textWithBlanks format with {{blanks}}
-  // 2. question format for API response (e.g., "Kubernetes is an open-source container __________ system.")
+  // Parse text with blanks from the API response format
   const renderTextWithBlanks = () => {
-    // Format 1: Using textWithBlanks with {{blank}} pattern
-    if (currentQuestion.textWithBlanks && 
-        currentQuestion.textWithBlanks.includes("{{") && 
-        currentQuestion.textWithBlanks.includes("}}")) {
-      
-      const parts = currentQuestion.textWithBlanks.split(/\{\{([^}]+)\}\}/g);
+    // Get question text from the API response
+    const questionText = currentQuestion.question || "";
+    
+    // Check if the question contains blanks (indicated by underscores)
+    if (questionText.includes("_")) {
+      // Split by underscores pattern
+      const parts = questionText.split(/(_+)/g);
       
       return parts.map((part, index) => {
-        // Even indices are text, odd indices are blank IDs
-        if (index % 2 === 0) {
-          return <span key={index}>{part}</span>;
-        } else {
-          const blankId = part;
+        // If this part is underscores, render an input field
+        if (part.match(/^_+$/)) {
+          const blankId = `blank_${index}`;
           const currentValue = inputValues[blankId] || '';
           
           return (
@@ -131,23 +114,26 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
               value={currentValue}
               onChange={(e) => handleBlankChange(blankId, e.target.value)}
               placeholder="..."
+              data-testid={`blank-input-${index}`}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
             />
           );
         }
+        
+        // Otherwise, render the text
+        return <span key={index} data-testid={`text-part-${index}`}>{part}</span>;
       });
     }
     
-    // Format 2: Using question with __________ as blanks
-    const questionText = currentQuestion.question || currentQuestion.text || "";
+    // If no underscores, try to handle the format with __________
     if (questionText.includes("__________")) {
       const parts = questionText.split(/__________/g);
       
       return parts.map((part, index) => {
         if (index === parts.length - 1) {
-          return <span key={index}>{part}</span>;
+          return <span key={index} data-testid={`text-part-${index}`}>{part}</span>;
         }
         
         const blankId = `blank_${index}`;
@@ -155,13 +141,14 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
         
         return (
           <React.Fragment key={index}>
-            <span>{part}</span>
+            <span data-testid={`text-part-${index}`}>{part}</span>
             <motion.input
               type="text"
               className="mx-1 px-2 py-1 border-b-2 border-primary/50 focus:outline-none focus:border-primary bg-transparent min-w-[100px] inline-block transition-all duration-200"
               value={currentValue}
               onChange={(e) => handleBlankChange(blankId, e.target.value)}
               placeholder="..."
+              data-testid={`blank-input-${index}`}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -171,7 +158,7 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
       });
     }
     
-    // If neither format is detected
+    // If neither format is detected, show error
     return (
       <Alert variant="destructive" className="mb-4">
         <AlertTriangle className="h-4 w-4" />
@@ -205,6 +192,13 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
           <div className="text-lg leading-relaxed">
             {renderTextWithBlanks()}
           </div>
+          
+          {/* Show the expected answer for testing/debugging - remove in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-2 bg-gray-100 rounded text-sm">
+              <p className="text-gray-500">Expected answer: <span className="font-mono">{currentQuestion.answer}</span></p>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-between">
@@ -213,6 +207,7 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
             disabled={currentQuestionIndex === 0}
             variant="outline"
             className="flex items-center"
+            data-testid="previous-button"
           >
             <ChevronLeft className="mr-1 h-4 w-4" /> Previous
           </Button>
@@ -222,6 +217,7 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
             disabled={currentQuestionIndex === questions.length - 1}
             variant={currentQuestionIndex === questions.length - 1 ? "outline" : "default"}
             className="flex items-center"
+            data-testid="next-button"
           >
             {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"} <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
@@ -229,6 +225,4 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
       </Card>
     </motion.div>
   );
-};
-
-export default BlanksQuiz;
+}

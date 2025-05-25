@@ -23,7 +23,7 @@ export default function McqQuizPage({
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
-  const { userId, status } = useAuth()
+  const { isAuthenticated,isLoading:load,user} = useAuth()
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -105,7 +105,7 @@ export default function McqQuizPage({
   // Render quiz wrapper with properly formatted data
   return (
     <div className="container max-w-4xl py-6">
-      <McqQuizWrapper slug={slug} userId={userId} quizData={quizData} />
+      <McqQuizWrapper slug={slug} userId={user?.id} quizData={quizData} />
     </div>
   )
 }
