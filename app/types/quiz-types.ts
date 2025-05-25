@@ -1,47 +1,36 @@
-// Unified types for both blanks and openended quizzes to match API response
-export interface OpenEndedQuestion {
-  id: number;
-  question: string;
-  answer: string;
-}
+// Unified quiz types for the entire application
+export type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
 
-export interface BlankQuizQuestion {
-  id: number;
-  question: string;
+// Base question interface that all quiz question types extend
+export interface BaseQuestion {
+  id: string | number;
+  question?: string;
+  text?: string;
+  type?: string;
   answer?: string;
-  modelAnswer?: string;
+  correctAnswer?: string;
 }
 
-export interface OpenEndedQuizQuestion {
+// Open ended questions
+export interface OpenEndedQuestion extends BaseQuestion {
   id: number;
   question: string;
   answer: string;
   hints?: string[];
-  openEndedQuestion?: OpenEndedQuestion;
   type: 'openended';
 }
 
-export interface QuizData {
+// Fill in the blanks questions
+export interface BlankQuizQuestion extends BaseQuestion {
   id: number;
-  slug: string;
-  type: 'blanks' | 'openended' | 'mcq' | 'code';
-  title: string;
-  questions: BlankQuizQuestion[] | OpenEndedQuizQuestion[];
-  userId: string;
+  question: string;
+  answer?: string;
+  modelAnswer?: string;
+  type?: 'blanks';
 }
 
-export interface BlankQuizData extends QuizData {
-  type: 'blanks';
-  questions: BlankQuizQuestion[];
-}
-
-export interface OpenEndedQuizData extends QuizData {
-  type: 'openended';
-  questions: OpenEndedQuizQuestion[];
-}
-
-// Enhanced types for better consistency
-export interface McqQuestion {
+// Multiple choice questions
+export interface McqQuestion extends BaseQuestion {
   id: string | number;
   text?: string;
   question?: string;
@@ -49,10 +38,11 @@ export interface McqQuestion {
   correctOptionId?: string;
   correctAnswer?: string;
   title?: string;
-  type?: string;
+  type?: 'mcq';
 }
 
-export interface CodeQuizQuestion {
+// Code quiz questions
+export interface CodeQuizQuestion extends BaseQuestion {
   id: string | number;
   text?: string;
   question?: string;
@@ -61,53 +51,68 @@ export interface CodeQuizQuestion {
   answer?: string;
   correctAnswer?: string;
   language?: string;
-  type?: string;
+  type?: 'code';
 }
+
+// Quiz data structure
+export interface QuizData {
+  id: number | string;
+  slug: string;
+  type: QuizType;
+  title: string;
+  questions: QuizQuestion[];
+  userId?: string;
+}
+
+// Union type for all question types
+export type QuizQuestion = BlankQuizQuestion | OpenEndedQuestion | McqQuestion | CodeQuizQuestion;
 
 // Answer types
-export interface BlankQuizAnswer {
-  questionId: number;
-  filledBlanks: Record<string, string>;
-  timestamp: number;
-}
-
-export interface OpenEndedQuizAnswer {
-  questionId: number;
-  text: string;
-  timestamp: number;
-}
-
-export interface CodeQuizAnswer {
+export interface BaseAnswer {
   questionId: string | number;
+  timestamp: number;
+  type?: QuizType;
+}
+
+export interface BlankQuizAnswer extends BaseAnswer {
+  filledBlanks: Record<string, string>;
+  type: 'blanks';
+}
+
+export interface OpenEndedQuizAnswer extends BaseAnswer {
+  text: string;
+  type: 'openended';
+}
+
+export interface McqQuizAnswer extends BaseAnswer {
+  selectedOptionId: string;
+  isCorrect?: boolean;
+  type: 'mcq';
+}
+
+export interface CodeQuizAnswer extends BaseAnswer {
   answer: string;
   isCorrect: boolean;
   timeSpent: number;
-  timestamp: number;
-  type: "code";
+  type: 'code';
 }
 
-export interface McqQuizAnswer {
-  questionId: string | number;
-  selectedOptionId: string;
-  isCorrect?: boolean;
-  timestamp: number;
-  type: "mcq";
-}
-
-export type QuizAnswer = BlankQuizAnswer | OpenEndedQuizAnswer;
+// Union type for all answer types
+export type UserAnswer = BlankQuizAnswer | OpenEndedQuizAnswer | McqQuizAnswer | CodeQuizAnswer;
 
 // Redux state types
 export interface QuizState {
   quizId: string | number | null;
-  quizType: string | null;
+  quizType: QuizType | null;
   title: string | null;
-  questions: (BlankQuizQuestion | OpenEndedQuizQuestion)[];
+  questions: QuizQuestion[];
   currentQuestionIndex: number;
-  answers: Record<string | number, QuizAnswer>;
+  answers: Record<string | number, UserAnswer>;
   status: 'idle' | 'loading' | 'submitting' | 'error';
   error: string | null;
-  isQuizComplete: boolean;
-  results: any | null;
+  isCompleted: boolean;
+  results: QuizResult | null;
+  sessionId?: string;
 }
 
 // Authentication types
@@ -118,7 +123,7 @@ export interface AuthState {
   error: string | null;
 }
 
-// Common interface for all quiz results
+// Quiz result types
 export interface QuizResult {
   quizId: string | number;
   slug?: string;
@@ -128,7 +133,17 @@ export interface QuizResult {
   percentage: number;
   completedAt: string;
   submittedAt?: string;
-  questionResults?: any[];
+  questionResults?: QuizQuestionResult[];
+  type?: QuizType;
+}
+
+export interface QuizResultPreview {
+  title: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  slug: string;
+  type?: QuizType;
 }
 
 export interface QuizQuestionResult {
@@ -139,6 +154,7 @@ export interface QuizQuestionResult {
   isCorrect: boolean;
 }
 
+// Component prop types
 export interface CodeQuizOptionsProps {
   options: string[];
   selectedOption?: string | null;
@@ -147,7 +163,48 @@ export interface CodeQuizOptionsProps {
   renderOptionContent?: (option: string) => React.ReactNode;
 }
 
-// Type guard
+// Type guard functions
 export function isOpenEndedQuestion(q: any): q is OpenEndedQuestion {
-  return typeof q === "object" && typeof q.answer === "string";
+  return typeof q === "object" && q.type === "openended";
+}
+
+export function isBlankQuestion(q: any): q is BlankQuizQuestion {
+  return typeof q === "object" && q.type === "blanks";
+}
+
+export function isMcqQuestion(q: any): q is McqQuestion {
+  return typeof q === "object" && q.type === "mcq";
+}
+
+export function isCodeQuestion(q: any): q is CodeQuizQuestion {
+  return typeof q === "object" && q.type === "code";
+}
+
+// User quiz attempt from user-types.ts
+export interface UserQuizAttempt {
+  id: string | number;
+  userId: string;
+  userQuizId: number;
+  score?: number;
+  timeSpent?: number;
+  improvement?: number;
+  accuracy?: number;
+  createdAt: Date;
+  updatedAt: Date;
+  attemptQuestions?: AttemptQuestion[];
+  userQuiz?: {
+    id: number;
+    title: string;
+    quizType?: string;
+    difficulty?: string;
+    questions?: QuizQuestion[];
+  }
+}
+
+export interface AttemptQuestion {
+  id: number;
+  questionId: number;
+  userAnswer?: string;
+  isCorrect?: boolean;
+  timeSpent: number;
 }

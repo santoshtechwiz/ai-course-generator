@@ -22,6 +22,7 @@ import {
   submitQuiz
 } from "@/store/slices/quizSlice"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { Button } from "@/components/ui/button"
 
 
 interface McqQuizWrapperProps {

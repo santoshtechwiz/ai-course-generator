@@ -2,6 +2,7 @@
 import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
+import { useSession } from "next-auth/react"
 import { AppDispatch } from "@/store"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
@@ -15,6 +16,7 @@ import {
 } from "@/store/slices/quizSlice"
 import McqQuizResult from "../../components/McqQuizResult"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
+import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthenticatedUserSignInPrompt"
 import { QuizResult, McqQuestion } from "@/app/types/quiz-types"
 
 interface ResultsPageProps {
@@ -31,6 +33,10 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   
+  // Get authentication status
+  const { data: session, status: authStatus } = useSession()
+  const isAuthenticated = authStatus === "authenticated"
+  
   // Get results and state from Redux store
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
@@ -40,26 +46,38 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   // Load results if not already in store
   useEffect(() => {
-    if (!quizResults && quizStatus !== 'loading' && quizStatus !== 'submitting' && quizStatus !== 'error') {
+    if (isAuthenticated && !quizResults && quizStatus !== 'loading' && quizStatus !== 'submitting' && quizStatus !== 'error') {
       // Try to fetch results if we don't have them
       dispatch(fetchQuizResults(slug))
     }
-  }, [quizResults, quizStatus, slug, dispatch])
+  }, [isAuthenticated, quizResults, quizStatus, slug, dispatch])
 
-  // Generate results from Redux state if no server results
-  const generatedResults = !quizResults && questions.length > 0 ? {
-    quizId: slug,
-    slug,
-    title: quizTitle || "Multiple Choice Quiz",
-    questions: questions,
-    answers: Object.values(answers || {}),
-    score: Object.values(answers || {}).filter(a => a.isCorrect).length,
-    maxScore: questions.length,
-    percentage: Math.round(
-      (Object.values(answers || {}).filter(a => a.isCorrect).length / questions.length) * 100
-    ),
-    completedAt: new Date().toISOString()
-  } : null
+  // Handle sign in
+  const handleSignIn = () => {
+    router.push(`/api/auth/signin?callbackUrl=/dashboard/mcq/${slug}/results`)
+  }
+
+  // Authentication loading
+  if (authStatus === "loading") {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "Checking authentication...", status: "loading" }
+        ]}
+      />
+    )
+  }
+
+  // Not authenticated - show sign in prompt
+  if (!isAuthenticated) {
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        onSignIn={handleSignIn}
+        title="Sign In to View Results"
+        message="Please sign in to view your quiz results and track your progress."
+      />
+    )
+  }
 
   // Loading state
   if (quizStatus === 'loading') {
