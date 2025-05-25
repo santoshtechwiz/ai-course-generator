@@ -28,11 +28,11 @@ export async function GET(
       slug,
       type: "blanks",
       title: quizData.title || "Fill in the Blanks Quiz",
-      description: quizData.description || "",
+     
       questions: Array.isArray(quizData.questions) ? quizData.questions : [],
       userId: quizData.userId || session?.user?.id || "anonymous"
     };
-
+    console.log("Processed Quiz Data:", processedQuizData);
     return NextResponse.json(processedQuizData);
   } catch (error) {
     console.error("Error fetching quiz:", error);

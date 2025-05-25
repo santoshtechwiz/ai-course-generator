@@ -526,4 +526,3 @@ describe('Quiz Slice', () => {
     });
 
   });
-  

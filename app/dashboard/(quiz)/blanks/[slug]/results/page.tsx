@@ -2,18 +2,18 @@
 
 import { use, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAppSelector } from "@/store/hooks"
+import { useAppSelector } from "@/store"
 import { Card, CardContent } from "@/components/ui/card"
 import { ErrorDisplay } from "../../../components/QuizStateDisplay"
-import CodeQuizResult from "../../components/CodeQuizResult"
 import { selectQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
 import type { QuizResult } from "@/app/types/quiz-types"
+import { BlankQuizResults } from "../../components/BlankQuizResults"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
 }
 
-export default function CodeResultsPage({ params }: ResultsPageProps) {
+export default function BlanksResultsPage({ params }: ResultsPageProps) {
   // Extract slug in a way that works in tests and in real usage
   const slug =
     params instanceof Promise
@@ -48,7 +48,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
         <p>We couldn't find your results for this quiz.</p>
         <div className="mt-6">
           <button
-            onClick={() => router.push(`/dashboard/code/${slug}`)}
+            onClick={() => router.push(`/dashboard/blanks/${slug}`)}
             className="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded"
           >
             Take the Quiz
@@ -58,29 +58,12 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // Create quiz result from Redux state
-  const quizResult: QuizResult = results || {
-    quizId: slug,
-    slug,
-    title: title || "Code Quiz",
-    score: results?.score || 0,
-    maxScore: questions.length,
-    percentage: results?.percentage || 0,
-    completedAt: new Date().toISOString(),
-    questions: questions.map((q) => ({
-      id: q.id,
-      question: q.text,
-      userAnswer: answers[q.id]?.code || "",
-      correctAnswer: "",
-      isCorrect: true, // Code questions are typically marked as correct when submitted
-    })),
-  }
 
   return (
     <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <CodeQuizResult result={quizResult} />
+          <BlankQuizResults result={quizResult} />
         </CardContent>
       </Card>
     </div>
