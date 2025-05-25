@@ -11,6 +11,7 @@ import { selectIsAuthenticated } from "@/store/slices/authSlice"
 import { NonAuthenticatedUserSignInPrompt } 
 from "../../../components/NonAuthenticatedUserSignInPrompt"
 import { BlankQuizResults } from "../../components/BlankQuizResults"
+import { Spinner } from "@/hooks/spinner"
 
 
 interface ResultsPageProps {
@@ -43,7 +44,8 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
     return (
       <div className="container max-w-md py-10">
         <NonAuthenticatedUserSignInPrompt 
-          onSignIn={handleSignIn}
+          quizType="blanks"
+          returnPath={`/dashboard/blanks/${slug}/results`}
           title="Sign In to View Results"
           message="Please sign in to view your quiz results and track your progress."
         />
@@ -101,7 +103,7 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
         <CardContent className="p-4 sm:p-6">
           <BlankQuizResults 
             result={quizResult} 
-            onRetake={() => router.push(`/dashboard/blanks/${slug}`)}
+            onRetake={() => router.push(`/dashboard/blanks/${slug}?reset=true`)}
           />
         </CardContent>
       </Card>

@@ -1,16 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSelector } from "react-redux"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { selectQuizResults, selectQuestions, selectAnswers,
-   selectQuizTitle } from "@/store/slices/quizSlice"
-import { QuizResult, BlankQuizQuestion } from "@/app/types/quiz-types"
-
+import { selectQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
+import { BlanksQuizResult } from "../blanks-quiz-types"
 
 interface BlankQuizResultsProps {
-  result: QuizResult;
+  result: BlanksQuizResult;
   onRetake?: () => void;
 }
 
@@ -19,7 +17,7 @@ export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
   
   // Redux selectors
   const storeResults = useSelector(selectQuizResults);
-  const questions = useSelector(selectQuestions) as BlankQuizQuestion[];
+  const questions = useSelector(selectQuestions);
   const answers = useSelector(selectAnswers);
   const title = useSelector(selectQuizTitle);
   
@@ -35,7 +33,10 @@ export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
     );
   }
   
-  const { score, maxScore, percentage } = quizResult;
+  // Calculate score and percentage if not provided in results
+  const score = quizResult.score ?? quizResult.correctAnswers ?? 0;
+  const maxScore = quizResult.totalQuestions ?? questions.length;
+  const percentage = quizResult.percentage ?? (maxScore > 0 ? Math.round((score / maxScore) * 100) : 0);
   
   // Get feedback based on score
   const getFeedback = () => {
@@ -56,8 +57,10 @@ export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-2">{title || "Quiz"} Results</h1>
-        <p className="text-muted-foreground">Completed on {new Date(quizResult.completedAt).toLocaleDateString()}</p>
+        <h1 className="text-2xl font-bold mb-2">Quiz Completed!</h1>
+        <p className="text-muted-foreground">
+          Completed on {new Date(quizResult.completedAt).toLocaleDateString()}
+        </p>
       </div>
       
       <Card className="bg-card shadow-md">
@@ -92,13 +95,12 @@ export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
           <h2 className="text-xl font-bold">Question Details</h2>
           
           {questions.map((question, index) => {
-            const answer = answers[question.id];
-            const isCorrect = quizResult.questionResults?.[index]?.isCorrect;
+            const answer = quizResult.answers?.[index];
+            const isCorrect = answer?.isCorrect;
             
-            // Get the user's answer for this question
-            const userAnswer = answer?.filledBlanks ? 
-              Object.values(answer.filledBlanks)[0] || "No answer" : 
-              "No answer";
+            // Get the user's answer and correct answer
+            const userAnswer = answer?.userAnswer || "No answer";
+            const correctAnswer = answer?.correctAnswer || question.answer || "Unknown";
             
             return (
               <Card key={question.id} className={`border-l-4 ${isCorrect ? 'border-l-green-500' : 'border-l-red-500'}`}>
@@ -116,7 +118,7 @@ export function BlankQuizResults({ result, onRetake }: BlankQuizResultsProps) {
                     
                     <div>
                       <p className="text-sm text-muted-foreground">Correct Answer:</p>
-                      <p className="font-medium text-green-600">{question.answer}</p>
+                      <p className="font-medium text-green-600">{correctAnswer}</p>
                     </div>
                   </div>
                 </CardContent>
