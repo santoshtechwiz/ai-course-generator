@@ -135,6 +135,11 @@ function CodingQuizComponent({
     return true
   }, [isMultipleChoice, selectedOption, userCode])
 
+  // Track key events to ensure we're properly handling transitions
+  useEffect(() => {
+    console.log(`Question state: ID=${question?.id}, submitting=${effectivelySubmitting}`)
+  }, [question?.id, effectivelySubmitting])
+
   const handleSubmit = useCallback(() => {
     if (effectivelySubmitting || !isMountedRef.current) return
 
@@ -181,13 +186,17 @@ function CodingQuizComponent({
       isCorrect = true
     }
 
-    // Call the onAnswer callback with a slight delay to show loading state
+    console.log(`Submitting answer: isCorrect=${isCorrect}, answer=${answer.substring(0, 20)}...`)
+
+    // Call the onAnswer callback directly without setTimeout to ensure it always fires
+    onAnswer(answer, answerTime, isCorrect)
+
+    // Reset state after a short delay
     setTimeout(() => {
       if (isMountedRef.current) {
-        onAnswer(answer, answerTime, isCorrect)
         setInternalSubmitting(false)
       }
-    }, 300)
+    }, 500)
   }, [effectivelySubmitting, validateAnswer, startTime, isMultipleChoice, selectedOption, userCode, question, onAnswer])
 
   // Validate question data

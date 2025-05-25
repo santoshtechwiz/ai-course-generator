@@ -22,16 +22,17 @@ import {
   Terminal,
 } from "lucide-react"
 import { QuizSubmissionLoading } from "../../components"
-import type { QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
 import { toast } from "sonner"
+import { QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
 
 interface CodeQuizResultProps {
   result: QuizResult & {
     questions: QuizQuestionResult[]
   }
+  onRetake?: () => void
 }
 
-export default function CodeQuizResult({ result }: CodeQuizResultProps) {
+export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("summary")
@@ -56,7 +57,6 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
   const title = result.title || "Code Quiz"
   const scorePercentage = result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : 0
 
-  // FIXED: Now these hooks come after the variable declarations they depend on
   const handleShare = useCallback(async () => {
     try {
       if (navigator.share) {
@@ -73,15 +73,23 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
     } catch (error) {
       console.error("Error sharing:", error)
     }
-  }, [scorePercentage, title]) // Updated dependencies
+  }, [scorePercentage, title])
 
   const handleSaveResults = useCallback(() => {
     // Implementation goes here
+    toast.info("Save functionality coming soon")
   }, [])
 
-  // Now the useEffect comes after all useCallback declarations
+  const handleRetake = useCallback(() => {
+    if (onRetake) {
+      onRetake()
+    } else {
+      router.push(`/dashboard/code/${slug}`)
+    }
+  }, [onRetake, router, slug])
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000)
+    const timer = setTimeout(() => setIsLoading(false), 500)
     return () => clearTimeout(timer)
   }, [])
 
@@ -173,7 +181,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/dashboard/code/${slug}`)}
+            onClick={handleRetake}
             className="gap-2"
             data-testid="retry-quiz-button"
           >
@@ -406,7 +414,7 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
           <span>Return to Dashboard</span>
         </Button>
         <Button
-          onClick={() => router.push(`/dashboard/code/${slug}`)}
+          onClick={handleRetake}
           className="flex items-center gap-2 bg-primary"
           data-testid="retry-quiz-button"
         >

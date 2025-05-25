@@ -3,7 +3,14 @@ import { motion } from "framer-motion"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/tailwindUtils"
-import type { CodeQuizOptionsProps } from "@/app/types/code-quiz-types"
+
+interface CodeQuizOptionsProps {
+  options: string[];
+  selectedOption?: string;
+  onSelect: (option: string) => void;
+  disabled?: boolean;
+  renderOptionContent?: (option: string) => React.ReactNode;
+}
 
 export default function CodeQuizOptions({
   options,
