@@ -10,13 +10,14 @@ import { toast } from "sonner"
 import McqQuiz from "./McqQuiz"
 import { McqQuestion, QuizResultsPreview } from "./types"
 import { AppDispatch } from "@/store"
-import { saveAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
+
 import { selectQuizId } from "@/store/slices/flashcardSlice"
 import { selectQuestions, selectAnswers, selectCurrentQuestionIndex, selectCurrentQuestion, selectQuizStatus, selectQuizError, selectQuizTitle, selectIsQuizComplete, fetchQuiz, setCurrentQuestionIndex, saveAnswer, submitQuiz } from "@/store/slices/quizSlice"
 import { MCQAnswer } from "@/types/quiz"
 import { QuizSubmissionLoading } from "../../components"
 import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
 import { InitializingDisplay, ErrorDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
+import { handleAuthRedirect } from "@/store/utils/authUtils"
 
 
 interface McqQuizWrapperProps {
@@ -159,7 +160,7 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
       };
 
       dispatch(
-        saveAuthRedirectState({
+        handleAuthRedirect({
           slug,
           quizId: quizId || slug,
           type: "mcq",

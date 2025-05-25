@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { AlertCircle, RefreshCw } from "lucide-react"
 
-import { useAppDispatch } from "@/store"
+
 import { resetFlashCards } from "@/store/slices/flashcardSlice"
+import { useAppDispatch } from "@/store"
 
 interface FlashCardResultsProps {
   quizId: string
