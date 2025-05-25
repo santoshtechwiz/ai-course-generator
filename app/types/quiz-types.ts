@@ -40,6 +40,30 @@ export interface OpenEndedQuizData extends QuizData {
   questions: OpenEndedQuizQuestion[];
 }
 
+// Enhanced types for better consistency
+export interface McqQuestion {
+  id: string | number;
+  text?: string;
+  question?: string;
+  options?: Array<{id: string, text: string}> | string[];
+  correctOptionId?: string;
+  correctAnswer?: string;
+  title?: string;
+  type?: string;
+}
+
+export interface CodeQuizQuestion {
+  id: string | number;
+  text?: string;
+  question?: string;
+  codeSnippet?: string;
+  options?: string[];
+  answer?: string;
+  correctAnswer?: string;
+  language?: string;
+  type?: string;
+}
+
 // Answer types
 export interface BlankQuizAnswer {
   questionId: number;
@@ -51,6 +75,23 @@ export interface OpenEndedQuizAnswer {
   questionId: number;
   text: string;
   timestamp: number;
+}
+
+export interface CodeQuizAnswer {
+  questionId: string | number;
+  answer: string;
+  isCorrect: boolean;
+  timeSpent: number;
+  timestamp: number;
+  type: "code";
+}
+
+export interface McqQuizAnswer {
+  questionId: string | number;
+  selectedOptionId: string;
+  isCorrect?: boolean;
+  timestamp: number;
+  type: "mcq";
 }
 
 export type QuizAnswer = BlankQuizAnswer | OpenEndedQuizAnswer;
@@ -77,7 +118,7 @@ export interface AuthState {
   error: string | null;
 }
 
-// Quiz result types
+// Common interface for all quiz results
 export interface QuizResult {
   quizId: string | number;
   slug?: string;
@@ -98,18 +139,15 @@ export interface QuizQuestionResult {
   isCorrect: boolean;
 }
 
-export interface CodeQuizQuestion {
-  id: string | number;
-  text?: string;
-  question?: string;
-  codeSnippet?: string;
-  options?: string[];
-  answer?: string;
-  correctAnswer?: string;
-  language?: string;
-  type?: string;
+export interface CodeQuizOptionsProps {
+  options: string[];
+  selectedOption?: string | null;
+  onSelect: (option: string) => void;
+  disabled?: boolean;
+  renderOptionContent?: (option: string) => React.ReactNode;
 }
 
+// Type guard
 export function isOpenEndedQuestion(q: any): q is OpenEndedQuestion {
   return typeof q === "object" && typeof q.answer === "string";
 }
