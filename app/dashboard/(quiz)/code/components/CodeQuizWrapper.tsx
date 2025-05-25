@@ -7,9 +7,8 @@ import { toast } from "sonner"
 import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
 import CodingQuiz from "./CodingQuiz"
 
-import QuizResultPreview from "./QuizResultPreview"
 import { selectQuestions, selectAnswers, selectQuizStatus, selectQuizError, selectIsQuizComplete, selectQuizResults, setCurrentQuestionIndex, fetchQuiz, saveAnswer, submitQuiz } from "@/store/slices/quizSlice"
-import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice"
+import { selectIsAuthenticated } from "@/store/slices/authSlice"
 import { signIn } from "next-auth/react"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
@@ -20,7 +19,7 @@ interface CodeQuizWrapperProps {
   quizData?: any
 }
 
-export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: CodeQuizWrapperProps) {
+export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrapperProps) {
   const dispatch = useDispatch()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,12 +35,14 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
   const currentQuestionIndex = useSelector((state: any) => state.quiz.currentQuestionIndex)
   const currentQuestion = questions[currentQuestionIndex]
 
+  // Fetch quiz data from API via slice
   useEffect(() => {
     if (slug && !quizId) {
       dispatch(fetchQuiz({ id: slug, data: quizData, type: "code" }))
     }
   }, [dispatch, slug, quizId, quizData])
 
+  // Handle reset parameter
   useEffect(() => {
     if (searchParams?.get("reset") === "true") {
       dispatch(setCurrentQuestionIndex(0))
@@ -129,26 +130,14 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
   if (!isAuthenticated && results) {
     return (
       <NonAuthenticatedUserSignInPrompt
-       
         onSignIn={handleShowSignIn}
-        showSaveMessage
+        
         message="Please sign in to submit your quiz and save your results"
-       
       />
     )
   }
 
   // Authenticated user with completed quiz (preview before submission)
-  if (isAuthenticated && results) {
-    return (
-      <QuizResultPreview
-        result={results}
-        onSubmit={handleSubmitQuiz}
-        onCancel={() => dispatch(setCurrentQuestionIndex(0))}
-        userAnswers={Object.values(answers)}
-      />
-    )
-  }
 
   // Quiz in progress
   if (currentQuestion) {
@@ -167,5 +156,12 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
     )
   }
 
-  
+  // Fallback
+  return (
+    <QuizLoadingSteps
+      steps={[
+        { label: "Initializing quiz", status: "loading" }
+      ]}
+    />
+  )
 }
