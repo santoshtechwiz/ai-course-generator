@@ -1,5 +1,5 @@
 // Redux slice for quiz state management with improved authentication handling
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction, createAction } from "@reduxjs/toolkit";
 import { createSelector } from "reselect";
 
 import { RootState } from "../index";
@@ -16,7 +16,7 @@ import {
 } from "../utils/session";
 
 // Initial state
-const initialState: QuizState & { sessionId?: string } = {
+const initialState: QuizState = {
   quizId: null,
   quizType: null,
   title: null,
@@ -25,7 +25,7 @@ const initialState: QuizState & { sessionId?: string } = {
   answers: {},
   status: "idle",
   error: null,
-  isCompleted: false, // <-- Change this line from isQuizComplete to isCompleted
+  isCompleted: false, // Make sure this matches the type in QuizState
   results: null,
   sessionId: typeof window !== "undefined" && sessionStorage.getItem("quiz_session_id")
     ? sessionStorage.getItem("quiz_session_id")!
@@ -181,6 +181,9 @@ export const submitQuiz = createAsyncThunk(
   }
 );
 
+// Action to set current question index
+export const setCurrentQuestionIndex = createAction<number>("quiz/setCurrentQuestionIndex");
+
 // Quiz slice
 const quizSlice = createSlice({
   name: "quiz",
@@ -197,7 +200,18 @@ const quizSlice = createSlice({
       state.quizType = action.payload;
     },
     setCurrentQuestionIndex: (state, action: PayloadAction<number>) => {
-      state.currentQuestionIndex = action.payload;
+      const newIndex = action.payload;
+      
+      // Detailed logging to help diagnose issues
+      console.log(`Redux: Setting question index to ${newIndex} (current: ${state.currentQuestionIndex}, max: ${state.questions.length - 1})`);
+      
+      // Validate and set the index with better bounds checking
+      if (newIndex >= 0 && newIndex < state.questions.length) {
+        state.currentQuestionIndex = newIndex;
+        console.log(`Redux: Question index set to ${newIndex}`);
+      } else {
+        console.warn(`Redux: Invalid question index: ${newIndex}. Valid range is 0 to ${state.questions.length - 1}`);
+      }
     },
     saveAnswer: (state, action: PayloadAction<{ questionId: string | number, answer: QuizAnswer }>) => {
       const { questionId, answer } = action.payload;
@@ -302,7 +316,6 @@ const quizSlice = createSlice({
 export const { 
   setQuizId, 
   setQuizType, 
-  setCurrentQuestionIndex, 
   saveAnswer, 
   resetQuiz,
   setQuizResults

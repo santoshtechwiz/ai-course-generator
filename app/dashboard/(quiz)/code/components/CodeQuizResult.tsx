@@ -24,6 +24,7 @@ import {
 import { QuizSubmissionLoading } from "../../components"
 import { toast } from "sonner"
 import { QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
+import { useSession } from "next-auth/react"
 
 interface CodeQuizResultProps {
   result: QuizResult & {
@@ -36,6 +37,7 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("summary")
+  const { data: session } = useSession()
 
   // Ensure result is valid and has the required properties
   if (

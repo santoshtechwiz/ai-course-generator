@@ -23,6 +23,7 @@ import {
 } from "@/store/slices/quizSlice"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import { Button } from "@/components/ui/button"
+import { QuizDebugger } from "../../components/QuizDebugger"
 
 interface CodeQuizWrapperProps {
   slug: string;
@@ -74,9 +75,9 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
     }
   }, [dispatch, slug, quizData, questions.length, status])
 
-  // Handle answer submission with improved typing
+  // Handle answer submission using the MCQ approach
   const handleAnswer = useCallback(
-    async (answerText: string, timeSpent: number, isCorrect: boolean) => {
+    (answerText: string, timeSpent: number, isCorrect: boolean) => {
       if (!currentQuestion) return
 
       const answer: CodeQuizAnswer = {
@@ -88,25 +89,15 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
         type: "code"
       }
 
-      try {
-        // Save answer to Redux
-        dispatch(saveAnswer({ questionId: currentQuestion.id, answer }))
-        
-        console.log(`Answer saved for question ${currentQuestion.id}`)
-        
-        // Move to next question with a slight delay to ensure state updates
-        if (currentQuestionIndex < questions.length - 1) {
-          const nextIndex = currentQuestionIndex + 1
-          // Use requestAnimationFrame instead of setTimeout for smoother transitions
-          requestAnimationFrame(() => {
-            dispatch(setCurrentQuestionIndex(nextIndex))
-          })
-        } else {
-          console.log("Last question completed")
-        }
-      } catch (error) {
-        console.error("Failed to save answer:", error)
-        toast.error("Failed to save answer. Please try again.")
+      // Save answer to Redux
+      dispatch(saveAnswer({ questionId: currentQuestion.id, answer }))
+      
+      // Navigate to next question immediately - similar to MCQ quiz
+      if (currentQuestionIndex < questions.length - 1) {
+        // Use requestAnimationFrame for smoother transition - just like MCQ
+        requestAnimationFrame(() => {
+          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+        })
       }
     },
     [currentQuestion, currentQuestionIndex, questions.length, dispatch]
@@ -192,6 +183,7 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
 
       {currentQuestion && (
         <CodingQuiz
+          key={currentQuestion.id}
           question={currentQuestion}
           onAnswer={handleAnswer}
           questionNumber={currentQuestionIndex + 1}
@@ -219,6 +211,8 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
           )}
         </Button>
       </div>
+      
+      {process.env.NODE_ENV === "development" && <QuizDebugger />}
     </div>
   )
 }

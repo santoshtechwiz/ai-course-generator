@@ -1,9 +1,10 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
 import { Card, CardContent } from "@/components/ui/card"
+import { useSession } from "next-auth/react"
 
 import CodeQuizResult from "../../components/CodeQuizResult"
 import { 
@@ -15,6 +16,7 @@ import {
 } from "@/store/slices/quizSlice"
 import { CodeQuizQuestion, QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
+import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthenticatedUserSignInPrompt"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -55,6 +57,10 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  
+  // Get authentication status
+  const { data: session, status: authStatus } = useSession()
+  const isAuthenticated = authStatus === "authenticated"
 
   // Redux selectors with proper types
   const results = useSelector(selectQuizResults)
@@ -64,20 +70,36 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   const quizId = useSelector(selectQuizId)
 
   // Simulate loading to avoid flash
-  useState(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false)
     }, 300)
     return () => clearTimeout(timer)
-  })
+  }, [])
+
+  // Handle sign in
+  const handleSignIn = () => {
+    router.push(`/api/auth/signin?callbackUrl=/dashboard/code/${slug}/results`)
+  }
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || authStatus === "loading") {
     return (
       <QuizLoadingSteps
         steps={[
           { label: "Loading quiz results", status: "loading" },
         ]}
+      />
+    )
+  }
+
+  // Not authenticated - show sign in prompt
+  if (!isAuthenticated) {
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        onSignIn={handleSignIn}
+        title="Sign In to View Results"
+        message="Please sign in to view your quiz results and track your progress."
       />
     )
   }

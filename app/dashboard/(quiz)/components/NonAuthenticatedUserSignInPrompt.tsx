@@ -6,6 +6,8 @@ import { Spinner } from "@/hooks/spinner";
 import { selectAuthStatus, selectIsAuthenticated } from "@/store/slices/authSlice";
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { LogIn, Lock } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface AuthPromptProps {
   onSignIn: () => void;
@@ -34,20 +36,31 @@ export const NonAuthenticatedUserSignInPrompt: React.FC<AuthPromptProps> = ({
   }, [isAuthenticated]);
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
-      <CardHeader className="text-center">
-        <CardTitle className="text-xl font-bold">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-center">
-        <div className="mb-6">
-          <p className="text-muted-foreground">{message}</p>
-        </div>
-        <div className="flex flex-col space-y-4">
-          <Button
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-md mx-auto py-10"
+    >
+      <Card className="border-2 border-primary/20">
+        <CardHeader className="text-center pb-6">
+          <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+            <Lock className="h-8 w-8 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">{title}</CardTitle>
+        </CardHeader>
+        
+        <CardContent className="text-center pb-6">
+          <p className="text-muted-foreground mb-6">
+            {message}
+          </p>
+        </CardContent>
+        
+        <CardFooter className="flex justify-center pb-8">
+          <Button 
             onClick={handleSignIn}
             disabled={isLoading || loading}
-            className="w-full"
-            size="lg"
+            size="lg" 
+            className="min-w-[200px] gap-2"
           >
             {isLoading || loading ? (
               <>
@@ -55,17 +68,14 @@ export const NonAuthenticatedUserSignInPrompt: React.FC<AuthPromptProps> = ({
                 <span>Signing in...</span>
               </>
             ) : (
-              "Sign In"
+              <>
+                <LogIn className="h-5 w-5" />
+                Sign In
+              </>
             )}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Your progress will be saved once you sign in.
-          </p>
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-center text-xs text-muted-foreground">
-        <p>This helps us track your progress and save your results.</p>
-      </CardFooter>
-    </Card>
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 };

@@ -51,9 +51,10 @@ function CodingQuizComponent({
   const [internalSubmitting, setInternalSubmitting] = useState<boolean>(false)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [validationError, setValidationError] = useState<string>("")
+  const [isAnimating, setIsAnimating] = useState(false)
 
   // Combined submitting state
-  const effectivelySubmitting = isSubmitting || internalSubmitting
+  const effectivelySubmitting = isSubmitting || internalSubmitting || isAnimating
 
   // Cleanup on unmount
   useEffect(() => {
@@ -75,6 +76,7 @@ function CodingQuizComponent({
       setStartTime(Date.now())
       setElapsedTime(0)
       setInternalSubmitting(false)
+      setIsAnimating(false)
     }
   }, [question?.id, question?.codeSnippet, question?.options, existingAnswer])
 
@@ -135,11 +137,7 @@ function CodingQuizComponent({
     return true
   }, [isMultipleChoice, selectedOption, userCode])
 
-  // Track key events to ensure we're properly handling transitions
-  useEffect(() => {
-    console.log(`Question state: ID=${question?.id}, submitting=${effectivelySubmitting}`)
-  }, [question?.id, effectivelySubmitting])
-
+  // Handle submission with MCQ-style approach
   const handleSubmit = useCallback(() => {
     if (effectivelySubmitting || !isMountedRef.current) return
 
@@ -156,7 +154,8 @@ function CodingQuizComponent({
       return
     }
 
-    // Mark as submitting immediately to prevent double clicks
+    // Use the same animation/transition approach as in MCQ quiz
+    setIsAnimating(true)
     setInternalSubmitting(true)
 
     // Determine answer and correctness
@@ -186,17 +185,17 @@ function CodingQuizComponent({
       isCorrect = true
     }
 
-    console.log(`Submitting answer: isCorrect=${isCorrect}, answer=${answer.substring(0, 20)}...`)
-
-    // Call the onAnswer callback directly without setTimeout to ensure it always fires
-    onAnswer(answer, answerTime, isCorrect)
-
-    // Reset state after a short delay
+    // Use a short timeout for visual feedback, just like in MCQ
     setTimeout(() => {
-      if (isMountedRef.current) {
-        setInternalSubmitting(false)
-      }
-    }, 500)
+      onAnswer(answer, answerTime, isCorrect)
+      // Reset animation state after a brief delay
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          setIsAnimating(false)
+          setInternalSubmitting(false)
+        }
+      }, 300)
+    }, 300)
   }, [effectivelySubmitting, validateAnswer, startTime, isMultipleChoice, selectedOption, userCode, question, onAnswer])
 
   // Validate question data
