@@ -65,7 +65,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         codeSnippet: "",
         options: options,
         answer: q.answer || "",
-        
+
       }
     })
 
@@ -77,13 +77,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       quizId: result.id.toString(),
       userId: result.userId,
       ownerId: result.userId,
-      quizData: {
-        id: result.id.toString(),
-        title: result.title,
-        questions: processedQuestions,
-      },
+
+      id: result.id.toString(),
+      title: result.title,
+      questions: processedQuestions,
+
     }
-    console.log("Quiz data:", quizData);
+ 
     // Return the structured response
     return NextResponse.json(quizData)
   } catch (error) {

@@ -48,11 +48,7 @@ export default function McqQuizPage({
 
         const data = await response.json()
 
-        // Validate and transform data to match slice expectations
-        if (!data?.id || !Array.isArray(data.questions)) {
-          throw new Error("Invalid quiz data format")
-        }
-
+        console.log("Fetched quiz data:", data);
         // Transform to match the slice's Question type
         const transformedData: QuizData = {
           id: data.id,

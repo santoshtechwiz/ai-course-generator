@@ -8,7 +8,8 @@ This directory contains components for the MCQ Quiz feature, which allows users 
 - `McqQuiz.tsx`: The quiz component that displays questions and multiple-choice options.
 - `McqQuizResult.tsx`: Component for displaying quiz results.
 - `McqResultPreview.tsx`: Component for displaying a preview of quiz results before submission.
-- `McqQuizHelpers.tsx`: Helper functions specific to MCQ quiz functionality.
+- `McqQuizClient.tsx`: Client component that initializes the quiz data and handles API interactions.
+- `McqResultsClient.tsx`: Client component for displaying quiz results.
 - `types.ts`: Type definitions used across MCQ components.
 
 ## State Management
@@ -24,30 +25,20 @@ When a non-authenticated user completes a quiz, they are prompted to sign in to 
 To use the MCQ quiz components, you need to:
 
 1. Import the `McqQuizWrapper` component
-2. Provide the required props: `quizData`, `slug`, `userId`, and `quizId`
-3. Wrap the component with the Redux provider
+2. Provide the required props: `slug`, `userId`, and optionally `quizData`
+3. Ensure the Redux provider is available in the parent component
 
 Example:
 ```tsx
 import McqQuizWrapper from "@/app/dashboard/(quiz)/mcq/components/McqQuizWrapper"
 
-export default function McqQuizPage({ quizData, slug, userId, quizId }) {
+export default function McqQuizPage({ slug, userId, quizData }) {
   return (
     <McqQuizWrapper 
-      quizData={quizData} 
       slug={slug} 
       userId={userId} 
-      quizId={quizId} 
+      quizData={quizData} 
     />
   )
 }
 ```
-
-## Component Communication
-
-The components follow a unidirectional data flow:
-
-1. `McqQuizWrapper` fetches and manages quiz state via Redux
-2. `McqQuiz` displays questions and handles user input
-3. On answer submission, Redux is updated with the user's response
-4. When the quiz is complete, `McqResultPreview` shows the results before final submission
