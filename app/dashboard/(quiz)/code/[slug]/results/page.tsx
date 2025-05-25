@@ -2,15 +2,46 @@
 
 import { use, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAppSelector } from "@/store"
+import { useSelector } from "react-redux"
 import { Card, CardContent } from "@/components/ui/card"
 
 import CodeQuizResult from "../../components/CodeQuizResult"
-import { selectQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
-
+import { 
+  selectQuizResults, 
+  selectQuestions, 
+  selectAnswers, 
+  selectQuizTitle,
+  selectQuizId
+} from "@/store/slices/quizSlice"
+import { QuizResult, QuizQuestionResult } from "@/app/types/quiz-types"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
+}
+
+function ErrorDisplay({
+  error,
+  onRetry,
+  onReturn,
+}: {
+  error: string
+  onRetry: () => void
+  onReturn: () => void
+}) {
+  return (
+    <div className="container max-w-4xl py-10 text-center">
+      <h1 className="text-2xl font-bold mb-4 text-red-600">Error Loading Results</h1>
+      <p className="mb-6">{error}</p>
+      <div className="flex gap-4 justify-center">
+        <button onClick={onRetry} className="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded">
+          Try Again
+        </button>
+        <button onClick={onReturn} className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded">
+          Return to Dashboard
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export default function CodeResultsPage({ params }: ResultsPageProps) {
@@ -24,10 +55,11 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   const [loadError, setLoadError] = useState<string | null>(null)
 
   // Redux selectors
-  const results = useAppSelector(selectQuizResults)
-  const questions = useAppSelector(selectQuestions)
-  const answers = useAppSelector(selectAnswers)
-  const title = useAppSelector(selectQuizTitle)
+  const results = useSelector(selectQuizResults)
+  const questions = useSelector(selectQuestions)
+  const answers = useSelector(selectAnswers)
+  const title = useSelector(selectQuizTitle)
+  const quizId = useSelector(selectQuizId)
 
   // Error state
   if (loadError) {
@@ -41,7 +73,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   }
 
   // No results found
-  if (!results && !questions.length) {
+  if (!results && (!questions || questions.length === 0)) {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
@@ -59,21 +91,34 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   }
 
   // Create quiz result from Redux state
-  const quizResult: any = results || {
-    quizId: slug,
+  const quizResult: QuizResult & { questions: QuizQuestionResult[] } = {
+    quizId: quizId || slug,
     slug,
     title: title || "Code Quiz",
-    score: results?.score || 0,
-    maxScore: questions.length,
-    percentage: results?.percentage || 0,
-    completedAt: new Date().toISOString(),
-    questions: questions.map((q) => ({
-      id: q.id,
-      question: q.text || q.question,
-      userAnswer: answers[q.id]?.answer || answers[q.id]?.code || "",
-      correctAnswer: q.correctAnswer || "",
-      isCorrect: typeof answers[q.id]?.isCorrect === "boolean" ? answers[q.id].isCorrect : true,
-    })),
+    score: results?.score ?? 0,
+    maxScore: results?.maxScore ?? questions.length,
+    percentage: results?.percentage ?? 0,
+    completedAt: results?.submittedAt ?? new Date().toISOString(),
+    questions: results?.questionResults?.map((qr: any) => {
+        const question = questions.find((q) => q.id === qr.questionId)
+        return {
+          id: qr.questionId,
+          question: question?.question || question?.text || "",
+          userAnswer: qr.userAnswer || qr.answer || "",
+          correctAnswer: qr.correctAnswer || question?.answer || "",
+          isCorrect: qr.isCorrect ?? false,
+        }
+      }) || 
+      questions.map((q) => {
+        const answer = answers[q.id]
+        return {
+          id: q.id,
+          question: q.question || q.text || "",
+          userAnswer: answer?.answer || "",
+          correctAnswer: q.answer || q.correctAnswer || "",
+          isCorrect: answer?.isCorrect ?? false,
+        }
+      }),
   }
 
   return (

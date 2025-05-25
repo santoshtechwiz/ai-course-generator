@@ -8,9 +8,8 @@ export interface OpenEndedQuestion {
 export interface BlankQuizQuestion {
   id: number;
   question: string;
-  answer: string;
-  openEndedQuestion?: OpenEndedQuestion;
-  type: 'blanks';
+  answer?: string;
+  modelAnswer?: string;
 }
 
 export interface OpenEndedQuizQuestion {
@@ -81,20 +80,34 @@ export interface AuthState {
 // Quiz result types
 export interface QuizResult {
   quizId: string | number;
-  slug: string;
+  slug?: string;
   title: string;
   score: number;
   maxScore: number;
-  totalQuestions: number;
-  correctAnswers: number;
   percentage: number;
   completedAt: string;
-  questionResults?: Array<{
-    questionId: number | string;
-    isCorrect: boolean;
-    userAnswer: any;
-    correctAnswer: string;
-  }>;
+  submittedAt?: string;
+  questionResults?: any[];
+}
+
+export interface QuizQuestionResult {
+  id: string | number;
+  question: string;
+  userAnswer: string | null;
+  correctAnswer: string;
+  isCorrect: boolean;
+}
+
+export interface CodeQuizQuestion {
+  id: string | number;
+  text?: string;
+  question?: string;
+  codeSnippet?: string;
+  options?: string[];
+  answer?: string;
+  correctAnswer?: string;
+  language?: string;
+  type?: string;
 }
 
 export function isOpenEndedQuestion(q: any): q is OpenEndedQuestion {

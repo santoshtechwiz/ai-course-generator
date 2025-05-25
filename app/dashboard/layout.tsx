@@ -19,7 +19,6 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
 
-
   return (
     <DashboardShell>
       {/* Only render NavigationEvents for all users */}
@@ -31,7 +30,6 @@ export default async function DashboardLayout({
         </div>
       </main>
       <Toaster />
-     
     </DashboardShell>
   )
 }

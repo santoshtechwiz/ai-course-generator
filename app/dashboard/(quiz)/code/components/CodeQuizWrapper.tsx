@@ -12,23 +12,20 @@ import {
   selectQuizStatus, 
   selectQuizError, 
   selectIsQuizComplete, 
-  selectQuizResults, 
+  selectQuizResults,
+  selectQuizTitle,
   setCurrentQuestionIndex, 
   fetchQuiz, 
   saveAnswer, 
   submitQuiz 
 } from "@/store/slices/quizSlice"
-import { selectIsAuthenticated } from "@/store/slices/authSlice"
-import { signIn } from "next-auth/react"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import React from 'react'
-
+import { Button } from "@/components/ui/button"
 
 interface CodeQuizWrapperProps {
-  slug: string
-  quizId?: string | number
-  userId?: string | null
-  quizData?: any
+  slug: string;
+  quizId?: string | number;
+  quizData?: any;
 }
 
 export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrapperProps) {
@@ -42,11 +39,11 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
   const error = useSelector(selectQuizError)
   const isQuizComplete = useSelector(selectIsQuizComplete)
   const results = useSelector(selectQuizResults)
-  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const title = useSelector(selectQuizTitle)
   const currentQuestionIndex = useSelector((state: any) => state.quiz.currentQuestionIndex)
   const currentQuestion = questions[currentQuestionIndex]
 
-  // Only reset quiz state on initial mount for this slug/quizId
+  // Only reset quiz state on initial mount
   const didInitRef = useRef(false)
   useEffect(() => {
     if (!didInitRef.current) {
@@ -58,11 +55,11 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
 
   // Fetch quiz data from API via slice (only if not already loaded)
   useEffect(() => {
-    if (slug && !quizId && questions.length === 0 && status === "idle") {
+    if (slug && questions.length === 0 && status === "idle") {
       dispatch(fetchQuiz({ id: slug, data: quizData, type: "code" }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, slug, quizId, quizData])
+  }, [dispatch, slug, quizData, questions.length, status])
 
   // Handle answer submission
   const handleAnswer = useCallback(
@@ -78,47 +75,34 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
         type: "code"
       }
 
-      try {
-        await dispatch(saveAnswer({ questionId: currentQuestion.id, answer })).unwrap()
-        if (currentQuestionIndex < questions.length - 1) {
-          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-        }
-      } catch {
-        toast.error("Failed to save answer. Please try again.")
+      // First save the answer
+      dispatch(saveAnswer({ questionId: currentQuestion.id, answer }))
+      
+      console.log(`Answer saved for question ${currentQuestion.id}, navigating to next question...`)
+      
+      // Then set a short timeout to move to the next question
+      // This ensures the Redux state has time to update
+      if (currentQuestionIndex < questions.length - 1) {
+        // Move to next question
+        const nextIndex = currentQuestionIndex + 1
+        console.log(`Moving to question index: ${nextIndex}`)
+        dispatch(setCurrentQuestionIndex(nextIndex))
+      } else {
+        console.log("Last question reached")
       }
     },
     [currentQuestion, currentQuestionIndex, questions.length, dispatch]
   )
 
   // Handle quiz submission
-  const submittingRef = useRef(false)
   const handleSubmitQuiz = useCallback(async () => {
-    if (submittingRef.current) return
-    submittingRef.current = true
     try {
       await dispatch(submitQuiz()).unwrap()
       router.push(`/dashboard/code/${slug}/results`)
     } catch {
       toast.error("Failed to submit quiz. Please try again.")
-    } finally {
-      submittingRef.current = false
     }
   }, [dispatch, router, slug])
-
-  // Handle sign-in action for non-authenticated users
-  const handleShowSignIn = useCallback(() => {
-    signIn(undefined, {
-      callbackUrl: `/dashboard/code/${slug}?fromAuth=true`,
-    })
-  }, [slug])
-
-  // Auto-submit for authenticated users when quiz is complete and not already submitting/results
-  useEffect(() => {
-    if (isAuthenticated && isQuizComplete && status === "idle" && !results) {
-      handleSubmitQuiz()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isQuizComplete, status, results])
 
   // Loading state
   if (status === "loading") {
@@ -154,79 +138,56 @@ export default function CodeQuizWrapper({ slug, quizId, quizData }: CodeQuizWrap
     )
   }
 
-  // Show sign-in prompt for completed quiz (unauthenticated users)
-  if (!isAuthenticated && isQuizComplete) {
-    // Create a preview of the results
-    const questionResults = questions.map(q => {
-      const answer = answers[q.id]
-      return {
-        id: q.id,
-        question: q.text || q.question || "",
-        userAnswer: answer?.answer || "",
-        correctAnswer: q.correctAnswer || q.answer || "",
-        isCorrect: answer?.isCorrect ?? false
-      }
-    })
-    const score = questionResults.filter(q => q.isCorrect).length
-    const preview = {
-      title: quizData?.title || "",
-      score,
-      maxScore: questions.length,
-      percentage: Math.round((score / questions.length) * 100),
-      questions: questionResults,
-      slug
-    }
-    return (
-      <div className="py-8">
-        <div className="mb-4">
-          <strong>Please sign in to submit your quiz and save your results.</strong>
+  const progressPercentage = Math.round((Object.keys(answers).length / questions.length) * 100) || 0
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">{title}</h1>
+
+      <div className="mb-6">
+        <div className="bg-gray-100 rounded-full h-2 mb-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
         </div>
-        <button
-          className="bg-primary text-white px-4 py-2 rounded"
-          onClick={handleShowSignIn}
-        >
-          Sign In to Save Results
-        </button>
-        {/* Optionally show preview */}
-        <div className="mt-6">
-          <h3 className="font-semibold mb-2">Quiz Preview</h3>
-          <ul className="text-sm">
-            {questionResults.map((q, i) => (
-              <li key={q.id}>
-                Q{i + 1}: {q.question} <br />
-                Your answer: {q.userAnswer} <br />
-                Correct: {q.isCorrect ? "Yes" : "No"}
-              </li>
-            ))}
-          </ul>
+        <div className="text-sm text-gray-600 text-right">
+          {Object.keys(answers).length}/{questions.length} questions answered
         </div>
       </div>
-    )
-  }
 
-  // Quiz in progress
-  if (currentQuestion) {
-    const userAnswer = answers[currentQuestion.id]?.answer
+      {currentQuestion && (
+        <CodingQuiz
+          question={currentQuestion}
+          onAnswer={handleAnswer}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          isLastQuestion={currentQuestionIndex === questions.length - 1}
+          isSubmitting={status === "submitting"}
+          existingAnswer={typeof answers[currentQuestion.id]?.answer === "string" 
+            ? answers[currentQuestion.id].answer 
+            : undefined
+          }
+        />
+      )}
 
-    return (
-      <CodingQuiz
-        question={currentQuestion}
-        onAnswer={handleAnswer}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        isLastQuestion={currentQuestionIndex === questions.length - 1}
-        isSubmitting={status === "submitting"}
-        existingAnswer={typeof userAnswer === "string" ? userAnswer : undefined}
-      />
-    )
-  }
-
-  // Fallback
-  return (
-    <QuizLoadingSteps
-      steps={[
-        { label: "Initializing quiz", status: "loading" }
-      ]}
-    />
+      <div className="mt-8 text-center">
+        <Button
+          onClick={handleSubmitQuiz}
+          disabled={!isQuizComplete || status === "submitting"}
+          className="px-6 py-3 transition-all duration-300"
+          variant={isQuizComplete ? "default" : "outline"}
+        >
+          {status === "submitting" ? (
+            <>
+              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+              <span>Submitting...</span>
+            </>
+          ) : (
+            "Submit Quiz"
+          )}
+        </Button>
+      </div>
+    </div>
   )
 }
