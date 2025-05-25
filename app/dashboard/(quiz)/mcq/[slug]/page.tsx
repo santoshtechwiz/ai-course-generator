@@ -1,40 +1,115 @@
+"use client"
 
-import { getQuizData } from "@/lib/api/quiz"
-import { Metadata } from "next"
-import McqQuizClient from "../components/McqQuizClient"
+import { use, useEffect, useState } from "react"
+import { useAuth } from "@/hooks/useAuth"
+import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
+import McqQuizWrapper from "../components/McqQuizWrapper"
 
-
-// This makes the component a server component
-export async function generateMetadata({ params }: { params: Promise< { slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  
-  try {
-    const quizData = await getQuizData('mcq', slug)
-    return {
-      title: `${quizData.title || 'MCQ Quiz'} | AI Learning Platform`,
-      description: quizData.description || 'Test your knowledge with our multiple-choice quiz',
-    }
-  } catch (error) {
-    return {
-      title: 'Quiz | AI Learning Platform',
-      description: 'Test your knowledge with our interactive quiz',
-    }
-  }
+interface QuizData {
+  id: string
+  title: string
+  description?: string
+  questions: Array<{
+    id: string
+    text: string
+    type: "mcq"
+    options: Array<{ id: string; text: string }>
+    correctOptionId: string
+  }>
 }
 
-export default async function McqQuizPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
-  
-  
-  
+export default function McqQuizPage({
+  params,
+}: {
+  params: Promise<{ slug: string }> | { slug: string }
+}) {
+  const { userId, status } = useAuth()
+  const [quizData, setQuizData] = useState<QuizData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
+  // Extract slug for both test and production environments
+  const slug = params instanceof Promise ? use(params).slug : params.slug
+
+  // Load quiz data for initial render (will be passed to Redux)
+  useEffect(() => {
+    if (!slug) return
+
+    const loadQuizData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const response = await fetch(`/api/quizzes/mcq/${slug}`)
+
+        if (!response.ok) {
+          throw new Error(response.status === 404 ? "Quiz not found" : `Failed to load quiz (${response.status})`)
+        }
+
+        const data = await response.json()
+
+        // Validate and transform data to match slice expectations
+        if (!data?.id || !Array.isArray(data.questions)) {
+          throw new Error("Invalid quiz data format")
+        }
+
+        // Transform to match the slice's Question type
+        const transformedData: QuizData = {
+          id: data.id,
+          title: data.title || "MCQ Quiz",
+          description: data.description || "",
+          questions: data.questions.map((q: any, index: number) => ({
+            id: q.id || `q-${index}`,
+            text: q.question || q.text || "",
+            type: "mcq" as const,
+            options: Array.isArray(q.options)
+              ? q.options.map((opt: any, optIndex: number) => ({
+                  id: opt.id || `opt-${optIndex}`,
+                  text: typeof opt === "string" ? opt : opt.text || "",
+                }))
+              : [],
+            correctOptionId: q.correctAnswer || q.answer || q.correctOptionId || "",
+          })),
+        }
+
+        setQuizData(transformedData)
+      } catch (err: any) {
+        setError(err.message || "Failed to load quiz")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadQuizData()
+  }, [slug])
+
+  // Show loading while fetching data or auth status
+  if (isLoading || status === "loading") {
+    return <InitializingDisplay />
+  }
+
+  // Show error if quiz failed to load
+  if (error) {
+    return (
+      <ErrorDisplay error={error} onRetry={() => window.location.reload()} onReturn={() => window.history.back()} />
+    )
+  }
+
+  // Show error if no quiz data
+  if (!quizData) {
+    return (
+      <ErrorDisplay
+        error="Quiz not found"
+        onRetry={() => window.location.reload()}
+        onReturn={() => window.history.back()}
+      />
+    )
+  }
+
+  // Render quiz wrapper with properly formatted data
   return (
     <div className="container max-w-4xl py-6">
-      <McqQuizClient 
-        slug={slug}
-        initialQuizData={null}
-        initialError={null}
-      />
+      <McqQuizWrapper slug={slug} userId={userId} quizData={quizData} />
     </div>
   )
 }
