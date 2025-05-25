@@ -1,250 +1,171 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth"
-import { QuizResultFactory } from "@/app/types/quiz-results"
-import { useQuiz } from "@/hooks/useQuiz"
-import { useAppDispatch } from "@/store"
-import { saveAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
-import { signIn } from "next-auth/react"
+import { useCallback, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useDispatch, useSelector } from "react-redux"
 import { toast } from "sonner"
-import { QuizSubmissionLoading } from "../../components"
 import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
-import { InitializingDisplay, ErrorDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
 import CodingQuiz from "./CodingQuiz"
-import { createResultsPreview } from "./QuizHelpers"
+
 import QuizResultPreview from "./QuizResultPreview"
+import { selectQuestions, selectAnswers, selectQuizStatus, selectQuizError, selectIsQuizComplete, selectQuizResults, setCurrentQuestionIndex, fetchQuiz, saveAnswer, submitQuiz } from "@/store/slices/quizSlice"
+import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice"
+import { signIn } from "next-auth/react"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
+interface CodeQuizWrapperProps {
+  slug: string
+  quizId?: string | number
+  userId?: string | null
+  quizData?: any
+}
 
-
-/**
- * CodeQuizWrapper - Manages the quiz flow for both authenticated and non-authenticated users
- * 
- * Flow:
- * 1. For signed-in users: Show quiz -> Show results immediately after completion
- * 2. For non-signed-in users: Show quiz -> Prompt to sign in -> After sign-in, show results
- * 
- * State management:
- * - Persists quiz state during navigation
- * - Restores state after authentication
- * - Cleans up state after quiz completion
- */
 export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: CodeQuizWrapperProps) {
+  const dispatch = useDispatch()
   const router = useRouter()
-  const { status, fromAuth } = useAuth()
-  const quiz = useQuiz()
-  const dispatch = useAppDispatch() // Get dispatch directly
-  const currentQuestion = quiz.quiz.currentQuestionData
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const searchParams = useSearchParams()
 
-  // Handle initial quiz loading with auth state
+  // Redux state
+  const questions = useSelector(selectQuestions)
+  const answers = useSelector(selectAnswers)
+  const status = useSelector(selectQuizStatus)
+  const error = useSelector(selectQuizError)
+  const isQuizComplete = useSelector(selectIsQuizComplete)
+  const results = useSelector(selectQuizResults)
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const currentQuestionIndex = useSelector((state: any) => state.quiz.currentQuestionIndex)
+  const currentQuestion = questions[currentQuestionIndex]
+
   useEffect(() => {
-    if (!quiz.quiz.data && !quiz.status.isLoading) {
-      quiz.actions.loadQuiz(slug, "code", quizData).catch((error) => {
-        if (error.status === 401 || error === "Unauthorized") {
-          // Save state before redirecting to auth
-          dispatch(saveAuthRedirectState({
-            slug,
-            quizId: quizId.toString(),
-            type: "code",
-            userAnswers: quiz.quiz.userAnswers,
-            currentQuestion: quiz.quiz.currentQuestion,
-            tempResults: quiz.tempResults
-          }))
-          signIn(undefined, { callbackUrl: `/dashboard/code/${slug}?fromAuth=true` })
-        }
-      })
+    if (slug && !quizId) {
+      dispatch(fetchQuiz({ id: slug, data: quizData, type: "code" }))
     }
-  }, [slug, quizData, quiz.quiz.data, quiz.status.isLoading, quizId, quiz, dispatch])
+  }, [dispatch, slug, quizId, quizData])
 
-  // Restore state after authentication
   useEffect(() => {
-    if (fromAuth && userId && quiz.quiz.data === null) {
-      quiz.actions.loadQuiz(slug, "code", quizData)
+    if (searchParams?.get("reset") === "true") {
+      dispatch(setCurrentQuestionIndex(0))
     }
-  }, [fromAuth, userId, slug, quizData, quiz.quiz.data, quiz.actions])
-
-  // Handle retry action
-  const handleRetry = useCallback(() => {
-    if (!userId || status !== "authenticated") {
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/code/${slug}`)}`)
-    } else {
-      quiz.actions.reset()
-      router.refresh()
-    }
-  }, [userId, status, slug, router, quiz.actions])
+  }, [searchParams, dispatch])
 
   // Handle answer submission
   const handleAnswer = useCallback(
-    (answer: string, timeSpent: number, isCorrect: boolean) => {
+    async (answerText: string, timeSpent: number, isCorrect: boolean) => {
       if (!currentQuestion) return
 
-      // Save the answer to Redux state
-      quiz.actions.saveAnswer(currentQuestion.id, {
-        answer,
-        timeSpent,
-        isCorrect,
+      const answer = {
         questionId: currentQuestion.id,
-      })
+        answer: answerText,
+        isCorrect,
+        timeSpent,
+        timestamp: Date.now(),
+        type: "code"
+      }
 
-      const isLastQuestion = quiz.quiz.isLastQuestion
-
-      if (isLastQuestion) {
-        // Create a preview of results for the last question
-        const allAnswers = [
-          ...quiz.quiz.userAnswers, 
-          { questionId: currentQuestion.id, answer, isCorrect }
-        ]
-        
-        const preview = createResultsPreview({
-          questions: quiz.quiz.data?.questions || [],
-          answers: allAnswers,
-          quizTitle: quiz.quiz.data?.title || "",
-          slug,
-          type: "code"
-        })
-
-        // Store temporary results
-        quiz.actions.setTempResults(preview)
-        
-        // For signed-in users, automatically submit
-        if (userId && status === "authenticated") {
-          handleSubmitQuiz()
+      try {
+        await dispatch(saveAnswer({ questionId: currentQuestion.id, answer })).unwrap()
+        if (currentQuestionIndex < questions.length - 1) {
+          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
         }
-      } else {
-        // Navigate to next question
-        quiz.navigation.next()
+      } catch {
+        toast.error("Failed to save answer. Please try again.")
       }
     },
-    [quiz, currentQuestion, slug, userId, status]
+    [currentQuestion, currentQuestionIndex, questions.length, dispatch]
   )
 
   // Handle quiz submission
-  const handleSubmitQuiz = useCallback(
-    async () => {
-      try {
-        setIsSubmitting(true)
-        
-        // Calculate total time spent
-        const totalTime = quiz.quiz.userAnswers.reduce(
-          (sum, a) => sum + (a.timeSpent || 0), 
-          0
-        )
-
-        // Submit quiz to backend
-        await quiz.actions.submitQuiz({
-          slug,
-          quizId,
-          type: "code",
-          answers: quiz.quiz.userAnswers,
-          timeTaken: totalTime,
-        })
-
-        // Navigate to results page
-        router.replace(`/dashboard/code/${slug}/results`)
-        
-        // Clean up quiz state
-        setTimeout(() => {
-          quiz.actions.reset()
-        }, 500)
-      } catch (error) {
-        toast.error("Failed to submit quiz. Please try again.")
-      } finally {
-        setIsSubmitting(false)
-      }
-    },
-    [quiz, slug, quizId, router]
-  )
+  const handleSubmitQuiz = useCallback(async () => {
+    try {
+      await dispatch(submitQuiz()).unwrap()
+      router.push(`/dashboard/code/${slug}/results`)
+    } catch {
+      toast.error("Failed to submit quiz. Please try again.")
+    }
+  }, [dispatch, router, slug])
 
   // Handle sign-in action for non-authenticated users
   const handleShowSignIn = useCallback(() => {
-    // Save quiz state to Redux before redirect
-    dispatch(saveAuthRedirectState({
-      slug,
-      quizId: quizId.toString(),
-      type: "code",
-      userAnswers: quiz.quiz.userAnswers,
-      currentQuestion: quiz.quiz.currentQuestion,
-      tempResults: quiz.tempResults
-    }))
-
-    // Redirect to sign-in page
     signIn(undefined, {
       callbackUrl: `/dashboard/code/${slug}?fromAuth=true`,
     })
-  }, [slug, quizId, quiz, dispatch])
+  }, [slug])
 
   // Loading state
-  if (quiz.status.isLoading || status === "loading" || isSubmitting) {
-    return isSubmitting ? 
-      <QuizSubmissionLoading quizType="code" /> : 
-      <InitializingDisplay />
+  if (status === "loading") {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "loading" },
+          { label: "Preparing questions", status: "pending" },
+        ]}
+      />
+    )
   }
 
   // Error state
-  if (quiz.status.hasError) {
+  if (error) {
     return (
-      <ErrorDisplay 
-        error={quiz.status.errorMessage || "Failed to load quiz"} 
-        onRetry={handleRetry} 
-        onReturn={() => router.push("/dashboard")} 
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "error", errorMsg: error }
+        ]}
       />
     )
   }
 
   // Empty questions state
-  if (quiz.quiz.data?.questions.length === 0) {
-    return <EmptyQuestionsDisplay onReturn={() => router.push("/dashboard")} />
+  if (questions.length === 0) {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "No questions available for this quiz", status: "error", errorMsg: "This quiz doesn't contain any questions. Please try another quiz." }
+        ]}
+      />
+    )
   }
 
   // Non-authenticated user with completed quiz
-  if (!userId && quiz.tempResults) {
-    const resultPreview = QuizResultFactory.createResult('code', quiz.tempResults)
+  if (!isAuthenticated && results) {
     return (
       <NonAuthenticatedUserSignInPrompt
-        quizType="code"
+       
         onSignIn={handleShowSignIn}
         showSaveMessage
         message="Please sign in to submit your quiz and save your results"
-        previewData={resultPreview.toPreview()}
+       
       />
     )
   }
 
   // Authenticated user with completed quiz (preview before submission)
-  if (userId && quiz.tempResults) {
-    const resultData = QuizResultFactory.createResult('code', quiz.tempResults)
+  if (isAuthenticated && results) {
     return (
       <QuizResultPreview
-        result={resultData.toFullResult()}
+        result={results}
         onSubmit={handleSubmitQuiz}
-        onCancel={() => quiz.actions.clearTempResults()}
-        userAnswers={quiz.quiz.userAnswers}
-        isSubmitting={isSubmitting}
+        onCancel={() => dispatch(setCurrentQuestionIndex(0))}
+        userAnswers={Object.values(answers)}
       />
     )
   }
 
   // Quiz in progress
   if (currentQuestion) {
-    const userAnswer = quiz.quiz.userAnswers.find(
-      (a) => a.questionId === currentQuestion.id
-    )?.answer
-    
+    const userAnswer = answers[currentQuestion.id]?.answer
+
     return (
       <CodingQuiz
         question={currentQuestion}
         onAnswer={handleAnswer}
-        questionNumber={quiz.quiz.currentQuestion + 1}
-        totalQuestions={quiz.quiz.data?.questions.length || 0}
-        isLastQuestion={quiz.quiz.isLastQuestion}
-        isSubmitting={quiz.status.isSubmitting || isSubmitting}
+        questionNumber={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        isLastQuestion={currentQuestionIndex === questions.length - 1}
+        isSubmitting={status === "submitting"}
         existingAnswer={typeof userAnswer === "string" ? userAnswer : undefined}
       />
     )
   }
 
-  // Default loading state
-  return <InitializingDisplay />
+  
 }

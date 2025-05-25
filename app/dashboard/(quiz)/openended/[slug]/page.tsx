@@ -2,7 +2,7 @@
 
 import { use } from "react"
 import { useAuth } from "@/hooks/useAuth"
-import { Spinner } from "@/hooks/spinner"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 
 
@@ -15,17 +15,16 @@ export default function OpenEndedPage({
   const slug = params instanceof Promise ? use(params).slug : params.slug
   
   // Custom hook for auth status
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
   // If still loading auth status, show loading
-  if (status === "loading") {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Spinner size="lg" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
+      <QuizLoadingSteps
+        steps={[
+          { label: "Checking authentication", status: "loading" }
+        ]}
+      />
     )
   }
 

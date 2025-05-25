@@ -1,23 +1,30 @@
 "use client"
 
+import { signIn } from "next-auth/react"
 import { useEffect, useCallback, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import { signIn } from "next-auth/react"
 import { toast } from "sonner"
-
 
 import McqQuiz from "./McqQuiz"
 import { McqQuestion, QuizResultsPreview } from "./types"
-import { AppDispatch } from "@/store"
+import { AppDispatch, RootState } from "@/store"
 
-import { selectQuizId } from "@/store/slices/flashcardSlice"
-import { selectQuestions, selectAnswers, selectCurrentQuestionIndex, selectCurrentQuestion, selectQuizStatus, selectQuizError, selectQuizTitle, selectIsQuizComplete, fetchQuiz, setCurrentQuestionIndex, saveAnswer, submitQuiz } from "@/store/slices/quizSlice"
-import { MCQAnswer } from "@/types/quiz"
-import { QuizSubmissionLoading } from "../../components"
+import {
+  selectQuestions,
+  selectAnswers,
+  selectQuizStatus,
+  selectQuizError,
+  selectIsQuizComplete,
+  selectQuizResults,
+  setCurrentQuestionIndex,
+  fetchQuiz,
+  saveAnswer,
+  submitQuiz
+} from "@/store/slices/quizSlice"
+import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice"
 import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
-import { InitializingDisplay, ErrorDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
-import { handleAuthRedirect } from "@/store/utils/authUtils"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
 
 interface McqQuizWrapperProps {
@@ -26,46 +33,43 @@ interface McqQuizWrapperProps {
   quizData?: any
 }
 
-export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrapperProps) {
-  const router = useRouter()
+type MCQAnswer = {
+  questionId: string
+  selectedOptionId: string
+  timestamp: number
+  type: "mcq"
+}
+
+export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
+  const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Redux selectors - following the exact slice structure
-  const questions = useSelector(selectQuestions)
-  const answers = useSelector(selectAnswers)
-  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
-  const currentQuestion = useSelector(selectCurrentQuestion)
-  const status = useSelector(selectQuizStatus)
-  const error = useSelector(selectQuizError)
-  const quizTitle = useSelector(selectQuizTitle)
-  const quizId = useSelector(selectQuizId)
-  const isQuizComplete = useSelector(selectIsQuizComplete)
-  const isQuizInProgress = useSelector(selectQuizInProgress)
+  // Redux state with explicit types
+  const questions = useSelector((state: RootState) => selectQuestions(state)) as McqQuestion[]
+  const answers = useSelector((state: RootState) => selectAnswers(state)) as Record<string, MCQAnswer>
+  const status = useSelector((state: RootState) => selectQuizStatus(state))
+  const error = useSelector((state: RootState) => selectQuizError(state))
+  const isQuizComplete = useSelector((state: RootState) => selectIsQuizComplete(state))
+  const results = useSelector((state: RootState) => selectQuizResults(state))
+  const isAuthenticated = useSelector((state: RootState) => selectIsAuthenticated(state))
+  const userId = useSelector((state: RootState) => selectUserId(state))
+  const currentQuestionIndex = useSelector((state: RootState) => state.quiz.currentQuestionIndex)
+  const quizId = useSelector((state: RootState) => state.quiz.quizId)
+  const currentQuestion = questions[currentQuestionIndex]
 
   // Memoized computed states for performance
-  const computedStates = useMemo(
-    () => ({
-      isLoading: status === "loading",
-      isSubmitting: status === "submitting",
-      hasError: status === "error",
-      isLastQuestion: currentQuestionIndex === questions.length - 1,
-      hasValidQuestions: Array.isArray(questions) && questions.length > 0,
-      shouldShowSignIn: !userId && isQuizComplete,
-    }),
-    [status, currentQuestionIndex, questions, userId, isQuizComplete],
-  )
+  const isLoading = status === "loading"
+  const isSubmitting = status === "submitting"
+  const hasError = status === "error"
+  const isLastQuestion = currentQuestionIndex === questions.length - 1
+  const hasValidQuestions = Array.isArray(questions) && questions.length > 0
+  const shouldShowSignIn = !userId && isQuizComplete
 
-  // Initialize quiz following the slice pattern
+  // Initialize quiz
   useEffect(() => {
     if (slug && !quizId) {
-      if (quizData) {
-        // Use provided data
-        dispatch(fetchQuiz({ id: slug, data: quizData }))
-      } else {
-        // Fetch from API
-        dispatch(fetchQuiz({ id: slug }))
-      }
+      dispatch(fetchQuiz({ id: slug, data: quizData, type: "mcq" }))
     }
   }, [dispatch, slug, quizId, quizData])
 
@@ -76,110 +80,39 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
     }
   }, [searchParams, dispatch])
 
-  // Handle answer submission following the slice's Answer type
+  // Handle answer submission
   const handleAnswer = useCallback(
-    async (selectedOption: string, timeSpent: number, isCorrect: boolean) => {
+    async (selectedOption: string) => {
       if (!currentQuestion) return
 
-      // Create MCQAnswer following the exact slice type
       const answer: MCQAnswer = {
         questionId: currentQuestion.id,
         selectedOptionId: selectedOption,
         timestamp: Date.now(),
+        type: "mcq"
       }
 
       try {
-        // Use the slice's saveAnswer thunk which handles session management
         await dispatch(saveAnswer({ questionId: currentQuestion.id, answer })).unwrap()
-
-        // Move to next question if not last
-        if (!computedStates.isLastQuestion) {
+        if (currentQuestionIndex < questions.length - 1) {
           dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
         }
-      } catch (error) {
+      } catch {
         toast.error("Failed to save answer. Please try again.")
       }
     },
-    [currentQuestion, computedStates.isLastQuestion, dispatch, currentQuestionIndex],
+    [currentQuestion, currentQuestionIndex, questions.length, dispatch],
   )
 
-  // Handle quiz submission following the slice pattern
+  // Handle quiz submission
   const handleSubmitQuiz = useCallback(async () => {
-    if (!userId) {
-      // Create a preview of the results directly instead of using createMCQResultsPreview
-      const questionResults = (questions as McqQuestion[]).map(q => {
-        const answer = Object.values(answers).find(a => (a as MCQAnswer).questionId === q.id) as MCQAnswer | undefined;
-        
-        // Find the selected option from the question options
-        const selectedOption = q.options && Array.isArray(q.options) ? 
-          q.options.find(o => {
-            if (typeof o === 'string') {
-              return o === answer?.selectedOptionId;
-            }
-            return o.id === answer?.selectedOptionId;
-          }) : undefined;
-        
-        // Find the correct option
-        const correctOption = q.options && Array.isArray(q.options) ?
-          q.options.find(o => {
-            if (typeof o === 'string') {
-              return o === q.correctOptionId || o === q.correctAnswer;
-            }
-            return o.id === q.correctOptionId || o.text === q.correctAnswer;
-          }) : undefined;
-        
-        // Determine if the answer is correct
-        const isCorrect = answer?.selectedOptionId === q.correctOptionId || 
-                          answer?.selectedOptionId === q.correctAnswer;
-        
-        // Create the question result object
-        return {
-          id: q.id,
-          question: q.text || q.question || '',
-          userAnswer: typeof selectedOption === 'string' ? 
-            selectedOption : 
-            selectedOption?.text || answer?.selectedOptionId || 'Not answered',
-          correctAnswer: typeof correctOption === 'string' ? 
-            correctOption : 
-            correctOption?.text || q.correctAnswer || q.correctOptionId || '',
-          isCorrect: !!isCorrect
-        };
-      });
-      
-      // Calculate score
-      const score = questionResults.filter(q => q.isCorrect).length;
-      
-      // Create preview object
-      const preview: QuizResultsPreview = {
-        title: quizTitle || "",
-        score,
-        maxScore: questions.length,
-        percentage: Math.round((score / questions.length) * 100),
-        questions: questionResults,
-        slug
-      };
-
-      dispatch(
-        handleAuthRedirect({
-          slug,
-          quizId: quizId || slug,
-          type: "mcq",
-          answers,
-          currentQuestionIndex,
-          tempResults: preview,
-        }),
-      )
-      return
-    }
-
     try {
-      // Use the slice's submitQuiz thunk
       await dispatch(submitQuiz()).unwrap()
-      router.replace(`/dashboard/mcq/${slug}/results`)
-    } catch (error) {
+      router.push(`/dashboard/mcq/${slug}/results`)
+    } catch {
       toast.error("Failed to submit quiz. Please try again.")
     }
-  }, [userId, questions, answers, quizTitle, slug, dispatch, quizId, currentQuestionIndex, router])
+  }, [dispatch, router, slug])
 
   // Handle sign-in for unauthenticated users
   const handleSignIn = useCallback(() => {
@@ -188,7 +121,7 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
     })
   }, [slug])
 
-  // Handle retry with proper error recovery
+  // Handle retry
   const handleRetry = useCallback(() => {
     if (!userId) {
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/mcq/${slug}`)}`)
@@ -197,10 +130,10 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
     }
   }, [userId, slug, router, dispatch])
 
-  // Memoized current question answer for performance
+  // Memoized current question answer
   const currentQuestionAnswer = useMemo(() => {
     if (!currentQuestion) return undefined
-    const answer = answers[currentQuestion.id] as MCQAnswer | undefined
+    const answer = answers[currentQuestion.id]
     return answer?.selectedOptionId
   }, [currentQuestion, answers])
 
@@ -212,91 +145,85 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
   }, [userId, isQuizComplete, status, handleSubmitQuiz])
 
   // Loading state
-  if (computedStates.isLoading) {
-    return <InitializingDisplay />
+  if (isLoading) {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "loading" },
+          { label: "Preparing questions", status: "pending" },
+        ]}
+      />
+    )
   }
 
   // Submitting state
-  if (computedStates.isSubmitting) {
-    return <QuizSubmissionLoading quizType="mcq" />
+  if (isSubmitting) {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "Submitting your answers", status: "loading" }
+        ]}
+      />
+    )
   }
 
   // Error state
-  if (computedStates.hasError) {
+  if (hasError) {
     return (
-      <ErrorDisplay
-        error={error || "Failed to load quiz"}
-        onRetry={handleRetry}
-        onReturn={() => router.push("/dashboard")}
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "error", errorMsg: error || "Failed to load quiz" }
+        ]}
       />
     )
   }
 
   // Empty questions state
-  if (!computedStates.hasValidQuestions) {
+  if (!hasValidQuestions) {
     return (
-      <EmptyQuestionsDisplay
-        onReturn={() => router.push("/dashboard")}
-        message="This quiz doesn't contain any questions. Please try another quiz."
+      <QuizLoadingSteps
+        steps={[
+          { label: "No questions available for this quiz", status: "error", errorMsg: "This quiz doesn't contain any questions. Please try another quiz." }
+        ]}
       />
     )
   }
 
   // Show sign-in prompt for completed quiz (unauthenticated users)
-  if (computedStates.shouldShowSignIn) {
-    // Create a preview of the results directly instead of using createMCQResultsPreview
-    const questionResults = (questions as McqQuestion[]).map(q => {
-      const answer = Object.values(answers).find(a => (a as MCQAnswer).questionId === q.id) as MCQAnswer | undefined;
-      
-      // Find the selected option from the question options
-      const selectedOption = q.options && Array.isArray(q.options) ? 
-        q.options.find(o => {
-          if (typeof o === 'string') {
-            return o === answer?.selectedOptionId;
-          }
-          return o.id === answer?.selectedOptionId;
-        }) : undefined;
-      
-      // Find the correct option
-      const correctOption = q.options && Array.isArray(q.options) ?
-        q.options.find(o => {
-          if (typeof o === 'string') {
-            return o === q.correctOptionId || o === q.correctAnswer;
-          }
-          return o.id === q.correctOptionId || o.text === q.correctAnswer;
-        }) : undefined;
-      
-      // Determine if the answer is correct
-      const isCorrect = answer?.selectedOptionId === q.correctOptionId || 
-                        answer?.selectedOptionId === q.correctAnswer;
-      
-      // Create the question result object
+  if (shouldShowSignIn) {
+    // Create a preview of the results
+    const questionResults = questions.map(q => {
+      const answer = answers[q.id]
+      const selectedOption = q.options?.find(
+        o => (typeof o === "string" ? o === answer?.selectedOptionId : o.id === answer?.selectedOptionId)
+      )
+      const correctOption = q.options?.find(
+        o => (typeof o === "string"
+          ? o === q.correctOptionId || o === q.correctAnswer
+          : o.id === q.correctOptionId || o.text === q.correctAnswer)
+      )
+      const isCorrect = answer?.selectedOptionId === q.correctOptionId || answer?.selectedOptionId === q.correctAnswer
       return {
         id: q.id,
-        question: q.text || q.question || '',
-        userAnswer: typeof selectedOption === 'string' ? 
-          selectedOption : 
-          selectedOption?.text || answer?.selectedOptionId || 'Not answered',
-        correctAnswer: typeof correctOption === 'string' ? 
-          correctOption : 
-          correctOption?.text || q.correctAnswer || q.correctOptionId || '',
+        question: q.text || q.question || "",
+        userAnswer: typeof selectedOption === "string"
+          ? selectedOption
+          : selectedOption?.text || answer?.selectedOptionId || "Not answered",
+        correctAnswer: typeof correctOption === "string"
+          ? correctOption
+          : correctOption?.text || q.correctAnswer || q.correctOptionId || "",
         isCorrect: !!isCorrect
-      };
-    });
-    
-    // Calculate score
-    const score = questionResults.filter(q => q.isCorrect).length;
-    
-    // Create preview object
+      }
+    })
+    const score = questionResults.filter(q => q.isCorrect).length
     const preview: QuizResultsPreview = {
-      title: quizTitle || "",
+      title: quizData?.title || "",
       score,
       maxScore: questions.length,
       percentage: Math.round((score / questions.length) * 100),
       questions: questionResults,
       slug
-    };
-
+    }
     return (
       <NonAuthenticatedUserSignInPrompt
         quizType="mcq"
@@ -316,13 +243,13 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
         onAnswer={handleAnswer}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
-        isLastQuestion={computedStates.isLastQuestion}
-        isSubmitting={computedStates.isSubmitting}
+        isLastQuestion={isLastQuestion}
+        isSubmitting={isSubmitting}
         existingAnswer={currentQuestionAnswer}
       />
     )
   }
 
   // Fallback
-  return <InitializingDisplay />
+  return <div>Initializing...</div>
 }

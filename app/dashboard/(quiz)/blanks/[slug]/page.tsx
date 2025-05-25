@@ -3,7 +3,8 @@
 import { use } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import BlankQuizWrapper from "../components/BlankQuizWrapper"
-import { Spinner } from "@/hooks/spinner"
+
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
 export default function BlanksPage({
   params,
@@ -19,12 +20,11 @@ export default function BlanksPage({
   // If still loading auth status, show loading
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Spinner size="lg" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
+      <QuizLoadingSteps
+        steps={[
+          { label: "Checking authentication", status: "loading" }
+        ]}
+      />
     )
   }
 

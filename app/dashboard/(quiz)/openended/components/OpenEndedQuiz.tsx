@@ -1,5 +1,6 @@
 "use client"
 
+import { OpenEndedQuizQuestion } from "@/app/types/quiz-types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +9,7 @@ import { Progress } from "@radix-ui/react-progress";
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { OpenEndedQuizQuestion } from "../types";
+
 
 
 interface OpenEndedQuizProps {
@@ -26,10 +27,10 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
   
   // Local state
   const [answer, setAnswer] = useState("");
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(Date.now());
   const [hintsUsed, setHintsUsed] = useState(false);
   const [showHints, setShowHints] = useState(false);
-  
+
   // Initialize answer from existing answers when component mounts or question changes
   useEffect(() => {
     if (currentQuestion?.id && answers[currentQuestion.id]?.text) {
@@ -39,6 +40,7 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
     }
     setShowHints(false);
     setHintsUsed(false);
+    setStartTime(Date.now()); // Reset timer for each question
   }, [currentQuestion, answers]);
   
   // Handle answer change
@@ -62,7 +64,7 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
   // Handle submission
   const handleSubmit = useCallback(() => {
     if (!currentQuestion) return;
-    
+
     // Save to Redux
     dispatch(saveAnswer({ 
       questionId: currentQuestion.id, 
@@ -72,19 +74,22 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
         timestamp: Date.now()
       }
     }));
-    
+
     // Calculate elapsed time
     const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-    
+
     // Call the onAnswer callback if provided
     if (onAnswer) {
       onAnswer(answer, elapsedTime, hintsUsed);
     } else if (currentQuestionIndex < questions.length - 1) {
       // If no callback, just move to next question
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
+    } else {
+      // If last question, optionally clear answer or show a message
+      // Optionally: dispatch(submitQuiz()) here if needed
     }
   }, [currentQuestion, answer, startTime, hintsUsed, onAnswer, currentQuestionIndex, questions.length, dispatch]);
-  
+
   if (!currentQuestion || questions.length === 0) {
     return (
       <Card className="p-6">

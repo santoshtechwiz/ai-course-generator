@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react"
 import { useAuth } from "@/hooks/useAuth"
-import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import McqQuizWrapper from "../components/McqQuizWrapper"
 
 interface QuizData {
@@ -23,7 +23,7 @@ export default function McqQuizPage({
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
-  const { isAuthenticated,isLoading:load,user} = useAuth()
+  const { isAuthenticated, isLoading: load, user } = useAuth()
   const [quizData, setQuizData] = useState<QuizData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -80,24 +80,35 @@ export default function McqQuizPage({
   }, [slug])
 
   // Show loading while fetching data or auth status
-  if (isLoading || status === "loading") {
-    return <InitializingDisplay />
+  if (isLoading || load) {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "loading" },
+          { label: "Preparing questions", status: "pending" },
+        ]}
+      />
+    )
   }
 
   // Show error if quiz failed to load
   if (error) {
     return (
-      <ErrorDisplay error={error} onRetry={() => window.location.reload()} onReturn={() => window.history.back()} />
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "error", errorMsg: error }
+        ]}
+      />
     )
   }
 
   // Show error if no quiz data
   if (!quizData) {
     return (
-      <ErrorDisplay
-        error="Quiz not found"
-        onRetry={() => window.location.reload()}
-        onReturn={() => window.history.back()}
+      <QuizLoadingSteps
+        steps={[
+          { label: "Quiz not found", status: "error", errorMsg: "Quiz not found" }
+        ]}
       />
     )
   }
