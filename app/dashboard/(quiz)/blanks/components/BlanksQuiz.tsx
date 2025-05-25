@@ -3,22 +3,14 @@
 import { useState, useEffect, useCallback } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import React from "react"
-import { 
-  saveAnswer,
-  setCurrentQuestionIndex,
-  selectQuestions,
-  selectCurrentQuestionIndex,
-  selectAnswers,
-  selectCurrentQuestion
-} from "@/store/slices/quizSlice"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react"
-import { motion } from "framer-motion"
-import { BlankQuizQuestion } from "../type"
-
+import { BlankQuizQuestion } from "@/app/types/quiz-types";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { selectQuestions, selectCurrentQuestionIndex, selectAnswers, selectCurrentQuestion, saveAnswer, setCurrentQuestionIndex } from "@/store/slices/quizSlice";
+import { Progress } from "@radix-ui/react-progress";
+import { motion } from "framer-motion";
+import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function BlanksQuiz() {
   const dispatch = useDispatch();
@@ -27,7 +19,7 @@ export function BlanksQuiz() {
   const questions = useSelector(selectQuestions);
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
   const answers = useSelector(selectAnswers);
-  const currentQuestion = useSelector(selectCurrentQuestion) as unknown as BlankQuizQuestion;
+  const currentQuestion = useSelector(selectCurrentQuestion) as BlankQuizQuestion;
   
   // Track input values before saving to Redux
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -193,13 +185,6 @@ export function BlanksQuiz() {
           <div className="text-lg leading-relaxed">
             {renderTextWithBlanks()}
           </div>
-          
-          {/* Show the expected answer for testing/debugging - remove in production */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-2 bg-gray-100 rounded text-sm">
-              <p className="text-gray-500">Expected answer: <span className="font-mono">{currentQuestion.answer}</span></p>
-            </div>
-          )}
         </div>
         
         <div className="flex justify-between">

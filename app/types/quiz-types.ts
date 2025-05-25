@@ -1,126 +1,96 @@
-/**
- * Quiz related types
- */
-
-// Quiz types
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
-
-// User answer for quiz
-export interface UserAnswer {
-  questionId: string | number
-  answer?: string
-  isCorrect?: boolean
-  timeSpent?: number
+// Unified types for both blanks and openended quizzes to match API response
+export interface OpenEndedQuestion {
+  id: number;
+  question: string;
+  answer: string;
 }
 
-// Processed question for rendering
-export interface ProcessedQuestion {
-  id: string
-  question: string
-  answer: string
-  options?: string[]
+export interface BlankQuizQuestion {
+  id: number;
+  question: string;
+  answer: string;
+  openEndedQuestion?: OpenEndedQuestion;
 }
 
-// Quiz question result
-export interface QuizQuestionResult {
-  id: string | number
-  question: string
-  userAnswer: string | string[]
-  correctAnswer: string
-  isCorrect: boolean
-  codeSnippet?: string
-  type?: QuizType
+export interface OpenEndedQuizQuestion {
+  id: number;
+  question: string;
+  answer: string;
+  hints?: string[];
+  openEndedQuestion?: OpenEndedQuestion;
 }
 
-// Open-ended quiz data
-export interface OpenEndedQuizData {
-  id: string
-  title: string
-  slug: string
-  questions: {
-    id: string
-    question: string
-    answer: string
-    hints?: string[]
-  }[]
+export interface QuizData {
+  id: number;
+  slug: string;
+  type: 'blanks' | 'openended' | 'mcq' | 'code';
+  title: string;
+  questions: BlankQuizQuestion[] | OpenEndedQuizQuestion[];
+  userId: string;
 }
 
-// Quiz result data
-export interface BaseQuizResultData {
-  quizId: string
-  slug: string
-  title: string
-  score: number
-  maxScore: number
-  percentage: number
-  questions: QuizQuestionResult[]
-  answers: UserAnswer[]
-  completedAt: string
-  type: QuizType
+export interface BlankQuizData extends QuizData {
+  type: 'blanks';
+  questions: BlankQuizQuestion[];
 }
 
-// Quiz submission types for API responses
-export interface QuizAnswer {
-  questionId: string | number
-  isCorrect: boolean
-  timeSpent: number
-  answer?: string
+export interface OpenEndedQuizData extends QuizData {
+  type: 'openended';
+  questions: OpenEndedQuizQuestion[];
 }
 
-export interface BlanksQuizAnswer {
-  questionId: string | number
-  userAnswer: string | string[]
-  timeSpent: number
-  isCorrect?: boolean
+// Answer types
+export interface BlankQuizAnswer {
+  questionId: number;
+  filledBlanks: Record<string, string>;
+  timestamp: number;
 }
 
-export interface CodeQuizAnswer {
-  questionId: string | number
-  answer: string
-  timeSpent: number
-  isCorrect?: boolean
+export interface OpenEndedQuizAnswer {
+  questionId: number;
+  text: string;
+  timestamp: number;
 }
 
-export type QuizAnswerUnion = QuizAnswer | BlanksQuizAnswer | CodeQuizAnswer
+export type QuizAnswer = BlankQuizAnswer | OpenEndedQuizAnswer;
 
-export interface QuizSubmission {
-  quizId: string
-  answers: QuizAnswerUnion[]
-  totalTime: number
-  score: number
-  type: QuizType
-  totalQuestions?: number
-  correctAnswers?: number
-  completedAt?: string
+// Redux state types
+export interface QuizState {
+  quizId: string | number | null;
+  quizType: string | null;
+  title: string | null;
+  questions: (BlankQuizQuestion | OpenEndedQuizQuestion)[];
+  currentQuestionIndex: number;
+  answers: Record<string | number, QuizAnswer>;
+  status: 'idle' | 'loading' | 'submitting' | 'error';
+  error: string | null;
+  isQuizComplete: boolean;
+  results: any | null;
 }
 
-export interface QuizCompletionResponse {
-  success: boolean
-  result?: {
-    updatedUserQuiz: any
-    quizAttempt: any
-    percentageScore: number
-    totalQuestions: number
-    score: number
-    totalTime: number
-  }
-  error?: string
-  details?: any
+// Authentication types
+export interface AuthState {
+  isAuthenticated: boolean;
+  userId: string | null;
+  status: 'idle' | 'loading' | 'error';
+  error: string | null;
 }
 
-// Similar quiz interface for recommendations
-export interface SimilarQuiz {
-  id: string
-  title: string
-  type: QuizType
-  difficulty: string
-  slug: string
-}
-
-// Quiz result
+// Quiz result types
 export interface QuizResult {
-  score: number
-  maxScore: number
-  percentage: number
-  questions: QuizQuestionResult[]
+  quizId: string | number;
+  slug: string;
+  title: string;
+  score: number;
+  maxScore: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  percentage: number;
+  completedAt: string;
+  questionResults?: Array<{
+    questionId: number | string;
+    isCorrect: boolean;
+    userAnswer: any;
+    correctAnswer: string;
+  }>;
 }

@@ -2,8 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useEffect, useRef } from "react"
-import { useAppDispatch } from "@/store"
-
+import  {useAppDispatch}  from "@/store";
 // This component syncs the session state with our Redux store
 export function SessionSync() {
   const { data: session, status } = useSession()

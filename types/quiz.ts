@@ -8,6 +8,7 @@ export interface BaseQuestion {
   id: string;
   text: string;
   type: QuizType;
+  isQuizComplete?: boolean;
 }
 
 export interface MCQQuestion extends BaseQuestion {

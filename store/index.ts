@@ -11,7 +11,7 @@ import quizReducer from "./slices/quizSlice"
 import subscriptionReducer from "./slices/subscription-slice"
 import userReducer from "./slices/userSlice"
 import flashcardReducer from "./slices/flashcardSlice"
-import textQuizReducer from "@/app/store/slices/textQuizSlice"
+
 
 // Define types for persist config
 interface PersistConfig {
@@ -52,22 +52,7 @@ const rootReducer = combineReducers({
   ),
   user: persistReducer(makePersistConfig("user", ["profile", "preferences", "statistics"]), userReducer),
   flashcard: flashcardReducer,
-  textQuiz: persistReducer(
-    makePersistConfig("textQuiz", [
-      "quizId",
-      "title",
-      "slug",
-      "currentQuestionIndex",
-      "questions",
-      "answers",
-      "status",
-      "startTime",
-      "completedAt",
-      "score",
-      "resultsSaved",
-    ]),
-    textQuizReducer,
-  ),
+
 })
 
 
@@ -77,16 +62,7 @@ type RootReducerType = typeof rootReducer
 // === STORE ===
 export const store = configureStore({
   reducer: rootReducer,
-  // Add middleware configuration to ignore non-serializable values for Redux Persist actions
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-        // Add any specific paths that might contain non-serializable values
-        ignoredActionPaths: ['register', 'meta.arg', 'payload.timestamp', 'payload.startedTimeStamp'],
-        ignoredPaths: ['register'],
-      },
-    }),
+
   devTools: process.env.NODE_ENV !== "production",
 })
 
@@ -100,4 +76,4 @@ export type AppDispatch = typeof store.dispatch
 // === HOOKS ===
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
-export const RoootState: RootState = store.getState()
+
