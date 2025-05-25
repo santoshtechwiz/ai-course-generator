@@ -1,45 +1,19 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, CheckCircle, XCircle, Send } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
-import { UserAnswer } from "./types"
+import { McqResultPreviewProps } from "./types"
 
-interface QuestionResult {
-  id: string
-  question: string
-  userAnswer: string
-  correctAnswer: string
-  isCorrect: boolean
-}
-
-interface MCQResultPreviewProps {
-  result: {
-    title: string
-    score: number
-    maxScore: number
-    percentage: number
-    questions: QuestionResult[]
-    slug: string
-  }
-  onSubmit: () => void
-  onCancel: () => void
-  userAnswers: UserAnswer[]
-  isSubmitting?: boolean
-}
-
-export default function MCQResultPreview({ 
+export default function McqResultPreview({ 
   result, 
   onSubmit, 
   onCancel,
   userAnswers,
   isSubmitting = false
-}: MCQResultPreviewProps) {
-  // Use the existing isSubmitting prop
-  
+}: McqResultPreviewProps) {
   return (
     <Card className="max-w-3xl mx-auto" data-testid="mcq-quiz-result-preview">
       <CardHeader>

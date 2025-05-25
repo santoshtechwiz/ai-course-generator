@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { useAppDispatch, useAppSelector } from "@/store"
 import { resetQuiz, selectQuestions, selectAnswers } from "@/store/slices/quizSlice"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 

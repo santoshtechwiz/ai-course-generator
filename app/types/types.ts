@@ -15,9 +15,9 @@ export interface SubscriptionData {
   trialEndsAt: string | null
   status: string
   cancelAtPeriodEnd?: boolean
-  credits?: number // Keep existing fields, mark optional if necessary
-  tokensUsed?: number // Keep existing fields, mark optional if necessary
-  features?: string[] // Keep existing fields, mark optional if necessary
+  credits?: number
+  tokensUsed?: number
+  features?: string[]
 }
 
 // Token usage interface
@@ -26,6 +26,14 @@ export interface TokenUsage {
   used: number
   remaining: number
   resetDate: string
+  percentage?: number
+  hasExceededLimit?: boolean
+}
+
+// Token usage response
+export interface TokenUsageResponse {
+  used: number
+  total: number
 }
 
 // Subscription details interface
@@ -40,14 +48,14 @@ export interface SubscriptionDetails {
   cancelAtPeriodEnd: boolean
   createdAt: string
   updatedAt: string
-  plan?: SubscriptionPlanType // Keep existing fields, mark optional if necessary
-  canceledAt?: string // Keep existing fields, mark optional if necessary
-  endedAt?: string // Keep existing fields, mark optional if necessary
-  trialStart?: string // Keep existing fields, mark optional if necessary
-  trialEnd?: string // Keep existing fields, mark optional if necessary
-  tokenUsage?: TokenUsage // Keep existing fields, mark optional if necessary
-  paymentMethod?: any // Keep existing fields, mark optional if necessary
-  invoices?: any[] // Keep existing fields, mark optional if necessary
+  plan?: SubscriptionPlanType
+  canceledAt?: string
+  endedAt?: string
+  trialStart?: string
+  trialEnd?: string
+  tokenUsage?: TokenUsage
+  paymentMethod?: any
+  invoices?: any[]
 }
 
 // Feature availability
@@ -72,6 +80,7 @@ export interface PriceOption {
   duration: number
   price: number
   currency: string
+  savings?: number
 }
 
 export interface PaymentOptions {
@@ -91,18 +100,6 @@ export interface SubscriptionPlan {
   limits: PlanLimits
   features: FeatureAvailability[]
   popular?: boolean
-}
-
-// User subscription data
-export interface UserSubscription {
-  userId: string
-  planId: SubscriptionPlanType
-  status: SubscriptionStatusType
-  currentPeriodStart?: Date
-  currentPeriodEnd?: Date
-  cancelAtPeriodEnd?: boolean
-  stripeCustomerId?: string
-  stripeSubscriptionId?: string
 }
 
 // Payment gateway interface
@@ -127,7 +124,9 @@ export interface PaymentGateway {
 // Promo code validation result
 export interface PromoValidationResult {
   valid: boolean
-  discountPercentage: number
+  message: string
+  discount?: number
+  discountType?: 'percentage' | 'fixed'
   code?: string
 }
 

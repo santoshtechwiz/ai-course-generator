@@ -1,54 +1,41 @@
 "use client"
 
-import { use, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useSelector, useDispatch } from "react-redux"
+import { useAppSelector } from "@/store"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent } from "@/components/ui/card"
-import { selectQuizResults, selectQuizId } from "@/store/slices/quizSlice"
-import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
-import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
-import McqQuizResult from "../../components/McqQuizResult"
-import { getQuizResults } from "@/lib/api/quiz"
-import { Metadata } from "next"
-import McqResultsClient from "../../components/McqResultsClient"
+import { selectQuizResults } from "@/store/slices/quizSlice"
+import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
+import { InitializingDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
+import McqQuizResult from "./McqQuizResult"
 
-interface ResultsPageProps {
-  params: Promise<{ slug: string }> | { slug: string }
+interface McqResultsClientProps {
+  slug: string
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const { slug } = params
-  
-  return {
-    title: `Quiz Results | AI Learning Platform`,
-    description: 'View your quiz results and see how you performed',
-  }
-}
-
-export default function McqResultsPage({ params }: ResultsPageProps) {
-  // Extract slug in a way that works in tests and in real usage
-  const slug =
-    params instanceof Promise
-      ? use(params).slug // Real usage with Next.js
-      : (params as { slug: string }).slug // Test usage
-
+export default function McqResultsClient({ slug }: McqResultsClientProps) {
   const router = useRouter()
   const { isAuthenticated, status, requireAuth } = useAuth()
   const [loadError, setLoadError] = useState<string | null>(null)
   const [fetchAttempted, setFetchAttempted] = useState(false)
+  const [resultsData, setResultsData] = useState<any>(null)
   
   // Get results from Redux store
-  const quizResults = useSelector(selectQuizResults)
-  const quizId = useSelector(selectQuizId)
-  const dispatch = useDispatch()
+  const quizResults = useAppSelector(selectQuizResults)
 
   // Load results if not already in store
   useEffect(() => {
-    if (isAuthenticated && !quizResults && !fetchAttempted) {
-      setFetchAttempted(true)
+    const loadResults = async () => {
+      // If we already have results in Redux, use them
+      if (quizResults) {
+        return
+      }
       
-      const fetchResults = async () => {
+      // Otherwise try to fetch from API
+      if (isAuthenticated && !fetchAttempted) {
+        setFetchAttempted(true)
+        
         try {
           const response = await fetch(`/api/quizzes/mcq/${slug}/results`)
           
@@ -56,20 +43,16 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
             throw new Error('Failed to load results')
           }
           
-          // In a real app, you would dispatch an action to store these results
           const data = await response.json()
-          console.log("Results fetched:", data)
-          
-          // Here we would dispatch to store the data
-          // dispatch(setQuizResults(data))
+          setResultsData(data)
         } catch (error) {
           console.error("Error loading results:", error)
           setLoadError("Failed to load quiz results")
         }
       }
-      
-      fetchResults()
     }
+    
+    loadResults()
   }, [isAuthenticated, quizResults, fetchAttempted, slug])
 
   // Authentication check
@@ -86,7 +69,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   // Loading state
   if (status === "loading") {
-    return <InitializingDisplay />
+    return <InitializingDisplay message="Preparing your results..." />
   }
 
   // Error state
@@ -103,8 +86,11 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     )
   }
 
+  // Use results from Redux or from API
+  const displayResults = quizResults || resultsData
+
   // No results found
-  if (!quizResults && isAuthenticated && fetchAttempted) {
+  if (!displayResults && isAuthenticated && fetchAttempted) {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
@@ -122,14 +108,12 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   }
 
   // Display results if we have them
-  return quizResults ? (
-    <div className="container max-w-4xl py-6">
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <McqQuizResult result={quizResults} />
-        </CardContent>
-      </Card>
-    </div>
+  return displayResults ? (
+    <Card>
+      <CardContent className="p-4 sm:p-6">
+        <McqQuizResult result={displayResults} />
+      </CardContent>
+    </Card>
   ) : (
     <InitializingDisplay message="Preparing your quiz results..." />
   )

@@ -60,12 +60,7 @@ console.log("Quiz Data:", quizData);
   // Add ClientWrapper with reset handling
   return (
     <div className="container mx-auto px-4 py-8">
-      <OpenEndedQuizWrapper 
-        quizData={quizData}
-        currentUserId={currentUserId}
-        slug={slug}
-        breadcrumbItems={breadcrumbItems}
-      />
+      <OpenEndedQuizWrapper slug={slug} quizData={quizData} />
     </div>
   )
 }
