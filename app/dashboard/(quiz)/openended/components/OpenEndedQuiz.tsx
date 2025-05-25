@@ -1,332 +1,181 @@
 "use client"
 
-import { useState, useEffect, useRef, memo, useCallback } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useEffect, useCallback } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { 
+  saveAnswer,
+  setCurrentQuestionIndex,
+  selectQuestions,
+  selectCurrentQuestionIndex,
+  selectAnswers,
+  selectCurrentQuestion
+} from "@/store/slices/quizSlice"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  LightbulbIcon,
-  SendIcon,
-  CheckCircleIcon,
-  ChevronRightIcon,
-  AlertTriangle,
-  AlertCircle,
-  Clock,
-} from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { formatQuizTime } from "@/lib/utils/quiz-utils"
-import { submitAnswerLocally } from "@/app/store/slices/textQuizSlice"
+import { Progress } from "@/components/ui/progress"
+import { motion } from "framer-motion"
+import { OpenEndedQuizQuestion } from "../types/types"
 
-
-
-
-interface QuizQuestionProps {
-  question: {
-    id: number | string
-    question: string
-    answer: string
-    openEndedQuestion?: {
-      hints?: string | string[]
-      difficulty?: string
-      tags?: string | string[]
-      inputType?: string
-    }
-  }
-  onAnswer: (answer: string) => void
-  questionNumber: number
-  totalQuestions: number
-  isLastQuestion?: boolean
+interface OpenEndedQuizProps {
+  onAnswer?: (answer: string, elapsedTime: number, hintsUsed: boolean) => void;
 }
 
-function OpenEndedQuizQuestionComponent({
-  question,
-  questionNumber,
-  totalQuestions,
-  isLastQuestion,
-}: QuizQuestionProps) {
-  const dispatch = useAppDispatch()
-  const quizState = useAppSelector((state) => state.textQuiz)
-  const currentQuestion = quizState?.currentQuestionIndex || 0
-
-  const [answer, setAnswer] = useState("")
-  const [showHints, setShowHints] = useState<boolean[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [hintLevel, setHintLevel] = useState(0)
-  const [elapsedTime, setElapsedTime] = useState(0)
-  const [startTime, setStartTime] = useState(Date.now())
-  const [showTooFastWarning, setShowTooFastWarning] = useState(false)
-  const [showGarbageWarning, setShowGarbageWarning] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  const minimumTimeThreshold = 5 // seconds for open-ended questions (longer than fill-in-the-blanks)
-  const minimumAnswerLength = 10 // characters
-
-  // Parse hints from question data
-  const hints = Array.isArray(question?.openEndedQuestion?.hints)
-    ? question.openEndedQuestion.hints
-    : question?.openEndedQuestion?.hints?.split("|") || []
-
-  // Reset state when question changes
+export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
+  const dispatch = useDispatch();
+  
+  // Get data from Redux store
+  const questions = useSelector(selectQuestions);
+  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
+  const answers = useSelector(selectAnswers);
+  const currentQuestion = useSelector(selectCurrentQuestion) as OpenEndedQuizQuestion;
+  
+  // Local state
+  const [answer, setAnswer] = useState("");
+  const [startTime] = useState(Date.now());
+  const [hintsUsed, setHintsUsed] = useState(false);
+  const [showHints, setShowHints] = useState(false);
+  
+  // Initialize answer from existing answers when component mounts or question changes
   useEffect(() => {
-    setShowHints(Array(hints.length).fill(false))
-    setHintLevel(0)
-    setAnswer("") // Reset answer when question changes
-    setElapsedTime(0)
-    setStartTime(Date.now())
-    setShowTooFastWarning(false)
-    setShowGarbageWarning(false)
-    setIsSubmitting(false)
-
-    // Focus the textarea when a new question is loaded
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus()
+    if (currentQuestion?.id && answers[currentQuestion.id]?.text) {
+      setAnswer(answers[currentQuestion.id].text || "");
+    } else {
+      setAnswer("");
+    }
+    setShowHints(false);
+    setHintsUsed(false);
+  }, [currentQuestion, answers]);
+  
+  // Handle answer change
+  const handleAnswerChange = useCallback((value: string) => {
+    setAnswer(value);
+  }, []);
+  
+  // Handle showing hints
+  const handleShowHints = useCallback(() => {
+    setShowHints(true);
+    setHintsUsed(true);
+  }, []);
+  
+  // Handle navigation
+  const handlePrevious = useCallback(() => {
+    if (currentQuestionIndex > 0) {
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1));
+    }
+  }, [currentQuestionIndex, dispatch]);
+  
+  // Handle submission
+  const handleSubmit = useCallback(() => {
+    if (!currentQuestion) return;
+    
+    // Save to Redux
+    dispatch(saveAnswer({ 
+      questionId: currentQuestion.id, 
+      answer: {
+        questionId: currentQuestion.id,
+        text: answer,
+        timestamp: Date.now()
       }
-    }, 300)
-  }, [question?.id, hints.length])
-
-  // Timer for elapsed time
-  useEffect(() => {
-    const timer = setInterval(() => setElapsedTime((prev) => prev + 1), 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  // Improve the handleSubmit function to provide better feedback
-  const handleSubmit = useCallback(async () => {
-    if (!answer.trim() || isSubmitting) return
-
-    setIsSubmitting(true)
-
-    try {
-      dispatch(
-        submitAnswerLocally({
-          questionId: question.id,
-          question: question.question,
-          answer: answer,
-          correctAnswer: question.answer,
-          timeSpent: Math.floor((Date.now() - startTime) / 1000),
-          hintsUsed: hintLevel > 0,
-          index: questionNumber - 1,
-        }),
-      )
-
-      setAnswer("")
-      setShowHints(Array(hints.length).fill(false))
-      setHintLevel(0)
-    } catch (error) {
-      console.error("Error submitting answer:", error)
-    } finally {
-      setIsSubmitting(false)
+    }));
+    
+    // Calculate elapsed time
+    const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    
+    // Call the onAnswer callback if provided
+    if (onAnswer) {
+      onAnswer(answer, elapsedTime, hintsUsed);
+    } else if (currentQuestionIndex < questions.length - 1) {
+      // If no callback, just move to next question
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
     }
-  }, [answer, dispatch, question, startTime, hintLevel, questionNumber])
-
-  // Add a function to check if the answer is valid
-  const isAnswerValid = () => {
-    return answer.trim().length >= minimumAnswerLength && !isSubmitting
+  }, [currentQuestion, answer, startTime, hintsUsed, onAnswer, currentQuestionIndex, questions.length, dispatch]);
+  
+  if (!currentQuestion || questions.length === 0) {
+    return (
+      <Card className="p-6">
+        <div className="text-center py-8">
+          <h2 className="text-xl font-bold mb-2">No Questions Available</h2>
+          <p className="text-gray-600">This quiz doesn't have any questions yet, or we couldn't load them.</p>
+        </div>
+      </Card>
+    );
   }
-
-  const handleProgressiveHint = () => {
-    if (hintLevel < hints.length) {
-      setShowHints((prev) => {
-        const newHints = [...prev]
-        newHints[hintLevel] = true
-        return newHints
-      })
-      setHintLevel((prev) => prev + 1)
-    }
-  }
-
-  const getDifficultyColor = (difficulty = "medium") => {
-    switch (difficulty?.toLowerCase()) {
-      case "easy":
-        return "bg-green-500"
-      case "medium":
-        return "bg-yellow-500"
-      case "hard":
-        return "bg-red-500"
-      default:
-        return "bg-blue-500"
-    }
-  }
-
+  
   return (
     <motion.div
-      key={question.id} // Important: Add key to ensure proper animation when question changes
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      data-testid="openended-quiz-question"
+      key={currentQuestionIndex}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
     >
-      <Card className="w-full max-w-4xl mx-auto shadow-lg border-t-4 border-primary">
-        <CardHeader className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <motion.div
-                className="flex items-center gap-1 text-sm text-muted-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <span className="font-medium text-foreground">Question {questionNumber}</span>
-                <ChevronRightIcon className="h-4 w-4" />
-                <span>{totalQuestions}</span>
-              </motion.div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                <Clock className="h-3.5 w-3.5" />
-                <span className="font-mono">{formatQuizTime(elapsedTime)}</span>
-              </div>
-              <Badge
-                variant="secondary"
-                className={cn("text-white", getDifficultyColor(question.openEndedQuestion?.difficulty))}
-              >
-                {question.openEndedQuestion?.difficulty || "Medium"}
-              </Badge>
-            </div>
+      <Card className="bg-card shadow-md p-6">
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-bold">Question {currentQuestionIndex + 1} of {questions.length}</h2>
+            <span className="text-sm text-muted-foreground">
+              {Math.floor((currentQuestionIndex / questions.length) * 100)}% complete
+            </span>
           </div>
-          <motion.h2
-            className="text-2xl font-bold leading-tight text-primary"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            data-testid="question-text"
-          >
-            {question.question}
-          </motion.h2>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Warning Alerts */}
-          <AnimatePresence>
-            {showTooFastWarning && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Alert
-                  variant="default"
-                  className="bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/30"
+          <Progress value={(currentQuestionIndex / questions.length) * 100} className="h-2" />
+        </div>
+        
+        <div className="mb-6">
+          <p className="text-lg font-medium mb-4">{currentQuestion.question}</p>
+          
+          {currentQuestion.hints && currentQuestion.hints.length > 0 && (
+            <div className="mb-4">
+              {!showHints ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleShowHints}
+                  className="text-sm"
                 >
-                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <AlertTitle className="text-amber-800 dark:text-amber-400">You're answering too quickly</AlertTitle>
-                  <AlertDescription className="text-amber-700 dark:text-amber-300">
-                    Please take your time to think about the answer before submitting. Open-ended questions require
-                    thoughtful responses.
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            )}
-
-            {showGarbageWarning && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Alert
-                  variant="destructive"
-                  className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900/30"
-                >
-                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <AlertTitle className="text-red-800 dark:text-red-400">Invalid answer</AlertTitle>
-                  <AlertDescription className="text-red-700 dark:text-red-300">
-                    Your answer is either too short or doesn't seem related to the question. Please provide a thoughtful
-                    response.
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <Textarea
-            ref={textareaRef}
-            value={answer}
-            onChange={(e) => {
-              setAnswer(e.target.value)
-              setShowGarbageWarning(false)
-              setShowTooFastWarning(false)
-            }}
-            placeholder="Type your answer here..."
-            className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary"
-            data-testid="answer-textarea"
-          />
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleProgressiveHint}
-              disabled={hintLevel >= hints.length}
-              className="w-full sm:w-auto hover:bg-primary hover:text-primary-foreground"
-              data-testid="hint-button"
-            >
-              <LightbulbIcon className="w-4 h-4 mr-2" />
-              {hintLevel === 0 ? "Get Hint" : `Next Hint (${hintLevel}/${hints.length})`}
-            </Button>
-            <AnimatePresence>
-              {showHints.map(
-                (show, index) =>
-                  show && (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="flex items-start gap-2 text-sm text-muted-foreground bg-secondary/10 p-2 rounded mt-2">
-                        <CheckCircleIcon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span>{hints[index]}</span>
-                      </div>
-                    </motion.div>
-                  ),
+                  Show Hints
+                </Button>
+              ) : (
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="font-medium text-sm mb-2">Hints:</p>
+                  <ul className="list-disc pl-5 text-sm space-y-1">
+                    {currentQuestion.hints.map((hint, index) => (
+                      <li key={index}>{hint}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
-            </AnimatePresence>
-          </div>
-        </CardContent>
-
-        <CardFooter>
+            </div>
+          )}
+          
+          <Textarea
+            value={answer}
+            onChange={(e) => handleAnswerChange(e.target.value)}
+            placeholder="Type your answer here..."
+            className="min-h-[150px] resize-y"
+          />
+        </div>
+        
+        <div className="flex justify-between">
+          <Button
+            onClick={handlePrevious}
+            disabled={currentQuestionIndex === 0}
+            variant="outline"
+            className="flex items-center"
+          >
+            Previous
+          </Button>
+          
           <Button
             onClick={handleSubmit}
-            disabled={!isAnswerValid()}
-            className="w-full sm:w-auto ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
-            data-testid="submit-button"
+            variant="default"
+            className="flex items-center"
+            disabled={!answer.trim()}
           >
-            {isSubmitting ? (
-              <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Submitting...
-              </>
-            ) : (
-              <>
-                <SendIcon className="w-4 h-4 mr-2" />
-                Submit Answer
-              </>
-            )}
+            {currentQuestionIndex === questions.length - 1 ? "Submit" : "Next"}
           </Button>
-        </CardFooter>
+        </div>
       </Card>
     </motion.div>
-  )
+  );
 }
-
-// Custom comparison function for memoization
-function arePropsEqual(prevProps: QuizQuestionProps, nextProps: QuizQuestionProps) {
-  return (
-    prevProps.question.id === nextProps.question.id &&
-    prevProps.questionNumber === nextProps.questionNumber &&
-    prevProps.totalQuestions === nextProps.totalQuestions
-  )
-}
-
-// Export memoized component with custom comparison
-export default memo(OpenEndedQuizQuestionComponent, arePropsEqual)
