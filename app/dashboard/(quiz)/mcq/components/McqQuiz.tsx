@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Timer, ChevronRight } from "lucide-react"
+import { Timer, ChevronRight } from 'lucide-react'
 import { cn } from "@/lib/utils"
 
 interface McqQuizQuestion {
   id: string
   text: string
   type: "mcq"
-  options: Array<{ id: string; text: string }>
+  options: Array<{ id: string; text: string }> | string[]
   correctOptionId: string
 }
 
@@ -19,7 +19,7 @@ interface McqQuizProps {
   question: McqQuizQuestion
   questionNumber: number
   totalQuestions: number
-  onAnswer: (answer: string, elapsedTime: number, isCorrect: boolean) => void
+  onAnswer: (answer: string) => void
   isLastQuestion?: boolean
   isSubmitting?: boolean
   existingAnswer?: string
@@ -37,20 +37,23 @@ export default function McqQuiz({
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
   const [timer, setTimer] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [startTime] = useState(Date.now())
 
-  // Memoized options for performance
+  // Memoized options for performance with better validation
   const options = useMemo(() => {
-    if (Array.isArray(question.options)) {
-      // Handle both object format and string array format
-      return question.options.map((option) =>
-        typeof option === "string"
-          ? { id: option, text: option }
-          : option,
-      )
-    }
-    // Fallback for legacy format
-    return []
-  }, [question.options])
+    if (!question?.options || !Array.isArray(question.options)) return []
+    
+    return question.options.map((option, index) => {
+      if (typeof option === "string") {
+        return { id: option, text: option }
+      }
+      if (option && typeof option === "object" && option.id && option.text) {
+        return option
+      }
+      // Fallback for malformed options
+      return { id: `option_${index}`, text: String(option) }
+    })
+  }, [question?.options])
 
   // Start timer when component mounts
   useEffect(() => {
@@ -64,31 +67,29 @@ export default function McqQuiz({
   // Reset selection when question changes
   useEffect(() => {
     setSelectedOption(existingAnswer || null)
-    setTimer(0) // Reset timer for new question
-  }, [question.id, existingAnswer])
+    setTimer(0)
+  }, [question?.id, existingAnswer])
 
-  // Handle option selection
+  // Handle option selection with validation
   const handleOptionSelect = useCallback(
     (optionId: string) => {
-      if (isSubmitting || isAnimating) return
+      if (isSubmitting || isAnimating || !optionId) return
       setSelectedOption(optionId)
     },
     [isSubmitting, isAnimating],
   )
 
-  // Handle answer submission
+  // Handle answer submission with validation
   const handleSubmit = useCallback(() => {
-    if (!selectedOption || isSubmitting || isAnimating) return
+    if (!selectedOption || isSubmitting || isAnimating || !question?.correctOptionId) return
 
     setIsAnimating(true)
-    const isCorrect = selectedOption === question.correctOptionId
-
-    // Add animation delay for better UX
+    // Only pass selectedOption to onAnswer (Redux handles correctness)
     setTimeout(() => {
-      onAnswer(selectedOption, timer, isCorrect)
+      onAnswer(selectedOption)
       setIsAnimating(false)
     }, 300)
-  }, [selectedOption, isSubmitting, isAnimating, question.correctOptionId, timer, onAnswer])
+  }, [selectedOption, isSubmitting, isAnimating, question?.correctOptionId, onAnswer])
 
   // Format timer display
   const formatTime = useCallback((seconds: number) => {
@@ -104,6 +105,17 @@ export default function McqQuiz({
     }
     return isLastQuestion ? "Submit Quiz" : "Next Question"
   }, [isSubmitting, isAnimating, isLastQuestion])
+
+  // Validate question data
+  if (!question || !question.text || !options.length) {
+    return (
+      <Card className="w-full shadow-md border border-border/60">
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground">Question data is not available</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="w-full shadow-md border border-border/60">

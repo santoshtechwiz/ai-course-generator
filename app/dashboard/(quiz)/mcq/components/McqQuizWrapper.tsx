@@ -1,7 +1,7 @@
 "use client"
 
 import { signIn } from "next-auth/react"
-import { useEffect, useCallback, useMemo } from "react"
+import { useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { toast } from "sonner"
@@ -45,26 +45,36 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Redux state with explicit types
-  const questions = useSelector((state: RootState) => selectQuestions(state)) as McqQuestion[]
-  const answers = useSelector((state: RootState) => selectAnswers(state)) as Record<string, MCQAnswer>
-  const status = useSelector((state: RootState) => selectQuizStatus(state))
-  const error = useSelector((state: RootState) => selectQuizError(state))
-  const isQuizComplete = useSelector((state: RootState) => selectIsQuizComplete(state))
-  const results = useSelector((state: RootState) => selectQuizResults(state))
-  const isAuthenticated = useSelector((state: RootState) => selectIsAuthenticated(state))
-  const userId = useSelector((state: RootState) => selectUserId(state))
+  // Memoized Redux selectors for performance
+  const questions = useSelector(selectQuestions) as McqQuestion[]
+  const answers = useSelector(selectAnswers) as Record<string, MCQAnswer>
+  const status = useSelector(selectQuizStatus)
+  const error = useSelector(selectQuizError)
+  const isQuizComplete = useSelector(selectIsQuizComplete)
+  const results = useSelector(selectQuizResults)
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const userId = useSelector(selectUserId)
   const currentQuestionIndex = useSelector((state: RootState) => state.quiz.currentQuestionIndex)
   const quizId = useSelector((state: RootState) => state.quiz.quizId)
   const currentQuestion = questions[currentQuestionIndex]
 
-  // Memoized computed states for performance
+  // Memoized computed states
   const isLoading = status === "loading"
   const isSubmitting = status === "submitting"
   const hasError = status === "error"
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   const hasValidQuestions = Array.isArray(questions) && questions.length > 0
-  const shouldShowSignIn = !userId && isQuizComplete
+  const shouldShowSignIn = !isAuthenticated && isQuizComplete
+
+  // Only reset quiz state on initial mount for this slug
+  const didInitRef = useRef(false)
+  useEffect(() => {
+    if (!didInitRef.current) {
+      dispatch({ type: "quiz/resetQuiz" })
+      didInitRef.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, slug])
 
   // Initialize quiz
   useEffect(() => {
@@ -75,14 +85,14 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
 
   // Handle reset parameter
   useEffect(() => {
-    if (searchParams?.get("reset") === "true") {
+    if (searchParams && typeof searchParams.get === "function" && searchParams.get("reset") === "true") {
       dispatch(setCurrentQuestionIndex(0))
     }
   }, [searchParams, dispatch])
 
   // Handle answer submission
   const handleAnswer = useCallback(
-    async (selectedOption: string) => {
+    (selectedOption: string) => {
       if (!currentQuestion) return
 
       const answer: MCQAnswer = {
@@ -92,25 +102,26 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
         type: "mcq"
       }
 
-      try {
-        await dispatch(saveAnswer({ questionId: currentQuestion.id, answer })).unwrap()
-        if (currentQuestionIndex < questions.length - 1) {
-          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-        }
-      } catch {
-        toast.error("Failed to save answer. Please try again.")
+      dispatch(saveAnswer({ questionId: currentQuestion.id, answer }))
+      if (currentQuestionIndex < questions.length - 1) {
+        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
       }
     },
     [currentQuestion, currentQuestionIndex, questions.length, dispatch],
   )
 
   // Handle quiz submission
+  const submittingRef = useRef(false)
   const handleSubmitQuiz = useCallback(async () => {
+    if (submittingRef.current) return
+    submittingRef.current = true
     try {
       await dispatch(submitQuiz()).unwrap()
       router.push(`/dashboard/mcq/${slug}/results`)
     } catch {
       toast.error("Failed to submit quiz. Please try again.")
+    } finally {
+      submittingRef.current = false
     }
   }, [dispatch, router, slug])
 
@@ -125,7 +136,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const handleRetry = useCallback(() => {
     if (!userId) {
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/mcq/${slug}`)}`)
-    } else {
+    } else if (slug) {
       dispatch(fetchQuiz({ id: slug }))
     }
   }, [userId, slug, router, dispatch])
@@ -139,10 +150,11 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
 
   // Auto-submit for authenticated users when quiz is complete
   useEffect(() => {
-    if (userId && isQuizComplete && status === "idle") {
+    if (userId && isQuizComplete && status === "idle" && !results) {
       handleSubmitQuiz()
     }
-  }, [userId, isQuizComplete, status, handleSubmitQuiz])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, isQuizComplete, status, results])
 
   // Loading state
   if (isLoading) {
@@ -226,11 +238,13 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     }
     return (
       <NonAuthenticatedUserSignInPrompt
-        quizType="mcq"
         onSignIn={handleSignIn}
-        showSaveMessage
         message="Please sign in to submit your quiz and save your results"
         previewData={preview}
+        onDontSave={() => {
+          // User chooses not to save: just show results page using Redux state
+          router.push(`/dashboard/mcq/${slug}/results`)
+        }}
       />
     )
   }

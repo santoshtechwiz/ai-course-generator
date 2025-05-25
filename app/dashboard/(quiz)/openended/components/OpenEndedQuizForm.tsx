@@ -59,6 +59,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
 
   const generateQuiz = useCallback(
     async (data: OpenEndedQuizFormData) => {
+      let isMounted = true
       setIsLoading(true)
 
       try {
@@ -75,13 +76,15 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
         }
 
         const { slug } = await response.json()
-        router.push(`/dashboard/openended/${slug}`)
+        if (isMounted) router.push(`/dashboard/openended/${slug}`)
       } catch (err) {
-        console.error("Error generating quiz:", err)
-        // Handle error (e.g., show error message to user)
+        if (isMounted) {
+          console.error("Error generating quiz:", err)
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
+      return () => { isMounted = false }
     },
     [router],
   )

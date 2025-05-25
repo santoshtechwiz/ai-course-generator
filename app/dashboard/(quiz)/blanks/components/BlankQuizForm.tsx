@@ -60,6 +60,7 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
 
   const generateQuiz = useCallback(
     async (data: FillInTheBlankQuizFormData) => {
+      let isMounted = true
       setIsLoading(true)
 
       try {
@@ -76,13 +77,15 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
         }
 
         const { slug } = await response.json()
-        router.push(`/dashboard/blanks/${slug}`)
+        if (isMounted) router.push(`/dashboard/blanks/${slug}`)
       } catch (err) {
-        console.error("Error generating quiz:", err)
-        // Handle error (e.g., show error message to user)
+        if (isMounted) {
+          console.error("Error generating quiz:", err)
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
+      return () => { isMounted = false }
     },
     [router],
   )
