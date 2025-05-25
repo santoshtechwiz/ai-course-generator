@@ -2,6 +2,44 @@
  * Session utility functions for quiz application
  */
 
+// Queue for batching session storage operations
+const storageQueue: Array<() => void> = [];
+let isProcessingQueue = false;
+
+/**
+ * Process the storage queue in batches to avoid blocking the main thread
+ */
+const processStorageQueue = () => {
+  if (isProcessingQueue || storageQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  // Process up to 5 operations at a time
+  const operations = storageQueue.splice(0, 5);
+  
+  // Execute operations
+  operations.forEach(operation => operation());
+  
+  // Continue processing if there are more operations
+  if (storageQueue.length > 0) {
+    setTimeout(processStorageQueue, 0);
+  } else {
+    isProcessingQueue = false;
+  }
+};
+
+/**
+ * Add an operation to the storage queue
+ */
+const enqueueStorageOperation = (operation: () => void) => {
+  storageQueue.push(operation);
+  
+  // Start processing the queue if it's not already being processed
+  if (!isProcessingQueue) {
+    setTimeout(processStorageQueue, 0);
+  }
+};
+
 /**
  * Generate a unique session ID for unauthenticated users
  */
@@ -9,19 +47,35 @@ export const generateSessionId = (): string => {
   return `quiz_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 };
 
+// Debounce map to avoid excessive storage operations
+const debounceTimers: Record<string, NodeJS.Timeout> = {};
+
 /**
- * Save quiz session to sessionStorage
+ * Save quiz session to sessionStorage with debouncing
  */
 export const saveQuizSession = (
   sessionId: string,
   quizId: string,
   answers: Record<string, any>,
 ): void => {
-  sessionStorage.setItem(`quiz_session_${sessionId}`, JSON.stringify({
-    quizId,
-    answers,
-    lastSaved: Date.now(),
-  }));
+  const key = `quiz_session_${sessionId}`;
+  
+  // Clear existing timer for this session
+  if (debounceTimers[key]) {
+    clearTimeout(debounceTimers[key]);
+  }
+  
+  // Set new timer
+  debounceTimers[key] = setTimeout(() => {
+    enqueueStorageOperation(() => {
+      sessionStorage.setItem(key, JSON.stringify({
+        quizId,
+        answers,
+        lastSaved: Date.now(),
+      }));
+    });
+    delete debounceTimers[key];
+  }, 300); // Debounce for 300ms
 };
 
 /**
@@ -50,7 +104,9 @@ export const saveQuizResults = (
   sessionId: string,
   results: any,
 ): void => {
-  sessionStorage.setItem(`quiz_results_${sessionId}`, JSON.stringify(results));
+  enqueueStorageOperation(() => {
+    sessionStorage.setItem(`quiz_results_${sessionId}`, JSON.stringify(results));
+  });
 };
 
 /**

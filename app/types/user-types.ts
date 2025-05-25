@@ -80,6 +80,30 @@ export interface Chapter {
   title: string
 }
 
+// Full chapter type for course page
+export interface FullChapterType extends Chapter {
+  content?: string
+  videoUrl?: string
+  questions?: CourseQuestion[]
+  duration?: number
+}
+
+// Full course type for course page
+export interface FullCourseType extends Course {
+  chapters?: FullChapterType[]
+  courseUnits?: CourseUnit[]
+  difficulty?: string
+}
+
+// Course question type
+export interface CourseQuestion {
+  id: string
+  question: string
+  options?: string[]
+  answer: string
+  explanation?: string
+}
+
 // Course progress
 export interface CourseProgress {
   id: string
@@ -90,6 +114,7 @@ export interface CourseProgress {
   isCompleted: boolean
   lastAccessedAt?: Date
   course?: Course
+  courseId?: string
 }
 
 // User quiz
@@ -116,6 +141,7 @@ export interface UserSubscription {
   cancelAtPeriodEnd: boolean
   stripeSubscriptionId: string
   stripeCustomerId: string
+  userId?: string
 }
 
 // Favorite
@@ -126,20 +152,32 @@ export interface Favorite {
 
 // User quiz attempt
 export interface UserQuizAttempt {
-  id: string
+  id: string | number
   userId: string
   userQuizId: number
-  score: number
-  timeSpent: number
-  createdAt: Date
-  updatedAt: Date
+  score?: number
+  timeSpent?: number
   improvement?: number
   accuracy?: number
+  createdAt: Date
+  updatedAt: Date
   attemptQuestions?: AttemptQuestion[]
   userQuiz?: {
     id: number
     title: string
-    questions?: any[]
+    quizType?: string
+    difficulty?: string
+    questions?: {
+      id: number
+      question: string
+      answer: string
+      questionType?: string
+      openEndedQuestion?: {
+        hints: string[]
+        difficulty: string
+        tags: string[]
+      }
+    }[]
   }
 }
 
@@ -147,16 +185,51 @@ export interface UserQuizAttempt {
 export interface AttemptQuestion {
   id: number
   questionId: number
-  userAnswer: string
-  isCorrect: boolean
+  userAnswer?: string
+  isCorrect?: boolean
   timeSpent: number
 }
 
 // Topic performance
 export interface TopicPerformance {
   topic: string
+  title?: string
   averageScore: number
   attempts: number
   averageTimeSpent: number
   difficulty?: string
+}
+
+// Common query parameters
+export interface QueryParams {
+  [key: string]: string | string[] | undefined
+  title?: string
+  amount?: string
+  category?: string
+}
+
+// User type for admin management
+export type UserType = "FREE" | "BASIC" | "PRO" | "PREMIUM" | "ULTIMATE"
+
+// User with transactions for admin
+export interface UserWithTransactions {
+  id: string
+  name: string
+  email: string
+  credits: number
+  transactions: any[]
+  subscription?: UserSubscription
+}
+
+// Quiz list item for quiz listing
+export interface QuizListItem {
+  id: string
+  title: string
+  quizType: QuizType
+  isPublic: boolean
+  isFavorite: boolean
+  timeStarted: string
+  slug: string
+  questionCount: number
+  bestScore?: number
 }

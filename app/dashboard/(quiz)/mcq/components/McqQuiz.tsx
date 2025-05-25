@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Timer, ChevronRight } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 interface McqQuizProps {
   question: {
@@ -36,9 +36,10 @@ export default function McqQuiz({
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
   const [timer, setTimer] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
+
   const correctAnswer = question.correctAnswer || question.answer || ""
 
-  // Start the timer when the component mounts
+  // Start timer when component mounts
   useEffect(() => {
     const interval = setInterval(() => {
       setTimer((prev) => prev + 1)
@@ -52,27 +53,26 @@ export default function McqQuiz({
     setSelectedOption(existingAnswer || null)
   }, [question.id, existingAnswer])
 
+  // Handle option selection
   const handleOptionSelect = (option: string) => {
-    // Don't allow changes if already submitted
     if (isSubmitting) return
-
     setSelectedOption(option)
   }
 
+  // Handle answer submission
   const handleSubmit = () => {
     if (!selectedOption || isSubmitting) return
 
     setIsAnimating(true)
     const isCorrect = selectedOption === correctAnswer
 
-    // Submit answer after animation
     setTimeout(() => {
       onAnswer(selectedOption, timer, isCorrect)
       setIsAnimating(false)
     }, 500)
   }
 
-  // Format time as MM:SS
+  // Format timer display
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -133,11 +133,7 @@ export default function McqQuiz({
       </CardContent>
 
       <CardFooter className="border-t pt-4">
-        <Button
-          className="ml-auto"
-          disabled={!selectedOption || isSubmitting}
-          onClick={handleSubmit}
-        >
+        <Button className="ml-auto" disabled={!selectedOption || isSubmitting} onClick={handleSubmit}>
           {isSubmitting ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
