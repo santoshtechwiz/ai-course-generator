@@ -17,7 +17,8 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react"
 import { motion } from "framer-motion"
-import { BlankQuizQuestion } from "../types/blanks-quiz"
+import { BlankQuizQuestion } from "../type"
+
 
 export function BlanksQuiz() {
   const dispatch = useDispatch();
@@ -26,7 +27,7 @@ export function BlanksQuiz() {
   const questions = useSelector(selectQuestions);
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
   const answers = useSelector(selectAnswers);
-  const currentQuestion = useSelector(selectCurrentQuestion) as BlankQuizQuestion;
+  const currentQuestion = useSelector(selectCurrentQuestion) as unknown as BlankQuizQuestion;
   
   // Track input values before saving to Redux
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
