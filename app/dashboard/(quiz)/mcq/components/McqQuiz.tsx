@@ -1,21 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Timer, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+interface McqQuizQuestion {
+  id: string
+  text: string
+  type: "mcq"
+  options: Array<{ id: string; text: string }>
+  correctOptionId: string
+}
+
 interface McqQuizProps {
-  question: {
-    id: string | number
-    question: string
-    options: string[]
-    correctAnswer?: string
-    answer?: string
-    type: "mcq"
-  }
+  question: McqQuizQuestion
   questionNumber: number
   totalQuestions: number
   onAnswer: (answer: string, elapsedTime: number, isCorrect: boolean) => void
@@ -37,7 +38,14 @@ export default function McqQuiz({
   const [timer, setTimer] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
 
-  const correctAnswer = question.correctAnswer || question.answer || ""
+  // Memoized options for performance
+  const options = useMemo(() => {
+    if (Array.isArray(question.options)) {
+      return question.options
+    }
+    // Fallback for legacy format
+    return []
+  }, [question.options])
 
   // Start timer when component mounts
   useEffect(() => {
@@ -51,33 +59,46 @@ export default function McqQuiz({
   // Reset selection when question changes
   useEffect(() => {
     setSelectedOption(existingAnswer || null)
+    setTimer(0) // Reset timer for new question
   }, [question.id, existingAnswer])
 
   // Handle option selection
-  const handleOptionSelect = (option: string) => {
-    if (isSubmitting) return
-    setSelectedOption(option)
-  }
+  const handleOptionSelect = useCallback(
+    (optionId: string) => {
+      if (isSubmitting || isAnimating) return
+      setSelectedOption(optionId)
+    },
+    [isSubmitting, isAnimating],
+  )
 
   // Handle answer submission
-  const handleSubmit = () => {
-    if (!selectedOption || isSubmitting) return
+  const handleSubmit = useCallback(() => {
+    if (!selectedOption || isSubmitting || isAnimating) return
 
     setIsAnimating(true)
-    const isCorrect = selectedOption === correctAnswer
+    const isCorrect = selectedOption === question.correctOptionId
 
+    // Add animation delay for better UX
     setTimeout(() => {
       onAnswer(selectedOption, timer, isCorrect)
       setIsAnimating(false)
-    }, 500)
-  }
+    }, 300)
+  }, [selectedOption, isSubmitting, isAnimating, question.correctOptionId, timer, onAnswer])
 
   // Format timer display
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
+  }, [])
+
+  // Memoized button text for performance
+  const buttonText = useMemo(() => {
+    if (isSubmitting || isAnimating) {
+      return isLastQuestion ? "Finishing..." : "Submitting..."
+    }
+    return isLastQuestion ? "Submit Quiz" : "Next Question"
+  }, [isSubmitting, isAnimating, isLastQuestion])
 
   return (
     <Card className="w-full shadow-md border border-border/60">
@@ -95,37 +116,37 @@ export default function McqQuiz({
           </span>
         </div>
 
-        <h2 className="text-xl font-semibold">{question.question}</h2>
+        <h2 className="text-xl font-semibold leading-relaxed">{question.text}</h2>
       </CardHeader>
 
       <CardContent className="pb-4">
         <div className="space-y-3">
-          {question.options?.map((option, index) => (
+          {options.map((option, index) => (
             <motion.button
-              key={index}
+              key={option.id}
               whileTap={{ scale: 0.98 }}
-              onClick={() => handleOptionSelect(option)}
+              onClick={() => handleOptionSelect(option.id)}
               className={cn(
-                "w-full text-left px-4 py-3 rounded-md border transition-all text-md flex items-start",
-                selectedOption === option
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-border/60 hover:border-border",
-                isAnimating && "pointer-events-none",
+                "w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 text-sm flex items-start hover:shadow-sm",
+                selectedOption === option.id
+                  ? "border-primary bg-primary/10 text-primary font-medium shadow-sm"
+                  : "border-border/60 hover:border-border hover:bg-muted/30",
+                (isAnimating || isSubmitting) && "pointer-events-none opacity-75",
               )}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isAnimating}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3 w-full">
                 <div
                   className={cn(
-                    "flex items-center justify-center w-6 h-6 rounded-full border text-xs font-medium",
-                    selectedOption === option
+                    "flex items-center justify-center w-6 h-6 rounded-full border text-xs font-medium mt-0.5 flex-shrink-0",
+                    selectedOption === option.id
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border/60 bg-background",
                   )}
                 >
                   {String.fromCharCode(65 + index)}
                 </div>
-                <span>{option}</span>
+                <span className="leading-relaxed">{option.text}</span>
               </div>
             </motion.button>
           ))}
@@ -133,15 +154,15 @@ export default function McqQuiz({
       </CardContent>
 
       <CardFooter className="border-t pt-4">
-        <Button className="ml-auto" disabled={!selectedOption || isSubmitting} onClick={handleSubmit}>
-          {isSubmitting ? (
-            <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <span>{isLastQuestion ? "Finishing..." : "Submitting..."}</span>
-            </>
-          ) : (
-            <span>{isLastQuestion ? "Submit Quiz" : "Next Question"}</span>
+        <Button
+          className="ml-auto min-w-[120px]"
+          disabled={!selectedOption || isSubmitting || isAnimating}
+          onClick={handleSubmit}
+        >
+          {(isSubmitting || isAnimating) && (
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
           )}
+          <span>{buttonText}</span>
         </Button>
       </CardFooter>
     </Card>

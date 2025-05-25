@@ -1,9 +1,14 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useCallback, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useDispatch, useSelector } from "react-redux"
+import { signIn } from "next-auth/react"
+import { toast } from "sonner"
+
+import type { AppDispatch } from "@/store"
 import {
+  fetchQuiz,
   saveAnswer,
   submitQuiz,
   setCurrentQuestionIndex,
@@ -11,162 +16,174 @@ import {
   selectQuestions,
   selectAnswers,
   selectCurrentQuestionIndex,
+  selectCurrentQuestion,
   selectQuizStatus,
   selectQuizError,
-  selectCurrentQuestion,
+  selectQuizTitle,
   selectQuizId,
+  selectIsQuizComplete,
+  selectQuizInProgress,
+  type MCQAnswer,
 } from "@/store/slices/quizSlice"
-import { toast } from "sonner"
-import { signIn } from "next-auth/react"
 
-import { UserAnswer } from "./types"
-import McqQuiz from "./McqQuiz"
-import McqResultPreview from "./MCQResultPreview"
-import { createMcqResultsPreview } from "./MCQQuizHelpers"
-import {
-  ErrorDisplay,
-  EmptyQuestionsDisplay,
-  InitializingDisplay,
-} from "../../components/QuizStateDisplay"
+import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
 import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
+import McqQuiz from "./McqQuiz"
+
 
 interface McqQuizWrapperProps {
   slug: string
   userId?: string | null
+  quizData?: any
 }
 
-export default function McqQuizWrapper({
-  slug,
-  userId,
-}: McqQuizWrapperProps) {
-  const dispatch = useAppDispatch()
+export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrapperProps) {
   const router = useRouter()
+  const dispatch = useDispatch<AppDispatch>()
   const searchParams = useSearchParams()
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [tempResults, setTempResults] = useState<any>(null)
+  // Redux selectors - following the exact slice structure
+  const questions = useSelector(selectQuestions)
+  const answers = useSelector(selectAnswers)
+  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
+  const currentQuestion = useSelector(selectCurrentQuestion)
+  const status = useSelector(selectQuizStatus)
+  const error = useSelector(selectQuizError)
+  const quizTitle = useSelector(selectQuizTitle)
+  const quizId = useSelector(selectQuizId)
+  const isQuizComplete = useSelector(selectIsQuizComplete)
+  const isQuizInProgress = useSelector(selectQuizInProgress)
 
-  // Get quiz data from Redux store
-  const quizId = useAppSelector(selectQuizId)
-  const questions = useAppSelector(selectQuestions)
-  const answers = useAppSelector(selectAnswers)
-  const currentQuestion = useAppSelector(selectCurrentQuestion)
-  const currentIndex = useAppSelector(selectCurrentQuestionIndex)
-  const status = useAppSelector(selectQuizStatus)
-  const error = useAppSelector(selectQuizError)
+  // Memoized computed states for performance
+  const computedStates = useMemo(
+    () => ({
+      isLoading: status === "loading",
+      isSubmitting: status === "submitting",
+      hasError: status === "error",
+      isLastQuestion: currentQuestionIndex === questions.length - 1,
+      hasValidQuestions: Array.isArray(questions) && questions.length > 0,
+      shouldShowSignIn: !userId && isQuizComplete,
+    }),
+    [status, currentQuestionIndex, questions, userId, isQuizComplete],
+  )
 
-  const isLoading = status === "loading"
-  const hasError = status === "error"
+  // Initialize quiz following the slice pattern
+  useEffect(() => {
+    if (slug && !quizId) {
+      if (quizData) {
+        // Use provided data
+        dispatch(fetchQuiz({ id: slug, data: quizData }))
+      } else {
+        // Fetch from API
+        dispatch(fetchQuiz({ id: slug }))
+      }
+    }
+  }, [dispatch, slug, quizId, quizData])
 
-  // Reset quiz if requested via URL param
+  // Handle reset parameter
   useEffect(() => {
     if (searchParams?.get("reset") === "true") {
       dispatch(setCurrentQuestionIndex(0))
-      setIsSubmitting(false)
-      setTempResults(null)
     }
   }, [searchParams, dispatch])
 
+  // Handle answer submission following the slice's Answer type
   const handleAnswer = useCallback(
-    (answerId: string, elapsedTime: number, isCorrect: boolean) => {
+    async (selectedOption: string, timeSpent: number, isCorrect: boolean) => {
       if (!currentQuestion) return
 
-      dispatch(
-        saveAnswer({
-          questionId: currentQuestion.id,
-          answer: {
-            questionId: currentQuestion.id,
-            selectedOptionId: answerId,
-            isCorrect,
-            timeSpent: elapsedTime,
-            timestamp: Date.now(),
-          },
-        }),
-      )
+      // Create MCQAnswer following the exact slice type
+      const answer: MCQAnswer = {
+        questionId: currentQuestion.id,
+        selectedOptionId: selectedOption,
+        timestamp: Date.now(),
+      }
 
-      const isLast = currentIndex === questions.length - 1
+      try {
+        // Use the slice's saveAnswer thunk which handles session management
+        await dispatch(saveAnswer({ questionId: currentQuestion.id, answer })).unwrap()
 
-      if (isLast) {
-        const allAnswers = [
-          ...Object.values(answers),
-          {
-            questionId: currentQuestion.id,
-            selectedOption: answerId,
-            isCorrect,
-          },
-        ] as UserAnswer[]
-
-        const preview = createMcqResultsPreview({
-          questions,
-          answers: allAnswers,
-          quizTitle: questions.length > 0 ? questions[0].text || "MCQ Quiz" : "MCQ Quiz",
-          slug,
-        })
-
-        setTempResults(preview)
-
-        if (userId) handleSubmitQuiz()
-      } else {
-        dispatch(setCurrentQuestionIndex(currentIndex + 1))
+        // Move to next question if not last
+        if (!computedStates.isLastQuestion) {
+          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+        }
+      } catch (error) {
+        toast.error("Failed to save answer. Please try again.")
       }
     },
-    [dispatch, currentQuestion, answers, questions, currentIndex, slug, userId],
+    [currentQuestion, computedStates.isLastQuestion, dispatch, currentQuestionIndex],
   )
 
+  // Handle quiz submission following the slice pattern
   const handleSubmitQuiz = useCallback(async () => {
-    try {
-      setIsSubmitting(true)
-      const totalTime = Object.values(answers).reduce((acc: number, a: any) => acc + (a.timeSpent || 0), 0)
+    if (!userId) {
+   
 
-      await dispatch(
-        submitQuiz({
+      dispatch(
+        saveAuthRedirectState({
           slug,
-          quizId,
+          quizId: quizId || slug,
           type: "mcq",
-          timeTaken: totalTime,
+          answers,
+          currentQuestionIndex,
+          tempResults: preview,
         }),
-      ).unwrap()
-
-      router.replace(`/dashboard/mcq/${slug}/results`)
-    } catch (e) {
-      toast.error("Failed to submit quiz.")
-      console.error(e)
-    } finally {
-      setIsSubmitting(false)
+      )
+      return
     }
-  }, [dispatch, answers, quizId, slug, router])
 
-  const handleShowSignIn = useCallback(() => {
-    dispatch(
-      saveAuthRedirectState({
-        slug,
-        quizId: quizId || "",
-        type: "mcq",
-        answers,
-        currentQuestionIndex: currentIndex,
-        tempResults,
-      }),
-    )
+    try {
+      // Use the slice's submitQuiz thunk
+      await dispatch(submitQuiz()).unwrap()
+      router.replace(`/dashboard/mcq/${slug}/results`)
+    } catch (error) {
+      toast.error("Failed to submit quiz. Please try again.")
+    }
+  }, [userId, questions, answers, quizTitle, slug, dispatch, quizId, currentQuestionIndex, router])
 
+  // Handle sign-in for unauthenticated users
+  const handleSignIn = useCallback(() => {
     signIn(undefined, {
       callbackUrl: `/dashboard/mcq/${slug}?fromAuth=true`,
     })
-  }, [dispatch, slug, quizId, answers, currentIndex, tempResults])
+  }, [slug])
 
+  // Handle retry with proper error recovery
   const handleRetry = useCallback(() => {
     if (!userId) {
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/mcq/${slug}`)}`)
     } else {
-      window.location.reload()
+      dispatch(fetchQuiz({ id: slug }))
     }
-  }, [userId, slug, router])
+  }, [userId, slug, router, dispatch])
 
-  if (isLoading || isSubmitting) {
-    return isSubmitting ? <QuizSubmissionLoading quizType="mcq" /> : <InitializingDisplay />
+  // Memoized current question answer for performance
+  const currentQuestionAnswer = useMemo(() => {
+    if (!currentQuestion) return undefined
+    const answer = answers[currentQuestion.id] as MCQAnswer | undefined
+    return answer?.selectedOptionId
+  }, [currentQuestion, answers])
+
+  // Auto-submit for authenticated users when quiz is complete
+  useEffect(() => {
+    if (userId && isQuizComplete && status === "idle") {
+      handleSubmitQuiz()
+    }
+  }, [userId, isQuizComplete, status, handleSubmitQuiz])
+
+  // Loading state
+  if (computedStates.isLoading) {
+    return <InitializingDisplay />
   }
 
-  if (hasError) {
+  // Submitting state
+  if (computedStates.isSubmitting) {
+    return <QuizSubmissionLoading quizType="mcq" />
+  }
+
+  // Error state
+  if (computedStates.hasError) {
     return (
       <ErrorDisplay
         error={error || "Failed to load quiz"}
@@ -176,49 +193,51 @@ export default function McqQuizWrapper({
     )
   }
 
-  if (!questions.length) {
-    return <EmptyQuestionsDisplay message="This quiz has no questions." onReturn={() => router.push("/dashboard")} />
+  // Empty questions state
+  if (!computedStates.hasValidQuestions) {
+    return (
+      <EmptyQuestionsDisplay
+        onReturn={() => router.push("/dashboard")}
+        message="This quiz doesn't contain any questions. Please try another quiz."
+      />
+    )
   }
 
-  if (!userId && tempResults) {
+  // Show sign-in prompt for completed quiz (unauthenticated users)
+  if (computedStates.shouldShowSignIn) {
+    const preview = createMCQResultsPreview({
+      questions: questions as MCQQuestion[],
+      answers: Object.values(answers),
+      quizTitle: quizTitle || "",
+      slug,
+    })
+
     return (
       <NonAuthenticatedUserSignInPrompt
         quizType="mcq"
-        onSignIn={handleShowSignIn}
+        onSignIn={handleSignIn}
         showSaveMessage
         message="Please sign in to submit your quiz and save your results"
-        previewData={tempResults}
+        previewData={preview}
       />
     )
   }
 
-  if (userId && tempResults) {
-    return (
-      <McqResultPreview
-        result={tempResults}
-        onSubmit={handleSubmitQuiz}
-        onCancel={() => setTempResults(null)}
-        userAnswers={Object.values(answers) as UserAnswer[]}
-        isSubmitting={isSubmitting}
-      />
-    )
-  }
-
+  // Show current question
   if (currentQuestion) {
-    const userAnswer = answers[currentQuestion.id]?.selectedOptionId
-
     return (
       <McqQuiz
         question={currentQuestion}
         onAnswer={handleAnswer}
-        questionNumber={currentIndex + 1}
+        questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
-        isLastQuestion={currentIndex === questions.length - 1}
-        isSubmitting={isSubmitting}
-        existingAnswer={typeof userAnswer === "string" ? userAnswer : undefined}
+        isLastQuestion={computedStates.isLastQuestion}
+        isSubmitting={computedStates.isSubmitting}
+        existingAnswer={currentQuestionAnswer}
       />
     )
   }
 
+  // Fallback
   return <InitializingDisplay />
 }
