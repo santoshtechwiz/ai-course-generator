@@ -11,7 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useAppDispatch, useAppSelector } from "@/store"
+
 
 // Import the flashcard slice actions
 import {
@@ -26,7 +26,8 @@ import {
 } from "@/store/slices/flashcardSlice"
 
 import FlashCardResults from "./FlashCardQuizResults"
-import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
