@@ -3,27 +3,14 @@
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import {
-  fetchQuiz,
-  setQuizId,
-  setQuizType,
-  submitQuiz,
-  setCurrentQuestionIndex,
-  saveAnswer,
-  selectQuestions,
-  selectCurrentQuestion,
-  selectCurrentQuestionIndex,
-  selectQuizStatus,
-  selectQuizError,
-  selectIsQuizComplete,
-  selectQuizResults
-} from "../store/quizSlice"
-import { selectIsAuthenticated, selectUserId } from "../store/authSlice"
-import { OpenEndedQuizData, OpenEndedQuizQuestion } from "../types/quiz"
-import { OpenEndedQuiz } from "./OpenEndedQuiz"
-import { Spinner } from "./Spinner"
-import { NonAuthenticatedUserSignInPrompt } from "./NonAuthenticatedUserSignInPrompt"
+
 import { toast } from "react-hot-toast"
+import { Spinner } from "@/hooks/spinner"
+import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice"
+import { selectQuestions, selectCurrentQuestion, selectCurrentQuestionIndex, selectQuizStatus, selectQuizError, selectIsQuizComplete, selectQuizResults, setQuizId, setQuizType, fetchQuiz, saveAnswer, setCurrentQuestionIndex, submitQuiz } from "@/store/slices/quizSlice"
+import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
+import { OpenEndedQuizQuestion, OpenEndedQuizData } from "../types"
+import { OpenEndedQuiz } from "./OpenEndedQuiz"
 
 interface OpenEndedQuizWrapperProps {
   slug: string;

@@ -1,21 +1,15 @@
 "use client"
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { selectQuestions, selectCurrentQuestionIndex, selectAnswers, selectCurrentQuestion, setCurrentQuestionIndex, saveAnswer } from "@/store/slices/quizSlice";
+import { Progress } from "@radix-ui/react-progress";
+import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { 
-  saveAnswer,
-  setCurrentQuestionIndex,
-  selectQuestions,
-  selectCurrentQuestionIndex,
-  selectAnswers,
-  selectCurrentQuestion
-} from "../store/quizSlice"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Progress } from "@/components/ui/progress"
-import { motion } from "framer-motion"
-import { OpenEndedQuizQuestion } from "../types/quiz"
+import { OpenEndedQuizQuestion } from "../types";
+
 
 interface OpenEndedQuizProps {
   onAnswer?: (answer: string, elapsedTime: number, hintsUsed: boolean) => void;

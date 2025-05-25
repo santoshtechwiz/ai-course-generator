@@ -3,19 +3,20 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
-
-import { useAppDispatch } from "@/store" // Import dispatch directly
-import { toast } from "sonner"
-import { signIn } from "next-auth/react"
-import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
-import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
-import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
-import CodingQuiz from "./CodingQuiz"
-import QuizResultPreview from "./QuizResultPreview"
-import { createResultsPreview } from "./QuizHelpers"
-import type { CodeQuizWrapperProps } from "@/app/types/code-quiz-types"
-import { saveAuthRedirectState } from "@/store/slices/quizSlice"
 import { QuizResultFactory } from "@/app/types/quiz-results"
+import { useQuiz } from "@/hooks/useQuiz"
+import { useAppDispatch } from "@/store"
+import { saveAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
+import { signIn } from "next-auth/react"
+import { toast } from "sonner"
+import { QuizSubmissionLoading } from "../../components"
+import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
+import { InitializingDisplay, ErrorDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
+import CodingQuiz from "./CodingQuiz"
+import { createResultsPreview } from "./QuizHelpers"
+import QuizResultPreview from "./QuizResultPreview"
+
+
 
 /**
  * CodeQuizWrapper - Manages the quiz flow for both authenticated and non-authenticated users
@@ -40,9 +41,7 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
   // Handle initial quiz loading with auth state
   useEffect(() => {
     if (!quiz.quiz.data && !quiz.status.isLoading) {
-      console.log("Loading quiz data for slug:", slug)
       quiz.actions.loadQuiz(slug, "code", quizData).catch((error) => {
-        console.error("Error loading quiz:", error)
         if (error.status === 401 || error === "Unauthorized") {
           // Save state before redirecting to auth
           dispatch(saveAuthRedirectState({
@@ -62,7 +61,6 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
   // Restore state after authentication
   useEffect(() => {
     if (fromAuth && userId && quiz.quiz.data === null) {
-      console.log("Restoring quiz state after authentication")
       quiz.actions.loadQuiz(slug, "code", quizData)
     }
   }, [fromAuth, userId, slug, quizData, quiz.quiz.data, quiz.actions])
@@ -151,7 +149,6 @@ export default function CodeQuizWrapper({ slug, quizId, userId, quizData }: Code
           quiz.actions.reset()
         }, 500)
       } catch (error) {
-        console.error("Error submitting quiz:", error)
         toast.error("Failed to submit quiz. Please try again.")
       } finally {
         setIsSubmitting(false)
