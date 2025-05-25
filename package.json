@@ -167,6 +167,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "ts-retry-promise": "^0.8.1",
+    "vitest": "3.1.4",
     "youtubei.js": "^13.0.0",
     "yt-transcript": "^0.0.2",
     "ytdl-core": "npm:@distube/ytdl-core@^4.15.8",

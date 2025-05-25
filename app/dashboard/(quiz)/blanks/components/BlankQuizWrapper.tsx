@@ -52,7 +52,8 @@ export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, sl
       dispatch(setQuizType("blanks"))
       dispatch(fetchQuiz({
         id: quizData.id,
-        data: quizData
+        data: quizData,
+        type: "blanks"
       }))
     }
   }, [dispatch, quizData])
@@ -89,11 +90,16 @@ export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, sl
     return (
       <ErrorDisplay
         error={error || "Failed to load quiz"}
-        onRetry={() => dispatch(fetchQuiz({ id: quizData?.id, data: quizData }))}
+        onRetry={() => dispatch(fetchQuiz({
+          id: quizData?.id, data: quizData,
+          type: "mcq"
+        }))}
         onReturn={() => router.push("/dashboard/quizzes")}
       />
     )
   }
+
+  const progressPercentage = Math.round((Object.keys(answers).length / questions.length) * 100) || 0
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -104,8 +110,8 @@ export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, sl
       <div className="mb-6">
         <div className="bg-gray-100 rounded-full h-2 mb-2">
           <div
-            className="bg-blue-600 h-2 rounded-full"
-            style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
+            style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
         <div className="text-sm text-gray-600 text-right">
@@ -120,7 +126,7 @@ export const BlankQuizWrapper: React.FC<BlankQuizWrapperProps> = ({ quizData, sl
           onClick={handleSubmitQuiz}
           disabled={!isQuizComplete || isSubmitting}
           variant={isQuizComplete ? "default" : "outline"}
-          className="px-6 py-3"
+          className="px-6 py-3 transition-all duration-300"
         >
           {isSubmitting ? (
             <>

@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import { AppDispatch } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/store"
 import { 
   saveAnswer,
   setCurrentQuestionIndex,
@@ -15,20 +14,33 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react"
+import { motion } from "framer-motion"
+import React from "react"
+
+interface BlankQuestion {
+  id: string | number;
+  question?: string;
+  textWithBlanks?: string;
+  text?: string;
+  blanks?: {
+    id: string;
+    correctAnswer: string;
+  }[];
+}
 
 interface BlanksQuizProps {
   quizId: string;
 }
 
 export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   
   // Get data from Redux store
-  const questions = useSelector(selectQuestions);
-  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
-  const answers = useSelector(selectAnswers);
-  const currentQuestion = useSelector(selectCurrentQuestion);
+  const questions = useAppSelector(selectQuestions);
+  const currentQuestionIndex = useAppSelector(selectCurrentQuestionIndex);
+  const answers = useAppSelector(selectAnswers);
+  const currentQuestion = useAppSelector(selectCurrentQuestion) as BlankQuestion;
   
   // Track input changes before saving to Redux
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -92,86 +104,130 @@ export const BlanksQuiz: React.FC<BlanksQuizProps> = ({ quizId }) => {
     );
   }
   
-  // Check if question format is valid
-  const isValidFormat = currentQuestion.textWithBlanks && 
-                       currentQuestion.textWithBlanks.includes("{{") && 
-                       currentQuestion.textWithBlanks.includes("}}");
-  
-  // Parse text with blanks and render inputs
-  const renderTextWithBlanks = useCallback(() => {
-    if (!isValidFormat) {
-      return (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>Question format is invalid</AlertDescription>
-        </Alert>
-      );
+  // Parse text with blanks - support both formats:
+  // 1. textWithBlanks format with {{blanks}}
+  // 2. question format for API response (e.g., "Kubernetes is an open-source container __________ system.")
+  const renderTextWithBlanks = () => {
+    // Format 1: Using textWithBlanks with {{blank}} pattern
+    if (currentQuestion.textWithBlanks && 
+        currentQuestion.textWithBlanks.includes("{{") && 
+        currentQuestion.textWithBlanks.includes("}}")) {
+      
+      const parts = currentQuestion.textWithBlanks.split(/\{\{([^}]+)\}\}/g);
+      
+      return parts.map((part, index) => {
+        // Even indices are text, odd indices are blank IDs
+        if (index % 2 === 0) {
+          return <span key={index}>{part}</span>;
+        } else {
+          const blankId = part;
+          const currentValue = inputValues[blankId] || '';
+          
+          return (
+            <motion.input
+              key={index}
+              type="text"
+              className="mx-1 px-2 py-1 border-b-2 border-primary/50 focus:outline-none focus:border-primary bg-transparent min-w-[100px] inline-block transition-all duration-200"
+              value={currentValue}
+              onChange={(e) => handleBlankChange(blankId, e.target.value)}
+              placeholder="..."
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            />
+          );
+        }
+      });
     }
     
-    const parts = currentQuestion.textWithBlanks.split(/\{\{([^}]+)\}\}/g);
-    
-    return parts.map((part, index) => {
-      // Even indices are text, odd indices are blank IDs
-      if (index % 2 === 0) {
-        return <span key={index}>{part}</span>;
-      } else {
-        const blankId = part;
-        const currentValue = inputValues[blankId] || 
-                           answers[currentQuestion.id]?.filledBlanks?.[blankId] || 
-                           '';
+    // Format 2: Using question with __________ as blanks
+    const questionText = currentQuestion.question || currentQuestion.text || "";
+    if (questionText.includes("__________")) {
+      const parts = questionText.split(/__________/g);
+      
+      return parts.map((part, index) => {
+        if (index === parts.length - 1) {
+          return <span key={index}>{part}</span>;
+        }
+        
+        const blankId = `blank_${index}`;
+        const currentValue = inputValues[blankId] || '';
         
         return (
-          <input
-            key={index}
-            type="text"
-            className="mx-1 px-2 py-1 border-b-2 border-primary/50 focus:outline-none focus:border-primary bg-transparent min-w-[100px] inline-block"
-            value={currentValue}
-            onChange={(e) => handleBlankChange(blankId, e.target.value)}
-            placeholder="..."
-          />
+          <React.Fragment key={index}>
+            <span>{part}</span>
+            <motion.input
+              type="text"
+              className="mx-1 px-2 py-1 border-b-2 border-primary/50 focus:outline-none focus:border-primary bg-transparent min-w-[100px] inline-block transition-all duration-200"
+              value={currentValue}
+              onChange={(e) => handleBlankChange(blankId, e.target.value)}
+              placeholder="..."
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            />
+          </React.Fragment>
         );
-      }
-    });
-  }, [currentQuestion, inputValues, answers, isValidFormat, handleBlankChange]);
+      });
+    }
+    
+    // If neither format is detected
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>Question format is invalid</AlertDescription>
+      </Alert>
+    );
+  };
   
   return (
-    <Card className="bg-card shadow-md p-6">
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-bold">Question {currentQuestionIndex + 1} of {questions.length}</h2>
-          <span className="text-sm text-muted-foreground">
-            {Math.floor((currentQuestionIndex / questions.length) * 100)}% complete
-          </span>
+    <motion.div
+      key={currentQuestionIndex}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="bg-card shadow-md p-6">
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-bold">Question {currentQuestionIndex + 1} of {questions.length}</h2>
+            <span className="text-sm text-muted-foreground">
+              {Math.floor((currentQuestionIndex / questions.length) * 100)}% complete
+            </span>
+          </div>
+          <Progress value={(currentQuestionIndex / questions.length) * 100} className="h-2" />
         </div>
-        <Progress value={(currentQuestionIndex / questions.length) * 100} className="h-2" />
-      </div>
-      
-      <div className="mb-8">
-        <p className="text-foreground mb-3">Fill in the blanks:</p>
-        <div className="text-lg leading-relaxed">
-          {renderTextWithBlanks()}
-        </div>
-      </div>
-      
-      <div className="flex justify-between">
-        <Button
-          onClick={handlePrevious}
-          disabled={currentQuestionIndex === 0}
-          variant="outline"
-        >
-          Previous
-        </Button>
         
-        <Button
-          onClick={handleNext}
-          disabled={currentQuestionIndex === questions.length - 1}
-          variant={currentQuestionIndex === questions.length - 1 ? "outline" : "default"}
-        >
-          {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
-        </Button>
-      </div>
-    </Card>
+        <div className="mb-8">
+          <p className="text-foreground mb-3 font-medium">Fill in the blanks:</p>
+          <div className="text-lg leading-relaxed">
+            {renderTextWithBlanks()}
+          </div>
+        </div>
+        
+        <div className="flex justify-between">
+          <Button
+            onClick={handlePrevious}
+            disabled={currentQuestionIndex === 0}
+            variant="outline"
+            className="flex items-center"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+          </Button>
+          
+          <Button
+            onClick={handleNext}
+            disabled={currentQuestionIndex === questions.length - 1}
+            variant={currentQuestionIndex === questions.length - 1 ? "outline" : "default"}
+            className="flex items-center"
+          >
+            {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"} <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      </Card>
+    </motion.div>
   );
 };
 
