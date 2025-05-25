@@ -1,6 +1,6 @@
 // Redux slice for authentication state management
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { AuthState } from "../types/quiz";
+import { AuthState } from "@/types/auth-types";
 import { RootState } from "../index";
 
 // Initial state
@@ -8,7 +8,8 @@ const initialState: AuthState = {
   isAuthenticated: false,
   userId: null,
   status: "idle",
-  error: null
+  error: null,
+  redirectPath: null
 };
 
 // Async thunks
@@ -46,6 +47,9 @@ const authSlice = createSlice({
     signOut: (state) => {
       state.isAuthenticated = false;
       state.userId = null;
+    },
+    setRedirectPath: (state, action: PayloadAction<string | null>) => {
+      state.redirectPath = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -70,12 +74,13 @@ const authSlice = createSlice({
 });
 
 // Actions
-export const { setAuthStatus, signOut } = authSlice.actions;
+export const { setAuthStatus, signOut, setRedirectPath } = authSlice.actions;
 
 // Selectors
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
 export const selectUserId = (state: RootState) => state.auth.userId;
 export const selectAuthStatus = (state: RootState) => state.auth.status;
 export const selectAuthError = (state: RootState) => state.auth.error;
+export const selectRedirectPath = (state: RootState) => state.auth.redirectPath;
 
 export default authSlice.reducer;

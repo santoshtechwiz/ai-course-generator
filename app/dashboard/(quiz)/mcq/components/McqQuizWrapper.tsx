@@ -6,31 +6,17 @@ import { useDispatch, useSelector } from "react-redux"
 import { signIn } from "next-auth/react"
 import { toast } from "sonner"
 
-import type { AppDispatch } from "@/store"
-import {
-  fetchQuiz,
-  saveAnswer,
-  submitQuiz,
-  setCurrentQuestionIndex,
-  saveAuthRedirectState,
-  selectQuestions,
-  selectAnswers,
-  selectCurrentQuestionIndex,
-  selectCurrentQuestion,
-  selectQuizStatus,
-  selectQuizError,
-  selectQuizTitle,
-  selectQuizId,
-  selectIsQuizComplete,
-  selectQuizInProgress,
-  type MCQAnswer,
-} from "@/store/slices/quizSlice"
 
-import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../components/QuizStateDisplay"
-import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
-import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import McqQuiz from "./McqQuiz"
 import { McqQuestion, QuizResultsPreview } from "./types"
+import { AppDispatch } from "@/store"
+import { saveAuthRedirectState } from "@/store/middleware/persistQuizMiddleware"
+import { selectQuizId } from "@/store/slices/flashcardSlice"
+import { selectQuestions, selectAnswers, selectCurrentQuestionIndex, selectCurrentQuestion, selectQuizStatus, selectQuizError, selectQuizTitle, selectIsQuizComplete, fetchQuiz, setCurrentQuestionIndex, saveAnswer, submitQuiz } from "@/store/slices/quizSlice"
+import { MCQAnswer } from "@/types/quiz"
+import { QuizSubmissionLoading } from "../../components"
+import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
+import { InitializingDisplay, ErrorDisplay, EmptyQuestionsDisplay } from "../../components/QuizStateDisplay"
 
 
 interface McqQuizWrapperProps {

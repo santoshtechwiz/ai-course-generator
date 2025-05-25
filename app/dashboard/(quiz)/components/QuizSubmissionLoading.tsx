@@ -1,63 +1,89 @@
 "use client"
 
+import React, { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
-import { Timer, Code, AlignLeft } from "lucide-react"
-import { Card } from "@/components/ui/card"
 
 interface QuizSubmissionLoadingProps {
-  quizType?: "code" | "blanks" | "quiz"
+  quizType: 'mcq' | 'code' | 'blanks' | 'openended' | 'flashcard'
+  message?: string
 }
 
-export function QuizSubmissionLoading({ quizType = "quiz" }: QuizSubmissionLoadingProps) {
-  const LoadingIcon = {
-    code: Code,
-    blanks: AlignLeft,
-    quiz: Timer,
-  }[quizType]
-
+export const QuizSubmissionLoading: React.FC<QuizSubmissionLoadingProps> = ({ 
+  quizType,
+  message 
+}) => {
+  const [dots, setDots] = useState('.')
+  
+  // Update dots animation
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(prev => prev.length < 3 ? prev + '.' : '.')
+    }, 500)
+    
+    return () => clearInterval(interval)
+  }, [])
+  
+  // Get appropriate message based on quiz type
+  const getSubmissionMessage = () => {
+    switch(quizType) {
+      case 'mcq':
+        return "Submitting your multiple choice answers"
+      case 'code':
+        return "Processing your code solutions"
+      case 'blanks':
+        return "Checking your fill-in-the-blank answers"
+      case 'openended':
+        return "Submitting your written responses"
+      case 'flashcard':
+        return "Saving your flashcard progress"
+      default:
+        return "Submitting your quiz"
+    }
+  }
+  
   return (
-    <Card className="max-w-3xl mx-auto p-8">
-      <div className="flex flex-col items-center justify-center gap-6">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 0, 360],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="bg-primary/10 p-4 rounded-full"
-        >
-          <LoadingIcon className="w-8 h-8 text-primary" />
-        </motion.div>
-
-        <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold text-primary">Submitting Your Quiz</h2>
-          <p className="text-muted-foreground">Please wait while we process your answers...</p>
-        </div>
-
-        <div className="w-full max-w-xs">
-          <motion.div
-            className="h-2 bg-primary/20 rounded-full overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <motion.div
-              className="h-full bg-primary"
-              initial={{ x: "-100%" }}
-              animate={{ x: "100%" }}
-              transition={{
-                repeat: Infinity,
-                duration: 1,
-                ease: "linear",
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="w-full max-w-md mx-auto"
+    >
+      <Card className="border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-xl text-center">
+            Submitting Quiz{dots}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-6">
+          <div className="relative mb-6">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <motion.div 
+              className="absolute inset-0 rounded-full border-2 border-primary"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1.2, opacity: 0 }}
+              transition={{ 
+                repeat: Infinity, 
+                duration: 1.5,
+                ease: "easeOut" 
               }}
             />
-          </motion.div>
-        </div>
-      </div>
-    </Card>
+          </div>
+          <p className="text-center mb-2">
+            {message || getSubmissionMessage()}
+          </p>
+          <p className="text-sm text-muted-foreground text-center">
+            Please don't close this page. This may take a moment.
+          </p>
+        </CardContent>
+        <CardFooter className="justify-center">
+          <p className="text-xs text-muted-foreground">
+            Your answers are being processed and saved.
+          </p>
+        </CardFooter>
+      </Card>
+    </motion.div>
   )
 }
