@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
 import axios from "axios"
 import type { FlashCard } from "@/app/types/types"
 import type { RootState } from "@/store"
+import { createSelector } from "reselect"
 
 // Define the answer format
 interface FlashCardAnswer {
@@ -268,6 +269,11 @@ export const selectSavedCardIds = (state: RootState) => state.flashcard.savedCar
 export const selectFlashCardsLoading = (state: RootState) => state.flashcard.loading
 export const selectFlashCardsError = (state: RootState) => state.flashcard.error
 export const selectOwnerId = (state: RootState) => state.flashcard.ownerId
-export const selectQuizId = (state: RootState) => state.flashcard.quizId
+export const selectFlashcardState = (state: RootState) => state.flashcard
+
+export const selectQuizId = createSelector(
+  [selectFlashcardState], 
+  (flashcardState) => flashcardState.quizId || null
+)
 
 export default flashcardSlice.reducer

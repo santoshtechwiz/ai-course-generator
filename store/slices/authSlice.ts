@@ -1,36 +1,30 @@
-// Redux slice for authentication state management
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { AuthState } from "@/types/auth-types";
 import { RootState } from "../index";
+import { AuthState, User } from "@/types/auth";
+import { createSelector } from "reselect";
+import { getSession } from "next-auth/react";
 
 // Initial state
 const initialState: AuthState = {
   isAuthenticated: false,
-  userId: null,
-  status: "idle",
-  error: null,
-  redirectPath: null
+  user: null,
+  loading: false,
+  error: null
 };
 
-// Async thunks
+// Async thunk to check auth status using NextAuth's getSession
 export const checkAuthStatus = createAsyncThunk(
   "auth/checkStatus",
   async (_, { rejectWithValue }) => {
     try {
-      // In a real app, this would check with your auth provider
-      const response = await fetch('/api/auth/session');
-      
-      if (!response.ok) {
-        throw new Error('Failed to check authentication status');
-      }
-      
-      const data = await response.json();
+      const session = await getSession();
+
       return {
-        isAuthenticated: !!data.user,
-        userId: data.user?.id || null
+        isAuthenticated: !!session?.user,
+        user: session?.user as User | null
       };
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || "Failed to fetch session");
     }
   }
 );
@@ -40,47 +34,81 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setAuthStatus: (state, action: PayloadAction<{ isAuthenticated: boolean; userId: string | null }>) => {
+    setAuthStatus: (state, action: PayloadAction<{ isAuthenticated: boolean; user: User | null }>) => {
       state.isAuthenticated = action.payload.isAuthenticated;
-      state.userId = action.payload.userId;
+      state.user = action.payload.user;
     },
     signOut: (state) => {
       state.isAuthenticated = false;
-      state.userId = null;
-    },
-    setRedirectPath: (state, action: PayloadAction<string | null>) => {
-      state.redirectPath = action.payload;
+      state.user = null;
     }
   },
   extraReducers: (builder) => {
     builder
       .addCase(checkAuthStatus.pending, (state) => {
-        state.status = "loading";
+        state.loading = true;
         state.error = null;
       })
       .addCase(checkAuthStatus.fulfilled, (state, action) => {
-        state.status = "idle";
+        state.loading = false;
         state.isAuthenticated = action.payload.isAuthenticated;
-        state.userId = action.payload.userId;
+        state.user = action.payload.user;
       })
       .addCase(checkAuthStatus.rejected, (state, action) => {
-        state.status = "error";
+        state.loading = false;
         state.error = action.payload as string;
-        // Default to not authenticated on error
         state.isAuthenticated = false;
-        state.userId = null;
+        state.user = null;
       });
   }
 });
 
 // Actions
-export const { setAuthStatus, signOut, setRedirectPath } = authSlice.actions;
+export const { setAuthStatus, signOut } = authSlice.actions;
 
 // Selectors
-export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
-export const selectUserId = (state: RootState) => state.auth.userId;
-export const selectAuthStatus = (state: RootState) => state.auth.status;
+export const selectAuthState = (state: RootState) => state.auth;
+
+export const selectIsAuthenticated = createSelector(
+  [selectAuthState],
+  (authState) => Boolean(authState.isAuthenticated)
+);
+
+export const selectUserId = createSelector(
+  [selectAuthState],
+  (authState) => authState.user?.id || null
+);
+
+export const selectUser = createSelector(
+  [selectAuthState],
+  (authState) => authState.user || null
+);
+
+export const selectUserProfile = createSelector(
+  [selectUser],
+  (user) => {
+    if (!user) return null;
+    return {
+      id: user.id,
+      name: user.name || 'Anonymous',
+      email: user.email,
+      image: user.image || '/images/default-avatar.png',
+      isComplete: Boolean(user.name && user.email)
+    };
+  }
+);
+
+export const selectAuthStatus = createSelector(
+  [selectAuthState],
+  (authState) => ({
+    isAuthenticated: authState.isAuthenticated,
+    user: authState.user,
+    loading: authState.loading,
+    error: authState.error
+  })
+);
+
+export const selectAuthLoading = (state: RootState) => state.auth.loading;
 export const selectAuthError = (state: RootState) => state.auth.error;
-export const selectRedirectPath = (state: RootState) => state.auth.redirectPath;
 
 export default authSlice.reducer;
