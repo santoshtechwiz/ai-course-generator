@@ -6,9 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Code, Play, Info } from "lucide-react"
-import { LoadingOverlay, SkeletonLoader } from "../../components/LoadingComponents"
-import { InitializingDisplay } from "../../components/QuizStateDisplay"
-import CodeQuizWrapperRedux from "../components/CodeQuizWrapperRedux"
 
 interface CodeQuizPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -28,21 +25,21 @@ function CodeQuizContent({ slug }: { slug: string }) {
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        
+
         // Fetch auth status
         const authResponse = await fetch('/api/auth/session')
         const authData = await authResponse.json()
         setUserId(authData?.user?.id || null)
-        
+
         // Fetch quiz data
         const quizResponse = await fetch(`/api/quizzes/code/${slug}`)
-        
+
         if (!quizResponse.ok) {
-          throw new Error(quizResponse.status === 404 
-            ? 'Quiz not found' 
+          throw new Error(quizResponse.status === 404
+            ? 'Quiz not found'
             : 'Failed to load quiz data')
         }
-        
+
         const data = await quizResponse.json()
         setQuizData(data)
         setError(null)
@@ -52,15 +49,12 @@ function CodeQuizContent({ slug }: { slug: string }) {
         setIsLoading(false)
       }
     }
-    
+
     fetchData()
   }, [slug])
 
-  // Loading state
-  if (isLoading) {
-    return <InitializingDisplay message="Loading code quiz..." />
-  }
-  
+
+
   // Error state
   if (error) {
     return (
@@ -87,7 +81,7 @@ function CodeQuizContent({ slug }: { slug: string }) {
       </Card>
     )
   }
-  
+
   // Empty questions state
   if (!quizData || !quizData.questions || quizData.questions.length === 0) {
     return (
@@ -110,21 +104,21 @@ function CodeQuizContent({ slug }: { slug: string }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => router.push("/dashboard")}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Button>
-        
+
         <div className="flex items-center gap-2">
           <Code className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold">{quizData.title || "Code Quiz"}</h1>
         </div>
       </div>
-      
+
       <Card className="w-full">
         <CardContent className="p-0">
           <Tabs defaultValue="quiz" className="w-full">
@@ -138,7 +132,7 @@ function CodeQuizContent({ slug }: { slug: string }) {
                 Quiz Info
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="quiz" className="p-6">
               <CodeQuizWrapperRedux
                 slug={slug}
@@ -147,7 +141,7 @@ function CodeQuizContent({ slug }: { slug: string }) {
                 quizData={quizData}
               />
             </TabsContent>
-            
+
             <TabsContent value="info" className="p-6">
               <div className="space-y-4">
                 <h2 className="text-lg font-medium">About This Quiz</h2>
@@ -167,9 +161,9 @@ function CodeQuizContent({ slug }: { slug: string }) {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="pt-4">
-                  <Button 
+                  <Button
                     onClick={() => document.querySelector('[data-value="quiz"]')?.click()}
                     className="w-full"
                   >
@@ -187,15 +181,14 @@ function CodeQuizContent({ slug }: { slug: string }) {
 
 export default function CodeQuizPage({ params, searchParams }: CodeQuizPageProps) {
   // Properly unwrap params using React.use()
-  const { slug } = params instanceof Promise 
-    ? use(params) 
-    : params as { slug: string }
-  
+  const slug = params instanceof Promise
+    ? use(params).slug
+    : (params as { slug: string }).slug
+
   return (
     <div className="container max-w-4xl py-6">
-      <Suspense fallback={<InitializingDisplay message="Loading code quiz..." />}>
-        <CodeQuizContent slug={slug} />
-      </Suspense>
+      <CodeQuizContent slug={slug} />
+
     </div>
   )
 }

@@ -11,6 +11,7 @@ import { selectQuestions, selectCurrentQuestion, selectCurrentQuestionIndex, sel
 import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
 import { OpenEndedQuizQuestion, OpenEndedQuizData } from "../types"
 import { OpenEndedQuiz } from "./OpenEndedQuiz"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
 interface OpenEndedQuizWrapperProps {
   slug: string;
@@ -142,34 +143,22 @@ export default function OpenEndedQuizWrapper({ slug }: OpenEndedQuizWrapperProps
 
   if (isInitializing || isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Spinner size="lg" />
-          <p className="text-muted-foreground">Loading quiz...</p>
-        </div>
-      </div>
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: isLoading ? "loading" : "done" },
+          { label: "Preparing questions", status: isLoading ? "pending" : "loading" },
+        ]}
+      />
     )
   }
 
   if (localError || error || !quizData) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <p className="text-destructive">Error: {localError || error || "Failed to load quiz"}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 mr-2"
-          >
-            Try Again
-          </button>
-          <button
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="bg-secondary text-white px-4 py-2 rounded-md hover:bg-secondary/90"
-          >
-            Return to Quizzes
-          </button>
-        </div>
-      </div>
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "error", errorMsg: localError || error || "Failed to load quiz" },
+        ]}
+      />
     )
   }
 

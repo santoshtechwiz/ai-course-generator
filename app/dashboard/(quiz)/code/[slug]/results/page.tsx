@@ -4,7 +4,7 @@ import { use, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAppSelector } from "@/store"
 import { Card, CardContent } from "@/components/ui/card"
-import { ErrorDisplay } from "../../../components/QuizStateDisplay"
+
 import CodeQuizResult from "../../components/CodeQuizResult"
 import { selectQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
 
@@ -69,10 +69,10 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     completedAt: new Date().toISOString(),
     questions: questions.map((q) => ({
       id: q.id,
-      question: q.text,
-      userAnswer: answers[q.id]?.code || "",
-      correctAnswer: "",
-      isCorrect: true, // Code questions are typically marked as correct when submitted
+      question: q.text || q.question,
+      userAnswer: answers[q.id]?.answer || answers[q.id]?.code || "",
+      correctAnswer: q.correctAnswer || "",
+      isCorrect: typeof answers[q.id]?.isCorrect === "boolean" ? answers[q.id].isCorrect : true,
     })),
   }
 

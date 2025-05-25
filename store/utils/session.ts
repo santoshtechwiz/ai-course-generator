@@ -75,19 +75,44 @@ export const saveQuizSession = (
   // Avoid saving proxies (e.g., Redux state slices) directly
   let safeAnswers: Record<string, any>;
   try {
+    // Try to serialize and deserialize to remove proxies
     safeAnswers = JSON.parse(JSON.stringify(answers));
-  } catch {
-    safeAnswers = { ...answers };
+  } catch (err) {
+    // Fallback: shallow copy, filter out proxies
+    safeAnswers = {};
+    for (const k in answers) {
+      try {
+        // Try to serialize each answer individually
+        safeAnswers[k] = JSON.parse(JSON.stringify(answers[k]));
+      } catch {
+        // If even that fails, skip this answer
+        continue;
+      }
+    }
   }
 
   // Prepare generic session object
-  const sessionObj: Record<string, any> = {
-    quizId,
-    quizType,
-    answers: safeAnswers,
-    lastSaved: Date.now(),
-    ...meta,
-  };
+  let sessionObj: Record<string, any>;
+  try {
+    sessionObj = {
+      quizId,
+      quizType,
+      answers: safeAnswers,
+      lastSaved: Date.now(),
+      ...meta,
+    };
+    // Try to serialize the whole session object to catch any remaining proxies
+    JSON.stringify(sessionObj);
+  } catch (err) {
+    // If the session object still contains a proxy, remove answers
+    sessionObj = {
+      quizId,
+      quizType,
+      answers: {},
+      lastSaved: Date.now(),
+      ...meta,
+    };
+  }
 
   // Clear existing timer for this session
   if (debounceTimers[key]) {
@@ -99,6 +124,15 @@ export const saveQuizSession = (
       try {
         sessionStorage.setItem(key, JSON.stringify(sessionObj));
       } catch (err) {
+        // If error is due to revoked proxy, just skip saving
+        if (
+          err &&
+          typeof err.message === "string" &&
+          err.message.includes("proxy that has been revoked")
+        ) {
+          // Optionally log or ignore
+          return;
+        }
         console.error("Failed to save session:", err);
       }
     });
