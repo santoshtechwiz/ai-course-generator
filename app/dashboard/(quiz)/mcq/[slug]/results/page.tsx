@@ -1,17 +1,21 @@
 "use client"
 
-import { use, useEffect, useState } from "react"
+import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useSelector, useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent } from "@/components/ui/card"
-import { selectQuizResults, selectQuizId } from "@/store/slices/quizSlice"
+import { 
+  selectQuizResults, 
+  selectQuizId,
+  selectQuizStatus,
+  selectQuizError,
+  fetchQuizResults
+} from "@/store/slices/quizSlice"
 import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
 import { InitializingDisplay, ErrorDisplay } from "../../../components/QuizStateDisplay"
 import McqQuizResult from "../../components/McqQuizResult"
-import { getQuizResults } from "@/lib/api/quiz"
 import { Metadata } from "next"
-import McqResultsClient from "../../components/McqResultsClient"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -35,42 +39,21 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   const router = useRouter()
   const { isAuthenticated, status, requireAuth } = useAuth()
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [fetchAttempted, setFetchAttempted] = useState(false)
+  const dispatch = useDispatch()
   
-  // Get results from Redux store
+  // Get results and status from Redux store
   const quizResults = useSelector(selectQuizResults)
   const quizId = useSelector(selectQuizId)
-  const dispatch = useDispatch()
+  const quizStatus = useSelector(selectQuizStatus)
+  const quizError = useSelector(selectQuizError)
 
   // Load results if not already in store
   useEffect(() => {
-    if (isAuthenticated && !quizResults && !fetchAttempted) {
-      setFetchAttempted(true)
-      
-      const fetchResults = async () => {
-        try {
-          const response = await fetch(`/api/quizzes/mcq/${slug}/results`)
-          
-          if (!response.ok) {
-            throw new Error('Failed to load results')
-          }
-          
-          // In a real app, you would dispatch an action to store these results
-          const data = await response.json()
-          console.log("Results fetched:", data)
-          
-          // Here we would dispatch to store the data
-          // dispatch(setQuizResults(data))
-        } catch (error) {
-          console.error("Error loading results:", error)
-          setLoadError("Failed to load quiz results")
-        }
-      }
-      
-      fetchResults()
+    if (isAuthenticated && !quizResults && quizStatus !== 'loading' && quizStatus !== 'error') {
+      // Use the Redux thunk to fetch results
+      dispatch(fetchQuizResults(slug))
     }
-  }, [isAuthenticated, quizResults, fetchAttempted, slug])
+  }, [isAuthenticated, quizResults, quizStatus, slug, dispatch])
 
   // Authentication check
   if (!isAuthenticated && status !== "loading") {
@@ -85,26 +68,14 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   }
 
   // Loading state
-  if (status === "loading") {
-    return <InitializingDisplay />
+  if (status === "loading" || quizStatus === 'loading') {
+    return <InitializingDisplay message="Loading your results..." />
   }
 
-  // Error state
-  if (loadError) {
-    return (
-      <ErrorDisplay
-        error={loadError}
-        onRetry={() => {
-          setFetchAttempted(false)
-          setLoadError(null)
-        }}
-        onReturn={() => router.push("/dashboard/quizzes")}
-      />
-    )
-  }
+ 
 
   // No results found
-  if (!quizResults && isAuthenticated && fetchAttempted) {
+  if (!quizResults && isAuthenticated && quizStatus !== 'loading' && quizStatus !== 'submitting') {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <h1 className="text-2xl font-bold mb-4">No Results Found</h1>

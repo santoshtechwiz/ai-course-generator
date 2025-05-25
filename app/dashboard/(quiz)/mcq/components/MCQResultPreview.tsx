@@ -57,7 +57,7 @@ export default function McqResultPreview({
                   <p className="font-medium mb-2">Q{index + 1}: {q.question}</p>
                   <p className="text-sm text-muted-foreground">
                     Your answer: <span className={q.isCorrect ? 'text-green-600' : 'text-red-600'}>
-                      {q.userAnswer}
+                      {q.userAnswer || 'No answer provided'}
                     </span>
                   </p>
                   {!q.isCorrect && (

@@ -30,6 +30,7 @@ import { InitializingDisplay, EmptyQuestionsDisplay, ErrorDisplay } from "../../
 import { QuizSubmissionLoading } from "../../components/QuizSubmissionLoading"
 import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 import McqQuiz from "./McqQuiz"
+import { McqQuestion, QuizResultsPreview } from "./types"
 
 
 interface McqQuizWrapperProps {
@@ -118,7 +119,58 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
   // Handle quiz submission following the slice pattern
   const handleSubmitQuiz = useCallback(async () => {
     if (!userId) {
-   
+      // Create a preview of the results directly instead of using createMCQResultsPreview
+      const questionResults = (questions as McqQuestion[]).map(q => {
+        const answer = Object.values(answers).find(a => (a as MCQAnswer).questionId === q.id) as MCQAnswer | undefined;
+        
+        // Find the selected option from the question options
+        const selectedOption = q.options && Array.isArray(q.options) ? 
+          q.options.find(o => {
+            if (typeof o === 'string') {
+              return o === answer?.selectedOptionId;
+            }
+            return o.id === answer?.selectedOptionId;
+          }) : undefined;
+        
+        // Find the correct option
+        const correctOption = q.options && Array.isArray(q.options) ?
+          q.options.find(o => {
+            if (typeof o === 'string') {
+              return o === q.correctOptionId || o === q.correctAnswer;
+            }
+            return o.id === q.correctOptionId || o.text === q.correctAnswer;
+          }) : undefined;
+        
+        // Determine if the answer is correct
+        const isCorrect = answer?.selectedOptionId === q.correctOptionId || 
+                          answer?.selectedOptionId === q.correctAnswer;
+        
+        // Create the question result object
+        return {
+          id: q.id,
+          question: q.text || q.question || '',
+          userAnswer: typeof selectedOption === 'string' ? 
+            selectedOption : 
+            selectedOption?.text || answer?.selectedOptionId || 'Not answered',
+          correctAnswer: typeof correctOption === 'string' ? 
+            correctOption : 
+            correctOption?.text || q.correctAnswer || q.correctOptionId || '',
+          isCorrect: !!isCorrect
+        };
+      });
+      
+      // Calculate score
+      const score = questionResults.filter(q => q.isCorrect).length;
+      
+      // Create preview object
+      const preview: QuizResultsPreview = {
+        title: quizTitle || "",
+        score,
+        maxScore: questions.length,
+        percentage: Math.round((score / questions.length) * 100),
+        questions: questionResults,
+        slug
+      };
 
       dispatch(
         saveAuthRedirectState({
@@ -205,12 +257,58 @@ export default function McqQuizWrapper({ slug, userId, quizData }: McqQuizWrappe
 
   // Show sign-in prompt for completed quiz (unauthenticated users)
   if (computedStates.shouldShowSignIn) {
-    const preview = createMCQResultsPreview({
-      questions: questions as MCQQuestion[],
-      answers: Object.values(answers),
-      quizTitle: quizTitle || "",
-      slug,
-    })
+    // Create a preview of the results directly instead of using createMCQResultsPreview
+    const questionResults = (questions as McqQuestion[]).map(q => {
+      const answer = Object.values(answers).find(a => (a as MCQAnswer).questionId === q.id) as MCQAnswer | undefined;
+      
+      // Find the selected option from the question options
+      const selectedOption = q.options && Array.isArray(q.options) ? 
+        q.options.find(o => {
+          if (typeof o === 'string') {
+            return o === answer?.selectedOptionId;
+          }
+          return o.id === answer?.selectedOptionId;
+        }) : undefined;
+      
+      // Find the correct option
+      const correctOption = q.options && Array.isArray(q.options) ?
+        q.options.find(o => {
+          if (typeof o === 'string') {
+            return o === q.correctOptionId || o === q.correctAnswer;
+          }
+          return o.id === q.correctOptionId || o.text === q.correctAnswer;
+        }) : undefined;
+      
+      // Determine if the answer is correct
+      const isCorrect = answer?.selectedOptionId === q.correctOptionId || 
+                        answer?.selectedOptionId === q.correctAnswer;
+      
+      // Create the question result object
+      return {
+        id: q.id,
+        question: q.text || q.question || '',
+        userAnswer: typeof selectedOption === 'string' ? 
+          selectedOption : 
+          selectedOption?.text || answer?.selectedOptionId || 'Not answered',
+        correctAnswer: typeof correctOption === 'string' ? 
+          correctOption : 
+          correctOption?.text || q.correctAnswer || q.correctOptionId || '',
+        isCorrect: !!isCorrect
+      };
+    });
+    
+    // Calculate score
+    const score = questionResults.filter(q => q.isCorrect).length;
+    
+    // Create preview object
+    const preview: QuizResultsPreview = {
+      title: quizTitle || "",
+      score,
+      maxScore: questions.length,
+      percentage: Math.round((score / questions.length) * 100),
+      questions: questionResults,
+      slug
+    };
 
     return (
       <NonAuthenticatedUserSignInPrompt

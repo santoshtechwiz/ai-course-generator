@@ -254,6 +254,25 @@ export const recoverSessionAfterAuth = createAsyncThunk(
   }
 );
 
+// Add a new thunk for fetching quiz results
+export const fetchQuizResults = createAsyncThunk(
+  'quiz/fetchQuizResults',
+  async (slug: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/quizzes/mcq/${slug}/results`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch quiz results');
+      }
+      
+      return await response.json();
+    } catch (error: any) {
+      console.error("Error fetching quiz results:", error);
+      return rejectWithValue(error.message || 'Failed to fetch quiz results');
+    }
+  }
+);
+
 // Helper function to calculate local results
 const calculateLocalResults = (questions: Question[], answers: Record<string, Answer>): QuizResults => {
   let score = 0;
@@ -391,7 +410,12 @@ const quizSlice = createSlice({
     },
     clearAuthRedirectState: (state) => {
       state.authRedirectState = null;
-    }
+    },
+    // Add a missing reducer to set quiz results
+    setQuizResults: (state, action: PayloadAction<QuizResults>) => {
+      state.results = action.payload;
+      state.status = 'submitted';
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -451,6 +475,19 @@ const quizSlice = createSlice({
           state.answers = answers;
           state.lastSaved = lastSaved;
         }
+      })
+
+      // fetchQuizResults reducers
+      .addCase(fetchQuizResults.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchQuizResults.fulfilled, (state, action) => {
+        state.status = 'submitted';
+        state.results = action.payload;
+      })
+      .addCase(fetchQuizResults.rejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.payload as string;
       });
   }
 });
@@ -467,7 +504,8 @@ export const {
   resetQuiz,
   clearQuiz,
   saveAuthRedirectState,
-  clearAuthRedirectState
+  clearAuthRedirectState,
+  setQuizResults
 } = quizSlice.actions;
 
 export default quizSlice.reducer;

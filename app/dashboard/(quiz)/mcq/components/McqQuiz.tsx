@@ -41,7 +41,12 @@ export default function McqQuiz({
   // Memoized options for performance
   const options = useMemo(() => {
     if (Array.isArray(question.options)) {
-      return question.options
+      // Handle both object format and string array format
+      return question.options.map((option) =>
+        typeof option === "string"
+          ? { id: option, text: option }
+          : option,
+      )
     }
     // Fallback for legacy format
     return []
