@@ -1,96 +1,127 @@
-export interface QuizQuestion {
-  id: string | number
-  question: string
-  answer: string
-  openEndedQuestion?: {
-    hints?: string[]
-    difficulty?: 'easy' | 'medium' | 'hard'
-    tags?: string[]
-    inputType?: string
-  }
+// Centralized type definitions for quiz functionality
+
+// Quiz types
+export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended';
+
+// Question types
+export interface BaseQuestion {
+  id: string;
+  text: string;
+  type: QuizType;
 }
 
-export interface QuizAnswer {
-  questionId: string | number
-  question: string
-  answer: string
-  correctAnswer: string
-  timeSpent: number
-  hintsUsed: boolean
-  index: number
-  similarity?: number
+export interface MCQQuestion extends BaseQuestion {
+  type: 'mcq';
+  options: Array<{
+    id: string;
+    text: string;
+  }>;
+  correctOptionId: string;
 }
 
-export interface QuizResult {
-  quizId: string
-  slug: string
-  answers: QuizAnswer[]
-  questions: QuizQuestion[]
-  totalQuestions: number
-  completedAt: string
+export interface CodeQuestion extends BaseQuestion {
+  type: 'code';
+  question: string;
+  codeSnippet?: string;
+  language: string;
+  correctAnswer: string;
+  explanation?: string;
 }
 
-export interface QuizResultView {
-  quizId: string
-  slug: string
-  answers: QuizAnswer[]
-  questions: QuizQuestion[]
-  totalQuestions: number
-  completedAt: string
+export interface BlanksQuestion extends BaseQuestion {
+  type: 'blanks';
+  textWithBlanks: string;
+  blanks: Array<{
+    id: string;
+    correctAnswer: string;
+  }>;
 }
 
+export interface OpenEndedQuestion extends BaseQuestion {
+  type: 'openended';
+  modelAnswer?: string;
+  keywords?: string[];
+}
+
+export type Question = MCQQuestion | CodeQuestion | BlanksQuestion | OpenEndedQuestion;
+
+// Answer types
+export interface BaseAnswer {
+  questionId: string;
+  timestamp: number;
+}
+
+export interface MCQAnswer extends BaseAnswer {
+  selectedOptionId: string;
+}
+
+export interface CodeAnswer extends BaseAnswer {
+  answer: string;
+  isCorrect?: boolean;
+  timeSpent?: number;
+}
+
+export interface BlanksAnswer extends BaseAnswer {
+  filledBlanks: Record<string, string>;
+}
+
+export interface OpenEndedAnswer extends BaseAnswer {
+  text: string;
+}
+
+export type Answer = MCQAnswer | CodeAnswer | BlanksAnswer | OpenEndedAnswer;
+
+// Results type
+export interface QuizResults {
+  score: number;
+  maxScore: number;
+  percentage: number;
+  questionResults: Array<{
+    questionId: string;
+    correct: boolean;
+    feedback?: string;
+    score?: number;
+  }>;
+  submittedAt: number;
+}
+
+// Auth redirect state
+export interface AuthRedirectState {
+  slug: string;
+  quizId: string;
+  type: string;
+  answers: Record<string, Answer>;
+  currentQuestionIndex: number;
+  tempResults: any;
+}
+
+// Quiz state interface
 export interface QuizState {
-  quizId: string | null
-  currentQuestionIndex: number
-  questions: QuizQuestion[]
-  answers: QuizAnswer[]
-  status: 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: string | null
-  startTime: number | null
-  completedAt: string | null
-}
+  // Quiz metadata
+  quizId: string | null;
+  quizType: QuizType | null;
+  title: string | null;
+  description: string | null;
 
-export interface TextQuizState {
-  quizId: string | null
-  title: string | null
-  slug: string | null
-  currentQuestionIndex: number
-  questions: QuizQuestion[]
-  answers: QuizAnswer[]
-  status: 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: string | null
-  startTime: number | null
-  completedAt: string | null
-  score: number | null
-  resultsSaved: boolean
-}
+  // Quiz content
+  questions: Question[];
+  totalQuestions: number;
 
-export type QuizType = 'mcq' | 'openended' | 'code' | 'blanks'
+  // Quiz progress
+  currentQuestionIndex: number;
+  answers: Record<string, Answer>;
 
-export interface QuizData {
-  id: string | number
-  title: string
-  userId: string
-  questions: QuizQuestion[]
-  isPublic?: boolean
-}
+  // Quiz status
+  status: 'idle' | 'loading' | 'submitting' | 'submitted' | 'error';
+  error: string | null;
 
-export interface OpenEndedQuestion {
-  id: string | number
-  question: string
-  answer: string
-  openEndedQuestion?: {
-    hints?: string[]
-    difficulty?: 'easy' | 'medium' | 'hard'
-    tags?: string[]
-    inputType?: string
-  }
-}
+  // Quiz results
+  results: QuizResults | null;
 
-export interface OpenEndedQuizData {
-  id: string | number
-  title: string
-  userId: string
-  questions: OpenEndedQuestion[]
-  isPublic?: boolean
+  // Session management
+  sessionId: string | null;
+  lastSaved: number | null;
+
+  // Auth redirect state
+  authRedirectState: AuthRedirectState | null;
 }

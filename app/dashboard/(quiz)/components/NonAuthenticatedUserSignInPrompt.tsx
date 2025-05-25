@@ -1,3 +1,4 @@
+'use client'
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";

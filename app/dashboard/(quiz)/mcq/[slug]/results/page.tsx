@@ -1,5 +1,5 @@
-"use client"
 
+'use client'
 import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
@@ -21,14 +21,7 @@ interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const { slug } = params
-  
-  return {
-    title: `Quiz Results | AI Learning Platform`,
-    description: 'View your quiz results and see how you performed',
-  }
-}
+
 
 export default function McqResultsPage({ params }: ResultsPageProps) {
   // Extract slug in a way that works in tests and in real usage
