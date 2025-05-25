@@ -52,43 +52,66 @@ const debounceTimers: Record<string, NodeJS.Timeout> = {};
 
 /**
  * Save quiz session to sessionStorage with debouncing
+ * Supports all quiz types (mcq, code, blanks, openended)
  */
 export const saveQuizSession = (
   sessionId: string,
   quizId: string,
+  quizType: string,
   answers: Record<string, any>,
+  meta: {
+    currentQuestionIndex?: number,
+    status?: string,
+    isCompleted?: boolean,
+    results?: any,
+    title?: string,
+    description?: string,
+    questions?: any[],
+    lastSaved?: number
+  } = {}
 ): void => {
   const key = `quiz_session_${sessionId}`;
-  
+
+  // Avoid saving proxies (e.g., Redux state slices) directly
+  let safeAnswers: Record<string, any>;
+  try {
+    safeAnswers = JSON.parse(JSON.stringify(answers));
+  } catch {
+    safeAnswers = { ...answers };
+  }
+
+  // Prepare generic session object
+  const sessionObj: Record<string, any> = {
+    quizId,
+    quizType,
+    answers: safeAnswers,
+    lastSaved: Date.now(),
+    ...meta,
+  };
+
   // Clear existing timer for this session
   if (debounceTimers[key]) {
     clearTimeout(debounceTimers[key]);
   }
-  
-  // Set new timer
+
   debounceTimers[key] = setTimeout(() => {
     enqueueStorageOperation(() => {
-      sessionStorage.setItem(key, JSON.stringify({
-        quizId,
-        answers,
-        lastSaved: Date.now(),
-      }));
+      try {
+        sessionStorage.setItem(key, JSON.stringify(sessionObj));
+      } catch (err) {
+        console.error("Failed to save session:", err);
+      }
     });
     delete debounceTimers[key];
-  }, 300); // Debounce for 300ms
+  }, 300);
 };
 
 /**
- * Retrieve quiz session from sessionStorage
+ * Retrieve quiz session from sessionStorage (generic for all quiz types)
  */
-export const getQuizSession = (sessionId: string): {
-  quizId: string;
-  answers: Record<string, any>;
-  lastSaved: number;
-} | null => {
+export const getQuizSession = (sessionId: string): any | null => {
   const sessionData = sessionStorage.getItem(`quiz_session_${sessionId}`);
   if (!sessionData) return null;
-  
   try {
     return JSON.parse(sessionData);
   } catch (error) {

@@ -102,6 +102,7 @@ export interface AuthRedirectState {
 
 // Quiz state interface
 export interface QuizState {
+  quizData: any
   // Quiz metadata
   quizId: string | null
   quizType: QuizType | null
@@ -111,6 +112,7 @@ export interface QuizState {
   // Quiz content
   questions: Question[]
   totalQuestions: number
+  isCompleted? : boolean
 
   // Quiz progress
   currentQuestionIndex: number

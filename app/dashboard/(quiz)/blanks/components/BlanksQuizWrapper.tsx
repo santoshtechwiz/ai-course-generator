@@ -15,11 +15,12 @@ import {
   selectIsQuizComplete,
   selectQuizResults
 } from "@/store/slices/quizSlice"
-import { ErrorDisplay, InitializingDisplay } from "../../components/QuizStateDisplay"
+
 import { BlanksQuiz } from "./BlanksQuiz"
 
 import { Button } from "@/components/ui/button"
-import { BlankQuizData } from "@/app/types/types"
+import { BlankQuizData } from "@/app/types/quiz-types"
+
 
 
 interface BlankQuizWrapperProps {

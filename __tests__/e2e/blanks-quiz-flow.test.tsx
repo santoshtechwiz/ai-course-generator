@@ -4,13 +4,13 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { SessionProvider } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { RecoilRoot } from 'recoil';
 
 ;
 import quizReducer from '@/store/slices/quizSlice';
 import * as auth from '@/hooks/useAuth';
 import * as nextAuth from 'next-auth/react';
 import BlanksQuizWrapper from '@/app/dashboard/(quiz)/blanks/components/BlanksQuizWrapper';
+import { QuizState } from "@/app/types/quiz-types";
 
 // Mock the router
 jest.mock('next/navigation', () => ({
@@ -147,12 +147,26 @@ const mockQuizData = {
 };
 
 // Create store factory
-const createStore = (preloadedState = {}) => {
+const createStore = (preloadedState: { quiz?: Partial<QuizState> } = {}) => {
   return configureStore({
     reducer: {
       quiz: quizReducer
     },
-    preloadedState
+    preloadedState: {
+      quiz: {
+        quizId: null,
+        quizType: null,
+        title: null,
+        questions: [],
+        currentQuestionIndex: 0,
+        answers: {},
+        status: "idle",
+        error: null,
+        isQuizComplete: false,
+        results: null,
+        ...preloadedState.quiz,
+      }
+    }
   });
 };
 
@@ -213,11 +227,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       // Render quiz wrapper component - remove quizData prop as component fetches it
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={mockAuthenticatedSession.data}>
+            <BlanksQuizWrapper slug="test-quiz" />
+          </SessionProvider>
         </Provider>
       );
       
@@ -293,11 +305,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       // Simulate navigation to results page
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlankQuizResults result={mockResult} />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={mockAuthenticatedSession.data}>
+            <BlankQuizResults result={mockResult} />
+          </SessionProvider>
         </Provider>
       );
       
@@ -319,11 +329,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={mockAuthenticatedSession.data}>
+            <BlanksQuizWrapper slug="test-quiz" />
+          </SessionProvider>
         </Provider>
       );
       
@@ -372,11 +380,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={mockAuthenticatedSession.data}>
+            <BlanksQuizWrapper slug="test-quiz" />
+          </SessionProvider>
         </Provider>
       );
       
@@ -394,11 +400,8 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
 
   describe('Unauthenticated User Flow', () => {
     beforeEach(() => {
-      // Set up unauthenticated session
       (auth.useAuth as jest.Mock).mockReturnValue({ isAuthenticated: false, user: null });
       (nextAuth.useSession as jest.Mock).mockReturnValue(mockUnauthenticatedSession);
-      
-      // Provide non-null value for quizData
       jest.spyOn(console, 'error').mockImplementation(() => {});
     });
 
@@ -410,17 +413,16 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       const router = useRouter() as jest.Mocked<any>;
       const store = createStore({
         quiz: {
-          quizData: null,
+          quizId: 'test-quiz',
+          quizType: 'blanks',
+          title: 'Test Blanks Quiz',
+          questions: mockQuizData.questions,
           currentQuestionIndex: 0,
-          answers: {},  // Updated to match the actual store structure
+          answers: {},
           status: 'idle',
           error: null,
-          isCompleted: false,
-          score: 0,
-          resultsSaved: false,
-          savedState: null,
-          hasUnsavedChanges: false,
-          lastLoadedQuiz: undefined
+          isQuizComplete: false,
+          results: null,
         }
       });
       
@@ -440,11 +442,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={null}>
-              <BlanksQuizWrapper slug="test-quiz" />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={null}>
+            <BlanksQuizWrapper slug="test-quiz" />
+          </SessionProvider>
         </Provider>
       );
       
@@ -479,7 +479,7 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       expect(router.replace).toHaveBeenCalledWith(
         expect.stringContaining('/dashboard/blanks/test-quiz/results')
       );
-    }, 10000);  // Increase timeout for this test
+    }, 10000);
 
     test('should show sign-in prompt on results page for unauthenticated users', async () => {
       // Mock the NonAuthenticatedUserSignInPrompt component
@@ -497,41 +497,33 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       const store = createStore({
         quiz: {
           quizId: 'test-quiz',
-          slug: 'test-quiz',
+          quizType: 'blanks',
           title: 'Test Blanks Quiz',
           questions: mockQuizData.questions,
           currentQuestionIndex: 2,
-          answers: [
-            { questionId: 'q1', answer: 'programming', isCorrect: true, timeSpent: 30, index: 0 },
-            { questionId: 'q2', answer: 'library', isCorrect: true, timeSpent: 45, index: 1 }
-          ],
-          status: 'succeeded',
+          answers: {
+            q1: { questionId: 'q1', filledBlanks: { blank_0: 'programming' }, timestamp: Date.now() },
+            q2: { questionId: 'q2', filledBlanks: { blank_0: 'library' }, timestamp: Date.now() }
+          },
+          status: 'idle',
           error: null,
-          isCompleted: true,
-          score: 100,
-          resultsSaved: false
+          isQuizComplete: true,
+          results: null,
         }
       });
-      
-      // Render results page directly with unauthenticated state
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={null}>
-              <div data-testid="sign-in-prompt">
-                <h3>Sign in to save your results</h3>
-                <button data-testid="sign-in-button">Sign In</button>
-              </div>
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={null}>
+            <BlanksQuizWrapper slug="test-quiz" />
+          </SessionProvider>
         </Provider>
       );
-      
-      // Verify sign in prompt is shown
-      expect(screen.getByTestId('sign-in-prompt')).toBeInTheDocument();
-      
-      // Test clicking sign in button
-      const signInButton = screen.getByTestId('sign-in-button');
+      // Wait for sign-in prompt
+      await waitFor(() => {
+        expect(screen.getByText(/sign in to see results/i)).toBeInTheDocument();
+      });
+      // Simulate sign-in button click
+      const signInButton = screen.getByText(/sign in/i);
       fireEvent.click(signInButton);
     });
 
@@ -557,11 +549,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={null}>
-              <BlanksQuizWrapper slug="test-quiz" />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={null}>
+            <BlanksQuizWrapper slug="test-quiz" />
+          </SessionProvider>
         </Provider>
       );
       
@@ -628,11 +618,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       // Render with invalid quiz data
       render(
         <Provider store={store}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={null as any} />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={mockAuthenticatedSession.data}>
+            <BlanksQuizWrapper slug="test-quiz" quizData={null as any} />
+          </SessionProvider>
         </Provider>
       );
       
@@ -653,11 +641,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
       
       render(
         <Provider store={createStore()}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={emptyQuizData} />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={mockAuthenticatedSession.data}>
+            <BlanksQuizWrapper slug="test-quiz" quizData={emptyQuizData} />
+          </SessionProvider>
         </Provider>
       );
       
@@ -672,11 +658,9 @@ describe('Blanks Quiz Flow End-to-End Test', () => {
     test('should show correct question number indicator', async () => {
       render(
         <Provider store={createStore()}>
-          <RecoilRoot>
-            <SessionProvider session={mockAuthenticatedSession.data}>
-              <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
-            </SessionProvider>
-          </RecoilRoot>
+          <SessionProvider session={mockAuthenticatedSession.data}>
+            <BlanksQuizWrapper slug="test-quiz" quizData={mockQuizData} />
+          </SessionProvider>
         </Provider>
       );
       

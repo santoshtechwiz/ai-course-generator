@@ -19,7 +19,7 @@ export function BlanksQuiz() {
   const questions = useSelector(selectQuestions);
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
   const answers = useSelector(selectAnswers);
-  const currentQuestion = useSelector(selectCurrentQuestion) as BlankQuizQuestion;
+  const currentQuestion = useSelector(selectCurrentQuestion) as unknown as BlankQuizQuestion;
   
   // Track input values before saving to Redux
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -85,20 +85,55 @@ export function BlanksQuiz() {
   
   // Parse text with blanks from the API response format
   const renderTextWithBlanks = () => {
-    // Get question text from the API response
     const questionText = currentQuestion.question || "";
-    
-    // Check if the question contains blanks (indicated by underscores)
+
+    // Support [[answer]] format
+    if (questionText.match(/\[\[.*?\]\]/)) {
+      const regex = /\[\[(.*?)\]\]/g;
+      let lastIndex = 0;
+      let match;
+      let idx = 0;
+      const elements: React.ReactNode[] = [];
+      while ((match = regex.exec(questionText)) !== null) {
+        if (match.index > lastIndex) {
+          elements.push(
+            <span key={`text-${idx}`}>{questionText.slice(lastIndex, match.index)}</span>
+          );
+        }
+        const blankId = `blank_${idx}`;
+        const currentValue = inputValues[blankId] || '';
+        elements.push(
+          <motion.input
+            key={`blank-${idx}`}
+            type="text"
+            className="mx-1 px-2 py-1 border-b-2 border-primary/50 focus:outline-none focus:border-primary bg-transparent min-w-[100px] inline-block transition-all duration-200"
+            value={currentValue}
+            onChange={(e) => handleBlankChange(blankId, e.target.value)}
+            placeholder="..."
+            data-testid={`blank-input-${idx}`}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05 }}
+          />
+        );
+        lastIndex = regex.lastIndex;
+        idx++;
+      }
+      if (lastIndex < questionText.length) {
+        elements.push(
+          <span key={`text-end`}>{questionText.slice(lastIndex)}</span>
+        );
+      }
+      return elements;
+    }
+
+    // Support underscores
     if (questionText.includes("_")) {
-      // Split by underscores pattern
       const parts = questionText.split(/(_+)/g);
-      
       return parts.map((part, index) => {
-        // If this part is underscores, render an input field
         if (part.match(/^_+$/)) {
           const blankId = `blank_${index}`;
           const currentValue = inputValues[blankId] || '';
-          
           return (
             <motion.input
               key={index}
@@ -114,24 +149,19 @@ export function BlanksQuiz() {
             />
           );
         }
-        
-        // Otherwise, render the text
         return <span key={index} data-testid={`text-part-${index}`}>{part}</span>;
       });
     }
     
-    // If no underscores, try to handle the format with __________
+    // Support __________
     if (questionText.includes("__________")) {
       const parts = questionText.split(/__________/g);
-      
       return parts.map((part, index) => {
         if (index === parts.length - 1) {
           return <span key={index} data-testid={`text-part-${index}`}>{part}</span>;
         }
-        
         const blankId = `blank_${index}`;
         const currentValue = inputValues[blankId] || '';
-        
         return (
           <React.Fragment key={index}>
             <span data-testid={`text-part-${index}`}>{part}</span>
@@ -174,10 +204,10 @@ export function BlanksQuiz() {
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-bold">Question {currentQuestionIndex + 1} of {questions.length}</h2>
             <span className="text-sm text-muted-foreground">
-              {Math.floor((currentQuestionIndex / questions.length) * 100)}% complete
+              {questions.length > 0 ? Math.floor((currentQuestionIndex / questions.length) * 100) : 0}% complete
             </span>
           </div>
-          <Progress value={(currentQuestionIndex / questions.length) * 100} className="h-2" />
+          <Progress value={questions.length > 0 ? (currentQuestionIndex / questions.length) * 100 : 0} className="h-2" />
         </div>
         
         <div className="mb-8">
