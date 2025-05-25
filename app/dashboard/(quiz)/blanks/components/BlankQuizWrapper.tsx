@@ -6,10 +6,9 @@ import { useDispatch, useSelector } from "react-redux"
 import { BlankQuizData } from "@/app/types/quiz-types";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/hooks/spinner";
-import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice";
 import { selectQuestions, selectAnswers, selectQuizStatus, selectQuizError, selectIsQuizComplete, selectQuizResults, setQuizId, setQuizType, fetchQuiz, submitQuiz } from "@/store/slices/quizSlice";
-import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt";
 import { BlanksQuiz } from "./BlanksQuiz";
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
 
 interface BlankQuizWrapperProps {
@@ -19,10 +18,6 @@ interface BlankQuizWrapperProps {
 export default function BlankQuizWrapper({ slug }: BlankQuizWrapperProps) {
   const dispatch = useDispatch();
   const router = useRouter();
-  
-  // Authentication state
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const userId = useSelector(selectUserId);
   
   // Quiz state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,12 +77,8 @@ export default function BlankQuizWrapper({ slug }: BlankQuizWrapperProps) {
       setIsSubmitting(true);
       try {
         await dispatch(submitQuiz()).unwrap();
-        
-        // If authenticated, go directly to results
-        if (isAuthenticated) {
-          router.push(`/dashboard/blanks/${slug}/results`);
-        }
-        // Otherwise, show auth prompt (handled in render)
+        // Always go to results page, let results page handle auth
+        router.push(`/dashboard/blanks/${slug}/results`);
       } catch (error) {
         setError("Failed to submit quiz. Please try again.");
       } finally {
@@ -96,58 +87,26 @@ export default function BlankQuizWrapper({ slug }: BlankQuizWrapperProps) {
     }
   };
 
-  // Handle sign in
-  const handleSignIn = () => {
-    // In a real app, this would redirect to your auth provider
-    router.push(`/api/auth/signin?callbackUrl=/dashboard/blanks/${slug}/results`);
-  };
-
   // Show loading state
   if (isLoading || status === "loading") {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Spinner size="lg" />
-          <p className="text-muted-foreground">Loading quiz...</p>
-        </div>
-      </div>
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: isLoading ? "loading" : "done" },
+          { label: "Preparing questions", status: isLoading ? "pending" : "loading" },
+        ]}
+      />
     );
   }
 
   // Show error state
   if (error || status === "error" || !quizData) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <p className="text-destructive">{error || storeError || "Failed to load quiz"}</p>
-          <Button
-            onClick={() => window.location.reload()}
-            variant="outline"
-            className="mr-2"
-          >
-            Try Again
-          </Button>
-          <Button
-            onClick={() => router.push("/dashboard/quizzes")}
-            variant="default"
-          >
-            Return to Quizzes
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // If quiz is complete and user is not authenticated, show sign in prompt
-  if (isQuizComplete && !isAuthenticated && !isSubmitting) {
-    return (
-      <div className="max-w-md mx-auto my-8">
-        <NonAuthenticatedUserSignInPrompt 
-          onSignIn={handleSignIn}
-          title="Sign In to See Results"
-          message="Your quiz is complete! Sign in to view your results and save your progress."
-        />
-      </div>
+      <QuizLoadingSteps
+        steps={[
+          { label: "Fetching quiz data", status: "error", errorMsg: error || storeError || "Failed to load quiz" },
+        ]}
+      />
     );
   }
 

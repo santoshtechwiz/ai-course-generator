@@ -14,10 +14,10 @@ export default function BlanksPage({
   const slug = params instanceof Promise ? use(params).slug : params.slug
   
   // Custom hook for auth status
-  const { isAuthenticated, status } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
   // If still loading auth status, show loading
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center space-y-4">

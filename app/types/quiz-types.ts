@@ -10,6 +10,7 @@ export interface BlankQuizQuestion {
   question: string;
   answer: string;
   openEndedQuestion?: OpenEndedQuestion;
+  type: 'blanks';
 }
 
 export interface OpenEndedQuizQuestion {
@@ -18,6 +19,7 @@ export interface OpenEndedQuizQuestion {
   answer: string;
   hints?: string[];
   openEndedQuestion?: OpenEndedQuestion;
+  type: 'openended';
 }
 
 export interface QuizData {
@@ -93,4 +95,8 @@ export interface QuizResult {
     userAnswer: any;
     correctAnswer: string;
   }>;
+}
+
+export function isOpenEndedQuestion(q: any): q is OpenEndedQuestion {
+  return typeof q === "object" && typeof q.answer === "string";
 }
