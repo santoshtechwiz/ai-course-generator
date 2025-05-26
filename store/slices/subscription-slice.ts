@@ -240,8 +240,17 @@ export const selectSubscriptionData = (state: RootState) => state.subscription.d
 export const selectSubscriptionLoading = (state: RootState) => state.subscription.isLoading
 export const selectSubscriptionError = (state: RootState) => state.subscription.error
 
-// Memoized derived selectors
-export const selectSubscription = createSelector([selectSubscriptionData], (data) => data)
+// Fix the identity selector - transform the data instead of returning it directly
+export const selectSubscription = createSelector([selectSubscriptionData], (data) => {
+  if (!data) return null
+  return {
+    ...data,
+    // Add derived fields to transform the data
+    isActive: data.status === "ACTIVE" && !data.cancelAtPeriodEnd,
+    formattedCredits: typeof data.credits === "number" ? `${data.credits} credits` : "No credits",
+    hasCreditsRemaining: (data.credits || 0) > (data.tokensUsed || 0),
+  }
+})
 
 // Token usage selector with memoization
 export const selectTokenUsage = createSelector([selectSubscriptionData], (subscription) => {

@@ -100,35 +100,34 @@ export interface AuthRedirectState {
   tempResults: QuizResults | null // Changed 'any' to a more specific type
 }
 
+// Quiz answer interface
+export interface QuizAnswer {
+  questionId: string | number
+  selectedOption?: string
+  selectedOptionId?: string
+  text?: string
+  filledBlanks?: Record<string, string>
+  timestamp?: number
+  type?: string
+  isCorrect?: boolean
+}
+
 // Quiz state interface
 export interface QuizState {
-  quizData: any
-  // Quiz metadata
-  quizId: string | null
-  quizType: QuizType | null
+  quizId: string | number | null
+  quizType: string | null
   title: string | null
-  description: string | null
-
-  // Quiz content
-  questions: Question[]
-  totalQuestions: number
-  isCompleted? : boolean
-
-  // Quiz progress
+  questions: any[]
   currentQuestionIndex: number
-  answers: Record<string, Answer>
-
-  // Quiz status
-  status: "idle" | "loading" | "submitting" | "submitted" | "error"
+  answers: Record<string | number, QuizAnswer>
+  status: "idle" | "loading" | "submitting" | "error"
   error: string | null
-
-  // Quiz results
-  results: QuizResults | null
-
-  // Session management
-  sessionId: string | null
+  isCompleted: boolean
+  results: any
+  sessionId: string
+  quizData?: any
+  description: string | null
+  totalQuestions: number
   lastSaved: number | null
-
-  // Auth redirect state
-  authRedirectState: AuthRedirectState | null
+  authRedirectState: any
 }

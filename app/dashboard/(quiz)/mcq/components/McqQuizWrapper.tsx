@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useCallback, useMemo, useRef } from "react"
+import { useEffect, useCallback, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { toast } from "sonner"
 
 import McqQuiz from "./McqQuiz"
-import { McqQuestion, QuizResultsPreview } from "./types"
+
 import { AppDispatch, RootState } from "@/store"
 
 import {
@@ -23,6 +23,8 @@ import {
 } from "@/store/slices/quizSlice"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import { Button } from "@/components/ui/button"
+import { McqQuestion } from "@/app/types/quiz-types"
+import { stateTracker } from "@/utils/stateTracker"
 
 
 interface McqQuizWrapperProps {
@@ -43,6 +45,12 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
   const searchParams = useSearchParams()
+  
+  // Debug state to track current index changes
+  const [debugState, setDebugState] = useState({
+    lastAction: "",
+    timestamp: Date.now()
+  })
 
   // Memoized Redux selectors for performance
   const questions = useSelector(selectQuestions) as McqQuestion[]
@@ -51,8 +59,9 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const error = useSelector(selectQuizError)
   const isQuizComplete = useSelector(selectIsQuizComplete)
   const results = useSelector(selectQuizResults)
-  const currentQuestionIndex = useSelector((state: RootState) => state.quiz.currentQuestionIndex)
+  const currentQuestionIndex = useSelector((state: RootState) => state.quiz.currentQuestionIndex) 
   const quizId = useSelector((state: RootState) => state.quiz.quizId)
+  const quizType = useSelector((state: RootState) => state.quiz.quizType)
   const currentQuestion: McqQuestion | undefined = questions[currentQuestionIndex]
 
   // Submission tracking
@@ -84,18 +93,27 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   // Handle reset parameter
   useEffect(() => {
     if (searchParams && typeof searchParams.get === "function" && searchParams.get("reset") === "true") {
-      dispatch(setCurrentQuestionIndex(0))
+      dispatch({ type: "quiz/resetQuiz" })
+      router.replace(`/dashboard/mcq/${slug}`)
     }
-  }, [searchParams, dispatch])
+  }, [searchParams, dispatch, router, slug])
+
+  // Debug current question index changes
+  useEffect(() => {
+    console.log("Current question index changed:", currentQuestionIndex);
+  }, [currentQuestionIndex])
 
   // Handle answer submission
   const handleAnswer = useCallback(
     (selectedOption: string) => {
       if (!currentQuestion) return
 
+      // Log for debugging
+      console.log("Answer selected:", selectedOption, "for question", currentQuestion.id);
+
       // Determine if the answer is correct
       const isCorrect = selectedOption === currentQuestion.correctOptionId || 
-                        selectedOption === currentQuestion.correctAnswer
+                        selectedOption === currentQuestion.answer
 
       const answer: MCQAnswer = {
         questionId: currentQuestion.id,
@@ -105,18 +123,56 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
         isCorrect
       }
 
-      // Save answer to Redux
-      dispatch(saveAnswer({ questionId: currentQuestion.id, answer }))
+      // Save answer to Redux and session storage
+      dispatch(saveAnswer({ 
+        questionId: currentQuestion.id, 
+        answer 
+      }))
       
-      // Navigate to next question with a slight delay for state update
-      if (currentQuestionIndex < questions.length - 1) {
-        requestAnimationFrame(() => {
-          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-        })
-      }
+      // Track for debugging
+      setDebugState({
+        lastAction: "Answer saved",
+        timestamp: Date.now()
+      })
+
+      // Don't auto-advance to next question, let user control navigation
     },
-    [currentQuestion, currentQuestionIndex, questions.length, dispatch],
+    [currentQuestion, dispatch],
   )
+
+  // Handle navigation to next/previous question
+  const handleNavigation = useCallback((direction: 'next' | 'prev') => {
+    // Log for debugging
+    console.log(`Navigation ${direction} requested. Current index: ${currentQuestionIndex}, Questions length: ${questions.length}`);
+
+    if (direction === 'next' && currentQuestionIndex < questions.length - 1) {
+      // Use requestAnimationFrame instead of setTimeout for more reliable execution
+      requestAnimationFrame(() => {
+        const nextIndex = currentQuestionIndex + 1;
+        console.log(`Actually setting index to ${nextIndex}`);
+        dispatch(setCurrentQuestionIndex(nextIndex));
+        
+        // Track for debugging
+        setDebugState({
+          lastAction: `Navigation next: ${currentQuestionIndex} → ${nextIndex}`,
+          timestamp: Date.now()
+        });
+      });
+    } else if (direction === 'prev' && currentQuestionIndex > 0) {
+      // Use requestAnimationFrame instead of setTimeout for more reliable execution
+      requestAnimationFrame(() => {
+        const prevIndex = currentQuestionIndex - 1;
+        console.log(`Actually setting index to ${prevIndex}`);
+        dispatch(setCurrentQuestionIndex(prevIndex));
+        
+        // Track for debugging
+        setDebugState({
+          lastAction: `Navigation prev: ${currentQuestionIndex} → ${prevIndex}`,
+          timestamp: Date.now()
+        });
+      });
+    }
+  }, [currentQuestionIndex, questions.length, dispatch])
 
   // Handle quiz submission with debounce
   const handleSubmitQuiz = useCallback(async () => {
@@ -141,6 +197,17 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
       handleSubmitQuiz()
     }
   }, [isQuizComplete, status, results, handleSubmitQuiz])
+
+  // Track state changes
+  useEffect(() => {
+    if (currentQuestion) {
+      stateTracker.takeSnapshot("Question Changed", {
+        currentQuestionIndex,
+        questionId: currentQuestion.id,
+        hasAnswers: Object.keys(answers).length
+      });
+    }
+  }, [currentQuestionIndex, currentQuestion, answers])
 
   // Loading state
   if (isLoading) {
@@ -179,18 +246,26 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   // Show current question
   if (currentQuestion) {
     // Calculate the existing answer for this question
-    const currentAnswerId = answers[currentQuestion.id]?.selectedOptionId
+    const currentAnswer = answers[currentQuestion.id];
+    const currentAnswerId = currentAnswer?.selectedOptionId;
 
     return (
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">{currentQuestion.title || "Multiple Choice Quiz"}</h1>
+        
+        {/* Debug info - remove in production */}
+        <div className="mb-4 p-2 bg-yellow-50 text-xs text-gray-800 rounded">
+          <p>Current Index: {currentQuestionIndex}</p>
+          <p>Question ID: {currentQuestion.id}</p>
+          <p>Last Action: {debugState.lastAction}</p>
+        </div>
         
         {/* Progress bar */}
         <div className="mb-6">
           <div className="bg-gray-100 rounded-full h-2 mb-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${(currentQuestionIndex / questions.length) * 100}%` }}
+              style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
             ></div>
           </div>
           <div className="text-sm text-gray-600 text-right">
@@ -206,9 +281,40 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           isLastQuestion={isLastQuestion}
           isSubmitting={isSubmitting}
           existingAnswer={currentAnswerId}
+          onNavigate={handleNavigation}
         />
         
-        {isQuizComplete && (
+        {/* Navigation buttons */}
+        <div className="flex justify-between mt-6">
+          <Button
+            variant="outline"
+            onClick={() => handleNavigation('prev')}
+            disabled={currentQuestionIndex === 0 || isSubmitting}
+            className="min-w-[100px]"
+          >
+            Previous
+          </Button>
+          
+          {!isLastQuestion ? (
+            <Button
+              onClick={() => handleNavigation('next')}
+              disabled={isSubmitting}
+              className="min-w-[100px]"
+            >
+              Next
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmitQuiz}
+              disabled={isSubmitting}
+              className="min-w-[100px]"
+            >
+              {isSubmitting ? "Submitting..." : "Submit Quiz"}
+            </Button>
+          )}
+        </div>
+        
+        {isQuizComplete && !isLastQuestion && (
           <div className="mt-8 text-center">
             <Button
               onClick={handleSubmitQuiz}

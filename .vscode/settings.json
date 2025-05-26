@@ -8,5 +8,8 @@
             "connectString": "postgresql://admin:duzJBT4c5TyaXMlt4eyiHNcnEK9t6t29@dpg-culhsu5svqrc73ce9icg-a.oregon-postgres.render.com/courseai_h0nd"
         }
     ],
-    "workbench.editor.enablePreview": false
+    "workbench.editor.enablePreview": false,
+    "microsoft-sovereign-cloud.customEnvironment": {
+        
+    }
 }

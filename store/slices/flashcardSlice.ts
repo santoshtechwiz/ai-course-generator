@@ -264,16 +264,35 @@ export const {
 } = flashcardSlice.actions
 
 // Selectors
-export const selectFlashCards = (state: RootState) => state.flashcard.flashCards
-export const selectSavedCardIds = (state: RootState) => state.flashcard.savedCardIds
-export const selectFlashCardsLoading = (state: RootState) => state.flashcard.loading
-export const selectFlashCardsError = (state: RootState) => state.flashcard.error
-export const selectOwnerId = (state: RootState) => state.flashcard.ownerId
-export const selectFlashcardState = (state: RootState) => state.flashcard
+export const selectFlashCards = (state: RootState) => state.flashcard.flashCards;
+export const selectSavedCardIds = (state: RootState) => state.flashcard.savedCardIds;
+export const selectFlashCardsLoading = (state: RootState) => state.flashcard.loading;
+export const selectFlashCardsError = (state: RootState) => state.flashcard.error;
+export const selectOwnerId = (state: RootState) => state.flashcard.ownerId;
+export const selectFlashcardState = (state: RootState) => state.flashcard;
 
+// Fix the identity selector - transform the data
 export const selectQuizId = createSelector(
   [selectFlashcardState], 
-  (flashcardState) => flashcardState.quizId || null
-)
+  (flashcardState) => {
+    const id = flashcardState.quizId;
+    return {
+      id: id || null,
+      isValid: !!id && id.length > 0,
+      formattedId: id ? `quiz-${id}` : 'no-quiz'
+    };
+  }
+);
+
+// Add additional derived selectors
+export const selectFlashcardStats = createSelector(
+  [selectFlashcardState],
+  (state) => ({
+    totalCards: state.flashCards.length,
+    savedCards: state.savedCardIds.length,
+    completedCards: state.answers.length,
+    progress: state.flashCards.length ? Math.round((state.answers.length / state.flashCards.length) * 100) : 0
+  })
+);
 
 export default flashcardSlice.reducer
