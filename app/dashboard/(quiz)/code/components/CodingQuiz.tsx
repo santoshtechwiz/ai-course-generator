@@ -311,15 +311,15 @@ function CodingQuizComponent({
       )}
 
       {/* Footer with timer and submit button */}
-      <CardFooter className="flex justify-between items-center gap-4 border-t pt-6 p-6">
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+      <CardFooter className="flex justify-end items-center gap-4 border-t pt-6 p-6">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground mr-auto">
           <Clock className="h-3.5 w-3.5" />
           <span>{formatQuizTime(elapsedTime)}</span>
         </div>
 
         <Button
           onClick={handleSubmit}
-          disabled={effectivelySubmitting}
+          disabled={effectivelySubmitting || (isMultipleChoice ? !selectedOption : !userCode.trim())}
           className={cn("px-8", effectivelySubmitting ? "bg-primary/70" : "")}
           data-testid="submit-answer"
         >
@@ -328,8 +328,10 @@ function CodingQuizComponent({
               <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               <span>Saving Answer...</span>
             </div>
+          ) : isLastQuestion ? (
+            "Finish Quiz"
           ) : (
-            "Save Answer"
+            "Next"
           )}
         </Button>
       </CardFooter>
