@@ -6,11 +6,13 @@ import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 
 
-export default function OpenEndedPage({
-  params,
-}: {
-  params: Promise<{ slug: string }> | { slug: string }
-}) {
+interface OpenEndedQuizPageProps {
+  params: {
+    slug: string;
+  };
+}
+
+export default function OpenEndedQuizPage({ params }: OpenEndedQuizPageProps) {
   // Extract slug for both test and production environments
   const slug = params instanceof Promise ? use(params).slug : params.slug
   
@@ -34,3 +36,4 @@ export default function OpenEndedPage({
     </div>
   )
 }
+

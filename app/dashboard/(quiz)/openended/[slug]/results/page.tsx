@@ -1,15 +1,16 @@
 "use client"
 
-import { use } from "react"
+import { Suspense, use } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { selectIsAuthenticated } from "@/store/slices/authSlice"
 import { Spinner } from "@/hooks/spinner"
 import { selectQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
-import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthenticatedUserSignInPrompt"
+import { NonAuthenticatedUserSignInPrompt } 
+from "../../../components/NonAuthenticatedUserSignInPrompt"
 import QuizResultsOpenEnded from "../../components/QuizResultsOpenEnded"
+import { QuizSubmissionLoading } from "../../../components"
 
 
 interface PageProps {
@@ -93,15 +94,15 @@ export default function OpenEndedQuizResultsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="container mx-auto max-w-5xl py-6">
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <QuizResultsOpenEnded 
-            result={quizResult} 
-            onRetake={() => router.push(`/dashboard/openended/${slug}`)}
-          />
-        </CardContent>
-      </Card>
+    <div className="container py-8">
+      <Suspense fallback={<QuizSubmissionLoading quizType="openended" />}>
+        <QuizResultsOpenEnded 
+          result={quizResult} 
+          onRetake={() => router.push(`/dashboard/openended/${slug}`)}
+          slug={slug}
+        />
+      </Suspense>
     </div>
   )
 }
+
