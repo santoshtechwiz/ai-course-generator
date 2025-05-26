@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Check, X, RefreshCw, Home, Download, Share2 } from "lucide-react"
+import { Check, X, RefreshCw, Home, Download, Share2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 
 // Use a more compatible type definition
@@ -14,23 +14,28 @@ interface QuizAnswer {
   questionId: string | number;
   answer?: string;
   selectedOption?: string;
+  selectedOptionId?: string; // Add this field to match potential structure
   isCorrect?: boolean;
+  userAnswer?: string; // Add for compatibility with generated results
 }
 
 interface QuizQuestion {
   id: string | number;
-  question: string;
-  options: string[];
-  answer: string;
+  question?: string;
+  text?: string; // Add text field as an alternative to question
+  options: string[] | {id: string, text: string}[];
+  answer?: string;
   correctAnswer?: string;
+  correctOptionId?: string;
 }
 
 interface QuizResult {
   quizId: string | number;
   slug: string;
   title: string;
-  questions: QuizQuestion[];
-  answers: QuizAnswer[];
+  questions?: QuizQuestion[] | null; // Make optional and nullable
+  questionResults?: any[]; // Add for compatibility with API results
+  answers?: QuizAnswer[] | null; // Make optional and nullable
   completedAt: string;
   score: number;
   maxScore: number;
@@ -44,12 +49,88 @@ interface McqQuizResultProps {
 export default function McqQuizResult({ result }: McqQuizResultProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
 
+  // For normalizing/preparing result data
+  const [normalizedResult, setNormalizedResult] = useState<QuizResult | null>(null)
+
+  // Normalize the result data structure
   useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => setIsLoading(false), 500)
-    return () => clearTimeout(timer)
-  }, [])
+    try {
+      if (!result) {
+        console.error("Result object is undefined");
+        setHasError(true);
+        return;
+      }
+      
+      // Prepare a normalized version of the results
+      const normalized: QuizResult = {
+        ...result,
+        title: result.title || "Quiz Results",
+        score: result.score || 0,
+        maxScore: result.maxScore || 0,
+        percentage: result.percentage || 0,
+        completedAt: result.completedAt || new Date().toISOString(),
+        slug: result.slug || "",
+        questions: [],
+        answers: []
+      };
+      
+      // Handle questions from different formats
+      let normalizedQuestions: QuizQuestion[] = [];
+      
+      // Case 1: We have questions array directly
+      if (result.questions && Array.isArray(result.questions)) {
+        normalizedQuestions = result.questions;
+      }
+      // Case 2: We have question results but need to extract questions
+      else if (result.questionResults && Array.isArray(result.questionResults)) {
+        normalizedQuestions = result.questionResults.map((qResult, index) => ({
+          id: qResult.questionId || `q-${index}`,
+          question: qResult.question || `Question ${index + 1}`,
+          answer: qResult.correctAnswer || "",
+          correctAnswer: qResult.correctAnswer || "",
+          options: [] // We might not have options in results
+        }));
+      }
+      
+      // Handle answers from different formats
+      let normalizedAnswers: QuizAnswer[] = [];
+      
+      // Case 1: We have answers array directly
+      if (result.answers && Array.isArray(result.answers)) {
+        normalizedAnswers = result.answers;
+      }
+      // Case 2: We need to extract answers from question results
+      else if (result.questionResults && Array.isArray(result.questionResults)) {
+        normalizedAnswers = result.questionResults.map((qResult, index) => ({
+          questionId: qResult.questionId || `q-${index}`,
+          userAnswer: qResult.userAnswer || "",
+          selectedOption: qResult.userAnswer || "",
+          isCorrect: qResult.isCorrect || false
+        }));
+      }
+      
+      normalized.questions = normalizedQuestions;
+      normalized.answers = normalizedAnswers;
+      
+      // Valid questions array check
+      if (!normalized.questions || !Array.isArray(normalized.questions) || normalized.questions.length === 0) {
+        console.warn("Normalized questions array is empty or invalid");
+        // Don't set error, we can still show score summary
+      }
+      
+      setNormalizedResult(normalized);
+      
+      // Simulate loading time
+      const timer = setTimeout(() => setIsLoading(false), 500);
+      return () => clearTimeout(timer);
+    } catch (error) {
+      console.error("Error normalizing quiz results:", error);
+      setHasError(true);
+      setIsLoading(false);
+    }
+  }, [result]);
   
   if (isLoading) {
     return (
@@ -61,13 +142,34 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
       </div>
     )
   }
+  
+  if (hasError || !normalizedResult) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-xl font-bold mb-2">Error Loading Results</h2>
+        <p className="text-muted-foreground mb-6">
+          We couldn't load your quiz results properly. Some data might be missing.
+        </p>
+        <Button onClick={() => router.push("/dashboard/quizzes")}>
+          Back to Quizzes
+        </Button>
+      </div>
+    );
+  }
+
+  // Access the normalized result for rendering
+  const safeResult = normalizedResult;
+  const hasQuestionDetails = safeResult.questions && 
+                            Array.isArray(safeResult.questions) && 
+                            safeResult.questions.length > 0;
 
   const handleShare = async () => {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${result.title} - Quiz Results`,
-          text: `I scored ${result.percentage}% on the ${result.title} quiz!`,
+          title: `${safeResult.title} - Quiz Results`,
+          text: `I scored ${safeResult.percentage}% on the ${safeResult.title} quiz!`,
           url: window.location.href
         })
         toast.success("Shared successfully!")
@@ -83,22 +185,36 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
   const handleDownload = () => {
     // Create a text summary of results
     const resultText = `
-Quiz Results: ${result.title}
-Date: ${new Date(result.completedAt).toLocaleString()}
-Score: ${result.score}/${result.maxScore} (${result.percentage}%)
+Quiz Results: ${safeResult.title}
+Date: ${new Date(safeResult.completedAt).toLocaleString()}
+Score: ${safeResult.score}/${safeResult.maxScore} (${safeResult.percentage}%)
 
-Question Summary:
-${result.questions.map((q, i) => {
-  const userAns = result.answers.find(a => a.questionId.toString() === q.id.toString());
-  const isCorrect = userAns?.isCorrect || false;
+${hasQuestionDetails ? `Question Summary:
+${safeResult.questions!.map((q, i) => {
+  // Find the matching answer
+  const userAnswer = safeResult.answers?.find(a => 
+    a?.questionId?.toString() === q?.id?.toString()
+  );
+  
+  const isCorrect = userAnswer?.isCorrect ?? false;
+  const questionText = q.question || q.text || `Question ${i + 1}`;
+  const userAnswerText = userAnswer?.userAnswer || 
+                        userAnswer?.selectedOption || 
+                        userAnswer?.selectedOptionId ||
+                        userAnswer?.answer || 
+                        'Not answered';
+  const correctAnswerText = q.correctAnswer || 
+                          q.answer || 
+                          q.correctOptionId ||
+                          'Answer unavailable';
   
   return `
-Q${i + 1}: ${q.question}
-Your answer: ${userAns?.selectedOption || userAns?.answer || 'Not answered'}
-Correct answer: ${q.correctAnswer || q.answer}
+Q${i + 1}: ${questionText}
+Your answer: ${userAnswerText}
+Correct answer: ${correctAnswerText}
 Result: ${isCorrect ? 'Correct' : 'Incorrect'}
 `;
-}).join('\n')}
+}).join('\n')}` : 'No question details available for this quiz.'}
     `.trim();
     
     // Create and download file
@@ -106,7 +222,7 @@ Result: ${isCorrect ? 'Correct' : 'Incorrect'}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${result.title.replace(/\s+/g, '-').toLowerCase()}-results.txt`;
+    a.download = `${safeResult.title.replace(/\s+/g, '-').toLowerCase()}-results.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -116,9 +232,9 @@ Result: ${isCorrect ? 'Correct' : 'Incorrect'}
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-2">{result.title}</h1>
+        <h1 className="text-2xl font-bold mb-2">{safeResult.title}</h1>
         <p className="text-muted-foreground">
-          Completed on {new Date(result.completedAt).toLocaleDateString()}
+          Completed on {new Date(safeResult.completedAt).toLocaleDateString()}
         </p>
       </div>
       
@@ -139,72 +255,80 @@ Result: ${isCorrect ? 'Correct' : 'Incorrect'}
                 cy="50"
                 r="45"
                 fill="none"
-                stroke={result.percentage >= 70 ? "#4CAF50" : result.percentage >= 40 ? "#FF9800" : "#F44336"}
+                stroke={safeResult.percentage >= 70 ? "#4CAF50" : safeResult.percentage >= 40 ? "#FF9800" : "#F44336"}
                 strokeWidth="10"
-                strokeDasharray={`${result.percentage} 100`}
+                strokeDasharray={`${safeResult.percentage} 100`}
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl font-bold">{result.percentage}%</span>
+              <span className="text-3xl font-bold">{safeResult.percentage}%</span>
             </div>
           </div>
           
           <div className="text-center">
             <p className="text-xl font-semibold mb-1">
-              {result.score} out of {result.maxScore} correct
+              {safeResult.score} out of {safeResult.maxScore} correct
             </p>
             <p className="text-muted-foreground">
-              {result.percentage >= 90 ? "Excellent! You've mastered this topic." :
-               result.percentage >= 70 ? "Great job! You have a solid understanding." :
-               result.percentage >= 50 ? "Good effort! Keep practicing to improve." :
+              {safeResult.percentage >= 90 ? "Excellent! You've mastered this topic." :
+               safeResult.percentage >= 70 ? "Great job! You have a solid understanding." :
+               safeResult.percentage >= 50 ? "Good effort! Keep practicing to improve." :
                "Keep learning! Review the material and try again."}
             </p>
           </div>
         </div>
       </div>
       
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold mb-4">Question Summary</h2>
-        
-        {result.questions.map((q, index) => {
-          const answer = result.answers.find(a => a.questionId.toString() === q.id.toString());
-          const isCorrect = answer?.isCorrect || false;
+      {hasQuestionDetails && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold mb-4">Question Summary</h2>
           
-          return (
-            <motion.div 
-              key={q.id.toString()} 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`border rounded-lg p-4 ${isCorrect ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/50' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50'}`}
-            >
-              <div className="flex gap-3">
-                <div className="mt-0.5">
-                  {isCorrect ? (
-                    <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  ) : (
-                    <X className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  )}
-                </div>
-                
-                <div>
-                  <p className="font-medium mb-1">Q{index + 1}: {q.question}</p>
-                  <div className="text-sm">
-                    <p className={isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      Your answer: {answer?.selectedOption || answer?.answer || 'Not answered'}
-                    </p>
-                    {!isCorrect && (
-                      <p className="text-green-600 dark:text-green-400 mt-1">
-                        Correct answer: {q.correctAnswer || q.answer}
-                      </p>
+          {safeResult.questions!.map((q, index) => {
+            if (!q) return null; // Skip null/undefined questions
+            
+            const answer = safeResult.answers?.find(a => 
+              a && q && a.questionId?.toString() === q.id?.toString()
+            );
+            
+            const isCorrect = answer?.isCorrect || false;
+            const questionText = q.question || q.text || `Question ${index + 1}`;
+            
+            return (
+              <motion.div 
+                key={q.id?.toString() || index} 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`border rounded-lg p-4 ${isCorrect ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/50' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50'}`}
+              >
+                <div className="flex gap-3">
+                  <div className="mt-0.5">
+                    {isCorrect ? (
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <X className="h-5 w-5 text-red-600 dark:text-red-400" />
                     )}
                   </div>
+                  
+                  <div>
+                    <p className="font-medium mb-1">Q{index + 1}: {questionText}</p>
+                    <div className="text-sm">
+                      <p className={isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                        Your answer: {answer?.userAnswer || answer?.selectedOption || answer?.selectedOptionId || answer?.answer || 'Not answered'}
+                      </p>
+                      {!isCorrect && (
+                        <p className="text-green-600 dark:text-green-400 mt-1">
+                          Correct answer: {q.correctAnswer || q.answer || q.correctOptionId || "Answer unavailable"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
       
       <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t">
         <div className="flex flex-wrap gap-2">
@@ -243,7 +367,7 @@ Result: ${isCorrect ? 'Correct' : 'Incorrect'}
           <Button
             variant="default"
             size="sm"
-            onClick={() => router.push(`/dashboard/mcq/${result.slug}`)}
+            onClick={() => router.push(`/dashboard/mcq/${safeResult.slug}`)}
             className="flex items-center gap-1"
           >
             <RefreshCw className="h-4 w-4" />

@@ -1,48 +1,63 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
-import { motion } from "framer-motion"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Timer, ChevronRight } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import { useState, useCallback, useMemo, useEffect } from "react"
 
-interface McqQuizQuestion {
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, Check } from "lucide-react"
+
+interface Option {
   id: string
   text: string
-  type: "mcq"
-  options: Array<{ id: string; text: string }> | string[]
-  correctOptionId: string
 }
 
 interface McqQuizProps {
-  question: McqQuizQuestion
-  questionNumber: number
-  totalQuestions: number
+  question: {
+    id: string
+    text?: string
+    question?: string
+    options: (string | { id: string; text: string })[]
+  }
   onAnswer: (answer: string) => void
-  isLastQuestion?: boolean
   isSubmitting?: boolean
+  questionNumber?: number
+  totalQuestions?: number
+  isLastQuestion?: boolean
   existingAnswer?: string
+  onNavigate?: (direction: "next" | "prev") => void
 }
 
-export default function McqQuiz({
+const McqQuiz = ({
   question,
+  onAnswer,
+  isSubmitting,
   questionNumber,
   totalQuestions,
-  onAnswer,
-  isLastQuestion = false,
-  isSubmitting = false,
+  isLastQuestion,
   existingAnswer,
-}: McqQuizProps) {
+  onNavigate,
+}: McqQuizProps) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
-  const [timer, setTimer] = useState(0)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [startTime] = useState(Date.now())
+  const [isAnswerSaved, setIsAnswerSaved] = useState(!!existingAnswer)
 
-  // Memoized options for performance with better validation
+  // Use the question text field or fall back to the question field
+  const questionText = question.text || question.question || "Question text unavailable"
+
+  // Update selected option when existingAnswer changes
+  useEffect(() => {
+    if (existingAnswer) {
+      setSelectedOption(existingAnswer)
+      setIsAnswerSaved(true)
+    } else {
+      setIsAnswerSaved(false)
+    }
+  }, [existingAnswer, question.id])
+
   const options = useMemo(() => {
     if (!question?.options || !Array.isArray(question.options)) return []
-    
+
     return question.options.map((option, index) => {
       if (typeof option === "string") {
         return { id: option, text: option }
@@ -51,67 +66,39 @@ export default function McqQuiz({
         return option
       }
       // Fallback for malformed options
-      return { id: `option_${index}`, text: String(option) }
+      return { id: `option_${index}`, text: String(option || `Option ${index + 1}`) }
     })
   }, [question?.options])
 
-  // Start timer when component mounts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimer((prev) => prev + 1)
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
-
-  // Reset selection when question changes
-  useEffect(() => {
-    setSelectedOption(existingAnswer || null)
-    setTimer(0)
-  }, [question?.id, existingAnswer])
-
-  // Handle option selection with validation
-  const handleOptionSelect = useCallback(
-    (optionId: string) => {
-      if (isSubmitting || isAnimating || !optionId) return
-      setSelectedOption(optionId)
-    },
-    [isSubmitting, isAnimating],
-  )
-
-  // Handle answer submission with validation
   const handleSubmit = useCallback(() => {
-    if (!selectedOption || isSubmitting || isAnimating || !question?.correctOptionId) return
+    if (!selectedOption || isSubmitting) return
 
-    setIsAnimating(true)
-    // Only pass selectedOption to onAnswer (Redux handles correctness)
-    setTimeout(() => {
-      onAnswer(selectedOption)
-      setIsAnimating(false)
-    }, 300)
-  }, [selectedOption, isSubmitting, isAnimating, question?.correctOptionId, onAnswer])
+    // Pass the selected option to the parent component
+    onAnswer(selectedOption)
+    setIsAnswerSaved(true)
+  }, [selectedOption, isSubmitting, onAnswer])
 
-  // Format timer display
-  const formatTime = useCallback((seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  // Handle option selection
+  const handleOptionSelect = useCallback((optionId: string) => {
+    setSelectedOption(optionId)
+    setIsAnswerSaved(false)
   }, [])
 
-  // Memoized button text for performance
-  const buttonText = useMemo(() => {
-    if (isSubmitting || isAnimating) {
-      return isLastQuestion ? "Finishing..." : "Submitting..."
-    }
-    return isLastQuestion ? "Submit Quiz" : "Next Question"
-  }, [isSubmitting, isAnimating, isLastQuestion])
+  // Add this function to directly handle navigation
+  const handleDirectNavigation = useCallback((direction: "next" | "prev") => {
+    console.log(`Direct navigation button clicked: ${direction}`);
+    onNavigate?.(direction);
+  }, [onNavigate]);
 
   // Validate question data
-  if (!question || !question.text || !options.length) {
+  if (!question || (!questionText) || !options.length) {
     return (
       <Card className="w-full shadow-md border border-border/60">
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground">Question data is not available</p>
+          <Button variant="outline" onClick={() => window.location.reload()} className="mt-4">
+            Reload Quiz
+          </Button>
         </CardContent>
       </Card>
     )
@@ -119,69 +106,76 @@ export default function McqQuiz({
 
   return (
     <Card className="w-full shadow-md border border-border/60">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-            Question {questionNumber}
-            <ChevronRight className="h-4 w-4" />
-            {totalQuestions}
-          </span>
+      <CardHeader>
+        <CardTitle>{questionText}</CardTitle>
+        <CardDescription>
+          Question {questionNumber} of {totalQuestions}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <RadioGroup value={selectedOption || ""} onValueChange={handleOptionSelect}>
+          {options.map((option) => (
+            <div key={option.id} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50">
+              <RadioGroupItem value={option.id} id={option.id} disabled={isSubmitting} />
+              <Label 
+                htmlFor={option.id} 
+                className="flex-grow cursor-pointer py-1"
+              >
+                {option.text}
+              </Label>
+              {selectedOption === option.id && isAnswerSaved && (
+                <Check size={16} className="text-green-500" />
+              )}
+            </div>
+          ))}
+        </RadioGroup>
 
-          <span className="bg-muted/50 text-muted-foreground px-3 py-1 rounded-full text-xs font-mono flex items-center">
-            <Timer className="h-3.5 w-3.5 mr-1" />
-            {formatTime(timer)}
-          </span>
+        <div className="flex justify-center mt-4">
+          {!isAnswerSaved ? (
+            <Button 
+              onClick={handleSubmit} 
+              disabled={!selectedOption || isSubmitting}
+            >
+              Save Answer
+            </Button>
+          ) : (
+            <p className="text-sm text-green-600">Answer saved!</p>
+          )}
         </div>
 
-        <h2 className="text-xl font-semibold leading-relaxed">{question.text}</h2>
-      </CardHeader>
-
-      <CardContent className="pb-4">
-        <div className="space-y-3">
-          {options.map((option, index) => (
-            <motion.button
-              key={option.id}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleOptionSelect(option.id)}
-              className={cn(
-                "w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 text-sm flex items-start hover:shadow-sm",
-                selectedOption === option.id
-                  ? "border-primary bg-primary/10 text-primary font-medium shadow-sm"
-                  : "border-border/60 hover:border-border hover:bg-muted/30",
-                (isAnimating || isSubmitting) && "pointer-events-none opacity-75",
-              )}
-              disabled={isSubmitting || isAnimating}
+        {/* Separate navigation buttons as direct actions */}
+        <div className="flex justify-between mt-4 pt-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={() => handleDirectNavigation('prev')}
+            disabled={questionNumber === 1 || isSubmitting}
+          >
+            <ChevronLeft size={16} className="mr-1" />
+            Previous
+          </Button>
+          
+          {!isLastQuestion ? (
+            <Button
+              variant="outline"
+              onClick={() => handleDirectNavigation('next')}
+              disabled={isSubmitting}
             >
-              <div className="flex items-start gap-3 w-full">
-                <div
-                  className={cn(
-                    "flex items-center justify-center w-6 h-6 rounded-full border text-xs font-medium mt-0.5 flex-shrink-0",
-                    selectedOption === option.id
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border/60 bg-background",
-                  )}
-                >
-                  {String.fromCharCode(65 + index)}
-                </div>
-                <span className="leading-relaxed">{option.text}</span>
-              </div>
-            </motion.button>
-          ))}
+              Next
+              <ChevronRight size={16} className="ml-1" />
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              onClick={() => onNavigate?.('next')}
+              disabled={isSubmitting || !isAnswerSaved}
+            >
+              Finish Quiz
+            </Button>
+          )}
         </div>
       </CardContent>
-
-      <CardFooter className="border-t pt-4">
-        <Button
-          className="ml-auto min-w-[120px]"
-          disabled={!selectedOption || isSubmitting || isAnimating}
-          onClick={handleSubmit}
-        >
-          {(isSubmitting || isAnimating) && (
-            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          )}
-          <span>{buttonText}</span>
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
+
+export default McqQuiz

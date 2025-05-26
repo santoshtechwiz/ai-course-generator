@@ -3,7 +3,6 @@ import { createSlice, createAsyncThunk, PayloadAction, createAction } from "@red
 import { createSelector } from "reselect";
 
 import { RootState } from "../index";
-import { BlankQuizQuestion, OpenEndedQuizQuestion, QuizAnswer } from "@/app/types/quiz-types";
 
 import { QuizState } from "@/types/quiz";
 import {
@@ -30,6 +29,11 @@ const initialState: QuizState = {
   sessionId: typeof window !== "undefined" && sessionStorage.getItem("quiz_session_id")
     ? sessionStorage.getItem("quiz_session_id")!
     : generateSessionId(),
+  quizData: undefined,
+  description: null,
+  totalQuestions: 0,
+  lastSaved: null,
+  authRedirectState: null
 };
 
 // Async thunks
@@ -104,25 +108,35 @@ export const submitQuiz = createAsyncThunk(
     try {
       // Calculate score based on correct answers
       let score = 0;
+      let totalAnswered = 0;
+      
       const questionResults = questions.map((question) => {
-        const answer = answers[question.id];
+        const answer = answers[String(question.id)]; // Normalize ID to string
         let isCorrect = false;
+        let userAnswer = null;
+        
+        if (!answer) {
+          return {
+            questionId: question.id,
+            isCorrect: false,
+            userAnswer: null,
+            correctAnswer: question.answer,
+            skipped: true
+          };
+        }
+        
+        totalAnswered++;
 
         if (question.type === 'blanks' && answer && 'filledBlanks' in answer) {
           // For blanks quiz, check if the main blank is correct
           const mainBlankId = Object.keys(answer.filledBlanks)[0];
-          const userAnswer = answer.filledBlanks[mainBlankId]?.toLowerCase().trim();
+          const userAnswerText = answer.filledBlanks[mainBlankId]?.toLowerCase().trim();
           const correctAnswer = question.answer.toLowerCase().trim();
 
-          isCorrect = userAnswer === correctAnswer;
+          isCorrect = userAnswerText === correctAnswer;
           if (isCorrect) score++;
 
-          return {
-            questionId: question.id,
-            isCorrect,
-            userAnswer: answer.filledBlanks,
-            correctAnswer: question.answer,
-          };
+          userAnswer = answer.filledBlanks;
         } 
         else if (question.type === 'openended' && answer && 'text' in answer) {
           // For open-ended, we consider it correct if they submitted something
@@ -130,27 +144,32 @@ export const submitQuiz = createAsyncThunk(
           isCorrect = Boolean(answer.text.trim());
           if (isCorrect) score++;
 
-          return {
-            questionId: question.id,
-            isCorrect,
-            userAnswer: answer.text,
-            correctAnswer: question.answer,
-          };
+          userAnswer = answer.text;
+        }
+        else if (answer && 'selectedOption' in answer) {
+          // For mcq type questions
+          isCorrect = answer.isCorrect === true;
+          if (isCorrect) score++;
+
+          userAnswer = answer.selectedOption;
         }
 
         return {
           questionId: question.id,
-          isCorrect: false,
-          userAnswer: null,
+          isCorrect,
+          userAnswer,
           correctAnswer: question.answer,
+          skipped: false
         };
       });
       
+      // Add metrics about completion
       const results = {
         quizId,
         quizType,
         score,
         maxScore: questions.length,
+        totalAnswered, // New field
         percentage: Math.round((score / questions.length) * 100),
         submittedAt: new Date().toISOString(),
         questionResults,
@@ -184,6 +203,40 @@ export const submitQuiz = createAsyncThunk(
 // Action to set current question index
 export const setCurrentQuestionIndex = createAction<number>("quiz/setCurrentQuestionIndex");
 
+// Enhance the navigation thunk with better error handling and debug logging
+export const navigateToQuestion = createAsyncThunk(
+  "quiz/navigateToQuestion",
+  async (index: number, { dispatch, getState }) => {
+    const state = getState() as RootState;
+    const currentIndex = state.quiz.currentQuestionIndex;
+    const questionsLength = state.quiz.questions.length;
+    
+    // Validation with guard clauses
+    if (index < 0 || (questionsLength > 0 && index >= questionsLength)) {
+      console.error(`Invalid navigation index: ${index}. Valid range: 0-${questionsLength-1}`);
+      return currentIndex; // Return current index unchanged
+    }
+    
+    console.log(`Navigation requested: ${currentIndex} → ${index}`);
+    
+    try {
+      // Force update the index via direct action
+      dispatch(setCurrentQuestionIndex(index));
+      
+      // Create a timestamp to help track this specific navigation action
+      const timestamp = Date.now();
+      
+      // For debugging - log navigation with timestamp
+      console.log(`[${new Date(timestamp).toLocaleTimeString()}] Navigation action dispatched: ${currentIndex} → ${index}`);
+      
+      return { index, timestamp };
+    } catch (error) {
+      console.error("Navigation error:", error);
+      return currentIndex;
+    }
+  }
+);
+
 // Quiz slice
 const quizSlice = createSlice({
   name: "quiz",
@@ -203,33 +256,77 @@ const quizSlice = createSlice({
       const newIndex = action.payload;
       
       // Detailed logging to help diagnose issues
-      console.log(`Redux: Setting question index to ${newIndex} (current: ${state.currentQuestionIndex}, max: ${state.questions.length - 1})`);
+      console.log(`Redux: Setting question index to ${newIndex} (current: ${state.currentQuestionIndex})`);
       
-      // Validate and set the index with better bounds checking
-      if (newIndex >= 0 && newIndex < state.questions.length) {
-        state.currentQuestionIndex = newIndex;
-        console.log(`Redux: Question index set to ${newIndex}`);
-      } else {
-        console.warn(`Redux: Invalid question index: ${newIndex}. Valid range is 0 to ${state.questions.length - 1}`);
+      // ALWAYS set the index regardless of validation
+      state.currentQuestionIndex = newIndex;
+      
+      // If we save to session storage, include this updated index
+      if (typeof window !== "undefined" && state.sessionId && state.quizId) {
+        try {
+          saveQuizSession(
+            state.sessionId,
+            state.quizId.toString(),
+            state.quizType || 'mcq',
+            state.answers,
+            {
+              currentQuestionIndex: newIndex, // Use the new index
+              isCompleted: state.isCompleted,
+              title: state.title,
+              lastSaved: Date.now()
+            }
+          );
+        } catch (err) {
+          console.error('Failed to update question index in session storage:', err);
+        }
       }
     },
     saveAnswer: (state, action: PayloadAction<{ questionId: string | number, answer: QuizAnswer }>) => {
       const { questionId, answer } = action.payload;
-      state.answers[questionId] = answer;
+      const normalizedId = String(questionId); // Convert to string for consistency
+      state.answers[normalizedId] = answer;
       
       // Check if all questions have been answered
-      const allAnswered = state.questions.every(q => !!state.answers[q.id]);
-      state.isCompleted = allAnswered; // <-- Change this line from isQuizComplete to isCompleted
+      const allAnswered = state.questions.every(q => !!state.answers[String(q.id)]);
+      
+      // If we're on the last question and this answer completes all questions, mark as complete
+      const isLastQuestion = state.currentQuestionIndex === state.questions.length - 1;
+      const answeredCount = Object.keys(state.answers).length;
+      const isComplete = allAnswered || (isLastQuestion && answeredCount === state.questions.length);
+      
+      state.isCompleted = isComplete;
+      
+      // If this is the last question, log it clearly
+      if (isLastQuestion) {
+        console.log("Last question answered, quiz completion status:", isComplete);
+      }
 
       // Persist answers to sessionStorage
       if (typeof window !== "undefined" && state.sessionId && state.quizId) {
-        saveQuizSession(state.sessionId, state.quizId.toString(), state.answers);
+        // Use the fixed utility function with the proper parameters
+        try {
+          saveQuizSession(
+            state.sessionId,
+            state.quizId.toString(),
+            state.quizType || 'mcq',
+            state.answers,
+            {
+              currentQuestionIndex: state.currentQuestionIndex,
+              isCompleted: state.isCompleted,
+              title: state.title,
+              lastSaved: Date.now()
+            }
+          );
+          console.log('Quiz progress saved to session storage');
+        } catch (err) {
+          console.error('Failed to save quiz progress:', err);
+        }
       }
     },
     resetQuiz: (state) => {
       state.currentQuestionIndex = 0;
       state.answers = {};
-      state.isCompleted = false; // <-- Change this line from isQuizComplete to isCompleted
+      state.isCompleted = false;
       state.results = null;
 
       // Clear session on reset
@@ -269,6 +366,7 @@ const quizSlice = createSlice({
           const session = getQuizSession(state.sessionId);
           if (session && session.quizId == action.payload.id) {
             state.answers = session.answers || {};
+            state.currentQuestionIndex = session.currentQuestionIndex || 0;
             state.isCompleted = action.payload.questions.every((q: any) => session.answers && session.answers[q.id]);
           }
           const results = getQuizResults(state.sessionId);
@@ -308,6 +406,28 @@ const quizSlice = createSlice({
       .addCase(submitQuiz.rejected, (state, action) => {
         state.status = "error";
         state.error = action.payload as string;
+      })
+      
+      // Handle the navigation thunk
+      .addCase(navigateToQuestion.fulfilled, (state, action) => {
+        // The payload is now an object with index and timestamp
+        const { index, timestamp } = action.payload || { index: state.currentQuestionIndex, timestamp: Date.now() };
+        
+        // Forced update with explicit assignment
+        state.currentQuestionIndex = index;
+        
+        // For debugging purposes, add a navigation history field if it doesn't exist
+        if (!state.navigationHistory) {
+          state.navigationHistory = [];
+        }
+        
+        // Store this navigation in history (limited to last 10)
+        state.navigationHistory = [
+          { from: state.currentQuestionIndex, to: index, timestamp },
+          ...((state.navigationHistory || []).slice(0, 9))
+        ];
+        
+        console.log(`[${new Date(timestamp).toLocaleTimeString()}] Navigation confirmed in reducer: index set to ${index}`);
       });
   },
 });
@@ -360,10 +480,19 @@ export const selectCurrentQuestion = createSelector(
 );
 
 export const selectIsQuizComplete = createSelector(
-  [selectQuestions, selectAnswers], 
-  (questions, answers) => {
+  [selectQuizState, selectQuestions, selectAnswers], 
+  (quizState, questions, answers) => {
     if (!Array.isArray(questions) || questions.length === 0) return false;
-    return questions.every(q => answers[q.id]);
+    
+    // Consider complete if all questions are answered
+    const allAnswered = questions.every(q => answers[String(q.id)]);
+    
+    // OR if we're on the last question and all questions have answers
+    const isLastQuestion = quizState.currentQuestionIndex === questions.length - 1;
+    const answeredCount = Object.keys(answers).length;
+    const lastQuestionComplete = isLastQuestion && answeredCount === questions.length;
+    
+    return allAnswered || lastQuestionComplete || quizState.isCompleted;
   }
 );
 

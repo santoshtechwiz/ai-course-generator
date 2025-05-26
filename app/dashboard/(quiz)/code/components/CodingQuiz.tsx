@@ -52,9 +52,10 @@ function CodingQuizComponent({
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [validationError, setValidationError] = useState<string>("")
   const [isAnimating, setIsAnimating] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
 
   // Combined submitting state
-  const effectivelySubmitting = isSubmitting || internalSubmitting || isAnimating
+  const effectivelySubmitting = isSubmitting || internalSubmitting || isAnimating || hasSubmitted
 
   // Cleanup on unmount
   useEffect(() => {
@@ -77,6 +78,7 @@ function CodingQuizComponent({
       setElapsedTime(0)
       setInternalSubmitting(false)
       setIsAnimating(false)
+      setHasSubmitted(false) // Reset submission state for new question
     }
   }, [question?.id, question?.codeSnippet, question?.options, existingAnswer])
 
@@ -154,7 +156,8 @@ function CodingQuizComponent({
       return
     }
 
-    // Use the same animation/transition approach as in MCQ quiz
+    // Set submission state immediately to prevent double clicks
+    setHasSubmitted(true)
     setIsAnimating(true)
     setInternalSubmitting(true)
 
@@ -185,9 +188,12 @@ function CodingQuizComponent({
       isCorrect = true
     }
 
-    // Use a short timeout for visual feedback, just like in MCQ
+    console.log("Submitting answer:", { answer, answerTime, isCorrect })
+
+    // Just save the answer without navigation - parent component handles navigation
     setTimeout(() => {
       onAnswer(answer, answerTime, isCorrect)
+
       // Reset animation state after a brief delay
       setTimeout(() => {
         if (isMountedRef.current) {
@@ -320,12 +326,10 @@ function CodingQuizComponent({
           {effectivelySubmitting ? (
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <span>{isLastQuestion ? "Completing Quiz..." : "Next Question..."}</span>
+              <span>Saving Answer...</span>
             </div>
-          ) : isLastQuestion ? (
-            "Complete Quiz"
           ) : (
-            "Next Question"
+            "Save Answer"
           )}
         </Button>
       </CardFooter>

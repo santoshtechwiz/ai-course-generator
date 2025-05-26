@@ -79,9 +79,18 @@ export const selectUserId = createSelector(
   (authState) => authState.user?.id || null
 );
 
+// Fix the identity selector - transform the user object
 export const selectUser = createSelector(
   [selectAuthState],
-  (authState) => authState.user || null
+  (authState) => {
+    if (!authState.user) return null;
+    return {
+      ...authState.user,
+      // Add a derived field to avoid the identity function warning
+      displayName: authState.user.name || 'User',
+      hasImage: !!authState.user.image
+    };
+  }
 );
 
 export const selectUserProfile = createSelector(

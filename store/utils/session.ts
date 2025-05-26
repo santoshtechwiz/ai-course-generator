@@ -52,7 +52,6 @@ const debounceTimers: Record<string, NodeJS.Timeout> = {};
 
 /**
  * Save quiz session to sessionStorage with debouncing
- * Supports all quiz types (mcq, code, blanks, openended)
  */
 export const saveQuizSession = (
   sessionId: string,
@@ -70,6 +69,21 @@ export const saveQuizSession = (
     lastSaved?: number
   } = {}
 ): void => {
+  if (!sessionId) {
+    console.error("Cannot save quiz session: sessionId is required");
+    return;
+  }
+
+  // Add defensive checks for required parameters
+  if (!quizId) {
+    console.warn("Missing quizId in saveQuizSession call");
+  }
+  
+  if (!quizType) {
+    console.warn("Missing quizType in saveQuizSession call, defaulting to 'mcq'");
+    quizType = 'mcq'; // Provide a default
+  }
+
   const key = `quiz_session_${sessionId}`;
 
   // Avoid saving proxies (e.g., Redux state slices) directly
@@ -78,6 +92,7 @@ export const saveQuizSession = (
     // Try to serialize and deserialize to remove proxies
     safeAnswers = JSON.parse(JSON.stringify(answers));
   } catch (err) {
+    console.error("Failed to serialize answers:", err);
     // Fallback: shallow copy, filter out proxies
     safeAnswers = {};
     for (const k in answers) {
@@ -98,46 +113,49 @@ export const saveQuizSession = (
       quizId,
       quizType,
       answers: safeAnswers,
-      lastSaved: Date.now(),
-      ...meta,
+      currentQuestionIndex: meta.currentQuestionIndex || 0,
+      isCompleted: meta.isCompleted || false,
+      lastSaved: meta.lastSaved || Date.now(),
+      title: meta.title || null,
     };
     // Try to serialize the whole session object to catch any remaining proxies
     JSON.stringify(sessionObj);
   } catch (err) {
+    console.error("Failed to serialize session object:", err);
     // If the session object still contains a proxy, remove answers
     sessionObj = {
       quizId,
       quizType,
       answers: {},
+      currentQuestionIndex: meta.currentQuestionIndex || 0,
+      isCompleted: meta.isCompleted || false,
       lastSaved: Date.now(),
-      ...meta,
+      title: meta.title || null,
     };
   }
+
+  // Add more debug information
+  console.log(`Saving quiz session for ${quizId}:`, { 
+    currentQuestionIndex: meta.currentQuestionIndex, 
+    answersCount: Object.keys(answers).length,
+    timestamp: new Date().toLocaleTimeString()
+  });
 
   // Clear existing timer for this session
   if (debounceTimers[key]) {
     clearTimeout(debounceTimers[key]);
   }
 
+  // Use a shorter debounce time to improve responsiveness
   debounceTimers[key] = setTimeout(() => {
-    enqueueStorageOperation(() => {
-      try {
-        sessionStorage.setItem(key, JSON.stringify(sessionObj));
-      } catch (err) {
-        // If error is due to revoked proxy, just skip saving
-        if (
-          err &&
-          typeof err.message === "string" &&
-          err.message.includes("proxy that has been revoked")
-        ) {
-          // Optionally log or ignore
-          return;
-        }
-        console.error("Failed to save session:", err);
-      }
-    });
+    // Use try-catch to handle any storage issues
+    try {
+      sessionStorage.setItem(key, JSON.stringify(sessionObj));
+    } catch (err) {
+      console.error("Failed to save session:", err);
+    }
     delete debounceTimers[key];
-  }, 300);
+  }, 100); // Reduce debounce time from 300ms to 100ms
 };
 
 /**
@@ -215,4 +233,110 @@ export const setupAutoSave = (
   
   // Return cleanup function
   return () => clearInterval(intervalId);
+};
+
+/**
+ * Set up periodic sync with IndexedDB for more reliable storage
+ */
+export const setupSessionPersistence = (
+  sessionId: string,
+  getState: () => any,
+  interval = 60000 // Default: 1 minute
+): () => void => {
+  // Only setup if browser APIs available
+  if (typeof window === 'undefined' || !window.indexedDB) {
+    console.warn('IndexedDB not available for quiz persistence');
+    return () => {};
+  }
+  
+  // Create/open database
+  const request = indexedDB.open('quizSessions', 1);
+  
+  request.onupgradeneeded = (event) => {
+    const db = request.result;
+    if (!db.objectStoreNames.contains('sessions')) {
+      db.createObjectStore('sessions', { keyPath: 'id' });
+    }
+  };
+  
+  // Set up periodic sync
+  const intervalId = setInterval(() => {
+    try {
+      const state = getState();
+      const db = request.result;
+      
+      if (db) {
+        const transaction = db.transaction(['sessions'], 'readwrite');
+        const store = transaction.objectStore('sessions');
+        store.put({
+          id: sessionId,
+          state: JSON.stringify({
+            timestamp: Date.now(),
+            data: state
+          }),
+        });
+      }
+    } catch (err) {
+      console.error('Error syncing quiz state to IndexedDB:', err);
+    }
+  }, interval);
+  
+  // Return cleanup function
+  return () => {
+    clearInterval(intervalId);
+    try {
+      request.result?.close();
+    } catch (err) {
+      // Ignore close errors
+    }
+  };
+};
+
+/**
+ * Recover a quiz session from IndexedDB if available
+ */
+export const recoverQuizSession = async (
+  sessionId: string
+): Promise<any | null> => {
+  if (typeof window === 'undefined' || !window.indexedDB) {
+    return null;
+  }
+  
+  return new Promise((resolve) => {
+    const request = indexedDB.open('quizSessions', 1);
+    
+    request.onerror = () => {
+      resolve(null);
+    };
+    
+    request.onsuccess = () => {
+      try {
+        const db = request.result;
+        const transaction = db.transaction(['sessions'], 'readonly');
+        const store = transaction.objectStore('sessions');
+        const getRequest = store.get(sessionId);
+        
+        getRequest.onsuccess = () => {
+          if (getRequest.result) {
+            try {
+              const parsed = JSON.parse(getRequest.result.state);
+              resolve(parsed.data);
+            } catch (err) {
+              console.error('Error parsing recovered session:', err);
+              resolve(null);
+            }
+          } else {
+            resolve(null);
+          }
+        };
+        
+        getRequest.onerror = () => {
+          resolve(null);
+        };
+      } catch (err) {
+        console.error('Error recovering session:', err);
+        resolve(null);
+      }
+    };
+  });
 };

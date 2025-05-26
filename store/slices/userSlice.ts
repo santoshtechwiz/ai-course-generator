@@ -1,4 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+import { createSelector } from "@reduxjs/toolkit";
+import type { RootState } from "@/store";
 
 // Types
 export interface UserPreferences {
@@ -160,3 +162,48 @@ export const { setUserProfile, setUserPreferences, updateUserStatistics, recordQ
 
 // Export reducer
 export default userSlice.reducer
+
+// Add proper selectors that transform the data
+// Base selectors for accessing parts of the state
+export const selectUserState = (state: RootState) => state.user;
+export const selectUserProfile = (state: RootState) => state.user.profile;
+export const selectUserPreferences = (state: RootState) => state.user.preferences;
+export const selectUserStatistics = (state: RootState) => state.user.statistics;
+
+// Derived selectors with transformations
+export const selectFormattedUser = createSelector(
+  [selectUserProfile],
+  (profile) => {
+    if (!profile.id) return null;
+    return {
+      ...profile,
+      displayName: profile.name || 'Anonymous User',
+      avatarUrl: profile.image || '/default-avatar.png',
+      isComplete: Boolean(profile.name && profile.email)
+    };
+  }
+);
+
+export const selectUserThemePreference = createSelector(
+  [selectUserPreferences],
+  (preferences) => {
+    return {
+      currentTheme: preferences.theme,
+      isDarkMode: preferences.theme === 'dark',
+      isSystemTheme: preferences.theme === 'system',
+      isLightMode: preferences.theme === 'light'
+    };
+  }
+);
+
+export const selectUserStats = createSelector(
+  [selectUserStatistics],
+  (statistics) => {
+    return {
+      ...statistics,
+      formattedScore: `${statistics.averageScore.toFixed(1)}%`,
+      formattedTime: `${Math.round(statistics.totalTimeSpent / 60)} min`,
+      hasCompletedQuizzes: statistics.quizzesCompleted > 0
+    };
+  }
+);
