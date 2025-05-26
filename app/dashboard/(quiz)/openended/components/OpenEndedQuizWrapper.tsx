@@ -1,15 +1,31 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 
 import { toast } from "react-hot-toast"
 import { Spinner } from "@/hooks/spinner"
 import { selectIsAuthenticated, selectUserId } from "@/store/slices/authSlice"
-import { selectQuestions, selectCurrentQuestion, selectCurrentQuestionIndex, selectQuizStatus, selectQuizError, selectIsQuizComplete, selectQuizResults, setQuizId, setQuizType, fetchQuiz, saveAnswer, setCurrentQuestionIndex, submitQuiz } from "@/store/slices/quizSlice"
+import { 
+  selectQuestions, 
+  selectCurrentQuestion, 
+  selectCurrentQuestionIndex, 
+  selectQuizStatus, 
+  selectQuizError, 
+  selectIsQuizComplete, 
+  selectQuizResults, 
+  selectAnswers,
+  setQuizId, 
+  setQuizType, 
+  fetchQuiz, 
+  saveAnswer, 
+  setCurrentQuestionIndex, 
+  submitQuiz,
+  setQuizResults
+} from "@/store/slices/quizSlice"
 import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
-import { OpenEndedQuizQuestion, OpenEndedQuizData } from "../types"
+import { OpenEndedQuizQuestion, OpenEndedQuizData, OpenEndedQuizAnswer } from "@/app/types/quiz-types"
 import { OpenEndedQuiz } from "./OpenEndedQuiz"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
@@ -33,12 +49,14 @@ export default function OpenEndedQuizWrapper({ slug }: OpenEndedQuizWrapperProps
   const error = useSelector(selectQuizError)
   const isQuizComplete = useSelector(selectIsQuizComplete)
   const results = useSelector(selectQuizResults)
+  const answers = useSelector(selectAnswers) // Get answers from Redux
 
   const [isInitializing, setIsInitializing] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [quizData, setQuizData] = useState<OpenEndedQuizData | null>(null)
+  const submittingRef = useRef(false)
 
   // Fetch quiz data
   useEffect(() => {
@@ -87,6 +105,88 @@ export default function OpenEndedQuizWrapper({ slug }: OpenEndedQuizWrapperProps
     router.push(`/api/auth/signin?callbackUrl=/dashboard/openended/${slug}/results`);
   };
 
+  // Calculate similarity between user answer and correct answer
+  const calculateSimilarity = (userAnswer: string, correctAnswer: string): number => {
+    if (!userAnswer || !correctAnswer) return 0;
+    
+    const userTokens = userAnswer.toLowerCase().split(/\s+/);
+    const correctTokens = correctAnswer.toLowerCase().split(/\s+/);
+    
+    // Find common words
+    const commonWords = userTokens.filter(word => 
+      correctTokens.includes(word)
+    );
+    
+    // Calculate Jaccard similarity
+    const union = new Set([...userTokens, ...correctTokens]).size;
+    const similarity = union > 0 ? commonWords.length / union : 0;
+    
+    return similarity;
+  };
+
+  // Handle quiz submission
+  const handleSubmitQuiz = useCallback(async () => {
+    if (submittingRef.current) return
+    submittingRef.current = true
+    setIsSubmitting(true)
+    
+    try {
+      // Calculate score based on similarity
+      let score = 0;
+      const maxScore = questions.length;
+      
+      // Process each question's answer
+      const processedAnswers = questions.map(question => {
+        const answer = answers[question.id];
+        const userAnswer = answer?.text || "";
+        const correctAnswer = question.answer || "";
+        
+        // Calculate similarity and determine if answer is correct
+        const similarity = calculateSimilarity(userAnswer, correctAnswer);
+        const similarityThreshold = 0.6;
+        const isCorrect = similarity >= similarityThreshold;
+        
+        // Increment score if correct
+        if (isCorrect) {
+          score++;
+        }
+        
+        return {
+          questionId: question.id,
+          question: question.question,
+          userAnswer,
+          correctAnswer,
+          isCorrect,
+          similarity
+        };
+      });
+      
+      // Create results object
+      const quizResults = {
+        quizId: quizData?.id,
+        slug: slug,
+        title: quizData?.title || "Open-Ended Quiz",
+        score,
+        maxScore,
+        percentage: Math.round((score / maxScore) * 100),
+        completedAt: new Date().toISOString(),
+        questions: processedAnswers
+      };
+      
+      // Save results to Redux store
+      dispatch(setQuizResults(quizResults));
+      
+      // Redirect to results page immediately 
+      router.push(`/dashboard/openended/${slug}/results`);
+    } catch (error) {
+      console.error("Failed to submit quiz:", error);
+      toast.error("Failed to submit quiz. Please try again.");
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [dispatch, questions, answers, quizData, router, slug]);
+
   const handleAnswerSubmit = useCallback(
     async (answer: string, elapsedTime: number, hintsUsed: boolean) => {
       if (quizStatus === "submitting" || !currentQuestion) {
@@ -96,50 +196,63 @@ export default function OpenEndedQuizWrapper({ slug }: OpenEndedQuizWrapperProps
       try {
         setIsSubmitting(true);
         
+        // Calculate similarity with correct answer
+        const similarity = calculateSimilarity(answer, currentQuestion.answer || "");
+        
+        // Consider it correct if similarity is above threshold
+        const similarityThreshold = 0.6; // 60% similarity threshold
+        const isCorrect = similarity >= similarityThreshold;
+        
+        // Prepare the answer object with proper types
+        const openEndedAnswer: OpenEndedQuizAnswer = {
+          questionId: currentQuestion.id,
+          text: answer,
+          timestamp: Date.now(),
+          type: "openended",
+          similarity: similarity,
+          isCorrect: isCorrect,
+          hintsUsed: hintsUsed,
+          timeSpent: elapsedTime
+        };
+        
         // Save answer to Redux
         await dispatch(
           saveAnswer({
             questionId: currentQuestion.id,
-            answer: {
-              questionId: currentQuestion.id,
-              text: answer,
-              timestamp: Date.now(),
-            },
-          }),
-        ).unwrap()
+            answer: openEndedAnswer
+          })
+        ).unwrap();
 
-        // Check if we're on the last question
-        const isLastQuestion = currentQuestionIndex >= questions.length - 1
-
-        if (!isLastQuestion) {
-          // Move to the next question
-          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-          toast.success("Answer saved! Moving to next question...")
+        // Check if this is the last question
+        const isLastQuestion = currentQuestionIndex >= questions.length - 1;
+        
+        // If this is the last question, submit the quiz immediately
+        if (isLastQuestion) {
           setIsSubmitting(false);
+          // Give a small delay to ensure the answer is saved
+          setTimeout(() => {
+            handleSubmitQuiz();
+          }, 100);
         } else {
-          // This is the last question - handle quiz completion
-          try {
-            await dispatch(submitQuiz()).unwrap()
-            
-            // If authenticated, go directly to results
-            if (isAuthenticated) {
-              toast.success("Quiz completed! Viewing your results...")
-              router.push(`/dashboard/openended/${slug}/results`)
-            }
-            // Otherwise, show auth prompt (handled in render)
-            setIsSubmitting(false);
-          } catch (error) {
-            toast.error("Failed to submit quiz, but your answers are saved")
-            setIsSubmitting(false);
-          }
+          // Move to next question
+          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
+          toast.success("Answer saved! Moving to next question...");
+          setIsSubmitting(false);
         }
       } catch (error) {
-        toast.error("Failed to process your answer. Please try again.")
+        toast.error("Failed to process your answer. Please try again.");
         setIsSubmitting(false);
       }
     },
-    [currentQuestion, questions.length, currentQuestionIndex, dispatch, slug, router, quizStatus, isAuthenticated],
-  )
+    [currentQuestion, currentQuestionIndex, questions.length, dispatch, handleSubmitQuiz]
+  );
+
+  // Check if all questions are answered and auto-submit
+  useEffect(() => {
+    if (isQuizComplete && !results && !submittingRef.current) {
+      handleSubmitQuiz();
+    }
+  }, [isQuizComplete, results, handleSubmitQuiz]);
 
   if (isInitializing || isLoading) {
     return (
@@ -160,19 +273,6 @@ export default function OpenEndedQuizWrapper({ slug }: OpenEndedQuizWrapperProps
         ]}
       />
     )
-  }
-
-  // If quiz is complete and user is not authenticated, show sign in prompt
-  if (isQuizComplete && !isAuthenticated && !isSubmitting) {
-    return (
-      <div className="max-w-md mx-auto my-8">
-        <NonAuthenticatedUserSignInPrompt 
-          onSignIn={handleSignIn}
-          title="Sign In to See Results"
-          message="Your quiz is complete! Sign in to view your results and save your progress."
-        />
-      </div>
-    );
   }
 
   if (!currentQuestion) {

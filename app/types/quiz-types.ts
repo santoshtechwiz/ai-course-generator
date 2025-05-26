@@ -18,6 +18,8 @@ export interface OpenEndedQuestion extends BaseQuestion {
   answer: string;
   hints?: string[];
   type: 'openended';
+  keywords?: string[]; // Keywords for similarity matching
+  similarityThreshold?: number; // Threshold to consider answer correct (0.0-1.0)
 }
 
 // Fill in the blanks questions
@@ -82,6 +84,10 @@ export interface BlankQuizAnswer extends BaseAnswer {
 export interface OpenEndedQuizAnswer extends BaseAnswer {
   text: string;
   type: 'openended';
+  similarity?: number; // Similarity score (0.0-1.0)
+  isCorrect?: boolean; // Based on similarity threshold
+  hintsUsed?: boolean; // Whether hints were used
+  timeSpent?: number; // Time spent on question in seconds
 }
 
 export interface McqQuizAnswer extends BaseAnswer {
@@ -207,4 +213,12 @@ export interface AttemptQuestion {
   userAnswer?: string;
   isCorrect?: boolean;
   timeSpent: number;
+}
+
+// Open-ended quiz data structure
+export interface OpenEndedQuizData extends QuizData {
+  questions: OpenEndedQuestion[];
+  type: 'openended';
+  evaluationMethod?: 'similarity' | 'exact' | 'keywords' | 'ai';
+  similarityThreshold?: number; // Default threshold
 }

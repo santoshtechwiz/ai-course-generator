@@ -1,21 +1,32 @@
 "use client"
 
-import { OpenEndedQuizQuestion } from "@/app/types/quiz-types";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { selectQuestions, selectCurrentQuestionIndex, selectAnswers, selectCurrentQuestion, setCurrentQuestionIndex, saveAnswer } from "@/store/slices/quizSlice";
+import { 
+  selectQuestions, 
+  selectCurrentQuestionIndex, 
+  selectAnswers, 
+  selectCurrentQuestion, 
+  setCurrentQuestionIndex, 
+  saveAnswer,
+  submitQuiz,
+ 
+} from "@/store/slices/quizSlice";
 import { Progress } from "@radix-ui/react-progress";
 import { motion } from "framer-motion";
-import { useState, useEffect, useCallback } from "react"
-import { useDispatch, useSelector } from "react-redux"
-
-
+import { useState, useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface OpenEndedQuizProps {
   onAnswer?: (answer: string, elapsedTime: number, hintsUsed: boolean) => void;
 }
-
+interface OpenEndedQuizQuestion {
+  id: string;
+  question: string;
+  hints?: string[];
+}
 export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
   const dispatch = useDispatch();
   
@@ -30,13 +41,17 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
   const [startTime, setStartTime] = useState(Date.now());
   const [hintsUsed, setHintsUsed] = useState(false);
   const [showHints, setShowHints] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAnswered, setHasAnswered] = useState(false);
 
   // Initialize answer from existing answers when component mounts or question changes
   useEffect(() => {
     if (currentQuestion?.id && answers[currentQuestion.id]?.text) {
       setAnswer(answers[currentQuestion.id].text || "");
+      setHasAnswered(true);
     } else {
       setAnswer("");
+      setHasAnswered(false);
     }
     setShowHints(false);
     setHintsUsed(false);
@@ -60,20 +75,19 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1));
     }
   }, [currentQuestionIndex, dispatch]);
+
+  // Handle navigation to next question
+  const handleNext = useCallback(() => {
+    if (currentQuestionIndex < questions.length - 1) {
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
+    }
+  }, [currentQuestionIndex, questions.length, dispatch]);
   
   // Handle submission
   const handleSubmit = useCallback(() => {
-    if (!currentQuestion) return;
-
-    // Save to Redux
-    dispatch(saveAnswer({ 
-      questionId: currentQuestion.id, 
-      answer: {
-        questionId: currentQuestion.id,
-        text: answer,
-        timestamp: Date.now()
-      }
-    }));
+    if (!currentQuestion || !answer.trim() || isSubmitting) return;
+    
+    setIsSubmitting(true);
 
     // Calculate elapsed time
     const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
@@ -81,14 +95,32 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
     // Call the onAnswer callback if provided
     if (onAnswer) {
       onAnswer(answer, elapsedTime, hintsUsed);
-    } else if (currentQuestionIndex < questions.length - 1) {
-      // If no callback, just move to next question
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
-    } else {
-      // If last question, optionally clear answer or show a message
-      // Optionally: dispatch(submitQuiz()) here if needed
     }
-  }, [currentQuestion, answer, startTime, hintsUsed, onAnswer, currentQuestionIndex, questions.length, dispatch]);
+    
+    // Mark as answered locally
+    setHasAnswered(true);
+    setIsSubmitting(false);
+  }, [currentQuestion, answer, startTime, hintsUsed, onAnswer, isSubmitting]);
+
+  // Handle final submission
+  const handleFinishQuiz = useCallback(() => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    // Make sure the current answer is saved first
+    if (currentQuestion && answer.trim()) {
+      const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+      if (onAnswer) {
+        onAnswer(answer, elapsedTime, hintsUsed);
+      }
+    }
+    
+    // Submit the entire quiz
+    dispatch(submitQuiz());
+    
+    setIsSubmitting(false);
+  }, [answer, currentQuestion, dispatch, hintsUsed, isSubmitting, onAnswer, startTime]);
 
   if (!currentQuestion || questions.length === 0) {
     return (
@@ -165,14 +197,27 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
             Previous
           </Button>
           
-          <Button
-            onClick={handleSubmit}
-            variant="default"
-            className="flex items-center"
-            disabled={!answer.trim()}
-          >
-            {currentQuestionIndex === questions.length - 1 ? "Submit" : "Next"}
-          </Button>
+          {!hasAnswered ? (
+            <Button
+              onClick={handleSubmit}
+              variant="default"
+              className="flex items-center"
+              disabled={!answer.trim() || isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Answer"}
+            </Button>
+          ) : (
+            <Button
+              onClick={currentQuestionIndex === questions.length - 1 ? handleFinishQuiz : handleNext}
+              variant="default"
+              className="flex items-center"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 
+                (currentQuestionIndex === questions.length - 1 ? "Finishing Quiz..." : "Loading...") : 
+                (currentQuestionIndex === questions.length - 1 ? "Finish Quiz" : "Next Question")}
+            </Button>
+          )}
         </div>
       </Card>
     </motion.div>
