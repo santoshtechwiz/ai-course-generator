@@ -2,70 +2,229 @@
 
 import React from "react"
 import { Progress } from "@/components/ui/progress"
-import { motion } from "framer-motion"
-import { CheckCircle2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { CheckCircle2, Clock, Target, TrendingUp } from 'lucide-react'
 
 interface QuizProgressProps {
-  current: number
-  total: number
-  percentage: number
+  currentQuestionIndex: number
+  totalQuestions: number
+  timeSpent: number[]
+  title?: string
+  quizType?: string
+  animate?: boolean
 }
 
 export const QuizProgress: React.FC<QuizProgressProps> = ({ 
-  current, 
-  total, 
-  percentage 
+  currentQuestionIndex, 
+  totalQuestions, 
+  timeSpent = [],
+  title = "Quiz Progress",
+  quizType = "Quiz",
+  animate = true
 }) => {
-  // Ensure percentage is valid
-  const validPercentage = isNaN(percentage) ? 0 : Math.min(Math.max(percentage, 0), 100)
+  // Ensure values are valid
+  const current = Math.max(0, Math.min(currentQuestionIndex + 1, totalQuestions))
+  const total = Math.max(1, totalQuestions)
+  const percentage = Math.min(Math.max((current / total) * 100, 0), 100)
+  
+  // Calculate total time spent
+  const totalTimeSpent = timeSpent.reduce((acc, time) => acc + (time || 0), 0)
+  
+  // Format time display
+  const formatTime = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}m ${remainingSeconds}s`
+  }
+  
+  // Calculate average time per question
+  const avgTimePerQuestion = timeSpent.length > 0 
+    ? Math.round(totalTimeSpent / timeSpent.length) 
+    : 0
+  
+  // Determine progress color based on completion
+  const getProgressColor = () => {
+    if (percentage === 100) return "bg-gradient-to-r from-green-500 to-emerald-500"
+    if (percentage >= 75) return "bg-gradient-to-r from-blue-500 to-cyan-500"
+    if (percentage >= 50) return "bg-gradient-to-r from-yellow-500 to-orange-500"
+    return "bg-gradient-to-r from-primary to-primary/80"
+  }
+  
+  // Check if we've hit a milestone
+  const getMilestone = () => {
+    if (percentage === 100) return { icon: CheckCircle2, text: "Complete!", color: "text-green-600" }
+    if (percentage >= 75) return { icon: TrendingUp, text: "Almost there!", color: "text-blue-600" }
+    if (percentage >= 50) return { icon: Target, text: "Halfway!", color: "text-yellow-600" }
+    return null
+  }
+  
+  const milestone = getMilestone()
   
   return (
-    <div className="w-full mb-6">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium">
-          Question {current} of {total}
-        </span>
-        <span className="text-sm font-medium">
-          {Math.round(validPercentage)}% Complete
-        </span>
-      </div>
-      
-      <div className="relative">
-        <Progress 
-          value={validPercentage} 
-          className="h-2 w-full" 
-        />
+    <motion.div 
+      className="w-full space-y-4"
+      initial={animate ? { opacity: 0, y: -10 } : false}
+      animate={animate ? { opacity: 1, y: 0 } : false}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="px-2 py-1 bg-primary/10 text-primary rounded-md font-medium">
+              {quizType}
+            </span>
+            {totalTimeSpent > 0 && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>{formatTime(totalTimeSpent)}</span>
+              </div>
+            )}
+          </div>
+        </div>
         
-        {validPercentage === 100 && (
-          <motion.div 
-            className="absolute right-0 top-0 transform -translate-y-1/2"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          >
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-          </motion.div>
-        )}
-      </div>
-      
-      <div className="flex justify-between mt-1">
-        <div className="flex space-x-1">
-          {Array.from({ length: total }).map((_, i) => (
-            <motion.div
-              key={i}
-              className={`h-1 w-1 rounded-full ${
-                i < current ? "bg-primary" : "bg-muted"
-              }`}
-              initial={{ scale: 0.8, opacity: 0.5 }}
-              animate={{ 
-                scale: i === current - 1 ? 1.2 : 1,
-                opacity: i < current ? 1 : 0.5
-              }}
-              transition={{ duration: 0.3 }}
-            />
-          ))}
+        <div className="text-right">
+          <div className="text-2xl font-bold text-foreground">
+            {current}<span className="text-muted-foreground">/{total}</span>
+          </div>
+          <p className="text-xs text-muted-foreground">Questions</p>
         </div>
       </div>
-    </div>
+      
+      {/* Progress Section */}
+      <div className="space-y-3">
+        {/* Main Progress Bar */}
+        <div className="relative">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-foreground">
+              Progress
+            </span>
+            <motion.span 
+              className="text-sm font-bold text-primary"
+              key={percentage}
+              initial={animate ? { scale: 1.2, opacity: 0 } : false}
+              animate={animate ? { scale: 1, opacity: 1 } : false}
+              transition={{ duration: 0.3 }}
+            >
+              {Math.round(percentage)}%
+            </motion.span>
+          </div>
+          
+          <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              className={`h-full rounded-full ${getProgressColor()}`}
+              initial={animate ? { width: 0 } : { width: `${percentage}%` }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+            
+            {/* Milestone markers */}
+            {[25, 50, 75].map((mark) => (
+              <div
+                key={mark}
+                className="absolute top-0 bottom-0 w-0.5 bg-background/50"
+                style={{ left: `${mark}%` }}
+              />
+            ))}
+          </div>
+          
+          {/* Milestone Achievement */}
+          <AnimatePresence>
+            {milestone && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.9 }}
+                className="absolute -top-8 right-0 flex items-center gap-1 px-2 py-1 bg-background border border-border rounded-md shadow-sm"
+              >
+                <milestone.icon className={`w-3 h-3 ${milestone.color}`} />
+                <span className={`text-xs font-medium ${milestone.color}`}>
+                  {milestone.text}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        
+        {/* Question Indicators */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-1 flex-wrap">
+            {Array.from({ length: Math.min(total, 10) }).map((_, i) => {
+              const isCompleted = i < current - 1
+              const isCurrent = i === current - 1
+              const isUpcoming = i >= current
+              
+              return (
+                <motion.div
+                  key={i}
+                  className={`
+                    w-2 h-2 rounded-full transition-all duration-300
+                    ${isCompleted 
+                      ? 'bg-green-500 scale-110' 
+                      : isCurrent 
+                        ? 'bg-primary scale-125 ring-2 ring-primary/30' 
+                        : 'bg-muted scale-100'
+                    }
+                  `}
+                  initial={animate ? { scale: 0.8, opacity: 0.5 } : false}
+                  animate={animate ? { 
+                    scale: isCurrent ? 1.25 : isCompleted ? 1.1 : 1,
+                    opacity: 1
+                  } : false}
+                  transition={{ duration: 0.3, delay: i * 0.05 }}
+                />
+              )
+            })}
+            {total > 10 && (
+              <span className="text-xs text-muted-foreground ml-2">
+                +{total - 10} more
+              </span>
+            )}
+          </div>
+          
+          {/* Stats */}
+          {avgTimePerQuestion > 0 && (
+            <motion.div 
+              className="text-xs text-muted-foreground flex items-center gap-1"
+              initial={animate ? { opacity: 0 } : false}
+              animate={animate ? { opacity: 1 } : false}
+              transition={{ delay: 0.5 }}
+            >
+              <Clock className="w-3 h-3" />
+              <span>~{formatTime(avgTimePerQuestion)}/q</span>
+            </motion.div>
+          )}
+        </div>
+      </div>
+      
+      {/* Completion Celebration */}
+      <AnimatePresence>
+        {percentage === 100 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -10 }}
+            className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-green-800 dark:text-green-200">
+                  Quiz Completed!
+                </h4>
+                <p className="text-sm text-green-600 dark:text-green-300">
+                  Great job finishing all {total} questions
+                  {totalTimeSpent > 0 && ` in ${formatTime(totalTimeSpent)}`}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
