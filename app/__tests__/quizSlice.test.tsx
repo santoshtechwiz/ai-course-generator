@@ -307,39 +307,117 @@ describe('quizSlice', () => {
         })
 
         describe('fetchQuizResults', () => {
-            it('should fetch quiz results successfully', async () => {
+            it('should return existing results from state', async () => {
+                // Set up existing results
                 const mockResults = {
                     score: 8,
                     maxScore: 10,
                     percentage: 80,
                     submittedAt: new Date().toISOString()
                 }
-
-                    ; (fetch as jest.Mock).mockResolvedValueOnce({
-                        ok: true,
-                        json: async () => mockResults
-                    })
-
-                store.dispatch(setQuizType('mcq'))
-                await store.dispatch(fetchQuizResults('test-slug'))
-                const state = store.getState().quiz
-
-                expect(state.status).toBe('idle')
-                expect(state.results).toEqual(mockResults)
+                
+                store.dispatch(setQuizResults(mockResults))
+                
+                const resultAction = await store.dispatch(fetchQuizResults('test-slug'))
+                
+                expect(resultAction.payload).toEqual(mockResults)
+                expect(store.getState().quiz.results).toEqual(mockResults)
             })
 
-            it('should handle fetch results failure', async () => {
-                ; (fetch as jest.Mock).mockResolvedValueOnce({
-                    ok: false,
-                    status: 404
+            it('should calculate results if quiz is completed but results not saved', async () => {
+                // Set up quiz with questions and answers
+                store.dispatch(fetchQuiz.fulfilled({
+                    id: 'test-slug',
+                    type: 'mcq',
+                    title: 'Test Quiz',
+                    questions: [
+                        { id: '1', question: 'Q1', type: 'mcq', answer: 'correct1' },
+                        { id: '2', question: 'Q2', type: 'mcq', answer: 'correct2' }
+                    ]
+                }, '', { id: 'test-slug', type: 'mcq' }))
+                
+                // Add answers (one correct, one incorrect)
+                store.dispatch(saveAnswer({
+                    questionId: '1',
+                    answer: { 
+                        questionId: '1', 
+                        selectedOption: 'correct1', 
+                        type: 'mcq',
+                        isCorrect: true
+                    }
+                }))
+                
+                store.dispatch(saveAnswer({
+                    questionId: '2',
+                    answer: { 
+                        questionId: '2', 
+                        selectedOption: 'wrong2', 
+                        type: 'mcq',
+                        isCorrect: false
+                    }
+                }))
+
+                // Mark it as completed to simulate a completed quiz
+                store.dispatch({
+                    type: 'quiz/setIsCompleted',
+                    payload: true
                 })
-
-                store.dispatch(setQuizType('mcq'))
-                await store.dispatch(fetchQuizResults('nonexistent'))
+                
+                const resultAction = await store.dispatch(fetchQuizResults('test-slug'))
+                
+                // Verify results were calculated correctly
+                expect(resultAction.payload).toBeTruthy()
+                expect(resultAction.payload.score).toBe(1)
+                expect(resultAction.payload.maxScore).toBe(2)
+                expect(resultAction.payload.percentage).toBe(50)
+                
+                // Verify state was updated
                 const state = store.getState().quiz
+                expect(state.results).toEqual(resultAction.payload)
+            })
 
-                expect(state.status).toBe('error')
-                expect(state.error).toContain('Failed to fetch results')
+            it('should restore results from session storage if available', async () => {
+                // Mock session storage with saved results
+                const mockStoredResults = {
+                    score: 7,
+                    maxScore: 10,
+                    percentage: 70,
+                    submittedAt: new Date().toISOString()
+                }
+                
+                mockSessionStorage.getItem.mockImplementation((key) => {
+                    if (key.includes('quiz_results_')) {
+                        return JSON.stringify(mockStoredResults)
+                    }
+                    return null
+                })
+                
+                // Set quiz ID but no results in state yet
+                store.dispatch(setQuizId('test-slug'))
+                store.dispatch(setQuizType('mcq'))
+                
+                const resultAction = await store.dispatch(fetchQuizResults('test-slug'))
+                
+                // Verify results were restored from storage
+                expect(resultAction.payload).toEqual(mockStoredResults)
+                expect(store.getState().quiz.results).toEqual(mockStoredResults)
+            })
+
+            it('should reject if no results available anywhere', async () => {
+                // Clear everything
+                store.dispatch(resetQuiz())
+                mockSessionStorage.getItem.mockReturnValue(null)
+                
+                // Set minimal quiz state
+                store.dispatch(setQuizId('test-slug'))
+                store.dispatch(setQuizType('mcq'))
+                
+                // This should fail with no results
+                const resultAction = await store.dispatch(fetchQuizResults('test-slug'))
+                
+                expect(resultAction.type).toBe('quiz/fetchQuizResults/rejected')
+                expect(resultAction.payload).toBe('No quiz results available. Please take the quiz first.')
+                expect(store.getState().quiz.error).toBe('No quiz results available. Please take the quiz first.')
             })
         })
 
@@ -496,12 +574,13 @@ describe('quizSlice', () => {
 
         describe('error handling', () => {
             it('should handle network errors in fetchQuiz', async () => {
-                ; (fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'))
+                const networkError = new Error('Network error')
+                ;(fetch as jest.Mock).mockRejectedValueOnce(networkError)
 
                 await store.dispatch(fetchQuiz({ id: 'test', type: 'mcq' }))
                 const state = store.getState().quiz
 
-                expect(state.status).toBe('error')
+                expect(state.status).toBe('error') // <-- Fix: expect "error"
                 expect(state.error).toBe('Network error')
             })
 
