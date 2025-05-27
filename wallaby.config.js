@@ -1,12 +1,14 @@
 module.exports = function (wallaby) {
   return {
     files: [
-      'src/**/*.+(ts|tsx|js|jsx|json|snap)',
-      '!src/**/*.test.(ts|tsx|js|jsx)'
+      'store/**/*.+(ts|tsx|js|jsx|json|snap)',
+      'lib/**/*.+(ts|tsx|js|jsx|json|snap)',
+      'app/**/*.+(ts|tsx|js|jsx|json|snap)',
+      '!app/**/*.test.(ts|tsx|js|jsx)'
     ],
 
     tests: [
-      'src/**/*.test.(ts|tsx|js|jsx)'
+      'app/**/*.test.(ts|tsx|js|jsx)'
     ],
 
     env: {
@@ -17,7 +19,7 @@ module.exports = function (wallaby) {
     testFramework: 'jest',
 
     setup: function (wallaby) {
-      const jestConfig = require('./jest.config'); // use .ts if needed and transpile
+      const jestConfig = require('./jest.config.ts'); // Ensure correct extension
       wallaby.testFramework.configure(jestConfig);
     }
   };
