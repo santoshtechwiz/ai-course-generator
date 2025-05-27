@@ -84,17 +84,72 @@ export const fetchQuizResults = createAsyncThunk(
   async (slug: string, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState;
-      const { quizType } = state.quiz;
+      const { quizType, results, questions, answers, quizId, title } = state.quiz;
       
-      const response = await fetch(`/api/quizzes/${quizType}/${slug}/results`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch results: ${response.status}`);
+      // If we already have results in the state, return them
+      if (results) {
+        return results;
       }
       
-      const data = await response.json();
-      return data;
+      // If we have questions and answers but no results, generate results
+      if (questions.length > 0 && Object.keys(answers).length > 0) {
+        // Calculate score based on correct answers
+        let score = 0;
+        let totalAnswered = 0;
+        
+        const questionResults = questions.map((question) => {
+          const answer = answers[String(question.id)]; // Normalize ID to string
+          let isCorrect = false;
+          let userAnswer = null;
+          
+          if (!answer) {
+            return {
+              questionId: question.id,
+              isCorrect: false,
+              userAnswer: null,
+              correctAnswer: question.correctOptionId || question.answer,
+              skipped: true
+            };
+          }
+          
+          totalAnswered++;
+          
+          if (answer && 'selectedOptionId' in answer) {
+            // For MCQ questions
+            isCorrect = answer.isCorrect === true;
+            userAnswer = answer.selectedOptionId;
+            if (isCorrect) score++;
+          }
+          
+          return {
+            questionId: question.id,
+            isCorrect,
+            userAnswer,
+            correctAnswer: question.correctOptionId || question.answer,
+            skipped: false
+          };
+        });
+        
+        return {
+          quizId,
+          slug,
+          title: title || "Quiz Results",
+          quizType,
+          score,
+          maxScore: questions.length,
+          totalAnswered,
+          percentage: Math.round((score / questions.length) * 100),
+          submittedAt: new Date().toISOString(),
+          questionResults,
+          questions,
+          answers: Object.values(answers)
+        };
+      }
+      
+      // No results or data to generate results
+      return rejectWithValue("No quiz results available. Please take the quiz first.");
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || "Failed to get quiz results");
     }
   }
 );
@@ -284,6 +339,30 @@ const quizSlice = createSlice({
     saveAnswer: (state, action: PayloadAction<{ questionId: string | number, answer: QuizAnswer }>) => {
       const { questionId, answer } = action.payload;
       const normalizedId = String(questionId); // Convert to string for consistency
+      
+      // Handle different quiz types and validate answers in the reducer
+      if (answer.type === 'mcq' && 'selectedOptionId' in answer) {
+        // Find the question to check if the answer is correct
+        const question = state.questions.find(q => String(q.id) === normalizedId);
+        if (question) {
+          // Update the isCorrect property based on the correct answer in the question
+          const correctAnswer = question.correctOptionId || question.answer;
+          answer.isCorrect = answer.selectedOptionId === correctAnswer;
+        }
+      } else if (answer.type === 'blanks' && 'filledBlanks' in answer) {
+        const question = state.questions.find(q => String(q.id) === normalizedId);
+        if (question) {
+          // Validate blanks answers
+          const mainBlankId = Object.keys(answer.filledBlanks)[0];
+          const userAnswerText = answer.filledBlanks[mainBlankId]?.toLowerCase().trim();
+          const correctAnswer = question.answer?.toLowerCase().trim() || "";
+          answer.isCorrect = userAnswerText === correctAnswer;
+        }
+      } else if (answer.type === 'openended' && 'text' in answer) {
+        // For open-ended, we don't auto-validate in real-time, but consider it answered
+        answer.isCorrect = answer.text.trim().length > 0;
+      }
+      
       state.answers[normalizedId] = answer;
       
       // Check if all questions have been answered
@@ -296,14 +375,8 @@ const quizSlice = createSlice({
       
       state.isCompleted = isComplete;
       
-      // If this is the last question, log it clearly
-      if (isLastQuestion) {
-        console.log("Last question answered, quiz completion status:", isComplete);
-      }
-
       // Persist answers to sessionStorage
       if (typeof window !== "undefined" && state.sessionId && state.quizId) {
-        // Use the fixed utility function with the proper parameters
         try {
           saveQuizSession(
             state.sessionId,
@@ -317,7 +390,6 @@ const quizSlice = createSlice({
               lastSaved: Date.now()
             }
           );
-          console.log('Quiz progress saved to session storage');
         } catch (err) {
           console.error('Failed to save quiz progress:', err);
         }
@@ -512,6 +584,77 @@ export const selectQuizInProgress = createSelector(
     const answeredCount = Object.keys(quizState.answers || {}).length;
     const totalCount = (questions || []).length;
     return answeredCount > 0 && answeredCount < totalCount;
+  }
+);
+
+export const selectOrGenerateQuizResults = createSelector(
+  [selectQuizState, selectQuestions, selectAnswers],
+  (quizState, questions, answers) => {
+    // If we already have results in state, return them
+    if (quizState.results) {
+      return quizState.results;
+    }
+    
+    // If we have questions and answers, generate results on-the-fly
+    if (questions.length > 0) {
+      // Calculate score based on correct answers
+      let score = 0;
+      let totalAnswered = 0;
+      
+      const questionResults = questions.map((question) => {
+        const answer = answers[String(question.id)];
+        let isCorrect = false;
+        let userAnswer = null;
+        let skipped = true;
+        
+        if (answer) {
+          totalAnswered++;
+          skipped = false;
+          
+          if ('isCorrect' in answer) {
+            isCorrect = answer.isCorrect === true;
+            if (isCorrect) score++;
+          }
+          
+          if ('selectedOptionId' in answer) {
+            userAnswer = answer.selectedOptionId;
+          } else if ('filledBlanks' in answer) {
+            userAnswer = answer.filledBlanks;
+          } else if ('text' in answer) {
+            userAnswer = answer.text;
+          }
+        }
+        
+        return {
+          questionId: question.id,
+          isCorrect,
+          userAnswer,
+          correctAnswer: question.correctOptionId || question.answer,
+          skipped
+        };
+      });
+      
+      // Calculate percentage safely
+      const maxScore = questions.length;
+      const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+      
+      return {
+        quizId: quizState.quizId,
+        slug: quizState.slug || "unknown",
+        title: quizState.title || "Quiz Results",
+        quizType: quizState.quizType,
+        score,
+        maxScore,
+        totalAnswered,
+        percentage,
+        completedAt: new Date().toISOString(),
+        questionResults,
+        questions,
+        answers: Object.values(answers)
+      };
+    }
+    
+    return null;
   }
 );
 
