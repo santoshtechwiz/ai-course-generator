@@ -342,3 +342,15 @@ export const recoverQuizSession = async (
     };
   });
 };
+
+/**
+ * Utility to get sessionId from URL or sessionStorage for auth flow
+ */
+export const getSessionIdFromUrlOrStorage = (): string | null => {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get("sessionId");
+  if (sessionId) return sessionId;
+  // Optionally, check sessionStorage for a stored sessionId
+  return sessionStorage.getItem("currentSessionId") || null;
+};
