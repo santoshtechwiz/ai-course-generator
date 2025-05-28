@@ -1,107 +1,355 @@
-// Redux slice for quiz state management with improved authentication handling
-import { createSlice, createAsyncThunk, PayloadAction, createAction } from "@reduxjs/toolkit";
-import { createSelector } from "reselect";
+import { createSlice, createAsyncThunk, type PayloadAction, createSelector } from "@reduxjs/toolkit"
+import type { RootState } from "../index"
 
-import { RootState } from "../index";
+export interface QuizState {
+  quizId: string | null
+  quizType: string | null
+  title: string
+  questions: any[]
+  currentQuestionIndex: number
+  answers: { [questionId: string]: any }
+  isCompleted: boolean
+  results: any | null
+  error: string | null
+  status: "idle" | "loading" | "succeeded" | "failed" | "submitting"
+  sessionId: string | null
+  pendingQuiz: { slug: string; quizData: any; currentState?: any } | null
+  authRedirectState: { callbackUrl: string; quizState: any } | null
+  shouldRedirectToAuth: boolean
+  shouldRedirectToResults: boolean
+  authStatus: "checking" | "authenticated" | "unauthenticated" | "idle"
+  slug?: string | null // Add slug for better auth/result flow
+}
 
-import { QuizState } from "@/types/quiz";
-import {
-  generateSessionId,
-  saveQuizSession,
-  getQuizSession,
-  saveQuizResults,
-  getQuizResults,
-  clearQuizSession,
-} from "../utils/session";
-
-// Initial state
 const initialState: QuizState = {
   quizId: null,
   quizType: null,
-  title: null,
+  title: "",
   questions: [],
   currentQuestionIndex: 0,
   answers: {},
-  status: "idle",
-  error: null,
-  isCompleted: false, // Make sure this matches the type in QuizState
+  isCompleted: false,
   results: null,
-  sessionId: typeof window !== "undefined" && sessionStorage.getItem("quiz_session_id")
-    ? sessionStorage.getItem("quiz_session_id")!
-    : generateSessionId(),
-  quizData: undefined,
-  description: null,
-  totalQuestions: 0,
-  lastSaved: null,
+  error: null,
+  status: "idle",
+  sessionId: null,
+  pendingQuiz: null,
   authRedirectState: null,
-  pendingQuiz: null // { slug, quizData }
-};
+  shouldRedirectToAuth: false,
+  shouldRedirectToResults: false,
+  authStatus: "idle",
+  slug: null,
+}
 
-// Async thunks
+// Backward compatible: Keep existing fetchQuiz thunk
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetchQuiz",
-  async ({ id, data, type }: { id: string | number, data?: any, type: string }, { rejectWithValue }) => {
+  async ({ id, data, type }: { id: string | number; data?: any; type: string }, { rejectWithValue }) => {
     try {
       // If data is provided directly, use it
       if (data) {
-        // Ensure each question has a type property
         const questions = (data.questions || []).map((q: any) => ({
           ...q,
-          type: type
-        }));
+          type: type,
+        }))
         return {
           id: data.id,
           type: data.type || type,
           title: data.title,
           questions,
-        };
+          slug: id, // Add slug
+        }
       }
 
       // Otherwise fetch from API
-      const response = await fetch(`/api/quizzes/${type}/${id}`);
+      const response = await fetch(`/api/quizzes/${type}/${id}`)
       if (!response.ok) {
-        throw new Error(`Failed to fetch quiz: ${response.status}`);
+        throw new Error(`Failed to fetch quiz: ${response.status}`)
       }
-      const quizData = await response.json();
-      // Ensure each question has a type property
+      const quizData = await response.json()
       const questions = (quizData.questions || []).map((q: any) => ({
         ...q,
-        type: quizData.type || type
-      }));
+        type: quizData.type || type,
+      }))
       return {
         id: quizData.id,
         type: quizData.type || type,
         title: quizData.title,
         questions,
-      };
+        slug: id, // Add slug
+      }
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message)
+    }
+  },
+)
+
+// Backward compatible: Keep existing submitQuiz thunk
+export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getState, rejectWithValue }) => {
+  const state = getState() as RootState
+  const { quizId, quizType, questions, answers } = state.quiz
+
+  try {
+    let score = 0
+    let totalAnswered = 0
+
+    const questionResults = questions.map((question) => {
+      const answer = answers[String(question.id)]
+      let isCorrect = false
+      let userAnswer = null
+
+      if (!answer) {
+        return {
+          questionId: question.id,
+          isCorrect: false,
+          userAnswer: null,
+          correctAnswer: question.answer,
+          skipped: true,
+        }
+      }
+
+      totalAnswered++
+
+      if (question.type === "blanks" && answer && "filledBlanks" in answer) {
+        const mainBlankId = Object.keys(answer.filledBlanks)[0]
+        const userAnswerText = answer.filledBlanks[mainBlankId]?.toLowerCase().trim()
+        const correctAnswer = question.answer.toLowerCase().trim()
+        isCorrect = userAnswerText === correctAnswer
+        if (isCorrect) score++
+        userAnswer = answer.filledBlanks
+      } else if (question.type === "openended" && answer && "text" in answer) {
+        isCorrect = Boolean(answer.text.trim())
+        if (isCorrect) score++
+        userAnswer = answer.text
+      } else if (answer && "selectedOption" in answer) {
+        isCorrect = answer.isCorrect === true
+        if (isCorrect) score++
+        userAnswer = answer.selectedOption
+      } else if (answer && "selectedOptionId" in answer) {
+        isCorrect = answer.isCorrect === true
+        if (isCorrect) score++
+        userAnswer = answer.selectedOptionId
+      }
+
+      return {
+        questionId: question.id,
+        isCorrect,
+        userAnswer,
+        correctAnswer: question.answer,
+        skipped: false,
+      }
+    })
+
+    const results = {
+      quizId,
+      quizType,
+      score,
+      maxScore: questions.length,
+      totalAnswered,
+      percentage: Math.round((score / questions.length) * 100),
+      submittedAt: new Date().toISOString(),
+      questionResults,
+    }
+
+    return results
+  } catch (error: any) {
+    return rejectWithValue(error.message)
+  }
+})
+
+// Thunk: Initialize quiz with auth check
+export const initializeQuiz = createAsyncThunk(
+  "quiz/initializeQuiz",
+  async (
+    { slug, quizData, authStatus }: { slug: string; quizData?: any; authStatus: string },
+    { dispatch, getState },
+  ) => {
+    const state = getState() as RootState
+
+    // If not authenticated, prepare for auth redirect
+    if (authStatus !== "authenticated") {
+      const currentState = {
+        currentQuestionIndex: state.quiz.currentQuestionIndex,
+        answers: state.quiz.answers,
+        isCompleted: state.quiz.isCompleted,
+      }
+
+      dispatch(setPendingQuiz({ slug, quizData, currentState }))
+      dispatch(setAuthRedirect(`/dashboard/mcq/${slug}?fromAuth=true`))
+      return { requiresAuth: true }
+    }
+
+    // If authenticated, load quiz
+    if (quizData) {
+      return {
+        quizData: {
+          id: slug,
+          type: "mcq",
+          title: quizData.title || "MCQ Quiz",
+          questions: quizData.questions || [],
+        },
+      }
+    }
+
+    // Fetch from API if no data provided
+    const response = await fetch(`/api/quizzes/mcq/${slug}`)
+    if (!response.ok) {
+      throw new Error(`Failed to load quiz: ${response.status}`)
+    }
+    const data = await response.json()
+
+    return {
+      quizData: {
+        id: slug,
+        type: "mcq",
+        title: data.title || "MCQ Quiz",
+        questions: data.questions || [],
+      },
+    }
+  },
+)
+
+// Thunk: Restore quiz after authentication
+export const restoreQuizAfterAuth = createAsyncThunk("quiz/restoreQuizAfterAuth", async (_, { getState, dispatch }) => {
+  const state = getState() as RootState
+
+  // Try to get pending quiz from state or sessionStorage
+  let pendingQuiz = state.quiz.pendingQuiz
+
+  if (!pendingQuiz && typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem("pendingQuiz")
+      if (stored) {
+        pendingQuiz = JSON.parse(stored)
+      }
+    } catch (err) {
+      console.error("Failed to restore pending quiz:", err)
     }
   }
-);
 
+  if (pendingQuiz) {
+    dispatch(clearAuthRedirect())
+    return pendingQuiz
+  }
+
+  throw new Error("No pending quiz to restore")
+})
+
+// Thunk: Submit quiz and prepare results
+export const submitQuizAndPrepareResults = createAsyncThunk(
+  "quiz/submitQuizAndPrepareResults",
+  async ({ slug }: { slug: string }, { getState }) => {
+    const state = getState() as RootState
+    const { questions, answers, title } = state.quiz
+
+    // Calculate results
+    let score = 0
+    const questionResults = questions.map((question) => {
+      const answer = answers[String(question.id)]
+      const isCorrect = answer?.isCorrect === true
+      if (isCorrect) score++
+
+      return {
+        questionId: question.id,
+        isCorrect,
+        userAnswer: answer?.selectedOptionId || null,
+        correctAnswer: question.correctOptionId || question.answer,
+      }
+    })
+
+    const results = {
+      quizId: state.quiz.quizId,
+      slug,
+      title: title || "Quiz Results",
+      score,
+      maxScore: questions.length,
+      percentage: Math.round((score / questions.length) * 100),
+      completedAt: new Date().toISOString(),
+      questions,
+      answers: Object.values(answers),
+      questionResults,
+    }
+
+    return results
+  },
+)
+
+// Thunk: Check auth and load results
+export const checkAuthAndLoadResults = createAsyncThunk(
+  "quiz/checkAuthAndLoadResults",
+  async ({ slug, authStatus }: { slug: string; authStatus: string }, { getState, dispatch }) => {
+    // If not authenticated, trigger auth redirect
+    if (authStatus !== "authenticated") {
+      dispatch(setAuthRedirect(`/dashboard/mcq/${slug}/results`))
+      return { requiresAuth: true }
+    }
+
+    const state = getState() as RootState
+
+    // If we have results, return them
+    if (state.quiz.results) {
+      return { results: state.quiz.results }
+    }
+
+    // Generate results from current state if possible
+    const { questions, answers, title } = state.quiz
+    if (questions.length > 0 && Object.keys(answers).length > 0) {
+      let score = 0
+      const questionResults = questions.map((question) => {
+        const answer = answers[String(question.id)]
+        const isCorrect = answer?.isCorrect === true
+        if (isCorrect) score++
+
+        return {
+          questionId: question.id,
+          isCorrect,
+          userAnswer: answer?.selectedOptionId || null,
+          correctAnswer: question.correctOptionId || question.answer,
+        }
+      })
+
+      const results = {
+        quizId: state.quiz.quizId,
+        slug,
+        title: title || "Quiz Results",
+        score,
+        maxScore: questions.length,
+        percentage: Math.round((score / questions.length) * 100),
+        completedAt: new Date().toISOString(),
+        questions,
+        answers: Object.values(answers),
+        questionResults,
+      }
+
+      return { results }
+    }
+
+    throw new Error("No quiz results available")
+  },
+)
+
+// Backward compatible: Keep existing fetchQuizResults thunk
 export const fetchQuizResults = createAsyncThunk(
   "quiz/fetchQuizResults",
   async (slug: string, { getState, rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const { quizType, results, questions, answers, quizId, title } = state.quiz;
+      const state = getState() as RootState
+      const { quizType, results, questions, answers, quizId, title } = state.quiz
 
       // If we already have results in the state, return them
       if (results) {
-        return results;
+        return results
       }
 
       // If we have questions and answers but no results, generate results
       if (questions.length > 0 && Object.keys(answers).length > 0) {
-        // Calculate score based on correct answers
-        let score = 0;
-        let totalAnswered = 0;
+        let score = 0
+        let totalAnswered = 0
 
         const questionResults = questions.map((question) => {
-          const answer = answers[String(question.id)]; // Normalize ID to string
-          let isCorrect = false;
-          let userAnswer = null;
+          const answer = answers[String(question.id)]
+          let isCorrect = false
+          let userAnswer = null
 
           if (!answer) {
             return {
@@ -109,17 +357,16 @@ export const fetchQuizResults = createAsyncThunk(
               isCorrect: false,
               userAnswer: null,
               correctAnswer: question.correctOptionId || question.answer,
-              skipped: true
-            };
+              skipped: true,
+            }
           }
 
-          totalAnswered++;
+          totalAnswered++
 
-          if (answer && 'selectedOptionId' in answer) {
-            // For MCQ questions
-            isCorrect = answer.isCorrect === true;
-            userAnswer = answer.selectedOptionId;
-            if (isCorrect) score++;
+          if (answer && "selectedOptionId" in answer) {
+            isCorrect = answer.isCorrect === true
+            userAnswer = answer.selectedOptionId
+            if (isCorrect) score++
           }
 
           return {
@@ -127,9 +374,9 @@ export const fetchQuizResults = createAsyncThunk(
             isCorrect,
             userAnswer,
             correctAnswer: question.correctOptionId || question.answer,
-            skipped: false
-          };
-        });
+            skipped: false,
+          }
+        })
 
         return {
           quizId,
@@ -143,513 +390,359 @@ export const fetchQuizResults = createAsyncThunk(
           submittedAt: new Date().toISOString(),
           questionResults,
           questions,
-          answers: Object.values(answers)
-        };
+          answers: Object.values(answers),
+        }
       }
 
-      // No results or data to generate results
-      return rejectWithValue("No quiz results available. Please take the quiz first.");
+      return rejectWithValue("No quiz results available. Please take the quiz first.")
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to get quiz results");
+      return rejectWithValue(error.message || "Failed to get quiz results")
     }
-  }
-);
+  },
+)
 
-export const submitQuiz = createAsyncThunk(
-  "quiz/submitQuiz",
-  async (_, { getState, rejectWithValue }) => {
-    const state = getState() as RootState;
-    const { quizId, quizType, questions, answers } = state.quiz;
-
-    try {
-      // Calculate score based on correct answers
-      let score = 0;
-      let totalAnswered = 0;
-
-      const questionResults = questions.map((question) => {
-        const answer = answers[String(question.id)]; // Normalize ID to string
-        let isCorrect = false;
-        let userAnswer = null;
-
-        if (!answer) {
-          return {
-            questionId: question.id,
-            isCorrect: false,
-            userAnswer: null,
-            correctAnswer: question.answer,
-            skipped: true
-          };
-        }
-
-        totalAnswered++;
-
-        if (question.type === 'blanks' && answer && 'filledBlanks' in answer) {
-          // For blanks quiz, check if the main blank is correct
-          const mainBlankId = Object.keys(answer.filledBlanks)[0];
-          const userAnswerText = answer.filledBlanks[mainBlankId]?.toLowerCase().trim();
-          const correctAnswer = question.answer.toLowerCase().trim();
-
-          isCorrect = userAnswerText === correctAnswer;
-          if (isCorrect) score++;
-
-          userAnswer = answer.filledBlanks;
-        }
-        else if (question.type === 'openended' && answer && 'text' in answer) {
-          // For open-ended, we consider it correct if they submitted something
-          // In a real app, this would be evaluated by an API
-          isCorrect = Boolean(answer.text.trim());
-          if (isCorrect) score++;
-
-          userAnswer = answer.text;
-        }
-        else if (answer && 'selectedOption' in answer) {
-          // For mcq type questions
-          isCorrect = answer.isCorrect === true;
-          if (isCorrect) score++;
-
-          userAnswer = answer.selectedOption;
-        }
-
-        return {
-          questionId: question.id,
-          isCorrect,
-          userAnswer,
-          correctAnswer: question.answer,
-          skipped: false
-        };
-      });
-
-      // Add metrics about completion
-      const results = {
-        quizId,
-        quizType,
-        score,
-        maxScore: questions.length,
-        totalAnswered, // New field
-        percentage: Math.round((score / questions.length) * 100),
-        submittedAt: new Date().toISOString(),
-        questionResults,
-      };
-
-      // In a real app, you would submit to an API here
-      // const response = await fetch('/api/submit-quiz', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     quizId,
-      //     answers: Object.values(answers),
-      //   }),
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error(`Failed to submit quiz: ${response.status}`);
-      // }
-
-      // const data = await response.json();
-      // return data;
-
-      // For now, just return the calculated results
-      return results;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-// Action to set current question index
-export const setCurrentQuestionIndex = createAction<number>("quiz/setCurrentQuestionIndex");
-
-// Enhance the navigation thunk with better error handling and debug logging
-export const navigateToQuestion = createAsyncThunk(
-  "quiz/navigateToQuestion",
-  async (index: number, { dispatch, getState }) => {
-    const state = getState() as RootState;
-    const currentIndex = state.quiz.currentQuestionIndex;
-    const questionsLength = state.quiz.questions.length;
-
-    // Validation with guard clauses
-    if (index < 0 || (questionsLength > 0 && index >= questionsLength)) {
-      console.error(`Invalid navigation index: ${index}. Valid range: 0-${questionsLength - 1}`);
-      return currentIndex; // Return current index unchanged
-    }
-
-    console.log(`Navigation requested: ${currentIndex} → ${index}`);
-
-    try {
-      // Force update the index via direct action
-      dispatch(setCurrentQuestionIndex(index));
-
-      // Create a timestamp to help track this specific navigation action
-      const timestamp = Date.now();
-
-      // For debugging - log navigation with timestamp
-      console.log(`[${new Date(timestamp).toLocaleTimeString()}] Navigation action dispatched: ${currentIndex} → ${index}`);
-
-      return { index, timestamp };
-    } catch (error) {
-      console.error("Navigation error:", error);
-      return currentIndex;
-    }
-  }
-);
-
-// Quiz slice
 const quizSlice = createSlice({
   name: "quiz",
   initialState,
   reducers: {
-    setQuizId: (state, action: PayloadAction<string | number>) => {
-      state.quizId = action.payload;
-      // Save sessionId to sessionStorage for persistence
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("quiz_session_id", state.sessionId || "");
-      }
-    },
-    setSessionId: (state, action: PayloadAction<string>) => {
-      state.sessionId = action.payload;
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('quiz_session_id', action.payload);
-      }
-    },
-    setQuizType: (state, action: PayloadAction<string>) => {
-      state.quizType = action.payload;
-    },
     setCurrentQuestionIndex: (state, action: PayloadAction<number>) => {
-      const newIndex = action.payload;
-
-      // Detailed logging to help diagnose issues
-      console.log(`Redux: Setting question index to ${newIndex} (current: ${state.currentQuestionIndex})`);
-
-      // ALWAYS set the index regardless of validation
-      state.currentQuestionIndex = newIndex;
-
-      // If we save to session storage, include this updated index
-      if (typeof window !== "undefined" && state.sessionId && state.quizId) {
-        try {
-          saveQuizSession(
-            state.sessionId,
-            state.quizId.toString(),
-            state.quizType || 'mcq',
-            state.answers,
-            {
-              currentQuestionIndex: newIndex, // Use the new index
-              isCompleted: state.isCompleted,
-              title: state.title,
-              lastSaved: Date.now()
-            }
-          );
-        } catch (err) {
-          console.error('Failed to update question index in session storage:', err);
-        }
-      }
+      state.currentQuestionIndex = action.payload
     },
-    saveAnswer: (state, action: PayloadAction<{ questionId: string | number, answer: QuizAnswer }>) => {
-      const { questionId, answer } = action.payload;
-      const normalizedId = String(questionId); // Convert to string for consistency
 
-      // Handle different quiz types and validate answers in the reducer
-      if (answer.type === 'mcq' && 'selectedOptionId' in answer) {
-        // Find the question to check if the answer is correct
-        const question = state.questions.find(q => String(q.id) === normalizedId);
+    saveAnswer: (state, action: PayloadAction<{ questionId: string; answer: any }>) => {
+      const { questionId, answer } = action.payload
+      const normalizedId = String(questionId)
+
+      // Handle different quiz types and validate answers
+      if (answer.type === "mcq" && "selectedOptionId" in answer) {
+        const question = state.questions.find((q) => String(q.id) === normalizedId)
         if (question) {
-          // Update the isCorrect property based on the correct answer in the question
-          const correctAnswer = question.correctOptionId || question.answer;
-          answer.isCorrect = answer.selectedOptionId === correctAnswer;
+          const correctAnswer = question.correctOptionId || question.answer
+          answer.isCorrect = answer.selectedOptionId === correctAnswer
         }
-      } else if (answer.type === 'blanks' && 'filledBlanks' in answer) {
-        const question = state.questions.find(q => String(q.id) === normalizedId);
+      } else if (answer.type === "blanks" && "filledBlanks" in answer) {
+        const question = state.questions.find((q) => String(q.id) === normalizedId)
         if (question) {
-          // Validate blanks answers
-          const mainBlankId = Object.keys(answer.filledBlanks)[0];
-          const userAnswerText = answer.filledBlanks[mainBlankId]?.toLowerCase().trim();
-          const correctAnswer = question.answer?.toLowerCase().trim() || "";
-          answer.isCorrect = userAnswerText === correctAnswer;
+          const mainBlankId = Object.keys(answer.filledBlanks)[0]
+          const userAnswerText = answer.filledBlanks[mainBlankId]?.toLowerCase().trim()
+          const correctAnswer = question.answer?.toLowerCase().trim() || ""
+          answer.isCorrect = userAnswerText === correctAnswer
         }
-      } else if (answer.type === 'openended' && 'text' in answer) {
-        // For open-ended, we don't auto-validate in real-time, but consider it answered
-        answer.isCorrect = answer.text.trim().length > 0;
+      } else if (answer.type === "openended" && "text" in answer) {
+        answer.isCorrect = answer.text.trim().length > 0
       }
 
-      state.answers[normalizedId] = answer;
+      state.answers[normalizedId] = answer
 
       // Check if all questions have been answered
-      const allAnswered = state.questions.every(q => !!state.answers[String(q.id)]);
+      const allAnswered = state.questions.every((q) => !!state.answers[String(q.id)])
+      const isLastQuestion = state.currentQuestionIndex === state.questions.length - 1
+      const answeredCount = Object.keys(state.answers).length
+      const isComplete = allAnswered || (isLastQuestion && answeredCount === state.questions.length)
 
-      // If we're on the last question and this answer completes all questions, mark as complete
-      const isLastQuestion = state.currentQuestionIndex === state.questions.length - 1;
-      const answeredCount = Object.keys(state.answers).length;
-      const isComplete = allAnswered || (isLastQuestion && answeredCount === state.questions.length);
-
-      state.isCompleted = isComplete;
-
-      // Persist answers to sessionStorage
-      if (typeof window !== "undefined" && state.sessionId && state.quizId) {
-        try {
-          saveQuizSession(
-            state.sessionId,
-            state.quizId.toString(),
-            state.quizType || 'mcq',
-            state.answers,
-            {
-              currentQuestionIndex: state.currentQuestionIndex,
-              isCompleted: state.isCompleted,
-              title: state.title,
-              lastSaved: Date.now()
-            }
-          );
-        } catch (err) {
-          console.error('Failed to save quiz progress:', err);
-        }
-      }
+      state.isCompleted = isComplete
     },
+
     resetQuiz: (state) => {
-      state.currentQuestionIndex = 0;
-      state.answers = {};
-      state.isCompleted = false;
-      state.results = null;
-
-      // Clear session on reset
-      if (typeof window !== "undefined" && state.sessionId) {
-        clearQuizSession(state.sessionId);
-      }
-    },
-    setQuizResults: (state, action: PayloadAction<any>) => {
-      state.results = action.payload;
-
-      // Persist results to sessionStorage
-      if (typeof window !== "undefined" && state.sessionId) {
-        saveQuizResults(state.sessionId, action.payload);
-      }
-    },
-    setPendingQuiz(state, action) {
-      state.pendingQuiz = action.payload
-    },
-    resetPendingQuiz(state) {
-      state.pendingQuiz = null
-    },
-    rehydrateQuiz(state, action) {
-      // action.payload: { slug, quizData }
       state.currentQuestionIndex = 0
       state.answers = {}
       state.isCompleted = false
-      state.quizId = action.payload?.slug || null
-      state.quizType = "mcq"
-      state.questions = action.payload?.quizData?.questions || []
-      state.title = action.payload?.quizData?.title || ""
+      state.results = null
+      state.error = null
+      state.status = "idle"
+      state.shouldRedirectToAuth = false
+      state.shouldRedirectToResults = false
+    },
+
+    setQuizResults: (state, action: PayloadAction<any>) => {
+      state.results = action.payload
+      state.isCompleted = true
+    },
+
+    setPendingQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
+      state.pendingQuiz = action.payload
+      if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+        try {
+          sessionStorage.setItem('pendingQuiz', JSON.stringify(action.payload))
+        } catch (error) {
+          console.error("Failed to save pending quiz to sessionStorage:", error)
+        }
+      }
+    },
+
+    resetPendingQuiz: (state) => {
       state.pendingQuiz = null
     },
+    rehydrateQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
+      const { slug, quizData, currentState } = action.payload
+      state.currentQuestionIndex = 0
+      state.answers = {}
+      state.isCompleted = false
+      state.results = null
+      state.error = null
+      state.status = "idle"
+      state.quizId = slug
+      state.slug = slug
+      state.quizType = "mcq"
+      state.title = quizData?.title || ""
+      state.questions = quizData?.questions || []
+      if (currentState) {
+        // If restoring for result, don't reset answers/results
+        if (currentState.showResults) {
+          // Just set slug and quizId for result access
+          state.quizId = slug
+          state.slug = slug
+        } else {
+          state.currentQuestionIndex = currentState.currentQuestionIndex || 0
+          state.answers = currentState.answers || {}
+          state.isCompleted = currentState.isCompleted || false
+        }
+      }
+      state.pendingQuiz = null
+    },
+
+    clearPendingQuiz: (state) => {
+      state.pendingQuiz = null
+    },
+
+    setAuthRedirect: (state, action: PayloadAction<string>) => {
+      state.shouldRedirectToAuth = true
+      state.authRedirectState = { callbackUrl: action.payload, quizState: null }
+    },
+
+    clearAuthRedirect: (state) => {
+      state.shouldRedirectToAuth = false
+      state.authRedirectState = null
+    },
+
+    setResultsRedirect: (state) => {
+      state.shouldRedirectToResults = true
+    },
+
+    clearResultsRedirect: (state) => {
+      state.shouldRedirectToResults = false
+    },
+
+    // Backward compatible: Keep existing actions
+    setQuizId: (state, action: PayloadAction<string>) => {
+      state.quizId = action.payload
+      state.slug = action.payload // Also set slug for consistency
+    },
+
+    setQuizType: (state, action: PayloadAction<string>) => {
+      state.quizType = action.payload
+    },
+
+    setSessionId: (state, action: PayloadAction<string | null>) => {
+      state.sessionId = action.payload
+    },
   },
+
   extraReducers: (builder) => {
     builder
-      // fetchQuiz
+      // Backward compatible: Handle existing fetchQuiz
       .addCase(fetchQuiz.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
+        state.status = "loading"
+        state.error = null
       })
       .addCase(fetchQuiz.fulfilled, (state, action) => {
-        state.status = "idle";
-        state.quizId = action.payload.id;
-        state.quizType = action.payload.type;
-        state.title = action.payload.title;
-        state.questions = action.payload.questions;
-        state.currentQuestionIndex = 0;
-        state.answers = {};
-        state.isCompleted = false;
-        state.results = null;
-
-        // Try to restore from sessionStorage
-        if (typeof window !== "undefined" && state.sessionId) {
-          const session = getQuizSession(state.sessionId);
-          if (session && session.quizId == action.payload.id) {
-            state.answers = session.answers || {};
-            state.currentQuestionIndex = session.currentQuestionIndex || 0;
-            state.isCompleted = action.payload.questions.every((q: any) => session.answers && session.answers[q.id]);
-          }
-          const results = getQuizResults(state.sessionId);
-          if (results) {
-            state.results = results;
-          }
-        }
+        state.status = "succeeded"
+        state.quizId = action.payload.id
+        state.quizType = action.payload.type
+        state.title = action.payload.title
+        state.questions = action.payload.questions
+        state.slug = action.payload.slug || action.payload.id // Set slug
+        state.currentQuestionIndex = 0
+        state.answers = {}
+        state.isCompleted = false
+        state.results = null
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
-        state.status = "error";
-        state.error = action.payload as string;
+        state.status = "failed"
+        state.error = action.payload as string
       })
 
-      // fetchQuizResults
-      .addCase(fetchQuizResults.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
-      })
-      .addCase(fetchQuizResults.fulfilled, (state, action) => {
-        state.status = "idle";
-        state.results = action.payload;
-      })
-      .addCase(fetchQuizResults.rejected, (state, action) => {
-        state.status = "error";
-        state.error = action.payload as string;
-      })
-
-      // submitQuiz
+      // Backward compatible: Handle existing submitQuiz
       .addCase(submitQuiz.pending, (state) => {
-        state.status = "submitting";
-        state.error = null;
+        state.status = "submitting"
+        state.error = null
       })
       .addCase(submitQuiz.fulfilled, (state, action) => {
-        state.status = "idle";
-        state.results = action.payload;
+        state.status = "succeeded"
+        state.results = action.payload
       })
       .addCase(submitQuiz.rejected, (state, action) => {
-        state.status = "error";
-        state.error = action.payload as string;
+        state.status = "failed"
+        state.error = action.payload as string
       })
 
-      // Handle the navigation thunk
-      .addCase(navigateToQuestion.fulfilled, (state, action) => {
-        // The payload is now an object with index and timestamp
-        const { index, timestamp } = action.payload || { index: state.currentQuestionIndex, timestamp: Date.now() };
+      // Backward compatible: Handle existing fetchQuizResults
+      .addCase(fetchQuizResults.pending, (state) => {
+        state.status = "loading"
+        state.error = null
+      })
+      .addCase(fetchQuizResults.fulfilled, (state, action) => {
+        state.status = "succeeded"
+        state.results = action.payload
+      })
+      .addCase(fetchQuizResults.rejected, (state, action) => {
+        state.status = "failed"
+        state.error = action.payload as string
+      })
 
-        // Forced update with explicit assignment
-        state.currentQuestionIndex = index;
+      // Initialize quiz
+      .addCase(initializeQuiz.pending, (state) => {
+        state.status = "loading"
+        state.error = null
+        state.authStatus = "checking"
+      })
+      .addCase(initializeQuiz.fulfilled, (state, action) => {
+        if (action.payload.requiresAuth) {
+          state.status = "idle"
+          state.authStatus = "unauthenticated"
+        } else if (action.payload.quizData) {
+          state.status = "succeeded"
+          state.authStatus = "authenticated"
+          state.quizId = action.payload.quizData.id
+          state.quizType = action.payload.quizData.type
+          state.title = action.payload.quizData.title
+          state.questions = action.payload.quizData.questions
+        }
+      })
+      .addCase(initializeQuiz.rejected, (state, action) => {
+        state.status = "failed"
+        state.error = action.error.message || "Failed to initialize quiz"
+      })
 
-        // For debugging purposes, add a navigation history field if it doesn't exist
-        if (!state.navigationHistory) {
-          state.navigationHistory = [];
+      // Restore after auth
+      .addCase(restoreQuizAfterAuth.fulfilled, (state, action) => {
+        const { slug, quizData, currentState } = action.payload
+        state.quizId = slug
+        state.slug = slug // Set slug
+        state.quizType = "mcq"
+        state.title = quizData?.title || ""
+        state.questions = quizData?.questions || []
+
+        if (currentState) {
+          state.currentQuestionIndex = currentState.currentQuestionIndex || 0
+          state.answers = currentState.answers || {}
+          state.isCompleted = currentState.isCompleted || false
         }
 
-        // Store this navigation in history (limited to last 10)
-        state.navigationHistory = [
-          { from: state.currentQuestionIndex, to: index, timestamp },
-          ...((state.navigationHistory || []).slice(0, 9))
-        ];
+        state.pendingQuiz = null
+        state.shouldRedirectToAuth = false
+        state.status = "succeeded"
+      })
 
-        console.log(`[${new Date(timestamp).toLocaleTimeString()}] Navigation confirmed in reducer: index set to ${index}`);
-      });
+      // Submit quiz and prepare results
+      .addCase(submitQuizAndPrepareResults.pending, (state) => {
+        state.status = "submitting"
+      })
+      .addCase(submitQuizAndPrepareResults.fulfilled, (state, action) => {
+        state.status = "succeeded"
+        state.results = action.payload
+        state.shouldRedirectToResults = true
+      })
+      .addCase(submitQuizAndPrepareResults.rejected, (state, action) => {
+        state.status = "failed"
+        state.error = action.error.message || "Failed to submit quiz"
+      })
+
+      // Check auth and load results
+      .addCase(checkAuthAndLoadResults.pending, (state) => {
+        state.status = "loading"
+        state.authStatus = "checking"
+      })
+      .addCase(checkAuthAndLoadResults.fulfilled, (state, action) => {
+        if (action.payload.requiresAuth) {
+          state.authStatus = "unauthenticated"
+          state.status = "idle"
+        } else if (action.payload.results) {
+          state.authStatus = "authenticated"
+          state.status = "succeeded"
+          state.results = action.payload.results
+        }
+      })
+      .addCase(checkAuthAndLoadResults.rejected, (state, action) => {
+        state.status = "failed"
+        state.error = action.error.message || "Failed to load results"
+      })
   },
-});
+})
 
-// Actions
 export const {
-  setQuizId,
-  setQuizType,
+  setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
   setQuizResults,
   setPendingQuiz,
   resetPendingQuiz,
   rehydrateQuiz,
-  setSessionId
-} = quizSlice.actions;
+  clearPendingQuiz,
+  setAuthRedirect,
+  clearAuthRedirect,
+  setResultsRedirect,
+  clearResultsRedirect,
+  // Backward compatible exports
+  setQuizId,
+  setQuizType,
+  setSessionId,
+} = quizSlice.actions
 
-// Selectors
-export const selectQuizState = (state: RootState) => state.quiz;
-
-export const selectQuestions = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.questions || []
-);
-
-export const selectAnswers = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.answers || {}
-);
-
-export const selectQuizStatus = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.status || 'idle'
-);
-
-export const selectQuizError = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.error || null
-);
-
-export const selectQuizTitle = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.title || ''
-);
-
-export const selectCurrentQuestionIndex = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.currentQuestionIndex || 0
-);
-
+// Selectors - keeping all existing ones for backward compatibility
+export const selectQuizState = (state: RootState) => state.quiz
+export const selectQuestions = createSelector([selectQuizState], (quiz) => quiz.questions)
+export const selectAnswers = createSelector([selectQuizState], (quiz) => quiz.answers)
+export const selectQuizStatus = createSelector([selectQuizState], (quiz) => quiz.status)
+export const selectQuizError = createSelector([selectQuizState], (quiz) => quiz.error)
+export const selectCurrentQuestionIndex = createSelector([selectQuizState], (quiz) => quiz.currentQuestionIndex)
+export const selectIsQuizComplete = createSelector([selectQuizState], (quiz) => quiz.isCompleted)
+export const selectQuizResults = createSelector([selectQuizState], (quiz) => quiz.results)
+export const selectQuizTitle = createSelector([selectQuizState], (quiz) => quiz.title)
+export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz.quizId)
 export const selectCurrentQuestion = createSelector(
   [selectQuestions, selectCurrentQuestionIndex],
-  (questions, currentIndex) => questions[currentIndex] || null
-);
+  (questions, index) => questions[index] || null,
+)
 
-export const selectIsQuizComplete = createSelector(
-  [selectQuizState, selectQuestions, selectAnswers],
-  (quizState, questions, answers) => {
-    if (!Array.isArray(questions) || questions.length === 0) return false;
+// New selectors for auth flow
+export const selectShouldRedirectToAuth = createSelector([selectQuizState], (quiz) => quiz.shouldRedirectToAuth)
+export const selectShouldRedirectToResults = createSelector([selectQuizState], (quiz) => quiz.shouldRedirectToResults)
+export const selectAuthRedirectUrl = createSelector([selectQuizState], (quiz) => quiz.authRedirectState?.callbackUrl)
 
-    // Consider complete if all questions are answered
-    const allAnswered = questions.every(q => answers[String(q.id)]);
-
-    // OR if we're on the last question and all questions have answers
-    const isLastQuestion = quizState.currentQuestionIndex === questions.length - 1;
-    const answeredCount = Object.keys(answers).length;
-    const lastQuestionComplete = isLastQuestion && answeredCount === questions.length;
-
-    return allAnswered || lastQuestionComplete || quizState.isCompleted;
-  }
-);
-
-export const selectQuizId = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.quizId || null
-);
-
-export const selectQuizResults = createSelector(
-  [selectQuizState],
-  (quizState) => quizState.results || null
-);
-
-export const selectQuizInProgress = createSelector(
-  [selectQuizState, selectQuestions],
-  (quizState, questions) => {
-    const answeredCount = Object.keys(quizState.answers || {}).length;
-    const totalCount = (questions || []).length;
-    return answeredCount > 0 && answeredCount < totalCount;
-  }
-);
-
+// Backward compatible: Keep existing selectors
 export const selectOrGenerateQuizResults = createSelector(
   [selectQuizState, selectQuestions, selectAnswers],
   (quizState, questions, answers) => {
-    // If we already have results in state, return them
     if (quizState.results) {
-      return quizState.results;
+      return quizState.results
     }
 
-    // If we have questions and answers, generate results on-the-fly
     if (questions.length > 0) {
-      // Calculate score based on correct answers
-      let score = 0;
-      let totalAnswered = 0;
+      let score = 0
+      let totalAnswered = 0
 
       const questionResults = questions.map((question) => {
-        const answer = answers[String(question.id)];
-        let isCorrect = false;
-        let userAnswer = null;
-        let skipped = true;
+        const answer = answers[String(question.id)]
+        let isCorrect = false
+        let userAnswer = null
+        let skipped = true
 
         if (answer) {
-          totalAnswered++;
-          skipped = false;
+          totalAnswered++
+          skipped = false
 
-          if ('isCorrect' in answer) {
-            isCorrect = answer.isCorrect === true;
-            if (isCorrect) score++;
+          if ("isCorrect" in answer) {
+            isCorrect = answer.isCorrect === true
+            if (isCorrect) score++
           }
 
-          if ('selectedOptionId' in answer) {
-            userAnswer = answer.selectedOptionId;
-          } else if ('filledBlanks' in answer) {
-            userAnswer = answer.filledBlanks;
-          } else if ('text' in answer) {
-            userAnswer = answer.text;
+          if ("selectedOptionId" in answer) {
+            userAnswer = answer.selectedOptionId
+          } else if ("filledBlanks" in answer) {
+            userAnswer = answer.filledBlanks
+          } else if ("text" in answer) {
+            userAnswer = answer.text
           }
         }
 
@@ -658,13 +751,12 @@ export const selectOrGenerateQuizResults = createSelector(
           isCorrect,
           userAnswer,
           correctAnswer: question.correctOptionId || question.answer,
-          skipped
-        };
-      });
+          skipped,
+        }
+      })
 
-      // Calculate percentage safely
-      const maxScore = questions.length;
-      const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+      const maxScore = questions.length
+      const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0
 
       return {
         quizId: quizState.quizId,
@@ -678,12 +770,12 @@ export const selectOrGenerateQuizResults = createSelector(
         completedAt: new Date().toISOString(),
         questionResults,
         questions,
-        answers: Object.values(answers)
-      };
+        answers: Object.values(answers),
+      }
     }
 
-    return null;
-  }
-);
+    return null
+  },
+)
 
-export default quizSlice.reducer;
+export default quizSlice.reducer

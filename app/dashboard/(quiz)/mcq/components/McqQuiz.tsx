@@ -1,12 +1,6 @@
 "use client"
 
 import {
-  useState,
-  useCallback,
-  useMemo,
-  useEffect
-} from "react"
-import {
   Card,
   CardContent,
   CardDescription,
@@ -18,7 +12,8 @@ import {
   Check,
   Clock,
   HelpCircle,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
@@ -43,6 +38,7 @@ interface McqQuizProps {
   questionNumber?: number
   totalQuestions?: number
   existingAnswer?: string
+  feedbackType?: "correct" | "incorrect" | null
 }
 
 const McqQuiz = ({
@@ -51,9 +47,11 @@ const McqQuiz = ({
   isSubmitting = false,
   questionNumber = 1,
   totalQuestions = 1,
-  existingAnswer
+  existingAnswer,
+  feedbackType,
 }: McqQuizProps) => {
-  // Add this guard at the top:
+  // Remove all local state and logic, just render UI and call onAnswer
+
   if (!question) {
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-xl border-0 bg-gradient-to-br from-background to-muted/20">
@@ -73,50 +71,20 @@ const McqQuiz = ({
     )
   }
 
-  const dispatch = useAppDispatch()
-  const savedAnswer = useAppSelector(state => state.quiz.answers[question.id])
-
-  const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer ?? savedAnswer ?? null)
-  const [isAnswerSaved, setIsAnswerSaved] = useState(!!existingAnswer || !!savedAnswer)
-  const questionText = question.text || question.question || "Question text unavailable"
-
-  useEffect(() => {
-    if (existingAnswer) {
-      setSelectedOption(existingAnswer)
-      setIsAnswerSaved(true)
-    } else {
-      setSelectedOption(savedAnswer)
-      setIsAnswerSaved(!!savedAnswer)
+  // Prepare options for rendering
+  const options = (question?.options || []).map((option, index) => {
+    if (typeof option === "string") {
+      return { id: option, text: option }
     }
-  }, [existingAnswer, savedAnswer, question.id])
-
-  const options = useMemo(() => {
-    return (question?.options || []).map((option, index) => {
-      if (typeof option === "string") {
-        return { id: option, text: option }
-      }
-      if (option && typeof option === "object" && option.id && option.text) {
-        return option
-      }
-      return { id: `option_${index}`, text: `Option ${index + 1}` }
-    })
-  }, [question.options])
-
-  const handleOptionSelect = useCallback((optionId: string) => {
-    setSelectedOption(optionId)
-    setIsAnswerSaved(false)
-  }, [])
-
-  const handleSaveAnswer = useCallback(() => {
-    if (selectedOption) {
-      dispatch(saveAnswer({ questionId: question.id, answer: selectedOption }))
-      setIsAnswerSaved(true)
+    if (option && typeof option === "object" && option.id && option.text) {
+      return option
     }
-  }, [selectedOption, dispatch, question.id])
+    return { id: `option_${index}`, text: `Option ${index + 1}` }
+  })
 
   const progressPercentage = (questionNumber / totalQuestions) * 100
 
-  if (!question || !questionText || !options.length) {
+  if (!question || (!question.text && !question.question) || !options.length) {
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-xl border-0 bg-gradient-to-br from-background to-muted/20">
         <CardContent className="p-8 text-center">
@@ -167,7 +135,6 @@ const McqQuiz = ({
             <Progress value={progressPercentage} className="h-3 bg-muted/50" />
           </div>
         </CardHeader>
-
         <CardContent className="p-8 space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -180,7 +147,7 @@ const McqQuiz = ({
               <span className="text-sm font-medium text-primary">Choose the best answer</span>
             </div>
             <h3 className="text-xl font-semibold text-foreground max-w-3xl mx-auto">
-              {questionText}
+              {question.text || question.question || "Question text unavailable"}
             </h3>
           </motion.div>
 
@@ -192,9 +159,18 @@ const McqQuiz = ({
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
             }}
+            role="radiogroup"
+            aria-label="Answer options"
           >
             {options.map((option, index) => {
-              const isSelected = selectedOption === option.id
+              const isSelected = existingAnswer === option.id
+              const isAnswered = !!existingAnswer
+              let optionFeedback = ""
+              if (isAnswered) {
+                if (isSelected && feedbackType === "correct") optionFeedback = "correct"
+                else if (isSelected && feedbackType === "incorrect") optionFeedback = "incorrect"
+                else optionFeedback = ""
+              }
               return (
                 <motion.div
                   key={option.id}
@@ -208,18 +184,39 @@ const McqQuiz = ({
                     className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300
                       ${
                         isSelected
-                          ? "border-primary bg-primary/5 shadow-lg"
+                          ? optionFeedback === "correct"
+                            ? "border-green-500 bg-green-50 dark:bg-green-900/10"
+                            : optionFeedback === "incorrect"
+                            ? "border-red-500 bg-red-50 dark:bg-red-900/10"
+                            : "border-primary bg-primary/5 shadow-lg"
                           : "border-border bg-card hover:bg-muted/30"
                       }
-                      ${isSubmitting ? "opacity-70 pointer-events-none" : ""}
+                      ${isSubmitting || isAnswered ? "opacity-70 pointer-events-none" : ""}
                     `}
-                    onClick={() => !isSubmitting && handleOptionSelect(option.id)}
-                    role="button"
-                    aria-pressed={isSelected}
+                    tabIndex={0}
+                    role="radio"
+                    aria-checked={isSelected}
+                    aria-disabled={isSubmitting || isAnswered}
+                    onClick={() => !isSubmitting && !isAnswered && onAnswer(option.id)}
+                    onKeyDown={e => {
+                      if (
+                        !isSubmitting &&
+                        !isAnswered &&
+                        (e.key === "Enter" || e.key === " ")
+                      ) {
+                        onAnswer(option.id)
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-6 h-6 rounded-full border-2 ${
-                        isSelected ? "border-primary bg-primary" : "border-muted-foreground/30 bg-background"
+                        isSelected
+                          ? optionFeedback === "correct"
+                            ? "border-green-500 bg-green-500"
+                            : optionFeedback === "incorrect"
+                            ? "border-red-500 bg-red-500"
+                            : "border-primary bg-primary"
+                          : "border-muted-foreground/30 bg-background"
                       } flex items-center justify-center`}>
                         {isSelected && (
                           <motion.div
@@ -230,9 +227,23 @@ const McqQuiz = ({
                           />
                         )}
                       </div>
-                      <span className={`text-base font-medium ${isSelected ? "text-primary" : "text-foreground"}`}>
+                      <span className={`text-base font-medium ${
+                        isSelected
+                          ? optionFeedback === "correct"
+                            ? "text-green-700 dark:text-green-400"
+                            : optionFeedback === "incorrect"
+                            ? "text-red-700 dark:text-red-400"
+                            : "text-primary"
+                          : "text-foreground"
+                      }`}>
                         {option.text}
                       </span>
+                      {isSelected && feedbackType === "correct" && (
+                        <Check className="ml-2 w-5 h-5 text-green-600" aria-label="Correct" />
+                      )}
+                      {isSelected && feedbackType === "incorrect" && (
+                        <X className="ml-2 w-5 h-5 text-red-600" aria-label="Incorrect" />
+                      )}
                     </div>
                     <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center
                       ${isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground"}
@@ -244,35 +255,21 @@ const McqQuiz = ({
               )
             })}
           </motion.div>
-
-          <motion.div
-            className="flex justify-center"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Button
-              data-testid="submit-answer"
-              onClick={handleSaveAnswer}
-              disabled={!selectedOption || isSubmitting || isAnswerSaved}
-              size="lg"
-              className="px-6"
-            >
-              Save Answer
-            </Button>
-          </motion.div>
-
-          {selectedOption && isAnswerSaved && (
-            <motion.div
-              className="flex justify-center"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-            >
-              <div className="flex items-center gap-2 px-6 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <span className="text-green-700 dark:text-green-300 font-medium">Answer saved!</span>
-              </div>
-            </motion.div>
+          {/* Feedback message */}
+          {feedbackType && (
+            <div className="flex justify-center mt-4">
+              <span
+                className={`px-4 py-2 rounded-lg font-semibold text-lg ${
+                  feedbackType === "correct"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                    : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                {feedbackType === "correct" ? "Correct!" : "Incorrect"}
+              </span>
+            </div>
           )}
         </CardContent>
       </Card>

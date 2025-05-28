@@ -1,340 +1,243 @@
-"use client"
+'use client'
 
-import { useEffect, useCallback, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useDispatch, useSelector } from "react-redux"
-import { useSession } from "next-auth/react"
-
-import McqQuiz from "./McqQuiz"
-import { AppDispatch, RootState } from "@/store"
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch } from '@/store'
 import {
   selectQuestions,
   selectAnswers,
   selectQuizStatus,
   selectQuizError,
+  selectCurrentQuestionIndex,
+  selectCurrentQuestion,
+  selectQuizTitle,
   selectIsQuizComplete,
-  selectQuizResults,
   setCurrentQuestionIndex,
-  fetchQuiz,
   saveAnswer,
+  fetchQuiz,
   submitQuiz,
-  resetQuiz
-} from "@/store/slices/quizSlice"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import { Button } from "@/components/ui/button"
-import { McqQuestion } from "@/app/types/quiz-types"
-import { stateTracker } from "@/utils/stateTracker"
+  setQuizResults,
+  setPendingQuiz,
+} from '@/store/slices/quizSlice'
+import { selectIsAuthenticated } from '@/store/slices/authSlice'
 
+import { Button } from '@/components/ui/button'
+import McqQuiz from './McqQuiz'
+import { QuizLoadingSteps } from '../../components/QuizLoadingSteps'
 
 interface McqQuizWrapperProps {
   slug: string
-  userId?: string | null
-  quizData?: any
-}
-
-interface MCQAnswer {
-  questionId: string | number
-  selectedOptionId: string
-  timestamp: number
-  type: "mcq"
-  isCorrect?: boolean
-}
-
-// Helper function to safely interact with sessionStorage
-const safeSessionStorage = {
-  getItem: (key: string): string | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-      return sessionStorage.getItem(key);
-    } catch (e) {
-      console.error('Failed to get from sessionStorage:', e);
-      return null;
-    }
-  },
-  setItem: (key: string, value: string): void => {
-    if (typeof window === 'undefined') return;
-    try {
-      sessionStorage.setItem(key, value);
-    } catch (e) {
-      console.error('Failed to set to sessionStorage:', e);
-    }
-  },
-  removeItem: (key: string): void => {
-    if (typeof window === 'undefined') return;
-    try {
-      sessionStorage.removeItem(key);
-    } catch (e) {
-      console.error('Failed to remove from sessionStorage:', e);
-    }
+  quizData?: {
+    title?: string
+    questions?: any[]
   }
-};
-
-// Key for storing quiz state
-const QUIZ_STATE_KEY = 'quizState';
+}
 
 export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { status: authStatus } = useSession()
 
-  const questions = useSelector(selectQuestions) as McqQuestion[]
-  const answers = useSelector(selectAnswers) as Record<string | number, MCQAnswer>
-  const status = useSelector(selectQuizStatus)
+  const questions = useSelector(selectQuestions)
+  const answers = useSelector(selectAnswers)
+  const quizStatus = useSelector(selectQuizStatus)
   const error = useSelector(selectQuizError)
+  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
+  const currentQuestion = useSelector(selectCurrentQuestion)
+  const quizTitle = useSelector(selectQuizTitle)
   const isQuizComplete = useSelector(selectIsQuizComplete)
-  const results = useSelector(selectQuizResults)
-  const currentQuestionIndex = useSelector((state: RootState) => state.quiz.currentQuestionIndex) 
-  const quizId = useSelector((state: RootState) => state.quiz.quizId)
-  const currentQuestion: McqQuestion | undefined = questions[currentQuestionIndex]
+  const isAuthenticated = useSelector(selectIsAuthenticated) // Fix: Use selector instead of function
 
-  const submittingRef = useRef(false)
-  const isLoading = status === "loading"
-  const isSubmitting = status === "submitting" || submittingRef.current
-  const isLastQuestion = currentQuestionIndex === questions.length - 1
-  const hasValidQuestions = Array.isArray(questions) && questions.length > 0
+  const feedbackTimeout = useRef<NodeJS.Timeout | null>(null)
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | null>(null)
 
-  // Reset quiz state on mount for this slug
+  // Load quiz data on mount
   useEffect(() => {
-    dispatch(resetQuiz())
-  }, [dispatch])
-
-  // Save current quiz state to sessionStorage
-  const saveQuizState = useCallback(() => {
-    if (typeof window === 'undefined' || !slug) return;
-    
-    const quizState = {
-      slug,
-      quizData,
-      answers,
-      currentQuestionIndex,
-      isQuizComplete
-    };
-    
-    safeSessionStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(quizState));
-  }, [slug, quizData, answers, currentQuestionIndex, isQuizComplete]);
-
-  // Save state before unload
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    // Save state when component updates
-    if (slug && (Object.keys(answers).length > 0 || currentQuestionIndex > 0)) {
-      saveQuizState();
+    if (quizStatus === 'idle') {
+      if (quizData) {
+        dispatch(fetchQuiz({
+          id: slug,
+          data: {
+            id: slug,
+            title: quizData.title || 'MCQ Quiz',
+            questions: quizData.questions || [],
+            type: 'mcq',
+          },
+          type: 'mcq',
+        }))
+      } else {
+        dispatch(fetchQuiz({ id: slug, type: 'mcq' }))
+      }
     }
-    
-    // Also save state before page unload
-    const handleBeforeUnload = () => {
-      saveQuizState();
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [slug, answers, currentQuestionIndex, saveQuizState]);
+  }, [quizStatus, dispatch, slug, quizData])
 
-  // Initialize quiz
+  // Handle quiz completion
   useEffect(() => {
-    if (
-      slug &&
-      !quizId &&
-      questions.length === 0 &&
-      status === "idle"
-    ) {
-      dispatch(fetchQuiz({ id: slug, data: quizData, type: "mcq" }));
-    }
-  }, [dispatch, slug, quizId, questions.length, status, quizData]);
+    if (!isQuizComplete) return
 
-  // Handle reset parameter
-  useEffect(() => {
-    if (searchParams && typeof searchParams.get === "function" && searchParams.get("reset") === "true") {
-      dispatch(resetQuiz());
-      router.replace(`/dashboard/mcq/${slug}`);
+    if (isAuthenticated) { // Fix: Use boolean value instead of function call
+      dispatch(submitQuiz()).then((res: any) => {
+        if (res?.payload) {
+          dispatch(setQuizResults(res.payload))
+          router.push(`/dashboard/mcq/${slug}/results`)
+        }
+      })
+    } else {
+      dispatch(setPendingQuiz({
+        slug,
+        quizData: {
+          title: quizTitle,
+          questions
+        },
+        currentState: {
+          answers,
+          currentQuestionIndex,
+          isCompleted: true,
+          showResults: true
+        }
+      }))
+       router.push(`/dashboard/mcq/${slug}/results`)
     }
-  }, [searchParams, dispatch, router, slug]);
+  }, [
+    isQuizComplete,
+    isAuthenticated, // Fix: Use correct dependency
+    dispatch,
+    router,
+    slug,
+    quizTitle,
+    questions,
+    answers,
+    currentQuestionIndex
+  ])
 
-  // Handle answer submission
-  const handleAnswer = useCallback(
-    (selectedOption: string) => {
-      if (!currentQuestion) return;
-      const isCorrect = selectedOption === currentQuestion.correctOptionId ||
-                        selectedOption === currentQuestion.answer;
-      const answer: MCQAnswer = {
+
+  const handleAnswerQuestion = (selectedOption: string) => {
+    if (!currentQuestion || answers[currentQuestion.id]?.selectedOptionId) return
+
+    const isCorrect =
+      selectedOption === currentQuestion.correctOptionId ||
+      selectedOption === currentQuestion.answer
+
+    dispatch(saveAnswer({
+      questionId: currentQuestion.id,
+      answer: {
         questionId: currentQuestion.id,
         selectedOptionId: selectedOption,
         timestamp: Date.now(),
-        type: "mcq",
-        isCorrect
-      };
-      dispatch(saveAnswer({
-        questionId: currentQuestion.id,
-        answer
-      }));
-      
-      // Save state after answer submission
-      setTimeout(saveQuizState, 0);
-    },
-    [currentQuestion, dispatch, saveQuizState],
-  );
+        type: 'mcq',
+        isCorrect,
+      },
+    }))
 
-  // Handle navigation to next/previous question
-  const handleNavigation = useCallback((direction: 'next' | 'prev') => {
-    if (direction === 'next' && currentQuestionIndex < questions.length - 1) {
-      requestAnimationFrame(() => {
-        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
-        setTimeout(saveQuizState, 0);
-      });
-    } else if (direction === 'prev' && currentQuestionIndex > 0) {
-      requestAnimationFrame(() => {
-        dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1));
-        setTimeout(saveQuizState, 0);
-      });
-    }
-  }, [currentQuestionIndex, questions.length, dispatch, saveQuizState]);
+    setShowFeedback(true)
+    setFeedbackType(isCorrect ? 'correct' : 'incorrect')
 
-  // Handle quiz submission
-  const handleSubmitQuiz = useCallback(async () => {
-    if (submittingRef.current) return;
-    submittingRef.current = true;
-    try {
-      await dispatch(submitQuiz()).unwrap();
-      
-      // Clear quiz state from sessionStorage after successful submission
-      safeSessionStorage.removeItem(QUIZ_STATE_KEY);
-      
-      router.push(`/dashboard/mcq/${slug}/results`);
-    } catch {}
-    finally {
-      submittingRef.current = false;
-    }
-  }, [dispatch, router, slug]);
-
-  // Auto-submit when quiz is complete
-  useEffect(() => {
-    if (isQuizComplete && status === "idle" && !results && !submittingRef.current) {
-      handleSubmitQuiz();
-    }
-  }, [isQuizComplete, status, results, handleSubmitQuiz]);
-
-  // Loading state
-  if (isLoading || authStatus === "loading") {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Fetching quiz data", status: "loading" },
-          { label: "Preparing questions", status: "pending" },
-        ]}
-      />
-    );
+    if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current)
+    feedbackTimeout.current = setTimeout(() => {
+      setShowFeedback(false)
+      setFeedbackType(null)
+      if (currentQuestionIndex < questions.length - 1) {
+        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+      }
+    }, 900)
   }
 
-  // Error state
-  if (status === "error") {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Fetching quiz data", status: "error", errorMsg: error || "Failed to load quiz" }
-        ]}
-      />
-    );
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+    }
   }
 
-  // Empty questions state
-  if (!hasValidQuestions) {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "No questions available for this quiz", status: "error", errorMsg: "This quiz doesn't contain any questions. Please try another quiz." }
-        ]}
-      />
-    );
+  // === RENDER STATES ===
+
+  if (quizStatus === 'loading') {
+    return <QuizLoadingSteps steps={[{ label: 'Loading quiz data', status: 'loading' }]} />
   }
 
-  // Show current question
-  if (currentQuestion) {
-    const currentAnswer = answers[currentQuestion.id];
-    const currentAnswerId = currentAnswer?.selectedOptionId;
-
+  if (quizStatus === 'failed') {
     return (
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">{currentQuestion.title || "Multiple Choice Quiz"}</h1>
-        <div className="mb-6">
-          <div className="bg-gray-100 rounded-full h-2 mb-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-            ></div>
-          </div>
-          <div className="text-sm text-gray-600 text-right">
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </div>
-        </div>
-        <McqQuiz
-          question={currentQuestion}
-          onAnswer={handleAnswer}
-          questionNumber={currentQuestionIndex + 1}
-          totalQuestions={questions.length}
-          isLastQuestion={isLastQuestion}
-          isSubmitting={isSubmitting}
-          existingAnswer={currentAnswerId}
-          onNavigate={handleNavigation}
-        />
-        <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={() => handleNavigation('prev')}
-            disabled={currentQuestionIndex === 0 || isSubmitting}
-            className="min-w-[100px]"
-          >
-            Previous
+      <div className="max-w-4xl mx-auto text-center py-12">
+        <h2 className="text-xl font-bold mb-4">Quiz Not Found</h2>
+        <p className="text-muted-foreground mb-6">{error || 'Unable to load quiz data.'}</p>
+        <div className="space-x-4">
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Try Again
           </Button>
-          {!isLastQuestion ? (
-            <Button
-              onClick={() => handleNavigation('next')}
-              disabled={isSubmitting}
-              className="min-w-[100px]"
-            >
-              Next
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmitQuiz}
-              disabled={isSubmitting}
-              className="min-w-[100px]"
-            >
-              {isSubmitting ? "Submitting..." : "Submit Quiz"}
-            </Button>
-          )}
+          <Button onClick={() => router.push('/dashboard/quizzes')}>Back to Quizzes</Button>
         </div>
-        {isQuizComplete && !isLastQuestion && (
-          <div className="mt-8 text-center">
-            <Button
-              onClick={handleSubmitQuiz}
-              disabled={isSubmitting}
-              className="px-6 py-3 transition-all duration-300"
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                "Submit Quiz"
-              )}
-            </Button>
-          </div>
-        )}
       </div>
     )
   }
 
-  // Fallback
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-12">
+        <h2 className="text-xl font-bold mb-4">No Questions Available</h2>
+        <p className="text-muted-foreground mb-6">This quiz has no questions.</p>
+        <Button onClick={() => router.push('/dashboard/quizzes')}>Back to Quizzes</Button>
+      </div>
+    )
+  }
+
+  if (!currentQuestion) {
+    return <QuizLoadingSteps steps={[{ label: 'Initializing quiz', status: 'loading' }]} />
+  }
+
+  const currentAnswer = answers[currentQuestion.id]
+  const existingAnswer = currentAnswer?.selectedOptionId
+
   return (
-    <QuizLoadingSteps
-      steps={[
-        { label: "Initializing quiz", status: "loading" }
-      ]}
-    />
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">{quizTitle || 'Multiple Choice Quiz'}</h1>
+        <p className="text-muted-foreground">Select an answer and click Next to continue</p>
+      </div>
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium">
+            Question {currentQuestionIndex + 1} of {questions.length}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}% complete
+          </span>
+        </div>
+        <div className="bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-primary h-2 rounded-full transition-all duration-300 ease-in-out"
+            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+          />
+        </div>
+      </div>
+      <div className="mb-8">
+        <McqQuiz
+          question={currentQuestion}
+          onAnswer={handleAnswerQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          isSubmitting={quizStatus === 'submitting'}
+          existingAnswer={existingAnswer}
+          feedbackType={showFeedback ? feedbackType : null}
+        />
+      </div>
+      <div className="flex justify-end">
+        <Button
+          onClick={handleNextQuestion}
+          disabled={
+            quizStatus === 'submitting' ||
+            !answers[currentQuestion.id]?.selectedOptionId ||
+            showFeedback
+          }
+          className="min-w-[120px]"
+        >
+          {currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+        </Button>
+      </div>
+      <div className="mt-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          {Object.keys(answers).length} of {questions.length} questions answered
+        </p>
+      </div>
+    </div>
   )
 }

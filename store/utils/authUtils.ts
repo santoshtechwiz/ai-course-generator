@@ -193,5 +193,11 @@ export const setupAutoSave = (
 
 // ========== Stub: Implement this based on your Redux slice ==========
 const saveAuthRedirectState = (state: any) => {
-  // You must implement this to store in Redux slice or local/sessionStorage as needed
+  if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem('authRedirectState', JSON.stringify(state));
+    } catch (error) {
+      console.error("Failed to save auth redirect state:", error);
+    }
+  }
 };
