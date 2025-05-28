@@ -53,11 +53,11 @@ export const fetchQuiz = createAsyncThunk(
           type: type,
         }))
         return {
-          id: data.id,
+          id: data.id || id, // Ensure id is set from data.id or fallback to the param id
           type: data.type || type,
           title: data.title,
           questions,
-          slug: id, // Add slug
+          slug: typeof id === 'string' ? id : String(id), // Always ensure slug is a string
         }
       }
 
@@ -72,11 +72,11 @@ export const fetchQuiz = createAsyncThunk(
         type: quizData.type || type,
       }))
       return {
-        id: quizData.id,
+        id: quizData.quizId || quizData.id || id, // Prioritize quizId from API
         type: quizData.type || type,
         title: quizData.title,
         questions,
-        slug: id, // Add slug
+        slug: quizData.slug || (typeof id === 'string' ? id : String(id)), // Prioritize slug from API
       }
     } catch (error: any) {
       return rejectWithValue(error.message)
@@ -475,29 +475,123 @@ const quizSlice = createSlice({
     },
     rehydrateQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
       const { slug, quizData, currentState } = action.payload
+      
+      // Ensure slug is always a string and set both slug and quizId 
+      const sanitizedSlug = typeof slug === 'string' ? slug : String(slug)
+      state.slug = sanitizedSlug
+      state.quizId = sanitizedSlug  // For backward compatibility
+      
       state.currentQuestionIndex = 0
-      state.answers = {}
-      state.isCompleted = false
-      state.results = null
       state.error = null
       state.status = "idle"
-      state.quizId = slug
-      state.slug = slug
       state.quizType = "mcq"
-      state.title = quizData?.title || ""
-      state.questions = quizData?.questions || []
-      if (currentState) {
-        // If restoring for result, don't reset answers/results
-        if (currentState.showResults) {
-          // Just set slug and quizId for result access
-          state.quizId = slug
-          state.slug = slug
-        } else {
-          state.currentQuestionIndex = currentState.currentQuestionIndex || 0
-          state.answers = currentState.answers || {}
-          state.isCompleted = currentState.isCompleted || false
-        }
+      
+      // Always populate the questions from quizData if available
+      if (quizData?.questions?.length) {
+        state.title = quizData?.title || state.title || ""
+        state.questions = quizData.questions
       }
+      
+      // Don't reset answers if we have existing ones and currentState.showResults is true
+      if (!(currentState?.showResults && Object.keys(state.answers).length > 0)) {
+        state.answers = currentState?.answers || {}
+      }
+      
+      state.isCompleted = currentState?.isCompleted || false
+      
+      // Special handling for results when showResults is true
+      if (currentState?.showResults) {
+        // If we have explicit results from currentState, use them
+        if (currentState.results) {
+          state.results = currentState.results
+          state.status = "succeeded"
+          console.log("Using results from currentState")
+        } else {
+          // Try to find results from storage using slug
+          try {
+            if (typeof window !== 'undefined') {
+              // Try with exact slug
+              const storedResults = sessionStorage.getItem(`quiz_results_${slug}`)
+              if (storedResults) {
+                try {
+                  state.results = JSON.parse(storedResults)
+                  state.status = "succeeded"
+                  console.log("Restored results from sessionStorage", state.results)
+                } catch (e) {
+                  console.error("Failed to parse stored quiz results:", e)
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Error accessing sessionStorage:", e)
+          }
+          
+          // If still no results, try to compute them from questions and answers or from the quiz data itself
+          if (!state.results) {
+            // If we don't have answers but have quiz data, create a default set of answers
+            if (Object.keys(state.answers).length === 0 && state.questions.length > 0) {
+              // Create default answers for all questions (unmarked/incorrect)
+              state.questions.forEach(question => {
+                state.answers[String(question.id)] = {
+                  questionId: question.id,
+                  selectedOptionId: null,
+                  isCorrect: false,
+                  type: "mcq"
+                }
+              });
+            }
+            
+            // Generate results if we have both questions and answers
+            if (state.questions.length > 0) {
+              try {
+                // Process each question and check if the answer is correct
+                let score = 0
+                const questionResults = state.questions.map((question: any) => {
+                  const answer = state.answers[String(question.id)]
+                  const isCorrect = answer?.isCorrect === true
+                  if (isCorrect) score++
+                  return {
+                    questionId: question.id,
+                    isCorrect,
+                    userAnswer: answer?.selectedOptionId || null,
+                    correctAnswer: question.correctOptionId || question.answer,
+                    question: question.question || question.text,
+                    skipped: !answer || !answer.selectedOptionId
+                  }
+                })
+                
+                // Create complete results object
+                state.results = {
+                  quizId: state.quizId,
+                  slug: slug,
+                  title: state.title || "Quiz Results",
+                  score,
+                  maxScore: state.questions.length,
+                  percentage: state.questions.length > 0 ? Math.round((score / state.questions.length) * 100) : 0,
+                  completedAt: new Date().toISOString(),
+                  questions: state.questions,
+                  answers: Object.values(state.answers),
+                  questionResults,
+                }
+                state.status = "succeeded"
+                console.log("Generated quiz results from quiz data:", state.results)
+              } catch (e) {
+                console.error("Error generating results:", e)
+                state.status = "failed"
+                state.error = "Failed to generate results. Please try again."
+              }
+            } else {
+              state.status = "failed"
+              state.error = "No questions available to show results."
+            }
+          }
+        }
+      } else {
+        state.currentQuestionIndex = currentState?.currentQuestionIndex || 0
+        // Only clear results if not showing results
+        state.results = null
+      }
+      
       state.pendingQuiz = null
     },
 
@@ -524,9 +618,11 @@ const quizSlice = createSlice({
     },
 
     // Backward compatible: Keep existing actions
-    setQuizId: (state, action: PayloadAction<string>) => {
-      state.quizId = action.payload
-      state.slug = action.payload // Also set slug for consistency
+    setQuizId: (state, action: PayloadAction<string | number>) => {
+      // Convert numeric IDs to strings
+      const id = String(action.payload)
+      state.quizId = id
+      state.slug = id // Always keep slug and quizId in sync
     },
 
     setQuizType: (state, action: PayloadAction<string>) => {
@@ -547,11 +643,13 @@ const quizSlice = createSlice({
       })
       .addCase(fetchQuiz.fulfilled, (state, action) => {
         state.status = "succeeded"
-        state.quizId = action.payload.id
+        // Always use strings for both quizId and slug
+        state.quizId = String(action.payload.id)
         state.quizType = action.payload.type
         state.title = action.payload.title
         state.questions = action.payload.questions
-        state.slug = action.payload.slug || action.payload.id // Set slug
+        // Ensure slug is always set to a string value
+        state.slug = action.payload.slug || String(action.payload.id)
         state.currentQuestionIndex = 0
         state.answers = {}
         state.isCompleted = false

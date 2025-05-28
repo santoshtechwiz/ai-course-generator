@@ -1,0 +1,495 @@
+import React from "react"
+import { render, screen, waitFor, fireEvent } from "@testing-library/react"
+import { Provider } from "react-redux"
+import { useRouter } from "next/navigation"
+import { useSession, signIn } from "next-auth/react"
+import configureStore from "redux-mock-store"
+import McqResultsPage from "./page"
+
+// Mock next/navigation
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+  })),
+  useSearchParams: jest.fn(() => ({
+    get: jest.fn((param) => param === 'auth' ? null : null)
+  })),
+}))
+
+// Mock next-auth/react
+jest.mock("next-auth/react", () => ({
+  useSession: jest.fn(),
+  signIn: jest.fn(),
+}))
+
+// Mock React's use function for handling params
+jest.mock("react", () => {
+  const originalReact = jest.requireActual("react");
+  return {
+    ...originalReact,
+    use: jest.fn((promise) => {
+      if (promise && typeof promise === 'object' && 'slug' in promise) {
+        return promise;
+      }
+      return promise;
+    }),
+  };
+});
+
+// Create mock store
+const mockStore = configureStore([])
+
+// Create default state to avoid null selector issues
+const createDefaultState = (overrides = {}) => ({
+  quiz: {
+    quizId: "test-quiz",
+    slug: "test-quiz",
+    results: null,
+    questions: [],
+    answers: {},
+    status: "idle",
+    error: null,
+    title: "Test Quiz",
+    ...overrides.quiz || {}
+  },
+  auth: {
+    isAuthenticated: false,
+    user: null,
+    loading: false,
+    error: null,
+    ...overrides.auth || {}
+  }
+})
+
+// Mock store utils to ensure results are properly retrieved
+jest.mock("@/store/utils/session", () => ({
+  getQuizResults: jest.fn().mockImplementation(() => null),
+  saveQuizResults: jest.fn(),
+}))
+
+// Mock thunks to return plain objects so redux-mock-store doesn't throw
+jest.mock('@/store/slices/quizSlice', () => {
+  const actual = jest.requireActual('@/store/slices/quizSlice');
+  return {
+    ...actual,
+    checkAuthAndLoadResults: jest.fn(() => ({ type: 'quiz/checkAuthAndLoadResults', payload: {} })),
+    rehydrateQuiz: jest.fn((payload) => ({ type: 'quiz/rehydrateQuiz', payload })),
+    resetPendingQuiz: jest.fn(() => ({ type: 'quiz/resetPendingQuiz' })),
+    setQuizResults: jest.fn((payload) => ({ type: 'quiz/setQuizResults', payload })),
+  };
+});
+
+describe("MCQ Results Page", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    
+    // Mock sessionStorage
+    const mockSessionStorage = {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn(),
+      length: 0,
+      key: jest.fn(),
+    };
+    Object.defineProperty(window, 'sessionStorage', {
+      value: mockSessionStorage,
+      writable: true
+    });
+  })
+
+  it("shows sign-in prompt for unauthenticated users", async () => {
+    // Mock unauthenticated session
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: null, 
+      status: "unauthenticated" 
+    })
+    
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: false,
+      }
+    }))
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    await waitFor(() => {
+      expect(screen.getByText("Sign In to View Results")).toBeInTheDocument()
+      expect(screen.getByText(/Please sign in to view your quiz results/i)).toBeInTheDocument()
+    })
+    
+    const signInButton = screen.getByRole('button', { name: /sign in/i });
+    fireEvent.click(signInButton);
+    expect(signIn).toHaveBeenCalled()
+  })
+
+  it("shows results when authenticated with results available", async () => {
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    })
+    
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+        user: { name: "Test User" },
+      },
+      quiz: {
+        status: "succeeded",
+        results: { 
+          score: 2, 
+          maxScore: 3, 
+          percentage: 67, 
+          slug: "test-quiz", 
+          title: "Test Quiz", 
+          completedAt: new Date().toISOString(),
+          questions: [{ id: "1", question: "Q1", options: ["A", "B"], correctOptionId: "A" }],
+          questionResults: [{ questionId: "1", isCorrect: true, userAnswer: "A" }],
+          answers: [{ questionId: "1", selectedOptionId: "A", isCorrect: true }],
+        },
+      }
+    }))
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    await waitFor(() => {
+      expect(screen.getByText(/2 out of 3/i)).toBeInTheDocument()
+      expect(screen.getByText("67%")).toBeInTheDocument()
+    })
+  })
+
+  it("shows loading state when auth is loading", async () => {
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: null, 
+      status: "loading" 
+    })
+    
+    const store = mockStore(createDefaultState({
+      quiz: {
+        status: "loading",
+      }
+    }))
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Checking authentication/i)).toBeInTheDocument()
+    })
+  })
+
+  it("shows error message when quiz status is failed", async () => {
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    })
+    
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+      },
+      quiz: {
+        status: "failed",
+        error: "Failed to load quiz results"
+      }
+    }))
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Error Loading Results/i)).toBeInTheDocument()
+      expect(screen.getByText(/Failed to load quiz results/i)).toBeInTheDocument()
+    })
+  })
+
+  it("handles the special case of 'Results not found' error by generating results", async () => {
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    })
+    
+    const pendingQuizData = {
+      slug: "test-quiz",
+      quizData: {
+        title: "Test Quiz",
+        questions: [{ id: "1", question: "Q1", options: ["A", "B"], correctOptionId: "A" }]
+      },
+      currentState: {
+        showResults: true
+      }
+    };
+    
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+      },
+      quiz: {
+        status: "failed",
+        error: "Results not found. Please take the quiz again.",
+        pendingQuiz: pendingQuizData
+      }
+    }))
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Generating quiz results/i)).toBeInTheDocument()
+    })
+    
+    const actions = store.getActions();
+    expect(actions.some(action => 
+      action.type === 'quiz/rehydrateQuiz' && 
+      action.payload.currentState.showResults === true
+    )).toBeTruthy();
+  })
+
+  it("redirects to quiz page when no results and no answers on authenticated state", async () => {
+    // Mock router
+    const mockPush = jest.fn();
+    (useRouter as jest.Mock).mockReturnValue({
+      push: mockPush,
+    });
+    
+    // Mock authenticated session
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    })
+    
+    // Create store with authenticated state but no questions or answers
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+      },
+      quiz: {
+        status: "succeeded",
+        questions: [],
+        answers: {},
+      }
+    }))
+    
+    // Use fake timers for setTimeout
+    jest.useFakeTimers();
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    // Fast-forward timers
+    jest.advanceTimersByTime(500);
+    
+    // Expect redirect to happen
+    expect(mockPush).toHaveBeenCalledWith("/dashboard/mcq/test-quiz");
+    
+    // Restore timers
+    jest.useRealTimers();
+  })
+
+  it("handles recovery from pendingQuiz with showResults=true", async () => {
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    })
+    
+    const pendingQuizData = {
+      slug: "test-quiz",
+      quizData: {
+        title: "Test Quiz",
+        questions: [{ id: "1", question: "Q1", options: ["A", "B"], correctOptionId: "A" }]
+      },
+      currentState: {
+        showResults: true,
+        // No pre-populated results
+      }
+    };
+    
+    // Mock sessionStorage to return pending quiz
+    window.sessionStorage.getItem = jest.fn().mockImplementation((key) => {
+      if (key === 'pendingQuiz') return JSON.stringify(pendingQuizData);
+      return null;
+    });
+    
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+      },
+      quiz: {
+        status: "idle",
+        pendingQuiz: pendingQuizData,
+      }
+    }))
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    // Should dispatch rehydrateQuiz with the pending quiz data
+    await waitFor(() => {
+      const actions = store.getActions();
+      expect(actions.some(action => action.type === 'quiz/rehydrateQuiz')).toBeTruthy();
+    });
+  })
+
+  it("handles numeric IDs in the URL by redirecting to proper slug", async () => {
+    // Use a numeric slug to trigger the slug redirection
+    const numericSlug = "123";
+    
+    // Mock the router
+    const mockPush = jest.fn();
+    (useRouter as jest.Mock).mockReturnValue({
+      push: mockPush,
+    });
+    
+    // Mock authenticated session
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    });
+    
+    // Mock pendingQuiz with a proper slug in sessionStorage
+    const pendingQuizWithProperSlug = {
+      slug: "proper-slug-name",
+      quizData: { title: "Test Quiz" }
+    };
+    
+    // Mock sessionStorage to return pendingQuiz with proper slug
+    window.sessionStorage.getItem = jest.fn().mockImplementation((key) => {
+      if (key === 'pendingQuiz') return JSON.stringify(pendingQuizWithProperSlug);
+      return null;
+    });
+    
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+      },
+      quiz: {
+        status: "idle",
+        pendingQuiz: pendingQuizWithProperSlug,
+      }
+    }));
+    
+    // Use fake timers
+    jest.useFakeTimers();
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: numericSlug }} />
+      </Provider>
+    );
+    
+    // Fast-forward timers
+    jest.advanceTimersByTime(500);
+    
+    // Should redirect to the proper slug
+    expect(mockPush).toHaveBeenCalledWith("/dashboard/mcq/proper-slug-name");
+    
+    // Restore timers
+    jest.useRealTimers();
+  });
+
+  it("computes results on-the-spot when questions and answers are available but no results", async () => {
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    })
+    
+    // Create store with questions and answers but no results
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+      },
+      quiz: {
+        status: "succeeded",
+        questions: [
+          { id: "1", question: "Q1", options: ["A", "B"], correctOptionId: "A" },
+          { id: "2", question: "Q2", options: ["X", "Y"], correctOptionId: "Y" }
+        ],
+        answers: {
+          "1": { questionId: "1", selectedOptionId: "A", isCorrect: true },
+          "2": { questionId: "2", selectedOptionId: "X", isCorrect: false }
+        },
+        // No results
+      }
+    }))
+    
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    // Should compute and display results immediately
+    await waitFor(() => {
+      // Should find score (1 out of 2)
+      expect(screen.getByText(/1 out of 2/i)).toBeInTheDocument()
+      // Should find percentage (50%)
+      expect(screen.getByText("50%")).toBeInTheDocument()
+    })
+  })
+
+  it("recovers from invalid JSON in sessionStorage", async () => {
+    (useSession as jest.Mock).mockReturnValue({ 
+      data: { user: { name: "Test User" } }, 
+      status: "authenticated" 
+    })
+    
+    // Mock sessionStorage with invalid JSON
+    window.sessionStorage.getItem = jest.fn().mockImplementation((key) => {
+      if (key === 'pendingQuiz') return '{invalid:json}';
+      return null;
+    });
+    
+    // Mock console.error to suppress error messages
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    const store = mockStore(createDefaultState({
+      auth: {
+        isAuthenticated: true,
+      },
+      quiz: {
+        status: "idle",
+        questions: [],
+        answers: {}
+      }
+    }))
+    
+    // Should not crash when encountering invalid JSON
+    render(
+      <Provider store={store}>
+        <McqResultsPage params={{ slug: "test-quiz" }} />
+      </Provider>
+    )
+    
+    // Use fake timers
+    jest.useFakeTimers();
+    jest.advanceTimersByTime(500);
+    
+    // Restore console.error and timers
+    consoleErrorSpy.mockRestore();
+    jest.useRealTimers();
+  })
+})
