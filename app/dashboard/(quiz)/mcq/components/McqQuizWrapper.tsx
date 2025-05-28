@@ -46,7 +46,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const currentQuestion = useSelector(selectCurrentQuestion)
   const quizTitle = useSelector(selectQuizTitle)
   const isQuizComplete = useSelector(selectIsQuizComplete)
-  const isAuthenticated = useSelector(selectIsAuthenticated) // Fix: Use selector instead of function
+  const isAuthenticated = useSelector(selectIsAuthenticated)
 
   const feedbackTimeout = useRef<NodeJS.Timeout | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
@@ -55,7 +55,8 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   // Load quiz data on mount
   useEffect(() => {
     if (quizStatus === 'idle') {
-      if (quizData) {
+      // Always fetch from API if quizData is not provided (even if quizData is null)
+      if (quizData && quizData.questions && quizData.questions.length > 0) {
         dispatch(fetchQuiz({
           id: slug,
           data: {
@@ -67,6 +68,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           type: 'mcq',
         }))
       } else {
+        // Always fetch from API if quizData is missing or empty
         dispatch(fetchQuiz({ id: slug, type: 'mcq' }))
       }
     }
@@ -76,41 +78,44 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   useEffect(() => {
     if (!isQuizComplete) return
 
-    if (isAuthenticated) { // Fix: Use boolean value instead of function call
+    if (isAuthenticated) {
       dispatch(submitQuiz()).then((res: any) => {
         if (res?.payload) {
           dispatch(setQuizResults(res.payload))
-          router.push(`/dashboard/mcq/${slug}/results`)
+          // Always use slug in URL, not numeric ID
+          const safeSlug = typeof slug === 'string' ? slug : String(slug);
+          router.push(`/dashboard/mcq/${safeSlug}/results`)
         }
       })
     } else {
       dispatch(setPendingQuiz({
-        slug,
+        slug, // This will be saved properly in sessionStorage
         quizData: {
           title: quizTitle,
-          questions
+          questions,
         },
         currentState: {
           answers,
           currentQuestionIndex,
           isCompleted: true,
-          showResults: true
-        }
+          showResults: true,
+        },
       }))
-       router.push(`/dashboard/mcq/${slug}/results`)
+      // Always use slug in URL, not numeric ID
+      const safeSlug = typeof slug === 'string' ? slug : String(slug);
+      router.push(`/dashboard/mcq/${safeSlug}/results`)
     }
   }, [
     isQuizComplete,
-    isAuthenticated, // Fix: Use correct dependency
+    isAuthenticated,
     dispatch,
     router,
     slug,
     quizTitle,
     questions,
     answers,
-    currentQuestionIndex
+    currentQuestionIndex,
   ])
-
 
   const handleAnswerQuestion = (selectedOption: string) => {
     if (!currentQuestion || answers[currentQuestion.id]?.selectedOptionId) return

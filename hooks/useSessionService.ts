@@ -20,6 +20,20 @@ export function useSessionService() {
 
   const saveAuthRedirectState = useCallback((state: AuthRedirectState) => {
     const { slug, quizData = null, currentState = {}, showResults = false } = state.quizState
+    
+    // Check if we have quiz results in Redux that should be preserved
+    let quizResults = null;
+    if (typeof window !== 'undefined' && showResults) {
+      try {
+        // Try to get results from session storage first
+        const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
+        if (storedResults) {
+          quizResults = JSON.parse(storedResults);
+        }
+      } catch (e) {
+        console.warn('Failed to retrieve stored quiz results:', e);
+      }
+    }
 
     // Dispatch to Redux
     dispatch(setPendingQuiz({
@@ -27,7 +41,8 @@ export function useSessionService() {
       quizData,
       currentState: {
         ...currentState,
-        showResults
+        showResults,
+        results: quizResults // Include results when redirecting for authentication
       }
     }))
 
@@ -39,7 +54,8 @@ export function useSessionService() {
           quizData,
           currentState: {
             ...currentState,
-            showResults
+            showResults,
+            results: quizResults // Include results in sessionStorage too
           }
         }))
         sessionStorage.setItem('authRedirectPath', state.returnPath)
@@ -50,11 +66,34 @@ export function useSessionService() {
   }, [dispatch])
 
   const handleSignInWithState = useCallback((slug: string, showResults: boolean = false) => {
+    // Attempt to retrieve existing quiz data from session storage
+    let existingData = null;
+    let existingAnswers = null;
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const storedQuiz = sessionStorage.getItem('pendingQuiz');
+        if (storedQuiz) {
+          const parsed = JSON.parse(storedQuiz);
+          existingData = parsed.quizData;
+          
+          // Also try to get answers if available
+          if (parsed.currentState?.answers) {
+            existingAnswers = parsed.currentState.answers;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to retrieve existing quiz data:', e);
+      }
+    }
+
     dispatch(setPendingQuiz({
       slug,
-      quizData: null,
+      quizData: existingData, // Use existing data if available instead of null
       currentState: {
-        showResults
+        showResults,
+        // Also include answers if available to properly compute results
+        answers: existingAnswers || {}
       }
     }))
 

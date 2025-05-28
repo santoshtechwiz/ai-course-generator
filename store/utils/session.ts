@@ -173,30 +173,87 @@ export const getQuizSession = (sessionId: string): any | null => {
 };
 
 /**
- * Save quiz results to sessionStorage
+ * Save quiz results to session storage
  */
-export const saveQuizResults = (
-  sessionId: string,
-  results: any,
-): void => {
-  enqueueStorageOperation(() => {
-    sessionStorage.setItem(`quiz_results_${sessionId}`, JSON.stringify(results));
-  });
-};
+export const saveQuizResults = (slug: string, results: any) => {
+  if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+    try {
+      // Ensure slug is a string (not a number)
+      const safeSlug = String(slug);
+      
+      // Save using the slug key
+      const resultKey = `quiz_results_${safeSlug}`;
+      sessionStorage.setItem(resultKey, JSON.stringify(results));
+      
+      // Additionally save using quizId if different from slug
+      if (results.quizId && results.quizId !== safeSlug) {
+        const quizIdKey = `quiz_results_${results.quizId}`;
+        sessionStorage.setItem(quizIdKey, JSON.stringify(results));
+      }
+      
+      // Always include the slug in the results object for easier retrieval
+      if (!results.slug || results.slug !== safeSlug) {
+        results.slug = safeSlug;
+      }
+      
+      // Also update any pending quiz to include the results
+      const pendingQuizStr = sessionStorage.getItem('pendingQuiz')
+      if (pendingQuizStr) {
+        try {
+          const pendingQuiz = JSON.parse(pendingQuizStr)
+          if (pendingQuiz.slug === safeSlug) {
+            if (!pendingQuiz.currentState) {
+              pendingQuiz.currentState = {};
+            }
+            pendingQuiz.currentState.results = results;
+            pendingQuiz.currentState.showResults = true;
+            sessionStorage.setItem('pendingQuiz', JSON.stringify(pendingQuiz));
+          }
+        } catch (e) {
+          // Ignore parsing errors with pending quiz
+        }
+      }
+      
+      console.log(`Successfully saved quiz results for ${safeSlug}`);
+    } catch (error) {
+      console.warn('Failed to save quiz results to sessionStorage:', error)
+    }
+  }
+}
 
 /**
  * Retrieve quiz results from sessionStorage
  */
-export const getQuizResults = (sessionId: string): any | null => {
-  const resultsData = sessionStorage.getItem(`quiz_results_${sessionId}`);
-  if (!resultsData) return null;
+export const getQuizResults = (key: string): any | null => {
+  if (typeof window === 'undefined') return null;
   
   try {
-    return JSON.parse(resultsData);
+    // Try the exact key first
+    const exactKeyResults = sessionStorage.getItem(`quiz_results_${key}`);
+    if (exactKeyResults) {
+      return JSON.parse(exactKeyResults);
+    }
+    
+    // If no direct match, try to find any results for this quiz
+    // by looking through all sessionStorage keys
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const storageKey = sessionStorage.key(i);
+      if (storageKey?.startsWith('quiz_results_')) {
+        try {
+          const storedData = JSON.parse(sessionStorage.getItem(storageKey) || '');
+          if (storedData.slug === key || storedData.quizId === key) {
+            return storedData;
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+    }
   } catch (error) {
     console.error('Failed to parse results data:', error);
-    return null;
   }
+  
+  return null;
 };
 
 /**
