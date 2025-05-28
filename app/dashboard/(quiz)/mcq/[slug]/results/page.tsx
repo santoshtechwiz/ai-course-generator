@@ -13,7 +13,8 @@ import {
   selectQuestions,
   selectAnswers,
   selectQuizError,
-  fetchQuizResults
+  fetchQuizResults,
+  setSessionId
 } from "@/store/slices/quizSlice"
 import McqQuizResult from "../../components/McqQuizResult"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
@@ -21,6 +22,7 @@ import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthent
 import { QuizResult, McqQuestion } from "@/app/types/quiz-types"
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { recoverQuizSession } from "@/store/utils/session"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -52,7 +54,19 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   // Generate results from questions and answers if needed
   const [generatedResults, setGeneratedResults] = useState<QuizResult | null>(null);
-  
+  // page.tsx
+useEffect(() => {
+  if (typeof window === 'undefined') return;
+
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get('sessionId');
+  if (sessionId) {
+    dispatch(setSessionId(sessionId));
+    // Clean the URL after processing
+    const newUrl = window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+  }
+}, [dispatch]);
   // Generate results from available questions and answers if they exist
   useEffect(() => {
     if (!quizResults && questions.length > 0 && Object.keys(answers).length > 0) {
@@ -129,9 +143,15 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   }, [isAuthenticated, quizResults, quizStatus, slug, dispatch])
 
   // Handle sign in
-  const handleSignIn = () => {
-    router.push(`/api/auth/signin?callbackUrl=/dashboard/mcq/${slug}/results`)
-  }
+// page.tsx
+const handleSignIn = () => {
+  // Flush pending storage operations to ensure data is saved
+  recoverQuizSession();
+
+  const sessionId = typeof window !== 'undefined' ? sessionStorage.getItem('quiz_session_id') : null;
+  const callbackUrl = `/dashboard/mcq/${slug}/results${sessionId ? `?sessionId=${sessionId}` : ''}`;
+  router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+}
 
   // Authentication loading
   if (authStatus === "loading") {

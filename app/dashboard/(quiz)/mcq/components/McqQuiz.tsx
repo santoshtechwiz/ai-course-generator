@@ -22,6 +22,9 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { saveAnswer } from "@/store/slices/quizSlice"
+
 
 interface Option {
   id: string
@@ -50,8 +53,31 @@ const McqQuiz = ({
   totalQuestions = 1,
   existingAnswer
 }: McqQuizProps) => {
-  const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer ?? null)
-  const [isAnswerSaved, setIsAnswerSaved] = useState(!!existingAnswer)
+  // Add this guard at the top:
+  if (!question) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto shadow-xl border-0 bg-gradient-to-br from-background to-muted/20">
+        <CardContent className="p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <HelpCircle className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-bold mb-3">Question Unavailable</h3>
+          <p className="text-muted-foreground mb-6">
+            We’re having trouble loading this question. Please try refreshing.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Reload Quiz
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const dispatch = useAppDispatch()
+  const savedAnswer = useAppSelector(state => state.quiz.answers[question.id])
+
+  const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer ?? savedAnswer ?? null)
+  const [isAnswerSaved, setIsAnswerSaved] = useState(!!existingAnswer || !!savedAnswer)
   const questionText = question.text || question.question || "Question text unavailable"
 
   useEffect(() => {
@@ -59,10 +85,10 @@ const McqQuiz = ({
       setSelectedOption(existingAnswer)
       setIsAnswerSaved(true)
     } else {
-      setSelectedOption(null)
-      setIsAnswerSaved(false)
+      setSelectedOption(savedAnswer)
+      setIsAnswerSaved(!!savedAnswer)
     }
-  }, [existingAnswer, question.id])
+  }, [existingAnswer, savedAnswer, question.id])
 
   const options = useMemo(() => {
     return (question?.options || []).map((option, index) => {
@@ -83,10 +109,10 @@ const McqQuiz = ({
 
   const handleSaveAnswer = useCallback(() => {
     if (selectedOption) {
-      onAnswer(selectedOption)
+      dispatch(saveAnswer({ questionId: question.id, answer: selectedOption }))
       setIsAnswerSaved(true)
     }
-  }, [selectedOption, onAnswer])
+  }, [selectedOption, dispatch, question.id])
 
   const progressPercentage = (questionNumber / totalQuestions) * 100
 
@@ -111,6 +137,7 @@ const McqQuiz = ({
 
   return (
     <motion.div
+      data-testid="mcq-quiz"
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -24 }}
@@ -171,6 +198,7 @@ const McqQuiz = ({
               return (
                 <motion.div
                   key={option.id}
+                  data-testid={`option-${index}`}
                   variants={{
                     hidden: { opacity: 0, x: -10 },
                     visible: { opacity: 1, x: 0 }
@@ -224,6 +252,7 @@ const McqQuiz = ({
             transition={{ delay: 0.3 }}
           >
             <Button
+              data-testid="submit-answer"
               onClick={handleSaveAnswer}
               disabled={!selectedOption || isSubmitting || isAnswerSaved}
               size="lg"

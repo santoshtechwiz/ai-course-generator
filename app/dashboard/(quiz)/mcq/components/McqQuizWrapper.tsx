@@ -1,14 +1,12 @@
 "use client"
 
-import { useEffect, useCallback, useMemo, useRef, useState } from "react"
+import { useEffect, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 import McqQuiz from "./McqQuiz"
-
 import { AppDispatch, RootState } from "@/store"
-
 import {
   selectQuestions,
   selectAnswers,
@@ -19,7 +17,8 @@ import {
   setCurrentQuestionIndex,
   fetchQuiz,
   saveAnswer,
-  submitQuiz
+  submitQuiz,
+  resetQuiz
 } from "@/store/slices/quizSlice"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import { Button } from "@/components/ui/button"
@@ -41,18 +40,44 @@ interface MCQAnswer {
   isCorrect?: boolean
 }
 
+// Helper function to safely interact with sessionStorage
+const safeSessionStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return sessionStorage.getItem(key);
+    } catch (e) {
+      console.error('Failed to get from sessionStorage:', e);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (e) {
+      console.error('Failed to set to sessionStorage:', e);
+    }
+  },
+  removeItem: (key: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.removeItem(key);
+    } catch (e) {
+      console.error('Failed to remove from sessionStorage:', e);
+    }
+  }
+};
+
+// Key for storing quiz state
+const QUIZ_STATE_KEY = 'quizState';
+
 export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
   const searchParams = useSearchParams()
-  
-  // Debug state to track current index changes
-  const [debugState, setDebugState] = useState({
-    lastAction: "",
-    timestamp: Date.now()
-  })
+  const { status: authStatus } = useSession()
 
-  // Memoized Redux selectors for performance
   const questions = useSelector(selectQuestions) as McqQuestion[]
   const answers = useSelector(selectAnswers) as Record<string | number, MCQAnswer>
   const status = useSelector(selectQuizStatus)
@@ -61,156 +86,139 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const results = useSelector(selectQuizResults)
   const currentQuestionIndex = useSelector((state: RootState) => state.quiz.currentQuestionIndex) 
   const quizId = useSelector((state: RootState) => state.quiz.quizId)
-  const quizType = useSelector((state: RootState) => state.quiz.quizType)
   const currentQuestion: McqQuestion | undefined = questions[currentQuestionIndex]
 
-  // Submission tracking
   const submittingRef = useRef(false)
-
-  // Memoized computed states
   const isLoading = status === "loading"
   const isSubmitting = status === "submitting" || submittingRef.current
-  const hasError = status === "error"
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   const hasValidQuestions = Array.isArray(questions) && questions.length > 0
 
-  // Only reset quiz state on initial mount for this slug
-  const didInitRef = useRef(false)
+  // Reset quiz state on mount for this slug
   useEffect(() => {
-    if (!didInitRef.current) {
-      dispatch({ type: "quiz/resetQuiz" })
-      didInitRef.current = true
-    }
+    dispatch(resetQuiz())
   }, [dispatch])
+
+  // Save current quiz state to sessionStorage
+  const saveQuizState = useCallback(() => {
+    if (typeof window === 'undefined' || !slug) return;
+    
+    const quizState = {
+      slug,
+      quizData,
+      answers,
+      currentQuestionIndex,
+      isQuizComplete
+    };
+    
+    safeSessionStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(quizState));
+  }, [slug, quizData, answers, currentQuestionIndex, isQuizComplete]);
+
+  // Save state before unload
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Save state when component updates
+    if (slug && (Object.keys(answers).length > 0 || currentQuestionIndex > 0)) {
+      saveQuizState();
+    }
+    
+    // Also save state before page unload
+    const handleBeforeUnload = () => {
+      saveQuizState();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [slug, answers, currentQuestionIndex, saveQuizState]);
 
   // Initialize quiz
   useEffect(() => {
-    if (slug && !quizId && questions.length === 0 && status === "idle") {
-      dispatch(fetchQuiz({ id: slug, data: quizData, type: "mcq" }))
+    if (
+      slug &&
+      !quizId &&
+      questions.length === 0 &&
+      status === "idle"
+    ) {
+      dispatch(fetchQuiz({ id: slug, data: quizData, type: "mcq" }));
     }
-  }, [dispatch, slug, quizId, questions.length, status, quizData])
+  }, [dispatch, slug, quizId, questions.length, status, quizData]);
 
   // Handle reset parameter
   useEffect(() => {
     if (searchParams && typeof searchParams.get === "function" && searchParams.get("reset") === "true") {
-      dispatch({ type: "quiz/resetQuiz" })
-      router.replace(`/dashboard/mcq/${slug}`)
+      dispatch(resetQuiz());
+      router.replace(`/dashboard/mcq/${slug}`);
     }
-  }, [searchParams, dispatch, router, slug])
-
-  // Debug current question index changes
-  useEffect(() => {
-    console.log("Current question index changed:", currentQuestionIndex);
-  }, [currentQuestionIndex])
+  }, [searchParams, dispatch, router, slug]);
 
   // Handle answer submission
   const handleAnswer = useCallback(
     (selectedOption: string) => {
-      if (!currentQuestion) return
-
-      // Log for debugging
-      console.log("Answer selected:", selectedOption, "for question", currentQuestion.id);
-
-      // Determine if the answer is correct
-      const isCorrect = selectedOption === currentQuestion.correctOptionId || 
-                        selectedOption === currentQuestion.answer
-
+      if (!currentQuestion) return;
+      const isCorrect = selectedOption === currentQuestion.correctOptionId ||
+                        selectedOption === currentQuestion.answer;
       const answer: MCQAnswer = {
         questionId: currentQuestion.id,
         selectedOptionId: selectedOption,
         timestamp: Date.now(),
         type: "mcq",
         isCorrect
-      }
-
-      // Save answer to Redux and session storage
-      dispatch(saveAnswer({ 
-        questionId: currentQuestion.id, 
-        answer 
-      }))
+      };
+      dispatch(saveAnswer({
+        questionId: currentQuestion.id,
+        answer
+      }));
       
-      // Track for debugging
-      setDebugState({
-        lastAction: "Answer saved",
-        timestamp: Date.now()
-      })
-
-      // Don't auto-advance to next question, let user control navigation
+      // Save state after answer submission
+      setTimeout(saveQuizState, 0);
     },
-    [currentQuestion, dispatch],
-  )
+    [currentQuestion, dispatch, saveQuizState],
+  );
 
   // Handle navigation to next/previous question
   const handleNavigation = useCallback((direction: 'next' | 'prev') => {
-    // Log for debugging
-    console.log(`Navigation ${direction} requested. Current index: ${currentQuestionIndex}, Questions length: ${questions.length}`);
-
     if (direction === 'next' && currentQuestionIndex < questions.length - 1) {
-      // Use requestAnimationFrame instead of setTimeout for more reliable execution
       requestAnimationFrame(() => {
-        const nextIndex = currentQuestionIndex + 1;
-        console.log(`Actually setting index to ${nextIndex}`);
-        dispatch(setCurrentQuestionIndex(nextIndex));
-        
-        // Track for debugging
-        setDebugState({
-          lastAction: `Navigation next: ${currentQuestionIndex} → ${nextIndex}`,
-          timestamp: Date.now()
-        });
+        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
+        setTimeout(saveQuizState, 0);
       });
     } else if (direction === 'prev' && currentQuestionIndex > 0) {
-      // Use requestAnimationFrame instead of setTimeout for more reliable execution
       requestAnimationFrame(() => {
-        const prevIndex = currentQuestionIndex - 1;
-        console.log(`Actually setting index to ${prevIndex}`);
-        dispatch(setCurrentQuestionIndex(prevIndex));
-        
-        // Track for debugging
-        setDebugState({
-          lastAction: `Navigation prev: ${currentQuestionIndex} → ${prevIndex}`,
-          timestamp: Date.now()
-        });
+        dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1));
+        setTimeout(saveQuizState, 0);
       });
     }
-  }, [currentQuestionIndex, questions.length, dispatch])
+  }, [currentQuestionIndex, questions.length, dispatch, saveQuizState]);
 
-  // Handle quiz submission with debounce
+  // Handle quiz submission
   const handleSubmitQuiz = useCallback(async () => {
-    if (submittingRef.current) return
-    submittingRef.current = true
-    
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
-      const result = await dispatch(submitQuiz()).unwrap()
-      console.log("Quiz submitted successfully:", result)
-      router.push(`/dashboard/mcq/${slug}/results`)
-    } catch (error) {
-      console.error("Failed to submit quiz:", error)
-      toast.error("Failed to submit quiz. Please try again.")
-    } finally {
-      submittingRef.current = false
+      await dispatch(submitQuiz()).unwrap();
+      
+      // Clear quiz state from sessionStorage after successful submission
+      safeSessionStorage.removeItem(QUIZ_STATE_KEY);
+      
+      router.push(`/dashboard/mcq/${slug}/results`);
+    } catch {}
+    finally {
+      submittingRef.current = false;
     }
-  }, [dispatch, router, slug])
+  }, [dispatch, router, slug]);
 
   // Auto-submit when quiz is complete
   useEffect(() => {
     if (isQuizComplete && status === "idle" && !results && !submittingRef.current) {
-      handleSubmitQuiz()
+      handleSubmitQuiz();
     }
-  }, [isQuizComplete, status, results, handleSubmitQuiz])
-
-  // Track state changes
-  useEffect(() => {
-    if (currentQuestion) {
-      stateTracker.takeSnapshot("Question Changed", {
-        currentQuestionIndex,
-        questionId: currentQuestion.id,
-        hasAnswers: Object.keys(answers).length
-      });
-    }
-  }, [currentQuestionIndex, currentQuestion, answers])
+  }, [isQuizComplete, status, results, handleSubmitQuiz]);
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || authStatus === "loading") {
     return (
       <QuizLoadingSteps
         steps={[
@@ -218,18 +226,18 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           { label: "Preparing questions", status: "pending" },
         ]}
       />
-    )
+    );
   }
 
   // Error state
-  if (hasError) {
+  if (status === "error") {
     return (
       <QuizLoadingSteps
         steps={[
           { label: "Fetching quiz data", status: "error", errorMsg: error || "Failed to load quiz" }
         ]}
       />
-    )
+    );
   }
 
   // Empty questions state
@@ -240,27 +248,17 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           { label: "No questions available for this quiz", status: "error", errorMsg: "This quiz doesn't contain any questions. Please try another quiz." }
         ]}
       />
-    )
+    );
   }
 
   // Show current question
   if (currentQuestion) {
-    // Calculate the existing answer for this question
     const currentAnswer = answers[currentQuestion.id];
     const currentAnswerId = currentAnswer?.selectedOptionId;
 
     return (
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">{currentQuestion.title || "Multiple Choice Quiz"}</h1>
-        
-        {/* Debug info - remove in production */}
-        <div className="mb-4 p-2 bg-yellow-50 text-xs text-gray-800 rounded">
-          <p>Current Index: {currentQuestionIndex}</p>
-          <p>Question ID: {currentQuestion.id}</p>
-          <p>Last Action: {debugState.lastAction}</p>
-        </div>
-        
-        {/* Progress bar */}
         <div className="mb-6">
           <div className="bg-gray-100 rounded-full h-2 mb-2">
             <div
@@ -272,7 +270,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
             Question {currentQuestionIndex + 1} of {questions.length}
           </div>
         </div>
-        
         <McqQuiz
           question={currentQuestion}
           onAnswer={handleAnswer}
@@ -283,8 +280,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           existingAnswer={currentAnswerId}
           onNavigate={handleNavigation}
         />
-        
-        {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
           <Button
             variant="outline"
@@ -294,7 +289,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           >
             Previous
           </Button>
-          
           {!isLastQuestion ? (
             <Button
               onClick={() => handleNavigation('next')}
@@ -313,7 +307,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
             </Button>
           )}
         </div>
-        
         {isQuizComplete && !isLastQuestion && (
           <div className="mt-8 text-center">
             <Button

@@ -33,7 +33,8 @@ const initialState: QuizState = {
   description: null,
   totalQuestions: 0,
   lastSaved: null,
-  authRedirectState: null
+  authRedirectState: null,
+  pendingQuiz: null // { slug, quizData }
 };
 
 // Async thunks
@@ -85,23 +86,23 @@ export const fetchQuizResults = createAsyncThunk(
     try {
       const state = getState() as RootState;
       const { quizType, results, questions, answers, quizId, title } = state.quiz;
-      
+
       // If we already have results in the state, return them
       if (results) {
         return results;
       }
-      
+
       // If we have questions and answers but no results, generate results
       if (questions.length > 0 && Object.keys(answers).length > 0) {
         // Calculate score based on correct answers
         let score = 0;
         let totalAnswered = 0;
-        
+
         const questionResults = questions.map((question) => {
           const answer = answers[String(question.id)]; // Normalize ID to string
           let isCorrect = false;
           let userAnswer = null;
-          
+
           if (!answer) {
             return {
               questionId: question.id,
@@ -111,16 +112,16 @@ export const fetchQuizResults = createAsyncThunk(
               skipped: true
             };
           }
-          
+
           totalAnswered++;
-          
+
           if (answer && 'selectedOptionId' in answer) {
             // For MCQ questions
             isCorrect = answer.isCorrect === true;
             userAnswer = answer.selectedOptionId;
             if (isCorrect) score++;
           }
-          
+
           return {
             questionId: question.id,
             isCorrect,
@@ -129,7 +130,7 @@ export const fetchQuizResults = createAsyncThunk(
             skipped: false
           };
         });
-        
+
         return {
           quizId,
           slug,
@@ -145,7 +146,7 @@ export const fetchQuizResults = createAsyncThunk(
           answers: Object.values(answers)
         };
       }
-      
+
       // No results or data to generate results
       return rejectWithValue("No quiz results available. Please take the quiz first.");
     } catch (error: any) {
@@ -159,17 +160,17 @@ export const submitQuiz = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const { quizId, quizType, questions, answers } = state.quiz;
-    
+
     try {
       // Calculate score based on correct answers
       let score = 0;
       let totalAnswered = 0;
-      
+
       const questionResults = questions.map((question) => {
         const answer = answers[String(question.id)]; // Normalize ID to string
         let isCorrect = false;
         let userAnswer = null;
-        
+
         if (!answer) {
           return {
             questionId: question.id,
@@ -179,7 +180,7 @@ export const submitQuiz = createAsyncThunk(
             skipped: true
           };
         }
-        
+
         totalAnswered++;
 
         if (question.type === 'blanks' && answer && 'filledBlanks' in answer) {
@@ -192,7 +193,7 @@ export const submitQuiz = createAsyncThunk(
           if (isCorrect) score++;
 
           userAnswer = answer.filledBlanks;
-        } 
+        }
         else if (question.type === 'openended' && answer && 'text' in answer) {
           // For open-ended, we consider it correct if they submitted something
           // In a real app, this would be evaluated by an API
@@ -217,7 +218,7 @@ export const submitQuiz = createAsyncThunk(
           skipped: false
         };
       });
-      
+
       // Add metrics about completion
       const results = {
         quizId,
@@ -229,7 +230,7 @@ export const submitQuiz = createAsyncThunk(
         submittedAt: new Date().toISOString(),
         questionResults,
       };
-      
+
       // In a real app, you would submit to an API here
       // const response = await fetch('/api/submit-quiz', {
       //   method: 'POST',
@@ -239,14 +240,14 @@ export const submitQuiz = createAsyncThunk(
       //     answers: Object.values(answers),
       //   }),
       // });
-      
+
       // if (!response.ok) {
       //   throw new Error(`Failed to submit quiz: ${response.status}`);
       // }
-      
+
       // const data = await response.json();
       // return data;
-      
+
       // For now, just return the calculated results
       return results;
     } catch (error: any) {
@@ -265,25 +266,25 @@ export const navigateToQuestion = createAsyncThunk(
     const state = getState() as RootState;
     const currentIndex = state.quiz.currentQuestionIndex;
     const questionsLength = state.quiz.questions.length;
-    
+
     // Validation with guard clauses
     if (index < 0 || (questionsLength > 0 && index >= questionsLength)) {
-      console.error(`Invalid navigation index: ${index}. Valid range: 0-${questionsLength-1}`);
+      console.error(`Invalid navigation index: ${index}. Valid range: 0-${questionsLength - 1}`);
       return currentIndex; // Return current index unchanged
     }
-    
+
     console.log(`Navigation requested: ${currentIndex} → ${index}`);
-    
+
     try {
       // Force update the index via direct action
       dispatch(setCurrentQuestionIndex(index));
-      
+
       // Create a timestamp to help track this specific navigation action
       const timestamp = Date.now();
-      
+
       // For debugging - log navigation with timestamp
       console.log(`[${new Date(timestamp).toLocaleTimeString()}] Navigation action dispatched: ${currentIndex} → ${index}`);
-      
+
       return { index, timestamp };
     } catch (error) {
       console.error("Navigation error:", error);
@@ -304,18 +305,24 @@ const quizSlice = createSlice({
         sessionStorage.setItem("quiz_session_id", state.sessionId || "");
       }
     },
+    setSessionId: (state, action: PayloadAction<string>) => {
+      state.sessionId = action.payload;
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('quiz_session_id', action.payload);
+      }
+    },
     setQuizType: (state, action: PayloadAction<string>) => {
       state.quizType = action.payload;
     },
     setCurrentQuestionIndex: (state, action: PayloadAction<number>) => {
       const newIndex = action.payload;
-      
+
       // Detailed logging to help diagnose issues
       console.log(`Redux: Setting question index to ${newIndex} (current: ${state.currentQuestionIndex})`);
-      
+
       // ALWAYS set the index regardless of validation
       state.currentQuestionIndex = newIndex;
-      
+
       // If we save to session storage, include this updated index
       if (typeof window !== "undefined" && state.sessionId && state.quizId) {
         try {
@@ -339,7 +346,7 @@ const quizSlice = createSlice({
     saveAnswer: (state, action: PayloadAction<{ questionId: string | number, answer: QuizAnswer }>) => {
       const { questionId, answer } = action.payload;
       const normalizedId = String(questionId); // Convert to string for consistency
-      
+
       // Handle different quiz types and validate answers in the reducer
       if (answer.type === 'mcq' && 'selectedOptionId' in answer) {
         // Find the question to check if the answer is correct
@@ -362,19 +369,19 @@ const quizSlice = createSlice({
         // For open-ended, we don't auto-validate in real-time, but consider it answered
         answer.isCorrect = answer.text.trim().length > 0;
       }
-      
+
       state.answers[normalizedId] = answer;
-      
+
       // Check if all questions have been answered
       const allAnswered = state.questions.every(q => !!state.answers[String(q.id)]);
-      
+
       // If we're on the last question and this answer completes all questions, mark as complete
       const isLastQuestion = state.currentQuestionIndex === state.questions.length - 1;
       const answeredCount = Object.keys(state.answers).length;
       const isComplete = allAnswered || (isLastQuestion && answeredCount === state.questions.length);
-      
+
       state.isCompleted = isComplete;
-      
+
       // Persist answers to sessionStorage
       if (typeof window !== "undefined" && state.sessionId && state.quizId) {
         try {
@@ -413,7 +420,24 @@ const quizSlice = createSlice({
       if (typeof window !== "undefined" && state.sessionId) {
         saveQuizResults(state.sessionId, action.payload);
       }
-    }
+    },
+    setPendingQuiz(state, action) {
+      state.pendingQuiz = action.payload
+    },
+    resetPendingQuiz(state) {
+      state.pendingQuiz = null
+    },
+    rehydrateQuiz(state, action) {
+      // action.payload: { slug, quizData }
+      state.currentQuestionIndex = 0
+      state.answers = {}
+      state.isCompleted = false
+      state.quizId = action.payload?.slug || null
+      state.quizType = "mcq"
+      state.questions = action.payload?.quizData?.questions || []
+      state.title = action.payload?.quizData?.title || ""
+      state.pendingQuiz = null
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -451,7 +475,7 @@ const quizSlice = createSlice({
         state.status = "error";
         state.error = action.payload as string;
       })
-      
+
       // fetchQuizResults
       .addCase(fetchQuizResults.pending, (state) => {
         state.status = "loading";
@@ -465,7 +489,7 @@ const quizSlice = createSlice({
         state.status = "error";
         state.error = action.payload as string;
       })
-      
+
       // submitQuiz
       .addCase(submitQuiz.pending, (state) => {
         state.status = "submitting";
@@ -479,107 +503,111 @@ const quizSlice = createSlice({
         state.status = "error";
         state.error = action.payload as string;
       })
-      
+
       // Handle the navigation thunk
       .addCase(navigateToQuestion.fulfilled, (state, action) => {
         // The payload is now an object with index and timestamp
         const { index, timestamp } = action.payload || { index: state.currentQuestionIndex, timestamp: Date.now() };
-        
+
         // Forced update with explicit assignment
         state.currentQuestionIndex = index;
-        
+
         // For debugging purposes, add a navigation history field if it doesn't exist
         if (!state.navigationHistory) {
           state.navigationHistory = [];
         }
-        
+
         // Store this navigation in history (limited to last 10)
         state.navigationHistory = [
           { from: state.currentQuestionIndex, to: index, timestamp },
           ...((state.navigationHistory || []).slice(0, 9))
         ];
-        
+
         console.log(`[${new Date(timestamp).toLocaleTimeString()}] Navigation confirmed in reducer: index set to ${index}`);
       });
   },
 });
 
 // Actions
-export const { 
-  setQuizId, 
-  setQuizType, 
-  saveAnswer, 
+export const {
+  setQuizId,
+  setQuizType,
+  saveAnswer,
   resetQuiz,
-  setQuizResults
+  setQuizResults,
+  setPendingQuiz,
+  resetPendingQuiz,
+  rehydrateQuiz,
+  setSessionId
 } = quizSlice.actions;
 
 // Selectors
 export const selectQuizState = (state: RootState) => state.quiz;
 
 export const selectQuestions = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.questions || []
 );
 
 export const selectAnswers = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.answers || {}
 );
 
 export const selectQuizStatus = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.status || 'idle'
 );
 
 export const selectQuizError = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.error || null
 );
 
 export const selectQuizTitle = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.title || ''
 );
 
 export const selectCurrentQuestionIndex = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.currentQuestionIndex || 0
 );
 
 export const selectCurrentQuestion = createSelector(
-  [selectQuestions, selectCurrentQuestionIndex], 
+  [selectQuestions, selectCurrentQuestionIndex],
   (questions, currentIndex) => questions[currentIndex] || null
 );
 
 export const selectIsQuizComplete = createSelector(
-  [selectQuizState, selectQuestions, selectAnswers], 
+  [selectQuizState, selectQuestions, selectAnswers],
   (quizState, questions, answers) => {
     if (!Array.isArray(questions) || questions.length === 0) return false;
-    
+
     // Consider complete if all questions are answered
     const allAnswered = questions.every(q => answers[String(q.id)]);
-    
+
     // OR if we're on the last question and all questions have answers
     const isLastQuestion = quizState.currentQuestionIndex === questions.length - 1;
     const answeredCount = Object.keys(answers).length;
     const lastQuestionComplete = isLastQuestion && answeredCount === questions.length;
-    
+
     return allAnswered || lastQuestionComplete || quizState.isCompleted;
   }
 );
 
 export const selectQuizId = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.quizId || null
 );
 
 export const selectQuizResults = createSelector(
-  [selectQuizState], 
+  [selectQuizState],
   (quizState) => quizState.results || null
 );
 
 export const selectQuizInProgress = createSelector(
-  [selectQuizState, selectQuestions], 
+  [selectQuizState, selectQuestions],
   (quizState, questions) => {
     const answeredCount = Object.keys(quizState.answers || {}).length;
     const totalCount = (questions || []).length;
@@ -594,28 +622,28 @@ export const selectOrGenerateQuizResults = createSelector(
     if (quizState.results) {
       return quizState.results;
     }
-    
+
     // If we have questions and answers, generate results on-the-fly
     if (questions.length > 0) {
       // Calculate score based on correct answers
       let score = 0;
       let totalAnswered = 0;
-      
+
       const questionResults = questions.map((question) => {
         const answer = answers[String(question.id)];
         let isCorrect = false;
         let userAnswer = null;
         let skipped = true;
-        
+
         if (answer) {
           totalAnswered++;
           skipped = false;
-          
+
           if ('isCorrect' in answer) {
             isCorrect = answer.isCorrect === true;
             if (isCorrect) score++;
           }
-          
+
           if ('selectedOptionId' in answer) {
             userAnswer = answer.selectedOptionId;
           } else if ('filledBlanks' in answer) {
@@ -624,7 +652,7 @@ export const selectOrGenerateQuizResults = createSelector(
             userAnswer = answer.text;
           }
         }
-        
+
         return {
           questionId: question.id,
           isCorrect,
@@ -633,11 +661,11 @@ export const selectOrGenerateQuizResults = createSelector(
           skipped
         };
       });
-      
+
       // Calculate percentage safely
       const maxScore = questions.length;
       const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-      
+
       return {
         quizId: quizState.quizId,
         slug: quizState.slug || "unknown",
@@ -653,7 +681,7 @@ export const selectOrGenerateQuizResults = createSelector(
         answers: Object.values(answers)
       };
     }
-    
+
     return null;
   }
 );
