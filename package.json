@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "jest --config jest.config.ts --no-stack-trace --colors",
+    "test": "jest --config jest.config.ts --no-stack-trace --colors ",
     "test:watch": "jest --config jest.config.ts --watch --no-stack-trace",
     "test:ci": "jest --config jest.config.ts --ci --json --outputFile=test-results.json --no-stack-trace",
     "test:summary": "jest --config jest.config.ts --no-stack-trace --reporters=jest-summary-reporter",

@@ -226,7 +226,7 @@ export const setupAutoSave = (
   const intervalId = setInterval(() => {
     const answers = getAnswers();
     if (Object.keys(answers).length > 0) {
-      saveQuizSession(sessionId, quizId, answers);
+      saveQuizSession(sessionId, quizId, 'mcq', answers, { lastSaved: Date.now() });
       console.log('Auto-saved quiz progress at', new Date().toLocaleTimeString());
     }
   }, interval);
@@ -291,6 +291,8 @@ export const setupSessionPersistence = (
     }
   };
 };
+
+
 
 /**
  * Recover a quiz session from IndexedDB if available

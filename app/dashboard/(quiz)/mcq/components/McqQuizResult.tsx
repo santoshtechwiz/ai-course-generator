@@ -50,19 +50,17 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
-
-  // For normalizing/preparing result data
   const [normalizedResult, setNormalizedResult] = useState<QuizResult | null>(null)
 
   // Normalize the result data structure
   useEffect(() => {
+    // Show error immediately if result is null/undefined
+    if (!result) {
+      setHasError(true)
+      setIsLoading(false)
+      return
+    }
     try {
-      if (!result) {
-        console.error("Result object is undefined");
-        setHasError(true);
-        return;
-      }
-      
       // Prepare a normalized version of the results
       const normalized: QuizResult = {
         ...result,
@@ -74,76 +72,48 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
         slug: result.slug || "",
         questions: [],
         answers: []
-      };
+      }
       
       // Handle questions from different formats
-      let normalizedQuestions: QuizQuestion[] = [];
-      
-      // Case 1: We have questions array directly
+      let normalizedQuestions: QuizQuestion[] = []
       if (result.questions && Array.isArray(result.questions)) {
-        normalizedQuestions = result.questions;
-      }
-      // Case 2: We have question results but need to extract questions
-      else if (result.questionResults && Array.isArray(result.questionResults)) {
+        normalizedQuestions = result.questions
+      } else if (result.questionResults && Array.isArray(result.questionResults)) {
         normalizedQuestions = result.questionResults.map((qResult, index) => ({
           id: qResult.questionId || `q-${index}`,
           question: qResult.question || `Question ${index + 1}`,
           answer: qResult.correctAnswer || "",
           correctAnswer: qResult.correctAnswer || "",
-          options: [] // We might not have options in results
-        }));
+          options: []
+        }))
       }
       
       // Handle answers from different formats
-      let normalizedAnswers: QuizAnswer[] = [];
-      
-      // Case 1: We have answers array directly
+      let normalizedAnswers: QuizAnswer[] = []
       if (result.answers && Array.isArray(result.answers)) {
-        normalizedAnswers = result.answers;
-      }
-      // Case 2: We need to extract answers from question results
-      else if (result.questionResults && Array.isArray(result.questionResults)) {
+        normalizedAnswers = result.answers
+      } else if (result.questionResults && Array.isArray(result.questionResults)) {
         normalizedAnswers = result.questionResults.map((qResult, index) => ({
           questionId: qResult.questionId || `q-${index}`,
           userAnswer: qResult.userAnswer || "",
           selectedOption: qResult.userAnswer || "",
           isCorrect: qResult.isCorrect || false
-        }));
+        }))
       }
-      
-      normalized.questions = normalizedQuestions;
-      normalized.answers = normalizedAnswers;
-      
-      // Valid questions array check
-      if (!normalized.questions || !Array.isArray(normalized.questions) || normalized.questions.length === 0) {
-        console.warn("Normalized questions array is empty or invalid");
-        // Don't set error, we can still show score summary
-      }
-      
-      setNormalizedResult(normalized);
-      
+      normalized.questions = normalizedQuestions
+      normalized.answers = normalizedAnswers
+      setNormalizedResult(normalized)
       // Simulate loading time
-      const timer = setTimeout(() => setIsLoading(false), 500);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setIsLoading(false), 500)
+      return () => clearTimeout(timer)
     } catch (error) {
-      console.error("Error normalizing quiz results:", error);
-      setHasError(true);
-      setIsLoading(false);
+      setHasError(true)
+      setIsLoading(false)
     }
-  }, [result]);
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <div className="animate-pulse text-center">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading results...</p>
-        </div>
-      </div>
-    )
-  }
-  
-  if (hasError || !normalizedResult) {
+  }, [result])
+
+  // Show error state immediately if result is missing/invalid
+  if (hasError || !result) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
@@ -155,7 +125,19 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
           Back to Quizzes
         </Button>
       </div>
-    );
+    )
+  }
+
+  // Only show loading spinner if result is defined and loading is in progress
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px]">
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading results...</p>
+        </div>
+      </div>
+    )
   }
 
   // Access the normalized result for rendering
