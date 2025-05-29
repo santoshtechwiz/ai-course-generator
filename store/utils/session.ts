@@ -185,15 +185,14 @@ export const saveQuizResults = (slug: string, results: any) => {
       const resultKey = `quiz_results_${safeSlug}`;
       sessionStorage.setItem(resultKey, JSON.stringify(results));
       
-      // Additionally save using quizId if different from slug
-      if (results.quizId && results.quizId !== safeSlug) {
-        const quizIdKey = `quiz_results_${results.quizId}`;
-        sessionStorage.setItem(quizIdKey, JSON.stringify(results));
-      }
-      
       // Always include the slug in the results object for easier retrieval
       if (!results.slug || results.slug !== safeSlug) {
         results.slug = safeSlug;
+      }
+      
+      // Keep quizId for database compatibility
+      if (!results.quizId) {
+        results.quizId = safeSlug;
       }
       
       // Also update any pending quiz to include the results

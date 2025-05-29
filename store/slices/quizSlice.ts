@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, type PayloadAction, createSelector } fro
 import type { RootState } from "../index"
 
 export interface QuizState {
-  quizId: string | null
+  quizId: string | null  // Keep for database compatibility
   quizType: string | null
   title: string
   questions: any[]
@@ -18,7 +18,7 @@ export interface QuizState {
   shouldRedirectToAuth: boolean
   shouldRedirectToResults: boolean
   authStatus: "checking" | "authenticated" | "unauthenticated" | "idle"
-  slug?: string | null // Add slug for better auth/result flow
+  slug: string | null  // Primary identifier for UI operations
 }
 
 const initialState: QuizState = {
@@ -52,12 +52,16 @@ export const fetchQuiz = createAsyncThunk(
           ...q,
           type: type,
         }))
+        
+        // Always prioritize slug as the primary identifier
+        const slug = typeof id === 'string' ? id : String(id);
+        
         return {
-          id: data.id || id, // Ensure id is set from data.id or fallback to the param id
+          id: data.id || id,  // Keep for database compatibility
           type: data.type || type,
           title: data.title,
           questions,
-          slug: typeof id === 'string' ? id : String(id), // Always ensure slug is a string
+          slug: slug,  // Always set slug
         }
       }
 
@@ -258,8 +262,8 @@ export const submitQuizAndPrepareResults = createAsyncThunk(
     })
 
     const results = {
-      quizId: state.quiz.quizId,
-      slug,
+      quizId: state.quiz.quizId, // Keep for database compatibility
+      slug,                      // Primary identifier for UI
       title: title || "Quiz Results",
       score,
       maxScore: questions.length,
@@ -476,10 +480,10 @@ const quizSlice = createSlice({
     rehydrateQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
       const { slug, quizData, currentState } = action.payload
       
-      // Ensure slug is always a string and set both slug and quizId 
+      // Ensure slug is always a string and set as primary identifier
       const sanitizedSlug = typeof slug === 'string' ? slug : String(slug)
       state.slug = sanitizedSlug
-      state.quizId = sanitizedSlug  // For backward compatibility
+      state.quizId = sanitizedSlug  // Keep for database compatibility
       
       state.currentQuestionIndex = 0
       state.error = null
@@ -621,8 +625,8 @@ const quizSlice = createSlice({
     setQuizId: (state, action: PayloadAction<string | number>) => {
       // Convert numeric IDs to strings
       const id = String(action.payload)
-      state.quizId = id
-      state.slug = id // Always keep slug and quizId in sync
+      state.quizId = id     // Keep for database compatibility
+      state.slug = id       // Primary identifier for UI
     },
 
     setQuizType: (state, action: PayloadAction<string>) => {
@@ -643,13 +647,12 @@ const quizSlice = createSlice({
       })
       .addCase(fetchQuiz.fulfilled, (state, action) => {
         state.status = "succeeded"
-        // Always use strings for both quizId and slug
+        // Set slug as primary identifier, keep quizId for database compatibility
+        state.slug = action.payload.slug 
         state.quizId = String(action.payload.id)
         state.quizType = action.payload.type
         state.title = action.payload.title
         state.questions = action.payload.questions
-        // Ensure slug is always set to a string value
-        state.slug = action.payload.slug || String(action.payload.id)
         state.currentQuestionIndex = 0
         state.answers = {}
         state.isCompleted = false
@@ -797,7 +800,7 @@ export const selectCurrentQuestionIndex = createSelector([selectQuizState], (qui
 export const selectIsQuizComplete = createSelector([selectQuizState], (quiz) => quiz.isCompleted)
 export const selectQuizResults = createSelector([selectQuizState], (quiz) => quiz.results)
 export const selectQuizTitle = createSelector([selectQuizState], (quiz) => quiz.title)
-export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz.quizId)
+export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz.slug || quiz.quizId)
 export const selectCurrentQuestion = createSelector(
   [selectQuestions, selectCurrentQuestionIndex],
   (questions, index) => questions[index] || null,
