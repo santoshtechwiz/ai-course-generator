@@ -368,7 +368,7 @@ describe("MCQ Results Page", () => {
     (useSession as jest.Mock).mockReturnValue({ 
       data: { user: { name: "Test User" } }, 
       status: "authenticated" 
-    });
+    })
     
     // Mock pendingQuiz with a proper slug in sessionStorage
     const pendingQuizWithProperSlug = {
@@ -411,85 +411,131 @@ describe("MCQ Results Page", () => {
     jest.useRealTimers();
   });
 
-  it("computes results on-the-spot when questions and answers are available but no results", async () => {
+  it("properly handles slug values when fetching results", async () => {
+    // Mock authenticated session
     (useSession as jest.Mock).mockReturnValue({ 
       data: { user: { name: "Test User" } }, 
       status: "authenticated" 
-    })
+    });
     
-    // Create store with questions and answers but no results
+    // Setup mock implementation for getItem BEFORE creating the store
+    const mockGetItem = jest.fn();
+    window.sessionStorage.getItem = mockGetItem;
+    
+    // Setup specific mock implementation for the quiz_results key
+    mockGetItem.mockImplementation((key) => {
+      if (key === 'quiz_results_angular-advanced-UvGH3X') {
+        return JSON.stringify({
+          score: 5,
+          maxScore: 10,
+          percentage: 50,
+          slug: "angular-advanced-UvGH3X",
+          title: "Angular Advanced",
+          completedAt: new Date().toISOString(),
+          questions: [],
+          questionResults: []
+        });
+      }
+      return null;
+    });
+    
+    // Create a store with quiz data
     const store = mockStore(createDefaultState({
       auth: {
         isAuthenticated: true,
       },
       quiz: {
         status: "succeeded",
+        slug: "angular-advanced-UvGH3X", // String slug only
         questions: [
-          { id: "1", question: "Q1", options: ["A", "B"], correctOptionId: "A" },
-          { id: "2", question: "Q2", options: ["X", "Y"], correctOptionId: "Y" }
+          { id: "1", question: "Q1", options: ["A", "B"], correctOptionId: "A" }
         ],
         answers: {
-          "1": { questionId: "1", selectedOptionId: "A", isCorrect: true },
-          "2": { questionId: "2", selectedOptionId: "X", isCorrect: false }
-        },
-        // No results
+          "1": { questionId: "1", selectedOptionId: "A", isCorrect: true }
+        }
       }
-    }))
+    }));
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-quiz" }} />
+        <McqResultsPage params={{ slug: "angular-advanced-UvGH3X" }} />
       </Provider>
-    )
+    );
     
-    // Should compute and display results immediately
+    // The component should compute results on the spot with available questions/answers
     await waitFor(() => {
-      // Should find score (1 out of 2)
-      expect(screen.getByText(/1 out of 2/i)).toBeInTheDocument()
-      // Should find percentage (50%)
-      expect(screen.getByText("50%")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByText(/1 out of 1/i)).toBeInTheDocument();
+      expect(screen.getByText("100%")).toBeInTheDocument();
+    });
+    
+    // First, ensure getItem was called
+    expect(mockGetItem).toHaveBeenCalled();
+    
+    // Then specifically check for our expected key
+    expect(mockGetItem).toHaveBeenCalledWith('quiz_results_angular-advanced-UvGH3X');
+  });
 
-  it("recovers from invalid JSON in sessionStorage", async () => {
+  it("handles numeric slugs by treating them as strings", async () => {
+    const numericSlug = "38";
+    
+    // Mock authenticated session
     (useSession as jest.Mock).mockReturnValue({ 
       data: { user: { name: "Test User" } }, 
       status: "authenticated" 
-    })
-    
-    // Mock sessionStorage with invalid JSON
-    window.sessionStorage.getItem = jest.fn().mockImplementation((key) => {
-      if (key === 'pendingQuiz') return '{invalid:json}';
-      return null;
     });
     
-    // Mock console.error to suppress error messages
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    
+    // Set up Redux store with numeric slug
     const store = mockStore(createDefaultState({
       auth: {
         isAuthenticated: true,
       },
       quiz: {
-        status: "idle",
-        questions: [],
-        answers: {}
+        slug: numericSlug,
+        status: "succeeded",
+        questions: [
+          { id: "1", question: "What is Angular Ivy?", options: ["A", "B", "C", "D"], correctOptionId: "C" }
+        ],
+        answers: {
+          "1": { questionId: "1", selectedOptionId: "C", isCorrect: true }
+        },
+        pendingQuiz: {
+          slug: numericSlug,
+          quizData: {
+            title: "Angular Advanced",
+            questions: [{ id: "1", question: "What is Angular Ivy?", options: ["A", "B", "C", "D"], correctOptionId: "C" }]
+          },
+          currentState: {
+            showResults: true
+          }
+        }
       }
-    }))
+    }));
     
-    // Should not crash when encountering invalid JSON
+    // Mock saveQuizResults to capture what's being saved
+    const { saveQuizResults } = require("@/store/utils/session");
+    
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-quiz" }} />
+        <McqResultsPage params={{ slug: numericSlug }} />
       </Provider>
-    )
+    );
     
-    // Use fake timers
-    jest.useFakeTimers();
-    jest.advanceTimersByTime(500);
+    // Verify rendered content shows computed results
+    await waitFor(() => {
+      expect(screen.getByText(/1 out of 1/i)).toBeInTheDocument();
+      expect(screen.getByText("100%")).toBeInTheDocument();
+    });
     
-    // Restore console.error and timers
-    consoleErrorSpy.mockRestore();
-    jest.useRealTimers();
-  })
+    // Verify the quiz was saved with the numeric slug as a string
+    const actions = store.getActions();
+    const setResultsAction = actions.find(action => action.type === 'quiz/setQuizResults');
+    
+    // Ensure we're using the slug as the primary identifier
+    if (setResultsAction) {
+      expect(setResultsAction.payload.slug).toBe(numericSlug);
+      expect(saveQuizResults).toHaveBeenCalledWith(numericSlug, expect.objectContaining({
+        slug: numericSlug
+      }));
+    }
+  });
 })

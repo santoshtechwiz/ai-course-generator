@@ -45,7 +45,6 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   const pendingQuiz = useSelector((state: RootState) => state.quiz.pendingQuiz)
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
-  const quizId = useSelector((state: RootState) => state.quiz.quizId) // Add this selector
 
   const [rehydrated, setRehydrated] = useState(false)
   const [restoredOnce, setRestoredOnce] = useState(false)
@@ -92,13 +91,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
             return JSON.parse(storedResults);
           }
           
-          // Also try with quizId if different from slug
-          if (quizId && quizId !== slug) {
-            const alternateResults = sessionStorage.getItem(`quiz_results_${quizId}`);
-            if (alternateResults) {
-              return JSON.parse(alternateResults);
-            }
-          }
+          // No need to try with quizId
         } catch (e) {
           console.error("Failed to retrieve stored results:", e);
         }
@@ -121,7 +114,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     });
 
     const results = {
-      quizId: slug,
+      quizId: slug, // Use slug as the primary identifier
       slug,
       title: questions[0]?.title || "Quiz Results",
       score,
@@ -134,7 +127,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     };
     
     return results;
-  }, [questions, answers, slug, quizId]); // Include quizId in dependencies
+  }, [questions, answers, slug]); // Remove quizId dependency
 
   // If there's a pendingQuiz with showResults, try to get results from storage
   useEffect(() => {
@@ -154,7 +147,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
             return;
           }
           
-          // Also try with pendingQuiz slug
+          // Also try with pendingQuiz slug if it's different
           const pendingSlug = pendingQuiz.slug;
           if (pendingSlug && pendingSlug !== slug) {
             const alternateResults = sessionStorage.getItem(`quiz_results_${pendingSlug}`);
