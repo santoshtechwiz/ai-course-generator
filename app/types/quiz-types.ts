@@ -36,7 +36,7 @@ export interface McqQuestion extends BaseQuestion {
   id: string | number;
   text?: string;
   question?: string;
-  options?: Array<{id: string, text: string}> | string[];
+  options?: Array<{ id: string; text: string }> | string[];
   correctOptionId?: string;
   correctAnswer?: string;
   title?: string;
@@ -49,7 +49,7 @@ export interface CodeQuizQuestion extends BaseQuestion {
   text?: string;
   question?: string;
   codeSnippet?: string;
-  options?: string[];
+  options?: Array<{ id: string; text: string }> | string[];
   answer?: string;
   correctAnswer?: string;
   language?: string;
@@ -58,8 +58,7 @@ export interface CodeQuizQuestion extends BaseQuestion {
 
 // Quiz data structure
 export interface QuizData {
-  id: number | string;
-  slug: string;
+  slug: string; // Primary identifier
   type: QuizType;
   title: string;
   questions: QuizQuestion[];
@@ -131,8 +130,7 @@ export interface AuthState {
 
 // Quiz result types
 export interface QuizResult {
-  quizId: string | number;
-  slug?: string;
+  slug: string; // Primary identifier
   title: string;
   score: number;
   maxScore: number;
@@ -162,7 +160,7 @@ export interface QuizQuestionResult {
 
 // Component prop types
 export interface CodeQuizOptionsProps {
-  options: string[];
+  options: Array<{ id: string; text: string }> | string[];
   selectedOption?: string | null;
   onSelect: (option: string) => void;
   disabled?: boolean;

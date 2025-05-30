@@ -1,39 +1,31 @@
 "use client"
 
-import React from "react"
 import { use } from "react"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
-import { useAuth } from "@/hooks/useAuth"
 
-interface CodeQuizPageProps {
+
+export default function CodeQuizPage({
+  params,
+}: {
   params: Promise<{ slug: string }> | { slug: string }
-  searchParams?: { [key: string]: string | string[] | undefined }
-}
+}) {
+  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const slug = resolvedParams.slug;
 
-export default function CodeQuizPage({ params }: CodeQuizPageProps) {
-  // Always unwrap params using React.use() for future compatibility
-  const slug = params instanceof Promise ? use(params).slug : params.slug
-
-  // Use unified auth hook for consistency
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth()
-
-  // Show loading while checking auth
-  if (authLoading) {
+  if (!slug) {
     return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Checking authentication", status: "loading" },
-          { label: "Preparing quiz", status: "pending" },
-        ]}
-      />
-    )
+      <div className="container max-w-4xl py-6">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Error</h2>
+          <p className="text-muted-foreground">Quiz slug is missing. Please check the URL.</p>
+        </div>
+      </div>
+    );
   }
 
-  // Render the Redux-powered quiz wrapper
   return (
     <div className="container max-w-4xl py-6">
-      <CodeQuizWrapper slug={slug} userId={user?.id} />
+      <CodeQuizWrapper slug={slug} />
     </div>
-  )
+  );
 }
