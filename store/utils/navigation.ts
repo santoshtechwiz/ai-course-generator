@@ -71,3 +71,29 @@ export const redirectFromNumericId = async (
   
   return false;
 };
+
+/**
+ * Navigate to quiz results page
+ */
+export const navigateToQuizResults = (
+  router: any,
+  quizType: string,
+  slug: string | number | null | undefined
+): void => {
+  if (!slug) return;
+  
+  // Ensure slug is a string
+  const safeSlug = String(slug).trim();
+  if (!safeSlug) return;
+  
+  try {
+    router.push(`/dashboard/${quizType}/${safeSlug}/results`);
+  } catch (e) {
+    console.error("Error navigating to results:", e);
+    
+    // Fallback to window.location if needed
+    if (typeof window !== 'undefined') {
+      window.location.href = `/dashboard/${quizType}/${safeSlug}/results`;
+    }
+  }
+};

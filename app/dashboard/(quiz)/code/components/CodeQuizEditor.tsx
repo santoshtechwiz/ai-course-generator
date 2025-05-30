@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useRef, useEffect, useState } from "react"
+import { useRef, useEffect, useState } from "react"
 import Editor from "@monaco-editor/react"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 interface CodeQuizEditorProps {
   value: string
@@ -40,6 +40,11 @@ export default function CodeQuizEditor({
     editorRef.current = editor
     setIsLoading(false)
     setEditorError(null)
+
+    // Set placeholder if value is empty
+    if (!value && placeholder) {
+      editor.setValue(placeholder)
+    }
   }
 
   const handleEditorError = (error: any) => {
@@ -48,19 +53,24 @@ export default function CodeQuizEditor({
     setIsLoading(false)
   }
 
-  if (!isMounted || isLoading) {
+  const handleEditorChange = (newValue: string | undefined) => {
+    if (!disabled && !readOnly) {
+      onChange(newValue)
+    }
+  }
+
+  if (!isMounted) {
     return (
       <div
         className={cn(
           "border rounded-md bg-muted/50 w-full p-4 font-mono text-sm overflow-auto whitespace-pre flex items-center justify-center",
-          disabled && "opacity-70 pointer-events-none",
           className,
         )}
         style={{ height }}
       >
         <div className="text-center">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading editor...</p>
+          <p className="text-sm text-muted-foreground">Initializing editor...</p>
         </div>
       </div>
     )
@@ -69,18 +79,15 @@ export default function CodeQuizEditor({
   if (editorError) {
     return (
       <div
-        className={cn(
-          "border rounded-md bg-destructive/10 w-full p-4 text-destructive text-sm",
-          className,
-        )}
+        className={cn("border rounded-md bg-destructive/10 w-full p-4 text-destructive text-sm", className)}
         style={{ height }}
       >
-        <p>Code editor failed to load. Please refresh the page.</p>
+        <p>Code editor failed to load. Using fallback textarea.</p>
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full h-full mt-2 p-2 border rounded resize-none font-mono text-sm"
+          className="w-full h-full mt-2 p-2 border rounded resize-none font-mono text-sm bg-background"
           disabled={disabled || readOnly}
         />
       </div>
@@ -89,14 +96,22 @@ export default function CodeQuizEditor({
 
   return (
     <div className={cn("border rounded-md overflow-hidden", disabled && "opacity-80 pointer-events-none", className)}>
+      {isLoading && (
+        <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">Loading editor...</p>
+          </div>
+        </div>
+      )}
       <Editor
         height={height}
         language={language}
         value={value}
-        onChange={onChange}
+        onChange={handleEditorChange}
         theme="vs-dark"
         onMount={handleEditorDidMount}
-        onError={handleEditorError}
+        loading={null} // Disable default loading
         options={{
           minimap: { enabled: false },
           fontSize: 14,
@@ -109,6 +124,10 @@ export default function CodeQuizEditor({
           contextmenu: !readOnly && !disabled,
           cursorStyle: readOnly || disabled ? "line-thin" : "line",
           automaticLayout: true,
+          tabSize: 2,
+          insertSpaces: true,
+          renderWhitespace: "selection",
+          bracketPairColorization: { enabled: true },
         }}
         {...rest}
       />

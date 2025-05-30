@@ -55,12 +55,11 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   // Load quiz data on mount
   useEffect(() => {
     if (quizStatus === 'idle') {
-      // Always fetch from API if quizData is not provided (even if quizData is null)
       if (quizData && quizData.questions && quizData.questions.length > 0) {
         dispatch(fetchQuiz({
-          id: slug,
+          slug: slug, // Use slug consistently
           data: {
-            id: slug,
+            slug: slug, // Use slug consistently
             title: quizData.title || 'MCQ Quiz',
             questions: quizData.questions || [],
             type: 'mcq',
@@ -68,28 +67,28 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           type: 'mcq',
         }))
       } else {
-        // Always fetch from API if quizData is missing or empty
-        dispatch(fetchQuiz({ id: slug, type: 'mcq' }))
+        dispatch(fetchQuiz({ slug, type: 'mcq' })) // Use slug instead of id
       }
     }
   }, [quizStatus, dispatch, slug, quizData])
 
   // Handle quiz completion
   useEffect(() => {
-    if (!isQuizComplete) return
+    if (!isQuizComplete) return;
 
     if (isAuthenticated) {
       dispatch(submitQuiz()).then((res: any) => {
         if (res?.payload) {
           dispatch(setQuizResults(res.payload))
-          // Always use slug in URL, not numeric ID
           const safeSlug = typeof slug === 'string' ? slug : String(slug);
           router.push(`/dashboard/mcq/${safeSlug}/results`)
         }
+      }).catch((error) => {
+        console.error("Error submitting quiz:", error);
       })
     } else {
       dispatch(setPendingQuiz({
-        slug, // This will be saved properly in sessionStorage
+        slug,
         quizData: {
           title: quizTitle,
           questions,
@@ -101,28 +100,15 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           showResults: true,
         },
       }))
-      // Always use slug in URL, not numeric ID
       const safeSlug = typeof slug === 'string' ? slug : String(slug);
       router.push(`/dashboard/mcq/${safeSlug}/results`)
     }
-  }, [
-    isQuizComplete,
-    isAuthenticated,
-    dispatch,
-    router,
-    slug,
-    quizTitle,
-    questions,
-    answers,
-    currentQuestionIndex,
-  ])
+  }, [isQuizComplete, isAuthenticated, dispatch, router, slug, quizTitle, questions, answers, currentQuestionIndex])
 
   const handleAnswerQuestion = (selectedOption: string) => {
-    if (!currentQuestion || answers[currentQuestion.id]?.selectedOptionId) return
+    if (!currentQuestion || answers[currentQuestion.id]?.selectedOptionId) return;
 
-    const isCorrect =
-      selectedOption === currentQuestion.correctOptionId ||
-      selectedOption === currentQuestion.answer
+    const isCorrect = selectedOption === currentQuestion.correctOptionId;
 
     dispatch(saveAnswer({
       questionId: currentQuestion.id,

@@ -1,9 +1,10 @@
 import { createSlice, createAsyncThunk, type PayloadAction, createSelector } from "@reduxjs/toolkit"
 import type { RootState } from "../index"
+import { QuizType } from "@/types/quiz"
 
 export interface QuizState {
   quizId: string | null  // Keep for database compatibility
-  quizType: string | null
+  quizType: QuizType | null  // Keep for database compatibility
   title: string
   questions: any[]
   currentQuestionIndex: number
@@ -22,8 +23,9 @@ export interface QuizState {
 }
 
 const initialState: QuizState = {
-  quizId: null,
-  quizType: null,
+  slug: null, // Primary identifier for UI operations
+  quizId: null, // Keep for database compatibility
+  quizType: "mcq",
   title: "",
   questions: [],
   currentQuestionIndex: 0,
@@ -38,13 +40,13 @@ const initialState: QuizState = {
   shouldRedirectToAuth: false,
   shouldRedirectToResults: false,
   authStatus: "idle",
-  slug: null,
 }
 
 // Backward compatible: Keep existing fetchQuiz thunk
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetchQuiz",
-  async ({ id, data, type }: { id: string | number; data?: any; type: string }, { rejectWithValue }) => {
+  async ({ slug, data, type }: { slug: string; data?: any; type: QuizType }, { rejectWithValue }) => {
+    console.log("Fetching quiz:", slug, type);
     try {
       // If data is provided directly, use it
       if (data) {
@@ -53,34 +55,36 @@ export const fetchQuiz = createAsyncThunk(
           type: type,
         }))
         
-        // Always prioritize slug as the primary identifier
-        const slug = typeof id === 'string' ? id : String(id);
-        
         return {
-          id: data.id || id,  // Keep for database compatibility
+          slug,
+          id: slug, // Ensure id is set to slug for compatibility
           type: data.type || type,
           title: data.title,
           questions,
-          slug: slug,  // Always set slug
         }
       }
 
       // Otherwise fetch from API
-      const response = await fetch(`/api/quizzes/${type}/${id}`)
+      const response = await fetch(`/api/quizzes/${type}/${slug}`)
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(`Quiz not found: ${slug}`)
+        }
         throw new Error(`Failed to fetch quiz: ${response.status}`)
       }
+      
       const quizData = await response.json()
       const questions = (quizData.questions || []).map((q: any) => ({
         ...q,
         type: quizData.type || type,
       }))
+      
       return {
-        id: quizData.quizId || quizData.id || id, // Prioritize quizId from API
+        slug: quizData.slug || slug, // Prioritize slug from API
+        id: quizData.id || slug, // Keep id for backward compatibility
         type: quizData.type || type,
         title: quizData.title,
         questions,
-        slug: quizData.slug || (typeof id === 'string' ? id : String(id)), // Prioritize slug from API
       }
     } catch (error: any) {
       return rejectWithValue(error.message)
@@ -165,10 +169,10 @@ export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getSta
 export const initializeQuiz = createAsyncThunk(
   "quiz/initializeQuiz",
   async (
-    { slug, quizData, authStatus }: { slug: string; quizData?: any; authStatus: string },
+    { slug, quizData, authStatus, quizType }: { slug: string; quizData?: any; authStatus: string; quizType: QuizType },
     { dispatch, getState },
   ) => {
-    const state = getState() as RootState
+    const state = getState() as RootState;
 
     // If not authenticated, prepare for auth redirect
     if (authStatus !== "authenticated") {
@@ -176,10 +180,10 @@ export const initializeQuiz = createAsyncThunk(
         currentQuestionIndex: state.quiz.currentQuestionIndex,
         answers: state.quiz.answers,
         isCompleted: state.quiz.isCompleted,
-      }
+      };
 
       dispatch(setPendingQuiz({ slug, quizData, currentState }))
-      dispatch(setAuthRedirect(`/dashboard/mcq/${slug}?fromAuth=true`))
+      dispatch(setAuthRedirect(`/dashboard/common/${quizType}/${slug}`))
       return { requiresAuth: true }
     }
 
@@ -188,15 +192,15 @@ export const initializeQuiz = createAsyncThunk(
       return {
         quizData: {
           id: slug,
-          type: "mcq",
-          title: quizData.title || "MCQ Quiz",
+          type: quizType,
+          title: quizData.title || `${quizType.toUpperCase()} Quiz`,
           questions: quizData.questions || [],
         },
       }
     }
 
     // Fetch from API if no data provided
-    const response = await fetch(`/api/quizzes/mcq/${slug}`)
+    const response = await fetch(`/api/quizzes/${quizType}/${slug}`)
     if (!response.ok) {
       throw new Error(`Failed to load quiz: ${response.status}`)
     }
@@ -205,8 +209,8 @@ export const initializeQuiz = createAsyncThunk(
     return {
       quizData: {
         id: slug,
-        type: "mcq",
-        title: data.title || "MCQ Quiz",
+        type: quizType,
+        title: data.title || `${quizType.toUpperCase()} Quiz`,
         questions: data.questions || [],
       },
     }
@@ -647,9 +651,8 @@ const quizSlice = createSlice({
       })
       .addCase(fetchQuiz.fulfilled, (state, action) => {
         state.status = "succeeded"
-        // Set slug as primary identifier, keep quizId for database compatibility
-        state.slug = action.payload.slug 
-        state.quizId = String(action.payload.id)
+        state.slug = action.payload.slug; // Set slug as primary identifier
+        state.quizId = action.payload.id || action.payload.slug; // Keep id for compatibility
         state.quizType = action.payload.type
         state.title = action.payload.title
         state.questions = action.payload.questions

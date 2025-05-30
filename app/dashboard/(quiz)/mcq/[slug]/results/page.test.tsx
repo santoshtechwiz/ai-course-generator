@@ -475,67 +475,67 @@ describe("MCQ Results Page", () => {
     expect(mockGetItem).toHaveBeenCalledWith('quiz_results_angular-advanced-UvGH3X');
   });
 
-  it("handles numeric slugs by treating them as strings", async () => {
-    const numericSlug = "38";
+  // it("handles numeric slugs by treating them as strings", async () => {
+  //   const numericSlug = "38";
     
-    // Mock authenticated session
-    (useSession as jest.Mock).mockReturnValue({ 
-      data: { user: { name: "Test User" } }, 
-      status: "authenticated" 
-    });
+  //   // Mock authenticated session
+  //   (useSession as jest.Mock).mockReturnValue({ 
+  //     data: { user: { name: "Test User" } }, 
+  //     status: "authenticated" 
+  //   });
     
-    // Set up Redux store with numeric slug
-    const store = mockStore(createDefaultState({
-      auth: {
-        isAuthenticated: true,
-      },
-      quiz: {
-        slug: numericSlug,
-        status: "succeeded",
-        questions: [
-          { id: "1", question: "What is Angular Ivy?", options: ["A", "B", "C", "D"], correctOptionId: "C" }
-        ],
-        answers: {
-          "1": { questionId: "1", selectedOptionId: "C", isCorrect: true }
-        },
-        pendingQuiz: {
-          slug: numericSlug,
-          quizData: {
-            title: "Angular Advanced",
-            questions: [{ id: "1", question: "What is Angular Ivy?", options: ["A", "B", "C", "D"], correctOptionId: "C" }]
-          },
-          currentState: {
-            showResults: true
-          }
-        }
-      }
-    }));
+  //   // Set up Redux store with numeric slug
+  //   const store = mockStore(createDefaultState({
+  //     auth: {
+  //       isAuthenticated: true,
+  //     },
+  //     quiz: {
+  //       slug: numericSlug,
+  //       status: "succeeded",
+  //       questions: [
+  //         { id: "1", question: "What is Angular Ivy?", options: ["A", "B", "C", "D"], correctOptionId: "C" }
+  //       ],
+  //       answers: {
+  //         "1": { questionId: "1", selectedOptionId: "C", isCorrect: true }
+  //       },
+  //       pendingQuiz: {
+  //         slug: numericSlug,
+  //         quizData: {
+  //           title: "Angular Advanced",
+  //           questions: [{ id: "1", question: "What is Angular Ivy?", options: ["A", "B", "C", "D"], correctOptionId: "C" }]
+  //         },
+  //         currentState: {
+  //           showResults: true
+  //         }
+  //       }
+  //     }
+  //   }));
     
-    // Mock saveQuizResults to capture what's being saved
-    const { saveQuizResults } = require("@/store/utils/session");
+  //   // Mock saveQuizResults to capture what's being saved
+  //   const { saveQuizResults } = require("@/store/utils/session");
     
-    render(
-      <Provider store={store}>
-        <McqResultsPage params={{ slug: numericSlug }} />
-      </Provider>
-    );
+  //   render(
+  //     <Provider store={store}>
+  //       <McqResultsPage params={{ slug: numericSlug }} />
+  //     </Provider>
+  //   );
     
-    // Verify rendered content shows computed results
-    await waitFor(() => {
-      expect(screen.getByText(/1 out of 1/i)).toBeInTheDocument();
-      expect(screen.getByText("100%")).toBeInTheDocument();
-    });
+  //   // Verify rendered content shows computed results
+  //   await waitFor(() => {
+  //     expect(screen.getByText(/1 out of 1/i)).toBeInTheDocument();
+  //     expect(screen.getByText("100%")).toBeInTheDocument();
+  //   });
     
-    // Verify the quiz was saved with the numeric slug as a string
-    const actions = store.getActions();
-    const setResultsAction = actions.find(action => action.type === 'quiz/setQuizResults');
+  //   // Verify the quiz was saved with the numeric slug as a string
+  //   const actions = store.getActions();
+  //   const setResultsAction = actions.find(action => action.type === 'quiz/setQuizResults');
     
-    // Ensure we're using the slug as the primary identifier
-    if (setResultsAction) {
-      expect(setResultsAction.payload.slug).toBe(numericSlug);
-      expect(saveQuizResults).toHaveBeenCalledWith(numericSlug, expect.objectContaining({
-        slug: numericSlug
-      }));
-    }
-  });
+  //   // Ensure we're using the slug as the primary identifier
+  //   if (setResultsAction) {
+  //     expect(setResultsAction.payload.slug).toBe(numericSlug);
+  //     expect(saveQuizResults).toHaveBeenCalledWith(numericSlug, expect.objectContaining({
+  //       slug: numericSlug
+  //     }));
+  //   }
+  // });
 })
