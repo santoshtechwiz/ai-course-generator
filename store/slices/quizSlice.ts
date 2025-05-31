@@ -845,6 +845,12 @@ export const selectCurrentQuestion = createSelector(
   (questions, index) => questions[index] || null,
 )
 
+export const clearAuthState = (state: RootState) => {
+  const quiz = selectQuizState(state);
+  quiz.shouldRedirectToAuth = false;
+  quiz.authRedirectState = null;
+  quiz.authStatus = "idle";
+}
 // New selectors for auth flow
 export const selectShouldRedirectToAuth = createSelector([selectQuizState], (quiz) => quiz.shouldRedirectToAuth)
 export const selectShouldRedirectToResults = createSelector([selectQuizState], (quiz) => quiz.shouldRedirectToResults)
