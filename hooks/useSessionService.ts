@@ -251,7 +251,7 @@ export function useSessionService() {
         // Clear results-specific flags
         const keys = Object.keys(sessionStorage);
         keys.forEach(key => {
-          if (key.endsWith('_auth_for_results')) {
+          if (key.endsWith('_auth_for_results') || key.endsWith('_auth_restored')) {
             sessionStorage.removeItem(key);
           }
         });
@@ -334,6 +334,20 @@ export function useSessionService() {
     }
   }, [dispatch]);
 
+  const clearAuthRedirectState = useCallback(() => {
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("authRedirectPath");
+        sessionStorage.removeItem("callbackUrl");
+        localStorage.removeItem("authRedirectPath");
+        localStorage.removeItem("callbackUrl");
+      }
+    } catch (error) {
+      console.warn("Failed to clear auth redirect state:", error);
+    }
+  }
+  , []);
+
   return {
     saveAuthRedirectState,
     restoreAuthRedirectState,
@@ -341,5 +355,6 @@ export function useSessionService() {
     clearQuizResults,
     getStoredResults,
     storeResults,
+    clearAuthRedirectState, // Add the missing function to the returned object
   }
 }

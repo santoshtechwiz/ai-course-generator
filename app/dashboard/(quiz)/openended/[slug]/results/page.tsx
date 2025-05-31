@@ -1,11 +1,17 @@
 "use client"
 
-import { use, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { use, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useSession } from "next-auth/react"
 import type { AppDispatch } from "@/store"
-import { selectQuizResults, selectQuizStatus, selectOrGenerateQuizResults, fetchQuiz } from "@/store/slices/quizSlice"
+import {
+  selectQuizResults,
+  selectQuizStatus,
+  selectOrGenerateQuizResults,
+  selectAnswers,
+  fetchQuiz,
+} from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
@@ -21,58 +27,124 @@ export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
   const slug = resolvedParams.slug
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
+  const searchParams = useSearchParams()
+  const fromAuth = searchParams.get("fromAuth") === "true"
+
   const { data: session, status: authStatus } = useSession()
-  const { restoreAuthRedirectState, getStoredResults } = useSessionService()
+  const { restoreAuthRedirectState, getStoredResults, clearAuthState } = useSessionService()
+
+  // Local state for managing the flow
+  const [hasCheckedForResults, setHasCheckedForResults] = useState(false)
+  const [shouldRedirect, setShouldRedirect] = useState(false)
+  const [localResults, setLocalResults] = useState<any>(null)
+  const [isRestoringState, setIsRestoringState] = useState(fromAuth)
 
   // Redux selectors
   const quizResults = useSelector(selectQuizResults)
   const generatedResults = useSelector(selectOrGenerateQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
+  const answers = useSelector(selectAnswers)
 
-  // Use either stored results or generated results
-  const resultData = quizResults || generatedResults || getStoredResults(slug)
+  // Determine if we have any results or answers
+  const hasResults = !!(quizResults || generatedResults || localResults)
+  const hasAnswers = Object.keys(answers).length > 0
+  const hasAnyData = hasResults || hasAnswers
 
-  // Restore auth state if coming from authentication
+  // Handle authentication state restoration
   useEffect(() => {
-    if (authStatus === "authenticated") {
-      restoreAuthRedirectState()
+    if (authStatus === "authenticated" && fromAuth) {
+      setIsRestoringState(true)
+      const restoredState = restoreAuthRedirectState()
+      if (restoredState?.quizState?.currentState?.results) {
+        setLocalResults(restoredState.quizState.currentState.results)
+      }
+      clearAuthState() // Use the correct function name here
+      setIsRestoringState(false)
     }
-  }, [authStatus, restoreAuthRedirectState])
+  }, [authStatus, fromAuth, restoreAuthRedirectState, clearAuthState])
 
-  // Redirect to quiz if no results
+  // Check for stored results when component mounts
   useEffect(() => {
-    if (authStatus !== "loading" && !resultData && quizStatus !== "loading") {
+    if (!hasCheckedForResults) {
+      const storedResults = getStoredResults(slug)
+      if (storedResults) {
+        setLocalResults(storedResults)
+      }
+      setHasCheckedForResults(true)
+    }
+  }, [slug, getStoredResults, hasCheckedForResults])
+
+  // Handle redirect logic when no data is available
+  useEffect(() => {
+    // Only check for redirect after auth status is determined and we've checked for results
+    if (authStatus !== "loading" && hasCheckedForResults && !hasAnyData && !localResults && !isRestoringState) {
+      // Set a small delay to prevent immediate redirect and allow for any async data loading
+      const redirectTimer = setTimeout(() => {
+        setShouldRedirect(true)
+      }, 1000)
+
+      return () => clearTimeout(redirectTimer)
+    }
+  }, [authStatus, hasCheckedForResults, hasAnyData, localResults, isRestoringState])
+
+  // Perform the redirect
+  useEffect(() => {
+    if (shouldRedirect) {
       router.push(`/dashboard/openended/${slug}`)
     }
-  }, [authStatus, resultData, quizStatus, router, slug])
+  }, [shouldRedirect, router, slug])
+
+  // Try to fetch quiz data if authenticated and no results
+  useEffect(() => {
+    if (
+      authStatus === "authenticated" &&
+      hasCheckedForResults &&
+      !hasAnyData &&
+      !localResults &&
+      quizStatus !== "loading" &&
+      !isRestoringState
+    ) {
+      dispatch(fetchQuiz({ slug, type: "openended" }))
+    }
+  }, [authStatus, hasCheckedForResults, hasAnyData, localResults, quizStatus, dispatch, slug, isRestoringState])
 
   // Handle retaking the quiz
   const handleRetakeQuiz = () => {
     router.push(`/dashboard/openended/${slug}?reset=true`)
   }
 
-  // Add this effect to fetch quiz data if needed
-  useEffect(() => {
-    // If we don't have results and we're authenticated, try to fetch the quiz
-    if (!resultData && authStatus === "authenticated" && quizStatus !== "loading") {
-      dispatch(fetchQuiz({ slug, type: "openended" }))
-    }
-  }, [resultData, authStatus, quizStatus, dispatch, slug])
-
-  // Loading state
-  if (authStatus === "loading" || quizStatus === "loading") {
+  // Show loading state while auth is loading or we're checking for results
+  if (authStatus === "loading" || !hasCheckedForResults || quizStatus === "loading" || isRestoringState) {
     return (
       <QuizLoadingSteps
         steps={[
           { label: "Checking authentication", status: authStatus === "loading" ? "loading" : "completed" },
-          { label: "Loading quiz results", status: quizStatus === "loading" ? "loading" : "completed" },
+          {
+            label: "Loading quiz results",
+            status: !hasCheckedForResults || quizStatus === "loading" || isRestoringState ? "loading" : "completed",
+          },
         ]}
       />
     )
   }
 
-  // Error state - no results found
-  if (!resultData) {
+  // Show loading while redirect is being prepared
+  if (shouldRedirect) {
+    return (
+      <QuizLoadingSteps
+        steps={[
+          { label: "No results found", status: "completed" },
+          { label: "Redirecting to quiz", status: "loading" },
+        ]}
+      />
+    )
+  }
+
+  // Determine which results to show
+  const resultData = localResults || quizResults || generatedResults
+
+  // Show no results message if we still don't have any data
+  if (!resultData && !hasAnswers) {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <Card>
@@ -93,7 +165,7 @@ export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
         <CardContent className="p-4 sm:p-6">
           <OpenEndedQuizResults
             result={resultData}
-            isAuthenticated={!!session?.user}
+            isAuthenticated={authStatus === "authenticated"}
             slug={slug}
             onRetake={handleRetakeQuiz}
           />
