@@ -1,41 +1,37 @@
 "use client"
 
-import { use, useEffect } from "react"
+import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useSession } from "next-auth/react"
 import type { AppDispatch } from "@/store"
-import { 
-  selectQuizResults, 
-  selectQuizStatus, 
-  selectOrGenerateQuizResults, 
+import {
+  selectQuizResults,
+  selectQuizStatus,
+  selectOrGenerateQuizResults,
   selectQuizTitle,
   selectAnswers,
-  selectQuestions
+  selectQuestions,
+  resetQuiz,
 } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
-import QuizResult from "../../../components/QuizResult"
-import { useSessionService } from "@/hooks/useSessionService"
-import { RefreshCw } from "lucide-react"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import QuizResult from "../../components/QuizResult"
 
 interface ResultsPageProps {
   params: { slug: string }
 }
 
 export default function CodeResultsPage({ params }: ResultsPageProps) {
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const slug = resolvedParams.slug
+  const slug = params.slug
   const searchParams = useSearchParams()
   const fromAuth = searchParams.get("fromAuth") === "true"
-  
+
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { status: authStatus } = useSession()
-  const { restoreAuthRedirectState, getStoredResults } = useSessionService()
 
-  // Redux selectors
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
   const generatedResults = useSelector(selectOrGenerateQuizResults)
@@ -43,42 +39,30 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   const answers = useSelector(selectAnswers)
   const questions = useSelector(selectQuestions)
 
-  // Retrieve stored results from session storage if available
-  const storedResults = getStoredResults(slug)
-  
-  // Use the most authoritative result source
-  const resultData = quizResults || generatedResults || storedResults
+  const resultData = quizResults || generatedResults
 
-  // Restore auth state if coming from authentication
   useEffect(() => {
     if (authStatus === "authenticated" && fromAuth) {
-      restoreAuthRedirectState()
+      dispatch(resetQuiz())
     }
-  }, [authStatus, fromAuth, restoreAuthRedirectState])
+  }, [authStatus, fromAuth, dispatch])
 
-  // Redirect to quiz if no results or answers
   useEffect(() => {
     if (authStatus !== "loading" && quizStatus !== "loading") {
       const hasResults = resultData !== null
       const hasAnswers = Object.keys(answers || {}).length > 0
-      
-      // If we have no results and no answers, redirect back to quiz
+
       if (!hasResults && !hasAnswers) {
-        const redirectTimeout = setTimeout(() => {
-          router.push(`/dashboard/code/${slug}`)
-        }, 1000)
-        
-        return () => clearTimeout(redirectTimeout)
+        router.push(`/dashboard/code/${slug}`)
       }
     }
   }, [authStatus, quizStatus, resultData, router, slug, answers])
-  
-  // Handle retaking the quiz
+
   const handleRetake = () => {
+    dispatch(resetQuiz())
     router.push(`/dashboard/code/${slug}?reset=true`)
   }
 
-  // Loading state
   if (authStatus === "loading" || quizStatus === "loading") {
     return (
       <QuizLoadingSteps
@@ -90,13 +74,11 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // No results state with redirect
   if (!resultData) {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <Card>
           <CardContent className="p-8">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
             <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
             <p className="text-muted-foreground mb-6">Taking you to the quiz page...</p>
             <Button onClick={() => router.push(`/dashboard/code/${slug}`)}>Take Quiz Now</Button>
@@ -106,17 +88,14 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // Show results using the QuizResult component that now handles authentication
   return (
     <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <QuizResult 
-            result={resultData} 
-            onRetake={handleRetake} 
-            quizType="code" 
-            slug={slug} 
-          />
+          <QuizResult result={resultData} />
+          <Button onClick={handleRetake} className="mt-4">
+            Retake Quiz
+          </Button>
         </CardContent>
       </Card>
     </div>
