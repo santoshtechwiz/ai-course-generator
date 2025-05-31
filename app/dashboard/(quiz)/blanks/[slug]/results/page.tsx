@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useSession } from "next-auth/react"
 import type { AppDispatch } from "@/store"
-import { selectQuizResults, selectQuizStatus, selectOrGenerateQuizResults } from "@/store/slices/quizSlice"
+import { selectQuizResults, selectQuizStatus, selectOrGenerateQuizResults, fetchQuiz } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
@@ -48,8 +48,16 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
 
   // Handle retaking the quiz
   const handleRetakeQuiz = () => {
-    router.push(`/dashboard/blanks/${slug}`)
+    router.push(`/dashboard/blanks/${slug}?reset=true`)
   }
+
+  // Add this effect to fetch quiz data if needed
+  useEffect(() => {
+    // If we don't have results and we're authenticated, try to fetch the quiz
+    if (!resultData && authStatus === "authenticated" && quizStatus !== "loading") {
+      dispatch(fetchQuiz({ slug, type: "blanks" }))
+    }
+  }, [resultData, authStatus, quizStatus, dispatch, slug])
 
   // Loading state
   if (authStatus === "loading" || quizStatus === "loading") {

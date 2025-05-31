@@ -19,6 +19,7 @@ import {
   resetQuiz,
   setQuizResults,
   setQuizCompleted,
+  fetchQuiz,
 } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -65,25 +66,43 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
       dispatch(resetQuiz())
     }
 
-    if (quizData) {
-      // Hydrate quiz with provided data
-      dispatch(
-        hydrateQuiz({
-          slug,
-          quizData,
-          currentState: {
-            currentQuestionIndex: 0,
-            answers: {},
-            isCompleted: false,
-            showResults: false,
-          },
-        }),
-      )
-      setLoading(false)
-    } else {
-      setError("Quiz data not available")
-      setLoading(false)
+    const initializeQuiz = async () => {
+      setLoading(true)
+
+      if (quizData) {
+        // Hydrate quiz with provided data
+        dispatch(
+          hydrateQuiz({
+            slug,
+            quizData,
+            currentState: {
+              currentQuestionIndex: 0,
+              answers: {},
+              isCompleted: false,
+              showResults: false,
+            },
+          }),
+        )
+        setLoading(false)
+      } else {
+        // Fetch quiz data from API
+        try {
+          const result = await dispatch(fetchQuiz({ slug, type: "blanks" })).unwrap()
+          if (result) {
+            setError(null)
+          } else {
+            setError("Failed to load quiz data")
+          }
+        } catch (err) {
+          console.error("Error fetching quiz:", err)
+          setError("Failed to load quiz. Please try again.")
+        } finally {
+          setLoading(false)
+        }
+      }
     }
+
+    initializeQuiz()
   }, [quizData, slug, reset, dispatch])
 
   // Handle answer submission
@@ -105,20 +124,25 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
     // Save answer to Redux
     dispatch(saveAnswer({ questionId, answer: answerData }))
-
-    // Move to next question if not the last one
-    if (currentQuestionIndex < questions.length - 1) {
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-      return true
-    }
-
-    // If last question, submit quiz
-    submitQuiz()
     return true
   }
 
+  // Handle next question
+  const handleNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
+    }
+  }
+
+  // Handle previous question
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
+    }
+  }
+
   // Submit quiz and calculate results
-  const submitQuiz = () => {
+  const handleSubmitQuiz = () => {
     if (!questions.length) return
 
     // Generate results locally
@@ -158,7 +182,10 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     // Store results using session service
     storeResults(slug, generatedResults)
 
-   
+    // Navigate to results page for authenticated users
+    if (session?.user) {
+      router.push(`/dashboard/blanks/${slug}/results`)
+    }
   }
 
   // Handle retaking the quiz
@@ -183,6 +210,11 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     if (!questions.length) return null
     return questions[currentQuestionIndex]
   }, [questions, currentQuestionIndex])
+
+  // Navigation state
+  const canGoNext = currentQuestionIndex < questions.length - 1
+  const canGoPrevious = currentQuestionIndex > 0
+  const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   // Loading state
   if (loading || quizStatus === "loading") {
@@ -221,6 +253,12 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
         ""
       }
       onAnswer={handleAnswer}
+      onNext={handleNext}
+      onPrevious={handlePrevious}
+      onSubmit={handleSubmitQuiz}
+      canGoNext={canGoNext}
+      canGoPrevious={canGoPrevious}
+      isLastQuestion={isLastQuestion}
     />
   ) : (
     <Card>
