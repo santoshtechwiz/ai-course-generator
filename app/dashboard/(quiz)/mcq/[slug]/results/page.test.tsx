@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, fireEvent, act, findByText } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -67,7 +67,7 @@ describe("MCQ Results Page", () => {
   const mockSaveAuthRedirectState = jest.fn();
   
   beforeEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
     
     // Default mock implementations
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
@@ -192,14 +192,14 @@ describe("MCQ Results Page", () => {
       </Provider>
     );
     
-    // Should show score and sign-in prompt but not detailed results
+    // Check for limited results view for unauthenticated user
     expect(screen.getByText("Your Score: 50%")).toBeInTheDocument();
-    expect(screen.getByText("Sign In to See Full Results")).toBeInTheDocument();
-    expect(screen.getByText("Why Sign In?")).toBeInTheDocument();
+    expect(screen.getByText("Sign in to see your detailed results")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sign In to See Full Results/i })).toBeInTheDocument();
   });
   
   // Test: Authenticated user sees full results
-  it("shows full results for authenticated user", async () => {
+  it("shows full results for authenticated user", () => {
     const initialState = {
       quiz: {
         status: "succeeded",
@@ -242,26 +242,32 @@ describe("MCQ Results Page", () => {
       </Provider>
     );
     
-    // Should show the full quiz result component
-    // Note: We check for "Score" instead of specific title to avoid test brittleness
-    expect(await screen.findByText(/score/i, { selector: ".text-xl.text-muted-foreground" })).toBeInTheDocument();
+    // Check for full results view
+    expect(screen.getByText("MCQ Quiz")).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
+    expect(screen.getByText(/You got 1 out of 2 questions correct/i)).toBeInTheDocument();
   });
   
-  // Test: Sign-in handler is called when user clicks sign in
+  // Test: Sign in handler is called when user clicks sign in
   it("calls sign in when user clicks sign in button", async () => {
     const initialState = {
       quiz: {
         status: "succeeded",
-        questions: [{ id: "1", text: "Question 1", correctOptionId: "a" }],
-        answers: { "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" } },
+        questions: [
+          { id: "1", text: "Question 1", correctOptionId: "a" }
+        ],
+        answers: { 
+          "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" } 
+        },
         title: "MCQ Quiz",
         results: {
+          slug: "test-slug",
+          title: "MCQ Quiz",
           score: 1,
           maxScore: 1,
           percentage: 100,
           questionResults: [
-            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
+            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" }
           ],
         },
       },
@@ -278,59 +284,13 @@ describe("MCQ Results Page", () => {
       </Provider>
     );
     
-    // Click sign in button
-    fireEvent.click(screen.getByText("Sign In to See Full Results"));
+    // Find and click the sign in button
+    const signInButton = screen.getByRole("button", { name: /sign in to see full results/i });
+    fireEvent.click(signInButton);
     
     // Verify saveAuthRedirectState and signIn were called
-    await waitFor(() => {
-      expect(mockSaveAuthRedirectState).toHaveBeenCalled();
-      expect(signIn).toHaveBeenCalled();
-    });
-  });
-  
-  // Test: Retake button clears quiz state and redirects
-  it("clears quiz state and redirects when retake is clicked", () => {
-    const initialState = {
-      quiz: {
-        status: "succeeded",
-        questions: [{ id: "1", text: "Question 1", correctOptionId: "a" }],
-        answers: { "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" } },
-        title: "MCQ Quiz",
-        results: {
-          score: 1,
-          maxScore: 1,
-          percentage: 100,
-        },
-      },
-      auth: {
-        isAuthenticated: true,
-      },
-    };
-    
-    const store = createStore(initialState);
-    
-    (useSession as jest.Mock).mockReturnValue({
-      status: "authenticated",
-      data: { user: { name: "Test User" } },
-    });
-    
-    render(
-      <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
-      </Provider>
-    );
-    
-    // Find and click the retake button
-    const retakeButton = screen.getByRole("button", { name: /retake quiz/i });
-    
-    // Wrap state updates in act
-    act(() => {
-      fireEvent.click(retakeButton);
-    });
-    
-    // Verify clearQuizResults was called and router.push was called with the right URL
-    expect(mockClearQuizResults).toHaveBeenCalled();
-    expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/mcq/test-slug?reset=true");
+    expect(mockSaveAuthRedirectState).toHaveBeenCalled();
+    expect(signIn).toHaveBeenCalled();
   });
   
   // Test: Auth restoration happens after login

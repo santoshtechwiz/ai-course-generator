@@ -1,46 +1,45 @@
 "use client"
 
-import { use, useEffect } from "react"
-import { useAuth } from "@/hooks/useAuth"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { use } from "react"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
-import { useSelector } from "react-redux"
-import { selectQuizStatus } from "@/store/slices/quizSlice"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
+export default function OpenEndedQuizPage({
+  params,
+}: {
+  params: Promise<{ slug: string }> | { slug: string }
+}) {
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const slug = resolvedParams.slug
+  const { status: authStatus } = useSession()
+  const router = useRouter()
 
-interface OpenEndedQuizPageProps {
-  params: {
-    slug: string;
-  };
-}
+  // Check for loading state
+  if (authStatus === "loading") {
+    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+  }
 
-export default function OpenEndedQuizPage({ params }: OpenEndedQuizPageProps) {
-  // Extract slug for both test and production environments
-  const slug = params instanceof Promise ? use(params).slug : params.slug
-  
-  // Custom hook for auth status
-  const { isAuthenticated, isLoading } = useAuth()
-  
-  // Get quiz status from Redux to check if it was reset
-  const quizStatus = useSelector(selectQuizStatus)
-
-  // If still loading auth status, show loading
-  if (isLoading) {
+  if (!slug) {
     return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Checking authentication", status: "loading" }
-        ]}
-      />
+      <div className="container max-w-4xl py-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold mb-4">Error</h2>
+            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
+            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
     <div className="container max-w-4xl py-6">
-      <OpenEndedQuizWrapper 
-        slug={slug} 
-      />
+      <OpenEndedQuizWrapper slug={slug} />
     </div>
   )
 }
-
