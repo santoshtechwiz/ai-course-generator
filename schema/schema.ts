@@ -74,5 +74,15 @@ export const endGameSchema = z.object({
   gameId: z.string(),
 })
 
+export const blanksQuizSchema = z.object({
+  title: z
+    .string()
+    .min(3, "Topic must be at least 3 characters long")
+    .max(100, "Topic must be at most 100 characters long"),
+  type: z.enum(["fill_in_the_blanks"]).default("fill_in_the_blanks"),
+  amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+})
+
 export type CreateCourseInput = z.infer<typeof createCourseSchema>
 export { updateSchema, createCourseSchema, quizSchema, codeQuizSchema }
