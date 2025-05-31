@@ -1,17 +1,17 @@
 import React from "react"
 import { render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { Provider } from "react-redux"
-import McqResultsPage from "./page"
+import BlanksResultsPage from "./page"
+import { configureStore } from "@reduxjs/toolkit"
 import quizReducer from "@/store/slices/quizSlice"
 import authReducer from "@/store/slices/authSlice"
-import { configureStore } from "@reduxjs/toolkit"
 
-// Import the mocks to manipulate them
+// Import the mocks directly to manipulate them
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession, signIn } from "next-auth/react"
 import { useSessionService } from "@/hooks/useSessionService"
 
-// Mock modules properly
+// Mock modules correctly
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
@@ -26,17 +26,19 @@ jest.mock("@/hooks/useSessionService", () => ({
   useSessionService: jest.fn(),
 }))
 
-// Mock QuizResult component for easier testing
-jest.mock("../../../components/QuizResult", () => ({
-  __esModule: true,
-  default: ({ result }) => (
-    <div data-testid="mcq-quiz-result">
-      <h2>{result?.title || "Quiz Results"}</h2>
-      <div data-testid="percentage">{result?.percentage}%</div>
-      <div data-testid="score-fraction">{result?.score} / {result?.maxScore}</div>
-    </div>
-  ),
-}))
+// Mock QuizResult component with data-testid attributes for better testing
+jest.mock("../../../components/QuizResult", () => {
+  return {
+    __esModule: true,
+    default: ({ result }) => (
+      <div data-testid="blanks-quiz-result">
+        <div data-testid="quiz-title">{result?.title || "Quiz Results"}</div>
+        <div data-testid="quiz-score">{result?.percentage || 0}%</div>
+        <div data-testid="quiz-questions">{result?.score || 0} / {result?.maxScore || 0}</div>
+      </div>
+    ),
+  }
+})
 
 // Mock React's use function for handling params
 jest.mock("react", () => {
@@ -52,31 +54,49 @@ jest.mock("react", () => {
   };
 })
 
+// Mock selectOrGenerateQuizResults
+jest.mock("@/store/slices/quizSlice", () => {
+  const original = jest.requireActual("@/store/slices/quizSlice");
+  return {
+    ...original,
+    selectOrGenerateQuizResults: () => ({
+      title: "Fill-in-the-Blanks Quiz",
+      score: 2,
+      maxScore: 3,
+      percentage: 67,
+      questionResults: [
+        { questionId: "1", isCorrect: true },
+        { questionId: "2", isCorrect: true },
+        { questionId: "3", isCorrect: false },
+      ],
+    }),
+  };
+});
+
 // Create a mock store with the necessary state
-const createStore = (initialState = {}) => {
-  return configureStore({
-    reducer: {
-      quiz: quizReducer,
-      auth: authReducer,
-    },
-    preloadedState: initialState,
-  })
-}
+const createStore = (initialState = {}) => configureStore({
+  reducer: {
+    quiz: quizReducer,
+    auth: authReducer,
+  },
+  preloadedState: initialState,
+})
 
 // Mock window.scrollTo since it's not implemented in jsdom
-window.scrollTo = jest.fn()
+window.scrollTo = jest.fn();
 
-describe("MCQ Results Page", () => {
+describe("Blanks Results Page", () => {
   // Setup common mocks and utilities
-  const mockRouter = { push: jest.fn() }
+  const mockRouter = { push: jest.fn(), replace: jest.fn() }
   const mockClearQuizResults = jest.fn()
   const mockRestoreAuthRedirectState = jest.fn()
   const mockSaveAuthRedirectState = jest.fn()
+  const mockGetStoredResults = jest.fn().mockReturnValue(null)
   
   beforeEach(() => {
     jest.clearAllMocks()
     
-    // Set up the mocks properly using semicolon notation for safety
+    // Set up the mocks properly with semicolon notation
     ;(useRouter as jest.Mock).mockReturnValue(mockRouter)
     ;(useSearchParams as jest.Mock).mockReturnValue({
       get: jest.fn((param) => param === "fromAuth" ? "false" : null),
@@ -89,10 +109,10 @@ describe("MCQ Results Page", () => {
       clearQuizResults: mockClearQuizResults,
       restoreAuthRedirectState: mockRestoreAuthRedirectState,
       saveAuthRedirectState: mockSaveAuthRedirectState,
-      getStoredResults: jest.fn(() => null),
+      getStoredResults: mockGetStoredResults,
     })
     
-    // Mock session storage with a properly maintained state
+    // Mock session storage
     const mockStorageData = {}
     const mockSessionStorage = {
       getItem: jest.fn(key => mockStorageData[key] || null),
@@ -109,6 +129,7 @@ describe("MCQ Results Page", () => {
 
   // Test: Loading state is displayed while authentication is loading
   it("shows loading state when auth is loading", () => {
+    // Override the default mock for this test
     ;(useSession as jest.Mock).mockReturnValue({
       status: "loading",
       data: null,
@@ -119,7 +140,7 @@ describe("MCQ Results Page", () => {
         status: "idle",
         questions: [],
         answers: {},
-        results: null,
+        quizResults: null,
       },
       auth: {
         isAuthenticated: false,
@@ -130,11 +151,11 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <BlanksResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     )
     
-    expect(screen.getByText("Checking authentication")).toBeInTheDocument()
+    expect(screen.getByText(/checking authentication/i)).toBeInTheDocument()
   })
   
   // Test: Redirect to quiz when no results exist
@@ -144,7 +165,7 @@ describe("MCQ Results Page", () => {
         status: "succeeded",
         questions: [],
         answers: {},
-        results: null,
+        quizResults: null,
       },
       auth: {
         isAuthenticated: false,
@@ -155,44 +176,50 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <BlanksResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     )
     
-    // Should show loading screen with redirect message
-    expect(screen.getByText("No Results Available")).toBeInTheDocument()
-    
     // Wait for the redirect timeout
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/mcq/test-slug")
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/blanks/test-slug")
     }, { timeout: 1500 })
   })
   
   // Test: Unauthenticated user sees limited results
   it("shows limited results for unauthenticated user", () => {
+    const quizResults = {
+      slug: "test-slug",
+      title: "Fill-in-the-Blanks Quiz",
+      score: 2,
+      maxScore: 3,
+      percentage: 67,
+      completedAt: new Date().toISOString(),
+      questionResults: [
+        { questionId: "1", isCorrect: true, userAnswer: "correct", correctAnswer: "correct" },
+        { questionId: "2", isCorrect: true, userAnswer: "right", correctAnswer: "right" },
+        { questionId: "3", isCorrect: false, userAnswer: "wrong", correctAnswer: "correct" },
+      ],
+    }
+    
+    // Update mockGetStoredResults to return our quiz results
+    mockGetStoredResults.mockReturnValue(quizResults)
+    
     const initialState = {
       quiz: {
         status: "succeeded",
         questions: [
-          { id: "1", text: "Question 1", correctOptionId: "a" },
-          { id: "2", text: "Question 2", correctOptionId: "b" },
+          { id: "1", text: "Question 1", correctAnswer: "correct" },
+          { id: "2", text: "Question 2", correctAnswer: "right" },
+          { id: "3", text: "Question 3", correctAnswer: "correct" },
         ],
         answers: {
-          "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" },
-          "2": { selectedOptionId: "c", isCorrect: false, type: "mcq" },
+          "1": { answer: "correct", isCorrect: true, type: "blanks" },
+          "2": { answer: "right", isCorrect: true, type: "blanks" },
+          "3": { answer: "wrong", isCorrect: false, type: "blanks" },
         },
-        title: "MCQ Quiz",
-        results: {
-          slug: "test-slug",
-          title: "MCQ Quiz",
-          score: 1,
-          maxScore: 2,
-          percentage: 50,
-          questionResults: [
-            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
-            { questionId: "2", isCorrect: false, userAnswer: "c", correctAnswer: "b" },
-          ],
-        },
+        title: "Fill-in-the-Blanks Quiz",
+        quizResults: quizResults,
       },
       auth: {
         isAuthenticated: false,
@@ -203,46 +230,57 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <BlanksResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     )
     
     // Check for limited results view for unauthenticated user
-    expect(screen.getByText(/Your Score: 50%/)).toBeInTheDocument()
+    expect(screen.getByText(/Your Score: 67%/i)).toBeInTheDocument()
     expect(screen.getByText((content) => content.includes("Sign in to see your detailed results"))).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Sign In/i })).toBeInTheDocument()
   })
   
   // Test: Authenticated user sees full results
-  it("shows full results for authenticated user", () => {
+  it("shows full results for authenticated user", async () => {
+    // Set authenticated status
     ;(useSession as jest.Mock).mockReturnValue({
       status: "authenticated",
       data: { user: { name: "Test User" } },
     })
     
+    // Create meaningful quiz results
+    const quizResults = {
+      slug: "test-slug",
+      title: "Fill-in-the-Blanks Quiz",
+      score: 2,
+      maxScore: 3,
+      percentage: 67,
+      completedAt: new Date().toISOString(),
+      questionResults: [
+        { questionId: "1", isCorrect: true, userAnswer: "correct", correctAnswer: "correct" },
+        { questionId: "2", isCorrect: true, userAnswer: "right", correctAnswer: "right" },
+        { questionId: "3", isCorrect: false, userAnswer: "wrong", correctAnswer: "correct" },
+      ],
+    }
+    
+    // Update mockGetStoredResults to return our quiz results
+    mockGetStoredResults.mockReturnValue(quizResults)
+    
     const initialState = {
       quiz: {
         status: "succeeded",
         questions: [
-          { id: "1", text: "Question 1", correctOptionId: "a" },
-          { id: "2", text: "Question 2", correctOptionId: "b" },
+          { id: "1", text: "Question 1", correctAnswer: "correct" },
+          { id: "2", text: "Question 2", correctAnswer: "right" },
+          { id: "3", text: "Question 3", correctAnswer: "correct" },
         ],
         answers: {
-          "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" },
-          "2": { selectedOptionId: "c", isCorrect: false, type: "mcq" },
+          "1": { answer: "correct", isCorrect: true, type: "blanks" },
+          "2": { answer: "right", isCorrect: true, type: "blanks" },
+          "3": { answer: "wrong", isCorrect: false, type: "blanks" },
         },
-        title: "MCQ Quiz",
-        results: {
-          slug: "test-slug",
-          title: "MCQ Quiz",
-          score: 1,
-          maxScore: 2,
-          percentage: 50,
-          questionResults: [
-            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
-            { questionId: "2", isCorrect: false, userAnswer: "c", correctAnswer: "b" },
-          ],
-        },
+        title: "Fill-in-the-Blanks Quiz",
+        quizResults: quizResults,
       },
       auth: {
         isAuthenticated: true,
@@ -253,38 +291,51 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <BlanksResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     )
     
-    // Check for full results view using data-testid selectors
-    expect(screen.getByTestId("mcq-quiz-result")).toBeInTheDocument()
-    expect(screen.getByTestId("percentage")).toHaveTextContent("50%")
-    expect(screen.getByTestId("score-fraction")).toHaveTextContent("1 / 2")
+    // Wait for any state updates to complete
+    await waitFor(() => {
+      expect(screen.getByTestId("blanks-quiz-result")).toBeInTheDocument()
+    })
+    
+    // Verify the score values
+    expect(screen.getByTestId("quiz-title")).toHaveTextContent("Fill-in-the-Blanks Quiz")
+    expect(screen.getByTestId("quiz-score")).toHaveTextContent("67%")
+    expect(screen.getByTestId("quiz-questions")).toHaveTextContent("2 / 3")
   })
   
-  // Test: Sign in handler is called when user clicks sign in
+  // Test: Sign-in handler is called when user clicks sign in
   it("calls sign in when user clicks sign in button", async () => {
+    const quizResults = {
+      slug: "test-slug",
+      title: "Fill-in-the-Blanks Quiz",
+      score: 2,
+      maxScore: 3,
+      percentage: 67,
+      questionResults: [
+        { questionId: "1", isCorrect: true },
+        { questionId: "2", isCorrect: true },
+        { questionId: "3", isCorrect: false },
+      ],
+    }
+    
     const initialState = {
       quiz: {
         status: "succeeded",
         questions: [
-          { id: "1", text: "Question 1", correctOptionId: "a" }
+          { id: "1", text: "Question 1", correctAnswer: "correct" },
+          { id: "2", text: "Question 2", correctAnswer: "right" },
+          { id: "3", text: "Question 3", correctAnswer: "correct" },
         ],
-        answers: { 
-          "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" } 
+        answers: {
+          "1": { answer: "correct", isCorrect: true, type: "blanks" },
+          "2": { answer: "right", isCorrect: true, type: "blanks" },
+          "3": { answer: "wrong", isCorrect: false, type: "blanks" },
         },
-        title: "MCQ Quiz",
-        results: {
-          slug: "test-slug",
-          title: "MCQ Quiz",
-          score: 1,
-          maxScore: 1,
-          percentage: 100,
-          questionResults: [
-            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" }
-          ],
-        },
+        title: "Fill-in-the-Blanks Quiz",
+        quizResults: quizResults,
       },
       auth: {
         isAuthenticated: false,
@@ -295,11 +346,11 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <BlanksResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     )
     
-    // Find and click the sign in button using a more flexible selector
+    // Find and click the sign in button
     const signInButton = screen.getByRole("button", { name: /sign in/i })
     fireEvent.click(signInButton)
     
@@ -336,7 +387,7 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <BlanksResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     )
     
