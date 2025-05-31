@@ -6,7 +6,7 @@ import { cn } from "@/lib/tailwindUtils"
 
 
 interface CodeQuizOptionsProps {
-  options: Array<{ id: string; text: string }>;
+  options: string[]; // Simple array of strings
   selectedOption: string | null;
   onSelect: (option: string) => void;
   disabled?: boolean;
@@ -20,16 +20,21 @@ export default function CodeQuizOptions({
   disabled = false,
   renderOptionContent,
 }: CodeQuizOptionsProps) {
+  // Create a safe copy of options to avoid errors
+  const safeOptions = Array.isArray(options) ? options : [];
+
   return (
-    <RadioGroup value={selectedOption || ""} onValueChange={(option) => {
-      const validOptionIds = options.map(opt => opt.id);
-      if (!validOptionIds.includes(option)) {
-        console.error(`Invalid option selected: "${option}"`);
-        return;
-      }
-      onSelect(option);
-    }} className="space-y-3 w-full" disabled={disabled}>
-      {options.map((option, index) => (
+    <RadioGroup
+      value={selectedOption || ""}
+      onValueChange={(option) => {
+        if (safeOptions.includes(option)) {
+          onSelect(option);
+        }
+      }}
+      className="space-y-3 w-full"
+      disabled={disabled}
+    >
+      {safeOptions.map((option, index) => (
         <motion.div
           key={`option-${index}`}
           initial={{ opacity: 0, y: 10 }}
@@ -40,21 +45,23 @@ export default function CodeQuizOptions({
             ease: [0.25, 0.1, 0.25, 1],
           }}
         >
-          <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-            <div
-              className={cn(
-                "flex items-center space-x-2 p-4 rounded-lg transition-all w-full",
-                "border-2",
-                selectedOption === option.id ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/80",
-              )}
-              onClick={() => !disabled && onSelect(option.id)}
-            >
-              <RadioGroupItem value={option.id} id={`option-${index}`} />
-              <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer font-medium text-sm sm:text-base">
-                {renderOptionContent ? renderOptionContent(option.text) : option.text}
-              </Label>
-            </div>
-          </motion.div>
+          <div
+            className={cn(
+              "flex items-center space-x-2 p-4 rounded-lg transition-all w-full",
+              "border-2",
+              selectedOption === option ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/80",
+            )}
+            onClick={() => {
+              if (!disabled && safeOptions.includes(option)) {
+                onSelect(option);
+              }
+            }}
+          >
+            <RadioGroupItem value={option} id={`option-${index}`} />
+            <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer font-medium text-sm sm:text-base">
+              {renderOptionContent ? renderOptionContent(option) : option}
+            </Label>
+          </div>
         </motion.div>
       ))}
     </RadioGroup>

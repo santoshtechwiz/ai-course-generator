@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '@/store'
@@ -26,6 +26,7 @@ import CodeQuiz from './CodeQuiz'
 import { QuizLoadingSteps } from '../../components/QuizLoadingSteps'
 import QuizWrapper from '../../components/QuizWrapper'
 import { CodeQuestion } from './types'
+import { QuizType } from '@/types/quiz'
 
 interface CodeQuizWrapperProps {
   slug: string;
@@ -50,28 +51,23 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
   const isQuizComplete = useSelector(selectIsQuizComplete);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  // Local state for feedback
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | null>(null);
-  const feedbackTimeout = useRef<NodeJS.Timeout | null>(null);
-
   // Load quiz data on mount
   useEffect(() => {
     if (quizStatus === 'idle') {
-      if (quizData?.questions?.length) {
-        dispatch(fetchQuiz({
-          slug, // Use slug consistently
-          data: {
-            slug, // Use slug consistently
-            title: quizData.title || 'Code Quiz',
-            questions: quizData.questions,
-            type: 'code',
-          },
-          type: 'code',
-        }));
-      } else {
-        dispatch(fetchQuiz({ slug, type: 'code' })); // Use slug consistently
-      }
+      const quizPayload = quizData?.questions?.length
+        ? {
+            slug,
+            data: {
+              slug,
+              title: quizData.title || 'Code Quiz',
+              questions: quizData.questions,
+              type: 'code' as QuizType,
+            },
+            type: 'code' as QuizType,
+          }
+        : { slug, type: 'code' as QuizType };
+
+      dispatch(fetchQuiz(quizPayload));
     }
   }, [quizStatus, dispatch, slug, quizData]);
 
@@ -82,14 +78,18 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     const safeSlug = typeof slug === 'string' ? slug : String(slug);
 
     if (isAuthenticated) {
-      dispatch(submitQuiz()).then((res: any) => {
-        if (res?.payload) {
-          dispatch(setQuizResults(res.payload));
-          router.push(`/dashboard/code/${safeSlug}/results`);
-        }
-      }).catch((error) => {
-        console.error("Error submitting quiz:", error);
-      });
+      dispatch(submitQuiz())
+        .then((res: any) => {
+          if (res?.payload) {
+            dispatch(setQuizResults(res.payload));
+            router.push(`/dashboard/code/${safeSlug}/results`);
+          } else {
+            console.error("Submit quiz failed: payload is undefined", res);
+          }
+        })
+        .catch((error) => {
+          console.error("Error submitting quiz:", error);
+        });
     } else {
       dispatch(setPendingQuiz({
         slug,
@@ -108,98 +108,39 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     }
   }, [isQuizComplete, isAuthenticated, dispatch, router, slug, quizTitle, questions, answers, currentQuestionIndex]);
 
-  const handleAnswerQuestion = (selectedOption: string) => {
-    if (!currentQuestion || answers[currentQuestion.id]?.selectedOptionId) return;
+  const handleAnswerQuestion = (selectedOption: string | undefined) => {
+    if (!selectedOption || !currentQuestion || answers[currentQuestion.id]?.selectedOptionId) return;
 
-    try {
-      const validOptions = currentQuestion.options?.map(option => option.id) || [];
-      if (!validOptions.includes(selectedOption)) {
-        console.error(`Invalid option selected: "${selectedOption}"`);
-        return;
-      }
+    // Simple check for plain array of options
+    if (!Array.isArray(currentQuestion.options)) return;
+    if (!currentQuestion.options.includes(selectedOption)) return;
 
-      const isCorrect = selectedOption === currentQuestion.correctOptionId;
-
-      dispatch(saveAnswer({
+    dispatch(saveAnswer({
+      questionId: currentQuestion.id,
+      answer: {
         questionId: currentQuestion.id,
-        answer: {
-          questionId: currentQuestion.id,
-          selectedOptionId: selectedOption,
-          timestamp: Date.now(),
-          type: 'code',
-          isCorrect,
-        },
-      }));
-
-      setShowFeedback(true);
-      setFeedbackType(isCorrect ? 'correct' : 'incorrect');
-
-      if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
-
-      feedbackTimeout.current = setTimeout(() => {
-        setShowFeedback(false);
-        setFeedbackType(null);
-
-        if (currentQuestionIndex < questions.length - 1) {
-          dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
-        }
-      }, 1500);
-    } catch (error) {
-      console.error("Error handling answer:", error);
-    }
+        selectedOptionId: selectedOption,
+        timestamp: Date.now(),
+        type: 'code',
+      },
+    }));
   };
 
   const handleNext = () => {
-    setShowFeedback(false);
-    setFeedbackType(null);
-
-    if (feedbackTimeout.current) {
-      clearTimeout(feedbackTimeout.current);
-      feedbackTimeout.current = null;
-    }
-
-    try {
-      if (currentQuestionIndex < questions.length - 1) {
-        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
-      } else {
-        dispatch({ type: "quiz/setQuizCompleted" });
-      }
-    } catch (error) {
-      console.error("Error navigating to next question:", error);
+    if (currentQuestionIndex < questions.length - 1) {
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
+    } else {
+      dispatch({ type: "quiz/setQuizCompleted" });
     }
   };
 
   const handleFinish = () => {
-    setShowFeedback(false);
-    setFeedbackType(null);
-
-    if (feedbackTimeout.current) {
-      clearTimeout(feedbackTimeout.current);
-      feedbackTimeout.current = null;
-    }
-
-    try {
-      dispatch({ type: "quiz/setQuizCompleted" });
-    } catch (error) {
-      console.error("Error finishing quiz:", error);
-    }
+    dispatch({ type: "quiz/setQuizCompleted" });
   };
 
   const handleTimerComplete = () => {
-    try {
-      dispatch({ type: "quiz/setQuizCompleted" });
-    } catch (error) {
-      console.error("Error handling timer completion:", error);
-    }
+    dispatch({ type: "quiz/setQuizCompleted" });
   };
-
-  useEffect(() => {
-    return () => {
-      if (feedbackTimeout.current) {
-        clearTimeout(feedbackTimeout.current);
-      }
-    };
-  }, []);
 
   if (quizStatus === 'loading') {
     return <QuizLoadingSteps steps={[{ label: 'Loading quiz data', status: 'loading' }]} />;
@@ -252,13 +193,12 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
           onAnswer={handleAnswerQuestion}
           questionNumber={props.questionNumber}
           totalQuestions={props.totalQuestions}
-          isSubmitting={props.isSubmitting || showFeedback}
-          existingAnswer={existingAnswer}
-          feedbackType={showFeedback ? feedbackType : null}
+          isSubmitting={props.isSubmitting}
+          existingAnswer={answers[question.id]?.selectedOptionId || null}
+          onNext={handleNext}
         />
       )}
       existingAnswer={existingAnswer}
-      feedbackType={showFeedback ? feedbackType : null}
       timerSeconds={1800}
       onTimerComplete={handleTimerComplete}
     />

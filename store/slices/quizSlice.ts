@@ -46,48 +46,34 @@ const initialState: QuizState = {
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetchQuiz",
   async ({ slug, data, type }: { slug: string; data?: any; type: QuizType }, { rejectWithValue }) => {
-    console.log("Fetching quiz:", slug, type);
     try {
-      // If data is provided directly, use it
+      const questions = data?.questions?.map((q: any) => ({ ...q, type })) || [];
       if (data) {
-        const questions = (data.questions || []).map((q: any) => ({
-          ...q,
-          type: type,
-        }))
-        
         return {
           slug,
-          id: slug, // Ensure id is set to slug for compatibility
+          id: slug,
           type: data.type || type,
-          title: data.title,
+          title: data.title || "Untitled Quiz",
           questions,
-        }
+        };
       }
 
-      // Otherwise fetch from API
-      const response = await fetch(`/api/quizzes/${type}/${slug}`)
+      const response = await fetch(`/api/quizzes/${type}/${slug}`);
       if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(`Quiz not found: ${slug}`)
-        }
-        throw new Error(`Failed to fetch quiz: ${response.status}`)
+        throw new Error(response.status === 404 ? `Quiz not found: ${slug}` : `Failed to fetch quiz: ${response.status}`);
       }
-      
-      const quizData = await response.json()
-      const questions = (quizData.questions || []).map((q: any) => ({
-        ...q,
-        type: quizData.type || type,
-      }))
-      
+
+      const quizData = await response.json();
+
       return {
-        slug: quizData.slug || slug, // Prioritize slug from API
-        id: quizData.id || slug, // Keep id for backward compatibility
+        slug: quizData.slug || slug,
+        id: quizData.id || slug,
         type: quizData.type || type,
-        title: quizData.title,
-        questions,
-      }
+        title: quizData.title || "Untitled Quiz",
+        questions: quizData.questions || [],
+      };
     } catch (error: any) {
-      return rejectWithValue(error.message)
+      return rejectWithValue(error.message);
     }
   },
 )
@@ -428,6 +414,13 @@ const quizSlice = createSlice({
           const correctAnswer = question.correctOptionId || question.answer
           answer.isCorrect = answer.selectedOptionId === correctAnswer
         }
+      } else if (answer.type === "code" && "selectedOptionId" in answer) {
+        const question = state.questions.find((q) => String(q.id) === normalizedId)
+        if (question) {
+          // For code quizzes, correctOptionId or correctAnswer could be used
+          const correctAnswer = question.correctOptionId || question.correctAnswer || question.answer
+          answer.isCorrect = answer.selectedOptionId === correctAnswer
+        }
       } else if (answer.type === "blanks" && "filledBlanks" in answer) {
         const question = state.questions.find((q) => String(q.id) === normalizedId)
         if (question) {
@@ -650,16 +643,27 @@ const quizSlice = createSlice({
         state.error = null
       })
       .addCase(fetchQuiz.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.slug = action.payload.slug; // Set slug as primary identifier
-        state.quizId = action.payload.id || action.payload.slug; // Keep id for compatibility
-        state.quizType = action.payload.type
-        state.title = action.payload.title
-        state.questions = action.payload.questions
-        state.currentQuestionIndex = 0
-        state.answers = {}
-        state.isCompleted = false
-        state.results = null
+        if (!action.payload) {
+          console.warn("fetchQuiz fulfilled: payload is undefined", action);
+          state.status = "failed";
+          state.error = "Failed to load quiz data.";
+          return;
+        }
+
+        const { slug, id, type, title, questions } = action.payload;
+
+        state.status = "succeeded";
+        state.slug = slug || "unknown"; // Fallback to "unknown" if slug is missing
+        state.quizId = id || slug || "unknown"; // Keep id for compatibility
+        state.quizType = type || "mcq"; // Default to "mcq" if type is missing
+        state.title = title || "Untitled Quiz"; // Fallback to "Untitled Quiz"
+        state.questions = questions || []; // Default to empty array if questions are missing
+        state.currentQuestionIndex = 0;
+        state.answers = {};
+        state.isCompleted = false;
+        state.results = null;
+
+        console.info("Quiz loaded successfully:", { slug, id, type, title, questions });
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         state.status = "failed"

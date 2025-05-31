@@ -9,12 +9,13 @@ export interface CodeQuestion {
   title?: string;
   text?: string;
   question?: string;
-  options: Array<CodeOption>;
-  correctOptionId: string;
+  options: string[]; // Changed options type to ensure it's always a string array
+  correctOptionId?: string;
   explanation?: string;
   type?: string;
   codeSnippet?: string;
   language?: string;
+  correctAnswer?: string; // Added correctAnswer as an alternative for backward compatibility
 }
 
 export interface CodeAnswer {

@@ -2,19 +2,48 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Check, X, RefreshCw, Home, Download, Share2, AlertCircle } from "lucide-react"
+import { Check, X, RefreshCw, Home, Download, Share2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
-import React from "react"
-import { CodeQuestion, CodeAnswer, type CodeQuizResult } from "./types"
+import React, { useState } from "react"
+import { useSelector } from "react-redux"
+import { 
+  selectOrGenerateQuizResults, 
+  selectQuestions, 
+  selectAnswers, 
+  selectQuizTitle 
+} from "@/store/slices/quizSlice"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card"
+import type { CodeQuizResult } from "./types"
 
 interface CodeQuizResultProps {
-  result: CodeQuizResult;
+  result?: CodeQuizResult;
+  slug: string;
 }
 
-export default function CodeQuizResult({ result }: CodeQuizResultProps) {
-  const router = useRouter()
-
-  if (!result) {
+export default function CodeQuizResult({ result, slug }: CodeQuizResultProps) {
+  const router = useRouter();
+  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
+  
+  // Get results from Redux if not provided directly
+  const reduxResults = useSelector(selectOrGenerateQuizResults);
+  const questions = useSelector(selectQuestions);
+  const answers = useSelector(selectAnswers);
+  const quizTitle = useSelector(selectQuizTitle);
+  
+  // Use provided result or results from Redux
+  const finalResult = result || reduxResults;
+  
+  if (!finalResult) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
@@ -22,25 +51,67 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
         <p className="text-muted-foreground mb-6">
           We couldn't load your quiz results properly. Some data might be missing.
         </p>
-        <Button onClick={() => router.push("/dashboard/quizzes")}>
-          Back to Quizzes
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={() => router.push(`/dashboard/code/${slug}`)}>
+            Retake Quiz
+          </Button>
+          <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
+            Back to Quizzes
+          </Button>
+        </div>
       </div>
     )
   }
 
-  const safeResult = result
-  const hasQuestionDetails = safeResult.questions && 
-                            Array.isArray(safeResult.questions) && 
-                            safeResult.questions.length > 0
-  const quizSlug = safeResult.slug;
+  // Categorize questions by correctness
+  const correctQuestions = finalResult.questionResults?.filter(q => q.isCorrect) || [];
+  const incorrectQuestions = finalResult.questionResults?.filter(q => !q.isCorrect) || [];
+  
+  // Calculate various statistics
+  const correctCount = correctQuestions.length;
+  const incorrectCount = incorrectQuestions.length;
+  const totalCount = finalResult.maxScore || questions.length;
+  const skippedCount = totalCount - (correctCount + incorrectCount);
+  const percentageCorrect = finalResult.percentage || Math.round((correctCount / totalCount) * 100);
+  
+  // Generation functions for the score messages
+  const getScoreMessage = () => {
+    if (percentageCorrect >= 90) return "Outstanding! You've mastered these coding concepts.";
+    if (percentageCorrect >= 80) return "Excellent work! You have strong coding knowledge.";
+    if (percentageCorrect >= 70) return "Great job! Your coding skills are solid.";
+    if (percentageCorrect >= 60) return "Good effort! Keep practicing to strengthen your skills.";
+    if (percentageCorrect >= 50) return "You're making progress. More practice will help.";
+    return "Keep learning! Review the concepts and try again.";
+  };
+  
+  // Toggle a specific question's expanded state
+  const toggleQuestion = (id: string) => {
+    setExpandedQuestions(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+  
+  // Expand all questions
+  const expandAllQuestions = () => {
+    const expandedState: Record<string, boolean> = {};
+    finalResult.questionResults?.forEach(q => {
+      expandedState[q.questionId] = true;
+    });
+    setExpandedQuestions(expandedState);
+  };
+  
+  // Collapse all questions
+  const collapseAllQuestions = () => {
+    setExpandedQuestions({});
+  };
 
   const handleShare = async () => {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${safeResult.title} - Quiz Results`,
-          text: `I scored ${safeResult.percentage}% on the ${safeResult.title} quiz!`,
+          title: `${finalResult.title} - Quiz Results`,
+          text: `I scored ${percentageCorrect}% on the ${finalResult.title} quiz!`,
           url: window.location.href
         })
       } else if (navigator.clipboard) {
@@ -55,229 +126,196 @@ export default function CodeQuizResult({ result }: CodeQuizResultProps) {
     }
   }
 
-  const handleDownload = () => {
-    try {
-      const resultText = `
-Code Quiz Results: ${safeResult.title}
-Date: ${new Date(safeResult.completedAt).toLocaleString()}
-Score: ${safeResult.score}/${safeResult.maxScore} (${safeResult.percentage}%)
-
-${hasQuestionDetails ? `Question Summary:
-${safeResult.questions!.map((q, i) => {
-  if (!q) return `Q${i + 1}: Question data unavailable\n`;
-  
-  const userAnswer = safeResult.answers?.find(a => 
-    a && q && a.questionId?.toString() === q.id?.toString()
-  )
-  const isCorrect = userAnswer?.isCorrect ?? false
-  const questionText = q.question || q.text || `Question ${i + 1}`
-  const userAnswerText = userAnswer?.selectedOptionId || 'Not answered'
-  
-  // Find the selected option to get its text
-  const selectedOption = q.options?.find(opt => opt.id === userAnswer?.selectedOptionId);
-  const selectedOptionText = selectedOption ? selectedOption.text : 'Unknown option';
-  
-  // Find the correct option
-  const correctOption = q.options?.find(opt => opt.id === q.correctOptionId);
-  const correctOptionText = correctOption ? correctOption.text : 'Unknown';
-  
-  return `
-Q${i + 1}: ${questionText}
-Your answer: ${selectedOptionText} (${userAnswerText})
-Correct answer: ${correctOptionText} (${q.correctOptionId})
-Result: ${isCorrect ? 'Correct' : 'Incorrect'}
-`
-}).join('\n')}` : 'No question details available for this quiz.'}
-      `.trim()
-      const blob = new Blob([resultText], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${safeResult.title.replace(/\s+/g, '-').toLowerCase()}-results.txt`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      
-      toast.success("Results downloaded successfully")
-    } catch (error) {
-      console.error("Error downloading results:", error)
-      toast.error("Failed to download results")
-    }
-  }
-
-  // Add ref for review scroll
-  const summaryRef = React.useRef<HTMLDivElement>(null)
-  const handleReview = () => {
-    summaryRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
   return (
     <div className="space-y-8">
-      {/* Score summary bar */}
-      <div className="flex flex-col items-center justify-center gap-2">
-        <h1 className="text-2xl font-bold">{safeResult.title}</h1>
-        <div className="flex items-center gap-4 mt-2">
-          <span className="text-3xl font-bold text-primary">{safeResult.score}/{safeResult.maxScore}</span>
-          <span className="text-lg text-muted-foreground">({safeResult.percentage}%)</span>
-        </div>
-        <p className="text-muted-foreground">
-          Completed on {new Date(safeResult.completedAt).toLocaleDateString()}
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-2"
-          onClick={handleReview}
-        >
-          Review Answers
-        </Button>
-      </div>
-      
-      <div className="bg-card rounded-lg shadow-sm border p-6">
-        <div className="flex flex-col items-center mb-6">
-          <div className="relative w-32 h-32 mb-4">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="#eee"
-                strokeWidth="10"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke={safeResult.percentage >= 70 ? "#4CAF50" : safeResult.percentage >= 40 ? "#FF9800" : "#F44336"}
-                strokeWidth="10"
-                strokeDasharray={`${safeResult.percentage} 100`}
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl font-bold">{safeResult.percentage}%</span>
+      {/* Score summary */}
+      <Card className="border shadow-sm overflow-hidden bg-gradient-to-br from-card to-card/80">
+        <CardHeader className="bg-primary/5 border-b border-border/40">
+          <CardTitle className="flex justify-between items-center">
+            <span className="text-2xl font-bold">{finalResult.title || quizTitle || "Quiz Results"}</span>
+            <Badge variant={percentageCorrect >= 70 ? "success" : percentageCorrect >= 50 ? "warning" : "destructive"} className="text-base px-3 py-1">
+              {percentageCorrect}% Score
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Completed on {new Date(finalResult.completedAt).toLocaleDateString()} at {new Date(finalResult.completedAt).toLocaleTimeString()}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="p-6 space-y-5">
+          <div className="flex flex-col md:flex-row md:justify-between items-center gap-6">
+            <div className="relative w-40 h-40">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="hsl(var(--muted))"
+                  strokeWidth="10"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke={percentageCorrect >= 70 ? "hsl(var(--success))" : percentageCorrect >= 50 ? "hsl(var(--warning))" : "hsl(var(--destructive))"}
+                  strokeWidth="10"
+                  strokeDasharray={`${percentageCorrect} 100`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold">{correctCount}</span>
+                <span className="text-sm text-muted-foreground">of {totalCount}</span>
+              </div>
+            </div>
+            
+            <div className="space-y-4 flex-1">
+              <p className="text-xl font-medium text-center md:text-left">{getScoreMessage()}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
+                  <span className="text-2xl font-bold text-success">{correctCount}</span>
+                  <span className="text-sm text-muted-foreground">Correct</span>
+                </div>
+                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
+                  <span className="text-2xl font-bold text-destructive">{incorrectCount}</span>
+                  <span className="text-sm text-muted-foreground">Incorrect</span>
+                </div>
+                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
+                  <span className="text-2xl font-bold text-muted-foreground">{skippedCount}</span>
+                  <span className="text-sm text-muted-foreground">Skipped</span>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="text-center">
-            <p className="text-xl font-semibold mb-1">
-              {safeResult.score} out of {safeResult.maxScore} correct
-            </p>
-            <p className="text-muted-foreground">
-              {safeResult.percentage >= 90 ? "Excellent! Your coding skills are outstanding." :
-               safeResult.percentage >= 70 ? "Great job! You have a solid understanding of the code concepts." :
-               safeResult.percentage >= 50 ? "Good effort! Keep practicing to improve your coding skills." :
-               "Keep learning! Review the code concepts and try again."}
-            </p>
+        </CardContent>
+        
+        <CardFooter className="bg-muted/30 px-6 py-4 border-t border-border/40 flex flex-wrap gap-3 justify-between">
+          <div className="flex gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => router.push(`/dashboard/code/${slug}?reset=true`)}
+            >
+              <RefreshCw className="w-4 h-4 mr-1" /> Retake Quiz
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => router.push("/dashboard/quizzes")}
+            >
+              <Home className="w-4 h-4 mr-1" /> All Quizzes
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+            >
+              <Share2 className="w-4 h-4 mr-1" /> Share
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+      
+      {/* Question review section */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Question Review</h2>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={expandAllQuestions}>
+              <ChevronDown className="w-4 h-4 mr-1" /> Expand All
+            </Button>
+            <Button variant="ghost" size="sm" onClick={collapseAllQuestions}>
+              <ChevronUp className="w-4 h-4 mr-1" /> Collapse All
+            </Button>
           </div>
         </div>
-      </div>
-      
-      {hasQuestionDetails && (
-        <div className="space-y-4" ref={summaryRef}>
-          <h2 className="text-xl font-semibold mb-4">Question Summary</h2>
-          
-          {safeResult.questions!.map((q, index) => {
-            if (!q) return null; // Skip null/undefined questions
+        
+        <div className="space-y-4">
+          {finalResult.questionResults?.map((questionResult, index) => {
+            // Find the corresponding question data
+            const questionData = finalResult.questions?.find(q => q.id?.toString() === questionResult.questionId?.toString()) || 
+                                questions.find(q => q.id?.toString() === questionResult.questionId?.toString());
             
-            const answer = safeResult.answers?.find(a => 
-              a && q && a.questionId?.toString() === q.id?.toString()
-            );
+            if (!questionData) return null;
             
-            const isCorrect = answer?.isCorrect || false;
-            const questionText = q.question || q.text || `Question ${index + 1}`;
-            
-            // Find the selected option to get its text
-            const selectedOption = q.options?.find(opt => opt.id === answer?.selectedOptionId);
+            const isExpanded = expandedQuestions[questionResult.questionId];
+            const questionText = questionData.text || questionData.question || `Question ${index + 1}`;
+            const userAnswer = questionResult.userAnswer || 'Not answered';
+            const correctAnswer = questionData.correctOptionId || questionData.correctAnswer || questionData.answer || 'Answer unavailable';
             
             return (
-              <div 
-                key={q.id?.toString() || index} 
-                className={`border rounded-lg p-4 ${isCorrect ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/50' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50'}`}
+              <Collapsible 
+                key={questionResult.questionId} 
+                open={isExpanded}
+                onOpenChange={() => toggleQuestion(questionResult.questionId)}
+                className={`border rounded-lg overflow-hidden ${
+                  questionResult.isCorrect 
+                    ? 'border-success/30 bg-success/5' 
+                    : 'border-destructive/30 bg-destructive/5'
+                }`}
               >
-                <div className="flex gap-3">
-                  <div className="mt-0.5">
-                    {isCorrect ? (
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    ) : (
-                      <X className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    )}
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`rounded-full p-1 ${
+                      questionResult.isCorrect ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
+                    }`}>
+                      {questionResult.isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Question {index + 1}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-1">{questionText}</p>
+                    </div>
                   </div>
                   
-                  <div className="w-full">
-                    <p className="font-medium mb-1">Q{index + 1}: {questionText}</p>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+                
+                <CollapsibleContent>
+                  <div className="px-4 pb-4 space-y-4">
+                    <div className="p-4 bg-card rounded-md">
+                      <h4 className="font-medium mb-2">{questionText}</h4>
+                      {questionData.codeSnippet && (
+                        <div className="my-3 rounded-md overflow-hidden bg-slate-900 text-slate-50 p-4 font-mono text-sm">
+                          <pre>{questionData.codeSnippet}</pre>
+                        </div>
+                      )}
+                    </div>
                     
-                    {q.codeSnippet && (
-                      <div className="my-2 p-3 bg-gray-800 text-gray-100 rounded text-sm font-mono overflow-x-auto">
-                        <pre>{q.codeSnippet}</pre>
+                    <div className="grid gap-2">
+                      <div className={`p-3 rounded-md ${
+                        questionResult.isCorrect ? 'bg-success/10 border border-success/30' : 'bg-muted border border-muted-foreground/20'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {questionResult.isCorrect && <Check className="w-4 h-4 text-success" />}
+                          <span className="font-medium">Your answer:</span>
+                        </div>
+                        <p className="mt-1">{userAnswer}</p>
                       </div>
-                    )}
-                    
-                    <div className="text-sm">
-                      <p className={isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                        Your answer: {selectedOption?.text || answer?.selectedOptionId || 'Not answered'}
-                      </p>
-                      {!isCorrect && (
-                        <p className="text-green-600 dark:text-green-400 mt-1">
-                          Correct answer: {q.options?.find(opt => opt.id === q.correctOptionId)?.text || q.correctOptionId || "Answer unavailable"}
-                        </p>
+                      
+                      {!questionResult.isCorrect && (
+                        <div className="p-3 rounded-md bg-success/10 border border-success/30">
+                          <div className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-success" />
+                            <span className="font-medium">Correct answer:</span>
+                          </div>
+                          <p className="mt-1">{correctAnswer}</p>
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
+                </CollapsibleContent>
+              </Collapsible>
             );
           })}
         </div>
-      )}
-      
-      <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t">
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleDownload}
-            className="flex items-center gap-1"
-          >
-            <Download className="h-4 w-4" />
-            <span>Download</span>
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleShare}
-            className="flex items-center gap-1"
-          >
-            <Share2 className="h-4 w-4" />
-            <span>Share</span>
-          </Button>
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/dashboard/quizzes")}
-            className="flex items-center gap-1"
-          >
-            <Home className="h-4 w-4" />
-            <span>Back to Quizzes</span>
-          </Button>
-          
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => router.push(`/dashboard/code/${quizSlug}`)}
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>Retry Quiz</span>
-          </Button>
-        </div>
       </div>
     </div>
-  )
+  );
 }
