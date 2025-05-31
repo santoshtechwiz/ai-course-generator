@@ -20,6 +20,7 @@ import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 import QuizResult from "../../../components/QuizResult"
 import { useSessionService } from "@/hooks/useSessionService"
 import { Check, RefreshCw } from "lucide-react"
+import NonAuthenticatedUserSignInPrompt from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
 
 interface ResultsPageProps {
   params: { slug: string }
@@ -129,50 +130,71 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // Unauthenticated user view with limited results
+  // For unauthenticated users, show the sign-in prompt with limited results
   if (!isAuthenticated) {
+    // If we have results, show a teaser of results with limited information
+    if (resultData && Object.keys(resultData).length > 0) {
+      console.log("Showing limited Code results for unauthenticated user");
+      
+      // Create a limited version of results that hides specific answers
+      const limitedResultData = {
+        ...resultData,
+        // Remove detailed question data
+        questions: undefined,
+        // Only show overall score and limited question results
+        questionResults: resultData.questionResults?.map(q => ({
+          ...q,
+          correctAnswer: undefined, // Hide correct answers
+          isCorrect: undefined      // Hide which ones were correct/incorrect
+        })),
+        // Keep core stats
+        score: resultData.score,
+        maxScore: resultData.maxScore,
+        percentage: resultData.percentage
+      };
+
+      return (
+        <div className="container max-w-4xl py-6">
+          <NonAuthenticatedUserSignInPrompt
+            onSignIn={handleSignIn}
+            previewData={resultData}
+            title="Sign In to View Full Results"
+            quizType="code"
+          />
+            
+          {/* Show only limited score summary, not detailed question results */}
+          <div className="mt-6 relative opacity-50 pointer-events-none select-none filter blur-sm">
+            <Card>
+              <CardContent className="p-4 sm:p-6">
+                <QuizResult result={limitedResultData} onRetake={handleRetake} quizType="code" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-primary/90 text-white px-6 py-3 rounded-lg shadow-lg">
+                    Sign in to view detailed results
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+    
+    // If we don't have proper results, show sign-in prompt
+    console.log("Showing sign-in prompt for unauthenticated user (no Code results available)");
     return (
-      <div className="container max-w-4xl py-6">
-        <Card className="mb-6 bg-gradient-to-b from-background to-primary/10 border-primary/20">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-2xl font-bold mb-3">Your Score: {resultData.percentage}%</h2>
-            <p className="text-muted-foreground mb-6">
-              Sign in to see your detailed results, save your progress, and track your improvement over time.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button onClick={handleSignIn} size="lg">
-                Sign In to See Full Results
-              </Button>
-              <Button variant="outline" onClick={handleRetake} size="lg">
-                Retake Quiz
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="bg-muted/30 p-6 rounded-lg border border-muted mb-6">
-              <h3 className="text-lg font-medium mb-2 text-center">Why Sign In?</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>See which questions you answered correctly</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Review detailed explanations for all answers</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Track your progress across all quizzes</span>
-                </li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="container max-w-md py-10">
+        <NonAuthenticatedUserSignInPrompt
+          onSignIn={handleSignIn}
+          title="Sign In to View Results"
+          message="Please sign in to view your detailed quiz results and track your progress over time."
+          fallbackAction={{
+            label: "Take Quiz Instead",
+            onClick: () => router.push(`/dashboard/code/${slug}`),
+            variant: "outline",
+          }}
+        />
       </div>
-    )
+    );
   }
 
   // Authenticated user full results view
