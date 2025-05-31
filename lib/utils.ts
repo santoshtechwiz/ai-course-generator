@@ -11,3 +11,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export const buildQuizUrl = (slug: string, type: QuizType) => {
+  return `/dashboard/(quiz)/${type}/quizzes/${slug}`
+}

@@ -1,5 +1,5 @@
 import type { QuizType } from "@/app/types/types"
-import { buildQuizUrl } from "@/lib/utils"
+
 import type * as React from "react"
 
 const styles = {
