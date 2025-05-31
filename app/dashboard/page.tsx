@@ -11,6 +11,7 @@ const CourseList = dynamic(() => import("@/components/features/home/CourseLists"
 
 // Import the skeleton component
 import { CoursesListSkeleton } from "@/components/ui/loading/loading-skeleton"
+import { hydrateQuiz } from "@/store/slices/quizSlice"
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
   ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/explore`

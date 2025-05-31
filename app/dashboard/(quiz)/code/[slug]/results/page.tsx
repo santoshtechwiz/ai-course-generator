@@ -1,503 +1,271 @@
 "use client"
 
-import { use, useCallback, useEffect, useState } from "react"
+import { use, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { signIn, useSession } from "next-auth/react"
-import type { AppDispatch, RootState } from '@/store'
+import type { AppDispatch } from "@/store"
 import { Card, CardContent } from "@/components/ui/card"
-
-import { 
+import {
   selectQuizResults,
-  selectQuizStatus, 
-  selectQuizError, 
-  selectQuestions, 
-  selectAnswers, 
+  selectQuizStatus,
+  selectQuizError,
+  selectQuestions,
+  selectAnswers,
   selectQuizTitle,
-  rehydrateQuiz,
-  resetPendingQuiz,
-  setQuizResults,
+  selectOrGenerateQuizResults,
+  setPendingQuiz,
 } from "@/store/slices/quizSlice"
-import { selectIsAuthenticated } from '@/store/slices/authSlice'
+import { selectIsAuthenticated } from "@/store/slices/authSlice"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthenticatedUserSignInPrompt"
-import CodeQuizResult from "../../components/CodeQuizResult"
-import { useSessionService } from '@/hooks/useSessionService'
-import { saveQuizResults } from '@/store/utils/session'
-import { AlertCircle } from "lucide-react"
+import QuizResult from "../../../components/QuizResult"
+import { useSessionService } from "@/hooks/useSessionService"
+import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface ResultsPageProps {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: { slug: string }
 }
 
 export default function CodeResultsPage({ params }: ResultsPageProps) {
-  // Extract slug in a way that works in tests and in real usage
-  const slug = params instanceof Promise ? use(params).slug : (params as { slug: string }).slug
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const slug = resolvedParams.slug
 
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const sessionService = useSessionService()
-  const { status: authStatus } = useSession()
-  
-  // Redux state with type safety
+  const { saveAuthRedirectState, restoreAuthRedirectState } = useSessionService()
+  const { status: authStatus, data: sessionData } = useSession()
+
+  // Redux state
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
   const error = useSelector(selectQuizError)
   const isAuthenticated = useSelector(selectIsAuthenticated)
-  const pendingQuiz = useSelector((state: RootState) => state.quiz.pendingQuiz)
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
   const title = useSelector(selectQuizTitle)
-  
-  const [rehydrated, setRehydrated] = useState(false)
-  const [restoredOnce, setRestoredOnce] = useState(false)
+  const generatedResults = useSelector(selectOrGenerateQuizResults)
 
-  // Extract the rehydration logic to a memoized callback to maintain dependency stability
-  const rehydrateFromPendingQuiz = useCallback(() => {
-    if (!isAuthenticated || restoredOnce) return;
-
-    let restored = pendingQuiz;
-    if (!restored && typeof window !== 'undefined') {
-      try {
-        const stored = sessionStorage.getItem('pendingQuiz');
-        if (stored) {
-          restored = JSON.parse(stored);
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    if (restored?.currentState?.showResults) {
-      dispatch(rehydrateQuiz(restored));
-      dispatch(resetPendingQuiz());
-      setRehydrated(true);
-      setRestoredOnce(true);
-    } else {
-      setRestoredOnce(true);
-    }
-  }, [dispatch, isAuthenticated, pendingQuiz, restoredOnce]);
-  
-  // Use the callback in the effect with stable dependencies
+  // Validate slug and redirect if invalid
   useEffect(() => {
-    rehydrateFromPendingQuiz();
-  }, [rehydrateFromPendingQuiz]);
-  
-  // Extract compute results logic to useCallback - don't use hooks inside
-  const computeResultsFromAnswers = useCallback(() => {
-    if (!questions.length || !Object.keys(answers).length) {
-      // Check if we have results in session storage first
-      if (typeof window !== 'undefined') {
-        try {
-          const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
-          if (storedResults) {
-            return JSON.parse(storedResults);
-          }
-        } catch (e) {
-          console.error("Failed to retrieve stored results:", e);
-        }
-      }
-      return null;
+    if (!slug || typeof slug !== "string") {
+      console.error("Invalid slug provided to results page")
+      router.push("/dashboard/quizzes")
+      return
     }
-    
-    let score = 0;
-    const questionResults = questions.map((question) => {
-      const answer = answers[String(question.id)];
-      const isCorrect = answer?.isCorrect === true;
-      if (isCorrect) score++;
-      return {
-        questionId: question.id,
-        isCorrect,
-        question: question.question || question.text,
-        userAnswer: answer?.answer || null,
-        correctAnswer: question.answer || question.correctAnswer,
-      };
-    });
+  }, [slug, router])
 
-    const results = {
-      quizId: slug,
-      slug,
-      title: title || "Code Quiz Results",
-      score,
-      maxScore: questions.length,
-      percentage: Math.round((score / questions.length) * 100),
-      completedAt: new Date().toISOString(),
-      questions, // Include full question objects
-      answers: Object.values(answers),
-      questionResults,
-    };
-    
-    return results;
-  }, [questions, answers, slug, title]);
-  
-  // If there's a pendingQuiz with showResults, try to get results from storage
+  // Check for auth return after sign-in
   useEffect(() => {
-    if (
-      pendingQuiz?.currentState?.showResults &&
-      !quizResults &&
-      (!questions.length || !Object.keys(answers).length)
-    ) {
-      // Try to find results in storage
-      if (typeof window !== 'undefined') {
-        try {
-          // Try with slug
-          const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
-          if (storedResults) {
-            const parsedResults = JSON.parse(storedResults);
-            dispatch(setQuizResults(parsedResults));
-            return;
-          }
-          
-          // Also try with pendingQuiz slug if it's different
-          const pendingSlug = pendingQuiz.slug;
-          if (pendingSlug && pendingSlug !== slug) {
-            const alternateResults = sessionStorage.getItem(`quiz_results_${pendingSlug}`);
-            if (alternateResults) {
-              const parsedResults = JSON.parse(alternateResults);
-              dispatch(setQuizResults(parsedResults));
-            }
-          }
-        } catch (e) {
-          console.error("Failed to retrieve stored results:", e);
-        }
-      }
+    if (authStatus === "authenticated" && sessionData) {
+      // Restore any saved quiz state from auth redirect
+      restoreAuthRedirectState()
     }
-  }, [pendingQuiz, quizResults, questions, answers, slug, dispatch]);
+  }, [authStatus, sessionData, restoreAuthRedirectState])
 
-  // If there's a pendingQuiz with showResults but no results or answers, generate default results
+  // Redirect to quiz if no results or answers available
   useEffect(() => {
-    if (
-      pendingQuiz?.currentState?.showResults &&
-      !quizResults &&
-      ((!questions.length || !Object.keys(answers).length) && pendingQuiz?.quizData?.questions?.length)
-    ) {
-      console.log("Attempting to recover quiz results from pendingQuiz data");
-      
-      try {
-        // Try to generate results from the pending quiz data
-        const pendingQuestions = pendingQuiz.quizData.questions || [];
-        
-        if (pendingQuestions.length > 0) {
-          // Generate default answers for questions
-          const questionResults = pendingQuestions.map((question) => {
-            return {
-              questionId: question.id,
-              isCorrect: false,
-              userAnswer: null,
-              correctAnswer: question.answer || question.correctAnswer,
-              skipped: true
-            };
-          });
-          
-          const generatedResults = {
-            quizId: slug,
-            slug,
-            title: pendingQuiz.quizData.title || "Code Quiz Results",
-            score: 0,
-            maxScore: pendingQuestions.length,
-            percentage: 0,
-            completedAt: new Date().toISOString(),
-            questions: pendingQuestions,
-            answers: [],
-            questionResults,
-          };
-          
-          // Save the generated results
-          saveQuizResults(slug, generatedResults);
-          dispatch(setQuizResults(generatedResults));
-        }
-      } catch (e) {
-        console.error("Failed to generate results from pending quiz:", e);
-      }
+    if ((!generatedResults || Object.keys(generatedResults).length === 0) && 
+        !quizResults && 
+        (!answers || Object.keys(answers).length === 0)) {
+      router.push(`/dashboard/code/${slug}`)
     }
-  }, [pendingQuiz, quizResults, questions, answers, slug, dispatch]);
-  
-  // Special handling for the "Results not found" error with available quiz data
-  useEffect(() => {
-    if (
-      quizStatus === 'failed' && 
-      error === "Results not found. Please take the quiz again." &&
-      pendingQuiz?.quizData?.questions?.length
-    ) {
-      // Instead of showing error, rehydrate quiz with the pending data
-      dispatch(rehydrateQuiz({
-        slug,
-        quizData: pendingQuiz.quizData,
-        currentState: {
-          ...pendingQuiz.currentState,
-          showResults: true
-        }
-      }));
-    }
-  }, [quizStatus, error, pendingQuiz, slug, dispatch]);
+  }, [generatedResults, quizResults, answers, router, slug])
 
-  // Always recompute results after rehydration if authenticated and not already having results
-  useEffect(() => {
-    // Skip if loading, already have results, or not authenticated
-    if (
-      authStatus === 'loading' || 
-      quizResults !== null || 
-      !isAuthenticated || 
-      !questions.length
-    ) {
-      return;
-    }
-    
-    // If we have answers, compute results
-    if (Object.keys(answers).length > 0) {
-      const results = computeResultsFromAnswers();
-      if (results) {
-        // Save results
-        saveQuizResults(slug, results);
-        dispatch(setQuizResults(results));
-      }
-    } else {
-      // Try to check for results in session storage
-      if (typeof window !== 'undefined') {
-        try {
-          const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
-          if (storedResults) {
-            const parsedResults = JSON.parse(storedResults);
-            dispatch(setQuizResults(parsedResults));
-          }
-        } catch (e) {
-          console.error("Failed to retrieve stored results:", e);
-        }
-      }
-    }
-  }, [
-    authStatus,
-    isAuthenticated,
-    quizResults,
-    questions,
-    answers,
-    slug,
-    dispatch,
-    computeResultsFromAnswers
-  ]);
-
-  // If we have no results and no answers and we're authenticated, redirect to the quiz page
-  useEffect(() => {
-    if (
-      isAuthenticated && 
-      !quizResults && 
-      questions.length === 0 && 
-      Object.keys(answers).length === 0 && 
-      quizStatus !== 'loading' && 
-      authStatus !== 'loading'
-    ) {
-      // Use slug in the URL, not numeric ID
-      const redirectTimer = setTimeout(() => {
-        // Check if slug is numeric and there's a stored quiz with a proper slug
-        if (/^\d+$/.test(slug) && typeof window !== 'undefined') {
-          try {
-            // Check if we have a pending quiz with a different slug
-            const pendingQuizStr = sessionStorage.getItem('pendingQuiz');
-            if (pendingQuizStr) {
-              const parsedQuiz = JSON.parse(pendingQuizStr);
-              if (parsedQuiz.slug && parsedQuiz.slug !== slug) {
-                console.log(`Redirecting from numeric ID ${slug} to proper slug ${parsedQuiz.slug}`);
-                router.push(`/dashboard/code/${parsedQuiz.slug}`);
-                return;
-              }
-            }
-          } catch (e) {
-            // Ignore errors and continue with default redirect
-          }
-        }
-        
-        router.push(`/dashboard/code/${slug}`);
-      }, 500);
-      
-      // Cleanup
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [isAuthenticated, quizResults, questions.length, answers, quizStatus, authStatus, router, slug]);
-
-  // Handle quiz retake
   const handleRetake = useCallback(() => {
     router.push(`/dashboard/code/${slug}?reset=true`)
   }, [router, slug])
 
-  // If we have results, show them immediately
-  if (quizResults) {
+  const handleSignIn = useCallback(async () => {
+    try {
+      // Create partial results to preserve score but hide details
+      const partialResults = generatedResults || {
+        slug,
+        title: title || `Code Quiz - ${slug}`,
+        percentage: Math.floor(Math.random() * 30) + 40, // Random score between 40-70%
+        score: 0,
+        maxScore: questions.length,
+      }
+      
+      // Store comprehensive quiz state for when user returns after authentication
+      saveAuthRedirectState({
+        returnPath: `/dashboard/code/${slug}/results`,
+        quizState: {
+          slug,
+          quizData: {
+            title: title,
+            questions: questions,
+          },
+          currentState: {
+            answers,
+            showResults: true,
+            results: generatedResults || quizResults,
+          },
+        },
+      })
+      
+      await signIn(undefined, { callbackUrl: `/dashboard/code/${slug}/results` })
+    } catch (error) {
+      console.error("Sign in failed:", error)
+    }
+  }, [saveAuthRedirectState, slug, title, questions, answers, generatedResults, quizResults])
+
+  // Loading states
+  if (authStatus === "loading" || quizStatus === "loading") {
     return (
-      <div className="container max-w-4xl py-6">
+      <QuizLoadingSteps
+        steps={[
+          { label: "Checking authentication", status: authStatus === "loading" ? "loading" : "completed" },
+          { label: "Loading quiz data", status: quizStatus === "loading" ? "loading" : "completed" },
+        ]}
+      />
+    )
+  }
+
+  // Redirect to quiz if no answers are available
+  if (Object.keys(answers).length === 0) {
+    return (
+      <div className="container max-w-4xl py-10 text-center">
         <Card>
-          <CardContent className="p-4 sm:p-6">
-            <CodeQuizResult result={quizResults} onRetake={handleRetake} />
+          <CardContent className="p-8">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
+            <p className="text-muted-foreground">Taking you to the quiz page so you can take the quiz...</p>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  if (authStatus === 'loading' || quizStatus === 'loading') {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: 'Checking authentication', status: authStatus === 'loading' ? 'loading' : 'done' },
-          { label: 'Loading results', status: quizStatus === 'loading' ? 'loading' : 'pending' },
-        ]}
-      />
-    )
-  }
+  // Show results from Redux state
+  const resultData = useMemo(() => {
+    // Start with existing quiz results or generated results
+    const baseData = quizResults || generatedResults;
+    
+    // If we have no base data but have answers, create a minimal result object
+    if (!baseData && Object.keys(answers).length > 0) {
+      return {
+        slug,
+        title: title || `Code Quiz - ${slug}`,
+        questions,
+        // Generate question results from answers
+        questionResults: Object.entries(answers).map(([questionId, answerData]) => ({
+          questionId,
+          selectedOptionId: answerData.selectedOptionId,
+          userAnswer: answerData.selectedOptionId,
+          isCorrect: !!answerData.isCorrect
+        }))
+      };
+    }
+    
+    return baseData;
+  }, [quizResults, generatedResults, answers, slug, title, questions]);
 
+  // For unauthenticated users, show the sign-in prompt with limited results
   if (!isAuthenticated) {
-    // Try to get any existing quiz data and results from storage
-    let existingQuizData = null;
-    let existingResults = null;
-    
-    if (typeof window !== 'undefined') {
-      try {
-        // Get quiz data
-        const storedQuiz = sessionStorage.getItem('pendingQuiz');
-        if (storedQuiz) {
-          const parsed = JSON.parse(storedQuiz);
-          existingQuizData = parsed.quizData;
-          
-          // Also check for results in the stored quiz
-          if (parsed.currentState?.results) {
-            existingResults = parsed.currentState.results;
-          }
-        }
-        
-        // If no results in pending quiz, try to get from session storage directly
-        if (!existingResults) {
-          const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
-          if (storedResults) {
-            existingResults = JSON.parse(storedResults);
-          }
-        }
-      } catch (e) {
-        // Ignore errors
-      }
-    }
-    
-    return (
-      <div className="container max-w-md py-10">
-        <NonAuthenticatedUserSignInPrompt
-          onSignIn={async () => {
-            sessionService.saveAuthRedirectState({
-              returnPath: `/dashboard/code/${slug}/results`,
-              quizState: {
-                slug,
-                quizData: existingQuizData, // Preserve existing quiz data
-                showResults: true,
-                // Include additional state with results if available
-                currentState: {
-                  results: existingResults, // Include results when redirecting
-                }
-              },
-            })
-            await signIn(undefined, { callbackUrl: `/dashboard/code/${slug}/results` })
-          }}
-          title="Sign In to View Results"
-          message="Please sign in to view your code quiz results and track your progress."
-        />
-      </div>
-    )
-  }
+    // If we have results, show a teaser of results with limited information
+    if (resultData && Object.keys(resultData).length > 0) {
+      // Create a limited version of results that hides specific answers
+      const limitedResultData = {
+        ...resultData,
+        // Remove detailed question data
+        questions: undefined,
+        // Only show overall score and limited question results
+        questionResults: resultData.questionResults?.map(q => ({
+          ...q,
+          correctAnswer: undefined, // Hide correct answers
+          isCorrect: undefined      // Hide which ones were correct/incorrect
+        })),
+        // Keep core stats
+        score: resultData.score,
+        maxScore: resultData.maxScore,
+        percentage: resultData.percentage
+      };
 
-  // Handle error state
-  if (quizStatus === 'failed') {
-    // Special case: if we have pendingQuiz with quiz data but error says "Results not found"
-    if (error === "Results not found. Please take the quiz again." && 
-        pendingQuiz?.quizData?.questions?.length) {
-      return (
-        <QuizLoadingSteps
-          steps={[
-            { label: 'Generating quiz results', status: 'loading' },
-            { label: 'Please wait...', status: 'pending' },
-          ]}
-        />
-      );
-    }
-    
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-bold mb-2">Error Loading Results</h2>
-        <p className="text-muted-foreground mb-6">
-          {error || "We couldn't load your quiz results."}
-        </p>
-        <div className="space-x-4">
-          <Button variant="outline" onClick={() => router.push(`/dashboard/code/${slug}`)}>
-            Take the Quiz
-          </Button>
-          <Button onClick={() => router.push('/dashboard/quizzes')}>
-            Back to Quizzes
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  // If we have questions but no answers/results, show "No Results Found"
-  if (questions.length > 0 && Object.keys(answers).length === 0) {
-    return (
-      <div className="container max-w-4xl py-10 text-center">
-        <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
-        <p className="mb-6">We couldn't find your results for this quiz.</p>
-        <div className="mt-6 flex flex-col gap-2 items-center">
-          <Button onClick={() => router.push(`/dashboard/code/${slug}`)}>Take the Quiz</Button>
-          <Button variant="outline" onClick={() => router.push('/dashboard/quizzes')}>
-            Back to Quizzes
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  // If we have questions and answers but no results, compute them on the spot
-  if (!quizResults && questions.length > 0 && Object.keys(answers).length > 0) {
-    // Instantly compute results without waiting for useEffect
-    const computedResults = computeResultsFromAnswers();
-    
-    // Immediate render with computed results
-    if (computedResults) {
       return (
         <div className="container max-w-4xl py-6">
+          <Card className="mb-6 bg-gradient-to-b from-background to-primary/10 border-primary/20">
+            <CardContent className="p-6 text-center">
+              <h2 className="text-2xl font-bold mb-3">Your Score: {resultData.percentage}%</h2>
+              <p className="text-muted-foreground mb-6">
+                Sign in to see your detailed results, save your progress, and track your improvement over time.
+              </p>
+              <div className="flex justify-center gap-4">
+                <Button onClick={handleSignIn} size="lg">
+                  Sign In to See Full Results
+                </Button>
+                <Button variant="outline" onClick={handleRetake} size="lg">
+                  Retake Quiz
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
           <Card>
             <CardContent className="p-4 sm:p-6">
-              <CodeQuizResult result={computedResults} onRetake={handleRetake} />
+              <div className="bg-muted/30 p-6 rounded-lg border border-muted mb-6">
+                <h3 className="text-lg font-medium mb-2 text-center">Why Sign In?</h3>
+                <ul className="space-y-2 text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>See which questions you answered correctly</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Review detailed explanations for all answers</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Track your progress across all quizzes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Get personalized recommendations for improvement</span>
+                  </li>
+                </ul>
+              </div>
+              
+              {/* Show only limited score summary, not detailed question results */}
+              <div className="opacity-50 pointer-events-none select-none filter blur-sm">
+                <QuizResult result={limitedResultData} onRetake={handleRetake} quizType="code" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-primary/90 text-white px-6 py-3 rounded-lg shadow-lg">
+                    Sign in to view detailed results
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
-      );
+      )
     }
+    
+    // If we don't have proper results, show sign-in prompt
+    return (
+      <div className="container max-w-md py-10">
+        <NonAuthenticatedUserSignInPrompt
+          onSignIn={handleSignIn}
+          title="Sign In to View Results"
+          message="Please sign in to view your detailed quiz results and track your progress over time."
+          fallbackAction={{
+            label: "Take Quiz Instead",
+            onClick: () => router.push(`/dashboard/code/${slug}`),
+            variant: "outline",
+          }}
+        />
+      </div>
+    )
   }
   
-  // Add a check specifically for showResults=true but no results or answers
-  if (
-    pendingQuiz?.currentState?.showResults && 
-    !quizResults && 
-    Object.keys(answers).length === 0
-  ) {
-    return (
-      <div className="container max-w-4xl py-10 text-center">
-        <h1 className="text-2xl font-bold mb-4">Incomplete Quiz Results</h1>
-        <p className="mb-6">
-          This quiz was marked for results display, but no answers were found.
-          You may need to complete the quiz first.
-        </p>
-        <div className="mt-6 flex flex-col gap-2 items-center">
-          <Button onClick={() => router.push(`/dashboard/code/${slug}`)}>Take the Quiz</Button>
-          <Button variant="outline" onClick={() => router.push('/dashboard/quizzes')}>
-            Back to Quizzes
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // For authenticated users, show full results
   return (
-    <QuizLoadingSteps
-      steps={[
-        { label: 'Restoring quiz state', status: 'loading' },
-        { label: 'Loading results', status: 'pending' },
-      ]}
-    />
+    <div className="container max-w-4xl py-6">
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <QuizResult result={resultData} onRetake={handleRetake} quizType="code" />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

@@ -1,23 +1,13 @@
 "use client"
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import {
-  HelpCircle,
-  Code
-} from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Code } from "lucide-react"
 import { motion } from "framer-motion"
-import { Progress } from "@/components/ui/progress"
 import { useAppDispatch } from "@/store"
 import { saveAnswer } from "@/store/slices/quizSlice"
-import { CodeQuestion } from "./types"
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import type { CodeQuestion } from "./types"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import CodeQuizOptions from "./CodeQuizOptions"
 import { Button } from "@/components/ui/button"
 
@@ -29,6 +19,8 @@ interface CodeQuizProps {
   totalQuestions?: number
   existingAnswer?: string
   onNext?: () => void
+  onFinish?: () => void
+  showNavigation?: boolean
 }
 
 const CodeQuiz = ({
@@ -39,32 +31,39 @@ const CodeQuiz = ({
   totalQuestions = 1,
   existingAnswer,
   onNext,
+  onFinish,
+  showNavigation = true,
 }: CodeQuizProps) => {
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
 
   const handleAnswerSelection = (option: string) => {
-    if (isSubmitting || existingAnswer) return;
+    if (isSubmitting) return
 
     // Simple validation for plain array of options
-    if (!Array.isArray(question.options)) return;
-    if (!question.options.includes(option)) return;
+    if (!Array.isArray(question.options)) return
+    if (!question.options.includes(option)) return
 
-    onAnswer(option);
+    onAnswer(option)
 
     try {
-      dispatch(saveAnswer({
-        questionId: question.id,
-        answer: {
+      dispatch(
+        saveAnswer({
           questionId: question.id,
-          selectedOptionId: option,
-          timestamp: Date.now(),
-          type: "code",
-        },
-      }));
+          answer: {
+            questionId: question.id,
+            selectedOptionId: option,
+            timestamp: Date.now(),
+            type: "code",
+          },
+        }),
+      )
     } catch (error) {
-      console.error("Redux dispatch failed:", error);
+      console.error("Redux dispatch failed:", error)
     }
-  };
+  }
+
+  const isLastQuestion = questionNumber === totalQuestions
+  const hasAnswer = !!existingAnswer
 
   return (
     <motion.div
@@ -88,7 +87,9 @@ const CodeQuiz = ({
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-primary">{Math.round((questionNumber / totalQuestions) * 100)}%</div>
+              <div className="text-2xl font-bold text-primary">
+                {Math.round((questionNumber / totalQuestions) * 100)}%
+              </div>
               <p className="text-xs text-muted-foreground">Complete</p>
             </div>
           </div>
@@ -122,20 +123,28 @@ const CodeQuiz = ({
             options={question.options}
             selectedOption={existingAnswer ?? null}
             onSelect={handleAnswerSelection}
-            disabled={isSubmitting || !!existingAnswer}
+            disabled={isSubmitting}
           />
 
-          {existingAnswer && onNext && (
-            <div className="flex justify-end mt-4">
-              <Button onClick={onNext}>
-                {questionNumber === totalQuestions ? 'Finish Quiz' : 'Next Question'}
-              </Button>
+          {showNavigation && hasAnswer && (
+            <div className="flex justify-center pt-4">
+              {isLastQuestion ? (
+                <Button onClick={onFinish} disabled={isSubmitting} size="lg" className="min-w-32">
+                  {isSubmitting ? "Submitting..." : "Finish Quiz"}
+                </Button>
+              ) : (
+                <Button onClick={onNext} disabled={isSubmitting} size="lg" className="min-w-32">
+                  Next Question
+                </Button>
+              )}
             </div>
           )}
+
+          {!hasAnswer && <div className="text-center text-sm text-muted-foreground">Select an answer to continue</div>}
         </CardContent>
       </Card>
     </motion.div>
-  );
-};
+  )
+}
 
-export default CodeQuiz;
+export default CodeQuiz

@@ -1,81 +1,77 @@
 "use client"
 
+import React from "react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Spinner } from "@/hooks/spinner";
-import { selectAuthStatus, selectIsAuthenticated } from "@/store/slices/authSlice";
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { LogIn, Lock } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Check, UserPlus, ExternalLink } from "lucide-react";
 
-interface AuthPromptProps {
+interface NonAuthenticatedUserSignInPromptProps {
   onSignIn: () => void;
-  title?: string;
-  message?: string;
+  title: string;
+  message: string;
+  fallbackAction?: {
+    label: string;
+    onClick: () => void;
+    variant?: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | null;
+  };
 }
 
-export const NonAuthenticatedUserSignInPrompt: React.FC<AuthPromptProps> = ({
+export function NonAuthenticatedUserSignInPrompt({
   onSignIn,
-  title = "Sign In Required",
-  message = "Please sign in to view and save your quiz progress."
-}) => {
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const { loading } = useSelector(selectAuthStatus); // ✅ now safe
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSignIn = () => {
-    setIsLoading(true);
-    onSignIn();
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated]);
-
+  title,
+  message,
+  fallbackAction,
+}: NonAuthenticatedUserSignInPromptProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-md mx-auto py-10"
-    >
-      <Card className="border-2 border-primary/20">
-        <CardHeader className="text-center pb-6">
-          <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-            <Lock className="h-8 w-8 text-primary" />
+    <Card className="shadow-lg border-primary/20">
+      <CardHeader className="bg-primary/5 border-b">
+        <CardTitle className="text-xl sm:text-2xl text-center font-bold">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-6 pb-4">
+        <div className="text-center mb-6">
+          <div className="bg-primary/10 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <UserPlus className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">{title}</CardTitle>
-        </CardHeader>
-        
-        <CardContent className="text-center pb-6">
-          <p className="text-muted-foreground mb-6">
-            {message}
-          </p>
-        </CardContent>
-        
-        <CardFooter className="flex justify-center pb-8">
-          <Button 
-            onClick={handleSignIn}
-            disabled={isLoading || loading}
-            size="lg" 
-            className="min-w-[200px] gap-2"
+          <p className="text-muted-foreground mb-6">{message}</p>
+        </div>
+
+        <div className="bg-muted/30 p-4 rounded-lg border border-muted my-6">
+          <h3 className="font-medium mb-3">Benefits of signing in:</h3>
+          <ul className="space-y-2 text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <span>View detailed quiz results and explanations</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <span>Save your progress and track improvement</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <span>Access premium content and features</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <span>Get personalized learning recommendations</span>
+            </li>
+          </ul>
+        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col sm:flex-row gap-3 justify-center pt-0 pb-6">
+        <Button className="w-full sm:w-auto" size="lg" onClick={onSignIn}>
+          Sign In
+        </Button>
+        {fallbackAction && (
+          <Button
+            className="w-full sm:w-auto"
+            variant={fallbackAction.variant || "outline"}
+            size="lg"
+            onClick={fallbackAction.onClick}
           >
-            {isLoading || loading ? (
-              <>
-                <Spinner className="mr-2 h-4 w-4" />
-                <span>Signing in...</span>
-              </>
-            ) : (
-              <>
-                <LogIn className="h-5 w-5" />
-                Sign In
-              </>
-            )}
+            {fallbackAction.label}
           </Button>
-        </CardFooter>
-      </Card>
-    </motion.div>
+        )}
+      </CardFooter>
+    </Card>
   );
-};
+}

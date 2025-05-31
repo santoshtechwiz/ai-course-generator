@@ -324,76 +324,92 @@ export const checkAuthAndLoadResults = createAsyncThunk(
 
 // Backward compatible: Keep existing fetchQuizResults thunk
 export const fetchQuizResults = createAsyncThunk(
-  "quiz/fetchQuizResults",
-  async (slug: string, { getState, rejectWithValue }) => {
+  "quiz/fetchResults",
+  async (slug: string, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState
-      const { quizType, results, questions, answers, quizId, title } = state.quiz
-
-      // If we already have results in the state, return them
-      if (results) {
-        return results
+      const response = await fetch(`/api/quizzes/results/${slug}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch quiz results: ${response.status}`)
       }
 
-      // If we have questions and answers but no results, generate results
-      if (questions.length > 0 && Object.keys(answers).length > 0) {
-        let score = 0
-        let totalAnswered = 0
-
-        const questionResults = questions.map((question) => {
-          const answer = answers[String(question.id)]
-          let isCorrect = false
-          let userAnswer = null
-
-          if (!answer) {
-            return {
-              questionId: question.id,
-              isCorrect: false,
-              userAnswer: null,
-              correctAnswer: question.correctOptionId || question.answer,
-              skipped: true,
-            }
-          }
-
-          totalAnswered++
-
-          if (answer && "selectedOptionId" in answer) {
-            isCorrect = answer.isCorrect === true
-            userAnswer = answer.selectedOptionId
-            if (isCorrect) score++
-          }
-
-          return {
-            questionId: question.id,
-            isCorrect,
-            userAnswer,
-            correctAnswer: question.correctOptionId || question.answer,
-            skipped: false,
-          }
-        })
-
-        return {
-          quizId,
-          slug,
-          title: title || "Quiz Results",
-          quizType,
-          score,
-          maxScore: questions.length,
-          totalAnswered,
-          percentage: Math.round((score / questions.length) * 100),
-          submittedAt: new Date().toISOString(),
-          questionResults,
-          questions,
-          answers: Object.values(answers),
-        }
-      }
-
-      return rejectWithValue("No quiz results available. Please take the quiz first.")
+      const data = await response.json()
+      return data
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to get quiz results")
+      // Handle the "no results available" case more gracefully
+      if (error?.response?.status === 404 || 
+          error?.message?.includes("No quiz results") || 
+          error?.includes?.("No quiz results")) {
+        return rejectWithValue("NO_RESULTS_REDIRECT_TO_QUIZ");
+      }
+      console.error("Error fetching quiz results:", error);
+      return rejectWithValue(error?.message || "Failed to get quiz results");
     }
   },
 )
+
+// Improved rehydrateQuiz action to handle results properly
+export const rehydrateQuizState = createAsyncThunk(
+  "quiz/rehydrateState",
+  async (pendingQuiz: { slug: string; quizData: any; currentState: any }, { getState, dispatch }) => {
+    try {
+      const state = getState() as RootState;
+      const { slug, quizData, currentState } = pendingQuiz;
+      
+      // If we have data directly, use it
+      if (quizData?.questions?.length > 0) {
+        // Set questions and quiz data
+        dispatch(setQuiz({
+          quizId: slug,
+          title: quizData.title || "Quiz",
+          questions: quizData.questions,
+          type: quizData.type || "code"
+        }));
+        
+        // If we have saved answers, restore them
+        if (currentState?.answers && Object.keys(currentState.answers).length > 0) {
+          // Restore each answer
+          Object.entries(currentState.answers).forEach(([questionId, answer]) => {
+            dispatch(saveAnswer({
+              questionId,
+              answer
+            }));
+          });
+        }
+        
+        // If showResults is true, set the completion flag
+        if (currentState?.showResults) {
+          dispatch(setQuizCompleted());
+        }
+        
+        // If we have results, set them
+        if (currentState?.results) {
+          dispatch(setQuizResults(currentState.results));
+        }
+        
+        return pendingQuiz;
+      }
+      
+      // If we don't have data directly, need to fetch the quiz
+      const response = await fetch(`/api/quizzes/${pendingQuiz.quizData.type}/${slug}`)
+      if (!response.ok) {
+        throw new Error(`Failed to load quiz: ${response.status}`)
+      }
+      const data = await response.json()
+
+      dispatch(setQuiz({
+        quizId: slug,
+        title: data.title || "Quiz",
+        questions: data.questions,
+        type: data.type || "code"
+      }));
+
+      return pendingQuiz;
+    } catch (error) {
+      console.error("Error rehydrating quiz:", error);
+      return null;
+    }
+  }
+);
 
 const quizSlice = createSlice({
   name: "quiz",
@@ -456,10 +472,11 @@ const quizSlice = createSlice({
     },
 
     setQuizResults: (state, action: PayloadAction<any>) => {
-      state.results = action.payload
-      state.isCompleted = true
+      state.results = action.payload;
+      state.status = "success";
+      state.error = null;
     },
-
+    
     setPendingQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
       state.pendingQuiz = action.payload
       if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
@@ -474,7 +491,8 @@ const quizSlice = createSlice({
     resetPendingQuiz: (state) => {
       state.pendingQuiz = null
     },
-    rehydrateQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
+    // Rename to hydrateQuiz to avoid conflict with the async thunk
+    hydrateQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
       const { slug, quizData, currentState } = action.payload
       
       // Ensure slug is always a string and set as primary identifier
@@ -785,7 +803,7 @@ export const {
   setQuizResults,
   setPendingQuiz,
   resetPendingQuiz,
-  rehydrateQuiz,
+  hydrateQuiz, // Export the renamed action
   clearPendingQuiz,
   setAuthRedirect,
   clearAuthRedirect,
@@ -795,6 +813,8 @@ export const {
   setQuizId,
   setQuizType,
   setSessionId,
+  setQuizCompleted,
+  setQuiz
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility
@@ -820,70 +840,53 @@ export const selectAuthRedirectUrl = createSelector([selectQuizState], (quiz) =>
 
 // Backward compatible: Keep existing selectors
 export const selectOrGenerateQuizResults = createSelector(
-  [selectQuizState, selectQuestions, selectAnswers],
-  (quizState, questions, answers) => {
-    if (quizState.results) {
-      return quizState.results
+  [selectQuestions, selectAnswers, selectQuizTitle, selectQuizId],
+  (questions, answers, title, quizId) => {
+    // Don't generate if we have no questions or answers
+    if (Object.keys(answers).length === 0 || questions.length === 0) {
+      return null;
     }
 
-    if (questions.length > 0) {
-      let score = 0
-      let totalAnswered = 0
-
-      const questionResults = questions.map((question) => {
-        const answer = answers[String(question.id)]
-        let isCorrect = false
-        let userAnswer = null
-        let skipped = true
-
-        if (answer) {
-          totalAnswered++
-          skipped = false
-
-          if ("isCorrect" in answer) {
-            isCorrect = answer.isCorrect === true
-            if (isCorrect) score++
-          }
-
-          if ("selectedOptionId" in answer) {
-            userAnswer = answer.selectedOptionId
-          } else if ("filledBlanks" in answer) {
-            userAnswer = answer.filledBlanks
-          } else if ("text" in answer) {
-            userAnswer = answer.text
-          }
+    // Generate questionResults from answers
+    const questionResults = Object.entries(answers).map(([questionId, answerData]) => {
+      // Find the matching question to determine if the answer was correct
+      const question = questions.find(q => q.id.toString() === questionId);
+      let isCorrect = false;
+      
+      if (question && answerData.selectedOptionId) {
+        if (question.answer === answerData.selectedOptionId) {
+          isCorrect = true;
         }
-
-        return {
-          questionId: question.id,
-          isCorrect,
-          userAnswer,
-          correctAnswer: question.correctOptionId || question.answer,
-          skipped,
-        }
-      })
-
-      const maxScore = questions.length
-      const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0
-
-      return {
-        quizId: quizState.quizId,
-        slug: quizState.slug || "unknown",
-        title: quizState.title || "Quiz Results",
-        quizType: quizState.quizType,
-        score,
-        maxScore,
-        totalAnswered,
-        percentage,
-        completedAt: new Date().toISOString(),
-        questionResults,
-        questions,
-        answers: Object.values(answers),
       }
-    }
+      
+      return {
+        questionId,
+        userAnswer: answerData.selectedOptionId || "Not answered",
+        selectedOptionId: answerData.selectedOptionId,
+        isCorrect
+      };
+    });
+    
+    // Calculate score metrics
+    const correctCount = questionResults.filter(qr => qr.isCorrect).length;
+    const totalCount = questions.length;
+    const percentage = Math.round((correctCount / totalCount) * 100);
+    
+    // Return a complete result object
+    return {
+      quizId,
+      slug: quizId,
+      title: title || `Quiz ${quizId}`,
+      completedAt: new Date().toISOString(),
+      maxScore: totalCount,
+      score: correctCount,
+      percentage,
+      questionResults,
+      questions
+    };
+  }
+);
 
-    return null
-  },
-)
+export const selectPendingQuiz = (state: RootState) => state.quiz.pendingQuiz;
 
 export default quizSlice.reducer

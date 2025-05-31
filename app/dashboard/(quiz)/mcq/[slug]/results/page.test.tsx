@@ -81,8 +81,21 @@ jest.mock('@/store/slices/quizSlice', () => {
 });
 
 describe("MCQ Results Page", () => {
+  const mockRouter = {
+    push: jest.fn(),
+    back: jest.fn(),
+  };
+  
+  const mockDispatch = jest.fn(() => Promise.resolve({ payload: {} }));
+  
   beforeEach(() => {
     jest.clearAllMocks()
+    
+    // Mock router
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    
+    // Mock dispatch
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
     
     // Mock sessionStorage
     const mockSessionStorage = {
@@ -99,6 +112,53 @@ describe("MCQ Results Page", () => {
     });
   })
 
+  // Update test for unauthenticated user flow
+  it("shows sign-in prompt for unauthenticated users with no results", async () => {
+    mockUseSelector.mockImplementation((selector) => {
+      if (selector === selectIsAuthenticated) return false;
+      if (selector === selectQuizResults) return null;
+      if (selector === selectOrGenerateQuizResults) return null;
+      if (selector === selectAnswers) return {};
+      return defaultMocks[selector] || null;
+    });
+    
+    render(<McqResultsPage params={{ slug: "javascript-basics" }} />);
+    
+    // Should show sign-in prompt when no results are available
+    expect(await screen.findByText("Sign In to View Results")).toBeInTheDocument();
+    expect(screen.getByText("Sign In")).toBeInTheDocument();
+  });
+
+  // Add test for unauthenticated users with results
+  it("shows results and sign-in option for unauthenticated users with results", async () => {
+    const mockResults = {
+      title: "JavaScript Basics",
+      score: 7,
+      maxScore: 10,
+      percentage: 70,
+      questionResults: [
+        { questionId: "1", isCorrect: true },
+        { questionId: "2", isCorrect: false },
+      ],
+      questions: [{ id: "1", text: "Question 1" }, { id: "2", text: "Question 2" }]
+    };
+    
+    mockUseSelector.mockImplementation((selector) => {
+      if (selector === selectIsAuthenticated) return false;
+      if (selector === selectQuizResults) return null;
+      if (selector === selectOrGenerateQuizResults) return mockResults;
+      if (selector === selectAnswers) return { 1: {}, 2: {} };
+      return defaultMocks[selector] || null;
+    });
+    
+    render(<McqResultsPage params={{ slug: "javascript-basics" }} />);
+    
+    // Should show both results and sign-in option
+    expect(await screen.findByText("JavaScript Basics")).toBeInTheDocument();
+    expect(screen.getByText("70% Score")).toBeInTheDocument();
+    expect(screen.getByText("Save Your Results")).toBeInTheDocument();
+  });
+  
   it("shows sign-in prompt for unauthenticated users", async () => {
     // Mock unauthenticated session
     (useSession as jest.Mock).mockReturnValue({ 
