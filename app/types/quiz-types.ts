@@ -184,6 +184,14 @@ export function isCodeQuestion(q: any): q is CodeQuizQuestion {
   return typeof q === "object" && q.type === "code";
 }
 
+export function isQuizType(type: any): type is QuizType {
+  return ["blanks", "openended", "mcq", "code", "flashcard"].includes(type);
+}
+
+export function isValidQuestion(question: any): question is QuizQuestion {
+  return typeof question === "object" && "id" in question && isQuizType(question.type);
+}
+
 // User quiz attempt from user-types.ts
 export interface UserQuizAttempt {
   id: string | number;

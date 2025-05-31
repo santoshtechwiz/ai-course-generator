@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import {
   HelpCircle,
   Code
@@ -20,6 +19,7 @@ import { CodeQuestion } from "./types"
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import CodeQuizOptions from "./CodeQuizOptions"
+import { Button } from "@/components/ui/button"
 
 interface CodeQuizProps {
   question: CodeQuestion
@@ -28,7 +28,7 @@ interface CodeQuizProps {
   questionNumber?: number
   totalQuestions?: number
   existingAnswer?: string
-  feedbackType?: "correct" | "incorrect" | null
+  onNext?: () => void
 }
 
 const CodeQuiz = ({
@@ -38,59 +38,33 @@ const CodeQuiz = ({
   questionNumber = 1,
   totalQuestions = 1,
   existingAnswer,
-  feedbackType,
+  onNext,
 }: CodeQuizProps) => {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
 
-  if (
-    !question ||
-    (!question.text && !question.question) ||
-    !Array.isArray(question.options) ||
-    question.options.length === 0
-  ) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto shadow-xl border-0 bg-gradient-to-br from-background to-muted/20">
-        <CardContent className="p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <HelpCircle className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-bold mb-3">Question Unavailable</h3>
-          <p className="text-muted-foreground mb-6">
-            We're having trouble loading this question. Please try refreshing.
-          </p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Reload Quiz
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
+  const handleAnswerSelection = (option: string) => {
+    if (isSubmitting || existingAnswer) return;
 
-  const options = question.options
-  const progressPercentage = (questionNumber / totalQuestions) * 100
-  const language = question.language || "javascript"
+    // Simple validation for plain array of options
+    if (!Array.isArray(question.options)) return;
+    if (!question.options.includes(option)) return;
 
-  const handleAnswerSelection = (optionId: string) => {
-    if (isSubmitting || existingAnswer) return
-
-    onAnswer(optionId)
+    onAnswer(option);
 
     try {
-      const isCorrect = optionId === question.correctOptionId
       dispatch(saveAnswer({
         questionId: question.id,
         answer: {
           questionId: question.id,
-          selectedOptionId: optionId,
+          selectedOptionId: option,
           timestamp: Date.now(),
           type: "code",
-          isCorrect,
         },
-      }))
+      }));
     } catch (error) {
-      console.error("Redux dispatch failed:", error)
+      console.error("Redux dispatch failed:", error);
     }
-  }
+  };
 
   return (
     <motion.div
@@ -114,21 +88,14 @@ const CodeQuiz = ({
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-primary">{Math.round(progressPercentage)}%</div>
+              <div className="text-2xl font-bold text-primary">{Math.round((questionNumber / totalQuestions) * 100)}%</div>
               <p className="text-xs text-muted-foreground">Complete</p>
             </div>
-          </div>
-          <div className="mt-4">
-            <Progress value={progressPercentage} className="h-3 bg-muted/50" />
           </div>
         </CardHeader>
 
         <CardContent className="p-8 space-y-8">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/5 rounded-full border border-primary/20 mb-6">
-              <Code className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Select the correct code</span>
-            </div>
             <h3 className="text-xl font-semibold select-none text-foreground max-w-3xl mx-auto">
               {question.text || question.question}
             </h3>
@@ -137,7 +104,7 @@ const CodeQuiz = ({
           {question.codeSnippet && (
             <div className="rounded-md overflow-hidden">
               <SyntaxHighlighter
-                language={language}
+                language={question.language || "javascript"}
                 style={vscDarkPlus}
                 showLineNumbers
                 customStyle={{
@@ -151,36 +118,24 @@ const CodeQuiz = ({
             </div>
           )}
 
-          {/* ✅ Refactored: Use reusable CodeQuizOptions */}
           <CodeQuizOptions
-            options={options}
+            options={question.options}
             selectedOption={existingAnswer ?? null}
             onSelect={handleAnswerSelection}
-            feedbackType={feedbackType}
             disabled={isSubmitting || !!existingAnswer}
-            language={language}
           />
 
-          {/* Optional feedback message */}
-          {feedbackType && (
-            <div className="flex justify-center mt-4">
-              <span
-                className={`px-4 py-2 rounded-lg font-semibold text-lg ${
-                  feedbackType === "correct"
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300"
-                }`}
-                role="status"
-                aria-live="polite"
-              >
-                {feedbackType === "correct" ? "Correct!" : "Incorrect"}
-              </span>
+          {existingAnswer && onNext && (
+            <div className="flex justify-end mt-4">
+              <Button onClick={onNext}>
+                {questionNumber === totalQuestions ? 'Finish Quiz' : 'Next Question'}
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
     </motion.div>
-  )
-}
+  );
+};
 
-export default CodeQuiz
+export default CodeQuiz;
