@@ -30,6 +30,7 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { OpenEndedQuestion } from "@/types/quiz"
 import OpenEndedQuizResults from "./QuizResultsOpenEnded"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -107,20 +108,8 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   }, [quizData, slug, reset, dispatch])
 
   // Calculate similarity between user answer and correct answer
-  const calculateSimilarity = (userAnswer: string, correctAnswer: string): number => {
-    if (!userAnswer || !correctAnswer) return 0
-
-    const userTokens = userAnswer.toLowerCase().split(/\s+/)
-    const correctTokens = correctAnswer.toLowerCase().split(/\s+/)
-
-    // Find common words
-    const commonWords = userTokens.filter((word) => correctTokens.includes(word))
-
-    // Calculate Jaccard similarity
-    const union = new Set([...userTokens, ...correctTokens]).size
-    const similarity = union > 0 ? commonWords.length / union : 0
-
-    return similarity
+  const calculateSimilarity = (userAnswer: string, correctAnswer: string, keywords?: string[]): number => {
+    return getBestSimilarityScore(userAnswer, correctAnswer) / 100
   }
 
   // Handle answer submission
@@ -131,8 +120,8 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
     const questionId = question.id?.toString() || currentQuestionIndex.toString()
 
     // Calculate similarity with correct answer
-    const similarity = calculateSimilarity(answer, question.answer || "")
-    const similarityThreshold = 0.6 // 60% similarity threshold
+    const similarity = calculateSimilarity(answer, question.answer || "", question.keywords)
+    const similarityThreshold = 0.7 // 70% similarity threshold
     const isCorrect = similarity >= similarityThreshold
 
     // Create answer object for open-ended quiz
@@ -174,8 +163,8 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
       const answerData = answers[questionId]
       const userAnswer = answerData?.text || ""
       const correctAnswer = question.answer || ""
-      const isCorrect = answerData?.isCorrect || false
-      const similarity = answerData?.similarity || 0
+      const similarity = calculateSimilarity(userAnswer, correctAnswer, question.keywords)
+      const isCorrect = similarity >= 0.7
 
       return {
         questionId,
@@ -184,6 +173,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         isCorrect,
         similarity,
         question: question.question || question.text,
+        keywords: question.keywords,
       }
     })
 

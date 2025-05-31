@@ -29,6 +29,8 @@ import BlanksQuiz from "./BlanksQuiz"
 import BlankQuizResults from "./BlankQuizResults"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { BlankQuestion } from "./types"
+import { calculateCompositeSimilarity } from "../../openended/utils/similarity"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 
 interface BlanksQuizWrapperProps {
   slug: string
@@ -151,13 +153,17 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
       const answerData = answers[questionId]
       const userAnswer = answerData?.filledBlanks?.[questionId] || answerData?.userAnswer || ""
       const correctAnswer = question.answer || ""
-      const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim()
+      const similarityPercent = getBestSimilarityScore(userAnswer, correctAnswer)
+      const similarity = similarityPercent / 100
+      const isCorrect = similarity >= 0.7
 
       return {
         questionId,
         userAnswer,
         correctAnswer,
         isCorrect,
+        similarity,
+        question: question.question,
       }
     })
 

@@ -11,6 +11,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSessionService } from "@/hooks/useSessionService"
 import { NonAuthenticatedUserSignInPrompt } from "./EnhancedNonAuthenticatedUserSignInPrompt"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { Progress } from "@/components/ui/progress"
+import { Trophy, ThumbsUp, ThumbsDown, HelpCircle } from "lucide-react"
 
 interface QuizResult {
   title?: string
@@ -62,6 +65,7 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
     totalCount,
     skippedCount,
     percentageCorrect,
+    averageSimilarity,
   } = useMemo(() => {
     if (!result) {
       return {
@@ -72,6 +76,7 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
         totalCount: 0,
         skippedCount: 0,
         percentageCorrect: 0,
+        averageSimilarity: 0,
       }
     }
 
@@ -84,6 +89,17 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
     const skippedCount = totalCount - (correctCount + incorrectCount)
     const percentageCorrect = result.percentage || Math.round((correctCount / totalCount) * 100)
 
+    // Calculate average similarity for openended/blanks
+    let averageSimilarity = 0
+    if (questionData.length && (result.quizType === "openended" || result.quizType === "blanks" || result.questionResults?.some(q => typeof q.similarity === "number"))) {
+      const similarities = questionData
+        .map((q) => typeof q.similarity === "number" ? q.similarity : undefined)
+        .filter((s): s is number => typeof s === "number")
+      if (similarities.length > 0) {
+        averageSimilarity = similarities.reduce((a, b) => a + b, 0) / similarities.length
+      }
+    }
+
     return {
       correctQuestions,
       incorrectQuestions,
@@ -92,6 +108,7 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
       totalCount,
       skippedCount,
       percentageCorrect,
+      averageSimilarity,
     }
   }, [result])
 
@@ -187,6 +204,25 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
   // Render question content based on quiz type
   const renderQuestionContent = useCallback(
     (questionResult: any, questionData: any, userAnswer: string, correctAnswer: string) => {
+      // Calculate similarity and label for openended/blanks
+      let similarity = typeof questionResult.similarity === "number"
+        ? questionResult.similarity
+        : (quizType === "openended" || quizType === "blanks")
+          ? getBestSimilarityScore(userAnswer, correctAnswer) / 100
+          : undefined
+
+      let similarityLabel: string | undefined = undefined
+      if (typeof similarity === "number") {
+        if (similarity >= 0.7) similarityLabel = "Correct"
+        else if (similarity >= 0.5) similarityLabel = "Close"
+        else similarityLabel = "Incorrect"
+      }
+
+      // Color for badge
+      let badgeColor = "bg-destructive/20 text-destructive"
+      if (similarityLabel === "Correct") badgeColor = "bg-success/20 text-success"
+      else if (similarityLabel === "Close") badgeColor = "bg-yellow-100 text-yellow-800"
+
       if (quizType === "blanks") {
         const questionText = questionData?.question || `Question`
         return (
@@ -200,6 +236,19 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
                 ),
               }}
             />
+            {typeof similarity === "number" && (
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                <Badge className={badgeColor}>
+                  {similarityLabel}
+                </Badge>
+                <span>
+                  Similarity: {(similarity * 100).toFixed(0)}%
+                </span>
+                {similarityLabel === "Close" && (
+                  <span className="ml-2 text-xs text-yellow-700 font-semibold">(Close enough!)</span>
+                )}
+              </div>
+            )}
           </div>
         )
       } else {
@@ -208,6 +257,19 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
         return (
           <div className="p-4 bg-card rounded-md">
             <h4 className="font-medium mb-2">{questionText}</h4>
+            {typeof similarity === "number" && (
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                <Badge className={badgeColor}>
+                  {similarityLabel}
+                </Badge>
+                <span>
+                  Similarity: {(similarity * 100).toFixed(0)}%
+                </span>
+                {similarityLabel === "Close" && (
+                  <span className="ml-2 text-xs text-yellow-700 font-semibold">(Close enough!)</span>
+                )}
+              </div>
+            )}
           </div>
         )
       }
@@ -256,8 +318,11 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
       {/* Score summary */}
       <Card className="border shadow-sm overflow-hidden bg-gradient-to-br from-card to-card/80">
         <CardHeader className="bg-primary/5 border-b border-border/40">
-          <CardTitle className="flex justify-between items-center">
-            <span className="text-2xl font-bold">{result.title || "Quiz Results"}</span>
+          <CardTitle className="flex flex-col md:flex-row justify-between items-center gap-2">
+            <div className="flex items-center gap-3">
+              <Trophy className="w-8 h-8 text-yellow-500" />
+              <span className="text-2xl font-bold">{result.title || "Quiz Results"}</span>
+            </div>
             <Badge
               variant={percentageCorrect >= 70 ? "success" : percentageCorrect >= 50 ? "warning" : "destructive"}
               className="text-base px-3 py-1"
@@ -277,7 +342,7 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
 
         <CardContent className="p-6 space-y-5">
           <div className="flex flex-col md:flex-row md:justify-between items-center gap-6">
-            <div className="relative w-40 h-40">
+            <div className="relative w-40 h-40 flex flex-col items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
                 <circle
@@ -305,19 +370,44 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
             <div className="space-y-4 flex-1">
               <p className="text-xl font-medium text-center md:text-left">{getScoreMessage()}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
+                <div className="flex flex-col items-center p-4 bg-success/10 rounded-lg border border-success/30">
+                  <ThumbsUp className="w-6 h-6 text-success mb-1" />
                   <span className="text-2xl font-bold text-success">{correctCount}</span>
                   <span className="text-sm text-muted-foreground">Correct</span>
                 </div>
-                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
+                <div className="flex flex-col items-center p-4 bg-destructive/10 rounded-lg border border-destructive/30">
+                  <ThumbsDown className="w-6 h-6 text-destructive mb-1" />
                   <span className="text-2xl font-bold text-destructive">{incorrectCount}</span>
                   <span className="text-sm text-muted-foreground">Incorrect</span>
                 </div>
-                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
+                <div className="flex flex-col items-center p-4 bg-muted/40 rounded-lg border border-muted-foreground/20">
+                  <HelpCircle className="w-6 h-6 text-muted-foreground mb-1" />
                   <span className="text-2xl font-bold text-muted-foreground">{skippedCount}</span>
                   <span className="text-sm text-muted-foreground">Skipped</span>
                 </div>
               </div>
+              {/* Show average similarity for openended/blanks */}
+              {(result.quizType === "openended" || result.quizType === "blanks" || averageSimilarity > 0) && (
+                <div className="flex flex-col items-center mt-2 w-full">
+                  <span className="text-base font-medium text-primary mb-1">
+                    Avg. Similarity: <span className="font-bold">{Math.round(averageSimilarity * 100)}%</span>
+                  </span>
+                  <Progress
+                    value={averageSimilarity * 100}
+                    className="h-2 w-full max-w-xs bg-muted/60"
+                    indicatorClassName={
+                      averageSimilarity >= 0.7
+                        ? "bg-success"
+                        : averageSimilarity >= 0.5
+                        ? "bg-yellow-400"
+                        : "bg-destructive"
+                    }
+                  />
+                  <span className="text-xs text-muted-foreground mt-1">
+                    This reflects how close your answers were to the correct ones.
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -342,8 +432,11 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
       {/* Question review section */}
       {questionData.length > 0 && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Question Review</h2>
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              Question Review
+            </h2>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={expandAllQuestions}>
                 <ChevronDown className="w-4 h-4 mr-1" /> Expand All
@@ -370,25 +463,39 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
               const correctAnswer = questionResult.correctAnswer || questionDataItem?.answer || "Answer unavailable"
               const similarity = questionResult.similarity || 0
 
+              // Color for border and background
+              const borderColor =
+                questionResult.isCorrect
+                  ? "border-success/40 bg-success/5"
+                  : similarity >= 0.5
+                  ? "border-yellow-400/40 bg-yellow-50"
+                  : "border-destructive/40 bg-destructive/5"
+
               return (
                 <Collapsible
                   key={questionId}
                   open={isExpanded}
                   onOpenChange={() => toggleQuestion(questionId.toString())}
-                  className={`border rounded-lg overflow-hidden ${
-                    questionResult.isCorrect
-                      ? "border-success/30 bg-success/5"
-                      : "border-destructive/30 bg-destructive/5"
-                  }`}
+                  className={`border rounded-lg overflow-hidden ${borderColor} transition-all duration-200`}
                 >
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className={`rounded-full p-1 ${
-                          questionResult.isCorrect ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"
+                          questionResult.isCorrect
+                            ? "bg-success/20 text-success"
+                            : similarity >= 0.5
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-destructive/20 text-destructive"
                         }`}
                       >
-                        {questionResult.isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                        {questionResult.isCorrect ? (
+                          <Check className="w-5 h-5" />
+                        ) : similarity >= 0.5 ? (
+                          <HelpCircle className="w-5 h-5" />
+                        ) : (
+                          <X className="w-5 h-5" />
+                        )}
                       </div>
                       <div>
                         <h3 className="font-medium">Question {index + 1}</h3>
@@ -397,8 +504,10 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
                             ? (questionDataItem?.question || "").replace("________", "______")
                             : questionResult.question || "Question text"}
                         </p>
-                        {quizType === "openended" && (
-                          <p className="text-xs text-muted-foreground">Similarity: {Math.round(similarity * 100)}%</p>
+                        {typeof similarity === "number" && (
+                          <p className="text-xs text-muted-foreground">
+                            Similarity: {Math.round(similarity * 100)}%
+                          </p>
                         )}
                       </div>
                     </div>
@@ -419,11 +528,16 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
                           className={`p-3 rounded-md ${
                             questionResult.isCorrect
                               ? "bg-success/10 border border-success/30"
+                              : similarity >= 0.5
+                              ? "bg-yellow-50 border border-yellow-200"
                               : "bg-muted border border-muted-foreground/20"
                           }`}
                         >
                           <div className="flex items-center gap-2">
                             {questionResult.isCorrect && <Check className="w-4 h-4 text-success" />}
+                            {!questionResult.isCorrect && similarity >= 0.5 && (
+                              <HelpCircle className="w-4 h-4 text-yellow-700" />
+                            )}
                             <span className="font-medium">Your answer:</span>
                           </div>
                           <p className="mt-1 whitespace-pre-wrap">{userAnswer}</p>
