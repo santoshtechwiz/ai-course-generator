@@ -8,6 +8,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
 import { SubscriptionService } from "../subscription/services/subscription-service"
 
+export const dynamic = "force-dynamic"
+
+export const metadata = {
+  title: "Success",
+}
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+}
+
+export const themeColor = "#fff"
+
 export default async function PaymentSuccessPage({
   searchParams,
 }: {

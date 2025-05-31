@@ -1,4 +1,3 @@
-
 import { nanoid } from "nanoid"
 import slugify from "slugify"
 import type { QuizType } from "@/app/types/types"
@@ -13,4 +12,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export const buildQuizUrl = (slug: string, type: QuizType) => {
   return `/dashboard/(quiz)/${type}/quizzes/${slug}`
+}
+
+export function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
 }
