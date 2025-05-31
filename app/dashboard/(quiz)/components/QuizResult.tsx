@@ -5,13 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Check, X, RefreshCw, Home, Share2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
 import React, { useState, useMemo } from "react"
-import { useSelector } from "react-redux"
-import { 
-  selectOrGenerateQuizResults, 
-  selectQuestions, 
-  selectAnswers, 
-  selectQuizTitle 
-} from "@/store/slices/quizSlice"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { 
@@ -22,38 +15,85 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card"
-import type { CodeQuizResult } from "./types"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 
-interface CodeQuizResultProps {
-  result?: CodeQuizResult;
-  onRetake?: () => void;
+interface QuizResult {
+  title?: string;
+  slug?: string;
+  quizId?: string;
+  type?: "mcq" | "code";
+  completedAt?: string;
+  maxScore?: number;
+  score?: number;
+  percentage?: number;
+  questionResults?: Array<{
+    questionId: string;
+    isCorrect?: boolean;
+    userAnswer?: string;
+    selectedOptionId?: string;
+  }>;
+  questions?: Array<any>;
+  answers?: Array<any>;
 }
 
-export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps) {
+interface QuizResultProps {
+  result: QuizResult;
+  onRetake?: () => void;
+  quizType: "mcq" | "code";
+}
+
+export default function QuizResult({ result, onRetake, quizType }: QuizResultProps) {
   const router = useRouter();
   const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
-  
-  // Get results from Redux if not provided directly
-  const reduxResults = useSelector(selectOrGenerateQuizResults);
-  const questions = useSelector(selectQuestions);
-  const answers = useSelector(selectAnswers);
-  const quizTitle = useSelector(selectQuizTitle);
-  
-  // Use provided result or results from Redux
-  const finalResult = result || reduxResults;
-  
+
+  // Process the result data to ensure we have proper question results
+  const processedResult = useMemo(() => {
+    // Safely handle null/undefined result
+    if (!result) return null;
+
+    // Create a base processed result with defaults for missing fields
+    const baseResult = {
+      ...result,
+      title: result.title || "Quiz Results", 
+      slug: result.slug || result.quizId || "",
+      questions: result.questions || [],
+      questionResults: result.questionResults || []
+    };
+
+    // If we have answers array but no questionResults, build questionResults from answers
+    if (Array.isArray(result.answers) && (!result.questionResults || result.questionResults.length === 0)) {
+      // Make sure we safely handle potentially invalid answers data
+      const questionResults = result.answers
+        .filter(answer => answer && answer.questionId) // Filter out null/undefined entries
+        .map(answer => ({
+          questionId: answer.questionId?.toString() || '',
+          isCorrect: Boolean(answer.isCorrect),
+          userAnswer: answer.userAnswer || answer.selectedOptionId || "Not answered"
+        }))
+        .filter(q => q.questionId); // Final filter for safety
+      
+      baseResult.questionResults = questionResults;
+    }
+
+    // Generate questions array if missing but we have questionResults
+    if ((!baseResult.questions || baseResult.questions.length === 0) && 
+        baseResult.questionResults && baseResult.questionResults.length > 0) {
+      
+      // Create minimal question objects from questionResults if needed
+      baseResult.questions = baseResult.questionResults.map((qr: any, idx: number) => ({
+        id: qr.questionId,
+        text: `Question ${idx + 1}`,
+        answer: qr.correctAnswer || "Answer unavailable"
+      }));
+    }
+    
+    return baseResult;
+  }, [result]);
+
   // Memoize calculations to avoid recalculating on every render
-  const {
-    correctQuestions,
-    incorrectQuestions,
-    correctCount,
-    incorrectCount,
-    totalCount,
-    skippedCount,
-    percentageCorrect,
-    slug
-  } = useMemo(() => {
-    if (!finalResult) {
+  const calculatedData = useMemo(() => {
+    if (!processedResult) {
       return {
         correctQuestions: [],
         incorrectQuestions: [],
@@ -66,14 +106,48 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
       };
     }
     
-    const correctQuestions = finalResult.questionResults?.filter(q => q.isCorrect) || [];
-    const incorrectQuestions = finalResult.questionResults?.filter(q => !q.isCorrect) || [];
+    // Safely handle the data
+    const questionResults = Array.isArray(processedResult.questionResults) 
+      ? processedResult.questionResults 
+      : [];
+    
+    // Safety checks
+    const processedResults = questionResults
+      .filter(q => q && q.questionId) // Filter out null/undefined entries
+      .map(q => ({
+        ...q,
+        isCorrect: Boolean(q.isCorrect),
+        userAnswer: q.userAnswer || q.selectedOptionId || 'Not answered'
+      }));
+    
+    const correctQuestions = processedResults.filter(q => q.isCorrect);
+    const incorrectQuestions = processedResults.filter(q => !q.isCorrect && q.userAnswer && q.userAnswer !== 'Not answered');
     const correctCount = correctQuestions.length;
     const incorrectCount = incorrectQuestions.length;
-    const totalCount = finalResult.maxScore || questions.length;
-    const skippedCount = totalCount - (correctCount + incorrectCount);
-    const percentageCorrect = finalResult.percentage || Math.round((correctCount / totalCount) * 100);
-    const slug = finalResult.slug || finalResult.quizId || '';
+    
+    // Safely determine total count
+    let totalCount = 0;
+    if (typeof processedResult.maxScore === 'number' && !isNaN(processedResult.maxScore)) {
+      totalCount = processedResult.maxScore;
+    } else if (Array.isArray(processedResult.questions)) {
+      totalCount = processedResult.questions.length;
+    } else if (Array.isArray(processedResult.questionResults)) {
+      totalCount = processedResult.questionResults.length;
+    } else {
+      totalCount = correctCount + incorrectCount || 1;  // Ensure non-zero
+    }
+    
+    const skippedCount = Math.max(0, totalCount - (correctCount + incorrectCount));
+    
+    // Calculate percentage safely
+    let percentageCorrect = 0;
+    if (totalCount > 0) {
+      percentageCorrect = Math.round((correctCount / totalCount) * 100);
+    } else if (typeof processedResult.percentage === 'number' && !isNaN(processedResult.percentage)) {
+      percentageCorrect = processedResult.percentage;
+    }
+    
+    const slug = processedResult.slug || processedResult.quizId || '';
     
     return {
       correctQuestions,
@@ -85,13 +159,25 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
       percentageCorrect,
       slug
     };
-  }, [finalResult, questions.length]);
+  }, [processedResult]);
+  
+  // Destructure the calculated data
+  const {
+    correctQuestions,
+    incorrectQuestions,
+    correctCount,
+    incorrectCount,
+    totalCount,
+    skippedCount,
+    percentageCorrect,
+    slug
+  } = calculatedData;
   
   // Generation functions for the score messages
   const getScoreMessage = () => {
-    if (percentageCorrect >= 90) return "Outstanding! You've mastered these coding concepts.";
-    if (percentageCorrect >= 80) return "Excellent work! You have strong coding knowledge.";
-    if (percentageCorrect >= 70) return "Great job! Your coding skills are solid.";
+    if (percentageCorrect >= 90) return `Outstanding! You've mastered these ${quizType === "code" ? "coding" : ""} concepts.`;
+    if (percentageCorrect >= 80) return `Excellent work! You have strong ${quizType === "code" ? "coding" : ""} knowledge.`;
+    if (percentageCorrect >= 70) return `Great job! Your ${quizType === "code" ? "coding" : ""} skills are solid.`;
     if (percentageCorrect >= 60) return "Good effort! Keep practicing to strengthen your skills.";
     if (percentageCorrect >= 50) return "You're making progress. More practice will help.";
     return "Keep learning! Review the concepts and try again.";
@@ -107,10 +193,10 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
   
   // Expand all questions
   const expandAllQuestions = () => {
-    if (!finalResult?.questionResults) return;
+    if (!processedResult?.questionResults) return;
     
     const expandedState: Record<string, boolean> = {};
-    finalResult.questionResults.forEach(q => {
+    processedResult.questionResults.forEach(q => {
       if (q.questionId) {
         expandedState[q.questionId] = true;
       }
@@ -125,13 +211,13 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
 
   // Handle sharing results
   const handleShare = async () => {
-    if (!finalResult) return;
+    if (!processedResult) return;
     
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${finalResult.title} - Quiz Results`,
-          text: `I scored ${percentageCorrect}% on the ${finalResult.title} quiz!`,
+          title: `${processedResult.title} - Quiz Results`,
+          text: `I scored ${percentageCorrect}% on the ${processedResult.title} quiz!`,
           url: window.location.href
         });
       } else if (navigator.clipboard) {
@@ -151,25 +237,52 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
     if (onRetake) {
       onRetake();
     } else if (slug) {
-      router.push(`/dashboard/code/${slug}?reset=true`);
+      router.push(`/dashboard/${quizType}/${slug}?reset=true`);
     }
   };
 
-  // Error state when results can't be loaded
-  if (!finalResult) {
+  // More flexible validation for showing results vs error states
+  const hasMinimalResultData = processedResult && 
+    (processedResult.questionResults?.length > 0 || 
+     processedResult.questions?.length > 0 ||
+     Object.keys(processedResult).length > 3);  // Has at least some data beyond minimal fields
+
+  // Better error state when results can't be loaded
+  if (!processedResult) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-bold mb-2">Error Loading Results</h2>
+        <AlertCircle className="h-12 w-12 text-warning mb-4" />
+        <h2 className="text-xl font-bold mb-2">Quiz Results Not Available</h2>
         <p className="text-muted-foreground mb-6">
-          We couldn't load your quiz results properly. Some data might be missing.
+          We couldn't load your quiz results. You may need to take the quiz first.
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={() => router.push(`/dashboard/${quizType}/${slug || ''}`)}>
+            Take the Quiz
+          </Button>
+          <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
+            Browse Quizzes
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle incomplete results data - only show this when truly incomplete
+  if (!hasMinimalResultData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+        <AlertCircle className="h-12 w-12 text-warning mb-4" />
+        <h2 className="text-xl font-bold mb-2">Incomplete Results</h2>
+        <p className="text-muted-foreground mb-6">
+          Some information about your quiz results is missing. You might need to retake the quiz.
         </p>
         <div className="flex gap-3">
           <Button onClick={handleRetake}>
-            Retake Quiz
+            <RefreshCw className="w-4 h-4 mr-1" /> Retake Quiz
           </Button>
           <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
-            Back to Quizzes
+            Browse Quizzes
           </Button>
         </div>
       </div>
@@ -182,15 +295,15 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
       <Card className="border shadow-sm overflow-hidden bg-gradient-to-br from-card to-card/80">
         <CardHeader className="bg-primary/5 border-b border-border/40">
           <CardTitle className="flex justify-between items-center">
-            <span className="text-2xl font-bold">{finalResult.title || quizTitle || "Quiz Results"}</span>
+            <span className="text-2xl font-bold">{processedResult.title || "Quiz Results"}</span>
             <Badge variant={percentageCorrect >= 70 ? "success" : percentageCorrect >= 50 ? "warning" : "destructive"} className="text-base px-3 py-1">
               {percentageCorrect}% Score
             </Badge>
           </CardTitle>
           <CardDescription>
-            {finalResult.completedAt && (
+            {processedResult.completedAt && (
               <>
-                Completed on {new Date(finalResult.completedAt).toLocaleDateString()} at {new Date(finalResult.completedAt).toLocaleTimeString()}
+                Completed on {new Date(processedResult.completedAt).toLocaleDateString()} at {new Date(processedResult.completedAt).toLocaleTimeString()}
               </>
             )}
           </CardDescription>
@@ -273,8 +386,8 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
         </CardFooter>
       </Card>
       
-      {/* Question review section */}
-      {finalResult.questionResults && finalResult.questionResults.length > 0 && (
+      {/* Question review section - only show if we have question results */}
+      {processedResult.questionResults && processedResult.questionResults.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Question Review</h2>
@@ -289,19 +402,32 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
           </div>
           
           <div className="space-y-4">
-            {finalResult.questionResults.map((questionResult, index) => {
+            {processedResult.questionResults.map((questionResult, index) => {
               if (!questionResult.questionId) return null;
               
-              // Find the corresponding question data
-              const questionData = finalResult.questions?.find(q => q.id?.toString() === questionResult.questionId?.toString()) || 
-                                  questions.find(q => q.id?.toString() === questionResult.questionId?.toString());
-              
-              if (!questionData) return null;
+              // Find the corresponding question data - much more flexible now
+              const questionData = processedResult.questions?.find(q => 
+                q.id?.toString() === questionResult.questionId?.toString()
+              ) || {
+                id: questionResult.questionId,
+                text: `Question ${index + 1}`,
+                answer: "Answer unavailable"
+              };
               
               const isExpanded = expandedQuestions[questionResult.questionId];
               const questionText = questionData.text || questionData.question || `Question ${index + 1}`;
-              const userAnswer = questionResult.userAnswer || 'Not answered';
-              const correctAnswer = questionData.correctOptionId || questionData.correctAnswer || questionData.answer || 'Answer unavailable';
+              const userAnswer = questionResult.userAnswer || questionResult.selectedOptionId || 'Not answered';
+              
+              // Determine the correct answer based on quiz type
+              let correctAnswer = '';
+              if (quizType === "mcq") {
+                const correctOption = questionData.options?.find((o: any) => o === questionData.answer);
+                correctAnswer = correctOption || questionData.answer || 'Answer unavailable';
+              } else {
+                correctAnswer = questionData.answer || 'Answer unavailable';
+              }
+              
+              const isCorrect = questionResult.isCorrect;
               
               return (
                 <Collapsible 
@@ -309,7 +435,7 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                   open={isExpanded}
                   onOpenChange={() => toggleQuestion(questionResult.questionId)}
                   className={`border rounded-lg overflow-hidden ${
-                    questionResult.isCorrect 
+                    isCorrect 
                       ? 'border-success/30 bg-success/5' 
                       : 'border-destructive/30 bg-destructive/5'
                   }`}
@@ -317,9 +443,9 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`rounded-full p-1 ${
-                        questionResult.isCorrect ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
+                        isCorrect ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
                       }`}>
-                        {questionResult.isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                        {isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
                       </div>
                       <div>
                         <h3 className="font-medium">Question {index + 1}</h3>
@@ -339,24 +465,48 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                       <div className="p-4 bg-card rounded-md">
                         <h4 className="font-medium mb-2">{questionText}</h4>
                         {questionData.codeSnippet && (
-                          <div className="my-3 rounded-md overflow-hidden bg-slate-900 text-slate-50 p-4 font-mono text-sm">
-                            <pre>{questionData.codeSnippet}</pre>
+                          <div className="my-3 rounded-md overflow-hidden">
+                            <SyntaxHighlighter
+                              language={questionData.language || "javascript"}
+                              style={vscDarkPlus}
+                              showLineNumbers
+                            >
+                              {questionData.codeSnippet}
+                            </SyntaxHighlighter>
+                          </div>
+                        )}
+                        
+                        {quizType === "mcq" && questionData.options && (
+                          <div className="mt-3 space-y-2">
+                            <p className="font-medium">Options:</p>
+                            <div className="space-y-1 pl-4">
+                              {questionData.options.map((option: any, idx: number) => (
+                                <div key={idx} className={`flex gap-2 items-center p-2 rounded-md ${
+                                  option === questionData.answer ? 'bg-success/10' : 
+                                  option === questionResult.selectedOptionId && !isCorrect ? 'bg-destructive/10' : ''
+                                }`}>
+                                  {option === questionData.answer && <Check className="w-4 h-4 text-success" />}
+                                  {option === questionResult.selectedOptionId && !isCorrect && <X className="w-4 h-4 text-destructive" />}
+                                  <span>{option}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
                       
                       <div className="grid gap-2">
                         <div className={`p-3 rounded-md ${
-                          questionResult.isCorrect ? 'bg-success/10 border border-success/30' : 'bg-muted border border-muted-foreground/20'
+                          isCorrect ? 'bg-success/10 border border-success/30' : 'bg-muted border border-muted-foreground/20'
                         }`}>
                           <div className="flex items-center gap-2">
-                            {questionResult.isCorrect && <Check className="w-4 h-4 text-success" />}
+                            {isCorrect && <Check className="w-4 h-4 text-success" />}
                             <span className="font-medium">Your answer:</span>
                           </div>
                           <p className="mt-1">{userAnswer}</p>
                         </div>
                         
-                        {!questionResult.isCorrect && (
+                        {!isCorrect && (
                           <div className="p-3 rounded-md bg-success/10 border border-success/30">
                             <div className="flex items-center gap-2">
                               <Check className="w-4 h-4 text-success" />

@@ -132,7 +132,8 @@ function setCacheHeaders(response: NextResponse) {
   return response
 }
 async function protectAuthenticatedRoutes(req: NextRequest) {
-  const protectedPaths = ["/code", "/blanks", "/mcq", "/course"]
+  // Allow access to quiz routes - remove them from the protected paths
+  const protectedPaths = ["/course"]  // Removed "/code", "/blanks", "/mcq"
   const isProtected = protectedPaths.some((path) => req.nextUrl.pathname.startsWith(path))
 
   if (!isProtected) return null

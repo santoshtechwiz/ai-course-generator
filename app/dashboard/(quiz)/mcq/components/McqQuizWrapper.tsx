@@ -1,9 +1,9 @@
-'use client'
+"use client"
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useDispatch, useSelector } from 'react-redux'
-import type { AppDispatch } from '@/store'
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch } from "@/store"
 import {
   selectQuestions,
   selectAnswers,
@@ -19,12 +19,17 @@ import {
   submitQuiz,
   setQuizResults,
   setPendingQuiz,
-} from '@/store/slices/quizSlice'
-import { selectIsAuthenticated } from '@/store/slices/authSlice'
+} from "@/store/slices/quizSlice"
+import { selectIsAuthenticated } from "@/store/slices/authSlice"
+import { useSessionService } from "@/hooks/useSessionService"
 
-import { Button } from '@/components/ui/button'
-import McqQuiz from './McqQuiz'
-import { QuizLoadingSteps } from '../../components/QuizLoadingSteps'
+import { Button } from "@/components/ui/button"
+import McqQuiz from "./McqQuiz"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { QuizType } from "@/types/quiz"
 
 interface McqQuizWrapperProps {
   slug: string
@@ -37,7 +42,9 @@ interface McqQuizWrapperProps {
 export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
+  const { saveAuthRedirectState } = useSessionService()
 
+  // Redux selectors
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
   const quizStatus = useSelector(selectQuizStatus)
@@ -48,46 +55,62 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const isQuizComplete = useSelector(selectIsQuizComplete)
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
-  const feedbackTimeout = useRef<NodeJS.Timeout | null>(null)
-  const [showFeedback, setShowFeedback] = useState(false)
-  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | null>(null)
+  // Generate a unique session ID for this quiz attempt if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && typeof window !== 'undefined') {
+      const sessionKey = `mcq_session_${slug}`
+      if (!sessionStorage.getItem(sessionKey)) {
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+        sessionStorage.setItem(sessionKey, sessionId)
+      }
+    }
+  }, [slug, isAuthenticated])
 
   // Load quiz data on mount
   useEffect(() => {
-    if (quizStatus === 'idle') {
-      if (quizData && quizData.questions && quizData.questions.length > 0) {
-        dispatch(fetchQuiz({
-          slug: slug, // Use slug consistently
-          data: {
-            slug: slug, // Use slug consistently
-            title: quizData.title || 'MCQ Quiz',
-            questions: quizData.questions || [],
-            type: 'mcq',
-          },
-          type: 'mcq',
-        }))
-      } else {
-        dispatch(fetchQuiz({ slug, type: 'mcq' })) // Use slug instead of id
-      }
+    if (quizStatus === "idle") {
+      const quizPayload = quizData?.questions?.length
+        ? {
+            slug,
+            data: {
+              slug,
+              title: quizData.title || "MCQ Quiz",
+              questions: quizData.questions,
+              type: "mcq" as QuizType,
+            },
+            type: "mcq" as QuizType,
+          }
+        : { slug, type: "mcq" as QuizType }
+
+      dispatch(fetchQuiz(quizPayload))
     }
   }, [quizStatus, dispatch, slug, quizData])
 
-  // Handle quiz completion
+  // Handle quiz completion - only when explicitly triggered
   useEffect(() => {
-    if (!isQuizComplete) return;
+    if (!isQuizComplete) return
+
+    const safeSlug = typeof slug === "string" ? slug : String(slug)
 
     if (isAuthenticated) {
-      dispatch(submitQuiz()).then((res: any) => {
-        if (res?.payload) {
-          dispatch(setQuizResults(res.payload))
-          const safeSlug = typeof slug === 'string' ? slug : String(slug);
+      dispatch(submitQuiz())
+        .then((res: any) => {
+          if (res?.payload) {
+            dispatch(setQuizResults(res.payload))
+            router.push(`/dashboard/mcq/${safeSlug}/results`)
+          } else {
+            // Generate results through the selector and redirect
+            router.push(`/dashboard/mcq/${safeSlug}/results`)
+          }
+        })
+        .catch((error) => {
+          console.error("Error submitting quiz:", error)
+          // Still redirect to results - we can use generated results
           router.push(`/dashboard/mcq/${safeSlug}/results`)
-        }
-      }).catch((error) => {
-        console.error("Error submitting quiz:", error);
-      })
+        })
     } else {
-      dispatch(setPendingQuiz({
+      // For unauthenticated users, redirect to sign in
+      const pendingQuizData = {
         slug,
         quizData: {
           title: quizTitle,
@@ -99,64 +122,81 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           isCompleted: true,
           showResults: true,
         },
-      }))
-      const safeSlug = typeof slug === 'string' ? slug : String(slug);
+      }
+
+      dispatch(setPendingQuiz(pendingQuizData))
+      
+      // Save auth redirect state
+      saveAuthRedirectState({
+        returnPath: `/dashboard/mcq/${safeSlug}/results`,
+        quizState: {
+          slug,
+          quizData: {
+            title: quizTitle,
+            questions,
+          },
+          currentState: {
+            answers,
+            isCompleted: true,
+            showResults: true,
+          },
+        },
+      })
+      
       router.push(`/dashboard/mcq/${safeSlug}/results`)
     }
-  }, [isQuizComplete, isAuthenticated, dispatch, router, slug, quizTitle, questions, answers, currentQuestionIndex])
+  }, [isQuizComplete, isAuthenticated, dispatch, router, slug, quizTitle, questions, answers, currentQuestionIndex, saveAuthRedirectState])
 
-  const handleAnswerQuestion = (selectedOption: string) => {
-    if (!currentQuestion || answers[currentQuestion.id]?.selectedOptionId) return;
+  const handleAnswerQuestion = (selectedOptionId: string) => {
+    if (!currentQuestion) return
 
-    const isCorrect = selectedOption === currentQuestion.correctOptionId;
-
-    dispatch(saveAnswer({
-      questionId: currentQuestion.id,
-      answer: {
+    dispatch(
+      saveAnswer({
         questionId: currentQuestion.id,
-        selectedOptionId: selectedOption,
-        timestamp: Date.now(),
-        type: 'mcq',
-        isCorrect,
-      },
-    }))
-
-    setShowFeedback(true)
-    setFeedbackType(isCorrect ? 'correct' : 'incorrect')
-
-    if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current)
-    feedbackTimeout.current = setTimeout(() => {
-      setShowFeedback(false)
-      setFeedbackType(null)
-      if (currentQuestionIndex < questions.length - 1) {
-        dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-      }
-    }, 900)
+        answer: {
+          questionId: currentQuestion.id,
+          selectedOptionId,
+          isCorrect: selectedOptionId === currentQuestion.correctOptionId,
+          type: "mcq",
+        },
+      })
+    )
   }
 
-  const handleNextQuestion = () => {
+  const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }
 
-  // === RENDER STATES ===
-
-  if (quizStatus === 'loading') {
-    return <QuizLoadingSteps steps={[{ label: 'Loading quiz data', status: 'loading' }]} />
+  const handleFinish = () => {
+    dispatch({ type: "quiz/setQuizCompleted" })
   }
 
-  if (quizStatus === 'failed') {
+  const answeredQuestions = Object.keys(answers).length
+  const progressPercentage = (answeredQuestions / questions.length) * 100
+
+  if (quizStatus === "loading") {
+    return <QuizLoadingSteps steps={[{ label: "Loading quiz data", status: "loading" }]} />
+  }
+
+  if (quizStatus === "failed") {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-xl font-bold mb-4">Quiz Not Found</h2>
-        <p className="text-muted-foreground mb-6">{error || 'Unable to load quiz data.'}</p>
-        <div className="space-x-4">
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Try Again
-          </Button>
-          <Button onClick={() => router.push('/dashboard/quizzes')}>Back to Quizzes</Button>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">Quiz Not Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-6">{error || "Unable to load quiz data."}</p>
+            <div className="space-x-4">
+              <Button onClick={() => window.location.reload()}>Try Again</Button>
+              <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
+                Back to Quizzes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -164,70 +204,142 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   if (!Array.isArray(questions) || questions.length === 0) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-xl font-bold mb-4">No Questions Available</h2>
-        <p className="text-muted-foreground mb-6">This quiz has no questions.</p>
-        <Button onClick={() => router.push('/dashboard/quizzes')}>Back to Quizzes</Button>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">No Questions Available</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-6">This quiz has no questions.</p>
+            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   if (!currentQuestion) {
-    return <QuizLoadingSteps steps={[{ label: 'Initializing quiz', status: 'loading' }]} />
+    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
   }
 
   const currentAnswer = answers[currentQuestion.id]
   const existingAnswer = currentAnswer?.selectedOptionId
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{quizTitle || 'Multiple Choice Quiz'}</h1>
-        <p className="text-muted-foreground">Select an answer and click Next to continue</p>
-      </div>
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium">
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}% complete
-          </span>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Quiz Header */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-2xl font-bold">{quizTitle || "MCQ Quiz"}</CardTitle>
+                  <p className="text-muted-foreground mt-1">
+                    {answeredQuestions} of {questions.length} questions answered
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-sm font-medium">
+                      {answeredQuestions}/{questions.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <Progress value={progressPercentage} className="h-2" />
+              </div>
+            </CardHeader>
+          </Card>
         </div>
-        <div className="bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-primary h-2 rounded-full transition-all duration-300 ease-in-out"
-            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-          />
+
+        {/* Question Navigation */}
+        <div className="mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <Button
+                  variant="outline"
+                  onClick={() => dispatch(setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1)))}
+                  disabled={currentQuestionIndex === 0}
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+                </Button>
+
+                <div className="flex gap-2">
+                  {questions.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => dispatch(setCurrentQuestionIndex(index))}
+                      className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                        index === currentQuestionIndex
+                          ? "bg-primary text-primary-foreground"
+                          : answers[questions[index].id]
+                            ? "bg-green-500 text-white"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    dispatch(setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1)))
+                  }
+                  disabled={currentQuestionIndex === questions.length - 1}
+                >
+                  Next <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
-      <div className="mb-8">
+
+        {/* Current Question */}
         <McqQuiz
           question={currentQuestion}
           onAnswer={handleAnswerQuestion}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={questions.length}
-          isSubmitting={quizStatus === 'submitting'}
+          isSubmitting={quizStatus === "submitting"}
           existingAnswer={existingAnswer}
-          feedbackType={showFeedback ? feedbackType : null}
+          onNext={handleNext}
+          onFinish={handleFinish}
+          showNavigation={false} // We handle navigation separately
         />
-      </div>
-      <div className="flex justify-end">
-        <Button
-          onClick={handleNextQuestion}
-          disabled={
-            quizStatus === 'submitting' ||
-            !answers[currentQuestion.id]?.selectedOptionId ||
-            showFeedback
-          }
-          className="min-w-[120px]"
-        >
-          {currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
-        </Button>
-      </div>
-      <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          {Object.keys(answers).length} of {questions.length} questions answered
-        </p>
+
+        {/* Bottom Navigation */}
+        <div className="mt-8">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </div>
+
+                <div className="flex gap-3">
+                  {currentQuestionIndex < questions.length - 1 ? (
+                    <Button onClick={handleNext} disabled={!existingAnswer || quizStatus === "submitting"}>
+                      Next Question <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleFinish}
+                      disabled={answeredQuestions < questions.length || quizStatus === "submitting"}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {quizStatus === "submitting" ? "Submitting..." : "Finish Quiz"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

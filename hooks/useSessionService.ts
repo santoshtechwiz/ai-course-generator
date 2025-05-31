@@ -1,131 +1,124 @@
-'use client'
+"use client"
 
-import { useCallback } from 'react'
-import { useDispatch } from 'react-redux'
-import type { AppDispatch } from '@/store'
-import { rehydrateQuiz, resetPendingQuiz, setPendingQuiz } from '@/store/slices/quizSlice'
+import { useCallback } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch } from "@/store"
+import { 
+  hydrateQuiz,
+  resetPendingQuiz, 
+  setPendingQuiz,
+  setQuizResults
+} from "@/store/slices/quizSlice"
+import { selectPendingQuiz } from "@/store/slices/quizSlice"
+
+export type QuizState = {
+  slug: string
+  quizData?: any
+  currentState?: {
+    answers?: Record<string, any>
+    results?: any
+    showResults?: boolean
+    [key: string]: any
+  }
+}
 
 export type AuthRedirectState = {
   returnPath: string
-  quizState: {
-    slug: string
-    quizData?: any
-    currentState?: Record<string, any>
-    showResults?: boolean
-  }
+  quizState: QuizState
 }
 
 export function useSessionService() {
   const dispatch = useDispatch<AppDispatch>()
+  
+  // Get pending quiz from Redux state
+  const pendingQuiz = useSelector(selectPendingQuiz)
 
-  const saveAuthRedirectState = useCallback((state: AuthRedirectState) => {
-    const { slug, quizData = null, currentState = {}, showResults = false } = state.quizState
-    
-    // Check if we have quiz results in Redux that should be preserved
-    let quizResults = null;
-    if (typeof window !== 'undefined' && showResults) {
+  const saveAuthRedirectState = useCallback(
+    (state: AuthRedirectState) => {
       try {
-        // Try to get results from session storage first
-        const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
-        if (storedResults) {
-          quizResults = JSON.parse(storedResults);
+        const { returnPath } = state
+        const quizState = state.quizState || {}
+        const { slug = "", quizData = null, currentState = {} } = quizState
+
+        // Validate required data
+        if (!slug || typeof slug !== "string") {
+          console.warn("saveAuthRedirectState: Invalid slug provided")
+          return
         }
-      } catch (e) {
-        console.warn('Failed to retrieve stored quiz results:', e);
-      }
-    }
 
-    // Dispatch to Redux
-    dispatch(setPendingQuiz({
-      slug,
-      quizData,
-      currentState: {
-        ...currentState,
-        showResults,
-        results: quizResults // Include results when redirecting for authentication
-      }
-    }))
-
-    // Store in sessionStorage if in browser
-    if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
-      try {
-        sessionStorage.setItem('pendingQuiz', JSON.stringify({
+        // Create a pendingQuiz with proper structure
+        const pendingQuizData = {
           slug,
           quizData,
           currentState: {
             ...currentState,
-            showResults,
-            results: quizResults // Include results in sessionStorage too
-          }
-        }))
-        sessionStorage.setItem('authRedirectPath', state.returnPath)
-      } catch (error) {
-        console.warn('Failed to save auth redirect state to sessionStorage:', error)
-      }
-    }
-  }, [dispatch])
-
-  const handleSignInWithState = useCallback((slug: string, showResults: boolean = false) => {
-    // Attempt to retrieve existing quiz data from session storage
-    let existingData = null;
-    let existingAnswers = null;
-    
-    if (typeof window !== 'undefined') {
-      try {
-        const storedQuiz = sessionStorage.getItem('pendingQuiz');
-        if (storedQuiz) {
-          const parsed = JSON.parse(storedQuiz);
-          existingData = parsed.quizData;
-          
-          // Also try to get answers if available
-          if (parsed.currentState?.answers) {
-            existingAnswers = parsed.currentState.answers;
-          }
+            showResults: currentState.showResults || false,
+            // Store results if available
+            results: currentState.results || null,
+            // Store answers if available
+            answers: currentState.answers || {},
+          },
         }
-      } catch (e) {
-        console.warn('Failed to retrieve existing quiz data:', e);
+
+        // Save to Redux store
+        dispatch(setPendingQuiz(pendingQuizData))
+
+        // For results pages, explicitly save the results to ensure they're available immediately
+        if (currentState.showResults && currentState.results) {
+          dispatch(setQuizResults(currentState.results))
+        }
+
+        // Save redirect URL for NextAuth to use
+        if (typeof window !== "undefined") {
+          // Store the callback URL to ensure proper redirection after sign-in
+          sessionStorage.setItem("callbackUrl", returnPath)
+        }
+      } catch (error) {
+        console.error("Failed to save auth redirect state:", error)
       }
-    }
+    },
+    [dispatch],
+  )
 
-    dispatch(setPendingQuiz({
-      slug,
-      quizData: existingData, // Use existing data if available instead of null
-      currentState: {
-        showResults,
-        // Also include answers if available to properly compute results
-        answers: existingAnswers || {}
-      }
-    }))
-
-    // Return a safe callback URL
-    return `/dashboard/mcq/${slug}${showResults ? '/results' : ''}`
-  }, [dispatch])
-
-  // Restore from sessionStorage and dispatch to Redux if applicable
   const restoreAuthRedirectState = useCallback(() => {
-    if (typeof window === 'undefined') return null
-
     try {
-      const state = sessionStorage.getItem('pendingQuiz')
-      if (state) {
-        const parsed = JSON.parse(state)
-        dispatch(rehydrateQuiz(parsed))
-        dispatch(resetPendingQuiz())
-        sessionStorage.removeItem('pendingQuiz') // Clear session storage after restoring
-        sessionStorage.removeItem('authRedirectPath') // Clear redirect path
-        return parsed
+      // Get from Redux state
+      if (pendingQuiz?.slug) {
+        console.log("Restoring auth redirect state:", pendingQuiz)
+        
+        // Apply the stored quiz state
+        dispatch(hydrateQuiz(pendingQuiz))
+        
+        // Explicitly set results if they were stored
+        if (pendingQuiz.currentState?.results && pendingQuiz.currentState.showResults) {
+          console.log("Setting quiz results from pendingQuiz:", pendingQuiz.currentState.results)
+          dispatch(setQuizResults(pendingQuiz.currentState.results))
+        }
+        
+        return pendingQuiz
       }
+      
+      return null
     } catch (e) {
-      console.warn('Failed to restore redirect state:', e)
+      console.error("Failed to restore redirect state:", e)
+      return null
     }
+  }, [dispatch, pendingQuiz])
 
-    return null
+  const clearAuthState = useCallback(() => {
+    try {
+      dispatch(resetPendingQuiz())
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("callbackUrl")
+      }
+    } catch (error) {
+      console.warn("Failed to clear auth state:", error)
+    }
   }, [dispatch])
 
   return {
     saveAuthRedirectState,
-    handleSignInWithState,
     restoreAuthRedirectState,
+    clearAuthState,
   }
-
 }

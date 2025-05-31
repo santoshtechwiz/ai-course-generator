@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   selectQuestions,
   selectCurrentQuestionIndex,
@@ -10,119 +10,119 @@ import {
   selectCurrentQuestion,
   setCurrentQuestionIndex,
   submitQuiz,
-} from "@/store/slices/quizSlice";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Lightbulb,
-  PenTool,
-  CheckCircle2,
-  Clock,
-  BookOpen,
-} from "lucide-react";
+} from "@/store/slices/quizSlice"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
+import { Progress } from "@/components/ui/progress"
+import { ChevronLeft, ChevronRight, Lightbulb, PenTool, CheckCircle2, Clock, BookOpen } from "lucide-react"
 
 interface OpenEndedQuizProps {
-  onAnswer?: (answer: string, elapsedTime: number, hintsUsed: boolean) => void;
+  onAnswer?: (answer: string, elapsedTime: number, hintsUsed: boolean) => void
 }
 
 interface OpenEndedQuizQuestion {
-  id: string;
-  question: string;
-  hints?: string[];
+  id: string
+  question: string
+  hints?: string[]
 }
 
 export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch()
 
-  const questions = useSelector(selectQuestions);
-  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex);
-  const answers = useSelector(selectAnswers);
-  const currentQuestion = useSelector(selectCurrentQuestion) as OpenEndedQuizQuestion;
+  const questions = useSelector(selectQuestions)
+  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
+  const answers = useSelector(selectAnswers)
+  const currentQuestion = useSelector(selectCurrentQuestion) as OpenEndedQuizQuestion
 
-  const [answer, setAnswer] = useState("");
-  const [startTime, setStartTime] = useState(Date.now());
-  const [hintsUsed, setHintsUsed] = useState(false);
-  const [showHints, setShowHints] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasAnswered, setHasAnswered] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
-  const [isFocused, setIsFocused] = useState(false);
+  const [answer, setAnswer] = useState("")
+  const [startTime, setStartTime] = useState(Date.now())
+  const [hintsUsed, setHintsUsed] = useState(false)
+  const [showHints, setShowHints] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasAnswered, setHasAnswered] = useState(false)
+  const [wordCount, setWordCount] = useState(0)
+  const [isFocused, setIsFocused] = useState(false)
 
   useEffect(() => {
     if (currentQuestion?.id && answers[currentQuestion.id]?.text) {
-      const existingAnswer = answers[currentQuestion.id].text || "";
-      setAnswer(existingAnswer);
-      setHasAnswered(true);
-      setWordCount(existingAnswer.trim().split(/\s+/).filter(word => word.length > 0).length);
+      const existingAnswer = answers[currentQuestion.id].text || ""
+      setAnswer(existingAnswer)
+      setHasAnswered(true)
+      setWordCount(
+        existingAnswer
+          .trim()
+          .split(/\s+/)
+          .filter((word) => word.length > 0).length,
+      )
     } else {
-      setAnswer("");
-      setHasAnswered(false);
-      setWordCount(0);
+      setAnswer("")
+      setHasAnswered(false)
+      setWordCount(0)
     }
-    setShowHints(false);
-    setHintsUsed(false);
-    setStartTime(Date.now());
-  }, [currentQuestion, answers]);
+    setShowHints(false)
+    setHintsUsed(false)
+    setStartTime(Date.now())
+  }, [currentQuestion, answers])
 
   const handleAnswerChange = useCallback((value: string) => {
-    setAnswer(value);
-    const words = value.trim().split(/\s+/).filter(word => word.length > 0);
-    setWordCount(words.length);
-  }, []);
+    setAnswer(value)
+    const words = value
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0)
+    setWordCount(words.length)
+  }, [])
 
   const handleShowHints = useCallback(() => {
-    setShowHints(true);
-    setHintsUsed(true);
-  }, []);
+    setShowHints(true)
+    setHintsUsed(true)
+  }, [])
 
   const handlePrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1));
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
-  }, [currentQuestionIndex, dispatch]);
+  }, [currentQuestionIndex, dispatch])
 
   const handleNext = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1));
+      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
-  }, [currentQuestionIndex, questions.length, dispatch]);
+  }, [currentQuestionIndex, questions.length, dispatch])
 
   const handleSubmit = useCallback(() => {
-    if (!currentQuestion || !answer.trim() || isSubmitting) return;
+    if (!currentQuestion || !answer.trim() || isSubmitting) return
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
-    const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    const elapsedTime = Math.floor((Date.now() - startTime) / 1000)
 
     if (onAnswer) {
-      onAnswer(answer, elapsedTime, hintsUsed);
+      onAnswer(answer, elapsedTime, hintsUsed)
     }
 
-    setHasAnswered(true);
-    setIsSubmitting(false);
-  }, [currentQuestion, answer, startTime, hintsUsed, onAnswer, isSubmitting]);
+    setHasAnswered(true)
+    setIsSubmitting(false)
+  }, [currentQuestion, answer, startTime, hintsUsed, onAnswer, isSubmitting])
 
   const handleFinishQuiz = useCallback(() => {
-    if (isSubmitting) return;
+    if (isSubmitting) return
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
     if (currentQuestion && answer.trim()) {
-      const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+      const elapsedTime = Math.floor((Date.now() - startTime) / 1000)
       if (onAnswer) {
-        onAnswer(answer, elapsedTime, hintsUsed);
+        onAnswer(answer, elapsedTime, hintsUsed)
       }
     }
 
-    dispatch(submitQuiz());
-    setIsSubmitting(false);
-  }, [answer, currentQuestion, dispatch, hintsUsed, isSubmitting, onAnswer, startTime]);
+    dispatch(submitQuiz())
+    setIsSubmitting(false)
+  }, [answer, currentQuestion, dispatch, hintsUsed, isSubmitting, onAnswer, startTime])
 
-  const progressPercentage = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
+  const progressPercentage = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0
 
   if (!currentQuestion || questions.length === 0) {
     return (
@@ -139,7 +139,7 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -161,18 +161,12 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
                     <PenTool className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-foreground">
-                      Question {currentQuestionIndex + 1}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      of {questions.length} questions
-                    </p>
+                    <h2 className="text-xl font-bold text-foreground">Question {currentQuestionIndex + 1}</h2>
+                    <p className="text-sm text-muted-foreground">of {questions.length} questions</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">
-                    {Math.round(progressPercentage)}%
-                  </div>
+                  <div className="text-2xl font-bold text-primary">{Math.round(progressPercentage)}%</div>
                   <p className="text-xs text-muted-foreground">Complete</p>
                 </div>
               </div>
@@ -188,8 +182,8 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
                           i === currentQuestionIndex
                             ? "bg-primary scale-125"
                             : i < currentQuestionIndex
-                            ? "bg-green-500"
-                            : "bg-muted"
+                              ? "bg-green-500"
+                              : "bg-muted"
                         }`}
                         initial={{ scale: 0.8 }}
                         animate={{ scale: i === currentQuestionIndex ? 1.25 : 1 }}
@@ -210,9 +204,7 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary/5 rounded-full border border-primary/20"
               >
                 <Clock className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">
-                  Write your detailed answer
-                </span>
+                <span className="text-sm font-medium text-primary">Write your detailed answer</span>
               </motion.div>
             </div>
 
@@ -286,8 +278,8 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
                   isFocused
                     ? "border-primary shadow-lg shadow-primary/10 bg-primary/5"
                     : hasAnswered
-                    ? "border-green-500 bg-green-50 dark:bg-green-900/10"
-                    : "border-border hover:border-primary/50"
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/10"
+                      : "border-border hover:border-primary/50"
                 } focus:ring-2 focus:ring-primary/20`}
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded">
@@ -308,26 +300,51 @@ export function OpenEndedQuiz({ onAnswer }: OpenEndedQuizProps) {
             </div>
 
             {/* Footer Actions */}
-            <div className="flex justify-between items-center pt-4">
-              <Button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
-                <ChevronLeft className="w-4 h-4 mr-2" />
+          </CardContent>
+          {/* Uniform Footer Navigation */}
+          <div className="border-t border-border/50 bg-muted/20 p-6 mt-8">
+            <div className="flex justify-between items-center">
+              <Button
+                onClick={handlePrevious}
+                disabled={currentQuestionIndex === 0}
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2 px-6"
+              >
+                <ChevronLeft className="w-4 h-4" />
                 Previous
               </Button>
 
-              {currentQuestionIndex === questions.length - 1 ? (
-                <Button onClick={handleFinishQuiz} disabled={isSubmitting || !answer.trim()}>
-                  Finish Quiz
-                </Button>
-              ) : (
-                <Button onClick={() => { handleSubmit(); handleNext(); }} disabled={!answer.trim()}>
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
+              <div className="text-sm text-muted-foreground">
+                Question {currentQuestionIndex + 1} of {questions.length}
+              </div>
+
+              <Button
+                onClick={() => {
+                  if (answer.trim()) {
+                    const elapsedTime = Math.floor((Date.now() - startTime) / 1000)
+                    if (onAnswer) {
+                      onAnswer(answer, elapsedTime, hintsUsed)
+                    }
+                  }
+
+                  if (currentQuestionIndex === questions.length - 1) {
+                    handleFinishQuiz()
+                  } else {
+                    handleNext()
+                  }
+                }}
+                disabled={!answer.trim() || isSubmitting}
+                size="lg"
+                className="flex items-center gap-2 px-6"
+              >
+                {currentQuestionIndex === questions.length - 1 ? "Finish Quiz" : "Next"}
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
-          </CardContent>
+          </div>
         </Card>
       </motion.div>
     </AnimatePresence>
-  );
+  )
 }
