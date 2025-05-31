@@ -23,14 +23,13 @@ import {
 } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Flag } from "lucide-react"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import OpenEndedQuiz from "./OpenEndedQuiz"
+
 import { useSessionService } from "@/hooks/useSessionService"
-import { OpenEndedQuestion } from "@prisma/client"
+import type { OpenEndedQuestion } from "@/types/quiz"
 import OpenEndedQuizResults from "./QuizResultsOpenEnded"
-
-
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -271,19 +270,34 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
 
   // Show current question
   return currentQuestion ? (
-    <OpenEndedQuiz
-      question={currentQuestion}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-      existingAnswer={answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text || ""}
-      onAnswer={handleAnswer}
-      onNext={handleNext}
-      onPrevious={handlePrevious}
-      onSubmit={handleSubmitQuiz}
-      canGoNext={canGoNext}
-      canGoPrevious={canGoPrevious}
-      isLastQuestion={isLastQuestion}
-    />
+    <div className="space-y-6">
+      <OpenEndedQuiz
+        question={currentQuestion}
+        questionNumber={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        existingAnswer={answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text || ""}
+        onAnswer={handleAnswer}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        onSubmit={handleSubmitQuiz}
+        canGoNext={canGoNext}
+        canGoPrevious={canGoPrevious}
+        isLastQuestion={isLastQuestion}
+      />
+
+      {/* Add a prominent submit button at the bottom when all questions have answers */}
+      {Object.keys(answers).length === questions.length && (
+        <Card className="border-2 border-success/30 bg-success/5">
+          <CardContent className="p-4 text-center">
+            <p className="mb-4 font-medium">You've answered all questions! Ready to submit your quiz?</p>
+            <Button onClick={handleSubmitQuiz} size="lg" className="bg-success hover:bg-success/90 text-white">
+              <Flag className="w-4 h-4 mr-2" />
+              Submit Quiz and See Results
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   ) : (
     <Card>
       <CardContent className="p-6 text-center">

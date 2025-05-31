@@ -1,35 +1,40 @@
-import type { Config } from "jest"
-import nextJest from "next/jest"
+import nextJest from "next/jest";
+import type { Config } from "jest";
 
+// Configure Next.js app directory
 const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
   dir: "./",
-})
+});
 
-// Add any custom config to be passed to Jest
-const config: Config = {
-  coverageProvider: "v8",
+// Jest config overrides
+const customJestConfig: Config = {
   testEnvironment: "jest-environment-jsdom",
+  coverageProvider: "v8",
+  verbose: true,
+reporters: ['default', 'jest-summary-reporter'],
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
+
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
-    "^.+\\.(svg)$": "<rootDir>/__mocks__/svgMock.js",
-    // Add canvas mock
-    canvas: "<rootDir>/__mocks__/canvasMock.js",
+    "^.+\\.svg$": "<rootDir>/__mocks__/svgMock.js",
+    "^canvas$": "<rootDir>/__mocks__/canvasMock.js",
   },
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
-  testPathIgnorePatterns: ["/node_modules/", "/.next/"],
-  // Remove ts-jest transformer as next/jest handles this
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
-  verbose: true,
-  // Remove silent mode for better debugging
-  collectCoverageFrom: ["**/*.{js,jsx,ts,tsx}", "!**/*.d.ts", "!**/node_modules/**", "!**/.next/**", "!**/coverage/**"],
-  // Add reasonable timeout for tests
-  testTimeout: 10000,
-  transformIgnorePatterns: [
-    // Transform ES modules in node_modules
-    "node_modules/(?!(nanoid)/)",
-  ],
-}
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-export default createJestConfig(config)
+  testPathIgnorePatterns: ["/node_modules/", "/.next/"],
+  collectCoverageFrom: [
+    "**/*.{ts,tsx,js,jsx}",
+    "!**/*.d.ts",
+    "!**/node_modules/**",
+    "!**/.next/**",
+    "!**/coverage/**",
+  ],
+
+  transformIgnorePatterns: [
+    "node_modules/(?!(nanoid)/)", // allow ESM transform for nanoid
+  ],
+
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  testTimeout: 10000,
+};
+
+export default createJestConfig(customJestConfig);
