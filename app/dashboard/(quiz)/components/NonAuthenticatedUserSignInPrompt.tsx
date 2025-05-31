@@ -3,75 +3,104 @@
 import React from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, UserPlus, ExternalLink } from "lucide-react";
+import { Check, UserPlus } from "lucide-react";
+
+export interface FallbackAction {
+  label: string;
+  onClick: () => void;
+  variant?: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined;
+}
 
 interface NonAuthenticatedUserSignInPromptProps {
   onSignIn: () => void;
-  title: string;
-  message: string;
-  fallbackAction?: {
-    label: string;
-    onClick: () => void;
-    variant?: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | null;
+  title?: string;
+  message?: string;
+  score?: {
+    percentage: number;
   };
+  fallbackAction?: FallbackAction;
+  resultData?: any;
+  handleRetake?: () => void;
 }
 
 export function NonAuthenticatedUserSignInPrompt({
   onSignIn,
-  title,
-  message,
+  title = "Sign In Required",
+  message = "Sign in to see your detailed results, save your progress, and track your improvement over time.",
+  score,
   fallbackAction,
+  resultData,
+  handleRetake,
 }: NonAuthenticatedUserSignInPromptProps) {
   return (
-    <Card className="shadow-lg border-primary/20">
-      <CardHeader className="bg-primary/5 border-b">
-        <CardTitle className="text-xl sm:text-2xl text-center font-bold">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6 pb-4">
-        <div className="text-center mb-6">
-          <div className="bg-primary/10 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <UserPlus className="w-8 h-8 text-primary" />
-          </div>
-          <p className="text-muted-foreground mb-6">{message}</p>
-        </div>
+    <div className="space-y-6">
+      <Card className="mb-6 bg-gradient-to-b from-background to-primary/10 border-primary/20">
+        <CardContent className="p-6 text-center">
+          {/* Show score if available */}
+          {(score?.percentage !== undefined || resultData?.percentage !== undefined) && (
+            <h2 className="text-2xl font-bold mb-3">
+              Your Score: {score?.percentage ?? resultData?.percentage}%
+            </h2>
+          )}
 
-        <div className="bg-muted/30 p-4 rounded-lg border border-muted my-6">
-          <h3 className="font-medium mb-3">Benefits of signing in:</h3>
-          <ul className="space-y-2 text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span>View detailed quiz results and explanations</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span>Save your progress and track improvement</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span>Access premium content and features</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span>Get personalized learning recommendations</span>
-            </li>
-          </ul>
-        </div>
-      </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-3 justify-center pt-0 pb-6">
-        <Button className="w-full sm:w-auto" size="lg" onClick={onSignIn}>
-          Sign In
-        </Button>
-        {fallbackAction && (
-          <Button
-            className="w-full sm:w-auto"
-            variant={fallbackAction.variant || "outline"}
-            size="lg"
-            onClick={fallbackAction.onClick}
-          >
-            {fallbackAction.label}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+          {/* Title if no score is shown */}
+          {!score?.percentage && !resultData?.percentage && (
+            <h2 className="text-2xl font-bold mb-3">{title}</h2>
+          )}
+
+          <p className="text-muted-foreground mb-6">{message}</p>
+
+          <div className="flex justify-center gap-4">
+            <Button onClick={onSignIn} size="lg">
+              Sign In to See Full Results
+            </Button>
+
+            {/* Show retake button if handler provided */}
+            {handleRetake && (
+              <Button variant="outline" onClick={handleRetake} size="lg">
+                Retake Quiz
+              </Button>
+            )}
+
+            {/* Show fallback action if provided */}
+            {fallbackAction && !handleRetake && (
+              <Button
+                variant={fallbackAction.variant || "outline"}
+                onClick={fallbackAction.onClick}
+                size="lg"
+              >
+                {fallbackAction.label}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="bg-muted/30 p-6 rounded-lg border border-muted mb-6">
+            <h3 className="text-lg font-medium mb-2 text-center">Why Sign In?</h3>
+            <ul className="space-y-2 text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>See which questions you answered correctly</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Review detailed explanations for all answers</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Track your progress across all quizzes</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Get personalized recommendations for improvement</span>
+              </li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
