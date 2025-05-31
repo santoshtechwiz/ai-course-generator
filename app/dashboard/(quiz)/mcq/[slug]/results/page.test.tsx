@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, act, findByText } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -55,6 +55,9 @@ const createStore = (initialState = {}) => {
     preloadedState: initialState,
   });
 };
+
+// Mock window.scrollTo since it's not implemented in jsdom
+window.scrollTo = jest.fn();
 
 describe("MCQ Results Page", () => {
   // Setup common mocks and utilities
@@ -196,7 +199,7 @@ describe("MCQ Results Page", () => {
   });
   
   // Test: Authenticated user sees full results
-  it("shows full results for authenticated user", () => {
+  it("shows full results for authenticated user", async () => {
     const initialState = {
       quiz: {
         status: "succeeded",
@@ -241,7 +244,7 @@ describe("MCQ Results Page", () => {
     
     // Should show the full quiz result component
     // Note: We check for "Score" instead of specific title to avoid test brittleness
-    expect(screen.getByText(/score/i, { selector: ".text-xl.text-muted-foreground" })).toBeInTheDocument();
+    expect(await screen.findByText(/score/i, { selector: ".text-xl.text-muted-foreground" })).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
   });
   
@@ -319,7 +322,11 @@ describe("MCQ Results Page", () => {
     
     // Find and click the retake button
     const retakeButton = screen.getByRole("button", { name: /retake quiz/i });
-    fireEvent.click(retakeButton);
+    
+    // Wrap state updates in act
+    act(() => {
+      fireEvent.click(retakeButton);
+    });
     
     // Verify clearQuizResults was called and router.push was called with the right URL
     expect(mockClearQuizResults).toHaveBeenCalled();

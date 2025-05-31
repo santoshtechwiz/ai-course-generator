@@ -20,6 +20,7 @@ export interface QuizState {
   shouldRedirectToResults: boolean
   authStatus: "checking" | "authenticated" | "unauthenticated" | "idle"
   slug: string | null  // Primary identifier for UI operations
+  wasReset?: boolean // Track if the quiz was reset
 }
 
 const initialState: QuizState = {
@@ -461,14 +462,21 @@ const quizSlice = createSlice({
     },
 
     resetQuiz: (state) => {
+      // Reset all quiz state except for configuration preferences
+      state.status = 'idle'
+      state.questions = []
       state.currentQuestionIndex = 0
       state.answers = {}
       state.isCompleted = false
       state.results = null
       state.error = null
-      state.status = "idle"
-      state.shouldRedirectToAuth = false
-      state.shouldRedirectToResults = false
+      state.pendingQuiz = null
+      // Add a flag to indicate the quiz was just reset
+      state.wasReset = true
+    },
+
+    clearResetFlag: (state) => {
+      state.wasReset = false
     },
 
     setQuizResults: (state, action: PayloadAction<any>) => {
@@ -636,6 +644,9 @@ const quizSlice = createSlice({
       state.shouldRedirectToResults = false
     },
 
+    setQuizCompleted: (state) => {
+      state.isCompleted = true;
+    },
     // Backward compatible: Keep existing actions
     setQuizId: (state, action: PayloadAction<string | number>) => {
       // Convert numeric IDs to strings
@@ -800,15 +811,17 @@ export const {
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
+  clearResetFlag,
   setQuizResults,
   setPendingQuiz,
   resetPendingQuiz,
-  hydrateQuiz, // Export the renamed action
+  hydrateQuiz,
   clearPendingQuiz,
   setAuthRedirect,
   clearAuthRedirect,
   setResultsRedirect,
   clearResultsRedirect,
+  setQuizCompleted, // Export the new action
   // Backward compatible exports
   setQuizId,
   setQuizType,
@@ -887,5 +900,11 @@ export const selectOrGenerateQuizResults = createSelector(
 );
 
 export const selectPendingQuiz = (state: RootState) => state.quiz.pendingQuiz;
+
+// Selector to get answer for a specific question
+export const selectAnswerForQuestion = (state: RootState, questionId: string | number) => {
+  const normalizedId = String(questionId)
+  return state.quiz.answers[normalizedId] || null
+}
 
 export default quizSlice.reducer

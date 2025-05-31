@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
@@ -21,7 +21,8 @@ import {
   setCurrentQuestionIndex, 
   submitQuiz,
   setQuizResults,
-  setPendingQuiz
+  setPendingQuiz,
+  setQuizCompleted,
 } from "@/store/slices/quizSlice"
 
 import { OpenEndedQuiz } from "./OpenEndedQuiz"
@@ -47,6 +48,11 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const dispatch = useDispatch<AppDispatch>()
   const { saveAuthRedirectState } = useSessionService()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [localResults, setLocalResults] = useState<any>(null)
+  const [navigationAttempted, setNavigationAttempted] = useState(false)
+  
+  // Use a ref to track if navigation is in progress
+  const isNavigatingRef = useRef(false)
 
   // Redux selectors
   const isAuthenticated = useSelector(selectIsAuthenticated)
@@ -59,7 +65,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const answers = useSelector(selectAnswers)
   const quizTitle = useSelector(selectQuizTitle)
 
-  // Load quiz data on mount
+  // Load quiz data on mount - with proper dependencies
   useEffect(() => {
     if (quizStatus === "idle") {
       const quizPayload = quizData?.questions?.length
@@ -77,7 +83,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
 
       dispatch(fetchQuiz(quizPayload))
     }
-  }, [quizStatus, dispatch, slug, quizData])
+  }, [quizStatus, dispatch, slug, quizData]) // Ensure correct dependencies
 
   // Calculate similarity between user answer and correct answer
   const calculateSimilarity = (userAnswer: string, correctAnswer: string): number => {
@@ -98,40 +104,67 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
     return similarity
   }
 
-  // Handle quiz completion
+  // Handle quiz completion - use ref to prevent multiple calls
   useEffect(() => {
-    if (!isQuizComplete) return
+    if (!isQuizComplete || navigationAttempted || isNavigatingRef.current) return
 
+    setNavigationAttempted(true)
+    isNavigatingRef.current = true
     const safeSlug = typeof slug === "string" ? slug : String(slug)
-
+    
+    // Prevent multiple submissions
+    if (isSubmitting) return
+    
+    setIsSubmitting(true)
+    
+    // Generate local results first to ensure we have them
+    const clientSideResults = {
+      title: quizTitle || "Open-Ended Quiz",
+      completedAt: new Date().toISOString(),
+      percentage: calculatePercentage(),
+      score: calculateCorrectAnswers(),
+      maxScore: questions.length,
+      questions: formatQuestionsForResults()
+    }
+    
+    // Keep local copy
+    setLocalResults(clientSideResults)
+    
     if (isAuthenticated) {
-      setIsSubmitting(true)
+      // Also dispatch to Redux for persistence
+      dispatch(setQuizResults(clientSideResults))
       
-      // Process answers to calculate scores before submission
       dispatch(submitQuiz())
         .then((res: any) => {
           if (res?.payload) {
+            // Update with server response if available
+            setLocalResults(res.payload)
             dispatch(setQuizResults(res.payload))
-            router.push(`/dashboard/openended/${safeSlug}/results`)
-          } else {
-            console.error("Submit quiz failed: payload is undefined", res)
-            router.push(`/dashboard/openended/${safeSlug}/results`)
           }
+          // Navigate with a delay to ensure state is saved
+          setTimeout(() => {
+            router.push(`/dashboard/openended/${safeSlug}/results`)
+          }, 100)
         })
         .catch((error) => {
           console.error("Error submitting quiz:", error)
-          toast.error("Failed to submit quiz. Please try again.")
-          router.push(`/dashboard/openended/${safeSlug}/results`)
+          toast.error("Failed to submit quiz. Using local results.")
+          
+          // Already have local results, so just navigate
+          setTimeout(() => {
+            router.push(`/dashboard/openended/${safeSlug}/results`)
+          }, 100)
         })
         .finally(() => {
           setIsSubmitting(false)
+          isNavigatingRef.current = false
         })
     } else {
-      // For unauthenticated users, create a pending quiz state
-      const pendingQuizData = {
+      // For unauthenticated users
+      dispatch(setPendingQuiz({
         slug,
         quizData: {
-          title: quizData?.title || "Open-Ended Quiz",
+          title: quizTitle || "Open-Ended Quiz",
           questions,
         },
         currentState: {
@@ -139,10 +172,12 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
           currentQuestionIndex,
           isCompleted: true,
           showResults: true,
+          results: clientSideResults
         },
-      }
-
-      dispatch(setPendingQuiz(pendingQuizData))
+      }))
+      
+      // Also dispatch to Redux for consistency
+      dispatch(setQuizResults(clientSideResults))
       
       // Save auth redirect state
       saveAuthRedirectState({
@@ -150,20 +185,59 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         quizState: {
           slug,
           quizData: {
-            title: quizData?.title || "Open-Ended Quiz",
+            title: quizTitle || "Open-Ended Quiz",
             questions,
           },
           currentState: {
             answers,
             isCompleted: true,
             showResults: true,
+            results: clientSideResults
           },
         },
       })
       
-      router.push(`/dashboard/openended/${safeSlug}/results`)
+      // Navigate with local results
+      setTimeout(() => {
+        router.push(`/dashboard/openended/${safeSlug}/results`)
+      }, 100)
     }
-  }, [isQuizComplete, isAuthenticated, dispatch, router, slug, quizData, questions, answers, currentQuestionIndex, saveAuthRedirectState])
+  }, [isQuizComplete, isAuthenticated, dispatch, router, slug, questions, answers, 
+      currentQuestionIndex, saveAuthRedirectState, quizTitle, isSubmitting, navigationAttempted])
+
+  // Helper function to calculate percentage score
+  const calculatePercentage = useCallback(() => {
+    if (!questions.length || !answers) return 0
+    
+    const answeredQuestions = Object.values(answers) as OpenEndedQuizAnswer[]
+    if (!answeredQuestions.length) return 0
+    
+    const correctCount = answeredQuestions.filter(a => a.isCorrect).length
+    return Math.round((correctCount / questions.length) * 100)
+  }, [questions.length, answers])
+  
+  // Helper function to count correct answers
+  const calculateCorrectAnswers = useCallback(() => {
+    if (!answers) return 0
+    
+    const answeredQuestions = Object.values(answers) as OpenEndedQuizAnswer[]
+    return answeredQuestions.filter(a => a.isCorrect).length
+  }, [answers])
+  
+  // Format questions for results
+  const formatQuestionsForResults = useCallback(() => {
+    return questions.map(q => {
+      const userAnswer = answers[q.id]
+      return {
+        questionId: q.id,
+        question: q.question || q.text,
+        userAnswer: userAnswer?.text || '',
+        correctAnswer: q.answer || '',
+        isCorrect: userAnswer?.isCorrect || false,
+        similarity: userAnswer?.similarity || 0
+      }
+    })
+  }, [questions, answers])
 
   // Handle answer submission
   const handleAnswerSubmit = useCallback(
@@ -214,23 +288,25 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
     [currentQuestion, dispatch, isSubmitting]
   )
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const isLastQuestion = currentQuestionIndex >= questions.length - 1
     
     if (isLastQuestion) {
       // Complete the quiz
-      dispatch({ type: "quiz/setQuizCompleted" })
+      dispatch(setQuizCompleted())
     } else {
       // Move to next question
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
       toast.success("Answer saved! Moving to next question...")
     }
-  }
+  }, [currentQuestionIndex, questions.length, dispatch])
 
-  const handleFinish = () => {
-    dispatch({ type: "quiz/setQuizCompleted" })
-  }
+  // In the handleFinish function, modify it to explicitly set quiz completed
+  const handleFinish = useCallback(() => {
+    dispatch(setQuizCompleted()) // Use the imported action creator
+  }, [dispatch])
 
+  // Calculate derived values outside the render function to prevent recalculations
   const answeredQuestionsCount = Object.keys(answers).length
   const progressPercentage = questions.length > 0 ? (answeredQuestionsCount / questions.length) * 100 : 0
 

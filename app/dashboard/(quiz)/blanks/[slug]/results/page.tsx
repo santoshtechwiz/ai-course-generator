@@ -1,26 +1,16 @@
 "use client"
 
 import { use, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useSession } from "next-auth/react"
 import type { AppDispatch } from "@/store"
+import { selectQuizResults, selectQuizStatus, selectOrGenerateQuizResults } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  selectQuizResults,
-  selectQuizStatus,
-  selectQuizError,
-  selectOrGenerateQuizResults,
-  selectQuestions,
-  selectAnswers,
-  selectQuizTitle,
-} from "@/store/slices/quizSlice"
-import { selectIsAuthenticated } from "@/store/slices/authSlice"
+import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
-import { NonAuthenticatedUserSignInPrompt } from "../../../components/NonAuthenticatedUserSignInPrompt"
 import BlankQuizResults from "../../components/BlankQuizResults"
 import { useSessionService } from "@/hooks/useSessionService"
-import { RefreshCw } from "lucide-react"
 
 interface ResultsPageProps {
   params: { slug: string }
@@ -29,125 +19,75 @@ interface ResultsPageProps {
 export default function BlanksResultsPage({ params }: ResultsPageProps) {
   const resolvedParams = params instanceof Promise ? use(params) : params
   const slug = resolvedParams.slug
-  const searchParams = useSearchParams()
-  const fromAuth = searchParams.get("fromAuth") === 'true'
-
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const { restoreAuthRedirectState, clearQuizResults } = useSessionService()
-  const { status: authStatus } = useSession()
+  const { data: session, status: authStatus } = useSession()
+  const { restoreAuthRedirectState, getStoredResults } = useSessionService()
 
-  // Redux state
+  // Redux selectors
   const quizResults = useSelector(selectQuizResults)
-  const quizStatus = useSelector(selectQuizStatus)
-  const error = useSelector(selectQuizError)
-  const isAuthenticated = useSelector(selectIsAuthenticated)
-  const questions = useSelector(selectQuestions)
-  const answers = useSelector(selectAnswers)
-  const quizTitle = useSelector(selectQuizTitle)
   const generatedResults = useSelector(selectOrGenerateQuizResults)
+  const quizStatus = useSelector(selectQuizStatus)
 
-  // Check for auth return after sign-in
+  // Use either stored results or generated results
+  const resultData = quizResults || generatedResults || getStoredResults(slug)
+
+  // Restore auth state if coming from authentication
   useEffect(() => {
-    if (authStatus === "authenticated" && fromAuth) {
-      console.log("Authentication detected, restoring quiz state")
-      // Restore any saved quiz state from auth redirect
-      const restored = restoreAuthRedirectState()
-      
-      if (restored) {
-        sessionStorage.setItem(`${slug}_auth_restored`, 'true')
-      }
+    if (authStatus === "authenticated") {
+      restoreAuthRedirectState()
     }
-  }, [authStatus, restoreAuthRedirectState, slug, fromAuth])
+  }, [authStatus, restoreAuthRedirectState])
 
-  // Clean up function to reset quiz state when navigating away
+  // Redirect to quiz if no results
   useEffect(() => {
-    return () => {
-      if (typeof window !== "undefined" && !sessionStorage.getItem(`${slug}_auth_for_results`)) {
-        clearQuizResults()
-      }
+    if (authStatus !== "loading" && !resultData && quizStatus !== "loading") {
+      router.push(`/dashboard/blanks/${slug}`)
     }
-  }, [slug, clearQuizResults])
+  }, [authStatus, resultData, quizStatus, router, slug])
 
-  // Redirect to quiz if no results available
-  useEffect(() => {
-    // Skip redirect if we've just restored after auth
-    if (typeof window !== "undefined" && sessionStorage.getItem(`${slug}_auth_restored`) === 'true') {
-      sessionStorage.removeItem(`${slug}_auth_restored`)
-      return
-    }
-    
-    const redirectTimeout = setTimeout(() => {
-      const hasResults = quizResults || generatedResults
-      const hasAnswers = answers && Object.keys(answers).length > 0
-      
-      if (!hasResults && !hasAnswers) {
-        router.push(`/dashboard/blanks/${slug}`)
-      }
-    }, 1000)
-    
-    return () => clearTimeout(redirectTimeout)
-  }, [generatedResults, quizResults, answers, router, slug])
-
-  // Handle sign in for unauthenticated users
-  const handleSignIn = async () => {
-    try {
-      sessionStorage.setItem(`${slug}_auth_for_results`, 'true')
-      await signIn(undefined, { callbackUrl: `/dashboard/blanks/${slug}/results?fromAuth=true` })
-    } catch (error) {
-      console.error("Sign in failed:", error)
-    }
+  // Handle retaking the quiz
+  const handleRetakeQuiz = () => {
+    router.push(`/dashboard/blanks/${slug}`)
   }
 
-  // Loading states
+  // Loading state
   if (authStatus === "loading" || quizStatus === "loading") {
     return (
       <QuizLoadingSteps
         steps={[
           { label: "Checking authentication", status: authStatus === "loading" ? "loading" : "completed" },
-          { label: "Loading quiz data", status: quizStatus === "loading" ? "loading" : "completed" },
+          { label: "Loading quiz results", status: quizStatus === "loading" ? "loading" : "completed" },
         ]}
       />
     )
   }
 
-  // No results case - redirect to quiz
-  if (!quizResults && !generatedResults && Object.keys(answers).length === 0) {
+  // Error state - no results found
+  if (!resultData) {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <Card>
           <CardContent className="p-8">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
             <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
-            <p className="text-muted-foreground">Taking you to the quiz page so you can take the quiz...</p>
+            <p className="text-muted-foreground mb-6">You need to complete the quiz to see results.</p>
+            <Button onClick={handleRetakeQuiz}>Take Quiz Now</Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  // For unauthenticated users with results, show the sign-in prompt
-  if (!isAuthenticated && (quizResults || generatedResults || Object.keys(answers).length > 0)) {
-    return (
-      <div className="container max-w-4xl py-6">
-        <BlankQuizResults
-          result={quizResults || generatedResults}
-          isAuthenticated={false}
-          slug={slug}
-        />
-      </div>
-    )
-  }
-
-  // For authenticated users or users who just completed the quiz
+  // Show results
   return (
     <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
           <BlankQuizResults
-            result={quizResults || generatedResults}
-            isAuthenticated={isAuthenticated}
+            result={resultData}
+            isAuthenticated={!!session?.user}
             slug={slug}
+            onRetake={handleRetakeQuiz}
           />
         </CardContent>
       </Card>

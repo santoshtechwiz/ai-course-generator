@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-     "clear": "jest --clearCache",
+    "clear": "jest --clearCache",
     "test": "jest --config jest.config.ts --no-stack-trace --colors ",
     "test:watch": "jest --config jest.config.ts --watch --no-stack-trace",
     "test:ci": "jest --config jest.config.ts --ci --json --outputFile=test-results.json --no-stack-trace",
@@ -177,6 +177,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@apollo/client": "3.13.8",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

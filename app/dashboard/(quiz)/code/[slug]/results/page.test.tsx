@@ -46,15 +46,13 @@ jest.mock("react", () => {
 })
 
 // Create a mock store with the necessary state
-const createStore = (initialState = {}) => {
-  return configureStore({
-    reducer: {
-      quiz: quizReducer,
-      auth: authReducer,
-    },
-    preloadedState: initialState,
-  })
-}
+const createStore = (initialState = {}) => configureStore({
+  reducer: {
+    quiz: quizReducer,
+    auth: authReducer,
+  },
+  preloadedState: initialState,
+})
 
 describe("Code Results Page", () => {
   // Setup common mocks and utilities
@@ -64,7 +62,7 @@ describe("Code Results Page", () => {
   const mockSaveAuthRedirectState = jest.fn()
   
   beforeEach(() => {
-    jest.resetAllMocks()
+    jest.clearAllTimers();
     
     // Default mock implementations
     (useRouter as jest.Mock).mockReturnValue(mockRouter)
@@ -101,7 +99,7 @@ describe("Code Results Page", () => {
         status: "idle",
         questions: [],
         answers: {},
-        results: null,
+        quizResults: null,
       },
       auth: {
         isAuthenticated: false,
@@ -110,7 +108,7 @@ describe("Code Results Page", () => {
     
     const store = createStore(initialState)
     
-    render(
+    const store = createStore(initialState) as ReturnType<typeof configureStore>
       <Provider store={store}>
         <CodeResultsPage params={{ slug: "test-slug" }} />
       </Provider>
@@ -121,15 +119,21 @@ describe("Code Results Page", () => {
   
   // Test: Redirect to quiz when no results exist
   it("redirects to quiz when no results or answers exist", async () => {
+    // Set authenticated status
+    (useSession as jest.Mock).mockReturnValue({
+      status: "authenticated",
+      data: { user: { name: "Test User" } },
+    })
+    
     const initialState = {
       quiz: {
         status: "succeeded",
         questions: [],
         answers: {},
-        results: null,
+        quizResults: null,
       },
       auth: {
-        isAuthenticated: false,
+        isAuthenticated: true,
       },
     }
     
@@ -141,17 +145,14 @@ describe("Code Results Page", () => {
       </Provider>
     )
     
-    // Should show loading screen with redirect message
-    expect(screen.getByText("No Results Available")).toBeInTheDocument()
-    
     // Wait for the redirect timeout
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/code/test-slug")
     }, { timeout: 1500 })
   })
   
-  // Test: Unauthenticated user sees limited results
-  it("shows limited results for unauthenticated user", () => {
+  // Test: Unauthenticated user sees sign-in prompt
+  it("shows sign-in prompt for unauthenticated user", () => {
     const initialState = {
       quiz: {
         status: "succeeded",
@@ -164,7 +165,7 @@ describe("Code Results Page", () => {
           "2": { selectedOptionId: "c", isCorrect: false, type: "code" },
         },
         title: "Code Quiz",
-        results: {
+        quizResults: {
           slug: "test-slug",
           title: "Code Quiz",
           score: 1,
@@ -189,10 +190,9 @@ describe("Code Results Page", () => {
       </Provider>
     )
     
-    // Should show score and sign-in prompt but not detailed results
-    expect(screen.getByText("Your Score: 50%")).toBeInTheDocument()
-    expect(screen.getByText("Sign In to See Full Results")).toBeInTheDocument()
-    expect(screen.getByText("Why Sign In?")).toBeInTheDocument()
+    // Should show sign-in prompt
+    expect(screen.getByText("Sign In to View Results")).toBeInTheDocument()
+    expect(screen.getByText("Please sign in to view your code quiz results and track your progress.")).toBeInTheDocument()
   })
   
   // Test: Authenticated user sees full results
@@ -209,12 +209,13 @@ describe("Code Results Page", () => {
           "2": { selectedOptionId: "c", isCorrect: false, type: "code" },
         },
         title: "Code Quiz",
-        results: {
+        quizResults: {
           slug: "test-slug",
           title: "Code Quiz",
           score: 1,
           maxScore: 2,
           percentage: 50,
+          completedAt: new Date().toISOString(),
           questionResults: [
             { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
             { questionId: "2", isCorrect: false, userAnswer: "c", correctAnswer: "b" },
@@ -239,10 +240,10 @@ describe("Code Results Page", () => {
       </Provider>
     )
     
-    // Should show the full quiz result component
-    // Note: We check for "Score" instead of specific title to avoid test brittleness
-    expect(screen.getByText(/score/i, { selector: ".text-xl.text-muted-foreground" })).toBeInTheDocument()
-    expect(screen.getByText("50%")).toBeInTheDocument()
+    // Should show the full quiz result component with data-testid
+    expect(screen.getByTestId("result-summary")).toBeInTheDocument()
+    // Check for the score percentage
+    expect(screen.getByText("50% Score")).toBeInTheDocument()
   })
   
   // Test: Sign-in handler is called when user clicks sign in
@@ -253,7 +254,7 @@ describe("Code Results Page", () => {
         questions: [{ id: "1", text: "Question 1", correctOptionId: "a" }],
         answers: { "1": { selectedOptionId: "a", isCorrect: true, type: "code" } },
         title: "Code Quiz",
-        results: {
+        quizResults: {
           score: 1,
           maxScore: 1,
           percentage: 100,
@@ -275,8 +276,9 @@ describe("Code Results Page", () => {
       </Provider>
     )
     
-    // Click sign in button
-    fireEvent.click(screen.getByText("Sign In to See Full Results"))
+    // Find and click the sign in button
+    const signInButton = screen.getByRole("button", { name: /sign in/i })
+    fireEvent.click(signInButton)
     
     // Verify saveAuthRedirectState and signIn were called
     await waitFor(() => {
@@ -285,18 +287,23 @@ describe("Code Results Page", () => {
     })
   })
   
-  // Test: Retake button clears quiz state and redirects
-  it("clears quiz state and redirects when retake is clicked", () => {
+  // Test: Retake button redirects to quiz with reset parameter
+  it("redirects to quiz with reset parameter when retake is clicked", () => {
     const initialState = {
       quiz: {
         status: "succeeded",
         questions: [{ id: "1", text: "Question 1", correctOptionId: "a" }],
         answers: { "1": { selectedOptionId: "a", isCorrect: true, type: "code" } },
         title: "Code Quiz",
-        results: {
+        quizResults: {
+          slug: "test-slug",
           score: 1,
           maxScore: 1,
           percentage: 100,
+          completedAt: new Date().toISOString(),
+          questionResults: [
+            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
+          ],
         },
       },
       auth: {
@@ -321,8 +328,7 @@ describe("Code Results Page", () => {
     const retakeButton = screen.getByRole("button", { name: /retake quiz/i })
     fireEvent.click(retakeButton)
     
-    // Verify clearQuizResults was called and router.push was called with the right URL
-    expect(mockClearQuizResults).toHaveBeenCalled()
+    // Verify router.push was called with the right URL
     expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/code/test-slug?reset=true")
   })
 
@@ -354,7 +360,8 @@ describe("Code Results Page", () => {
     )
     
     // Should show error state
-    expect(screen.getByText("No Results Available")).toBeInTheDocument()
+    expect(screen.getByText("Error Loading Results")).toBeInTheDocument()
+    expect(screen.getByText("Failed to load quiz results")).toBeInTheDocument()
   })
   
   // Test: Auth restoration happens after login
@@ -374,7 +381,7 @@ describe("Code Results Page", () => {
         status: "succeeded",
         questions: [],
         answers: {},
-        results: null,
+        quizResults: null,
       },
       auth: {
         isAuthenticated: true,
@@ -391,5 +398,78 @@ describe("Code Results Page", () => {
     
     // Verify restoreAuthRedirectState was called
     expect(mockRestoreAuthRedirectState).toHaveBeenCalled()
+  })
+  
+  // Test: No results found message is shown when questions exist but no answers
+  it("shows 'No Results Found' when questions exist but no answers", () => {
+    const initialState = {
+      quiz: {
+        status: "succeeded",
+        questions: [
+          { id: "1", text: "Question 1", correctOptionId: "a" },
+          { id: "2", text: "Question 2", correctOptionId: "b" },
+        ],
+        answers: {},
+        quizResults: null,
+      },
+      auth: {
+        isAuthenticated: true,
+      },
+    }
+    
+    const store = createStore(initialState)
+    
+    (useSession as jest.Mock).mockReturnValue({
+      status: "authenticated",
+      data: { user: { name: "Test User" } },
+    })
+    
+    render(
+      <Provider store={store}>
+        <CodeResultsPage params={{ slug: "test-slug" }} />
+      </Provider>
+    )
+    
+    // Should show no results found message
+    expect(screen.getByText("No Results Found")).toBeInTheDocument()
+    expect(screen.getByText("We couldn't find your results for this quiz.")).toBeInTheDocument()
+  })
+  
+  // Test: Results are computed on the spot when questions and answers exist but no results
+  it("computes results on the spot when questions and answers exist but no results", () => {
+    const initialState = {
+      quiz: {
+        status: "succeeded",
+        questions: [
+          { id: "1", text: "Question 1", correctOptionId: "a" },
+          { id: "2", text: "Question 2", correctOptionId: "b" },
+        ],
+        answers: {
+          "1": { selectedOptionId: "a", isCorrect: true, type: "code" },
+          "2": { selectedOptionId: "c", isCorrect: false, type: "code" },
+        },
+        title: "Code Quiz",
+        quizResults: null,
+      },
+      auth: {
+        isAuthenticated: true,
+      },
+    }
+    
+    const store = createStore(initialState)
+    
+    (useSession as jest.Mock).mockReturnValue({
+      status: "authenticated",
+      data: { user: { name: "Test User" } },
+    })
+    
+    render(
+      <Provider store={store}>
+        <CodeResultsPage params={{ slug: "test-slug" }} />
+      </Provider>
+    )
+    
+    // Should compute and show results
+    expect(screen.getByTestId("result-summary")).toBeInTheDocument()
   })
 })

@@ -187,7 +187,7 @@ expect.extend({
   toHaveBeenCalledWithMatch(received, ...expected) {
     const pass = received.mock.calls.some((call) =>
       expected.every((arg, i) => {
-        if (typeof arg === "object") {
+        if (typeof arg === "object" && arg !== null) {
           return expect.objectContaining(arg).asymmetricMatch(call[i])
         }
         return arg === call[i]
@@ -196,7 +196,10 @@ expect.extend({
 
     return {
       pass,
-      message: () => `expected ${received.mock.calls} to match ${expected}`,
+      message: () =>
+        `expected ${received.mock.calls.map((call) =>
+          JSON.stringify(call),
+        )} to contain a call matching ${JSON.stringify(expected)}`,
     }
   },
 })

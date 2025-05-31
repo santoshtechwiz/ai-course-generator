@@ -1,33 +1,121 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { signIn } from "next-auth/react"
-import type { AppDispatch } from "@/store"
 import { Button } from "@/components/ui/button"
 import { Check, X, RefreshCw, Home, Share2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
+import { resetQuiz } from "@/store/slices/quizSlice"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card"
 import { useSessionService } from "@/hooks/useSessionService"
-import type { BlanksQuizResult } from "./types"
+import type { QuizResult, BaseQuestion } from "../types"
 
-interface BlankQuizResultsProps {
-  result?: BlanksQuizResult
-  onRetake?: () => void
-  isAuthenticated: boolean
-  slug: string
+interface TextQuizResultsProps {
+  result?: QuizResult;
+  isAuthenticated: boolean;
+  slug: string;
+  quizType: "blanks" | "openended";
+  questions?: BaseQuestion[];
+  answers?: Record<string, any>;
+  quizTitle?: string;
 }
 
-export default function BlankQuizResults({ result, onRetake, isAuthenticated, slug }: BlankQuizResultsProps) {
+export default function TextQuizResults({ 
+  result,
+  isAuthenticated,
+  slug,
+  quizType,
+  questions = [],
+  answers = {},
+  quizTitle = ""
+}: TextQuizResultsProps) {
   const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useDispatch()
   const { saveAuthRedirectState } = useSessionService()
   const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({})
-
-  // Memoize calculations to avoid recalculating on every render
+  const [isResultsReady, setIsResultsReady] = useState(false)
+  const [localResults, setLocalResults] = useState<any>(null)
+  
+  // Initialize local results from props or generate them
+  useEffect(() => {
+    if (result && !localResults) {
+      setLocalResults(result)
+      setIsResultsReady(true)
+    } else if (!localResults && questions.length > 0 && Object.keys(answers).length > 0) {
+      // Generate results from questions and answers
+      try {
+        const questionArray = Array.isArray(questions) ? questions : []
+        const totalCount = questionArray.length
+        
+        // Calculate scores based on answers
+        let correctCount = 0
+        let calculatedQuestionResults: any[] = []
+        
+        // Process answers to calculate scores
+        Object.entries(answers).forEach(([questionId, answer]) => {
+          const question = questionArray.find(q => q.id?.toString() === questionId)
+          if (!question) return
+          
+          const isCorrect = quizType === "openended" 
+            ? (answer as any).isCorrect || ((answer as any).similarity && (answer as any).similarity >= 0.6)
+            : (answer as any).userAnswer?.toLowerCase() === question.answer?.toLowerCase()
+          
+          if (isCorrect) correctCount++
+          
+          calculatedQuestionResults.push({
+            questionId,
+            question: question.question || question.text,
+            userAnswer: quizType === "openended" ? (answer as any).text : (answer as any).userAnswer,
+            correctAnswer: question.answer,
+            isCorrect,
+            similarity: quizType === "openended" ? (answer as any).similarity : undefined
+          })
+        })
+        
+        const percentageCorrect = Math.round((correctCount / totalCount) * 100)
+        
+        // Generate a result object from calculated data
+        const generatedResults = {
+          title: quizTitle,
+          completedAt: new Date().toISOString(),
+          percentage: percentageCorrect,
+          score: correctCount,
+          maxScore: totalCount,
+          questionResults: calculatedQuestionResults
+        }
+        
+        setLocalResults(generatedResults)
+        setIsResultsReady(true)
+      } catch (error) {
+        console.error("Error generating quiz results:", error)
+      }
+    }
+  }, [result, questions, answers, quizTitle, quizType, localResults])
+  
+  // Log data for debugging
+  useEffect(() => {
+    console.log("TextQuizResults component state:", { 
+      hasResult: !!result,
+      hasLocalResults: !!localResults,
+      questionCount: questions.length,
+      answerCount: Object.keys(answers).length,
+      quizTitle,
+      isResultsReady
+    })
+  }, [result, localResults, questions, answers, quizTitle, isResultsReady])
+  
+  // Memoize calculations based on local state
   const {
     correctQuestions,
     incorrectQuestions,
@@ -35,9 +123,9 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
     incorrectCount,
     totalCount,
     skippedCount,
-    percentageCorrect,
+    percentageCorrect
   } = useMemo(() => {
-    if (!result) {
+    if (!localResults) {
       return {
         correctQuestions: [],
         incorrectQuestions: [],
@@ -45,18 +133,18 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
         incorrectCount: 0,
         totalCount: 0,
         skippedCount: 0,
-        percentageCorrect: 0,
+        percentageCorrect: 0
       }
     }
-
-    const correctQuestions = result.questionResults?.filter((q) => q.isCorrect) || []
-    const incorrectQuestions = result.questionResults?.filter((q) => !q.isCorrect) || []
+    
+    const correctQuestions = localResults.questionResults?.filter(q => q.isCorrect) || []
+    const incorrectQuestions = localResults.questionResults?.filter(q => !q.isCorrect) || []
     const correctCount = correctQuestions.length
     const incorrectCount = incorrectQuestions.length
-    const totalCount = result.maxScore || result.questions?.length || 0
+    const totalCount = localResults.maxScore || questions.length
     const skippedCount = totalCount - (correctCount + incorrectCount)
-    const percentageCorrect = result.percentage || Math.round((correctCount / totalCount) * 100)
-
+    const percentageCorrect = localResults.percentage || Math.round((correctCount / totalCount) * 100)
+    
     return {
       correctQuestions,
       incorrectQuestions,
@@ -64,10 +152,10 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
       incorrectCount,
       totalCount,
       skippedCount,
-      percentageCorrect,
+      percentageCorrect
     }
-  }, [result])
-
+  }, [localResults, questions.length])
+  
   // Generation functions for the score messages
   const getScoreMessage = useCallback(() => {
     if (percentageCorrect >= 90) return "Outstanding! You've mastered these concepts."
@@ -77,28 +165,28 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
     if (percentageCorrect >= 50) return "You're making progress. More practice will help."
     return "Keep learning! Review the concepts and try again."
   }, [percentageCorrect])
-
+  
   // Toggle a specific question's expanded state
   const toggleQuestion = useCallback((id: string) => {
-    setExpandedQuestions((prev) => ({
+    setExpandedQuestions(prev => ({
       ...prev,
-      [id]: !prev[id],
+      [id]: !prev[id]
     }))
   }, [])
-
+  
   // Expand all questions
   const expandAllQuestions = useCallback(() => {
     if (!result?.questionResults) return
-
+    
     const expandedState: Record<string, boolean> = {}
-    result.questionResults.forEach((q) => {
+    result.questionResults.forEach(q => {
       if (q.questionId) {
         expandedState[q.questionId.toString()] = true
       }
     })
     setExpandedQuestions(expandedState)
   }, [result?.questionResults])
-
+  
   // Collapse all questions
   const collapseAllQuestions = useCallback(() => {
     setExpandedQuestions({})
@@ -106,14 +194,14 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
 
   // Handle sharing results
   const handleShare = useCallback(async () => {
-    if (!result) return
-
+    if (!localResults) return
+    
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${result.title} - Quiz Results`,
-          text: `I scored ${percentageCorrect}% on the ${result.title} quiz!`,
-          url: window.location.href,
+          title: `${localResults.title} - Quiz Results`,
+          text: `I scored ${percentageCorrect}% on the ${localResults.title} quiz!`,
+          url: window.location.href
         })
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(window.location.href)
@@ -125,57 +213,52 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
       console.error("Error sharing results:", error)
       toast.error("Failed to share results")
     }
-  }, [result, percentageCorrect])
+  }, [localResults, percentageCorrect])
 
   // Handle retaking the quiz
   const handleRetake = useCallback(() => {
-    if (onRetake) {
-      onRetake()
-    } else {
-      router.push(`/dashboard/blanks/${slug}`)
-    }
-  }, [onRetake, router, slug])
-
+    dispatch(resetQuiz())
+    router.push(`/dashboard/${quizType}/${slug}?reset=true`)
+  }, [dispatch, router, slug, quizType])
+  
   // Handle sign in for unauthenticated users
   const handleSignIn = useCallback(async () => {
-    // Save current state for restoration after auth
-    if (result) {
+    if (!isAuthenticated) {
+      // Save quiz state before redirecting using Redux state
       saveAuthRedirectState({
-        returnPath: `/dashboard/blanks/${slug}/results`,
+        returnPath: `/dashboard/${quizType}/${slug}/results?fromAuth=true`,
         quizState: {
           slug,
+          quizData: {
+            title: quizTitle,
+            questions,
+          },
           currentState: {
-            results: result,
+            answers,
+            isCompleted: true,
             showResults: true,
+            results: localResults || result,
           },
         },
       })
+      
+      await signIn(undefined, { callbackUrl: `/dashboard/${quizType}/${slug}/results?fromAuth=true` })
     }
-
-    await signIn(undefined, {
-      callbackUrl: `/dashboard/blanks/${slug}/results`,
-    })
-  }, [result, slug, saveAuthRedirectState])
+  }, [isAuthenticated, saveAuthRedirectState, slug, quizTitle, questions, answers, localResults, result, quizType])
 
   // Error state when results can't be loaded
-  if (!result) {
+  if (!isResultsReady || !localResults) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-bold mb-2">Error Loading Results</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+        <h2 className="text-xl font-bold mb-2">Processing Results</h2>
         <p className="text-muted-foreground mb-6">
-          We couldn't load your quiz results properly. Some data might be missing.
+          We're finalizing your quiz results. This will only take a moment.
         </p>
-        <div className="flex gap-3">
-          <Button onClick={handleRetake}>Retake Quiz</Button>
-          <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
-            Back to Quizzes
-          </Button>
-        </div>
       </div>
     )
   }
-
+  
   // For unauthenticated users, show limited results
   if (!isAuthenticated) {
     return (
@@ -197,7 +280,7 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
       </Card>
     )
   }
-
+  
   // Full results display for authenticated users
   return (
     <div className="space-y-8">
@@ -205,41 +288,38 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
       <Card className="border shadow-sm overflow-hidden bg-gradient-to-br from-card to-card/80">
         <CardHeader className="bg-primary/5 border-b border-border/40">
           <CardTitle className="flex justify-between items-center">
-            <span className="text-2xl font-bold">{result.title || "Quiz Results"}</span>
-            <Badge
-              variant={percentageCorrect >= 70 ? "success" : percentageCorrect >= 50 ? "warning" : "destructive"}
-              className="text-base px-3 py-1"
-            >
+            <span className="text-2xl font-bold">{result.title || quizTitle || "Quiz Results"}</span>
+            <Badge variant={percentageCorrect >= 70 ? "success" : percentageCorrect >= 50 ? "warning" : "destructive"} className="text-base px-3 py-1">
               {percentageCorrect}% Score
             </Badge>
           </CardTitle>
           <CardDescription>
             {result.completedAt && (
               <>
-                Completed on {new Date(result.completedAt).toLocaleDateString()} at{" "}
-                {new Date(result.completedAt).toLocaleTimeString()}
+                Completed on {new Date(result.completedAt).toLocaleDateString()} at {new Date(result.completedAt).toLocaleTimeString()}
               </>
             )}
           </CardDescription>
         </CardHeader>
-
+        
         <CardContent className="p-6 space-y-5">
           <div className="flex flex-col md:flex-row md:justify-between items-center gap-6">
             <div className="relative w-40 h-40">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
                 <circle
                   cx="50"
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke={
-                    percentageCorrect >= 70
-                      ? "hsl(var(--success))"
-                      : percentageCorrect >= 50
-                        ? "hsl(var(--warning))"
-                        : "hsl(var(--destructive))"
-                  }
+                  stroke="hsl(var(--muted))"
+                  strokeWidth="10"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke={percentageCorrect >= 70 ? "hsl(var(--success))" : percentageCorrect >= 50 ? "hsl(var(--warning))" : "hsl(var(--destructive))"}
                   strokeWidth="10"
                   strokeDasharray={`${percentageCorrect} 100`}
                 />
@@ -249,7 +329,7 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
                 <span className="text-sm text-muted-foreground">of {totalCount}</span>
               </div>
             </div>
-
+            
             <div className="space-y-4 flex-1">
               <p className="text-xl font-medium text-center md:text-left">{getScoreMessage()}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -269,24 +349,36 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
             </div>
           </div>
         </CardContent>
-
+        
         <CardFooter className="bg-muted/30 px-6 py-4 border-t border-border/40 flex flex-wrap gap-3 justify-between">
           <div className="flex gap-2">
-            <Button variant="default" size="sm" onClick={handleRetake}>
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={handleRetake}
+            >
               <RefreshCw className="w-4 h-4 mr-1" /> Retake Quiz
             </Button>
-            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/quizzes")}>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => router.push("/dashboard/quizzes")}
+            >
               <Home className="w-4 h-4 mr-1" /> All Quizzes
             </Button>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleShare}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+            >
               <Share2 className="w-4 h-4 mr-1" /> Share
             </Button>
           </div>
         </CardFooter>
       </Card>
-
+      
       {/* Question review section */}
       {result.questionResults && result.questionResults.length > 0 && (
         <div className="space-y-4">
@@ -301,87 +393,84 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
               </Button>
             </div>
           </div>
-
+          
           <div className="space-y-4">
             {result.questionResults.map((questionResult, index) => {
               if (!questionResult.questionId) return null
-
+              
               // Find the corresponding question data
-              const questionData = result.questions?.find(
-                (q) => q.id?.toString() === questionResult.questionId?.toString(),
-              )
-
+              const questionData = result.questions?.find(q => q.id?.toString() === questionResult.questionId?.toString()) || 
+                                  questions.find(q => q.id?.toString() === questionResult.questionId?.toString())
+              
               if (!questionData) return null
-
+              
               const isExpanded = expandedQuestions[questionResult.questionId.toString()]
-              const questionText = questionData.question || `Question ${index + 1}`
-              const userAnswer = questionResult.userAnswer || "Not answered"
-              const correctAnswer = questionData.answer || "Answer unavailable"
-
+              const questionText = questionData.question || questionData.text || `Question ${index + 1}`
+              const userAnswer = questionResult.userAnswer || questionResult.text || 'Not answered'
+              const correctAnswer = questionData.answer || 'Answer unavailable'
+              
+              // For blanks, replace the blank with the user's answer for preview
+              let displayQuestion = questionText
+              if (quizType === "blanks" && questionText.includes("________")) {
+                displayQuestion = questionText.replace("________", `<span class="px-2 py-0.5 border-b-2 border-dashed">${userAnswer}</span>`)
+              }
+              
               return (
-                <Collapsible
-                  key={questionResult.questionId}
+                <Collapsible 
+                  key={questionResult.questionId} 
                   open={isExpanded}
                   onOpenChange={() => toggleQuestion(questionResult.questionId.toString())}
                   className={`border rounded-lg overflow-hidden ${
-                    questionResult.isCorrect
-                      ? "border-success/30 bg-success/5"
-                      : "border-destructive/30 bg-destructive/5"
+                    questionResult.isCorrect 
+                      ? 'border-success/30 bg-success/5' 
+                      : 'border-destructive/30 bg-destructive/5'
                   }`}
                 >
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`rounded-full p-1 ${
-                          questionResult.isCorrect ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"
-                        }`}
-                      >
+                      <div className={`rounded-full p-1 ${
+                        questionResult.isCorrect ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
+                      }`}>
                         {questionResult.isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
                       </div>
                       <div>
                         <h3 className="font-medium">Question {index + 1}</h3>
                         <p className="text-sm text-muted-foreground line-clamp-1">
-                          {questionText.replace("________", "______")}
+                          {quizType === "blanks" 
+                            ? questionText.replace("________", "______") 
+                            : questionText}
                         </p>
                       </div>
                     </div>
-
+                    
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" size="sm">
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </Button>
                     </CollapsibleTrigger>
                   </div>
-
+                  
                   <CollapsibleContent>
                     <div className="px-4 pb-4 space-y-4">
                       <div className="p-4 bg-card rounded-md">
-                        <h4
-                          className="font-medium mb-2"
-                          dangerouslySetInnerHTML={{
-                            __html: questionText.replace(
-                              "________",
-                              `<span class="px-2 py-0.5 border-b-2 border-dashed">${userAnswer}</span>`,
-                            ),
-                          }}
-                        />
+                        <h4 className="font-medium mb-2">
+                          {quizType === "blanks"
+                            ? <span dangerouslySetInnerHTML={{ __html: displayQuestion }} />
+                            : questionText}
+                        </h4>
                       </div>
-
+                      
                       <div className="grid gap-2">
-                        <div
-                          className={`p-3 rounded-md ${
-                            questionResult.isCorrect
-                              ? "bg-success/10 border border-success/30"
-                              : "bg-muted border border-muted-foreground/20"
-                          }`}
-                        >
+                        <div className={`p-3 rounded-md ${
+                          questionResult.isCorrect ? 'bg-success/10 border border-success/30' : 'bg-muted border border-muted-foreground/20'
+                        }`}>
                           <div className="flex items-center gap-2">
                             {questionResult.isCorrect && <Check className="w-4 h-4 text-success" />}
                             <span className="font-medium">Your answer:</span>
                           </div>
                           <p className="mt-1">{userAnswer}</p>
                         </div>
-
+                        
                         {!questionResult.isCorrect && (
                           <div className="p-3 rounded-md bg-success/10 border border-success/30">
                             <div className="flex items-center gap-2">
@@ -389,6 +478,15 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
                               <span className="font-medium">Correct answer:</span>
                             </div>
                             <p className="mt-1">{correctAnswer}</p>
+                          </div>
+                        )}
+
+                        {questionResult.similarity !== undefined && quizType === "openended" && (
+                          <div className="p-3 rounded-md bg-primary/10 border border-primary/30">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Similarity score:</span>
+                            </div>
+                            <p className="mt-1">{Math.round(questionResult.similarity * 100)}%</p>
                           </div>
                         )}
                       </div>
