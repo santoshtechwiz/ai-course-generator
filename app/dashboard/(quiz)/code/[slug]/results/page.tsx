@@ -16,8 +16,8 @@ import {
 } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import QuizResult from "../../components/QuizResult"
+import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
+import QuizResult from "../../../components/QuizResult"
 
 interface ResultsPageProps {
   params: { slug: string }
@@ -92,7 +92,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <QuizResult result={resultData} />
+          <QuizResult result={resultData} quizType={"code"} />
           <Button onClick={handleRetake} className="mt-4">
             Retake Quiz
           </Button>
