@@ -186,7 +186,12 @@ export function useSessionService() {
         const isForResults = typeof window !== "undefined" && 
           sessionStorage.getItem(`${quizToRestore.slug}_auth_for_results`) === 'true';
         
-        if (isForResults) {
+        // Mark that we've completed the auth restoration
+        if (quizToRestore.slug && typeof window !== "undefined") {
+          sessionStorage.setItem(`${quizToRestore.slug}_auth_restored`, 'true');
+        }
+        
+        if (isForResults || (redirectPath && redirectPath.includes('/results'))) {
           console.log("This restoration is specifically for showing results");
           
           // Apply the stored quiz state
@@ -199,21 +204,18 @@ export function useSessionService() {
           }));
           
           // Remove the flag since we've used it
-          sessionStorage.removeItem(`${quizToRestore.slug}_auth_for_results`);
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem(`${quizToRestore.slug}_auth_for_results`);
+          }
         } else {
           // Standard restoration
           dispatch(hydrateQuiz(quizToRestore));
         }
         
         // Explicitly set results if they were stored
-        if (quizToRestore.currentState?.results && 
-            (quizToRestore.currentState.showResults || isForResults)) {
+        if (quizToRestore.currentState?.results) {
           console.log("Setting quiz results from pendingQuiz:", quizToRestore.currentState.results);
-          
-          // Wait a moment to ensure the hydrateQuiz has completed
-          setTimeout(() => {
-            dispatch(setQuizResults(quizToRestore.currentState.results));
-          }, 100);
+          dispatch(setQuizResults(quizToRestore.currentState.results));
         }
         
         return {
@@ -272,10 +274,58 @@ export function useSessionService() {
     }
   }, [dispatch]);
 
+  // New function to get stored results from sessionStorage
+  const getStoredResults = useCallback((slug: string) => {
+    if (typeof window === "undefined") return null;
+    
+    try {
+      // Try to get quiz results specifically for this slug
+      const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
+      if (storedResults) {
+        return JSON.parse(storedResults);
+      }
+      
+      // If not found, check if there's results in pending quiz
+      const pendingQuizData = sessionStorage.getItem('pendingQuiz');
+      if (pendingQuizData) {
+        const parsedPendingQuiz = JSON.parse(pendingQuizData);
+        if (parsedPendingQuiz.slug === slug && 
+            parsedPendingQuiz.currentState?.results) {
+          return parsedPendingQuiz.currentState.results;
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      console.error("Error retrieving stored results:", e);
+      return null;
+    }
+  }, []);
+
+  // New function to store results in sessionStorage
+  const storeResults = useCallback((slug: string, results: any) => {
+    if (typeof window === "undefined") return;
+    
+    try {
+      // Store results for this specific quiz
+      sessionStorage.setItem(`quiz_results_${slug}`, JSON.stringify(results));
+      
+      // Also update Redux state
+      dispatch(setQuizResults(results));
+      
+      return true;
+    } catch (e) {
+      console.error("Error storing results:", e);
+      return false;
+    }
+  }, [dispatch]);
+
   return {
     saveAuthRedirectState,
     restoreAuthRedirectState,
     clearAuthState,
     clearQuizResults,
+    getStoredResults,
+    storeResults,
   }
 }

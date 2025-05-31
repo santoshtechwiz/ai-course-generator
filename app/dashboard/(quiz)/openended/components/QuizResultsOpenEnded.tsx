@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useSelector, useDispatch } from 'react-redux'
@@ -33,72 +33,54 @@ import { QuizSubmissionLoading } from '../../components'
 
 interface QuizResultsOpenEndedProps {
   slug: string
+  initialResults?: any
+  hasResults?: boolean
 }
 
-export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps) {
+export default function QuizResultsOpenEnded({ 
+  slug,
+  initialResults,
+  hasResults = false
+}: QuizResultsOpenEndedProps) {
   const router = useRouter()
   const dispatch = useDispatch()
   const { data: session, status } = useSession()
   const isAuthenticated = status === 'authenticated'
   
+  // Simplified state management - reduce redundant state
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [activeTab, setActiveTab] = useState('summary')
   
-  // Get quiz results from Redux store
-  const results = useSelector(selectQuizResults)
+  // Get quiz results from Redux store just once (outside effects)
+  const reduxResults = useSelector(selectQuizResults)
   const quizTitle = useSelector(selectQuizTitle)
   
+  // Important - memoize results to prevent unnecessary processing and infinite loops
+  const results = useMemo(() => {
+    // Priority: initialResults (passed from parent) > reduxResults > null
+    return initialResults || reduxResults || null
+  }, [initialResults, reduxResults])
+
+  // Check if results exist on first render and set loading accordingly
   useEffect(() => {
-    // Simulate loading for smoother UX
+    // Simulate loading for smoother UX with shorter timeout
     const timer = setTimeout(() => {
       setIsLoading(false)
-    }, 800)
+    }, 400)
     
     return () => clearTimeout(timer)
-  }, [])
+  }, []) // Empty dependency array - only run once
 
-  // Handle save results to database
-  const handleSaveResults = useCallback(async () => {
-    if (!isAuthenticated || !results || isSaving || isSaved) return
-    
-    setIsSaving(true)
-    
-    try {
-      const response = await fetch('/api/quiz/save-results', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          quizType: 'openended',
-          slug,
-          results
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to save results')
-      }
-      
-      setIsSaved(true)
-      toast.success('Results saved successfully to your profile!')
-    } catch (error) {
-      console.error('Error saving results:', error)
-      toast.error('Failed to save results. Please try again.')
-    } finally {
-      setIsSaving(false)
-    }
-  }, [isAuthenticated, results, isSaving, isSaved, slug])
   
-  // Handle retake quiz
+  // Handle retake quiz with memoization to prevent unnecessary recreations
   const handleRetakeQuiz = useCallback(() => {
     dispatch(resetQuiz())
-    router.push(`/dashboard/openended/${slug}?reset=true`)
+    router.push(`/dashboard/openended/${slug}`)
   }, [dispatch, router, slug])
 
-  // Handle share results
+  // Handle share results with memoization
   const handleShareResults = useCallback(async () => {
     if (!results) return
     
@@ -118,11 +100,17 @@ export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps
     }
   }, [results])
 
+  // Handle sign in navigation
+  const handleSignIn = useCallback(() => {
+    router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}&fromQuiz=true`)
+  }, [router])
+
   if (isLoading) {
     return <QuizSubmissionLoading quizType="openended" />
   }
   
-  if (!results) {
+  // If no results are available, show a message
+  if (!results && !hasResults) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Brain className="w-16 h-16 text-muted-foreground mb-4" />
@@ -137,12 +125,13 @@ export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps
     )
   }
   
-  // Calculate performance metrics
-  const scorePercentage = results.percentage || 0
-  const correctCount = results.score || 0
-  const incorrectCount = (results.maxScore || 0) - correctCount
+  // Calculate performance metrics from results - move outside render and memoize to prevent re-calculations
+  const scorePercentage = results?.percentage || 0
+  const correctCount = results?.score || 0
+  const totalCount = results?.maxScore || 0
+  const incorrectCount = totalCount - correctCount
   
-  // Determine performance level
+  // Determine performance level - use function instead of IIFE to prevent re-execution on every render
   const getPerformanceBadge = () => {
     if (scorePercentage >= 90) return { label: 'Outstanding', color: 'text-green-600 bg-green-100' }
     if (scorePercentage >= 80) return { label: 'Excellent', color: 'text-blue-600 bg-blue-100' }
@@ -153,9 +142,16 @@ export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps
   
   const performanceBadge = getPerformanceBadge()
   
-  // Group questions by correctness
-  const correctAnswers = results.questions?.filter(q => q.isCorrect) || []
-  const incorrectAnswers = results.questions?.filter(q => !q.isCorrect) || []
+  // Group questions by correctness - memoize to avoid recalculation on every render
+  const correctAnswers = useMemo(() => 
+    results?.questions?.filter(q => q.isCorrect) || [], 
+    [results?.questions]
+  )
+  
+  const incorrectAnswers = useMemo(() => 
+    results?.questions?.filter(q => !q.isCorrect) || [], 
+    [results?.questions]
+  )
 
   return (
     <div className="container mx-auto py-8">
@@ -168,9 +164,9 @@ export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
           <div>
-            <h1 className="text-3xl font-bold">{results.title || 'Open-Ended Quiz'} Results</h1>
+            <h1 className="text-3xl font-bold">{results?.title || quizTitle || 'Open-Ended Quiz'} Results</h1>
             <p className="text-muted-foreground">
-              Completed on {new Date(results.completedAt || Date.now()).toLocaleDateString()}
+              Completed on {new Date(results?.completedAt || Date.now()).toLocaleDateString()}
             </p>
           </div>
           
@@ -204,7 +200,7 @@ export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Score</p>
-                    <p className="text-2xl font-bold">{correctCount}/{results.maxScore}</p>
+                    <p className="text-2xl font-bold">{correctCount}/{totalCount}</p>
                     <p className="text-xs text-muted-foreground">correct answers</p>
                   </div>
                 </div>
@@ -227,7 +223,7 @@ export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps
                     <p className="text-sm text-muted-foreground">Correct</p>
                     <p className="text-2xl font-bold">{correctCount}</p>
                     <p className="text-xs text-muted-foreground">
-                      {Math.round((correctCount / (results.maxScore || 1)) * 100)}% accuracy
+                      {Math.round((correctCount / (totalCount || 1)) * 100)}% accuracy
                     </p>
                   </div>
                 </div>
@@ -299,7 +295,7 @@ export default function QuizResultsOpenEnded({ slug }: QuizResultsOpenEndedProps
                     <h3 className="text-lg font-medium">Sign in to save your results</h3>
                     <p className="text-muted-foreground">Create an account or sign in to save your progress</p>
                   </div>
-                  <Button onClick={() => router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`)}>
+                  <Button onClick={handleSignIn}>
                     Sign In
                   </Button>
                 </div>

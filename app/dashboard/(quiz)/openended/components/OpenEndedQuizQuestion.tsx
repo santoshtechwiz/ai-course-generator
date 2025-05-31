@@ -3,14 +3,15 @@
 import { useCallback, useMemo } from "react"
 import { motion } from "framer-motion"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { saveAnswer, selectAnswerForQuestion, selectQuizStatus } from "@/store/slices/quizSlice"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SendIcon, ChevronRightIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { OpenEndedQuestion } from "@/store/slices/quizSlice"
+import { OpenEndedQuestion } from "@/types/quiz"
+import { selectQuizStatus, saveAnswer, selectAnswerForQuestion } from "@/store/slices/quizSlice"
+
 
 interface QuizQuestionProps {
   question: OpenEndedQuestion

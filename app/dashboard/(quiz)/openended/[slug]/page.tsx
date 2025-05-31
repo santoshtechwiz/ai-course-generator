@@ -1,9 +1,11 @@
 "use client"
 
-import { use } from "react"
+import { use, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
+import { useSelector } from "react-redux"
+import { selectQuizStatus } from "@/store/slices/quizSlice"
 
 
 interface OpenEndedQuizPageProps {
@@ -18,6 +20,9 @@ export default function OpenEndedQuizPage({ params }: OpenEndedQuizPageProps) {
   
   // Custom hook for auth status
   const { isAuthenticated, isLoading } = useAuth()
+  
+  // Get quiz status from Redux to check if it was reset
+  const quizStatus = useSelector(selectQuizStatus)
 
   // If still loading auth status, show loading
   if (isLoading) {
@@ -32,7 +37,9 @@ export default function OpenEndedQuizPage({ params }: OpenEndedQuizPageProps) {
 
   return (
     <div className="container max-w-4xl py-6">
-      <OpenEndedQuizWrapper slug={slug} />
+      <OpenEndedQuizWrapper 
+        slug={slug} 
+      />
     </div>
   )
 }
