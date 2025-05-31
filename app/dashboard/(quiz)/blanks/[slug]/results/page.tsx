@@ -11,7 +11,7 @@ import {
   selectOrGenerateQuizResults,
   selectAnswers,
   setQuizResults,
-  saveAuthRedirectState,
+  saveAuthRedirectState, // Ensure this matches the export in quizSlice.ts
   restoreAuthRedirectState,
   clearAuthState,
 } from "@/store/slices/quizSlice"
