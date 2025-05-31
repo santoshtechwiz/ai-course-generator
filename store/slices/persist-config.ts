@@ -1,6 +1,7 @@
 import storage from "redux-persist/lib/storage"
 import type { PersistConfig } from "redux-persist"
-import type { RootState } from "./store"
+import { RootState } from ".."
+
 
 // Define which parts of the state should be persisted
 export const persistConfig: PersistConfig<RootState> = {
