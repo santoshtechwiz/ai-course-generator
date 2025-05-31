@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSessionService } from "@/hooks/useSessionService"
+import { NonAuthenticatedUserSignInPrompt } from "./EnhancedNonAuthenticatedUserSignInPrompt"
 
 interface QuizResult {
   title?: string
@@ -233,9 +234,18 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
     )
   }
 
-  // For unauthenticated users, show limited results
+  // For unauthenticated users, show limited results with sign-in prompt
   if (!isAuthenticated) {
-    <></>
+    return (
+      <NonAuthenticatedUserSignInPrompt
+        onSignIn={handleSignIn}
+        title="Quiz Complete!"
+        message="Sign in to see your detailed results, save your progress, and track your improvement over time."
+        score={{ percentage: percentageCorrect }}
+        resultData={result}
+        handleRetake={handleRetake}
+      />
+    )
   }
 
   const questionData = result.questionResults || result.questions || []

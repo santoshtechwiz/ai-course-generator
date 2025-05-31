@@ -31,12 +31,13 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
   const fromAuth = searchParams.get("fromAuth") === "true"
 
   const { data: session, status: authStatus } = useSession()
-  const { restoreAuthRedirectState, getStoredResults, clearAuthRedirectState } = useSessionService()
+  const { restoreAuthRedirectState, getStoredResults, clearAuthState } = useSessionService()
 
   // Local state for managing the flow
   const [hasCheckedForResults, setHasCheckedForResults] = useState(false)
   const [shouldRedirect, setShouldRedirect] = useState(false)
   const [localResults, setLocalResults] = useState<any>(null)
+  const [isRestoringState, setIsRestoringState] = useState(fromAuth)
 
   // Redux selectors
   const quizResults = useSelector(selectQuizResults)
@@ -52,13 +53,15 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
   // Handle authentication state restoration
   useEffect(() => {
     if (authStatus === "authenticated" && fromAuth) {
+      setIsRestoringState(true)
       const restoredState = restoreAuthRedirectState()
       if (restoredState?.quizState?.currentState?.results) {
         setLocalResults(restoredState.quizState.currentState.results)
       }
-      clearAuthRedirectState()
+      clearAuthState() // Use the correct function name here
+      setIsRestoringState(false)
     }
-  }, [authStatus, fromAuth, restoreAuthRedirectState, clearAuthRedirectState])
+  }, [authStatus, fromAuth, restoreAuthRedirectState, clearAuthState])
 
   // Check for stored results when component mounts
   useEffect(() => {
@@ -74,7 +77,7 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
   // Handle redirect logic when no data is available
   useEffect(() => {
     // Only check for redirect after auth status is determined and we've checked for results
-    if (authStatus !== "loading" && hasCheckedForResults && !hasAnyData && !localResults) {
+    if (authStatus !== "loading" && hasCheckedForResults && !hasAnyData && !localResults && !isRestoringState) {
       // Set a small delay to prevent immediate redirect and allow for any async data loading
       const redirectTimer = setTimeout(() => {
         setShouldRedirect(true)
@@ -82,7 +85,7 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
 
       return () => clearTimeout(redirectTimer)
     }
-  }, [authStatus, hasCheckedForResults, hasAnyData, localResults])
+  }, [authStatus, hasCheckedForResults, hasAnyData, localResults, isRestoringState])
 
   // Perform the redirect
   useEffect(() => {
@@ -98,11 +101,12 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
       hasCheckedForResults &&
       !hasAnyData &&
       !localResults &&
-      quizStatus !== "loading"
+      quizStatus !== "loading" &&
+      !isRestoringState
     ) {
       dispatch(fetchQuiz({ slug, type: "blanks" }))
     }
-  }, [authStatus, hasCheckedForResults, hasAnyData, localResults, quizStatus, dispatch, slug])
+  }, [authStatus, hasCheckedForResults, hasAnyData, localResults, quizStatus, dispatch, slug, isRestoringState])
 
   // Handle retaking the quiz
   const handleRetakeQuiz = () => {
@@ -110,14 +114,14 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
   }
 
   // Show loading state while auth is loading or we're checking for results
-  if (authStatus === "loading" || !hasCheckedForResults || quizStatus === "loading") {
+  if (authStatus === "loading" || !hasCheckedForResults || quizStatus === "loading" || isRestoringState) {
     return (
       <QuizLoadingSteps
         steps={[
           { label: "Checking authentication", status: authStatus === "loading" ? "loading" : "completed" },
           {
             label: "Loading quiz results",
-            status: !hasCheckedForResults || quizStatus === "loading" ? "loading" : "completed",
+            status: !hasCheckedForResults || quizStatus === "loading" || isRestoringState ? "loading" : "completed",
           },
         ]}
       />

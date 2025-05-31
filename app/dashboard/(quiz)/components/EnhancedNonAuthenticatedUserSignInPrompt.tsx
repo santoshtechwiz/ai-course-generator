@@ -1,199 +1,112 @@
 "use client"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Check } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
-import { Spinner } from "@/hooks/spinner";
-import { selectAuthStatus, selectIsAuthenticated } from "@/store/slices/authSlice";
-import React, { useState, useEffect } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface QuizResultPreviewItem {
-  id: string | number;
-  question: string;
-  userAnswer: string;
-  correctAnswer: string;
-  isCorrect: boolean;
+export interface FallbackAction {
+  label: string
+  onClick: () => void
+  variant?: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined
 }
 
-interface QuizResultPreview {
-  title: string;
-  score: number;
-  maxScore: number;
-  percentage: number;
-  questions: QuizResultPreviewItem[];
-  slug?: string;
+interface NonAuthenticatedUserSignInPromptProps {
+  onSignIn: () => void
+  title?: string
+  message?: string
+  score?: {
+    percentage: number
+  }
+  fallbackAction?: FallbackAction
+  resultData?: any
+  handleRetake?: () => void
 }
 
-interface AuthPromptProps {
-  onSignIn: () => void;
-  title?: string;
-  message?: string;
-  quizType: 'mcq' | 'blanks' | 'openended' | 'code' | 'flashcard';
-  showSaveMessage?: boolean;
-  previewData?: QuizResultPreview;
-}
-
-export default function NonAuthenticatedUserSignInPrompt({
+export function NonAuthenticatedUserSignInPrompt({
   onSignIn,
   title = "Sign In Required",
-  message = "Please sign in to view and save your quiz results",
-  quizType,
-  showSaveMessage = true,
-  previewData
-}: AuthPromptProps) {
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const authStatus = useSelector(selectAuthStatus);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("signin");
-
-  // Handle sign in click
-  const handleSignIn = () => {
-    setIsLoading(true);
-    onSignIn();
-  };
-
-  // Reset loading state if auth status changes
-  useEffect(() => {
-    if (isAuthenticated) {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated]);
-
+  message = "Sign in to see your detailed results, save your progress, and track your improvement over time.",
+  score,
+  fallbackAction,
+  resultData,
+  handleRetake,
+}: NonAuthenticatedUserSignInPromptProps) {
   return (
-    <Card className="w-full max-w-3xl mx-auto shadow-lg">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">{title}</CardTitle>
-        {previewData && (
-          <CardDescription>
-            You scored {previewData.score} out of {previewData.maxScore} ({previewData.percentage}%)
-          </CardDescription>
-        )}
-      </CardHeader>
-      <CardContent>
-        {previewData ? (
-          <Tabs defaultValue="signin" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="preview">Results Preview</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin" className="space-y-4">
-              <div className="text-center mb-6">
-                <p className="text-muted-foreground">{message}</p>
-              </div>
-              <Button 
-                onClick={handleSignIn} 
-                disabled={isLoading || authStatus === 'loading'}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading || authStatus === 'loading' ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  "Sign In to Save Results"
-                )}
-              </Button>
-              {showSaveMessage && (
-                <p className="text-sm text-muted-foreground text-center mt-2">
-                  Your progress will be saved once you sign in.
-                </p>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="preview" className="space-y-4">
-              <div className="rounded-md border p-4">
-                <h3 className="font-medium mb-2">Quiz Summary</h3>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Score: </span>
-                    <span className="font-medium">{previewData.score}/{previewData.maxScore}</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Percentage: </span>
-                    <span className="font-medium">{previewData.percentage}%</span>
-                  </div>
-                </div>
-                
-                <h3 className="font-medium mb-2">Question Summary</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                  {previewData.questions.slice(0, 3).map((q, i) => (
-                    <div key={i} className="text-sm border-b pb-2">
-                      <p className="font-medium mb-1">{q.question}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <span className="text-muted-foreground">Your answer: </span>
-                          <span className={q.isCorrect ? "text-green-600" : "text-red-600"}>
-                            {q.userAnswer || "Not answered"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Correct answer: </span>
-                          <span className="text-green-600">{q.correctAnswer}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {previewData.questions.length > 3 && (
-                    <p className="text-sm text-muted-foreground text-center italic">
-                      Sign in to view all {previewData.questions.length} questions
-                    </p>
-                  )}
+    <div className="space-y-6">
+      <Card className="mb-6 bg-gradient-to-b from-background to-primary/10 border-primary/20">
+        <CardContent className="p-6 text-center">
+          {/* Show score if available */}
+          {(score?.percentage !== undefined || resultData?.percentage !== undefined) && (
+            <div className="mb-4">
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="10"
+                    strokeDasharray={`${score?.percentage ?? resultData?.percentage} 100`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold">{score?.percentage ?? resultData?.percentage}%</span>
                 </div>
               </div>
-              
-              <Button 
-                onClick={handleSignIn} 
-                disabled={isLoading || authStatus === 'loading'}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading || authStatus === 'loading' ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  "Sign In to Save Full Results"
-                )}
-              </Button>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <p className="text-muted-foreground">{message}</p>
             </div>
-            <Button 
-              onClick={handleSignIn} 
-              disabled={isLoading || authStatus === 'loading'}
-              className="w-full"
-              size="lg"
-            >
-              {isLoading || authStatus === 'loading' ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                "Sign In"
-              )}
+          )}
+
+          <h2 className="text-2xl font-bold mb-2">{title}</h2>
+          <p className="text-muted-foreground mb-6">{message}</p>
+
+          <div className="flex justify-center gap-4">
+            <Button onClick={onSignIn} size="lg">
+              Sign In to See Full Results
             </Button>
-            {showSaveMessage && (
-              <p className="text-sm text-muted-foreground text-center">
-                Your progress will be saved once you sign in.
-              </p>
+
+            {/* Show retake button if handler provided */}
+            {handleRetake && (
+              <Button variant="outline" onClick={handleRetake} size="lg">
+                Retake Quiz
+              </Button>
+            )}
+
+            {/* Show fallback action if provided */}
+            {fallbackAction && !handleRetake && (
+              <Button variant={fallbackAction.variant || "outline"} onClick={fallbackAction.onClick} size="lg">
+                {fallbackAction.label}
+              </Button>
             )}
           </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-center text-xs text-muted-foreground">
-        <p>This helps us track your progress and save your results.</p>
-      </CardFooter>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="bg-muted/30 p-6 rounded-lg border border-muted mb-6">
+            <h3 className="text-lg font-medium mb-2 text-center">Why Sign In?</h3>
+            <ul className="space-y-2 text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>See which questions you answered correctly</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Review detailed explanations for all answers</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Track your progress across all quizzes</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Get personalized recommendations for improvement</span>
+              </li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
