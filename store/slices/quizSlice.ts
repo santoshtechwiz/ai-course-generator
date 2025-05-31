@@ -913,4 +913,15 @@ export const selectAnswerForQuestion = (state: RootState, questionId: string | n
   return state.quiz.answers[normalizedId] || null
 }
 
+// Restore auth redirect state selector
+export const restoreAuthRedirectState = (state: RootState) => {
+  const quiz = selectQuizState(state);
+  return quiz.authRedirectState || null;
+};
+
 export default quizSlice.reducer
+
+export const saveAuthRedirectState = (state: RootState, payload: { callbackUrl: string; quizState: any }) => {
+  const quiz = selectQuizState(state);
+  quiz.authRedirectState = payload;
+};
