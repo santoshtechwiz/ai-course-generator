@@ -1,36 +1,50 @@
 "use client"
 
 import { use } from "react"
-import { useAuth } from "@/hooks/useAuth"
-import BlankQuizWrapper from "../components/BlankQuizWrapper"
-
+import { useSelector } from "react-redux"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
-export default function BlanksPage({
+export default function BlanksQuizPage({
   params,
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
-  // Extract slug for both test and production environments
-  const slug = params instanceof Promise ? use(params).slug : params.slug
-  
-  // Custom hook for auth status
-  const { isAuthenticated, isLoading } = useAuth()
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const slug = resolvedParams.slug
+  const { status: authStatus } = useSession()
+  const router = useRouter()
 
-  // If still loading auth status, show loading
-  if (isLoading) {
+  // Check for loading state
+  if (authStatus === "loading") {
     return (
       <QuizLoadingSteps
         steps={[
-          { label: "Checking authentication", status: "loading" }
+          { label: "Initializing quiz", status: "loading" }
         ]}
       />
     )
   }
 
+  if (!slug) {
+    return (
+      <div className="container max-w-4xl py-6">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Error</h2>
+          <p className="text-muted-foreground">
+            Quiz slug is missing. Please check the URL.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Allow all users to take quiz (authenticated or not)
   return (
     <div className="container max-w-4xl py-6">
-      <BlankQuizWrapper slug={slug} />
+      <BlanksQuizWrapper slug={slug} />
     </div>
   )
 }

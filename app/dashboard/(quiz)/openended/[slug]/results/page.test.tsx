@@ -4,7 +4,7 @@ import { Provider } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { configureStore } from "@reduxjs/toolkit";
-import McqResultsPage from "./page";
+import OpenEndedResultsPage from "./page";
 import { useSessionService } from "@/hooks/useSessionService";
 import quizReducer from "@/store/slices/quizSlice";
 import authReducer from "@/store/slices/authSlice";
@@ -18,18 +18,18 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(() => ({
     get: jest.fn((param) => param === "fromAuth" ? "false" : null),
   })),
-}))
+}));
 
 // Mock next-auth/react
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
   signIn: jest.fn(),
-}))
+}));
 
 // Mock useSessionService hook
 jest.mock("@/hooks/useSessionService", () => ({
   useSessionService: jest.fn(),
-}))
+}));
 
 // Mock React's use function for handling params
 jest.mock("react", () => {
@@ -56,7 +56,7 @@ const createStore = (initialState = {}) => {
   });
 };
 
-describe("MCQ Results Page", () => {
+describe("OpenEndedResultsPage", () => {
   // Setup common mocks and utilities
   const mockRouter = { push: jest.fn() };
   const mockClearQuizResults = jest.fn();
@@ -90,7 +90,7 @@ describe("MCQ Results Page", () => {
   });
 
   // Test: Loading state is displayed while authentication is loading
-  it("shows loading state when auth is loading", () => {
+  it("shows loading state when authentication is loading", () => {
     (useSession as jest.Mock).mockReturnValue({
       status: "loading",
       data: null,
@@ -112,7 +112,7 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     );
     
@@ -137,7 +137,7 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     );
     
@@ -146,7 +146,7 @@ describe("MCQ Results Page", () => {
     
     // Wait for the redirect timeout
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/mcq/test-slug");
+      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/openended/test-slug");
     }, { timeout: 1500 });
   });
   
@@ -156,23 +156,23 @@ describe("MCQ Results Page", () => {
       quiz: {
         status: "succeeded",
         questions: [
-          { id: "1", text: "Question 1", correctOptionId: "a" },
-          { id: "2", text: "Question 2", correctOptionId: "b" },
+          { id: "1", text: "Question 1", modelAnswer: "Model answer 1" },
+          { id: "2", text: "Question 2", modelAnswer: "Model answer 2" },
         ],
         answers: {
-          "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" },
-          "2": { selectedOptionId: "c", isCorrect: false, type: "mcq" },
+          "1": { text: "User answer 1", type: "openended" },
+          "2": { text: "User answer 2", type: "openended" },
         },
-        title: "MCQ Quiz",
+        title: "Open-Ended Quiz",
         results: {
           slug: "test-slug",
-          title: "MCQ Quiz",
-          score: 1,
+          title: "Open-Ended Quiz",
+          score: 2,
           maxScore: 2,
-          percentage: 50,
+          percentage: 100,
           questionResults: [
-            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
-            { questionId: "2", isCorrect: false, userAnswer: "c", correctAnswer: "b" },
+            { questionId: "1", isCorrect: true, userAnswer: "User answer 1", correctAnswer: "Model answer 1", feedback: "Good job!" },
+            { questionId: "2", isCorrect: true, userAnswer: "User answer 2", correctAnswer: "Model answer 2", feedback: "Well done!" },
           ],
         },
       },
@@ -185,14 +185,16 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     );
     
-    // Should show score and sign-in prompt but not detailed results
-    expect(screen.getByText("Your Score: 50%")).toBeInTheDocument();
+    // Should show completion rate and sign-in prompt but not detailed results/feedback
+    expect(screen.getByText("Your Completion Rate: 100%")).toBeInTheDocument();
     expect(screen.getByText("Sign In to See Full Results")).toBeInTheDocument();
     expect(screen.getByText("Why Sign In?")).toBeInTheDocument();
+    // Should not show feedback
+    expect(screen.queryByText("Good job!")).not.toBeInTheDocument();
   });
   
   // Test: Authenticated user sees full results
@@ -201,23 +203,23 @@ describe("MCQ Results Page", () => {
       quiz: {
         status: "succeeded",
         questions: [
-          { id: "1", text: "Question 1", correctOptionId: "a" },
-          { id: "2", text: "Question 2", correctOptionId: "b" },
+          { id: "1", text: "Question 1", modelAnswer: "Model answer 1" },
+          { id: "2", text: "Question 2", modelAnswer: "Model answer 2" },
         ],
         answers: {
-          "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" },
-          "2": { selectedOptionId: "c", isCorrect: false, type: "mcq" },
+          "1": { text: "User answer 1", type: "openended" },
+          "2": { text: "User answer 2", type: "openended" },
         },
-        title: "MCQ Quiz",
+        title: "Open-Ended Quiz",
         results: {
           slug: "test-slug",
-          title: "MCQ Quiz",
-          score: 1,
+          title: "Open-Ended Quiz",
+          score: 2,
           maxScore: 2,
-          percentage: 50,
+          percentage: 100,
           questionResults: [
-            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
-            { questionId: "2", isCorrect: false, userAnswer: "c", correctAnswer: "b" },
+            { questionId: "1", isCorrect: true, userAnswer: "User answer 1", correctAnswer: "Model answer 1", feedback: "Good job!" },
+            { questionId: "2", isCorrect: true, userAnswer: "User answer 2", correctAnswer: "Model answer 2", feedback: "Well done!" },
           ],
         },
       },
@@ -235,14 +237,13 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     );
     
-    // Should show the full quiz result component
-    // Note: We check for "Score" instead of specific title to avoid test brittleness
+    // Look for Score text instead of title to avoid brittleness
     expect(screen.getByText(/score/i, { selector: ".text-xl.text-muted-foreground" })).toBeInTheDocument();
-    expect(screen.getByText("50%")).toBeInTheDocument();
+    expect(screen.getByText("100%")).toBeInTheDocument();
   });
   
   // Test: Sign-in handler is called when user clicks sign in
@@ -250,15 +251,15 @@ describe("MCQ Results Page", () => {
     const initialState = {
       quiz: {
         status: "succeeded",
-        questions: [{ id: "1", text: "Question 1", correctOptionId: "a" }],
-        answers: { "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" } },
-        title: "MCQ Quiz",
+        questions: [{ id: "1", text: "Question 1", modelAnswer: "Model answer" }],
+        answers: { "1": { text: "User answer", type: "openended" } },
+        title: "Open-Ended Quiz",
         results: {
           score: 1,
           maxScore: 1,
           percentage: 100,
           questionResults: [
-            { questionId: "1", isCorrect: true, userAnswer: "a", correctAnswer: "a" },
+            { questionId: "1", isCorrect: true, userAnswer: "User answer", correctAnswer: "Model answer", feedback: "Good job!" },
           ],
         },
       },
@@ -271,7 +272,7 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     );
     
@@ -290,9 +291,9 @@ describe("MCQ Results Page", () => {
     const initialState = {
       quiz: {
         status: "succeeded",
-        questions: [{ id: "1", text: "Question 1", correctOptionId: "a" }],
-        answers: { "1": { selectedOptionId: "a", isCorrect: true, type: "mcq" } },
-        title: "MCQ Quiz",
+        questions: [{ id: "1", text: "Question 1", modelAnswer: "Model answer" }],
+        answers: { "1": { text: "User answer", type: "openended" } },
+        title: "Open-Ended Quiz",
         results: {
           score: 1,
           maxScore: 1,
@@ -313,7 +314,7 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     );
     
@@ -323,7 +324,7 @@ describe("MCQ Results Page", () => {
     
     // Verify clearQuizResults was called and router.push was called with the right URL
     expect(mockClearQuizResults).toHaveBeenCalled();
-    expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/mcq/test-slug?reset=true");
+    expect(mockRouter.push).toHaveBeenCalledWith("/dashboard/openended/test-slug?reset=true");
   });
   
   // Test: Auth restoration happens after login
@@ -354,11 +355,49 @@ describe("MCQ Results Page", () => {
     
     render(
       <Provider store={store}>
-        <McqResultsPage params={{ slug: "test-slug" }} />
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
       </Provider>
     );
     
     // Verify restoreAuthRedirectState was called
     expect(mockRestoreAuthRedirectState).toHaveBeenCalled();
+  });
+  
+  // Test: Results are automatically generated if not present but answers exist
+  it("generates results if not present but answers exist", () => {
+    const initialState = {
+      quiz: {
+        status: "succeeded",
+        questions: [
+          { id: "1", text: "Question 1", modelAnswer: "Model answer 1" },
+          { id: "2", text: "Question 2", modelAnswer: "Model answer 2" },
+        ],
+        answers: {
+          "1": { text: "User answer 1", type: "openended" },
+          "2": { text: "User answer 2", type: "openended" },
+        },
+        title: "Open-Ended Quiz",
+        results: null, // No results, should be generated
+      },
+      auth: {
+        isAuthenticated: true,
+      },
+    };
+    
+    const store = createStore(initialState);
+    
+    (useSession as jest.Mock).mockReturnValue({
+      status: "authenticated",
+      data: { user: { name: "Test User" } },
+    });
+    
+    render(
+      <Provider store={store}>
+        <OpenEndedResultsPage params={{ slug: "test-slug" }} />
+      </Provider>
+    );
+    
+    // The component should render without errors and not redirect
+    expect(mockRouter.push).not.toHaveBeenCalled();
   });
 });

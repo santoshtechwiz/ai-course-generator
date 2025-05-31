@@ -1,7 +1,7 @@
 "use client"
 
 import { use, useCallback, useEffect, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { signIn, useSession } from "next-auth/react"
 import type { AppDispatch } from "@/store"
@@ -15,6 +15,7 @@ import {
   selectQuizTitle,
   selectOrGenerateQuizResults,
   setPendingQuiz,
+  resetQuiz
 } from "@/store/slices/quizSlice"
 import { selectIsAuthenticated } from "@/store/slices/authSlice"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
@@ -31,10 +32,12 @@ interface ResultsPageProps {
 export default function McqResultsPage({ params }: ResultsPageProps) {
   const resolvedParams = params instanceof Promise ? use(params) : params
   const slug = resolvedParams.slug
+  const searchParams = useSearchParams()
+  const fromAuth = searchParams.get("fromAuth") === 'true'
 
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const { saveAuthRedirectState, restoreAuthRedirectState } = useSessionService()
+  const { saveAuthRedirectState, restoreAuthRedirectState, clearQuizResults } = useSessionService()
   const { status: authStatus, data: sessionData } = useSession()
 
   // Redux state
@@ -47,6 +50,18 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   const title = useSelector(selectQuizTitle)
   const generatedResults = useSelector(selectOrGenerateQuizResults)
 
+  // Debug logging
+  useEffect(() => {
+    console.log("MCQ Results page mount - Auth status:", authStatus);
+    console.log("MCQ Results data check:", { 
+      hasQuizResults: !!quizResults, 
+      hasGeneratedResults: !!generatedResults,
+      answersCount: Object.keys(answers).length,
+      questionsCount: questions.length,
+      fromAuth
+    });
+  }, [authStatus, quizResults, generatedResults, answers, questions, fromAuth]);
+
   // Validate slug and redirect if invalid
   useEffect(() => {
     if (!slug || typeof slug !== "string") {
@@ -58,58 +73,112 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   // Check for auth return after sign-in
   useEffect(() => {
-    if (authStatus === "authenticated" && sessionData) {
+    if (authStatus === "authenticated" && (fromAuth || sessionStorage.getItem(`${slug}_auth_for_results`) === 'true')) {
+      console.log("Authentication detected, restoring MCQ quiz state");
       // Restore any saved quiz state from auth redirect
-      restoreAuthRedirectState()
-    }
-  }, [authStatus, sessionData, restoreAuthRedirectState])
+      const restored = restoreAuthRedirectState()
+      
+      // Set a flag to avoid immediate redirect to quiz
+      if (restored) {
+        sessionStorage.setItem(`${slug}_auth_restored`, 'true');
+      }
 
-  // Redirect to quiz if no results or answers available
-  useEffect(() => {
-    if ((!generatedResults || Object.keys(generatedResults).length === 0) && 
-        !quizResults && 
-        (!answers || Object.keys(answers).length === 0)) {
-      router.push(`/dashboard/mcq/${slug}`)
+      // Clean up the fromAuth flag
+      if (fromAuth) {
+        sessionStorage.removeItem(`${slug}_auth_for_results`);
+      }
     }
-  }, [generatedResults, quizResults, answers, router, slug])
+  }, [authStatus, sessionData, restoreAuthRedirectState, slug, fromAuth]);
+
+  // Clean up function to reset quiz state when navigating away
+  useEffect(() => {
+    return () => {
+      // Only clear quiz results if we're not redirecting for authentication
+      if (typeof window !== "undefined" && 
+          !sessionStorage.getItem(`${slug}_auth_for_results`) && 
+          !sessionStorage.getItem("pendingQuiz")) {
+        clearQuizResults();
+        console.log("Cleaning up quiz results on unmount");
+      }
+    };
+  }, [slug, clearQuizResults]);
+
+  // Redirect to quiz if no results available - with debounce
+  useEffect(() => {
+    // Skip redirect if we've just restored after auth
+    if (typeof window !== "undefined" && sessionStorage.getItem(`${slug}_auth_restored`) === 'true') {
+      console.log("Skipping redirect check because auth was just restored");
+      sessionStorage.removeItem(`${slug}_auth_restored`);
+      return;
+    }
+    
+    const redirectTimeout = setTimeout(() => {
+      const hasResults = quizResults || generatedResults;
+      const hasAnswers = answers && Object.keys(answers).length > 0;
+      
+      console.log("Checking if redirect needed:", { hasResults, hasAnswers });
+      
+      if (!hasResults && !hasAnswers) {
+        console.log("No results or answers found, redirecting to MCQ quiz");
+        router.push(`/dashboard/mcq/${slug}`);
+      }
+    }, 1000); // Give time for state to be restored
+    
+    return () => clearTimeout(redirectTimeout);
+  }, [generatedResults, quizResults, answers, router, slug]);
 
   const handleRetake = useCallback(() => {
-    router.push(`/dashboard/mcq/${slug}?reset=true`)
-  }, [router, slug])
+    // Clear results state before redirecting
+    clearQuizResults();
+    router.push(`/dashboard/mcq/${slug}?reset=true`);
+  }, [router, slug, clearQuizResults]);
 
   const handleSignIn = useCallback(async () => {
     try {
-      // Create partial results to preserve score but hide details
-      const partialResults = generatedResults || {
+      // Store both generated and actual results for safety
+      const resultsToSave = quizResults || generatedResults || {
         slug,
         title: title || `MCQ Quiz - ${slug}`,
-        percentage: Math.floor(Math.random() * 30) + 40, // Random score between 40-70%
-        score: 0,
-        maxScore: questions.length,
-      }
+        questions: questions,
+        // Generate question results from answers if we have them
+        questionResults: Object.entries(answers).map(([questionId, answerData]) => ({
+          questionId,
+          selectedOptionId: answerData.selectedOptionId,
+          userAnswer: answerData.selectedOptionId,
+          isCorrect: !!answerData.isCorrect
+        }))
+      };
+      
+      console.log("Saving MCQ results before authentication:", resultsToSave);
       
       // Store comprehensive quiz state for when user returns after authentication
       saveAuthRedirectState({
-        returnPath: `/dashboard/mcq/${slug}/results`,
+        returnPath: `/dashboard/mcq/${slug}/results?fromAuth=true`,
         quizState: {
           slug,
           quizData: {
             title: title,
             questions: questions,
+            type: "mcq"
           },
           currentState: {
             answers,
             showResults: true,
-            results: generatedResults || quizResults,
+            results: resultsToSave,
           },
         },
-      })
+      });
       
-      await signIn(undefined, { callbackUrl: `/dashboard/mcq/${slug}/results` })
+      // Also save directly to session storage as a backup
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(`quiz_results_${slug}`, JSON.stringify(resultsToSave));
+      }
+      
+      await signIn(undefined, { callbackUrl: `/dashboard/mcq/${slug}/results?fromAuth=true` });
     } catch (error) {
-      console.error("Sign in failed:", error)
+      console.error("Sign in failed:", error);
     }
-  }, [saveAuthRedirectState, slug, title, questions, answers, generatedResults, quizResults])
+  }, [saveAuthRedirectState, slug, title, questions, answers, generatedResults, quizResults]);
 
   // Loading states
   if (authStatus === "loading" || quizStatus === "loading") {
@@ -120,22 +189,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
           { label: "Loading quiz data", status: quizStatus === "loading" ? "loading" : "completed" },
         ]}
       />
-    )
-  }
-
-  // Redirect to quiz if no answers are available
-  if (Object.keys(answers).length === 0) {
-    return (
-      <div className="container max-w-4xl py-10 text-center">
-        <Card>
-          <CardContent className="p-8">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
-            <p className="text-muted-foreground">Taking you to the quiz page so you can take the quiz...</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    );
   }
 
   // Show results from Redux state
@@ -145,6 +199,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     
     // If we have no base data but have answers, create a minimal result object
     if (!baseData && Object.keys(answers).length > 0) {
+      console.log("Creating minimal result object from answers");
       return {
         slug,
         title: title || `MCQ Quiz - ${slug}`,
@@ -159,13 +214,44 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       };
     }
     
+    // Try to get from sessionStorage as a last resort
+    if (!baseData && typeof window !== "undefined") {
+      try {
+        const storedResults = sessionStorage.getItem(`quiz_results_${slug}`);
+        if (storedResults) {
+          console.log("Retrieved MCQ results from sessionStorage");
+          return JSON.parse(storedResults);
+        }
+      } catch (e) {
+        console.error("Failed to retrieve MCQ results from sessionStorage:", e);
+      }
+    }
+    
     return baseData;
   }, [quizResults, generatedResults, answers, slug, title, questions]);
+
+  // No results case - redirect to quiz
+  if (!resultData && Object.keys(answers).length === 0) {
+    console.log("No MCQ result data available, showing loading...");
+    return (
+      <div className="container max-w-4xl py-10 text-center">
+        <Card>
+          <CardContent className="p-8">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
+            <p className="text-muted-foreground">Taking you to the quiz page so you can take the quiz...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // For unauthenticated users, show the sign-in prompt with limited results
   if (!isAuthenticated) {
     // If we have results, show a teaser of results with limited information
     if (resultData && Object.keys(resultData).length > 0) {
+      console.log("Showing limited MCQ results for unauthenticated user");
+      
       // Create a limited version of results that hides specific answers
       const limitedResultData = {
         ...resultData,
@@ -238,10 +324,11 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
             </CardContent>
           </Card>
         </div>
-      )
+      );
     }
     
     // If we don't have proper results, show sign-in prompt
+    console.log("Showing sign-in prompt for unauthenticated user (no MCQ results available)");
     return (
       <div className="container max-w-md py-10">
         <NonAuthenticatedUserSignInPrompt
@@ -255,10 +342,11 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
           }}
         />
       </div>
-    )
+    );
   }
   
   // For authenticated users, show full results
+  console.log("Showing full MCQ results for authenticated user");
   return (
     <div className="container max-w-4xl py-6">
       <Card>
@@ -267,5 +355,5 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

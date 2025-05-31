@@ -1,104 +1,184 @@
 "use client"
 
-import { memo, useCallback, useMemo, useState } from "react"
+import * as React from "react"
 import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { Brain, Info, AlertCircle, Sparkles } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import axios from "axios"
+import { signIn, useSession } from "next-auth/react"
+import { TextQuote, HelpCircle, Timer, Sparkles, Check } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 
+import { usePersistentState } from "@/hooks/usePersistentState"
+import { cn } from "@/lib/tailwindUtils"
+import { blanksQuizSchema } from "@/schema/schema"
+
+import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
+import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import useSubscription from "@/hooks/use-subscription"
 
-// Define schema with zod for consistent validation
-const fillInTheBlankQuizSchema = z.object({
-  title: z.string().min(3, "Topic must be at least 3 characters"),
-  questionCount: z.number().int().positive().min(1, "Must have at least 1 question"),
-  difficulty: z.enum(["easy", "medium", "hard"]),
-})
+type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {
+  userType?: string
+}
 
-type FillInTheBlankQuizFormData = z.infer<typeof fillInTheBlankQuizSchema>
-
-interface FillInTheBlankQuizFormProps {
+interface BlankQuizFormProps {
+  credits: number
   isLoggedIn: boolean
   maxQuestions: number
   params?: QueryParams
 }
 
-function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: FillInTheBlankQuizFormProps) {
+export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, params }: BlankQuizFormProps) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const { data: subscriptionData } = useSubscription()
+  const { toast } = useToast()
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(false)
+  const { data: session, status } = useSession()
 
-  const credits = subscriptionData?.credits || 0
+  // Type the status
+  const { data: subscriptionData, status: subStatus } = useSubscription()
+
+  const [formData, setFormData] = usePersistentState<BlankQuizFormData>("blankQuizFormData", {
+    title: params?.title || "",
+    amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
+    difficulty: (["easy", "medium", "hard"].includes(params?.difficulty || "") ? params?.difficulty : "easy") as
+      | "easy"
+      | "medium"
+      | "hard",
+    topic: params?.topic || "",
+  })
 
   const {
     control,
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isValid },
-  } = useForm<FillInTheBlankQuizFormData>({
-    resolver: zodResolver(fillInTheBlankQuizSchema),
-    defaultValues: {
-      title: params?.title || "",
-      questionCount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
-      difficulty: "easy",
-    },
+  } = useForm<BlankQuizFormData>({
+    resolver: zodResolver(blanksQuizSchema),
+    defaultValues: formData,
     mode: "onChange",
   })
 
-  const generateQuiz = useCallback(
-    async (data: FillInTheBlankQuizFormData) => {
-      let isMounted = true
-      setIsLoading(true)
-
-      try {
-        const response = await fetch("/api/blanks", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to generate quiz")
-        }
-
-        const { slug } = await response.json()
-        if (isMounted) router.push(`/dashboard/blanks/${slug}`)
-      } catch (err) {
-        if (isMounted) {
-          console.error("Error generating quiz:", err)
-        }
-      } finally {
-        if (isMounted) setIsLoading(false)
+  React.useEffect(() => {
+    if (params?.title) {
+      setValue("title", params.title)
+    }
+    if (params?.amount) {
+      const amount = Number.parseInt(params.amount, 10)
+      if (amount !== maxQuestions) {
+        setValue("amount", Math.min(amount, maxQuestions))
       }
-      return () => { isMounted = false }
+    }
+    if (params?.difficulty && ["easy", "medium", "hard"].includes(params.difficulty)) {
+      setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
+    }
+    if (params?.topic) {
+      setValue("topic", params.topic)
+    }
+  }, [params?.title, params?.amount, params?.difficulty, params?.topic, maxQuestions, setValue])
+
+  React.useEffect(() => {
+    const subscription = watch((value) => setFormData(value as BlankQuizFormData))
+    return () => subscription.unsubscribe()
+  }, [watch, setFormData])
+
+  const { mutateAsync: createBlankQuizMutation } = useMutation({
+    mutationFn: async (data: BlankQuizFormData) => {
+      data.userType = subscriptionData?.subscriptionPlan
+      const response = await axios.post("/api/blanks-quiz", data)
+      return response.data
     },
-    [router],
+    onError: (error) => {
+      console.error("Error creating blanks quiz:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create fill-in-the-blanks quiz. Please try again.",
+        variant: "destructive",
+      })
+    },
+  })
+
+  const onSubmit = React.useCallback(
+    (data: BlankQuizFormData) => {
+      if (isLoading) return
+
+      if (!data.title || !data.amount || !data.difficulty || !data.topic) {
+        toast({
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (!isLoggedIn) {
+        signIn("credentials", { callbackUrl: "/dashboard/blanks" })
+        return
+      }
+
+      setIsLoading(true)
+      setIsConfirmDialogOpen(true)
+    },
+    [isLoading, isLoggedIn, toast],
   )
 
-  const onSubmit = handleSubmit(generateQuiz)
+  const handleConfirm = React.useCallback(async () => {
+    setIsConfirmDialogOpen(false)
 
+    try {
+      const formValues = watch()
+      const response = await createBlankQuizMutation({
+        title: formValues.title,
+        amount: formValues.amount,
+        difficulty: formValues.difficulty,
+        topic: formValues.topic,
+        userType: subscriptionData?.subscriptionPlan,
+      })
+      const userQuizId = response?.userQuizId
+
+      if (!userQuizId) throw new Error("Blanks Quiz ID not found")
+
+      toast({
+        title: "Success!",
+        description: "Your fill-in-the-blanks quiz has been created.",
+      })
+
+      router.push(`/dashboard/blanks/${response?.slug}`)
+    } catch (error) {
+      // Error is handled in the mutation's onError callback
+    } finally {
+      setIsLoading(false)
+    }
+  }, [createBlankQuizMutation, watch, toast, router, subscriptionData?.subscriptionPlan])
+
+  const amount = watch("amount")
+  const difficulty = watch("difficulty")
   const title = watch("title")
-  const questionCount = watch("questionCount")
+  const topic = watch("topic")
 
-  const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
+  const isFormValid = React.useMemo(() => {
+    return !!title && !!amount && !!difficulty && !!topic && isValid
+  }, [title, amount, difficulty, topic, isValid])
+
+  const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 
   // Memoize the difficulty options to prevent unnecessary re-renders
-  const difficultyOptions = useMemo(() => {
+  const difficultyOptions = React.useMemo(() => {
     return [
       { value: "easy", label: "Easy", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
       { value: "medium", label: "Medium", color: "bg-amber-100 text-amber-800 border-amber-200" },
@@ -106,14 +186,25 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
     ]
   }, [])
 
+  // Suggested topics for blanks quizzes
+  const suggestedTopics = [
+    "English Grammar",
+    "Vocabulary",
+    "Science Terms",
+    "Historical Facts",
+    "Famous Quotes",
+    "Literary Passages",
+    "Business Terminology",
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-2xl mx-auto"
+      className="w-full max-w-4xl mx-auto p-6 space-y-8"
     >
-      <Card className="bg-background border border-border/60 shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300">
         <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
           <div className="flex justify-center mb-4">
             <motion.div
@@ -121,35 +212,34 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Brain className="w-8 h-8 text-primary" />
+              <TextQuote className="w-8 h-8 text-primary" />
             </motion.div>
           </div>
           <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
-            Fill-in-the-Blank Quiz Generator
+            Create Fill-in-the-Blanks Quiz
           </CardTitle>
           <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
-            Select a topic and customize your quiz with fill-in-the-blank questions.
+            Test your knowledge by filling in the missing words or phrases
           </p>
         </CardHeader>
 
         <CardContent className="space-y-6 pt-6">
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <motion.div
-              className="space-y-3"
+              className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="title" className="text-sm font-medium flex items-center gap-2">
-                <Info className="h-4 w-4 text-primary" />
-                Quiz Topic
+              <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
+                Title
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help ml-1" />
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-xs">
-                      <p>Enter a specific programming topic for your fill-in-the-blank quiz</p>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Enter a descriptive title for your fill-in-the-blanks quiz</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -157,11 +247,10 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               <div className="relative">
                 <Input
                   id="title"
+                  placeholder="Enter the quiz title"
+                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all pr-10"
                   {...register("title")}
-                  placeholder="E.g., JavaScript Fundamentals, React Hooks, Data Structures..."
-                  className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary pr-10"
-                  aria-label="Quiz topic"
-                  autoFocus
+                  aria-describedby="title-description"
                 />
                 <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               </div>
@@ -170,107 +259,188 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-destructive"
+                  className="text-sm text-destructive mt-1"
+                  id="title-error"
                 >
                   {errors.title.message}
+                </motion.p>
+              )}
+              <p className="text-sm text-muted-foreground" id="title-description">
+                Examples: Common English Idioms, Medical Terminology, Scientific Concepts
+              </p>
+            </motion.div>
+
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Label htmlFor="topic" className="text-base font-medium text-foreground flex items-center gap-2">
+                Topic
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Select a topic for your fill-in-the-blanks quiz</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {suggestedTopics.map((suggestedTopic) => (
+                    <Badge
+                      key={suggestedTopic}
+                      variant={topic === suggestedTopic ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setValue("topic", suggestedTopic)}
+                    >
+                      {suggestedTopic}
+                    </Badge>
+                  ))}
+                </div>
+
+                <Input
+                  id="topic"
+                  placeholder="Enter a topic or choose from above"
+                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
+                  {...register("topic")}
+                />
+              </div>
+
+              {errors.topic && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive mt-1"
+                >
+                  {errors.topic.message}
                 </motion.p>
               )}
             </motion.div>
 
             <motion.div
-              className="space-y-3"
+              className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.4 }}
             >
-              <Label htmlFor="difficulty" className="text-sm font-medium flex items-center gap-2">
-                <Info className="h-4 w-4 text-primary" />
-                Difficulty Level
+              <Label className="text-base font-medium text-foreground flex items-center gap-2">
+                Number of Questions
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Select how many questions you want in your quiz</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </Label>
-              <div className="grid grid-cols-3 gap-3">
-                {difficultyOptions.map((option) => (
-                  <Controller
-                    key={option.value}
-                    name="difficulty"
-                    control={control}
-                    render={({ field }) => (
-                      <button
-                        type="button"
-                        onClick={() => field.onChange(option.value)}
-                        className={`px-4 py-2 rounded-md border transition-all duration-200 ${
-                          field.value === option.value
-                            ? `${option.color} border-current shadow-sm`
-                            : "border-muted-foreground/20 hover:border-muted-foreground/40"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
+              <div className="space-y-3 px-2">
+                <div className="flex items-center justify-between px-2">
+                  <Timer className="w-5 h-5 text-muted-foreground" />
+                  <motion.span
+                    className="text-2xl font-bold text-primary"
+                    key={amount}
+                    initial={{ scale: 1.2, color: "#00ff00" }}
+                    animate={{ scale: 1, color: "var(--primary)" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                  >
+                    {amount}
+                  </motion.span>
+                </div>
+                <Controller
+                  name="amount"
+                  control={control}
+                  render={({ field }) => (
+                    <SubscriptionSlider
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
+                      ariaLabel="Select number of questions"
+                    />
+                  )}
+                />
+                <p className="text-sm text-muted-foreground text-center">
+                  Select between 1 and {maxQuestions} questions
+                </p>
+              </div>
+              {errors.amount && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive mt-1"
+                >
+                  {errors.amount.message}
+                </motion.p>
+              )}
+              <p className="text-sm text-muted-foreground mt-2">
+                {isLoggedIn
+                  ? "Unlimited quizzes available"
+                  : `This quiz will use ${amount} credit${amount > 1 ? "s" : ""}`}
+              </p>
+            </motion.div>
+
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Label className="text-base font-medium text-foreground flex items-center gap-2">
+                Difficulty
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Choose how challenging the questions should be</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <div className="grid grid-cols-3 gap-4">
+                {difficultyOptions.map((level) => (
+                  <Button
+                    key={level.value}
+                    type="button"
+                    variant={difficulty === level.value ? "default" : "outline"}
+                    className={cn(
+                      "capitalize w-full h-12 font-medium transition-all",
+                      difficulty === level.value ? "border-primary shadow-sm" : "hover:border-primary/50",
                     )}
-                  />
+                    onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
+                    aria-pressed={difficulty === level.value}
+                  >
+                    {level.label}
+                    {difficulty === level.value && <Check className="ml-2 h-4 w-4" />}
+                  </Button>
                 ))}
               </div>
             </motion.div>
 
             <motion.div
-              className="space-y-3"
+              className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.6 }}
             >
-              <Label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
-                <span className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-primary" />
-                  Number of Questions
-                </span>
-                <motion.span
-                  className="text-xl font-bold text-primary tabular-nums"
-                  key={questionCount}
-                  initial={{ scale: 1.2, color: "#00ff00" }}
-                  animate={{ scale: 1, color: "var(--primary)" }}
-                  transition={{ type: "spring", stiffness: 300, damping: 10 }}
-                >
-                  {questionCount}
-                </motion.span>
-              </Label>
-              <Controller
-                name="questionCount"
-                control={control}
-                render={({ field }) => (
-                  <SubscriptionSlider
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    ariaLabel="Select number of questions"
-                  />
-                )}
-              />
-              {errors.questionCount && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-destructive"
-                >
-                  {errors.questionCount.message}
-                </motion.p>
-              )}
-            </motion.div>
-
-            <motion.div
-              className="bg-primary/5 border border-primary/20 rounded-lg"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="p-4 space-y-2">
-                <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  Available Credits
-                </h3>
-                <Progress value={(credits / 10) * 100} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  You have <span className="font-bold text-primary">{credits}</span> credits remaining.
-                </p>
-              </div>
+              <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Available Credits
+              </h3>
+              <Progress value={(credits / 10) * 100} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+              </p>
             </motion.div>
 
             <AnimatePresence>
@@ -281,7 +451,6 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
                   exit={{ opacity: 0, y: -10 }}
                 >
                   <Alert variant="destructive">
-                    <AlertCircle className="h-5 w-5" />
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{errors.root.message}</AlertDescription>
                   </Alert>
@@ -293,32 +462,24 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
               className="pt-4 border-t border-border/60"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.7 }}
             >
               <PlanAwareButton
-                label="Generate Quiz"
-                onClick={onSubmit}
+                label="Generate Fill-in-the-Blanks Quiz"
+                onClick={handleSubmit(onSubmit)}
                 isLoggedIn={isLoggedIn}
                 isEnabled={!isDisabled}
                 isLoading={isLoading}
                 hasCredits={credits > 0}
-                loadingLabel="Generating..."
-                className="w-full h-12 transition-all duration-300 hover:shadow-lg"
+                loadingLabel="Generating Quiz..."
+                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg"
                 customStates={{
                   default: {
-                    tooltip: "Click to generate your fill-in-the-blank quiz",
-                  },
-                  loading: {
-                    label: "Generating Quiz...",
-                    tooltip: "Please wait while we generate your quiz",
-                  },
-                  notLoggedIn: {
-                    label: "Sign in to Generate",
-                    tooltip: "You need to be signed in to create a quiz",
+                    tooltip: "Click to generate your fill-in-the-blanks quiz",
                   },
                   notEnabled: {
-                    label: "Enter a valid topic",
-                    tooltip: "Please enter a topic with at least 3 characters",
+                    label: "Complete form to generate",
+                    tooltip: "Please complete the form before generating the quiz",
                   },
                   noCredits: {
                     label: "Out of credits",
@@ -330,10 +491,12 @@ function FillInTheBlankQuizFormComponent({ isLoggedIn, maxQuestions, params }: F
           </form>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        isOpen={isConfirmDialogOpen}
+        onConfirm={handleConfirm}
+        onCancel={() => setIsConfirmDialogOpen(false)}
+      />
     </motion.div>
   )
 }
-
-export const FillInTheBlankQuizForm = memo(FillInTheBlankQuizFormComponent)
-
-export default FillInTheBlankQuizForm

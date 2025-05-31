@@ -813,8 +813,7 @@ export const {
   setQuizId,
   setQuizType,
   setSessionId,
-  setQuizCompleted,
-  setQuiz
+ 
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility
