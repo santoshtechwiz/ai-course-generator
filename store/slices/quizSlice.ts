@@ -21,6 +21,9 @@ export interface QuizState {
   authStatus: "checking" | "authenticated" | "unauthenticated" | "idle"
   slug: string | null  // Primary identifier for UI operations
   wasReset?: boolean // Track if the quiz was reset
+  isSaving: boolean;
+  isSaved: boolean;
+  saveError: string | null;
 }
 
 const initialState: QuizState = {
@@ -41,6 +44,9 @@ const initialState: QuizState = {
   shouldRedirectToAuth: false,
   shouldRedirectToResults: false,
   authStatus: "idle",
+  isSaving: false,
+  isSaved: false,
+  saveError: null,
 }
 
 // Backward compatible: Keep existing fetchQuiz thunk
@@ -656,11 +662,28 @@ const quizSlice = createSlice({
     },
 
     setQuizType: (state, action: PayloadAction<string>) => {
-      state.quizType = action.payload
+      state.quizType = action.payload as QuizType
     },
 
     setSessionId: (state, action: PayloadAction<string | null>) => {
       state.sessionId = action.payload
+    },
+
+    resetSaveStatus: (state) => {
+      state.isSaving = false;
+      state.isSaved = false;
+      state.saveError = null;
+    },
+
+    // Add missing setQuiz action
+    setQuiz: (state, action: PayloadAction<{ quizId: string; title: string; questions: any[]; type: string }>) => {
+      const { quizId, title, questions, type } = action.payload;
+      state.quizId = quizId;
+      state.slug = quizId; // Set slug as primary identifier
+      state.title = title;
+      state.questions = questions;
+      state.quizType = type as QuizType;
+      state.status = "succeeded";
     },
   },
 
@@ -804,6 +827,20 @@ const quizSlice = createSlice({
         state.status = "failed"
         state.error = action.error.message || "Failed to load results"
       })
+
+      // Handle save results to database
+      .addCase(saveQuizResultsToDatabase.pending, (state) => {
+        state.isSaving = true;
+        state.saveError = null;
+      })
+      .addCase(saveQuizResultsToDatabase.fulfilled, (state) => {
+        state.isSaving = false;
+        state.isSaved = true;
+      })
+      .addCase(saveQuizResultsToDatabase.rejected, (state, action) => {
+        state.isSaving = false;
+        state.saveError = action.payload as string;
+      });
   },
 })
 
@@ -826,7 +863,8 @@ export const {
   setQuizId,
   setQuizType,
   setSessionId,
- 
+  resetSaveStatus,
+  setQuiz, // Export the new action
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility
@@ -919,9 +957,81 @@ export const restoreAuthRedirectState = (state: RootState) => {
   return quiz.authRedirectState || null;
 };
 
+// Additional selectors for save state
+export const selectIsSaving = createSelector([selectQuizState], (quiz) => quiz.isSaving);
+export const selectIsSaved = createSelector([selectQuizState], (quiz) => quiz.isSaved);
+export const selectSaveError = createSelector([selectQuizState], (quiz) => quiz.saveError);
+
 export default quizSlice.reducer
 
 export const saveAuthRedirectState = (state: RootState, payload: { callbackUrl: string; quizState: any }) => {
   const quiz = selectQuizState(state);
   quiz.authRedirectState = payload;
 };
+
+// Add the missing saveQuizResultsToDatabase thunk
+export const saveQuizResultsToDatabase = createAsyncThunk(
+  "quiz/saveResultsToDatabase",
+  async ({ slug, quizType }: { slug: string; quizType: string }, { getState, rejectWithValue }) => {
+    try {
+      const state = getState() as RootState;
+      const { results, title, questions } = state.quiz;
+
+      if (!results) {
+        return rejectWithValue("No results to save");
+      }
+
+      // Prepare data for API including required fields
+      const resultData = {
+        // Use the numeric ID format expected by the API
+        quizId: state.quiz.quizId,
+        type: state.quiz.quizType, // Required field
+        totalTime: 60, // Required field with default value
+        score: results.score || results.userScore || 0,
+        maxScore: results.maxScore || questions.length || 0,
+        percentage: results.percentage || 0,
+        totalQuestions: questions.length || 0,
+        title: results.title || title || `${quizType} Quiz`,
+        // Convert questionResults to answers format with proper structure
+        answers: (results.questionResults || []).map((qr: { questionId: any; isCorrect: any; userAnswer: any }) => ({
+          questionId: qr.questionId,
+          timeSpent: 30,
+          isCorrect: qr.isCorrect || false,
+          userAnswer: qr.userAnswer || "",
+          answer: qr.userAnswer || ""
+        }))
+      };
+
+      console.log("Sending quiz results to API:", JSON.stringify(resultData));
+
+      // Send results to API
+      const response = await fetch(`/api/quizzes/common/${slug}/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...resultData,
+          slug: slug, // Include slug separately for database lookup
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || `Failed to save quiz results: ${response.status}`);
+        } catch (e) {
+          throw new Error(`Failed to save quiz results: ${response.status}`);
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      console.error("Error in saveQuizResultsToDatabase:", error);
+      return rejectWithValue(error.message || "Failed to save results");
+    }
+  }
+);

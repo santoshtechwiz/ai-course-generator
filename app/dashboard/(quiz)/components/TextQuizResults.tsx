@@ -1,10 +1,10 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Check, X, RefreshCw, Home, Share2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
+import { Check, X, RefreshCw, Home, Share2, AlertCircle, ChevronDown, ChevronUp, SaveIcon, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -14,6 +14,16 @@ import { NonAuthenticatedUserSignInPrompt } from "./EnhancedNonAuthenticatedUser
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { Progress } from "@/components/ui/progress"
 import { Trophy, ThumbsUp, ThumbsDown, HelpCircle } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
+import { useDispatch, useSelector } from "react-redux"
+import { 
+  saveQuizResultsToDatabase,
+  selectIsSaving, 
+  selectIsSaved, 
+  selectSaveError,
+  resetSaveStatus
+} from "@/store/slices/quizSlice"
+import { AppDispatch } from "@/store"
 
 interface QuizResult {
   title?: string
@@ -49,12 +59,38 @@ interface QuizResultsProps {
   isAuthenticated: boolean
   slug: string
   quizType: "blanks" | "openended"
+  renderQuestionResult?: (question: any) => React.ReactNode
 }
 
-export default function QuizResults({ result, onRetake, isAuthenticated, slug, quizType }: QuizResultsProps) {
+export default function QuizResults({ result, onRetake, isAuthenticated, slug, quizType, renderQuestionResult }: QuizResultsProps) {
   const router = useRouter()
   const { saveAuthRedirectState } = useSessionService()
+  const dispatch = useDispatch<AppDispatch>()
+  const { toast } = useToast()
   const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({})
+  
+  // Use Redux state for saving status
+  const isSaving = useSelector(selectIsSaving)
+  const isSaved = useSelector(selectIsSaved)
+  const saveError = useSelector(selectSaveError)
+
+  // Reset save status when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(resetSaveStatus())
+    }
+  }, [dispatch])
+
+  // Handle save errors
+  useEffect(() => {
+    if (saveError) {
+      toast({
+        title: "Error",
+        description: saveError || "Failed to save results",
+        variant: "destructive",
+      })
+    }
+  }, [saveError, toast])
 
   // Memoize calculations to avoid recalculating on every render
   const {
@@ -200,6 +236,32 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
       callbackUrl: `/dashboard/${quizType}/${slug}/results?fromAuth=true`,
     })
   }, [result, slug, quizType, saveAuthRedirectState])
+
+  // Updated saveResultsToDatabase function
+  const saveResultsToDatabase = useCallback(() => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save your results",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "No results to save",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    dispatch(saveQuizResultsToDatabase({ 
+      slug, 
+      quizType 
+    }));
+  }, [dispatch, slug, quizType, isAuthenticated, toast, result])
 
   // Render question content based on quiz type
   const renderQuestionContent = useCallback(
@@ -563,6 +625,53 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
           </div>
         </div>
       )}
+
+      {/* Save results section */}
+      <Card className="border-2 border-primary/20">
+        <CardContent className="p-6 space-y-6">
+          <div className="flex flex-col md:flex-row md:justify-between items-center gap-6">
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold">Save Your Results</h2>
+              <p className="text-sm text-muted-foreground">
+                Save your quiz results to track your progress over time and review them later.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button 
+              variant="default" 
+              size="lg" 
+              onClick={saveResultsToDatabase} 
+              disabled={isSaving || isSaved}
+              className={isSaved ? "bg-success hover:bg-success/90" : ""}
+            >
+              {isSaving ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Saving...
+                </>
+              ) : isSaved ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Results Saved
+                </>
+              ) : (
+                <>
+                  <SaveIcon className="w-4 h-4 mr-2" />
+                  Save Results
+                </>
+              )}
+            </Button>
+            
+            {isSaved && (
+              <span className="text-sm text-success">
+                Your quiz results have been saved to your profile!
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
