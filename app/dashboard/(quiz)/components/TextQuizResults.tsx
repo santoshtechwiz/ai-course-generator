@@ -24,6 +24,7 @@ import {
   resetSaveStatus
 } from "@/store/slices/quizSlice"
 import { AppDispatch } from "@/store"
+import { QuizType } from "@/types/quiz"
 
 interface QuizResult {
   title?: string
