@@ -1,29 +1,33 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback, memo } from "react"
+import {
+  useState,
+  useEffect,
+  useCallback,
+  memo,
+  useRef,
+  useMemo
+} from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, ArrowRight, ArrowLeft, Flag } from "lucide-react"
+import {
+  CheckCircle,
+  ArrowRight,
+  ArrowLeft,
+  Flag,
+  Lightbulb
+} from "lucide-react"
 import type { BlankQuestion } from "./types"
-
-interface BlanksQuizProps {
-  question: BlankQuestion
-  questionNumber: number
-  totalQuestions: number
-  existingAnswer?: string
-  onAnswer: (answer: string) => boolean
-  onNext?: () => void
-  onPrevious?: () => void
-  onSubmit?: () => void
-  canGoNext?: boolean
-  canGoPrevious?: boolean
-  isLastQuestion?: boolean
-}
+import {
+  getBestSimilarityScore,
+  isAnswerCloseEnough,
+  getHint
+} from "@/lib/utils/text-similarity"
 
 const BlanksQuiz = memo(function BlanksQuiz({
   question,
@@ -36,87 +40,144 @@ const BlanksQuiz = memo(function BlanksQuiz({
   onSubmit,
   canGoNext = false,
   canGoPrevious = false,
-  isLastQuestion = false,
-}: BlanksQuizProps) {
+  isLastQuestion = false
+}: {
+  question: BlankQuestion
+  questionNumber: number
+  totalQuestions: number
+  existingAnswer?: string
+  onAnswer: (answer: string) => void
+  onNext?: () => void
+  onPrevious?: () => void
+  onSubmit?: () => void
+  canGoNext?: boolean
+  canGoPrevious?: boolean
+  isLastQuestion?: boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
   const [answer, setAnswer] = useState(existingAnswer || "")
   const [isFocused, setIsFocused] = useState(false)
   const [isAnswered, setIsAnswered] = useState(!!existingAnswer)
   const [showValidation, setShowValidation] = useState(false)
+  const [isSpamming, setIsSpamming] = useState(false)
+  const [showHint, setShowHint] = useState(false)
+  const [hintState, setHintState] = useState({ level: 0, views: 0 })
+  const [similarityScore, setSimilarityScore] = useState(0)
+  const SIMILARITY_THRESHOLD = 60
+  const SPAM_THRESHOLD = 80
 
-  // Extract parts of the question before and after the blank
-  const questionParts = question.question?.split("________") || []
-  const beforeBlank = questionParts[0] || ""
-  const afterBlank = questionParts[1] || ""
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Progress percentage
-  const progressPercentage = (questionNumber / totalQuestions) * 100
-
-  // When existingAnswer prop changes, update local state
-  useEffect(() => {
-    if (existingAnswer && existingAnswer !== answer) {
-      setAnswer(existingAnswer)
-      setIsAnswered(true)
+  const { beforeBlank, afterBlank } = useMemo(() => {
+    const [before, after] = (question.question || "").split("________")
+    return {
+      beforeBlank: before || "",
+      afterBlank: after || ""
     }
-  }, [existingAnswer, answer])
+  }, [question.question])
 
-  // Handle answer changes
+  const progressPercentage = useMemo(
+    () => (questionNumber / totalQuestions) * 100,
+    [questionNumber, totalQuestions]
+  )
+
+  useEffect(() => {
+    setAnswer(existingAnswer || "")
+    setIsAnswered(!!existingAnswer)
+  }, [existingAnswer])
+
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value
       setAnswer(value)
       setShowValidation(false)
 
-      // Auto-save answer as user types (debounced)
-      if (value.trim()) {
-        setIsAnswered(true)
-        onAnswer(value)
-      } else {
-        setIsAnswered(false)
-      }
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+
+      debounceTimerRef.current = setTimeout(() => {
+        if (!value.trim()) {
+          setIsAnswered(false)
+          setSimilarityScore(0)
+          setIsSpamming(false)
+          return
+        }
+
+        const questionScore = getBestSimilarityScore(value, question.question || "")
+        const isSpam = questionScore > SPAM_THRESHOLD
+        setIsSpamming(isSpam)
+
+        const answerScore = getBestSimilarityScore(value, question.answer || "")
+        setSimilarityScore(answerScore)
+
+        if (!isSpam) {
+          setIsAnswered(true)
+        }
+
+      }, 300)
+
+      // Notify immediately for form tracking
+      onAnswer(value)
     },
-    [onAnswer],
+    [onAnswer, question.question, question.answer]
   )
 
-  // Handle next button click
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    }
+  }, [])
+
   const handleNext = useCallback(() => {
     if (!answer.trim()) {
       setShowValidation(true)
       return
     }
+    onNext?.()
+  }, [answer, onNext])
 
-    const success = onAnswer(answer)
-    if (success && onNext) {
-      onNext()
-    }
-  }, [answer, onAnswer, onNext])
-
-  // Handle submit button click
   const handleSubmit = useCallback(() => {
     if (!answer.trim()) {
       setShowValidation(true)
       return
     }
+    onSubmit?.()
+  }, [answer, onSubmit])
 
-    const success = onAnswer(answer)
-    if (success && onSubmit) {
-      onSubmit()
-    }
-  }, [answer, onAnswer, onSubmit])
-
-  // Handle key press for form accessibility
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault()
-        if (isLastQuestion) {
-          handleSubmit()
-        } else {
-          handleNext()
-        }
+        isLastQuestion ? handleSubmit() : handleNext()
       }
     },
-    [handleNext, handleSubmit, isLastQuestion],
+    [handleNext, handleSubmit, isLastQuestion]
   )
+
+  const toggleHint = useCallback(() => {
+    setShowHint((prev) => !prev)
+
+    if (!showHint) {
+      setHintState((prev) => {
+        const newViews = prev.views + 1
+        const newLevel = Math.min(2, prev.level + 1)
+        return { views: newViews, level: newLevel }
+      })
+    }
+  }, [showHint])
+
+  const isNextButtonEnabled = useMemo(
+    () =>
+      answer.trim() &&
+      !isSpamming &&
+      isAnswerCloseEnough(answer, question.answer || "", SIMILARITY_THRESHOLD),
+    [answer, isSpamming, question.answer]
+  )
+
+const getHintContent = useCallback(() => {
+  if (!question.answer) return null;
+  return getHint(question.answer, hintState.level);
+}, [question.answer, hintState.level]);
+
 
   return (
     <motion.div
@@ -127,7 +188,6 @@ const BlanksQuiz = memo(function BlanksQuiz({
       className="w-full max-w-4xl mx-auto"
     >
       <Card className="overflow-hidden border-2 border-border/50 shadow-lg">
-        {/* Header with progress */}
         <CardHeader className="bg-primary/5 border-b border-border/40 pb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -138,7 +198,9 @@ const BlanksQuiz = memo(function BlanksQuiz({
                 <Label className="text-lg font-semibold text-foreground">
                   Question {questionNumber} of {totalQuestions}
                 </Label>
-                <p className="text-sm text-muted-foreground mt-1">Fill in the blank with the appropriate term</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Fill in the blank with the appropriate term
+                </p>
               </div>
             </div>
             {isAnswered && (
@@ -148,7 +210,6 @@ const BlanksQuiz = memo(function BlanksQuiz({
             )}
           </div>
 
-          {/* Progress bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Progress</span>
@@ -159,20 +220,22 @@ const BlanksQuiz = memo(function BlanksQuiz({
         </CardHeader>
 
         <CardContent className="p-8">
-          {/* Question with blank */}
           <div className="mb-8">
             <div className="flex flex-wrap items-center gap-2 text-xl leading-relaxed">
               <span>{beforeBlank}</span>
               <div className="relative min-w-[200px] max-w-full">
                 <Input
-                  className={`px-4 py-3 text-lg border-2 border-dashed transition-all duration-200 ${
+                  ref={inputRef}
+                  className={`px-4 py-3 text-lg border-2 transition-all duration-200 ${
                     isFocused
                       ? "border-primary shadow-md"
                       : isAnswered
-                        ? "border-success/50 bg-success/5"
-                        : showValidation
-                          ? "border-destructive/50 bg-destructive/5"
-                          : "border-muted-foreground/50"
+                      ? "border-success/50 bg-success/5"
+                      : showValidation
+                      ? "border-destructive/50 bg-destructive/5"
+                      : isSpamming
+                      ? "border-yellow-500 bg-yellow-50"
+                      : "border-muted-foreground/50"
                   }`}
                   placeholder="Type your answer..."
                   value={answer}
@@ -181,7 +244,6 @@ const BlanksQuiz = memo(function BlanksQuiz({
                   onBlur={() => setIsFocused(false)}
                   onKeyDown={handleKeyDown}
                   aria-label="Fill in the blank answer"
-                  autoFocus
                 />
                 {showValidation && (
                   <motion.p
@@ -192,12 +254,57 @@ const BlanksQuiz = memo(function BlanksQuiz({
                     Please enter an answer before continuing
                   </motion.p>
                 )}
+                {isSpamming && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm text-yellow-600 mt-1 absolute"
+                  >
+                    Your answer is too similar to the question. Please rephrase it.
+                  </motion.p>
+                )}
               </div>
               <span>{afterBlank}</span>
             </div>
           </div>
 
-          {/* Navigation buttons */}
+          {question.answer && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={toggleHint}
+                  className={`text-sm flex items-center gap-2 ${
+                    showHint ? "border-primary text-primary" : "text-muted-foreground"
+                  }`}
+                  size="sm"
+                >
+                  <Lightbulb className={`w-4 h-4 ${showHint ? "text-amber-500" : ""}`} />
+                  {showHint ? "Hide Hint" : hintState.views > 0 ? `Hint (${hintState.level + 1}/3)` : "Need a Hint?"}
+                </Button>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {showHint && (
+                  <motion.div
+                    key={`hint-level-${hintState.level}`}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-3 text-sm p-4 rounded-md border border-blue-200 bg-blue-50 text-blue-800"
+                  >
+                    <div className="flex items-start gap-2">
+                      <Lightbulb className="w-4 h-4 mt-0.5" />
+                      <p>{getHintContent()}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
           <div className="flex items-center justify-between pt-6 border-t border-border/40">
             <div className="flex gap-3">
               {canGoPrevious && (
@@ -207,48 +314,20 @@ const BlanksQuiz = memo(function BlanksQuiz({
                 </Button>
               )}
             </div>
-
             <div className="flex gap-3">
               {!isLastQuestion ? (
-                <Button
-                  onClick={handleNext}
-                  disabled={!answer.trim()}
-                  className="flex items-center gap-2 min-w-[120px]"
-                  size="lg"
-                >
+                <Button onClick={handleNext} disabled={!isNextButtonEnabled} className="flex items-center gap-2 min-w-[120px]" size="lg">
                   Next
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!answer.trim()}
-                  className="flex items-center gap-2 min-w-[140px] bg-success hover:bg-success/90"
-                  size="lg"
-                >
+                <Button onClick={handleSubmit} disabled={!isNextButtonEnabled} className="flex items-center gap-2 min-w-[140px]" size="lg">
                   <Flag className="w-4 h-4" />
                   Finish Quiz
                 </Button>
               )}
             </div>
           </div>
-
-          {/* Answer status */}
-          <AnimatePresence>
-            {isAnswered && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-4 p-3 bg-success/10 border border-success/30 rounded-lg"
-              >
-                <div className="flex items-center gap-2 text-success">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Answer saved</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </CardContent>
       </Card>
     </motion.div>

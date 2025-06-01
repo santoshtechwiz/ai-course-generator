@@ -179,3 +179,92 @@ export function getDetailedSimilarityAnalysis(userAnswer: string, correctAnswer:
     isMatch: bestScore >= 0.8,
   }
 }
+
+/**
+ * Determines if a user answer is close enough to the correct answer
+ * to be considered acceptable
+ *
+ * @param userInput The user's provided answer
+ * @param correctAnswer The expected correct answer
+ * @param threshold Similarity threshold percentage (default: 80)
+ * @returns boolean indicating if the answer is close enough
+ */
+export function isAnswerCloseEnough(
+  userInput: string,
+  correctAnswer: string,
+  threshold: number = 80,
+): boolean {
+  if (!userInput || !correctAnswer) return false
+
+  // Get similarity score (as percentage 0-100)
+  const similarityScore = getBestSimilarityScore(userInput, correctAnswer)
+
+  // Return true if the similarity meets or exceeds the threshold
+  return similarityScore >= threshold
+}
+
+/**
+ * Generates a hint for a correct answer
+ *
+ * @param correctAnswer The correct answer to create a hint for
+ * @param hintLevel The hint level (0-2), with higher levels revealing more
+ * @returns A string containing a hint
+ */
+export function getHint(correctAnswer: string, hintLevel: number = 0): string {
+  if (!correctAnswer || correctAnswer.length === 0) {
+    return "No hint available"
+  }
+
+  // Normalize the answer for hint generation
+  const answer = normalizeText(correctAnswer)
+
+  switch (hintLevel) {
+    case 0:
+      // Level 0: First letter hint
+      return `Starts with: '${answer[0].toUpperCase()}'`
+
+    case 1:
+      // Level 1: Masked word with some letters revealed
+      return generateMaskedWord(answer)
+
+    case 2:
+      // Level 2: First and last letters + length
+      return `${answer[0].toUpperCase()}${"_".repeat(Math.max(0, answer.length - 2))}${answer[answer.length - 1]}`
+
+    default:
+      return `Hint: ${answer.length} letters`
+  }
+}
+
+/**
+ * Helper function to generate a masked word with some strategic letter reveals
+ *
+ * @param word The word to mask
+ * @returns A masked version of the word with some letters revealed
+ */
+function generateMaskedWord(word: string): string {
+  if (word.length <= 2) {
+    return `${word[0]} _ `
+  }
+
+  const maskedChars = word.split("").map((char, index) => {
+    // Always reveal the first letter
+    if (index === 0) return char.toUpperCase()
+
+    // For longer words, reveal vowels or every third character
+    if (word.length > 4) {
+      if ("aeiou".includes(char.toLowerCase()) || index % 3 === 0) {
+        return char
+      }
+    }
+    // For shorter words, just reveal first letter and a middle letter
+    else if (index === Math.floor(word.length / 2)) {
+      return char
+    }
+
+    return "_"
+  })
+
+  // Join with spaces for better readability
+  return maskedChars.join(" ")
+}
