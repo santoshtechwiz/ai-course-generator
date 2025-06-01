@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "@/app/dashboard/(quiz)/components/QuizLoadingSteps"
 import McqQuizResult from "../../components/McqQuizResult"
+import QuizResult from "../../../components/QuizResult"
 
 interface ResultsPageProps {
   params: { slug: string }
@@ -74,18 +75,21 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
     if (resultsToSave) {
       dispatch(
-        saveAuthRedirectState({
-          returnPath: `/dashboard/mcq/${slug}/results?fromAuth=true`,
-          quizState: {
-            slug,
-            quizData: { title: resultsToSave.title, questions: resultsToSave.questions, type: "mcq" },
-            currentState: {
-              answers,
-              showResults: true,
-              results: resultsToSave,
+        saveAuthRedirectState(
+          {
+            returnPath: `/dashboard/mcq/${slug}/results?fromAuth=true`,
+            quizState: {
+              slug,
+              quizData: { title: resultsToSave.title, questions: resultsToSave.questions, type: "mcq" },
+              currentState: {
+                answers,
+                showResults: true,
+                results: resultsToSave,
+              },
             },
           },
-        }),
+          `/dashboard/mcq/${slug}/results?fromAuth=true`
+        ),
       )
     }
 
@@ -154,10 +158,8 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     <div className="container max-w-4xl py-6">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <McqQuizResult result={resultData} />
-          <Button onClick={handleRetakeQuiz} className="mt-4">
-            Retake Quiz
-          </Button>
+          <QuizResult result={resultData} quizType={"mcq"} />
+          
         </CardContent>
       </Card>
     </div>
