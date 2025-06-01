@@ -26,9 +26,10 @@ import { useSessionService } from "@/hooks/useSessionService"
 import { Button } from "@/components/ui/button"
 import McqQuiz from "./McqQuiz"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle, Trophy, Sparkles } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
 import type { QuizType } from "@/types/quiz"
 
 interface McqQuizWrapperProps {
@@ -57,7 +58,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
 
   // Generate a unique session ID for this quiz attempt if not authenticated
   useEffect(() => {
-    if (!isAuthenticated && typeof window !== 'undefined') {
+    if (!isAuthenticated && typeof window !== "undefined") {
       const sessionKey = `mcq_session_${slug}`
       if (!sessionStorage.getItem(sessionKey)) {
         const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -92,21 +93,33 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
 
     const safeSlug = typeof slug === "string" ? slug : String(slug)
 
+    // Show completion toast with celebration
+    toast.success("🎉 Quiz completed! Calculating your results...", {
+      duration: 2000,
+    })
+
     if (isAuthenticated) {
       dispatch(submitQuiz())
         .then((res: any) => {
           if (res?.payload) {
             dispatch(setQuizResults(res.payload))
-            router.push(`/dashboard/mcq/${safeSlug}/results`)
+            // Add a small delay for better UX
+            setTimeout(() => {
+              router.push(`/dashboard/mcq/${safeSlug}/results`)
+            }, 1000)
           } else {
             // Generate results through the selector and redirect
-            router.push(`/dashboard/mcq/${safeSlug}/results`)
+            setTimeout(() => {
+              router.push(`/dashboard/mcq/${safeSlug}/results`)
+            }, 1000)
           }
         })
         .catch((error) => {
           console.error("Error submitting quiz:", error)
           // Still redirect to results - we can use generated results
-          router.push(`/dashboard/mcq/${safeSlug}/results`)
+          setTimeout(() => {
+            router.push(`/dashboard/mcq/${safeSlug}/results`)
+          }, 1000)
         })
     } else {
       // For unauthenticated users, redirect to sign in
@@ -125,7 +138,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
       }
 
       dispatch(setPendingQuiz(pendingQuizData))
-      
+
       // Save auth redirect state
       saveAuthRedirectState({
         returnPath: `/dashboard/mcq/${safeSlug}/results`,
@@ -142,10 +155,23 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           },
         },
       })
-      
-      router.push(`/dashboard/mcq/${safeSlug}/results`)
+
+      setTimeout(() => {
+        router.push(`/dashboard/mcq/${safeSlug}/results`)
+      }, 1000)
     }
-  }, [isQuizComplete, isAuthenticated, dispatch, router, slug, quizTitle, questions, answers, currentQuestionIndex, saveAuthRedirectState])
+  }, [
+    isQuizComplete,
+    isAuthenticated,
+    dispatch,
+    router,
+    slug,
+    quizTitle,
+    questions,
+    answers,
+    currentQuestionIndex,
+    saveAuthRedirectState,
+  ])
 
   const handleAnswerQuestion = (selectedOptionId: string) => {
     if (!currentQuestion) return
@@ -159,8 +185,14 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           isCorrect: selectedOptionId === currentQuestion.correctOptionId,
           type: "mcq",
         },
-      })
+      }),
     )
+
+    // Show feedback toast
+    const isCorrect = selectedOptionId === currentQuestion.correctOptionId
+    toast.success(isCorrect ? "✅ Correct!" : "📝 Answer recorded", {
+      duration: 1000,
+    })
   }
 
   const handleNext = () => {
@@ -170,6 +202,11 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   }
 
   const handleFinish = () => {
+    // Show confirmation toast
+    toast.success("🏁 Finishing quiz...", {
+      duration: 1500,
+    })
+
     dispatch({ type: "quiz/setQuizCompleted" })
   }
 
@@ -223,6 +260,29 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
 
   const currentAnswer = answers[currentQuestion.id]
   const existingAnswer = currentAnswer?.selectedOptionId
+
+  // Show completion animation if quiz is being submitted
+  if (quizStatus === "submitting") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
+              <Trophy className="w-10 h-10 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Quiz Completed! 🎉</h2>
+              <p className="text-muted-foreground">Calculating your results...</p>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary animate-spin" />
+              <span className="text-sm text-muted-foreground">Processing answers</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8">
@@ -330,8 +390,9 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
                     <Button
                       onClick={handleFinish}
                       disabled={answeredQuestions < questions.length || quizStatus === "submitting"}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 gap-2"
                     >
+                      <Trophy className="w-4 h-4" />
                       {quizStatus === "submitting" ? "Submitting..." : "Finish Quiz"}
                     </Button>
                   )}

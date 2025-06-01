@@ -2,46 +2,47 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Check, X, RefreshCw, Home, Share2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
+import {
+  Check,
+  X,
+  RefreshCw,
+  Home,
+  Share2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Code,
+  Terminal,
+  Trophy,
+} from "lucide-react"
 import { toast } from "sonner"
-import React, { useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { useSelector } from "react-redux"
-import { 
-  selectOrGenerateQuizResults, 
-  selectQuestions, 
-  selectAnswers, 
-  selectQuizTitle 
-} from "@/store/slices/quizSlice"
+import { selectOrGenerateQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card"
-import type { CodeQuizResult } from "./types"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import type { QuizResult } from "./types"
 
 interface CodeQuizResultProps {
-  result?: CodeQuizResult;
-  onRetake?: () => void;
+  result?: QuizResult
+  onRetake?: () => void
 }
 
 export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps) {
-  const router = useRouter();
-  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
-  
+  const router = useRouter()
+  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({})
+
   // Get results from Redux if not provided directly
-  const reduxResults = useSelector(selectOrGenerateQuizResults);
-  const questions = useSelector(selectQuestions);
-  const answers = useSelector(selectAnswers);
-  const quizTitle = useSelector(selectQuizTitle);
-  
+  const reduxResults = useSelector(selectOrGenerateQuizResults)
+  const questions = useSelector(selectQuestions)
+  const answers = useSelector(selectAnswers)
+  const quizTitle = useSelector(selectQuizTitle)
+
   // Use provided result or results from Redux
-  const finalResult = result || reduxResults;
-  
+  const finalResult = result || reduxResults
+
   // Memoize calculations to avoid recalculating on every render
   const {
     correctQuestions,
@@ -51,7 +52,7 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
     totalCount,
     skippedCount,
     percentageCorrect,
-    slug
+    slug,
   } = useMemo(() => {
     if (!finalResult) {
       return {
@@ -62,19 +63,19 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
         totalCount: 0,
         skippedCount: 0,
         percentageCorrect: 0,
-        slug: ''
-      };
+        slug: "",
+      }
     }
-    
-    const correctQuestions = finalResult.questionResults?.filter(q => q.isCorrect) || [];
-    const incorrectQuestions = finalResult.questionResults?.filter(q => !q.isCorrect) || [];
-    const correctCount = correctQuestions.length;
-    const incorrectCount = incorrectQuestions.length;
-    const totalCount = finalResult.maxScore || questions.length;
-    const skippedCount = totalCount - (correctCount + incorrectCount);
-    const percentageCorrect = finalResult.percentage || Math.round((correctCount / totalCount) * 100);
-    const slug = finalResult.slug || finalResult.quizId || '';
-    
+
+    const correctQuestions = finalResult.questionResults?.filter((q) => q.isCorrect) || []
+    const incorrectQuestions = finalResult.questionResults?.filter((q) => !q.isCorrect) || []
+    const correctCount = correctQuestions.length
+    const incorrectCount = incorrectQuestions.length
+    const totalCount = finalResult.maxScore || questions.length
+    const skippedCount = totalCount - (correctCount + incorrectCount)
+    const percentageCorrect = finalResult.percentage || Math.round((correctCount / totalCount) * 100)
+    const slug = finalResult.slug || finalResult.quizId || ""
+
     return {
       correctQuestions,
       incorrectQuestions,
@@ -83,297 +84,405 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
       totalCount,
       skippedCount,
       percentageCorrect,
-      slug
-    };
-  }, [finalResult, questions.length]);
-  
-  // Generation functions for the score messages
-  const getScoreMessage = () => {
-    if (percentageCorrect >= 90) return "Outstanding! You've mastered these coding concepts.";
-    if (percentageCorrect >= 80) return "Excellent work! You have strong coding knowledge.";
-    if (percentageCorrect >= 70) return "Great job! Your coding skills are solid.";
-    if (percentageCorrect >= 60) return "Good effort! Keep practicing to strengthen your skills.";
-    if (percentageCorrect >= 50) return "You're making progress. More practice will help.";
-    return "Keep learning! Review the concepts and try again.";
-  };
-  
-  // Toggle a specific question's expanded state
-  const toggleQuestion = (id: string) => {
-    setExpandedQuestions(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-  
-  // Expand all questions
-  const expandAllQuestions = () => {
-    if (!finalResult?.questionResults) return;
-    
-    const expandedState: Record<string, boolean> = {};
-    finalResult.questionResults.forEach(q => {
-      if (q.questionId) {
-        expandedState[q.questionId] = true;
+      slug,
+    }
+  }, [finalResult, questions.length])
+
+  // Get performance level and message
+  const getPerformanceLevel = () => {
+    if (percentageCorrect >= 90)
+      return {
+        level: "Expert",
+        message: "Outstanding! You've mastered these coding concepts.",
+        color: "text-emerald-600",
+        bgColor: "bg-emerald-50",
+        borderColor: "border-emerald-200",
       }
-    });
-    setExpandedQuestions(expandedState);
-  };
-  
-  // Collapse all questions
+    if (percentageCorrect >= 80)
+      return {
+        level: "Advanced",
+        message: "Excellent work! You have strong coding knowledge.",
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-200",
+      }
+    if (percentageCorrect >= 70)
+      return {
+        level: "Proficient",
+        message: "Great job! Your coding skills are solid.",
+        color: "text-green-600",
+        bgColor: "bg-green-50",
+        borderColor: "border-green-200",
+      }
+    if (percentageCorrect >= 60)
+      return {
+        level: "Developing",
+        message: "Good effort! Keep practicing to strengthen your skills.",
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-200",
+      }
+    if (percentageCorrect >= 50)
+      return {
+        level: "Learning",
+        message: "You're making progress. More practice will help.",
+        color: "text-orange-600",
+        bgColor: "bg-orange-50",
+        borderColor: "border-orange-200",
+      }
+    return {
+      level: "Beginner",
+      message: "Keep learning! Review the concepts and try again.",
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+    }
+  }
+
+  const performance = getPerformanceLevel()
+
+  // Toggle functions for questions
+  const toggleQuestion = (id: string) => {
+    setExpandedQuestions((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }))
+  }
+
+  const expandAllQuestions = () => {
+    if (!finalResult?.questionResults) return
+    const expandedState: Record<string, boolean> = {}
+    finalResult.questionResults.forEach((q) => {
+      if (q.questionId) {
+        expandedState[q.questionId] = true
+      }
+    })
+    setExpandedQuestions(expandedState)
+  }
+
   const collapseAllQuestions = () => {
-    setExpandedQuestions({});
-  };
+    setExpandedQuestions({})
+  }
 
   // Handle sharing results
   const handleShare = async () => {
-    if (!finalResult) return;
-    
+    if (!finalResult) return
+
     try {
+      const shareData = {
+        title: `${finalResult.title} - Code Quiz Results`,
+        text: `I scored ${percentageCorrect}% (${performance.level}) on the ${finalResult.title} coding quiz!`,
+        url: window.location.href,
+      }
+
       if (navigator.share) {
-        await navigator.share({
-          title: `${finalResult.title} - Quiz Results`,
-          text: `I scored ${percentageCorrect}% on the ${finalResult.title} quiz!`,
-          url: window.location.href
-        });
+        await navigator.share(shareData)
       } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(window.location.href);
-        toast.success("Link copied to clipboard");
+        await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
+        toast.success("Results copied to clipboard!")
       } else {
-        toast.error("Sharing not supported on this device");
+        toast.error("Sharing not supported on this device")
       }
     } catch (error) {
-      console.error("Error sharing results:", error);
-      toast.error("Failed to share results");
+      console.error("Error sharing results:", error)
+      toast.error("Failed to share results")
     }
-  };
+  }
 
   // Handle retaking the quiz
   const handleRetake = () => {
     if (onRetake) {
-      onRetake();
+      onRetake()
     } else if (slug) {
-      router.push(`/dashboard/code/${slug}?reset=true`);
+      router.push(`/dashboard/code/${slug}?reset=true`)
     }
-  };
+  }
 
   // Error state when results can't be loaded
   if (!finalResult) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-bold mb-2">Error Loading Results</h2>
-        <p className="text-muted-foreground mb-6">
-          We couldn't load your quiz results properly. Some data might be missing.
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6">
+        <div className="relative">
+          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center">
+            <AlertCircle className="h-10 w-10 text-destructive" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">Unable to Load Results</h2>
+          <p className="text-muted-foreground max-w-md">
+            We couldn't load your code quiz results. The session may have expired or some data might be missing.
+          </p>
+        </div>
         <div className="flex gap-3">
-          <Button onClick={handleRetake}>
-            Retake Quiz
+          <Button onClick={handleRetake} className="gap-2">
+            <Code className="w-4 h-4" />
+            Take Quiz Again
           </Button>
-          <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
-            Back to Quizzes
+          <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")} className="gap-2">
+            <Home className="w-4 h-4" />
+            Browse Quizzes
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="space-y-8">
-      {/* Score summary */}
-      <Card className="border shadow-sm overflow-hidden bg-gradient-to-br from-card to-card/80">
-        <CardHeader className="bg-primary/5 border-b border-border/40">
-          <CardTitle className="flex justify-between items-center">
-            <span className="text-2xl font-bold">{finalResult.title || quizTitle || "Quiz Results"}</span>
-            <Badge variant={percentageCorrect >= 70 ? "success" : percentageCorrect >= 50 ? "warning" : "destructive"} className="text-base px-3 py-1">
-              {percentageCorrect}% Score
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* Header with performance badge */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <Code className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">{finalResult.title || quizTitle || "Code Quiz Results"}</h1>
+            <Badge
+              variant="secondary"
+              className={`mt-2 ${performance.color} ${performance.bgColor} ${performance.borderColor}`}
+            >
+              {performance.level} Level
             </Badge>
-          </CardTitle>
-          <CardDescription>
-            {finalResult.completedAt && (
-              <>
-                Completed on {new Date(finalResult.completedAt).toLocaleDateString()} at {new Date(finalResult.completedAt).toLocaleTimeString()}
-              </>
-            )}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="p-6 space-y-5">
-          <div className="flex flex-col md:flex-row md:justify-between items-center gap-6">
-            <div className="relative w-40 h-40">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="hsl(var(--muted))"
-                  strokeWidth="10"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke={percentageCorrect >= 70 ? "hsl(var(--success))" : percentageCorrect >= 50 ? "hsl(var(--warning))" : "hsl(var(--destructive))"}
-                  strokeWidth="10"
-                  strokeDasharray={`${percentageCorrect} 100`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold">{correctCount}</span>
-                <span className="text-sm text-muted-foreground">of {totalCount}</span>
+          </div>
+        </div>
+        {finalResult.completedAt && (
+          <p className="text-muted-foreground">
+            Completed on {new Date(finalResult.completedAt).toLocaleDateString()} at{" "}
+            {new Date(finalResult.completedAt).toLocaleTimeString()}
+          </p>
+        )}
+      </div>
+
+      {/* Score overview card */}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Trophy className="w-8 h-8 text-primary" />
+              <div>
+                <CardTitle className="text-2xl">Your Score</CardTitle>
+                <CardDescription>Code quiz performance summary</CardDescription>
               </div>
             </div>
-            
-            <div className="space-y-4 flex-1">
-              <p className="text-xl font-medium text-center md:text-left">{getScoreMessage()}</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
-                  <span className="text-2xl font-bold text-success">{correctCount}</span>
-                  <span className="text-sm text-muted-foreground">Correct</span>
-                </div>
-                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
-                  <span className="text-2xl font-bold text-destructive">{incorrectCount}</span>
-                  <span className="text-sm text-muted-foreground">Incorrect</span>
-                </div>
-                <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg border border-border/40">
-                  <span className="text-2xl font-bold text-muted-foreground">{skippedCount}</span>
-                  <span className="text-sm text-muted-foreground">Skipped</span>
-                </div>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-primary">{percentageCorrect}%</div>
+              <div className="text-sm text-muted-foreground">
+                {correctCount} of {totalCount}
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            {/* Progress bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Progress</span>
+                <span>
+                  {correctCount}/{totalCount} correct
+                </span>
+              </div>
+              <Progress value={percentageCorrect} className="h-3" />
+            </div>
+
+            {/* Performance message */}
+            <div className={`p-4 rounded-lg border-2 ${performance.bgColor} ${performance.borderColor}`}>
+              <p className={`font-medium ${performance.color}`}>{performance.message}</p>
+            </div>
+
+            {/* Statistics grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-success/10 border border-success/20 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-success">{correctCount}</div>
+                <div className="text-sm text-muted-foreground">Correct</div>
+              </div>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-destructive">{incorrectCount}</div>
+                <div className="text-sm text-muted-foreground">Incorrect</div>
+              </div>
+              <div className="bg-muted/50 border border-muted-foreground/20 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-muted-foreground">{skippedCount}</div>
+                <div className="text-sm text-muted-foreground">Skipped</div>
               </div>
             </div>
           </div>
         </CardContent>
-        
-        <CardFooter className="bg-muted/30 px-6 py-4 border-t border-border/40 flex flex-wrap gap-3 justify-between">
+
+        <CardFooter className="bg-muted/30 border-t flex flex-wrap gap-3 justify-between p-4">
           <div className="flex gap-2">
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={handleRetake}
-            >
-              <RefreshCw className="w-4 h-4 mr-1" /> Retake Quiz
+            <Button onClick={handleRetake} className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Retake Quiz
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => router.push("/dashboard/quizzes")}
-            >
-              <Home className="w-4 h-4 mr-1" /> All Quizzes
+            <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")} className="gap-2">
+              <Home className="w-4 h-4" />
+              All Quizzes
             </Button>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleShare}
-            >
-              <Share2 className="w-4 h-4 mr-1" /> Share
-            </Button>
-          </div>
+          <Button variant="outline" onClick={handleShare} className="gap-2">
+            <Share2 className="w-4 h-4" />
+            Share Results
+          </Button>
         </CardFooter>
       </Card>
-      
+
       {/* Question review section */}
       {finalResult.questionResults && finalResult.questionResults.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Question Review</h2>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={expandAllQuestions}>
-                <ChevronDown className="w-4 h-4 mr-1" /> Expand All
-              </Button>
-              <Button variant="ghost" size="sm" onClick={collapseAllQuestions}>
-                <ChevronUp className="w-4 h-4 mr-1" /> Collapse All
-              </Button>
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Terminal className="w-6 h-6 text-primary" />
+                <div>
+                  <CardTitle>Code Review</CardTitle>
+                  <CardDescription>Review your answers and learn from mistakes</CardDescription>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={expandAllQuestions} className="gap-1">
+                  <ChevronDown className="w-4 h-4" />
+                  Expand All
+                </Button>
+                <Button variant="ghost" size="sm" onClick={collapseAllQuestions} className="gap-1">
+                  <ChevronUp className="w-4 h-4" />
+                  Collapse All
+                </Button>
+              </div>
             </div>
-          </div>
-          
-          <div className="space-y-4">
+          </CardHeader>
+
+          <CardContent className="space-y-4">
             {finalResult.questionResults.map((questionResult, index) => {
-              if (!questionResult.questionId) return null;
-              
-              // Find the corresponding question data
-              const questionData = finalResult.questions?.find(q => q.id?.toString() === questionResult.questionId?.toString()) || 
-                                  questions.find(q => q.id?.toString() === questionResult.questionId?.toString());
-              
-              if (!questionData) return null;
-              
-              const isExpanded = expandedQuestions[questionResult.questionId];
-              const questionText = questionData.text || questionData.question || `Question ${index + 1}`;
-              const userAnswer = questionResult.userAnswer || 'Not answered';
-              const correctAnswer = questionData.correctOptionId || questionData.correctAnswer || questionData.answer || 'Answer unavailable';
-              
+              if (!questionResult.questionId) return null
+
+              const questionData =
+                finalResult.questions?.find((q) => q.id?.toString() === questionResult.questionId?.toString()) ||
+                questions.find((q) => q.id?.toString() === questionResult.questionId?.toString())
+
+              if (!questionData) return null
+
+              const isExpanded = expandedQuestions[questionResult.questionId]
+              const questionText = questionData.text || questionData.question || `Question ${index + 1}`
+              const userAnswer = questionResult.userAnswer || "Not answered"
+              const correctAnswer =
+                questionData.correctOptionId ||
+                questionData.correctAnswer ||
+                questionData.answer ||
+                "Answer unavailable"
+
               return (
-                <Collapsible 
-                  key={questionResult.questionId} 
+                <Collapsible
+                  key={questionResult.questionId}
                   open={isExpanded}
                   onOpenChange={() => toggleQuestion(questionResult.questionId)}
-                  className={`border rounded-lg overflow-hidden ${
-                    questionResult.isCorrect 
-                      ? 'border-success/30 bg-success/5' 
-                      : 'border-destructive/30 bg-destructive/5'
+                  className={`border rounded-lg overflow-hidden transition-all ${
+                    questionResult.isCorrect
+                      ? "border-success/40 bg-success/5 hover:bg-success/10"
+                      : "border-destructive/40 bg-destructive/5 hover:bg-destructive/10"
                   }`}
                 >
-                  <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`rounded-full p-1 ${
-                        questionResult.isCorrect ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
-                      }`}>
-                        {questionResult.isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            questionResult.isCorrect
+                              ? "bg-success/20 text-success"
+                              : "bg-destructive/20 text-destructive"
+                          }`}
+                        >
+                          {questionResult.isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg">Question {index + 1}</h3>
+                          <p className="text-muted-foreground truncate">{questionText}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium">Question {index + 1}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-1">{questionText}</p>
-                      </div>
+
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="gap-1">
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="w-4 h-4" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4" />
+                              Review
+                            </>
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
                     </div>
-                    
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </Button>
-                    </CollapsibleTrigger>
                   </div>
-                  
+
                   <CollapsibleContent>
-                    <div className="px-4 pb-4 space-y-4">
-                      <div className="p-4 bg-card rounded-md">
-                        <h4 className="font-medium mb-2">{questionText}</h4>
+                    <div className="px-4 pb-6 space-y-6">
+                      {/* Question content */}
+                      <div className="bg-card border rounded-lg p-4 space-y-4">
+                        <h4 className="font-semibold text-lg">{questionText}</h4>
                         {questionData.codeSnippet && (
-                          <div className="my-3 rounded-md overflow-hidden bg-slate-900 text-slate-50 p-4 font-mono text-sm">
-                            <pre>{questionData.codeSnippet}</pre>
+                          <div className="bg-slate-900 text-slate-50 rounded-lg overflow-hidden">
+                            <div className="bg-slate-800 px-4 py-2 text-sm border-b border-slate-700">
+                              <span className="text-slate-300">Code</span>
+                            </div>
+                            <pre className="p-4 text-sm font-mono overflow-x-auto">
+                              <code>{questionData.codeSnippet}</code>
+                            </pre>
                           </div>
                         )}
                       </div>
-                      
-                      <div className="grid gap-2">
-                        <div className={`p-3 rounded-md ${
-                          questionResult.isCorrect ? 'bg-success/10 border border-success/30' : 'bg-muted border border-muted-foreground/20'
-                        }`}>
-                          <div className="flex items-center gap-2">
-                            {questionResult.isCorrect && <Check className="w-4 h-4 text-success" />}
-                            <span className="font-medium">Your answer:</span>
-                          </div>
-                          <p className="mt-1">{userAnswer}</p>
-                        </div>
-                        
-                        {!questionResult.isCorrect && (
-                          <div className="p-3 rounded-md bg-success/10 border border-success/30">
-                            <div className="flex items-center gap-2">
-                              <Check className="w-4 h-4 text-success" />
-                              <span className="font-medium">Correct answer:</span>
+
+                      {/* Answer comparison */}
+                      <div className="space-y-4">
+                        {/* User answer */}
+                        <div
+                          className={`border rounded-lg p-4 ${
+                            questionResult.isCorrect
+                              ? "bg-success/10 border-success/30"
+                              : "bg-muted border-muted-foreground/20"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                questionResult.isCorrect ? "bg-success text-white" : "bg-muted-foreground/20"
+                              }`}
+                            >
+                              <span className="text-xs font-bold">Y</span>
                             </div>
-                            <p className="mt-1">{correctAnswer}</p>
+                            <span className="font-semibold">Your Answer</span>
+                          </div>
+                          <div className="bg-card border rounded p-3 font-mono text-sm whitespace-pre-wrap">
+                            {userAnswer}
+                          </div>
+                        </div>
+
+                        {/* Correct answer (only if incorrect) */}
+                        {!questionResult.isCorrect && (
+                          <div className="border border-success/30 bg-success/10 rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-6 h-6 rounded-full bg-success text-white flex items-center justify-center">
+                                <Check className="w-4 h-4" />
+                              </div>
+                              <span className="font-semibold">Correct Answer</span>
+                            </div>
+                            <div className="bg-card border rounded p-3 font-mono text-sm whitespace-pre-wrap">
+                              {correctAnswer}
+                            </div>
                           </div>
                         )}
                       </div>
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
-              );
+              )
             })}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
-  );
+  )
 }
