@@ -29,6 +29,21 @@ import {
   getHint
 } from "@/lib/utils/text-similarity"
 
+// Define props interface for better type safety
+interface BlanksQuizProps {
+  question: BlankQuestion
+  questionNumber: number
+  totalQuestions: number
+  existingAnswer?: string
+  onAnswer: (answer: string) => void
+  onNext?: () => void
+  onPrevious?: () => void
+  onSubmit?: () => void
+  canGoNext?: boolean
+  canGoPrevious?: boolean
+  isLastQuestion?: boolean
+}
+
 const BlanksQuiz = memo(function BlanksQuiz({
   question,
   questionNumber,
@@ -41,32 +56,25 @@ const BlanksQuiz = memo(function BlanksQuiz({
   canGoNext = false,
   canGoPrevious = false,
   isLastQuestion = false
-}: {
-  question: BlankQuestion
-  questionNumber: number
-  totalQuestions: number
-  existingAnswer?: string
-  onAnswer: (answer: string) => void
-  onNext?: () => void
-  onPrevious?: () => void
-  onSubmit?: () => void
-  canGoNext?: boolean
-  canGoPrevious?: boolean
-  isLastQuestion?: boolean
-}) {
+}: BlanksQuizProps) {
+  // Better typing for refs
   const inputRef = useRef<HTMLInputElement>(null)
-  const [answer, setAnswer] = useState(existingAnswer || "")
-  const [isFocused, setIsFocused] = useState(false)
-  const [isAnswered, setIsAnswered] = useState(!!existingAnswer)
-  const [showValidation, setShowValidation] = useState(false)
-  const [isSpamming, setIsSpamming] = useState(false)
-  const [showHint, setShowHint] = useState(false)
-  const [hintState, setHintState] = useState({ level: 0, views: 0 })
-  const [similarityScore, setSimilarityScore] = useState(0)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // State with proper typing
+  const [answer, setAnswer] = useState<string>(existingAnswer || "")
+  const [isFocused, setIsFocused] = useState<boolean>(false)
+  const [isAnswered, setIsAnswered] = useState<boolean>(!!existingAnswer)
+  const [showValidation, setShowValidation] = useState<boolean>(false)
+  const [isSpamming, setIsSpamming] = useState<boolean>(false)
+  const [showHint, setShowHint] = useState<boolean>(false)
+  const [hintState, setHintState] = useState<{ level: number; views: number }>({ level: 0, views: 0 })
+  const [similarityScore, setSimilarityScore] = useState<number>(0)
+  
+  // Constants in SCREAMING_SNAKE_CASE for clarity
   const SIMILARITY_THRESHOLD = 60
   const SPAM_THRESHOLD = 80
-
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const DEBOUNCE_MS = 300
 
   const { beforeBlank, afterBlank } = useMemo(() => {
     const [before, after] = (question.question || "").split("________")
@@ -86,6 +94,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
     setIsAnswered(!!existingAnswer)
   }, [existingAnswer])
 
+  // Improve error handling and user feedback
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value
@@ -94,38 +103,48 @@ const BlanksQuiz = memo(function BlanksQuiz({
 
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
 
+      // For immediate feedback, show loading state
+      if (value.trim() && !isAnswered) {
+        // Optional: Add loading indicator here
+      }
+
       debounceTimerRef.current = setTimeout(() => {
-        if (!value.trim()) {
-          setIsAnswered(false)
-          setSimilarityScore(0)
-          setIsSpamming(false)
-          return
+        try {
+          if (!value.trim()) {
+            setIsAnswered(false)
+            setSimilarityScore(0)
+            setIsSpamming(false)
+            return
+          }
+
+          const questionScore = getBestSimilarityScore(value, question.question || "")
+          const isSpam = questionScore > SPAM_THRESHOLD
+          setIsSpamming(isSpam)
+
+          const answerScore = getBestSimilarityScore(value, question.answer || "")
+          setSimilarityScore(answerScore)
+
+          if (!isSpam) {
+            setIsAnswered(true)
+          }
+        } catch (err) {
+          console.error("Error processing answer:", err);
+          // Handle potential errors in similarity calculation
         }
-
-        const questionScore = getBestSimilarityScore(value, question.question || "")
-        const isSpam = questionScore > SPAM_THRESHOLD
-        setIsSpamming(isSpam)
-
-        const answerScore = getBestSimilarityScore(value, question.answer || "")
-        setSimilarityScore(answerScore)
-
-        if (!isSpam) {
-          setIsAnswered(true)
-        }
-
-      }, 300)
+      }, DEBOUNCE_MS)
 
       // Notify immediately for form tracking
       onAnswer(value)
     },
-    [onAnswer, question.question, question.answer]
+    [onAnswer, question.question, question.answer, isAnswered]
   )
 
+  // Focus input field on mount for better UX
   useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    if (inputRef.current && !existingAnswer) {
+      inputRef.current.focus()
     }
-  }, [])
+  }, [existingAnswer])
 
   const handleNext = useCallback(() => {
     if (!answer.trim()) {
@@ -153,13 +172,20 @@ const BlanksQuiz = memo(function BlanksQuiz({
     [handleNext, handleSubmit, isLastQuestion]
   )
 
+  // Improve hint logic for better user experience
   const toggleHint = useCallback(() => {
     setShowHint((prev) => !prev)
 
     if (!showHint) {
+      // Progressive hint system - advance level based on views
       setHintState((prev) => {
         const newViews = prev.views + 1
-        const newLevel = Math.min(2, prev.level + 1)
+        
+        // Only advance level after first view or every second view
+        const newLevel = newViews === 1 ? 0 : 
+                         newViews === 3 ? 1 :
+                         newViews >= 5 ? 2 : prev.level;
+                         
         return { views: newViews, level: newLevel }
       })
     }
@@ -244,6 +270,8 @@ const getHintContent = useCallback(() => {
                   onBlur={() => setIsFocused(false)}
                   onKeyDown={handleKeyDown}
                   aria-label="Fill in the blank answer"
+                  aria-invalid={showValidation || isSpamming}
+                  aria-required="true"
                 />
                 {showValidation && (
                   <motion.p
@@ -279,6 +307,8 @@ const getHintContent = useCallback(() => {
                     showHint ? "border-primary text-primary" : "text-muted-foreground"
                   }`}
                   size="sm"
+                  aria-expanded={showHint}
+                  aria-controls="hint-panel"
                 >
                   <Lightbulb className={`w-4 h-4 ${showHint ? "text-amber-500" : ""}`} />
                   {showHint ? "Hide Hint" : hintState.views > 0 ? `Hint (${hintState.level + 1}/3)` : "Need a Hint?"}
@@ -288,6 +318,7 @@ const getHintContent = useCallback(() => {
               <AnimatePresence mode="wait">
                 {showHint && (
                   <motion.div
+                    id="hint-panel"
                     key={`hint-level-${hintState.level}`}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}

@@ -1,7 +1,14 @@
 /**
  * Normalize text by trimming, lowercasing, and removing punctuation.
+ * @param input The text to normalize
+ * @returns Normalized text
  */
 export function normalizeText(input: string): string {
+  if (typeof input !== 'string') {
+    console.warn('normalizeText received non-string input:', input);
+    return '';
+  }
+  
   return input
     .toLowerCase()
     .replace(/[^\w\s]|_/g, "") // remove punctuation
@@ -142,20 +149,33 @@ export function cosineSimilarity(a: string, b: string): number {
 /**
  * Get the best similarity score using multiple algorithms.
  * Returns a percentage (0-100).
+ * @param userAnswer User provided answer
+ * @param correctAnswer Expected correct answer
+ * @returns Similarity score as percentage
  */
 export function getBestSimilarityScore(userAnswer: string, correctAnswer: string): number {
-  if (!userAnswer || !correctAnswer) return 0
+  if (typeof userAnswer !== 'string' || typeof correctAnswer !== 'string') {
+    console.warn('getBestSimilarityScore received invalid inputs:', { userAnswer, correctAnswer });
+    return 0;
+  }
+  
+  if (!userAnswer.trim() || !correctAnswer.trim()) return 0;
 
-  // Calculate similarity using different methods
-  const levenshtein = similarityScore(userAnswer, correctAnswer)
-  const jaccard = jaccardSimilarity(userAnswer, correctAnswer)
-  const cosine = cosineSimilarity(userAnswer, correctAnswer)
+  try {
+    // Calculate similarity using different methods
+    const levenshtein = similarityScore(userAnswer, correctAnswer);
+    const jaccard = jaccardSimilarity(userAnswer, correctAnswer);
+    const cosine = cosineSimilarity(userAnswer, correctAnswer);
 
-  // Use the highest score (most favorable to the user)
-  const bestScore = Math.max(levenshtein, jaccard, cosine)
+    // Use the highest score (most favorable to the user)
+    const bestScore = Math.max(levenshtein, jaccard, cosine);
 
-  // Convert to percentage
-  return Math.round(bestScore * 100)
+    // Convert to percentage
+    return Math.round(bestScore * 100);
+  } catch (error) {
+    console.error('Error calculating similarity score:', error);
+    return 0;
+  }
 }
 
 /**
@@ -194,13 +214,22 @@ export function isAnswerCloseEnough(
   correctAnswer: string,
   threshold: number = 80,
 ): boolean {
-  if (!userInput || !correctAnswer) return false
+  if (typeof userInput !== 'string' || typeof correctAnswer !== 'string') {
+    return false;
+  }
+  
+  if (!userInput.trim() || !correctAnswer.trim()) return false;
 
-  // Get similarity score (as percentage 0-100)
-  const similarityScore = getBestSimilarityScore(userInput, correctAnswer)
+  try {
+    // Get similarity score (as percentage 0-100)
+    const similarityScore = getBestSimilarityScore(userInput, correctAnswer);
 
-  // Return true if the similarity meets or exceeds the threshold
-  return similarityScore >= threshold
+    // Return true if the similarity meets or exceeds the threshold
+    return similarityScore >= threshold;
+  } catch (error) {
+    console.error('Error in isAnswerCloseEnough:', error);
+    return false;
+  }
 }
 
 /**
@@ -211,28 +240,40 @@ export function isAnswerCloseEnough(
  * @returns A string containing a hint
  */
 export function getHint(correctAnswer: string, hintLevel: number = 0): string {
-  if (!correctAnswer || correctAnswer.length === 0) {
-    return "No hint available"
+  if (typeof correctAnswer !== 'string' || !correctAnswer.trim()) {
+    return "No hint available";
   }
 
-  // Normalize the answer for hint generation
-  const answer = normalizeText(correctAnswer)
+  try {
+    // Normalize the answer for hint generation
+    const answer = normalizeText(correctAnswer);
+    
+    // Handle ultra-short answers specially
+    if (answer.length <= 2) {
+      return hintLevel > 0 ? 
+        `A ${answer.length}-letter word starting with '${answer[0]}'` : 
+        `A very short answer (${answer.length} letters)`;
+    }
 
-  switch (hintLevel) {
-    case 0:
-      // Level 0: First letter hint
-      return `Starts with: '${answer[0].toUpperCase()}'`
+    switch (hintLevel) {
+      case 0:
+        // Level 0: First letter hint
+        return `Starts with '${answer[0].toUpperCase()}'`;
 
-    case 1:
-      // Level 1: Masked word with some letters revealed
-      return generateMaskedWord(answer)
+      case 1:
+        // Level 1: Masked word with some letters revealed
+        return generateMaskedWord(answer);
 
-    case 2:
-      // Level 2: First and last letters + length
-      return `${answer[0].toUpperCase()}${"_".repeat(Math.max(0, answer.length - 2))}${answer[answer.length - 1]}`
+      case 2:
+        // Level 2: First and last letters + length
+        return `${answer[0].toUpperCase()}${"_".repeat(Math.max(0, answer.length - 2))}${answer[answer.length - 1]} (${answer.length} letters)`;
 
-    default:
-      return `Hint: ${answer.length} letters`
+      default:
+        return `An answer with ${answer.length} letters`;
+    }
+  } catch (error) {
+    console.error('Error generating hint:', error);
+    return "Hint unavailable";
   }
 }
 
