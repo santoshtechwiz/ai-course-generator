@@ -25,6 +25,7 @@ import {
 } from "@/store/slices/quizSlice"
 import { AppDispatch } from "@/store"
 import { QuizType } from "@/types/quiz"
+import { cn } from "@/lib/utils"
 
 interface QuizResult {
   title?: string
@@ -453,22 +454,19 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
               {(result.quizType === "openended" || result.quizType === "blanks" || averageSimilarity > 0) && (
                 <div className="flex flex-col items-center mt-2 w-full">
                   <span className="text-base font-medium text-primary mb-1">
-                    Avg. Similarity: <span className="font-bold">{Math.round(averageSimilarity * 100)}%</span>
+                    This reflects how close your answers were to the correct ones.
                   </span>
                   <Progress
                     value={averageSimilarity * 100}
-                    className="h-2 w-full max-w-xs bg-muted/60"
-                    indicatorClassName={
+                    className={cn("h-2 w-full max-w-xs bg-muted/60")}
+                    indicatorClassName={cn(
                       averageSimilarity >= 0.7
                         ? "bg-success"
                         : averageSimilarity >= 0.5
                         ? "bg-yellow-400"
                         : "bg-destructive"
-                    }
+                    )}
                   />
-                  <span className="text-xs text-muted-foreground mt-1">
-                    This reflects how close your answers were to the correct ones.
-                  </span>
                 </div>
               )}
             </div>
