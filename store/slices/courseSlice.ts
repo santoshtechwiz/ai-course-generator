@@ -13,6 +13,7 @@ interface CourseState {
   completedChapters: (string | number)[];
   bookmarks: Record<string, number[]>;
   courseCompletionStatus: boolean;
+  videoProgress: Record<string, number>; // New state for video progress
 }
 
 // Initial state
@@ -26,6 +27,7 @@ const initialState: CourseState = {
   completedChapters: [],
   bookmarks: {},
   courseCompletionStatus: false,
+  videoProgress: {}, // Initialize video progress state
 };
 
 // Async thunk for fetching course data
@@ -33,12 +35,28 @@ export const fetchCourseDataApi = createAsyncThunk(
   "course/fetchCourseData",
   async (slug: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/courses/${slug}`);
-      return response.data;
+      console.log(`Fetching course data for slug: ${slug}`);
+      const response = await fetch(`/api/course/${slug}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error fetching course data: ${response.status}`, errorText);
+        return rejectWithValue(`Failed to fetch course data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Course data fetched successfully:", data);
+      
+      // Validate the response data
+      if (!data || !data.id) {
+        console.error("Invalid course data received:", data);
+        return rejectWithValue("Invalid course data received");
+      }
+      
+      return data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch course data"
-      );
+      console.error("Exception in fetchCourseDataApi:", error);
+      return rejectWithValue(error.message || "Failed to fetch course data");
     }
   }
 );
@@ -146,6 +164,10 @@ const courseSlice = createSlice({
         state.courseProgress.progress = 100;
       }
     },
+    // Track video progress
+    setVideoProgress: (state, action: PayloadAction<{ videoId: string; time: number }>) => {
+      state.videoProgress[action.payload.videoId] = action.payload.time;
+    },
   },
   extraReducers: (builder) => {
     // Handle fetch course data action states
@@ -153,6 +175,7 @@ const courseSlice = createSlice({
       .addCase(fetchCourseDataApi.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        console.log("Course data fetch pending");
       })
       .addCase(fetchCourseDataApi.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -164,10 +187,22 @@ const courseSlice = createSlice({
           state.completedChapters = action.payload.progress.completedChapters || [];
           state.courseCompletionStatus = !!action.payload.progress.isCompleted;
         }
+
+        // Set initial chapter/video if not already set
+        if (!state.currentChapterId && action.payload.courseUnits && action.payload.courseUnits.length > 0) {
+          const firstUnit = action.payload.courseUnits[0];
+          if (firstUnit.chapters && firstUnit.chapters.length > 0) {
+            const firstChapter = firstUnit.chapters[0];
+            state.currentChapterId = firstChapter.id;
+            console.log(`Setting initial chapter ID: ${firstChapter.id}`);
+          }
+        }
+        console.log("Course data fetch fulfilled");
       })
       .addCase(fetchCourseDataApi.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string || "Failed to fetch course data";
+        console.error("Course data fetch rejected:", action.payload);
       })
 
       // Handle update course progress action states
@@ -195,6 +230,7 @@ export const {
   setBookmarks,
   addBookmark,
   setCourseCompletionStatus,
+  setVideoProgress,
 } = courseSlice.actions;
 
 // Export reducer
