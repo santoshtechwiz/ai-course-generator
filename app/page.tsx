@@ -25,15 +25,7 @@ export const metadata: Metadata = generatePageMetadata({
     "programming practice",
   ],
   ogType: "website",
-  additionalMetaTags: [
-    { name: "google-site-verification", content: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "" },
-    { name: "application-name", content: "CourseAI" },
-    { name: "apple-mobile-web-app-capable", content: "yes" },
-    { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-    { name: "apple-mobile-web-app-title", content: "CourseAI" },
-    { name: "format-detection", content: "telephone=no" },
-    { name: "mobile-web-app-capable", content: "yes" },
-  ],
+  // Custom meta tags can be added manually in the <head> section of the layout file
 })
 
 const HomePage = () => {

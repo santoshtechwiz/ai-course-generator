@@ -215,5 +215,139 @@ export type {
   TopicPerformance
 }
 
+// Core type definitions for the AI Learning platform
+
+import { Prisma } from "@prisma/client"
+
+// Enhanced course type with full relationship data
+export interface FullCourseType {
+  id: number
+  title: string
+  description: string | null
+  image: string | null
+  viewCount: number
+  userId: number
+  categoryId: number | null
+  isCompleted: boolean
+  isPublic: boolean
+  slug: string
+  difficulty: string | null
+  estimatedHours: number | null
+  category: {
+    id: number
+    name: string
+  } | null
+  ratings: {
+    id: number
+    rating: number
+    userId: number
+    createdAt: Date
+  }[]
+  courseUnits: FullCourseUnit[]
+  courseProgress: CourseProgress[]
+  createdAt: Date
+  updatedAt: Date | null
+}
+
+// Course unit with expanded chapter data
+export interface FullCourseUnit {
+  id: number
+  courseId: number
+  title: string
+  isCompleted: boolean
+  duration: number | null
+  order: number
+  chapters: FullChapter[]
+}
+
+// Chapter with expanded quiz data
+export interface FullChapter {
+  id: number
+  title: string
+  videoId: string | null
+  order: number
+  isCompleted: boolean
+  summary: string | null
+  description: string | null
+  unitId: number
+  summaryStatus: string | null
+  videoStatus: string | null
+  questions: CourseQuestion[]
+}
+
+// Course question with properly typed options
+export interface CourseQuestion {
+  id: number
+  question: string
+  answer: string
+  options: string[]
+}
+
+// User progress tracking for courses
+export interface CourseProgress {
+  id: number
+  userId: number
+  courseId: number
+  currentChapterId: number | null
+  currentUnitId: number | null
+  completedChapters: number[]
+  progress: number
+  lastAccessedAt: Date | null
+  timeSpent: number
+  isCompleted: boolean
+  completionDate: Date | null
+  quizProgress: Prisma.JsonValue | null
+  notes: Prisma.JsonValue | null
+  bookmarks: Prisma.JsonValue | null
+  lastInteractionType: string | null
+  interactionCount: number
+  engagementScore: number | null
+  createdAt: Date
+  updatedAt: Date | null
+  user?: {
+    id: number
+    name: string | null
+    email: string | null
+  }
+}
+
+// Define specific quiz progress type for better type safety
+export interface QuizProgressType {
+  completed?: boolean
+  currentIndex?: number
+  answers?: Record<string, string>
+  score?: number
+  started?: boolean
+  startedAt?: string
+  completedAt?: string
+  lastUpdated?: string
+}
+
+// Schema for structured JSON-LD data
+export interface Schema {
+  '@context': string
+  '@type': string
+  [key: string]: any
+}
+
+// Registry for JSON-LD schemas
+export const SchemaRegistry = {
+  // Define schema constants here
+}
+
+// Helper function to validate schema
+export function validateSchema(schema: Schema): boolean {
+  return !!schema['@context'] && !!schema['@type']
+}
+
+// Generate breadcrumb items from a URL path
+export function generateBreadcrumbItemsFromPath(path: string): { name: string; item: string }[] {
+  const parts = path.split('/').filter(Boolean)
+  return parts.map((part, index) => ({
+    name: part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, ' '),
+    item: `/${parts.slice(0, index + 1).join('/')}`,
+  }))
+}
+
 
 
