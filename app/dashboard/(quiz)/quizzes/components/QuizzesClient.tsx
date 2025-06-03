@@ -8,7 +8,8 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 
 import type { QuizListItem } from "@/app/types/types"
-import type { QuizType } from "./QuizSidebar"
+import type { QuizType } from "@/app/types/quiz-types"
+import type { GetQuizzesResult } from "@/app/actions/getQuizes"
 
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { QuizSidebar } from "./QuizSidebar"
@@ -28,9 +29,9 @@ interface QuizzesClientProps {
   userId?: string
 }
 
-function extractQuizzes(data: any): QuizListItem[] {
+function extractQuizzes(data: { pages?: { quizzes: QuizListItem[] }[] } | undefined): QuizListItem[] {
   if (!data?.pages) return []
-  return data.pages.reduce((acc: QuizListItem[], page: { quizzes: any }) => {
+  return data.pages.reduce((acc: QuizListItem[], page) => {
     if (page?.quizzes) {
       return [...acc, ...page.quizzes]
     }
@@ -65,65 +66,54 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     [debouncedSearch, selectedTypes, userId, questionCountRange, showPublicOnly, activeTab],
   )
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, isRefetching } =
-    useInfiniteQuery({
-      queryKey,
-      queryFn: async ({ pageParam }) => {
-        try {
-          const result = await getQuizzes({
-            page: pageParam as number,
-            limit: 10,
-            searchTerm: debouncedSearch,
-            userId,
-            quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
-            minQuestions: questionCountRange[0],
-            maxQuestions: questionCountRange[1],
-            publicOnly: showPublicOnly,
-            tab: activeTab,
-          })
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+    isRefetching,
+  } = useInfiniteQuery<GetQuizzesResult, Error, { quizzes: QuizListItem[]; nextCursor: number | null }>({
+    queryKey,
+    queryFn: async ({ pageParam }) => {
+      const result = await getQuizzes({
+        page: pageParam as number,
+        limit: 10,
+        searchTerm: debouncedSearch,
+        userId,
+        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+        minQuestions: questionCountRange[0],
+        maxQuestions: questionCountRange[1],
+        publicOnly: showPublicOnly,
+        tab: activeTab,
+      })
 
-          // Transform the result to match QuizListItem type
-          const quizzes =
-            result?.quizzes?.map((quiz: any) => ({
-              ...quiz,
-              questions: quiz.questions || [],
-              tags: quiz.tags || [],
-            })) || []
+      if (result.error) {
+        throw new Error(result.error)
+      }
 
-          return {
-            quizzes,
-            nextCursor: result?.nextCursor ?? null,
-          }
-
-          // Check if there was an error in the server action
-          if (result.error) {
-            throw new Error(result.error)
-          }
-
-          return {
-            quizzes: result?.quizzes || [],
-            nextCursor: result?.nextCursor ?? null,
-          }
-        } catch (error) {
-          console.error("Error fetching quizzes:", error)
-          throw error // Re-throw to trigger error state
+      return {
+        quizzes: result?.quizzes || [],
+        nextCursor: result?.nextCursor ?? null,
+      }
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: 1,
+    initialData: () => {
+      if (search === "" && selectedTypes.length === 0 && activeTab === "all") {
+        return {
+          pages: [initialQuizzesData],
+          pageParams: [1],
         }
-      },
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-      initialPageParam: 1,
-      initialData: () => {
-        if (search === "" && selectedTypes.length === 0 && activeTab === "all") {
-          return {
-            pages: [initialQuizzesData],
-            pageParams: [1],
-          }
-        }
-        return undefined
-      },
-      staleTime: 1000 * 60 * 5, // 5 minutes stale time
-      retry: 2, // Retry failed requests twice
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-    })
+      }
+      return undefined
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    retry: 2, // Retry failed requests twice
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  })
 
   // Load more quizzes when scrolling to the bottom
   useEffect(() => {
@@ -170,15 +160,21 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     showPublicOnly ||
     activeTab !== "all"
 
-  // Calculate quiz counts by type
+  // Calculate quiz counts by type (memoized for performance)
   const quizCounts = useMemo(() => {
-    return {
+    const counts = {
       all: quizzes.length,
-      mcq: quizzes.filter((q) => q.quizType === "mcq").length,
-      openended: quizzes.filter((q) => q.quizType === "openended").length,
-      code: quizzes.filter((q) => q.quizType === "code").length,
-      "fill-blanks": quizzes.filter((q) => q.quizType === "fill-blanks").length,
+      mcq: 0,
+      openended: 0,
+      code: 0,
+      "fill-blanks": 0,
     }
+    for (const q of quizzes) {
+      if (counts[q.quizType as keyof typeof counts] !== undefined) {
+        counts[q.quizType as keyof typeof counts]++
+      }
+    }
+    return counts
   }, [quizzes])
 
   // Error state content

@@ -187,12 +187,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
         },
       }),
     )
-
-    // Show feedback toast
-    const isCorrect = selectedOptionId === currentQuestion.correctOptionId
-    toast.success(isCorrect ? "✅ Correct!" : "📝 Answer recorded", {
-      duration: 1000,
-    })
   }
 
   const handleNext = () => {
