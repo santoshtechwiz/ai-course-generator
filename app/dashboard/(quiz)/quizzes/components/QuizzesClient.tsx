@@ -263,3 +263,5 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     </div>
   )
 }
+
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

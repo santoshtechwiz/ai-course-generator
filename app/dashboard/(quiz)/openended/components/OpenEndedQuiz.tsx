@@ -271,3 +271,4 @@ const OpenEndedQuiz = memo(function OpenEndedQuiz({
 })
 
 export default OpenEndedQuiz
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

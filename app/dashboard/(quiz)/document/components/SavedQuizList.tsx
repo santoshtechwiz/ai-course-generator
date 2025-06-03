@@ -414,3 +414,5 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
     </>
   )
 }
+
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

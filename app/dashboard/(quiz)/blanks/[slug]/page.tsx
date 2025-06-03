@@ -13,6 +13,7 @@ export default function BlanksQuizPage({
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
+  // Unwrap params for future compatibility
   const resolvedParams = params instanceof Promise ? use(params) : params
   const slug = resolvedParams.slug
   const { status: authStatus } = useSession()

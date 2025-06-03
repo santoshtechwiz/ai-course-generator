@@ -16,7 +16,7 @@ import {
   Trophy,
 } from "lucide-react"
 import { toast } from "sonner"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useSelector } from "react-redux"
 import { selectOrGenerateQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
 import { Badge } from "@/components/ui/badge"
@@ -30,20 +30,66 @@ interface CodeQuizResultProps {
   onRetake?: () => void
 }
 
+function getPerformanceLevel(percentageCorrect: number) {
+  if (percentageCorrect >= 90)
+    return {
+      level: "Expert",
+      message: "Outstanding! You've mastered these coding concepts.",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+    }
+  if (percentageCorrect >= 80)
+    return {
+      level: "Advanced",
+      message: "Excellent work! You have strong coding knowledge.",
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+    }
+  if (percentageCorrect >= 70)
+    return {
+      level: "Proficient",
+      message: "Great job! Your coding skills are solid.",
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+    }
+  if (percentageCorrect >= 60)
+    return {
+      level: "Developing",
+      message: "Good effort! Keep practicing to strengthen your skills.",
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      borderColor: "border-yellow-200",
+    }
+  if (percentageCorrect >= 50)
+    return {
+      level: "Learning",
+      message: "You're making progress. More practice will help.",
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+    }
+  return {
+    level: "Beginner",
+    message: "Keep learning! Review the concepts and try again.",
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
+  }
+}
+
 export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps) {
   const router = useRouter()
   const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({})
 
-  // Get results from Redux if not provided directly
   const reduxResults = useSelector(selectOrGenerateQuizResults)
   const questions = useSelector(selectQuestions)
-  const answers = useSelector(selectAnswers)
   const quizTitle = useSelector(selectQuizTitle)
 
-  // Use provided result or results from Redux
   const finalResult = result || reduxResults
 
-  // Memoize calculations to avoid recalculating on every render
   const {
     correctQuestions,
     incorrectQuestions,
@@ -66,7 +112,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
         slug: "",
       }
     }
-
     const correctQuestions = finalResult.questionResults?.filter((q) => q.isCorrect) || []
     const incorrectQuestions = finalResult.questionResults?.filter((q) => !q.isCorrect) || []
     const correctCount = correctQuestions.length
@@ -75,7 +120,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
     const skippedCount = totalCount - (correctCount + incorrectCount)
     const percentageCorrect = finalResult.percentage || Math.round((correctCount / totalCount) * 100)
     const slug = finalResult.slug || finalResult.quizId || ""
-
     return {
       correctQuestions,
       incorrectQuestions,
@@ -88,68 +132,16 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
     }
   }, [finalResult, questions.length])
 
-  // Get performance level and message
-  const getPerformanceLevel = () => {
-    if (percentageCorrect >= 90)
-      return {
-        level: "Expert",
-        message: "Outstanding! You've mastered these coding concepts.",
-        color: "text-emerald-600",
-        bgColor: "bg-emerald-50",
-        borderColor: "border-emerald-200",
-      }
-    if (percentageCorrect >= 80)
-      return {
-        level: "Advanced",
-        message: "Excellent work! You have strong coding knowledge.",
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-        borderColor: "border-blue-200",
-      }
-    if (percentageCorrect >= 70)
-      return {
-        level: "Proficient",
-        message: "Great job! Your coding skills are solid.",
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-        borderColor: "border-green-200",
-      }
-    if (percentageCorrect >= 60)
-      return {
-        level: "Developing",
-        message: "Good effort! Keep practicing to strengthen your skills.",
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-50",
-        borderColor: "border-yellow-200",
-      }
-    if (percentageCorrect >= 50)
-      return {
-        level: "Learning",
-        message: "You're making progress. More practice will help.",
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
-        borderColor: "border-orange-200",
-      }
-    return {
-      level: "Beginner",
-      message: "Keep learning! Review the concepts and try again.",
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-200",
-    }
-  }
+  const performance = useMemo(() => getPerformanceLevel(percentageCorrect), [percentageCorrect])
 
-  const performance = getPerformanceLevel()
-
-  // Toggle functions for questions
-  const toggleQuestion = (id: string) => {
+  const toggleQuestion = useCallback((id: string) => {
     setExpandedQuestions((prev) => ({
       ...prev,
       [id]: !prev[id],
     }))
-  }
+  }, [])
 
-  const expandAllQuestions = () => {
+  const expandAllQuestions = useCallback(() => {
     if (!finalResult?.questionResults) return
     const expandedState: Record<string, boolean> = {}
     finalResult.questionResults.forEach((q) => {
@@ -158,23 +150,20 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
       }
     })
     setExpandedQuestions(expandedState)
-  }
+  }, [finalResult])
 
-  const collapseAllQuestions = () => {
+  const collapseAllQuestions = useCallback(() => {
     setExpandedQuestions({})
-  }
+  }, [])
 
-  // Handle sharing results
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!finalResult) return
-
     try {
       const shareData = {
         title: `${finalResult.title} - Code Quiz Results`,
         text: `I scored ${percentageCorrect}% (${performance.level}) on the ${finalResult.title} coding quiz!`,
         url: window.location.href,
       }
-
       if (navigator.share) {
         await navigator.share(shareData)
       } else if (navigator.clipboard) {
@@ -184,21 +173,18 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
         toast.error("Sharing not supported on this device")
       }
     } catch (error) {
-      console.error("Error sharing results:", error)
       toast.error("Failed to share results")
     }
-  }
+  }, [finalResult, percentageCorrect, performance.level])
 
-  // Handle retaking the quiz
-  const handleRetake = () => {
+  const handleRetake = useCallback(() => {
     if (onRetake) {
       onRetake()
     } else if (slug) {
       router.push(`/dashboard/code/${slug}?reset=true`)
     }
-  }
+  }, [onRetake, slug, router])
 
-  // Error state when results can't be loaded
   if (!finalResult) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6">
@@ -229,7 +215,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header with performance badge */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3">
           <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -252,8 +237,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
           </p>
         )}
       </div>
-
-      {/* Score overview card */}
       <Card className="overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
           <div className="flex items-center justify-between">
@@ -272,10 +255,8 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
             </div>
           </div>
         </CardHeader>
-
         <CardContent className="p-6">
           <div className="space-y-6">
-            {/* Progress bar */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Progress</span>
@@ -283,15 +264,11 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                   {correctCount}/{totalCount} correct
                 </span>
               </div>
-              <Progress value={percentageCorrect} className="h-3" />
+              <Progress value={percentageCorrect} className="h-2" />
             </div>
-
-            {/* Performance message */}
             <div className={`p-4 rounded-lg border-2 ${performance.bgColor} ${performance.borderColor}`}>
               <p className={`font-medium ${performance.color}`}>{performance.message}</p>
             </div>
-
-            {/* Statistics grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-success/10 border border-success/20 rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-success">{correctCount}</div>
@@ -308,7 +285,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
             </div>
           </div>
         </CardContent>
-
         <CardFooter className="bg-muted/30 border-t flex flex-wrap gap-3 justify-between p-4">
           <div className="flex gap-2">
             <Button onClick={handleRetake} className="gap-2">
@@ -326,8 +302,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
           </Button>
         </CardFooter>
       </Card>
-
-      {/* Question review section */}
       {finalResult.questionResults && finalResult.questionResults.length > 0 && (
         <Card>
           <CardHeader>
@@ -351,17 +325,16 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
               </div>
             </div>
           </CardHeader>
-
           <CardContent className="space-y-4">
             {finalResult.questionResults.map((questionResult, index) => {
               if (!questionResult.questionId) return null
-
-              const questionData =
-                finalResult.questions?.find((q) => q.id?.toString() === questionResult.questionId?.toString()) ||
-                questions.find((q) => q.id?.toString() === questionResult.questionId?.toString())
-
+              const questionData = useMemo(
+                () =>
+                  finalResult.questions?.find((q) => q.id?.toString() === questionResult.questionId?.toString()) ||
+                  questions.find((q) => q.id?.toString() === questionResult.questionId?.toString()),
+                [finalResult.questions, questions, questionResult.questionId]
+              )
               if (!questionData) return null
-
               const isExpanded = expandedQuestions[questionResult.questionId]
               const questionText = questionData.text || questionData.question || `Question ${index + 1}`
               const userAnswer = questionResult.userAnswer || "Not answered"
@@ -370,7 +343,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                 questionData.correctAnswer ||
                 questionData.answer ||
                 "Answer unavailable"
-
               return (
                 <Collapsible
                   key={questionResult.questionId}
@@ -399,7 +371,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                           <p className="text-muted-foreground truncate">{questionText}</p>
                         </div>
                       </div>
-
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm" className="gap-1">
                           {isExpanded ? (
@@ -417,10 +388,8 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                       </CollapsibleTrigger>
                     </div>
                   </div>
-
                   <CollapsibleContent>
                     <div className="px-4 pb-6 space-y-6">
-                      {/* Question content */}
                       <div className="bg-card border rounded-lg p-4 space-y-4">
                         <h4 className="font-semibold text-lg">{questionText}</h4>
                         {questionData.codeSnippet && (
@@ -434,10 +403,7 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                           </div>
                         )}
                       </div>
-
-                      {/* Answer comparison */}
                       <div className="space-y-4">
-                        {/* User answer */}
                         <div
                           className={`border rounded-lg p-4 ${
                             questionResult.isCorrect
@@ -459,8 +425,6 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                             {userAnswer}
                           </div>
                         </div>
-
-                        {/* Correct answer (only if incorrect) */}
                         {!questionResult.isCorrect && (
                           <div className="border border-success/30 bg-success/10 rounded-lg p-4">
                             <div className="flex items-center gap-2 mb-3">

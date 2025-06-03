@@ -144,6 +144,8 @@ function QuizCard({ quiz, index }: { quiz: SimilarQuiz; index: number }) {
   )
 }
 
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.
+
 function formatQuizType(quizType: QuizType): string {
   return quizType
     .replace(/-/g, " ")

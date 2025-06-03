@@ -405,3 +405,5 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     </div>
   )
 }
+
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

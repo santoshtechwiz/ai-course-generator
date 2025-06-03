@@ -1,178 +1,133 @@
 "use client"
 
-import { useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { RefreshCw, ChevronRight, Trophy } from "lucide-react"
-import { useSessionService } from "@/hooks/useSessionService"
+import { useMemo, useCallback } from "react"
 import { useSelector } from "react-redux"
+import { useSessionService } from "@/hooks/useSessionService"
+import {
+  selectQuizResults,
+  selectQuizStatus,
+  selectQuizError,
+  selectQuizId,
+} from "@/store/slices/quizSlice"
 import { selectIsAuthenticated } from "@/store/slices/authSlice"
-import NonAuthenticatedUserSignInPrompt from "./NonAuthenticatedUserSignInPrompt"
+import { QuizLoadingSteps } from "./QuizLoadingSteps"
+import QuizAuthGuard from "@/components/QuizAuthGuard"
+import McqQuizResult from "../mcq/components/McqQuizResult"
 import CodeQuizResult from "../code/components/CodeQuizResult"
-import MCQQuizResult from "../mcq/components/McqQuizResult"
+import BlanksQuizResult from "../blanks/components/BlankQuizResults"
+import OpenEndedQuizResult from "../openended/components/QuizResultsOpenEnded"
+import { Card, CardContent } from "@/components/ui/card"
+import { Trophy } from "lucide-react"
 
 interface QuizResultProps {
-  result: any
-  onRetake?: () => void
-  quizType: "code" | "mcq" | "blanks" | "openended"
+  result?: any
+  quizType?: "mcq" | "code" | "blanks" | "openended"
   slug?: string
-  onSignIn?: () => void
-  hideAuthPrompt?: boolean
+  onRetake?: () => void
+  hideAuthGuard?: boolean
 }
 
 export default function QuizResult({
-  result,
+  result: propResult,
+  quizType: propQuizType,
+  slug: propSlug,
   onRetake,
-  quizType,
-  slug,
-  onSignIn: externalSignInHandler,
-  hideAuthPrompt = false,
+  hideAuthGuard = false,
 }: QuizResultProps) {
-  const router = useRouter()
-  const { clearQuizResults, saveAuthRedirectState } = useSessionService()
+  const { getStoredResults } = useSessionService()
   const isAuthenticated = useSelector(selectIsAuthenticated)
+  const quizResults = useSelector(selectQuizResults)
+  const quizStatus = useSelector(selectQuizStatus)
+  const quizError = useSelector(selectQuizError)
+  const quizId = propSlug || useSelector(selectQuizId)
 
-  const handleRetake = useCallback(() => {
-    if (onRetake) {
-      clearQuizResults()
-      onRetake()
-    } else if (result?.slug || slug) {
-      clearQuizResults()
-      router.push(`/dashboard/${quizType}/${result?.slug || slug}?reset=true`)
-    }
-  }, [onRetake, result?.slug, slug, quizType, router, clearQuizResults])
+  const result = useMemo(
+    () => propResult || quizResults || (quizId ? getStoredResults(quizId) : null),
+    [propResult, quizResults, getStoredResults, quizId]
+  )
 
-  const handleBrowseQuizzes = useCallback(() => {
-    clearQuizResults()
-    router.push("/dashboard/quizzes")
-  }, [router, clearQuizResults])
+  const quizType = useMemo(
+    () =>
+      propQuizType ||
+      result?.quizType ||
+      quizResults?.quizType ||
+      (result?.questions && result?.questions[0]?.type) ||
+      "mcq",
+    [propQuizType, result, quizResults]
+  )
 
-  const handleSignIn = useCallback(async () => {
-    if (externalSignInHandler) {
-      return externalSignInHandler()
-    }
+  if (quizStatus === "loading") {
+    return <QuizLoadingSteps steps={[{ label: "Loading results", status: "loading" }]} />
+  }
 
-    if (!slug && !result?.slug) {
-      await signIn()
-      return
-    }
-
-    const safeSlug = slug || result?.slug
-    const returnPath = `/dashboard/${quizType}/${safeSlug}/results?fromAuth=true`
-
-    saveAuthRedirectState({
-      returnPath,
-      quizState: {
-        slug: safeSlug,
-        quizData: result?.quizData,
-        currentState: {
-          answers: result?.answers || {},
-          showResults: true,
-          results: result,
-        },
-      },
-    })
-
-    await signIn(undefined, { callbackUrl: returnPath })
-  }, [externalSignInHandler, slug, result, quizType, saveAuthRedirectState])
-
-  // No result state
-  if (!result) {
+  if (quizStatus === "failed" || quizError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6">
-        <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center">
-          <Trophy className="w-10 h-10 text-muted-foreground" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">No Results Available</h2>
-          <p className="text-muted-foreground max-w-md">We couldn't find any quiz results. Try taking a quiz first!</p>
-        </div>
-        <Button onClick={handleBrowseQuizzes} className="gap-2">
-          Browse Quizzes
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
+      <Card>
+        <CardContent className="p-8 text-center space-y-4">
+          <div className="w-16 h-16 mx-auto bg-destructive/10 rounded-full flex items-center justify-center">
+            <Trophy className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Unable to Load Results</h3>
+            <p className="text-muted-foreground">{quizError || "An error occurred loading your quiz results."}</p>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
-  // Authentication prompt for unauthenticated users
-  if (!isAuthenticated && !hideAuthPrompt) {
+  if (!result) {
     return (
-      <div className="space-y-6">
-        <NonAuthenticatedUserSignInPrompt
-          onSignIn={handleSignIn}
-          previewData={result}
-          title="Sign In to View Full Results"
-          quizType={quizType}
-          fallbackAction={{
-            label: "Retake Quiz",
-            onClick: handleRetake,
-            variant: "outline",
-          }}
-        />
+      <Card>
+        <CardContent className="p-8 text-center space-y-4">
+          <div className="w-16 h-16 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
+            <Trophy className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">No Results Available</h3>
+            <p className="text-muted-foreground">We couldn't find any quiz results. Try taking a quiz first!</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-        {/* Blurred preview */}
-        <div className="relative opacity-50 pointer-events-none select-none filter blur-sm">
+  const content = useCallback(() => {
+    switch (quizType) {
+      case "mcq":
+        return <McqQuizResult result={result} onRetake={onRetake} />
+      case "code":
+        return <CodeQuizResult result={result} onRetake={onRetake} />
+      case "blanks":
+        return <BlanksQuizResult result={result} onRetake={onRetake} />
+      case "openended":
+        return <OpenEndedQuizResult result={result} onRetake={onRetake} isAuthenticated={!!isAuthenticated} slug={quizId} />
+      default:
+        return (
           <Card>
             <CardContent className="p-8 text-center space-y-4">
-              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                <Trophy className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
+                <Trophy className="w-8 h-8 text-muted-foreground" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-bold">{result.title || "Quiz Results"}</h2>
-                <div className="text-4xl font-bold text-primary">{result.percentage || 0}%</div>
+                <h3 className="text-lg font-semibold">Unsupported Quiz Type</h3>
                 <p className="text-muted-foreground">
-                  You got {result.score || 0} out of {result.maxScore || 0} questions correct
+                  This quiz type is not supported. Please contact support.
                 </p>
               </div>
             </CardContent>
           </Card>
+        )
+    }
+  }, [quizType, result, onRetake, isAuthenticated, quizId])
 
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-primary/90 text-white px-6 py-3 rounded-lg shadow-lg">
-              Sign in to view detailed results
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+  if (hideAuthGuard) {
+    return content()
   }
 
-  // Delegate to specific result components for authenticated users
-  if (quizType === "code") {
-    return <CodeQuizResult result={result} onRetake={handleRetake} />
-  } else if (quizType === "mcq") {
-    return <MCQQuizResult result={result} />
-  }
-
-  // Fallback for other quiz types
   return (
-    <Card>
-      <CardContent className="p-8 text-center space-y-6">
-        <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-          <Trophy className="w-8 h-8 text-primary" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">{result.title || "Quiz Results"}</h2>
-          <div className="text-4xl font-bold text-primary">{result.percentage}%</div>
-          <p className="text-muted-foreground">
-            You got {result.score} out of {result.maxScore} questions correct
-          </p>
-        </div>
-
-        <div className="flex justify-center gap-4">
-          <Button onClick={handleRetake} variant="outline" className="gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Retake Quiz
-          </Button>
-          <Button onClick={handleBrowseQuizzes} className="gap-2">
-            Browse Quizzes
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <QuizAuthGuard quizId={quizId}>
+      {content()}
+    </QuizAuthGuard>
   )
 }

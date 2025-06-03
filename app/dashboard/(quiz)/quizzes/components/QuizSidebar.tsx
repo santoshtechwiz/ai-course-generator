@@ -293,3 +293,5 @@ function QuizSidebarComponent({
 
 // Memoize the component to prevent unnecessary re-renders
 export const QuizSidebar = memo(QuizSidebarComponent)
+
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

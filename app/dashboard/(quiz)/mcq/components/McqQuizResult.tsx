@@ -17,7 +17,7 @@ import {
   ChevronUp,
 } from "lucide-react"
 import { toast } from "sonner"
-import { useState, useEffect } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -59,17 +59,65 @@ interface McqQuizResultProps {
   result: QuizResult
 }
 
+function getPerformanceLevel(percentage: number) {
+  if (percentage >= 90)
+    return {
+      level: "Excellent",
+      message: "Outstanding knowledge! You've mastered this topic.",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      emoji: "🏆",
+    }
+  if (percentage >= 80)
+    return {
+      level: "Very Good",
+      message: "Great job! You have strong understanding.",
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      emoji: "🎯",
+    }
+  if (percentage >= 70)
+    return {
+      level: "Good",
+      message: "Well done! Your knowledge is solid.",
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      emoji: "✅",
+    }
+  if (percentage >= 60)
+    return {
+      level: "Fair",
+      message: "Good effort! Keep studying to improve.",
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      borderColor: "border-yellow-200",
+      emoji: "📚",
+    }
+  if (percentage >= 50)
+    return {
+      level: "Needs Work",
+      message: "You're making progress. More study needed.",
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      emoji: "💪",
+    }
+  return {
+    level: "Poor",
+    message: "Keep learning! Review the material thoroughly.",
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
+    emoji: "📖",
+  }
+}
+
 export default function McqQuizResult({ result }: McqQuizResultProps) {
   const router = useRouter()
   const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({})
-  const [showCelebration, setShowCelebration] = useState(false)
-
-  // Show celebration animation on mount
-  useEffect(() => {
-    setShowCelebration(true)
-    const timer = setTimeout(() => setShowCelebration(false), 3000)
-    return () => clearTimeout(timer)
-  }, [])
 
   // Error state
   if (!result) {
@@ -92,100 +140,21 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
     )
   }
 
-  const safeResult = result
+  const questions = result.questions || []
+  const answers = result.answers || []
+  const questionResults = result.questionResults || []
+  const hasQuestionDetails = questions.length > 0 || questionResults.length > 0
+  const quizSlug = result.slug || result.quizId || ""
 
-  // Debug logging
-  console.log("MCQ Quiz Result Data:", {
-    result: safeResult,
-    questions: safeResult.questions,
-    answers: safeResult.answers,
-    questionResults: safeResult.questionResults,
-  })
+  const performance = useMemo(() => getPerformanceLevel(result.percentage), [result.percentage])
 
-  // Check for questions in multiple possible locations
-  const questions = safeResult.questions || []
-  const answers = safeResult.answers || []
-  const questionResults = safeResult.questionResults || []
-
-  // If we have questionResults but no questions, try to reconstruct
-  let hasQuestionDetails = questions.length > 0
-
-  if (!hasQuestionDetails && questionResults.length > 0) {
-    console.log("Trying to use questionResults:", questionResults)
-    hasQuestionDetails = true
-  }
-
-  const quizSlug = safeResult.slug || safeResult.quizId || ""
-
-  // Get performance level
-  const getPerformanceLevel = () => {
-    const percentage = safeResult.percentage
-    if (percentage >= 90)
-      return {
-        level: "Excellent",
-        message: "Outstanding knowledge! You've mastered this topic.",
-        color: "text-emerald-600",
-        bgColor: "bg-emerald-50",
-        borderColor: "border-emerald-200",
-        emoji: "🏆",
-      }
-    if (percentage >= 80)
-      return {
-        level: "Very Good",
-        message: "Great job! You have strong understanding.",
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-        borderColor: "border-blue-200",
-        emoji: "🎯",
-      }
-    if (percentage >= 70)
-      return {
-        level: "Good",
-        message: "Well done! Your knowledge is solid.",
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-        borderColor: "border-green-200",
-        emoji: "✅",
-      }
-    if (percentage >= 60)
-      return {
-        level: "Fair",
-        message: "Good effort! Keep studying to improve.",
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-50",
-        borderColor: "border-yellow-200",
-        emoji: "📚",
-      }
-    if (percentage >= 50)
-      return {
-        level: "Needs Work",
-        message: "You're making progress. More study needed.",
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
-        borderColor: "border-orange-200",
-        emoji: "💪",
-      }
-    return {
-      level: "Poor",
-      message: "Keep learning! Review the material thoroughly.",
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-200",
-      emoji: "📖",
-    }
-  }
-
-  const performance = getPerformanceLevel()
-
-  // Toggle functions
-  const toggleQuestion = (id: string) => {
+  const toggleQuestion = useCallback((id: string) => {
     setExpandedQuestions((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
+  }, [])
 
-  const expandAll = () => {
+  const expandAll = useCallback(() => {
     if (!hasQuestionDetails) return
     const expanded: Record<string, boolean> = {}
-
     if (questions.length > 0) {
       questions.forEach((q) => {
         if (q?.id) expanded[q.id.toString()] = true
@@ -195,23 +164,20 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
         expanded[qr.questionId?.toString() || index.toString()] = true
       })
     }
-
     setExpandedQuestions(expanded)
-  }
+  }, [hasQuestionDetails, questions, questionResults])
 
-  const collapseAll = () => {
+  const collapseAll = useCallback(() => {
     setExpandedQuestions({})
-  }
+  }, [])
 
-  // Action handlers
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     try {
       const shareData = {
-        title: `${safeResult.title} - Quiz Results`,
-        text: `I scored ${safeResult.percentage}% (${performance.level}) on the ${safeResult.title} quiz! ${performance.emoji}`,
+        title: `${result.title} - Quiz Results`,
+        text: `I scored ${result.percentage}% (${performance.level}) on the ${result.title} quiz! ${performance.emoji}`,
         url: window.location.href,
       }
-
       if (navigator.share) {
         await navigator.share(shareData)
       } else if (navigator.clipboard) {
@@ -220,16 +186,16 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
       } else {
         toast.error("Sharing not supported")
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to share results")
     }
-  }
+  }, [result.title, result.percentage, performance.level, performance.emoji])
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     const resultText = `
-Quiz Results: ${safeResult.title}
-Date: ${new Date(safeResult.completedAt).toLocaleString()}
-Score: ${safeResult.score}/${safeResult.maxScore} (${safeResult.percentage}%)
+Quiz Results: ${result.title}
+Date: ${new Date(result.completedAt).toLocaleString()}
+Score: ${result.score}/${result.maxScore} (${result.percentage}%)
 Performance: ${performance.level} ${performance.emoji}
 
 ${
@@ -238,9 +204,7 @@ ${
 ${(questions.length > 0 ? questions : questionResults)
   .map((item, i) => {
     let questionText, userAnswerText, correctAnswerText, isCorrect
-
     if (questions.length > 0) {
-      // Using questions array
       const q = item
       const userAnswer = answers.find((a) => a?.questionId?.toString() === q?.id?.toString())
       isCorrect = userAnswer?.isCorrect ?? false
@@ -253,14 +217,12 @@ ${(questions.length > 0 ? questions : questionResults)
         "Not answered"
       correctAnswerText = q.correctAnswer || q.answer || q.correctOptionId || "Answer unavailable"
     } else {
-      // Using questionResults array
       const qr = item
       isCorrect = qr.isCorrect ?? false
       questionText = qr.question || qr.text || `Question ${i + 1}`
       userAnswerText = qr.userAnswer || qr.selectedOption || "Not answered"
       correctAnswerText = qr.correctAnswer || "Answer unavailable"
     }
-
     return `
 Q${i + 1}: ${questionText}
 Your answer: ${userAnswerText}
@@ -272,31 +234,20 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
     : "No detailed results available."
 }
     `.trim()
-
     const blob = new Blob([resultText], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `${safeResult.title.replace(/\s+/g, "-").toLowerCase()}-results.txt`
+    a.download = `${result.title.replace(/\s+/g, "-").toLowerCase()}-results.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     toast.success("Results downloaded!")
-  }
+  }, [result, performance, hasQuestionDetails, questions, questionResults, answers])
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto relative">
-      {/* Celebration Animation */}
-      {showCelebration && (
-        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-          <div className="animate-bounce">
-            <div className="text-8xl">{performance.emoji}</div>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 animate-pulse" />
-        </div>
-      )}
-
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3">
@@ -304,7 +255,7 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
             <BookOpen className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">{safeResult.title}</h1>
+            <h1 className="text-3xl font-bold">{result.title}</h1>
             <Badge
               variant="secondary"
               className={`mt-2 ${performance.color} ${performance.bgColor} ${performance.borderColor}`}
@@ -314,11 +265,10 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
           </div>
         </div>
         <p className="text-muted-foreground">
-          Completed on {new Date(safeResult.completedAt).toLocaleDateString()} at{" "}
-          {new Date(safeResult.completedAt).toLocaleTimeString()}
+          Completed on {new Date(result.completedAt).toLocaleDateString()} at{" "}
+          {new Date(result.completedAt).toLocaleTimeString()}
         </p>
       </div>
-
       {/* Score Overview */}
       <Card className="overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
@@ -331,57 +281,50 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-bold text-primary">{safeResult.percentage}%</div>
+              <div className="text-4xl font-bold text-primary">{result.percentage}%</div>
               <div className="text-sm text-muted-foreground">
-                {safeResult.score} of {safeResult.maxScore}
+                {result.score} of {result.maxScore}
               </div>
             </div>
           </div>
         </CardHeader>
-
         <CardContent className="p-6">
           <div className="space-y-6">
-            {/* Progress bar */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Progress</span>
                 <span>
-                  {safeResult.score}/{safeResult.maxScore} correct
+                  {result.score}/{result.maxScore} correct
                 </span>
               </div>
-              <Progress value={safeResult.percentage} className="h-3" />
+              <Progress value={result.percentage} className="h-3" />
             </div>
-
-            {/* Performance message */}
             <div className={`p-4 rounded-lg border-2 ${performance.bgColor} ${performance.borderColor}`}>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{performance.emoji}</span>
                 <p className={`font-medium ${performance.color}`}>{performance.message}</p>
               </div>
             </div>
-
-            {/* Quick stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-success">{safeResult.score}</div>
+                <div className="text-xl font-bold text-success">{result.score}</div>
                 <div className="text-xs text-muted-foreground">Correct</div>
               </div>
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-destructive">{safeResult.maxScore - safeResult.score}</div>
+                <div className="text-xl font-bold text-destructive">{result.maxScore - result.score}</div>
                 <div className="text-xs text-muted-foreground">Incorrect</div>
               </div>
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-primary">{safeResult.maxScore}</div>
+                <div className="text-xl font-bold text-primary">{result.maxScore}</div>
                 <div className="text-xs text-muted-foreground">Total</div>
               </div>
               <div className="bg-muted/50 border border-muted-foreground/20 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold">{Math.round((safeResult.score / safeResult.maxScore) * 100)}%</div>
+                <div className="text-xl font-bold">{Math.round((result.score / result.maxScore) * 100)}%</div>
                 <div className="text-xs text-muted-foreground">Accuracy</div>
               </div>
             </div>
           </div>
         </CardContent>
-
         <CardFooter className="bg-muted/30 border-t flex flex-wrap gap-3 justify-between p-4">
           <div className="flex gap-2">
             <Button onClick={() => router.push(`/dashboard/mcq/${quizSlug}`)} className="gap-2">
@@ -405,7 +348,6 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
           </div>
         </CardFooter>
       </Card>
-
       {/* Question Review */}
       {hasQuestionDetails && (
         <Card>
@@ -430,13 +372,10 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
               </div>
             </div>
           </CardHeader>
-
           <CardContent className="space-y-3">
             {(questions.length > 0 ? questions : questionResults).map((item, index) => {
               let questionData, answer, isCorrect, questionText, questionId
-
               if (questions.length > 0) {
-                // Using questions array
                 questionData = item
                 questionId = questionData?.id?.toString() || index.toString()
                 answer = answers.find(
@@ -445,7 +384,6 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
                 isCorrect = answer?.isCorrect || false
                 questionText = questionData.question || questionData.text || `Question ${index + 1}`
               } else {
-                // Using questionResults array
                 const qr = item
                 questionId = qr.questionId?.toString() || index.toString()
                 questionData = qr
@@ -453,11 +391,8 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
                 isCorrect = qr.isCorrect || false
                 questionText = qr.question || qr.text || `Question ${index + 1}`
               }
-
               if (!questionData) return null
-
               const isExpanded = expandedQuestions[questionId]
-
               return (
                 <Collapsible
                   key={questionId}
@@ -487,7 +422,6 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
                           {isCorrect ? "Correct" : "Incorrect"}
                         </Badge>
                       </div>
-
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm" className="gap-1 ml-2">
                           {isExpanded ? (
@@ -505,14 +439,10 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
                       </CollapsibleTrigger>
                     </div>
                   </div>
-
                   <CollapsibleContent>
                     <div className="px-4 pb-4 space-y-4 border-t bg-card/50">
-                      {/* Question */}
                       <div className="pt-4">
                         <h4 className="font-medium text-base mb-3">{questionText}</h4>
-
-                        {/* Show options if available */}
                         {questionData.options &&
                           Array.isArray(questionData.options) &&
                           questionData.options.length > 0 && (
@@ -528,7 +458,6 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
                                     questionData.correctOptionId === optionId ||
                                     questionData.correctAnswer === optionText ||
                                     questionData.answer === optionText
-
                                   return (
                                     <div
                                       key={optIndex}
@@ -563,8 +492,6 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
                               </div>
                             </div>
                           )}
-
-                        {/* Answer comparison */}
                         <div className="space-y-3">
                           <div
                             className={`p-3 rounded-md border ${
@@ -589,7 +516,6 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
                                 "Not answered"}
                             </p>
                           </div>
-
                           {!isCorrect && (
                             <div className="p-3 rounded-md bg-success/10 border border-success/30">
                               <div className="flex items-center gap-2 mb-2">
@@ -616,8 +542,6 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
           </CardContent>
         </Card>
       )}
-
-      {/* No questions available message */}
       {!hasQuestionDetails && (
         <Card>
           <CardContent className="p-8 text-center space-y-4">
@@ -636,3 +560,5 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
     </div>
   )
 }
+
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.
