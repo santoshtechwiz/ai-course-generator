@@ -259,16 +259,8 @@ const EnhancedVideoPlayer = ({
   // Add this useEffect to handle player initialization errors
   useEffect(() => {
     const handlePlayerError = () => {
-      console.log("Handling player error...")
-      setIsBuffering(false)
-
-      // Try to reinitialize player after a short delay
-      setTimeout(() => {
-        if (playerRef.current) {
-          setPlaying(false)
-          setTimeout(() => setPlaying(true), 500)
-        }
-      }, 1000)
+      console.error("Error initializing video player.")
+      setPlayerError(true) // Set error state to show fallback UI
     }
 
     if (typeof window !== "undefined") {
@@ -425,48 +417,42 @@ const EnhancedVideoPlayer = ({
       {playerError ? (
         <VideoPlayerFallback />
       ) : (
-        <div className="w-full h-full bg-background">
-          <ReactPlayer
-            ref={playerRef}
-            url={`https://www.youtube.com/watch?v=${videoId}`}
-            width="100%"
-            height="100%"
-            playing={playing}
-            volume={volume}
-            muted={muted}
-            onProgress={handleProgress}
-            onDuration={handleDuration}
-            onEnded={handleVideoEnd}
-            onBuffer={handleBuffer}
-            onBufferEnd={handleBufferEnd}
-            onError={(e) => {
-              console.error("ReactPlayer error:", e)
-              setPlayerError(true)
-              setIsBuffering(false)
-            }}
-            progressInterval={1000}
-            playbackRate={playbackSpeed}
-            style={{ backgroundColor: "transparent" }}
-            config={{
-              youtube: {
-                playerVars: {
-                  autoplay: autoPlay ? 1 : 0,
-                  start: Math.floor(initialTime),
-                  modestbranding: 1,
-                  rel: 0,
-                  showinfo: 0,
-                  iv_load_policy: 3,
-                  fs: 1,
-                  controls: 0,
-                  disablekb: 0,
-                  playsinline: 1,
-                  enablejsapi: 1,
-                  origin: typeof window !== "undefined" ? window.location.origin : "",
-                },
+        <ReactPlayer
+          ref={playerRef}
+          url={`https://www.youtube.com/watch?v=${videoId}`}
+          width="100%"
+          height="100%"
+          playing={playing}
+          volume={volume}
+          muted={muted}
+          onProgress={handleProgress}
+          onDuration={handleDuration}
+          onEnded={handleVideoEnd}
+          onBuffer={handleBuffer}
+          onBufferEnd={handleBufferEnd}
+          onError={() => setPlayerError(true)} // Handle player-specific errors
+          progressInterval={1000}
+          playbackRate={playbackSpeed}
+          style={{ backgroundColor: "transparent" }}
+          config={{
+            youtube: {
+              playerVars: {
+                autoplay: autoPlay ? 1 : 0,
+                start: Math.floor(initialTime),
+                modestbranding: 1,
+                rel: 0,
+                showinfo: 0,
+                iv_load_policy: 3,
+                fs: 1,
+                controls: 0,
+                disablekb: 0,
+                playsinline: 1,
+                enablejsapi: 1,
+                origin: typeof window !== "undefined" ? window.location.origin : "",
               },
-            }}
-          />
-        </div>
+            },
+          }}
+        />
       )}
 
       {/* Bookmark Tooltip */}
