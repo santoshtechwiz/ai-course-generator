@@ -16,7 +16,7 @@ interface QuizCardProps {
   questionCount: number
   isPublic?: boolean
   slug: string
-  quizType: "mcq" | "openended" | "fill-blanks" | "code" | "flashcard"
+  quizType: "mcq" | "openended" | "blanks" | "code" | "flashcard"
   estimatedTime: string
   completionRate?: number
 }
@@ -60,7 +60,7 @@ function QuizCardComponent({
       textColor: "text-purple-700 dark:text-purple-300",
       borderColor: "border-purple-200 dark:border-purple-800",
     },
-    "fill-blanks": {
+    "blanks": {
       label: "Fill in the Blanks",
       icon: PenTool,
       gradient: "from-yellow-500 to-orange-500",
