@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import { extractKeywords, generateMetaDescription } from "@/lib/seo-utils"
 import CoursePage from "./components/CoursePage"
+import type { FullCourseType } from "@/app/types/types"
 
 function LoadingSkeleton() {
   return (
@@ -57,10 +58,14 @@ function LoadingSkeleton() {
   )
 }
 
-// Generate metadata for the course page
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+type CoursePageParams = {
+  params: Promise<{ slug: string }>
+}
+
+// Generate metadata for the course page with improved typing
+export async function generateMetadata({ params }: CoursePageParams): Promise<Metadata> {
   const { slug } = await params
-  const course = await getCourseData(slug)
+  const course = await getCourseData(slug) as FullCourseType | null
 
   if (!course) {
     return generatePageMetadata({
@@ -109,7 +114,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+export default async function Page({ params }: CoursePageParams) {
   const { slug } = await params
   const course = await getCourseData(slug)
 

@@ -12,8 +12,9 @@ import {
   ClipboardList,
   FileCode,
   StickyNote,
+  Loader2,
+  Sparkles,
 } from "lucide-react"
-
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -21,9 +22,9 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/tailwindUtils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
-import React from "react"
+import React, { useEffect } from "react"
 
 // SVG Background Pattern Component
 const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
@@ -128,8 +129,8 @@ const quizTypeIcons = {
   mcq: HelpCircle,
 }
 
-// Memoize the QuizCard component
-const MemoizedQuizCard = React.memo(({ quiz, index }: { quiz: any; index: number }) => {
+// Carousel-like RandomQuizCard with animation and no auto-refresh
+const RandomQuizCard: React.FC<{ quiz: any }> = ({ quiz }) => {
   const Icon = quizTypeIcons[quiz.quizType as keyof typeof quizTypeIcons] || HelpCircle
   const bgColor = quiz.difficulty
     ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
@@ -138,21 +139,18 @@ const MemoizedQuizCard = React.memo(({ quiz, index }: { quiz: any; index: number
 
   return (
     <motion.div
-      key={`${quiz.id}-${index}`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ delay: index * 0.1, duration: 0.3 }}
-      className="relative group mb-4"
+      key={quiz.id}
+      initial={{ opacity: 0, scale: 0.95, y: 30 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 30 }}
+      transition={{ type: "spring", stiffness: 180, damping: 24 }}
+      className="relative group mb-4 transition-all duration-300"
+      style={{ minHeight: 320 }}
     >
-      {/* Rest of the component remains the same */}
       <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-lg opacity-0 group-hover:opacity-100 blur transition-all duration-300 group-hover:duration-200 animate-tilt"></div>
-
       <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
         <QuizBackgroundPattern quizType={quiz.quizType || ""} />
-
         <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
           <CardTitle className="flex justify-between items-center text-base sm:text-lg">
             <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2">
@@ -176,7 +174,6 @@ const MemoizedQuizCard = React.memo(({ quiz, index }: { quiz: any; index: number
             <span className="text-sm text-muted-foreground">{quiz.quizType}</span>
           </CardDescription>
         </CardHeader>
-
         <CardContent className="relative z-10 p-4 pt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
             <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
@@ -190,7 +187,6 @@ const MemoizedQuizCard = React.memo(({ quiz, index }: { quiz: any; index: number
               </div>
             )}
           </div>
-
           {quiz.completionRate !== undefined && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
@@ -201,7 +197,6 @@ const MemoizedQuizCard = React.memo(({ quiz, index }: { quiz: any; index: number
             </div>
           )}
         </CardContent>
-
         <CardFooter className="relative z-10 p-4 pt-2">
           <Link
             href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}
@@ -238,30 +233,23 @@ const MemoizedQuizCard = React.memo(({ quiz, index }: { quiz: any; index: number
       </Card>
     </motion.div>
   )
-})
+}
 
-MemoizedQuizCard.displayName = "MemoizedQuizCard"
-
-// In the RandomQuiz component, optimize the filter and refresh functions
 export const RandomQuiz: React.FC = () => {
-  const { quizzes, isLoading, error, refresh } = useRandomQuizzes(3)
+  const { quizzes, isLoading, error, refresh } = useRandomQuizzes(5)
   const [filter, setFilter] = useState<string | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
-
   const quizTypes = ["openended", "fill-blanks", "flashcard", "code"]
 
-  // Memoize the handleRefresh function
-  const handleRefresh = useCallback(() => {
-    setRefreshKey((prevKey) => prevKey + 1)
-    refresh()
-  }, [refresh])
-
-  // Memoize the filtered quizzes
+  // Filtered quizzes memoized
   const filteredQuizzes = useMemo(() => {
     return filter ? quizzes.filter((quiz) => quiz.quizType?.toLowerCase() === filter) : quizzes
   }, [filter, quizzes])
 
-  // In the return statement, use the memoized components
+  // Manual refresh only, no auto-refresh
+  const handleRefresh = useCallback(() => {
+    refresh()
+  }, [refresh])
+
   return (
     <div className="h-full flex flex-col bg-background">
       <div className="sticky top-0 z-10 p-4 bg-background/95 backdrop-blur border-b">
@@ -288,7 +276,6 @@ export const RandomQuiz: React.FC = () => {
             </Button>
           </div>
         </div>
-
         <div className="flex flex-wrap gap-2">
           {quizTypes.map((type) => (
             <Badge
@@ -304,34 +291,19 @@ export const RandomQuiz: React.FC = () => {
           ))}
         </div>
       </div>
-
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
+      <div className="flex-1 p-4 flex flex-col items-center justify-center min-h-[350px]">
         {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="rounded-lg border p-4"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <Skeleton className="h-6 w-3/4 rounded" />
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                </div>
-                <div className="flex gap-2 mb-4">
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="h-5 w-24 rounded-full" />
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Skeleton className="h-4 w-full rounded" />
-                  <Skeleton className="h-4 w-full rounded" />
-                </div>
-                <Skeleton className="h-8 w-full rounded mt-4" />
-              </motion.div>
-            ))}
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center justify-center h-full w-full"
+          >
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <span className="text-muted-foreground text-sm">Loading random quizzes...</span>
+            </div>
+          </motion.div>
         ) : error ? (
           <div className="rounded-lg border p-4 text-center">
             <div className="text-destructive mb-2">Failed to load quizzes</div>
@@ -341,13 +313,24 @@ export const RandomQuiz: React.FC = () => {
             </Button>
           </div>
         ) : filteredQuizzes.length > 0 ? (
-          filteredQuizzes.map((quiz, index) => (
-            <MemoizedQuizCard key={`${quiz.id}-${refreshKey}-${index}`} quiz={quiz} index={index} />
-          ))
+          <motion.div
+            key={filteredQuizzes[0]?.id}
+            className="relative w-full max-w-md mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{
+              type: "spring",
+              stiffness: 180,
+              damping: 20,
+            }}
+          >
+            <RandomQuizCard quiz={filteredQuizzes[0]} />
+          </motion.div>
         ) : (
           <div className="text-center p-8 border border-dashed rounded-lg bg-muted/30">
             <div className="flex justify-center mb-4">
-              <HelpCircle className="h-12 w-12 text-muted-foreground/50" />
+              <Sparkles className="h-12 w-12 text-muted-foreground/50" />
             </div>
             <p className="text-muted-foreground">No quizzes found for this filter.</p>
           </div>
