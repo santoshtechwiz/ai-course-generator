@@ -1,30 +1,26 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import EnhancedVideoPlayer from "./EnhancedVideoPlayer"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BookOpen, CheckCircle, Bookmark, Loader2, Lock } from "lucide-react"
+import { Loader2, PlayCircle, CheckCircle, Clock } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useSession, signIn } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import CourseDetailsQuiz from "./CourseDetailsQuiz"
 import CourseAISummary from "./CourseAISummary"
 import CourseCompletionOverlay from "./CourseCompletionOverlay"
-import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import { markdownToHtml } from "./markdownUtils"
-import { motion, AnimatePresence } from "framer-motion"
 import { Skeleton } from "@/components/ui/skeleton"
-import FloatingCourseActions from "./FloatingCourseActions"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   fetchCourseDataApi,
-  setCurrentChapterApi,
   setCurrentVideoApi,
   markChapterAsCompleted,
-  addBookmark,
   setCourseCompletionStatus,
 } from "@/store/slices/courseSlice"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
 
 interface MainContentProps {
   slug: string
@@ -55,10 +51,8 @@ export default function MainContent({
 }: MainContentProps) {
   const [activeTab, setActiveTab] = useState("notes")
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
-  const [htmlContent, setHtmlContent] = useState("")
   const [autoplayEnabled, setAutoplayEnabled] = useState(true)
   const [nextVideoCountdown, setNextVideoCountdown] = useState<number | null>(null)
-  const router = useRouter()
   const { data: session, status } = useSession()
   const { toast } = useToast()
   const isAuthenticated = status === "authenticated"
@@ -72,30 +66,15 @@ export default function MainContent({
     dispatch(fetchCourseDataApi(slug))
   }, [slug, dispatch])
 
-  useEffect(() => {
-    if (currentChapter?.description) {
-      const processMarkdown = async () => {
-        const html = await markdownToHtml(currentChapter.description || "")
-        setHtmlContent(html)
-      }
-      processMarkdown()
-    }
-  }, [currentChapter])
-
-  useEffect(() => {
-    if (courseState.courseCompletionStatus) {
-      setShowCompletionOverlay(true)
-    }
-  }, [courseState.courseCompletionStatus])
-
   const handleNextVideo = useCallback(() => {
     if (nextVideoId) {
       dispatch(setCurrentVideoApi(nextVideoId))
       onVideoSelect(nextVideoId)
+      toast({ title: "Next Video", description: "Playing the next video." })
     } else if (isLastVideo) {
       dispatch(setCourseCompletionStatus(true))
     }
-  }, [nextVideoId, isLastVideo, dispatch, onVideoSelect])
+  }, [nextVideoId, isLastVideo, dispatch, onVideoSelect, toast])
 
   const handleVideoEnd = useCallback(() => {
     if (nextVideoId) {
@@ -139,7 +118,7 @@ export default function MainContent({
             />
           </Suspense>
         ) : (
-          <UnauthenticatedContentFallback type="summary" onUpgrade={() => router.push("/dashboard/subscription")} />
+          <div className="text-center text-muted-foreground">Upgrade to access AI summaries.</div>
         )
       case "quiz":
         return planId === "PRO" || planId === "ULTIMATE" ? (
@@ -162,7 +141,7 @@ export default function MainContent({
             />
           </Suspense>
         ) : (
-          <UnauthenticatedContentFallback type="quiz" onUpgrade={() => router.push("/dashboard/subscription")} />
+          <div className="text-center text-muted-foreground">Upgrade to access quizzes.</div>
         )
       default:
         return (
@@ -175,8 +154,9 @@ export default function MainContent({
   }
 
   return (
-    <div className="flex flex-col w-full">
-      <div className="relative rounded-lg overflow-hidden border border-border">
+    <div className="space-y-6">
+      {/* Video Player */}
+      <div className="relative rounded-lg overflow-hidden border border-border shadow-md">
         {initialVideoId ? (
           <EnhancedVideoPlayer
             videoId={initialVideoId}
@@ -206,8 +186,10 @@ export default function MainContent({
         )}
       </div>
 
+      {/* Autoplay Controls */}
       {nextVideoCountdown !== null && (
-        <div className="text-center text-sm text-muted-foreground mt-4">
+        <div className="text-center text-sm text-muted-foreground">
+          <Clock className="inline-block h-4 w-4 mr-1" />
           Next video starts in {nextVideoCountdown} seconds...
           <Button
             variant="outline"
@@ -222,81 +204,65 @@ export default function MainContent({
           </Button>
         </div>
       )}
-
       <div className="flex items-center justify-between mt-4">
-        <span className="text-sm text-muted-foreground">Autoplay is {autoplayEnabled ? "On" : "Off"}</span>
+        <span className={cn("text-sm flex items-center", autoplayEnabled ? "text-primary" : "text-muted-foreground")}>
+          <PlayCircle className={cn("inline-block h-4 w-4 mr-1", autoplayEnabled ? "text-primary" : "text-muted-foreground")} />
+          Autoplay is {autoplayEnabled ? "On" : "Off"}
+        </span>
         <Button
-          variant="outline"
+          variant={autoplayEnabled ? "primary" : "outline"}
           size="sm"
+          className="transition-all"
           onClick={() => setAutoplayEnabled((prev) => !prev)}
         >
-          Toggle Autoplay
+          {autoplayEnabled ? "Disable Autoplay" : "Enable Autoplay"}
         </Button>
       </div>
 
-      <div className="p-4 md:p-6">
-        <h1 className="text-2xl font-bold mb-2">{currentChapter?.title}</h1>
-        <div className="flex items-center text-sm text-muted-foreground mb-6">
-          <BookOpen className="mr-2 h-4 w-4" />
-          <span>
-            Chapter {courseState.courseProgress?.completedChapters.length || 0} of{" "}
-            {courseState.currentCourse?.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0}
-          </span>
-          {courseState.courseProgress?.completedChapters.includes(currentChapter?.id || "") && (
-            <span className="ml-4 flex items-center text-green-600 dark:text-green-400">
-              <CheckCircle className="mr-1 h-4 w-4" />
-              Completed
-            </span>
-          )}
-        </div>
-
-        <div ref={tabsRef}>
-          <Tabs defaultValue="notes" value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-6 bg-background border border-border/30 rounded-lg p-1">
-              <TabsTrigger
-                value="notes"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
-              >
-                AI Summary
-              </TabsTrigger>
-              <TabsTrigger
-                value="quiz"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
-              >
-                Quiz
-              </TabsTrigger>
-            </TabsList>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <TabsContent
-                  value="notes"
-                  className="space-y-4 bg-background rounded-lg p-4 border border-border/30"
-                >
-                  {renderTabContent()}
-                </TabsContent>
-                <TabsContent value="quiz" className="bg-background rounded-lg p-4 border border-border/30">
-                  {renderTabContent()}
-                </TabsContent>
-              </motion.div>
-            </AnimatePresence>
-          </Tabs>
-        </div>
-      </div>
+      {/* Tabs for Notes and Quiz */}
+      <Tabs defaultValue="notes" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 mb-6 bg-background border border-border/30 rounded-lg p-1">
+          <TabsTrigger
+            value="notes"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
+          >
+            AI Summary
+          </TabsTrigger>
+          <TabsTrigger
+            value="quiz"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
+          >
+            Quiz
+          </TabsTrigger>
+        </TabsList>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TabsContent
+              value="notes"
+              className="space-y-4 bg-background rounded-lg p-4 border border-border/30 shadow-sm"
+            >
+              {renderTabContent()}
+            </TabsContent>
+            <TabsContent value="quiz" className="bg-background rounded-lg p-4 border border-border/30 shadow-sm">
+              {renderTabContent()}
+            </TabsContent>
+          </motion.div>
+        </AnimatePresence>
+      </Tabs>
 
       {showCompletionOverlay && (
         <CourseCompletionOverlay
           courseName={courseState.currentCourse?.title || ""}
-          onClose={handleCloseCompletionOverlay}
+          onClose={() => setShowCompletionOverlay(false)}
           onWatchAnotherCourse={onWatchAnotherCourse}
         />
       )}
-      <FloatingCourseActions slug={slug}></FloatingCourseActions>
     </div>
   )
 }
