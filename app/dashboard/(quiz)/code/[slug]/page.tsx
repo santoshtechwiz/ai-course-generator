@@ -1,36 +1,27 @@
 "use client"
 
 import { use } from "react"
-import { useSelector } from "react-redux"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { useSession } from "next-auth/react"
-import { selectIsAuthenticated } from '@/store/slices/authSlice'
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import {
-  hydrateQuiz, // Use renamed action
-} from "@/store/slices/quizSlice"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+
+
 
 export default function CodeQuizPage({
   params,
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
-  const resolvedParams = params instanceof Promise ? use(params) : params;
-  const slug = resolvedParams.slug;
-  const { status: authStatus } = useSession();
-  const router = useRouter();
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const slug = resolvedParams.slug
+  const { status: authStatus } = useSession()
+  const router = useRouter()
 
   // Check for loading state
-  if (authStatus === 'loading') {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: 'Initializing quiz', status: 'loading' }
-        ]}
-      />
-    );
+  if (authStatus === "loading") {
+    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
   }
 
   if (!slug) {
@@ -41,13 +32,13 @@ export default function CodeQuizPage({
           <p className="text-muted-foreground">Quiz slug is missing. Please check the URL.</p>
         </div>
       </div>
-    );
+    )
   }
 
   // Allow all users to take quiz (authenticated or not)
   return (
-    <div className="container max-w-4xl py-6">
+    <QuizPlayLayout>
       <CodeQuizWrapper slug={slug} />
-    </div>
-  );
+    </QuizPlayLayout>
+  )
 }
