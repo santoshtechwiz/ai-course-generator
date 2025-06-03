@@ -1,7 +1,7 @@
 "use client"
 
 import { use, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useSession, signIn } from "next-auth/react"
 import type { AppDispatch } from "@/store"
@@ -11,29 +11,26 @@ import {
   selectOrGenerateQuizResults,
   selectAnswers,
   setQuizResults,
-  saveAuthRedirectState,
-  restoreAuthRedirectState,
-  clearAuthState,
 } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { QuizLoadingSteps } from "@/app/dashboard/(quiz)/components/QuizLoadingSteps"
-import McqQuizResult from "../../components/McqQuizResult"
+import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
+
+import { NonAuthenticatedUserSignInPrompt } from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
+import { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
+import McqQuizResult from "../../components/McqQuizResult"
 
 interface ResultsPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }> | { slug: string }
 }
 
 export default function McqResultsPage({ params }: ResultsPageProps) {
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const slug = resolvedParams.slug
-  const searchParams = useSearchParams()
-  const fromAuth = searchParams.get("fromAuth") === "true"
-
+  const slug = params instanceof Promise ? use(params) : params.slug
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const { status: authStatus } = useSession()
+  const { data: session, status: authStatus } = useSession()
+  const { restoreAuthRedirectState, clearAuthState } = useSessionService()
 
   const quizResults = useSelector(selectQuizResults)
   const generatedResults = useSelector(selectOrGenerateQuizResults)
@@ -43,57 +40,35 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   const [hasRestoredState, setHasRestoredState] = useState(false)
 
   useEffect(() => {
-    if (authStatus === "authenticated" && fromAuth && !hasRestoredState) {
-      const restoredState = dispatch(restoreAuthRedirectState())
+    if (authStatus === "authenticated" && !hasRestoredState) {
+      const restoredState = restoreAuthRedirectState()
       if (restoredState?.quizState?.currentState?.results) {
         dispatch(setQuizResults(restoredState.quizState.currentState.results))
       }
       setHasRestoredState(true)
-      dispatch(clearAuthState())
+      clearAuthState()
     }
-  }, [authStatus, fromAuth, hasRestoredState, dispatch])
+  }, [authStatus, hasRestoredState, dispatch, restoreAuthRedirectState, clearAuthState])
 
   useEffect(() => {
     const hasResults = quizResults || generatedResults
     const hasAnswers = Object.keys(answers || {}).length > 0
 
-    if (authStatus !== "loading" && !hasResults && !hasAnswers && !fromAuth) {
+    if (authStatus !== "loading" && !hasResults && !hasAnswers) {
       const redirectTimer = setTimeout(() => {
         router.push(`/dashboard/mcq/${slug}`)
       }, 1000)
 
       return () => clearTimeout(redirectTimer)
     }
-  }, [authStatus, quizResults, generatedResults, answers, router, slug, fromAuth])
+  }, [authStatus, quizResults, generatedResults, answers, router, slug])
 
   const handleRetakeQuiz = () => {
     router.push(`/dashboard/mcq/${slug}?reset=true`)
   }
 
   const handleSignIn = async () => {
-    const resultsToSave = quizResults || generatedResults
-
-    if (resultsToSave) {
-      dispatch(
-        saveAuthRedirectState(
-          {
-            returnPath: `/dashboard/mcq/${slug}/results?fromAuth=true`,
-            quizState: {
-              slug,
-              quizData: { title: resultsToSave.title, questions: resultsToSave.questions, type: "mcq" },
-              currentState: {
-                answers,
-                showResults: true,
-                results: resultsToSave,
-              },
-            },
-          },
-          `/dashboard/mcq/${slug}/results?fromAuth=true`
-        ),
-      )
-    }
-
-    await signIn(undefined, { callbackUrl: `/dashboard/mcq/${slug}/results?fromAuth=true` })
+    await signIn()
   }
 
   if (authStatus === "loading" || quizStatus === "loading") {
@@ -127,41 +102,43 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     if (resultData) {
       return (
         <div className="container max-w-4xl py-6">
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <McqQuizResult result={resultData} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-primary/90 text-white px-6 py-3 rounded-lg shadow-lg">
-                  Sign in to view detailed results
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <NonAuthenticatedUserSignInPrompt
+            onSignIn={handleSignIn}
+            resultData={resultData}
+            handleRetake={handleRetakeQuiz}
+          />
+          <div className="mt-6 relative opacity-50 pointer-events-none select-none filter blur-sm">
+            <Card>
+              <CardContent className="p-4 sm:p-6">
+                <McqQuizResult result={resultData} isAuthenticated={false} slug={slug} onRetake={handleRetakeQuiz} />
+                <div className="absolute inset-0 flex items-center justify-center" />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )
     }
 
     return (
       <div className="container max-w-md py-10">
-        <Card>
-          <CardContent className="p-8">
-            <h2 className="text-xl font-semibold mb-2">Sign In to View Results</h2>
-            <p className="text-muted-foreground mb-6">Please sign in to view your detailed quiz results.</p>
-            <Button onClick={handleSignIn}>Sign In</Button>
-          </CardContent>
-        </Card>
+        <NonAuthenticatedUserSignInPrompt
+          onSignIn={handleSignIn}
+          title="Sign In to View Results"
+          message="Please sign in to view your detailed quiz results."
+          fallbackAction={{
+            label: "Take Quiz Instead",
+            onClick: () => router.push(`/dashboard/blanks/${slug}`),
+            variant: "outline",
+          }}
+        />
       </div>
     )
   }
 
+  // ✅ MISSING CASE FIXED: Authenticated user + results
   return (
-    <div className="container max-w-4xl py-6">
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <QuizResult result={resultData} quizType={"mcq"} />
-          
-        </CardContent>
-      </Card>
+    <div className="container max-w-4xl py-10">
+      <QuizResult quizType="mcq" result={resultData} slug={slug} onRetake={handleRetakeQuiz} />
     </div>
   )
 }

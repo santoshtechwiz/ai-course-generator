@@ -48,7 +48,7 @@ interface QuizActionsProps {
   icon?: React.ReactNode
   backgroundColor?: string
   textColor?: string
-  position?: "bottom-right" | "bottom-left" | "top-right" | "top-left" | "left-center" | "right-center"
+  position?: "bottom-right" | "bottom-left" | "top-right" | "top-left" | "left-center" | "right-center" | "center"
 }
 
 export function QuizActions({
@@ -89,6 +89,7 @@ export function QuizActions({
     "top-left": "top-4 left-4",
     "left-center": "top-1/2 -translate-y-1/2 left-4",
     "right-center": "top-1/2 -translate-y-1/2 right-4",
+    center: "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
   }
 
   // Fetch quiz data

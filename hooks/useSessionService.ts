@@ -69,6 +69,7 @@ export function useSessionService() {
 
   const saveAuthRedirectState = useCallback(
     (state: AuthRedirectState) => {
+      // Used by QuizAuthGuard to save intended path for redirect after login
       try {
         const { returnPath } = state
         const quizState = state.quizState || {}
@@ -80,14 +81,6 @@ export function useSessionService() {
           return
         }
 
-        console.log("Saving auth redirect state:", { 
-          slug, 
-          returnPath,
-          hasResults: !!currentState.results,
-          hasAnswers: !!currentState.answers && Object.keys(currentState.answers || {}).length > 0,
-          showResults: currentState.showResults
-        });
-
         // Create a pendingQuiz with proper structure
         const pendingQuizData = {
           slug,
@@ -95,9 +88,7 @@ export function useSessionService() {
           currentState: {
             ...currentState,
             showResults: currentState.showResults || false,
-            // Store results if available
             results: currentState.results || null,
-            // Store answers if available
             answers: currentState.answers || {},
           },
         }
@@ -107,26 +98,17 @@ export function useSessionService() {
 
         // For results pages, explicitly save the results to ensure they're available immediately
         if (currentState.showResults && currentState.results) {
-          console.log("Saving quiz results for restoration after auth:", currentState.results);
           dispatch(setQuizResults(currentState.results))
         }
 
-        // Save in both sessionStorage and localStorage for redundancy
+        // Save in sessionStorage and localStorage for redundancy (no fromAuth or ?fromAuth=true)
         if (typeof window !== "undefined") {
-          // Store the callback URL to ensure proper redirection after sign-in
-          sessionStorage.setItem("callbackUrl", returnPath);
-          sessionStorage.setItem("pendingQuiz", JSON.stringify(pendingQuizData));
-          sessionStorage.setItem("authRedirectPath", returnPath);
-          
-          // Flag to indicate this is for viewing results after auth
-          if (returnPath.includes('/results')) {
-            sessionStorage.setItem(`${slug}_auth_for_results`, 'true');
-          }
-          
+          sessionStorage.setItem("callbackUrl", returnPath)
+          sessionStorage.setItem("pendingQuiz", JSON.stringify(pendingQuizData))
+          sessionStorage.setItem("authRedirectPath", returnPath)
           try {
-            // Also try localStorage as a backup
             localStorage.setItem("pendingQuiz", JSON.stringify(pendingQuizData))
-            localStorage.setItem("authRedirectPath", returnPath);
+            localStorage.setItem("authRedirectPath", returnPath)
           } catch (e) {
             // Ignore localStorage errors
           }
@@ -151,12 +133,10 @@ export function useSessionService() {
           try {
             quizToRestore = JSON.parse(stored)
             redirectPath = sessionStorage.getItem("authRedirectPath");
-            console.log("Restored quiz from sessionStorage")
           } catch (e) {
             console.error("Failed to parse stored quiz:", e)
           }
         }
-        
         // If still not found, try localStorage
         if (!quizToRestore) {
           const lsStored = localStorage.getItem("pendingQuiz")
@@ -164,75 +144,37 @@ export function useSessionService() {
             try {
               quizToRestore = JSON.parse(lsStored)
               redirectPath = localStorage.getItem("authRedirectPath");
-              console.log("Restored quiz from localStorage")
             } catch (e) {
               console.error("Failed to parse localStorage quiz:", e)
             }
           }
         }
       }
-      
+
       if (quizToRestore?.slug) {
-        console.log("Restoring auth redirect state:", {
-          slug: quizToRestore.slug,
-          hasQuizData: !!quizToRestore.quizData,
-          hasCurrentState: !!quizToRestore.currentState,
-          showResults: quizToRestore.currentState?.showResults,
-          hasResults: !!quizToRestore.currentState?.results,
-          redirectPath
-        });
-        
-        // Check if this restoration is specifically for showing results
-        const isForResults = typeof window !== "undefined" && 
-          sessionStorage.getItem(`${quizToRestore.slug}_auth_for_results`) === 'true';
-        
-        // Mark that we've completed the auth restoration
-        if (quizToRestore.slug && typeof window !== "undefined") {
-          sessionStorage.setItem(`${quizToRestore.slug}_auth_restored`, 'true');
-        }
-        
-        if (isForResults || (redirectPath && redirectPath.includes('/results'))) {
-          console.log("This restoration is specifically for showing results");
-          
-          // Apply the stored quiz state
-          dispatch(hydrateQuiz({
-            ...quizToRestore,
-            currentState: {
-              ...quizToRestore.currentState,
-              showResults: true // Force showing results
-            }
-          }));
-          
-          // Remove the flag since we've used it
-          if (typeof window !== "undefined") {
-            sessionStorage.removeItem(`${quizToRestore.slug}_auth_for_results`);
-          }
-        } else {
-          // Standard restoration
-          dispatch(hydrateQuiz(quizToRestore));
-        }
-        
+        // Standard restoration
+        dispatch(hydrateQuiz(quizToRestore))
+
         // Explicitly set results if they were stored
         if (quizToRestore.currentState?.results) {
-          console.log("Setting quiz results from pendingQuiz:", quizToRestore.currentState.results);
-          dispatch(setQuizResults(quizToRestore.currentState.results));
+          dispatch(setQuizResults(quizToRestore.currentState.results))
         }
 
         // Clean up storage
         if (typeof window !== "undefined") {
-          sessionStorage.removeItem("callbackUrl");
-          sessionStorage.removeItem("pendingQuiz");
-          sessionStorage.removeItem("authRedirectPath");
-          localStorage.removeItem("pendingQuiz");
-          localStorage.removeItem("authRedirectPath");
+          sessionStorage.removeItem("callbackUrl")
+          sessionStorage.removeItem("pendingQuiz")
+          sessionStorage.removeItem("authRedirectPath")
+          localStorage.removeItem("pendingQuiz")
+          localStorage.removeItem("authRedirectPath")
         }
-        
+
         return {
           quizState: quizToRestore,
           redirectPath
         };
       }
-      
+
       return null;
     } catch (e) {
       console.error("Failed to restore redirect state:", e);

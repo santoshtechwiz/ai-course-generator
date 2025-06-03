@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download, Share2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { Progress } from "@/components/ui/progress"
 
 interface QuizResultsLayoutProps {
   title: string

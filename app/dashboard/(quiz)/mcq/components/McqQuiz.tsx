@@ -278,3 +278,4 @@ const McqQuiz = ({
 }
 
 export default McqQuiz
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

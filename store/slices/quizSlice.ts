@@ -260,7 +260,7 @@ export const submitQuizAndPrepareResults = createAsyncThunk(
 
     const results = {
       quizId: state.quiz.quizId, // Keep for database compatibility
-      slug,                      // Primary identifier for UI
+      slug: slug,                // Primary identifier for UI
       title: title || "Quiz Results",
       score,
       maxScore: questions.length,
@@ -332,23 +332,15 @@ export const checkAuthAndLoadResults = createAsyncThunk(
 // Backward compatible: Keep existing fetchQuizResults thunk
 export const fetchQuizResults = createAsyncThunk(
   "quiz/fetchResults",
-  async (slug: string, { rejectWithValue }) => {
+  async (slug: string, { getState, rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/quizzes/results/${slug}`)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch quiz results: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return data
-    } catch (error: any) {
-      // Handle the "no results available" case more gracefully
-      if (error?.response?.status === 404 || 
-          error?.message?.includes("No quiz results") || 
-          error?.includes?.("No quiz results")) {
+      const state = getState() as RootState;
+      const results = state.quiz?.results;
+      if (!results) {
         return rejectWithValue("NO_RESULTS_REDIRECT_TO_QUIZ");
       }
-      console.error("Error fetching quiz results:", error);
+      return results;
+    } catch (error: any) {
       return rejectWithValue(error?.message || "Failed to get quiz results");
     }
   },
@@ -868,16 +860,17 @@ export const {
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility
-export const selectQuizState = (state: RootState) => state.quiz
-export const selectQuestions = createSelector([selectQuizState], (quiz) => quiz.questions)
-export const selectAnswers = createSelector([selectQuizState], (quiz) => quiz.answers)
-export const selectQuizStatus = createSelector([selectQuizState], (quiz) => quiz.status)
-export const selectQuizError = createSelector([selectQuizState], (quiz) => quiz.error)
-export const selectCurrentQuestionIndex = createSelector([selectQuizState], (quiz) => quiz.currentQuestionIndex)
-export const selectIsQuizComplete = createSelector([selectQuizState], (quiz) => quiz.isCompleted)
-export const selectQuizResults = createSelector([selectQuizState], (quiz) => quiz.results)
-export const selectQuizTitle = createSelector([selectQuizState], (quiz) => quiz.title)
-export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz.slug || quiz.quizId)
+export const selectQuizState = (state: RootState | any) => state?.quiz ?? {};
+export const selectQuestions = createSelector([selectQuizState], (quiz) => quiz?.questions ?? []);
+export const selectAnswers = createSelector([selectQuizState], (quiz) => quiz?.answers ?? {});
+export const selectQuizStatus = createSelector([selectQuizState], (quiz) => quiz?.status ?? "idle");
+export const selectQuizError = createSelector([selectQuizState], (quiz) => quiz?.error ?? null);
+export const selectCurrentQuestionIndex = createSelector([selectQuizState], (quiz) => quiz?.currentQuestionIndex ?? 0);
+export const selectIsQuizComplete = createSelector([selectQuizState], (quiz) => quiz?.isCompleted ?? false);
+export const selectQuizResults = createSelector([selectQuizState], (quiz) => quiz?.results ?? null);
+export const selectQuizTitle = createSelector([selectQuizState], (quiz) => quiz?.title ?? "");
+export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz?.slug || quiz?.quizId || "");
+
 export const selectCurrentQuestion = createSelector(
   [selectQuestions, selectCurrentQuestionIndex],
   (questions, index) => questions[index] || null,
@@ -943,18 +936,18 @@ export const selectOrGenerateQuizResults = createSelector(
   }
 );
 
-export const selectPendingQuiz = (state: RootState) => state.quiz.pendingQuiz;
+export const selectPendingQuiz = (state: RootState | any) => state?.quiz?.pendingQuiz ?? null;
 
 // Selector to get answer for a specific question
-export const selectAnswerForQuestion = (state: RootState, questionId: string | number) => {
+export const selectAnswerForQuestion = (state: RootState | any, questionId: string | number) => {
   const normalizedId = String(questionId)
-  return state.quiz.answers[normalizedId] || null
+  return state?.quiz?.answers?.[normalizedId] ?? null
 }
 
 // Restore auth redirect state selector
-export const restoreAuthRedirectState = (state: RootState) => {
-  const quiz = selectQuizState(state);
-  return quiz.authRedirectState || null;
+export const restoreAuthRedirectState = (state: RootState | any) => {
+  if (!state || !state.quiz) return null;
+  return state.quiz.authRedirectState || null;
 };
 
 // Additional selectors for save state

@@ -1,66 +1,75 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { use, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import { useSession } from "next-auth/react"
+import { useSession, signIn } from "next-auth/react"
 import type { AppDispatch } from "@/store"
 import {
   selectQuizResults,
   selectQuizStatus,
   selectOrGenerateQuizResults,
-  selectQuizTitle,
   selectAnswers,
-  selectQuestions,
-  resetQuiz,
+  setQuizResults,
 } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
+
+import { NonAuthenticatedUserSignInPrompt } from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
+import { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
+import CodeQuizResult from "../../components/CodeQuizResult"
 
 interface ResultsPageProps {
   params: { slug: string }
 }
 
 export default function CodeResultsPage({ params }: ResultsPageProps) {
-  const slug = params.slug
-  const searchParams = useSearchParams()
-  const fromAuth = searchParams.get("fromAuth") === "true"
-
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const slug = resolvedParams.slug
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const { status: authStatus } = useSession()
+  const { data: session, status: authStatus } = useSession()
+  const { restoreAuthRedirectState, clearAuthState } = useSessionService()
 
   const quizResults = useSelector(selectQuizResults)
-  const quizStatus = useSelector(selectQuizStatus)
   const generatedResults = useSelector(selectOrGenerateQuizResults)
-  const quizTitle = useSelector(selectQuizTitle)
+  const quizStatus = useSelector(selectQuizStatus)
   const answers = useSelector(selectAnswers)
-  const questions = useSelector(selectQuestions)
 
-  const resultData = quizResults || generatedResults
-
-  useEffect(() => {
-    if (authStatus === "authenticated" && fromAuth) {
-      dispatch(resetQuiz())
-    }
-  }, [authStatus, fromAuth, dispatch])
+  const [hasRestoredState, setHasRestoredState] = useState(false)
 
   useEffect(() => {
-    if (authStatus !== "loading" && quizStatus !== "loading") {
-      const hasResults = resultData !== null
-      const hasAnswers = Object.keys(answers || {}).length > 0
-
-      if (!hasResults && !hasAnswers) {
-        router.push(`/dashboard/code/${slug}`)
+    if (authStatus === "authenticated" && !hasRestoredState) {
+      const restoredState = restoreAuthRedirectState()
+      if (restoredState?.quizState?.currentState?.results) {
+        dispatch(setQuizResults(restoredState.quizState.currentState.results))
       }
+      setHasRestoredState(true)
+      clearAuthState()
     }
-  }, [authStatus, quizStatus, resultData, router, slug, answers])
+  }, [authStatus, hasRestoredState, dispatch, restoreAuthRedirectState, clearAuthState])
 
-  const handleRetake = () => {
-    dispatch(resetQuiz())
+  useEffect(() => {
+    const hasResults = quizResults || generatedResults
+    const hasAnswers = Object.keys(answers || {}).length > 0
+
+    if (authStatus !== "loading" && !hasResults && !hasAnswers) {
+      const redirectTimer = setTimeout(() => {
+        router.push(`/dashboard/code/${slug}`)
+      }, 1000)
+
+      return () => clearTimeout(redirectTimer)
+    }
+  }, [authStatus, quizResults, generatedResults, answers, router, slug])
+
+  const handleRetakeQuiz = () => {
     router.push(`/dashboard/code/${slug}?reset=true`)
+  }
+
+  const handleSignIn = async () => {
+    await signIn()
   }
 
   if (authStatus === "loading" || quizStatus === "loading") {
@@ -74,30 +83,63 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  if (!resultData) {
+  const resultData = quizResults || generatedResults
+
+  if (!resultData && Object.keys(answers || {}).length === 0) {
     return (
       <div className="container max-w-4xl py-10 text-center">
         <Card>
           <CardContent className="p-8">
             <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
-            <p className="text-muted-foreground mb-6">Taking you to the quiz page...</p>
-            <Button onClick={() => router.push(`/dashboard/code/${slug}`)}>Take Quiz Now</Button>
+            <p className="text-muted-foreground mb-6">You need to complete the quiz to see results.</p>
+            <Button onClick={handleRetakeQuiz}>Take Quiz Now</Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
+  if (authStatus !== "authenticated") {
+    if (resultData) {
+      return (
+        <div className="container max-w-4xl py-6">
+          <NonAuthenticatedUserSignInPrompt
+            onSignIn={handleSignIn}
+            resultData={resultData}
+            handleRetake={handleRetakeQuiz}
+          />
+          <div className="mt-6 relative opacity-50 pointer-events-none select-none filter blur-sm">
+            <Card>
+              <CardContent className="p-4 sm:p-6">
+                <CodeQuizResult result={resultData} isAuthenticated={false} slug={slug} onRetake={handleRetakeQuiz} />
+                <div className="absolute inset-0 flex items-center justify-center" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="container max-w-md py-10">
+        <NonAuthenticatedUserSignInPrompt
+          onSignIn={handleSignIn}
+          title="Sign In to View Results"
+          message="Please sign in to view your detailed quiz results."
+          fallbackAction={{
+            label: "Take Quiz Instead",
+            onClick: () => router.push(`/dashboard/blanks/${slug}`),
+            variant: "outline",
+          }}
+        />
+      </div>
+    )
+  }
+
+  // ✅ MISSING CASE FIXED: Authenticated user + results
   return (
-    <div className="container max-w-4xl py-6">
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <QuizResult result={resultData} quizType={"code"} />
-          <Button onClick={handleRetake} className="mt-4">
-            Retake Quiz
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="container max-w-4xl py-10">
+      <QuizResult quizType="code" result={resultData} slug={slug} onRetake={handleRetakeQuiz} />
     </div>
   )
 }

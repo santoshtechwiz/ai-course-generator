@@ -1,7 +1,7 @@
 "use client"
 
 import { use, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useSession, signIn } from "next-auth/react"
 import type { AppDispatch } from "@/store"
@@ -11,94 +11,65 @@ import {
   selectOrGenerateQuizResults,
   selectAnswers,
   setQuizResults,
-  saveAuthRedirectState, // Ensure this matches the export in quizSlice.ts
-  restoreAuthRedirectState,
-  clearAuthState,
 } from "@/store/slices/quizSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 import BlankQuizResults from "../../components/BlankQuizResults"
 import { NonAuthenticatedUserSignInPrompt } from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
+import { useSessionService } from "@/hooks/useSessionService"
+import QuizResult from "../../../components/QuizResult"
 
 interface ResultsPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }> | { slug: string }  
 }
 
 export default function BlanksResultsPage({ params }: ResultsPageProps) {
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const slug = resolvedParams.slug
+  const slug = params instanceof Promise ? use(params) : params.slug;
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const searchParams = useSearchParams()
-  const fromAuth = searchParams.get("fromAuth") === "true"
-
   const { data: session, status: authStatus } = useSession()
+  const { restoreAuthRedirectState, clearAuthState } = useSessionService()
 
-  // Redux selectors
   const quizResults = useSelector(selectQuizResults)
   const generatedResults = useSelector(selectOrGenerateQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
   const answers = useSelector(selectAnswers)
 
-  // Local state for managing the flow
   const [hasRestoredState, setHasRestoredState] = useState(false)
 
-  // Handle authentication state restoration
   useEffect(() => {
-    if (authStatus === "authenticated" && fromAuth && !hasRestoredState) {
-      const restoredState = dispatch(restoreAuthRedirectState())
+    if (authStatus === "authenticated" && !hasRestoredState) {
+      const restoredState = restoreAuthRedirectState()
       if (restoredState?.quizState?.currentState?.results) {
         dispatch(setQuizResults(restoredState.quizState.currentState.results))
       }
       setHasRestoredState(true)
-      dispatch(clearAuthState())
+      clearAuthState()
     }
-  }, [authStatus, fromAuth, hasRestoredState, dispatch])
+  }, [authStatus, hasRestoredState, dispatch, restoreAuthRedirectState, clearAuthState])
 
-  // Redirect to quiz if no results available
   useEffect(() => {
     const hasResults = quizResults || generatedResults
     const hasAnswers = Object.keys(answers || {}).length > 0
 
-    if (authStatus !== "loading" && !hasResults && !hasAnswers && !fromAuth) {
+    if (authStatus !== "loading" && !hasResults && !hasAnswers) {
       const redirectTimer = setTimeout(() => {
         router.push(`/dashboard/blanks/${slug}`)
       }, 1000)
 
       return () => clearTimeout(redirectTimer)
     }
-  }, [authStatus, quizResults, generatedResults, answers, router, slug, fromAuth])
+  }, [authStatus, quizResults, generatedResults, answers, router, slug])
 
-  // Handle retaking the quiz
   const handleRetakeQuiz = () => {
     router.push(`/dashboard/blanks/${slug}?reset=true`)
   }
 
   const handleSignIn = async () => {
-    const resultsToSave = quizResults || generatedResults
-
-    if (resultsToSave) {
-      dispatch(
-        saveAuthRedirectState({
-          returnPath: `/dashboard/blanks/${slug}/results?fromAuth=true`,
-          quizState: {
-            slug,
-            quizData: { title: resultsToSave.title, questions: resultsToSave.questions, type: "blanks" },
-            currentState: {
-              answers,
-              showResults: true,
-              results: resultsToSave,
-            },
-          },
-        }),
-      )
-    }
-
-    await signIn(undefined, { callbackUrl: `/dashboard/blanks/${slug}/results?fromAuth=true` })
+    await signIn()
   }
 
-  // Show loading state while auth is loading or we're checking for results
   if (authStatus === "loading" || quizStatus === "loading") {
     return (
       <QuizLoadingSteps
@@ -110,10 +81,8 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // Determine which results to show
   const resultData = quizResults || generatedResults
 
-  // Show no results message if we still don't have any data
   if (!resultData && Object.keys(answers || {}).length === 0) {
     return (
       <div className="container max-w-4xl py-10 text-center">
@@ -128,7 +97,6 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // For unauthenticated users
   if (authStatus !== "authenticated") {
     if (resultData) {
       return (
@@ -138,16 +106,11 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
             resultData={resultData}
             handleRetake={handleRetakeQuiz}
           />
-
           <div className="mt-6 relative opacity-50 pointer-events-none select-none filter blur-sm">
             <Card>
               <CardContent className="p-4 sm:p-6">
                 <BlankQuizResults result={resultData} isAuthenticated={false} slug={slug} onRetake={handleRetakeQuiz} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-primary/90 text-white px-6 py-3 rounded-lg shadow-lg">
-                    Sign in to view detailed results
-                  </div>
-                </div>
+                <div className="absolute inset-0 flex items-center justify-center" />
               </CardContent>
             </Card>
           </div>
@@ -171,19 +134,10 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
     )
   }
 
-  // Show results
+  // ✅ MISSING CASE FIXED: Authenticated user + results
   return (
-    <div className="container max-w-4xl py-6">
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <BlankQuizResults
-            result={resultData}
-            isAuthenticated={authStatus === "authenticated"}
-            slug={slug}
-            onRetake={handleRetakeQuiz}
-          />
-        </CardContent>
-      </Card>
+    <div className="container max-w-4xl py-10">
+      <QuizResult result={resultData} slug={slug} onRetake={handleRetakeQuiz} />
     </div>
   )
 }

@@ -474,28 +474,6 @@ function FlashCardComponentInner({
     }
   }, [showConfetti])
 
-  // Handle authentication return
-  useEffect(() => {
-    if (typeof window === "undefined") return
-
-    const urlParams = new URLSearchParams(window.location.search)
-    const fromAuth = urlParams.get("fromAuth") === "true"
-    const completed = urlParams.get("completed") === "true"
-
-    if ((fromAuth || completed) && session?.user) {
-      // Process pending authentication
-      if (pendingAuthRequired && isCompleted) {
-        dispatch({ type: "flashcard/FORCE_COMPLETED" })
-      }
-
-      // Clean up URL parameters
-      const url = new URL(window.location.href)
-      url.searchParams.delete("fromAuth")
-      url.searchParams.delete("completed")
-      window.history.replaceState({}, "", url.toString())
-    }
-  }, [session, dispatch, pendingAuthRequired, isCompleted])
-
   if (isLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }

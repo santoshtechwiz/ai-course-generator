@@ -548,3 +548,5 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
     </motion.div>
   )
 }
+
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

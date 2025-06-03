@@ -277,3 +277,4 @@ export const QuizList = memo(QuizListComponent, (prevProps, nextProps) => {
     prevProps.activeFilter === nextProps.activeFilter
   )
 })
+// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.
