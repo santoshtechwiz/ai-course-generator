@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
 import { useCourseActions } from "@/hooks/useCourseActions"
+import { useScrollDirection } from "@/hooks/useScrollDirection"
 
 import {
   AlertDialog,
