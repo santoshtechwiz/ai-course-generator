@@ -1,38 +1,46 @@
 "use client"
 
-import React, { use } from "react"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { use } from "react"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import FlashCardsPageClient from "../components/FlashCardsPageClient"
-import { useAuth } from "@/hooks/useAuth"
+import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 
-interface PageProps {
+export default function FlashCardPage({
+  params,
+}: {
   params: Promise<{ slug: string }> | { slug: string }
-  searchParams?: { [key: string]: string | string[] | undefined }
-}
+}) {
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const slug = resolvedParams.slug
+  const { status: authStatus } = useSession()
+  const router = useRouter()
 
-export default function FlashcardPage({ params }: PageProps) {
-  // Always unwrap params using React.use() for future compatibility
-  const slug = params instanceof Promise ? use(params).slug : (params as { slug: string }).slug
+  // Check for loading state
+  if (authStatus === "loading") {
+    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+  }
 
-  // Use unified auth hook for consistency
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth()
-
-  // Show loading while checking auth
-  if (authLoading) {
+  if (!slug) {
     return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Checking authentication", status: "loading" },
-          { label: "Preparing flashcards", status: "pending" },
-        ]}
-      />
+      <div className="container max-w-4xl py-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold mb-4">Error</h2>
+            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
+            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
-  // Render the Redux-powered flashcard wrapper
   return (
-    <div className="container py-6">
-      <FlashCardsPageClient slug={slug} userId={user?.id || ""} />
-    </div>
+    <QuizPlayLayout>
+      <FlashCardsPageClient slug={slug} userId={ ""} />
+    </QuizPlayLayout>
   )
 }

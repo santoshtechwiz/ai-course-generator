@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+
 
 export default function OpenEndedQuizPage({
   params,
@@ -38,8 +40,8 @@ export default function OpenEndedQuizPage({
   }
 
   return (
-    <div className="container max-w-4xl py-6">
+    <QuizPlayLayout>
       <OpenEndedQuizWrapper slug={slug} />
-    </div>
+    </QuizPlayLayout>
   )
 }

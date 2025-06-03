@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
@@ -16,6 +16,7 @@ import { SessionSync } from "./session-provider"
 import { LoadingProvider } from "@/components/ui/loading/loading-provider"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
+import React from "react"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>

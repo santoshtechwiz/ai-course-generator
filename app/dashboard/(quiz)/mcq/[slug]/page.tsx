@@ -1,37 +1,28 @@
 "use client"
 
 import { use } from "react"
-import { useSelector, useDispatch } from "react-redux"
+import { useDispatch } from "react-redux"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { useSession } from "next-auth/react"
-import { selectIsAuthenticated } from '@/store/slices/authSlice'
 import McqQuizWrapper from "../components/McqQuizWrapper"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import {
-  hydrateQuiz, // Use renamed action
-} from "@/store/slices/quizSlice"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+
 
 export default function McqQuizPage({
   params,
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
-  const resolvedParams = params instanceof Promise ? use(params) : params;
-  const slug = resolvedParams.slug;
-  const { status: authStatus } = useSession();
-  const router = useRouter();
-  const dispatch = useDispatch();
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const slug = resolvedParams.slug
+  const { status: authStatus } = useSession()
+  const router = useRouter()
+  const dispatch = useDispatch()
 
   // Check for loading state
-  if (authStatus === 'loading') {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: 'Initializing quiz', status: 'loading' }
-        ]}
-      />
-    );
+  if (authStatus === "loading") {
+    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
   }
 
   if (!slug) {
@@ -42,13 +33,13 @@ export default function McqQuizPage({
           <p className="text-muted-foreground">Quiz slug is missing. Please check the URL.</p>
         </div>
       </div>
-    );
+    )
   }
 
   // Allow all users to take quiz (authenticated or not)
   return (
-    <div className="container max-w-4xl py-6">
+    <QuizPlayLayout>
       <McqQuizWrapper slug={slug} />
-    </div>
-  );
+    </QuizPlayLayout>
+  )
 }

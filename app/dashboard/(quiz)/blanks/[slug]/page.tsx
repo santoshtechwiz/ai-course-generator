@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+
 
 export default function BlanksQuizPage({
   params,
@@ -39,8 +41,8 @@ export default function BlanksQuizPage({
   }
 
   return (
-    <div className="container max-w-4xl py-6">
+    <QuizPlayLayout>
       <BlanksQuizWrapper slug={slug} />
-    </div>
+    </QuizPlayLayout>
   )
 }
