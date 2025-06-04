@@ -109,13 +109,12 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
       course.image ||
       `/api/og?title=${encodeURIComponent(course.title)}&description=${encodeURIComponent("Interactive Programming Course")}`,
     ogType: "article",
-    publishedTime: course.createdAt.toISOString(),
-    modifiedTime: (course.updatedAt || course.createdAt).toISOString(),
+      modifiedTime: (course.updatedAt || course.createdAt).toISOString(),
   })
 }
 
 export default async function Page({ params }: CoursePageParams) {
-  const { slug } = params;
+  const { slug } = await params;
   const course = await getCourseData(slug)
 
   if (!course) {

@@ -28,8 +28,14 @@ const coursePersistConfig = {
   ],
 };
 
+const authPersistConfig = {
+  key: "auth",
+  storage,
+  whitelist: ["token", "user"], // Add any other auth state properties you want to persist
+};
+
 const rootReducer = combineReducers({
-  auth: authReducer,
+  auth: persistReducer(authPersistConfig, authReducer),
   quiz: quizReducer,
   subscription: subscriptionReducer,
   user: userReducer,
