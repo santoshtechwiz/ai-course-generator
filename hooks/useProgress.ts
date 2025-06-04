@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateProgress } from "@/store/slices/courseSlice";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
+import type { CourseProgress } from "@/app/types/types";
 
 interface UseProgressProps {
-  courseId: number;
-  initialProgress?: any;
-  currentChapterId?: string;
+  courseId: number | string;
+  initialProgress?: CourseProgress;
+  currentChapterId?: string | number;
   useSSE?: boolean;
 }
 

@@ -120,6 +120,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     ]
   }, [])
 
+  // Modify the query function to better work with your existing API routes
   const {
     data: questions,
     isError,
@@ -131,40 +132,84 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
       if (!chapter?.videoId || !effectiveChapterId) {
         throw new Error("Required chapter data is missing.")
       }
+
+      // Debug: log incoming chapter/questions data
+      // eslint-disable-next-line no-console
+      console.debug("[CourseDetailsQuiz] chapter.videoId:", chapter.videoId, "chapterId:", effectiveChapterId)
+
+      // If chapter.questions is present and non-empty, use it directly (for server-provided questions)
+      if (Array.isArray(chapter.questions) && chapter.questions.length > 0) {
+        // Debug: log that we're using provided questions
+        // eslint-disable-next-line no-console
+        console.debug("[CourseDetailsQuiz] Using provided chapter.questions:", chapter.questions)
+        return chapter.questions.map((q: any) => ({
+          ...q,
+          id: q.id || `question-${Math.random().toString(36).substr(2, 9)}`,
+          options: Array.isArray(q.options)
+            ? q.options
+            : typeof q.options === "string"
+              ? (() => {
+                  try {
+                    return JSON.parse(q.options)
+                  } catch {
+                    return []
+                  }
+                })()
+              : q.options
+                ? [q.options]
+                : [],
+        }))
+      }
+
+      // Debug: log that we're fetching from API
+      // eslint-disable-next-line no-console
+      console.debug("[CourseDetailsQuiz] Fetching quiz data from API for:", {
+        videoId: chapter.videoId,
+        chapterId: Number(effectiveChapterId),
+        chapterName: chapter.title || chapter.name,
+      })
+
       const response = await axios.post("/api/coursequiz", {
         videoId: chapter.videoId,
         chapterId: Number(effectiveChapterId),
-        chapterName: chapter.title || chapter.title,
+        chapterName: chapter.title || chapter.name,
       })
 
-      // Also, let's improve the error handling and logging
-      if (response.data.error) {
-        console.error("Quiz API error:", response.data.error)
-        throw new Error(response.data.error)
+      // Log the response for debugging
+      // eslint-disable-next-line no-console
+      console.debug("[CourseDetailsQuiz] Quiz API response:", response.data)
+
+      if (!response.data || !Array.isArray(response.data)) {
+        // eslint-disable-next-line no-console
+        console.warn("[CourseDetailsQuiz] Invalid response format from quiz API:", response.data)
+        return []
       }
 
-      // Add better logging to help diagnose the issue
-      console.log("Quiz data received:", response.data)
-
-      // Make sure we're properly handling empty responses
-      if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-        console.warn("Empty quiz data received for chapter:", effectiveChapterId)
-        throw new Error("No quiz questions available for this chapter")
-      }
-
-      // Ensure we're properly parsing the options
       return response.data.map((question: any) => ({
         ...question,
+        id: question.id || `question-${Math.random().toString(36).substr(2, 9)}`,
         options: Array.isArray(question.options)
           ? question.options
           : typeof question.options === "string"
-            ? JSON.parse(question.options)
-            : [],
+            ? (() => {
+                try {
+                  return JSON.parse(question.options)
+                } catch {
+                  return []
+                }
+              })()
+            : question.options
+              ? [question.options]
+              : [],
       }))
     },
     retry: 3,
     staleTime: 5 * 60 * 1000,
-    enabled: isPremium && quizStarted && isAuthenticated, // Only fetch if user is premium, authenticated and quiz has started
+    enabled: isPremium && quizStarted && isAuthenticated,
+    onError: (err) => {
+      // eslint-disable-next-line no-console
+      console.error("[CourseDetailsQuiz] Quiz data fetch error:", err)
+    },
   })
 
   // Use demo questions for unauthenticated users
@@ -172,24 +217,57 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     if (!isPremium || !isAuthenticated) {
       return demoQuestions
     }
-    return questions || []
-  }, [isPremium, isAuthenticated, questions, demoQuestions])
+
+    // If we have questions from the API, use them
+    if (questions && questions.length > 0) {
+      return questions
+    }
+
+    // If we're not loading and there are no questions, use demo questions as fallback
+    if (!isQuizLoading && (!questions || questions.length === 0)) {
+      console.log("No quiz questions found, using demo questions as fallback")
+      return demoQuestions
+    }
+
+    return []
+  }, [isPremium, isAuthenticated, questions, demoQuestions, isQuizLoading])
 
   const currentQuestion = useMemo(
     () => (effectiveQuestions && effectiveQuestions.length > 0 ? effectiveQuestions[currentQuestionIndex] : null),
     [effectiveQuestions, currentQuestionIndex],
   )
 
+  const animateCorrectAnswer = (questionId, selectedOption) => {
+    const element = document.getElementById(`option-${questionId}-${selectedOption}`)
+    if (element) {
+      // Add a pulse animation to the selected answer
+      element.classList.add("animate-pulse")
+      element.classList.add("bg-green-100")
+      element.classList.add("dark:bg-green-900/30")
+
+      setTimeout(() => {
+        element.classList.remove("animate-pulse")
+      }, 1000)
+    }
+  }
+
+  // Update the handleAnswer function to include animation
   const handleAnswer = useCallback(
     (value: string) => {
       if (currentQuestion) {
         const newAnswers = { ...answers, [currentQuestion.id]: value }
         setAnswers(newAnswers)
         saveProgress({ answers: newAnswers, currentIndex: currentQuestionIndex })
+
+        // Add animation feedback
+        animateCorrectAnswer(currentQuestion.id, value)
       }
     },
     [currentQuestion, answers, currentQuestionIndex, saveProgress],
   )
+
+  // Add confetti effect when completing the quiz with a good score
+  // Update the checkAnswer function to include confetti for high scores
 
   const checkAnswer = useCallback(() => {
     if (currentQuestion) {
@@ -212,6 +290,18 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
           score: finalScore,
           completedAt: new Date().toISOString(),
         })
+
+        // Show confetti for high scores (80% or higher)
+        const scorePercentage = (finalScore / effectiveQuestions.length) * 100
+        if (scorePercentage >= 80 && typeof window !== "undefined") {
+          import("canvas-confetti").then((confetti) => {
+            confetti.default({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 },
+            })
+          })
+        }
 
         toast({
           title: "Quiz Completed!",
@@ -346,6 +436,21 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     )
   }
 
+  if (isPremium && isAuthenticated && !quizStarted) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+          <CheckCircle className="w-12 h-12 text-primary mb-4" />
+          <h3 className="text-xl font-semibold mb-2">Chapter Quiz Available</h3>
+          <p className="text-muted-foreground mb-6">Test your knowledge of this chapter with our interactive quiz.</p>
+          <Button onClick={startQuiz} size="lg">
+            Start Quiz
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto relative overflow-hidden bg-card">
       <QuizBackground />
@@ -368,22 +473,29 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
               <Progress value={((currentQuestionIndex + 1) / effectiveQuestions.length) * 100} className="mb-6 h-2" />
               <h2 className="text-xl font-semibold mb-6">{currentQuestion.question}</h2>
               <RadioGroup onValueChange={handleAnswer} value={answers[currentQuestion.id]} className="space-y-2">
-                {currentQuestion.options.map((option: string, index: number) => (
-                  <div
-                    key={`${option}-${index}`}
-                    className={cn(
-                      "flex items-center space-x-3 p-3 rounded-lg transition-colors",
-                      answers[currentQuestion.id] === option
-                        ? "bg-primary/10 text-primary dark:bg-primary/20"
-                        : "hover:bg-accent/50 dark:hover:bg-accent/20",
-                    )}
-                  >
-                    <RadioGroupItem value={option} id={`option-${index}`} className="w-5 h-5" />
-                    <Label htmlFor={`option-${index}`} className="text-base flex-grow cursor-pointer">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
+                {currentQuestion.options.map((option: string, index: number) => {
+                  const isSelected = answers[currentQuestion.id] === option
+                  return (
+                    <motion.div
+                      key={`${option}-${index}`}
+                      id={`option-${currentQuestion.id}-${option}`}
+                      className={cn(
+                        "flex items-center space-x-3 p-3 rounded-lg transition-colors",
+                        isSelected
+                          ? "bg-primary/10 text-primary dark:bg-primary/20 border border-primary/30"
+                          : "hover:bg-accent/50 dark:hover:bg-accent/20 border border-transparent",
+                      )}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <RadioGroupItem value={option} id={`option-${index}`} className="w-5 h-5" />
+                      <Label htmlFor={`option-${index}`} className="text-base flex-grow cursor-pointer">
+                        {option}
+                      </Label>
+                    </motion.div>
+                  )
+                })}
               </RadioGroup>
             </motion.div>
           ) : quizCompleted ? (

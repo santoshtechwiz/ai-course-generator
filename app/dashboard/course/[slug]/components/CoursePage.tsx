@@ -180,7 +180,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
   const throttledUpdateProgress = useCallback(
     throttle(
       (updateData: {
-        currentChapterId?: number
+        currentChapterId?: number | string
         completedChapters?: number[]
         progress?: number
         currentUnitId?: number
@@ -188,36 +188,60 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         lastAccessedAt?: Date
       }) => {
         if (session?.user?.id) {
+          // Ensure currentChapterId is present and valid
+          if (!updateData.currentChapterId && state.currentChapter?.id) {
+            updateData.currentChapterId = Number(state.currentChapter.id);
+          }
+          
+          // Debug logs to track the progress update
+          console.debug("[CoursePage] Updating progress with:", { 
+            courseId, 
+            chapterId: updateData.currentChapterId,
+            data: updateData 
+          });
+          
           updateProgress(updateData)
+            .catch(error => {
+              console.error("[CoursePage] Error updating progress:", error);
+              // You could add toast notification here
+            });
         }
       },
       5000,
       { leading: true, trailing: true },
     ),
-    [updateProgress, session?.user?.id],
+    [updateProgress, session?.user?.id, state.currentChapter?.id],
   )
 
   const markChapterAsCompleted = useCallback(() => {
-    if (!state.currentChapter || !progress) return
+    if (!state.currentChapter || !progress) return;
 
-    const updatedCompletedChapters = Array.isArray(progress.completedChapters) ? [...progress.completedChapters] : []
+    const currentChapterId = Number(state.currentChapter.id);
+    if (isNaN(currentChapterId)) {
+      console.error("[CoursePage] Invalid chapter ID:", state.currentChapter.id);
+      return;
+    }
 
-    if (!updatedCompletedChapters.includes(+state.currentChapter.id)) {
-      updatedCompletedChapters.push(+state.currentChapter.id)
-      const totalChapters = videoPlaylist.length
-      const newProgress = Math.round((updatedCompletedChapters.length / totalChapters) * 100)
+    const updatedCompletedChapters = Array.isArray(progress.completedChapters) 
+      ? [...progress.completedChapters] 
+      : [];
+
+    if (!updatedCompletedChapters.includes(currentChapterId)) {
+      updatedCompletedChapters.push(currentChapterId);
+      const totalChapters = videoPlaylist.length;
+      const newProgress = Math.round((updatedCompletedChapters.length / totalChapters) * 100);
 
       // Check if course is completed
       if (updatedCompletedChapters.length === totalChapters) {
-        setCourseCompleted(true)
+        setCourseCompleted(true);
       }
 
       throttledUpdateProgress({
-        currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
+        currentChapterId: currentChapterId,
         completedChapters: updatedCompletedChapters,
         progress: newProgress,
         isCompleted: updatedCompletedChapters.length === totalChapters,
-      })
+      });
     }
   }, [state.currentChapter, progress, throttledUpdateProgress, videoPlaylist.length])
 
@@ -267,33 +291,41 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
   const handleVideoSelect = useCallback(
     (videoId: string) => {
-      // Debug: Log video selection
-      console.debug("[CoursePage] handleVideoSelect:", videoId);
-      
-      if (state.currentChapter) {
-        markChapterAsCompleted();
-      }
+      try {
+        // Debug: Log video selection
+        console.debug("[CoursePage] handleVideoSelect:", videoId);
+        
+        if (state.currentChapter) {
+          markChapterAsCompleted();
+        }
 
-      const selectedChapter = findChapterByVideoId(videoId);
-      if (selectedChapter) {
-        // Update local state
-        dispatch({
-          type: "SET_VIDEO",
-          payload: { videoId, chapter: selectedChapter },
-        });
-        
-        // Update Redux state using the properly imported dispatch and action
-        reduxDispatch(setCurrentVideoApi(videoId));
-        
-        // Update progress in backend
-        throttledUpdateProgress({
-          currentChapterId: Number(selectedChapter.id),
-          lastAccessedAt: new Date(),
-        });
+        const selectedChapter = findChapterByVideoId(videoId);
+        if (selectedChapter) {
+          // First update local state
+          dispatch({
+            type: "SET_VIDEO",
+            payload: { videoId, chapter: selectedChapter },
+          });
+          
+          // Then update Redux state safely
+          try {
+            reduxDispatch(setCurrentVideoApi(videoId));
+          } catch (error) {
+            console.error("[CoursePage] Error updating Redux state:", error);
+          }
+          
+          // Finally update progress in backend
+          throttledUpdateProgress({
+            currentChapterId: Number(selectedChapter.id),
+            lastAccessedAt: new Date(),
+          });
+        }
+      } catch (error) {
+        console.error("[CoursePage] Error in handleVideoSelect:", error);
       }
     },
     [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, state.currentChapter, reduxDispatch]
-  )
+  );
 
   const handleWatchAnotherCourse = useCallback(() => {
     router.push("/dashboard")

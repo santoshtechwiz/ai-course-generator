@@ -1,19 +1,14 @@
 "use client"
 
-import { useState, useEffect, memo, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { signIn } from "next-auth/react"
-import { Lock, PlayCircle, ChevronDown, CheckCircle, ChevronUp, Info } from "lucide-react"
+import { ChevronDown, CheckCircle, ChevronUp, Info, Play, ChevronRight, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { cn } from "@/lib/tailwindUtils"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { motion } from "framer-motion"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { setCurrentVideoApi, markChapterAsStarted } from "@/store/slices/courseSlice"
-import { formatDuration } from "@/lib/formatters"
 
 // Simple Info icon without tooltip to avoid infinite loops
 const InfoIcon = () => <Info className="h-4 w-4 text-muted-foreground" />
@@ -26,206 +21,50 @@ interface VideoNavigationSidebarProps {
   currentVideoId: string
   isAuthenticated: boolean
   progress: CourseProgress | null
+  completedChapters: number[]
   nextVideoId?: string
   prevVideoId?: string
-  completedChapters?: number[]
 }
 
-// Separate VideoPlaylist component to avoid re-renders
-const VideoPlaylist = memo(function VideoPlaylist({
-  courseUnits,
-  currentChapter,
-  onVideoSelect,
-  currentVideoId,
-  progress,
-  nextVideoId,
-  prevVideoId,
-}: {
-  courseUnits: FullCourseType["courseUnits"] | undefined
-  currentChapter?: FullChapterType
-  onVideoSelect: (videoId: string) => void
-  currentVideoId: string
-  progress: CourseProgress | null
-  nextVideoId?: string
-  prevVideoId?: string
-}) {
-  const showFullContent = true
-  const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({})
+// Helper function for formatting duration - define outside component to avoid circular reference
+function formatDuration(seconds: number): string {
+  if (!seconds || isNaN(seconds)) return "--:--"
 
-  // Initialize expanded state based on current chapter
-  useEffect(() => {
-    if (currentChapter && Array.isArray(courseUnits)) {
-      const currentUnitId = courseUnits
-        ?.find((unit) => unit?.chapters?.some((chapter) => chapter?.id === currentChapter?.id))
-        ?.id?.toString()
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
 
-      if (currentUnitId) {
-        setExpandedUnits((prev) => ({
-          ...prev,
-          [currentUnitId]: true,
-        }))
-      }
-    }
-  }, [currentChapter, courseUnits])
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+}
 
-  const toggleUnit = (unitId: string) => {
-    setExpandedUnits((prev) => ({
-      ...prev,
-      [unitId]: !prev[unitId],
-    }))
+// Helper function to determine the total duration of previous chapters - define outside component
+function calculateStartTime(unit: any, chapterIndex: number): number {
+  let startTime = 0
+  for (let i = 0; i < chapterIndex; i++) {
+    startTime += unit.chapters[i]?.duration || 0
   }
+  return startTime
+}
 
-  // Debug function to log when videos are clicked
-  const handleVideoClick = useCallback(
-    (videoId: string) => {
-      console.debug("[VideoPlaylist] Video clicked:", videoId)
-      if (showFullContent && videoId) {
-        onVideoSelect(videoId)
-      }
-    },
-    [onVideoSelect, showFullContent],
-  )
-
-  // Check if courseUnits is undefined or empty
-  if (!courseUnits || courseUnits.length === 0) {
-    return (
-      <div className="p-4 text-center">
-        <p className="text-muted-foreground">No content available for this course</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="p-4">
-      {courseUnits.map((unit) => {
-        if (!unit) return null // Skip undefined units
-
-        const isCurrentUnit = unit.chapters?.some((chapter) => chapter?.id === currentChapter?.id) || false
-        const isExpanded = expandedUnits[unit.id?.toString() || ""] || isCurrentUnit
-
-        const completedChaptersInUnit = unit.chapters?.filter((chapter) =>
-          progress?.completedChapters?.includes(chapter?.id || ""),
-        )?.length || 0
-
-        const totalChaptersInUnit = unit.chapters?.length || 0
-        const unitProgress = totalChaptersInUnit > 0 ? (completedChaptersInUnit / totalChaptersInUnit) * 100 : 0
-
-        return (
-          <Collapsible
-            key={unit.id || `unit-${Math.random()}`}
-            open={isExpanded}
-            onOpenChange={() => toggleUnit(unit.id?.toString() || "")}
-            className="mb-4 border rounded-lg overflow-hidden"
-          >
-            <CollapsibleTrigger className="flex w-full items-center justify-between p-3 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-              <div className="flex flex-col w-full">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold">{unit.title || "Untitled Unit"}</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-muted-foreground">
-                      {completedChaptersInUnit}/{totalChaptersInUnit}
-                    </span>
-                    <ChevronDown
-                      className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-                <Progress value={unitProgress} className="h-1" />
-              </div>
-            </CollapsibleTrigger>
-
-            <CollapsibleContent className="space-y-1 p-2 bg-muted/20">
-              {unit.chapters?.map((chapter, index) => {
-                if (!chapter) return null // Skip undefined chapters
-
-                const isCompleted = showFullContent && progress?.completedChapters?.includes(chapter.id || "")
-                const isCurrent = chapter.videoId === currentVideoId
-                const isNext = chapter.videoId === nextVideoId
-
-                return (
-                  <button
-                    key={chapter.id || `chapter-${index}`}
-                    onClick={() => chapter.videoId && handleVideoClick(chapter.videoId)}
-                    disabled={!showFullContent || !chapter.videoId}
-                    className={cn(
-                      "group relative w-full rounded-md p-3 text-left text-sm transition-all duration-200",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      isCurrent && "bg-accent/70 text-accent-foreground",
-                      !showFullContent && "cursor-not-allowed opacity-60",
-                      !chapter.videoId && "opacity-50 cursor-not-allowed",
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center shrink-0">
-                        {showFullContent ? (
-                          isCurrent ? (
-                            <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
-                              <PlayCircle className="h-4 w-4 text-primary" />
-                            </div>
-                          ) : isCompleted ? (
-                            <div className="h-6 w-6 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                            </div>
-                          ) : (
-                            <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center">
-                              <div className="h-2 w-2 rounded-full bg-muted-foreground/70" />
-                            </div>
-                          )
-                        ) : (
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                            <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <span className={cn("flex-1 truncate", isCurrent && "font-medium")}>
-                        {index + 1}. {chapter.title || "Untitled Chapter"}
-                      </span>
-                      {isNext && (
-                        <Badge
-                          variant="outline"
-                          className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800"
-                        >
-                          Next
-                        </Badge>
-                      )}
-                      {isCurrent && (
-                        <Badge
-                          variant="outline"
-                          className="ml-2 bg-primary/10 text-primary border-primary/20 animate-pulse"
-                        >
-                          Playing
-                        </Badge>
-                      )}
-                    </div>
-                  </button>
-                )
-              }) || <div className="p-2 text-center text-muted-foreground">No chapters available</div>}
-            </CollapsibleContent>
-          </Collapsible>
-        )
-      })}
-    </div>
-  )
-})
-
-function VideoNavigationSidebar({
+export default function VideoNavigationSidebar({
   course,
   currentChapter,
+  courseId,
   onVideoSelect,
   currentVideoId,
   isAuthenticated,
   progress,
+  completedChapters,
   nextVideoId,
   prevVideoId,
-  completedChapters,
 }: VideoNavigationSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false
   const dispatch = useAppDispatch()
   const playingVideoId = useAppSelector((state) => state.course.currentVideoId)
+
+  // Add a search filter for chapters
+  // Add this state at the top of the component
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Use progress data if available, otherwise create a default structure
   // Added null checking for course
@@ -241,14 +80,16 @@ function VideoNavigationSidebar({
       }
     }
 
-    return progress || {
-      id: 0,
-      userId: "",
-      courseId: typeof course.id === "string" ? parseInt(course.id) : (course.id || 0),
-      progress: 0,
-      completedChapters: [],
-      currentChapterId: currentChapter?.id || null,
-    }
+    return (
+      progress || {
+        id: 0,
+        userId: "",
+        courseId: typeof course.id === "string" ? Number.parseInt(course.id) : course.id || 0,
+        progress: 0,
+        completedChapters: [],
+        currentChapterId: currentChapter?.id || null,
+      }
+    )
   }, [progress, course, currentChapter?.id])
 
   // Ensure course is defined before accessing its properties
@@ -260,6 +101,47 @@ function VideoNavigationSidebar({
   // Calculate progress for display
   const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
   const progressPercentage = totalChapters > 0 ? Math.round((completedCount / totalChapters) * 100) : 0
+
+  // Add this function to filter chapters
+  const filteredUnits = useMemo(() => {
+    if (!searchQuery.trim() || !course?.courseUnits) return course?.courseUnits || []
+
+    return course.courseUnits
+      .map((unit) => ({
+        ...unit,
+        chapters: unit.chapters.filter((chapter) => chapter.title?.toLowerCase().includes(searchQuery.toLowerCase())),
+      }))
+      .filter((unit) => unit.chapters.length > 0)
+  }, [course?.courseUnits, searchQuery])
+
+  // Enhance the sidebar with better UX
+  // Add this function inside the component before the return statement
+
+  const handleChapterClick = useCallback(
+    (chapter) => {
+      if (chapter.videoId) {
+        // Add a visual feedback animation when clicking a chapter
+        const element = document.getElementById(`chapter-${chapter.id}`)
+        if (element) {
+          element.classList.add("bg-primary/10")
+          setTimeout(() => {
+            element.classList.remove("bg-primary/10")
+          }, 300)
+        }
+
+        // Track the click for analytics
+        if (typeof window !== "undefined" && window.gtag) {
+          window.gtag("event", "select_chapter", {
+            chapter_id: chapter.id,
+            chapter_title: chapter.title,
+          })
+        }
+
+        onVideoSelect(chapter.videoId)
+      }
+    },
+    [onVideoSelect],
+  )
 
   // Memoize the content to prevent unnecessary re-renders
   // Add proper null checking throughout
@@ -287,6 +169,18 @@ function VideoNavigationSidebar({
           )}
         </div>
 
+        {!isCollapsed && (
+          <div className="px-4 py-2 sticky top-0 bg-background z-10 border-b">
+            <input
+              type="text"
+              placeholder="Search chapters..."
+              className="w-full px-3 py-1 text-sm bg-muted/50 border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
+
         <div className="flex-1 flex flex-col min-h-0 z-0">
           {effectiveProgress && !isCollapsed && (
             <div className="px-6 py-4 sticky top-0 bg-background z-10 border-b">
@@ -300,8 +194,8 @@ function VideoNavigationSidebar({
               <Progress value={effectiveProgress.progress} className="h-2" />
               <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  {(Array.isArray(effectiveProgress.completedChapters) ? effectiveProgress.completedChapters.length : 0)} /{" "}
-                  {totalChapters} chapters
+                  {Array.isArray(effectiveProgress.completedChapters) ? effectiveProgress.completedChapters.length : 0}{" "}
+                  / {totalChapters} chapters
                 </span>
                 <span>{Math.round(effectiveProgress.progress)}% complete</span>
               </div>
@@ -327,15 +221,126 @@ function VideoNavigationSidebar({
                 className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
                 style={{ maxHeight: "calc(100vh - 200px)" }}
               >
-                <VideoPlaylist
-                  courseUnits={course?.courseUnits}
-                  currentChapter={currentChapter}
-                  onVideoSelect={onVideoSelect}
-                  currentVideoId={currentVideoId}
-                  progress={effectiveProgress}
-                  nextVideoId={nextVideoId}
-                  prevVideoId={prevVideoId}
-                />
+                {filteredUnits.map((unit, unitIndex) => (
+                  <div key={unit.id} className="mb-4">
+                    {/* Unit title section - Collapsible trigger removed for simplicity */}
+                    <div className="flex items-center justify-between p-3 text-sm font-medium text-foreground">
+                      <div className="flex flex-col w-full">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold">{unit.title || "Untitled Unit"}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-muted-foreground">
+                              {unit.chapters?.filter((chapter) =>
+                                progress?.completedChapters?.includes(chapter?.id || ""),
+                              ).length || 0}
+                              /{unit.chapters?.length || 0}
+                            </span>
+                            <ChevronDown
+                              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                                false ? "rotate-180" : ""
+                              }`}
+                            />
+                          </div>
+                        </div>
+                        <Progress value={0} className="h-1" />
+                      </div>
+                    </div>
+
+                    {/* Chapter list - Directly rendered without collapsible for simplicity */}
+                    <div className="space-y-1 mt-2">
+                      {unit.chapters.map((chapter, chapterIndex) => {
+                        const isCurrentChapter = chapter.videoId === currentVideoId
+                        const isNextChapter = chapter.videoId === nextVideoId
+                        const isCompleted = completedChapters?.includes(+chapter.id)
+
+                        // Calculate timestamps for the chapter
+                        const startTime = calculateStartTime(unit, chapterIndex)
+                        const endTime = startTime + (chapter.duration || 0)
+
+                        return (
+                          <motion.div
+                            id={`chapter-${chapter.id}`}
+                            key={chapter.id}
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={cn(
+                              "relative rounded-md px-3 py-2 transition-all cursor-pointer",
+                              isCurrentChapter
+                                ? "bg-primary/15 border-l-4 border-primary text-primary pl-2"
+                                : isCompleted
+                                  ? "bg-muted/50 hover:bg-muted/80"
+                                  : isNextChapter
+                                    ? "bg-accent/10 hover:bg-accent/20 border-l-2 border-accent pl-[10px]"
+                                    : "hover:bg-muted/50",
+                            )}
+                            onClick={() => handleChapterClick(chapter)}
+                          >
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                {/* Status indicator */}
+                                <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                                  {isCompleted ? (
+                                    <motion.div
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                                    >
+                                      <CheckCircle className="h-4 w-4 text-primary" />
+                                    </motion.div>
+                                  ) : isCurrentChapter ? (
+                                    <motion.div
+                                      animate={{ scale: [0.8, 1.2, 0.8] }}
+                                      transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
+                                    >
+                                      <Play className="h-4 w-4 fill-primary text-primary" />
+                                    </motion.div>
+                                  ) : isNextChapter ? (
+                                    <ChevronRight className="h-4 w-4 text-accent" />
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground font-medium">
+                                      {unitIndex + 1}.{chapterIndex + 1}
+                                    </span>
+                                  )}
+                                </span>
+
+                                {/* Title */}
+                                <div className="flex-1 text-sm truncate">
+                                  <span
+                                    className={cn(
+                                      "truncate line-clamp-2",
+                                      isCurrentChapter ? "font-medium" : "",
+                                      isCompleted && !isCurrentChapter ? "text-muted-foreground" : "",
+                                    )}
+                                  >
+                                    {chapter.title}
+                                  </span>
+                                </div>
+
+                                {/* Next badge for upcoming video */}
+                                {isNextChapter && (
+                                  <span className="text-[10px] uppercase font-semibold bg-accent/20 text-accent px-1.5 py-0.5 rounded">
+                                    Next
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Duration indicator */}
+                              {chapter.videoId && chapter.duration > 0 && (
+                                <div className="flex items-center text-xs text-muted-foreground ml-7">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  <span>
+                                    {formatDuration(startTime)} - {formatDuration(endTime)}
+                                    <span className="ml-1">({formatDuration(chapter.duration || 0)})</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -354,10 +359,11 @@ function VideoNavigationSidebar({
       onVideoSelect,
       prevVideoId,
       totalChapters,
+      filteredUnits,
+      handleChapterClick,
+      searchQuery,
     ],
   )
 
-  return sidebarContent
+  return <div className="flex flex-col h-full overflow-hidden">{sidebarContent}</div>
 }
-
-export default memo(VideoNavigationSidebar)
