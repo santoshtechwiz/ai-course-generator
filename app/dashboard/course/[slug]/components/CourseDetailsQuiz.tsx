@@ -133,13 +133,42 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
         throw new Error("Required chapter data is missing.")
       }
 
-      console.log("Fetching quiz data for:", {
+      // Debug: log incoming chapter/questions data
+      // eslint-disable-next-line no-console
+      console.debug("[CourseDetailsQuiz] chapter.videoId:", chapter.videoId, "chapterId:", effectiveChapterId)
+
+      // If chapter.questions is present and non-empty, use it directly (for server-provided questions)
+      if (Array.isArray(chapter.questions) && chapter.questions.length > 0) {
+        // Debug: log that we're using provided questions
+        // eslint-disable-next-line no-console
+        console.debug("[CourseDetailsQuiz] Using provided chapter.questions:", chapter.questions)
+        return chapter.questions.map((q: any) => ({
+          ...q,
+          id: q.id || `question-${Math.random().toString(36).substr(2, 9)}`,
+          options: Array.isArray(q.options)
+            ? q.options
+            : typeof q.options === "string"
+              ? (() => {
+                  try {
+                    return JSON.parse(q.options)
+                  } catch {
+                    return []
+                  }
+                })()
+              : q.options
+                ? [q.options]
+                : [],
+        }))
+      }
+
+      // Debug: log that we're fetching from API
+      // eslint-disable-next-line no-console
+      console.debug("[CourseDetailsQuiz] Fetching quiz data from API for:", {
         videoId: chapter.videoId,
         chapterId: Number(effectiveChapterId),
         chapterName: chapter.title || chapter.name,
       })
 
-      // Use the existing coursequiz API route
       const response = await axios.post("/api/coursequiz", {
         videoId: chapter.videoId,
         chapterId: Number(effectiveChapterId),
@@ -147,22 +176,28 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
       })
 
       // Log the response for debugging
-      console.log("Quiz API response:", response.data)
+      // eslint-disable-next-line no-console
+      console.debug("[CourseDetailsQuiz] Quiz API response:", response.data)
 
-      // If the response is empty or not an array, return an empty array
       if (!response.data || !Array.isArray(response.data)) {
-        console.warn("Invalid response format from quiz API:", response.data)
+        // eslint-disable-next-line no-console
+        console.warn("[CourseDetailsQuiz] Invalid response format from quiz API:", response.data)
         return []
       }
 
-      // Process the response data based on your API's actual response format
       return response.data.map((question: any) => ({
         ...question,
         id: question.id || `question-${Math.random().toString(36).substr(2, 9)}`,
         options: Array.isArray(question.options)
           ? question.options
           : typeof question.options === "string"
-            ? JSON.parse(question.options)
+            ? (() => {
+                try {
+                  return JSON.parse(question.options)
+                } catch {
+                  return []
+                }
+              })()
             : question.options
               ? [question.options]
               : [],
@@ -172,7 +207,8 @@ export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublic
     staleTime: 5 * 60 * 1000,
     enabled: isPremium && quizStarted && isAuthenticated,
     onError: (err) => {
-      console.error("Quiz data fetch error:", err)
+      // eslint-disable-next-line no-console
+      console.error("[CourseDetailsQuiz] Quiz data fetch error:", err)
     },
   })
 

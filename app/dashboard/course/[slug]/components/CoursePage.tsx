@@ -20,6 +20,8 @@ import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
 
 import MobilePlayList from "./MobilePlayList"
 import { useAuth } from "@/hooks"
+import { useAppDispatch } from "@/store/hooks"
+import { setCurrentVideoApi } from "@/store/slices/courseSlice"
 
 // Ensure proper typing for the reducer state and actions
 interface State {
@@ -118,7 +120,7 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
   // Set Initial Video
   useEffect(() => {
-    if (!state.selectedVideoId && !hasSetInitialVideo.current) {
+    if (!state.selectedVideoId && !hasSetInitialVideo) {
       const initialVideo = initialChapterId
         ? videoPlaylist.find((entry) => entry.chapter.id.toString() === initialChapterId)
         : videoPlaylist[0]
@@ -128,10 +130,10 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
           type: "SET_VIDEO",
           payload: { videoId: initialVideo.videoId, chapter: initialVideo.chapter },
         })
-        hasSetInitialVideo.current = true
+        setHasSetInitialVideo(true)
       }
     }
-  }, [videoPlaylist, state.selectedVideoId, initialChapterId])
+  }, [videoPlaylist, state.selectedVideoId, initialChapterId, hasSetInitialVideo])
 
   // Update Navigation (Next/Prev Video)
   useEffect(() => {
@@ -162,6 +164,17 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     initialProgress: undefined,
     currentChapterId,
   })
+
+  // Only update progress when chapter changes, not on every render
+  useEffect(() => {
+    if (state.currentChapter && session) {
+      throttledUpdateProgress({
+        currentChapterId: Number(state.currentChapter.id),
+      })
+    }
+    // Only run when chapter or session changes, not on progress update
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentChapter?.id, session?.user?.id])
 
   // Create a stable throttled update function
   const throttledUpdateProgress = useCallback(
@@ -250,25 +263,36 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     markChapterAsCompleted,
   ])
 
+  const reduxDispatch = useAppDispatch();
+
   const handleVideoSelect = useCallback(
     (videoId: string) => {
+      // Debug: Log video selection
+      console.debug("[CoursePage] handleVideoSelect:", videoId);
+      
       if (state.currentChapter) {
-        markChapterAsCompleted()
+        markChapterAsCompleted();
       }
 
-      const selectedChapter = findChapterByVideoId(videoId)
+      const selectedChapter = findChapterByVideoId(videoId);
       if (selectedChapter) {
+        // Update local state
         dispatch({
           type: "SET_VIDEO",
           payload: { videoId, chapter: selectedChapter },
-        })
+        });
+        
+        // Update Redux state using the properly imported dispatch and action
+        reduxDispatch(setCurrentVideoApi(videoId));
+        
+        // Update progress in backend
         throttledUpdateProgress({
           currentChapterId: Number(selectedChapter.id),
           lastAccessedAt: new Date(),
-        })
+        });
       }
     },
-    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, state.currentChapter],
+    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, state.currentChapter, reduxDispatch]
   )
 
   const handleWatchAnotherCourse = useCallback(() => {
@@ -380,18 +404,16 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
                 currentChapter={state.currentChapter}
                 currentTime={0}
                 onWatchAnotherCourse={handleWatchAnotherCourse}
-                onTimeUpdate={(time: number) => {
-                  if (state.currentChapter && session) {
-                    throttledUpdateProgress({
-                      currentChapterId: Number(state.currentChapter.id),
-                    })
-                  }
-                }}
+                onTimeUpdate={
+                  // Only update progress on time update if chapter changes
+                  undefined
+                }
                 progress={progress || undefined}
                 onChapterComplete={markChapterAsCompleted}
                 planId={user?.subscriptionPlan || "FREE"}
                 isLastVideo={isLastVideo}
                 courseCompleted={courseCompleted}
+                autoPlay={!hasSetInitialVideo}
               />
             </div>
           </div>

@@ -50,7 +50,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
   const navbar = useMemo(() => <MainNavbar />, [])
 
   // Memoize more components that don't need to re-render frequently
-  const jsonLd = useMemo(() => <JsonLd type="default" />, [])
+  const jsonLd = useMemo(() => <JsonLd type="default" data={undefined} />, [])
   const sessionSync = useMemo(() => <SessionSync />, [])
 
   return (

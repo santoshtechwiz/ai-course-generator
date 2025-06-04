@@ -7,6 +7,15 @@ import { Loader2, Bookmark, CheckCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/hooks/use-toast"
 import { VideoControls } from "./VideoControls"
+import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { 
+  setVideoProgress, 
+  setAutoplayEnabled, 
+  addBookmark,
+  setPlaybackSettings,
+  setResumePoint,
+  setLastPlayedAt
+} from "@/store/slices/courseSlice"
 
 interface VideoPlayerProps {
   videoId: string
@@ -73,82 +82,74 @@ const EnhancedVideoPlayer = ({
     showCertificateButton: false,
   },
 }: VideoPlayerProps) => {
-  const [playing, setPlaying] = useState(autoPlay)
-  const [volume, setVolume] = useState(0.8)
-  const [muted, setMuted] = useState(false)
-  const [played, setPlayed] = useState(0)
-  const [loaded, setLoaded] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [showControls, setShowControls] = useState(true)
-  const [fullscreen, setFullscreen] = useState(false)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1)
-  const [isBuffering, setIsBuffering] = useState(false)
-  const [autoplayNext, setAutoplayNext] = useState(true)
-  const [showBookmarkTooltip, setShowBookmarkTooltip] = useState(false)
-  const [showCompletionToast, setShowCompletionToast] = useState(false)
-  const [videoCompleted, setVideoCompleted] = useState(false)
-  const [lastSavedPosition, setLastSavedPosition] = useState(0)
-  const playerRef = useRef<ReactPlayer>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const { toast } = useToast()
-  const [playerError, setPlayerError] = useState(false)
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Get autoplayEnabled state from Redux
+  const dispatch = useAppDispatch();
+  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled);
+  const playbackSettings = useAppSelector((state) => state.course.playbackSettings);
+  const courseId = useAppSelector((state) => state.course.currentCourseId);
+  
+  const [playing, setPlaying] = useState(false); // Start as false and enable in onReady
+  const [volume, setVolume] = useState(playbackSettings.volume ?? 0.8);
+  const [muted, setMuted] = useState(playbackSettings.muted ?? false);
+  const [played, setPlayed] = useState(0);
+  const [loaded, setLoaded] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [showControls, setShowControls] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(playbackSettings.playbackSpeed ?? 1);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [showBookmarkTooltip, setShowBookmarkTooltip] = useState(false);
+  const [showCompletionToast, setShowCompletionToast] = useState(false);
+  const [videoCompleted, setVideoCompleted] = useState(false);
+  const [lastSavedPosition, setLastSavedPosition] = useState(0);
+  const playerRef = useRef<ReactPlayer>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const [playerError, setPlayerError] = useState(false);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const playerLoaded = useRef<boolean>(false);
+  const videoIdRef = useRef<string>(videoId);
 
-  // Load global player settings from localStorage on mount
+  // Debug: log autoplay state
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedMute = localStorage.getItem("global-player-mute")
-      const savedVolume = localStorage.getItem("global-player-volume")
-      const savedAutoplay = localStorage.getItem("global-player-autoplay")
-      const savedPlaybackSpeed = localStorage.getItem("global-player-speed")
+    // eslint-disable-next-line no-console
+    console.debug("[EnhancedVideoPlayer] autoplayEnabled:", autoplayEnabled, "autoPlay:", autoPlay);
+  }, [autoplayEnabled, autoPlay]);
 
-      if (savedMute) {
-        setMuted(savedMute === "true")
-      }
-      if (savedVolume) {
-        setVolume(Number.parseFloat(savedVolume))
-      }
-      if (savedAutoplay !== null) {
-        setAutoplayNext(savedAutoplay === "true")
-      } else {
-        // Default to true if not set
-        setAutoplayNext(true)
-        localStorage.setItem("global-player-autoplay", "true")
-      }
-      if (savedPlaybackSpeed) {
-        setPlaybackSpeed(Number.parseFloat(savedPlaybackSpeed))
-      }
-    }
-  }, [])
-
-  // Reset video state when videoId changes
+  // Update videoIdRef when videoId changes - for comparisons in effects
   useEffect(() => {
-    setPlaying(autoPlay)
-    setVideoCompleted(false)
-    if (playerRef.current) {
-      if (initialTime > 0) {
-        playerRef.current.seekTo(initialTime)
-      } else {
-        playerRef.current.seekTo(0)
-      }
-    }
-  }, [autoPlay, initialTime, videoId])
+    videoIdRef.current = videoId;
+  }, [videoId]);
 
-  // Load saved position from localStorage
+  // Load global player settings from Redux on mount
   useEffect(() => {
-    if (playerConfig.rememberPosition && typeof window !== "undefined") {
-      const savedPosition = localStorage.getItem(`video-position-${videoId}`)
-      if (savedPosition) {
-        const position = Number.parseFloat(savedPosition)
-        setPlayed(position)
-        setLastSavedPosition(position)
-        // Only seek if the position is valid and not at the end
-        if (position > 0 && position < 0.99) {
-          playerRef.current?.seekTo(position)
-        }
-      }
+    // Apply playback settings from Redux
+    setVolume(playbackSettings.volume);
+    setMuted(playbackSettings.muted);
+    setPlaybackSpeed(playbackSettings.playbackSpeed);
+  }, [playbackSettings]);
+
+  // On videoId change, update resume point in Redux
+  useEffect(() => {
+    // Reset the player loaded flag when video ID changes
+    playerLoaded.current = false;
+    
+    // Debug log
+    console.debug("[EnhancedVideoPlayer] videoId changed:", videoId);
+    
+    // Don't auto-start playing here, wait for onReady
+    setPlaying(false);
+    setVideoCompleted(false);
+    
+    // Reset player state for new video
+    setPlayed(0);
+    setLoaded(0);
+
+    if (courseId) {
+      dispatch(setResumePoint({ courseId, resumePoint: 0 }));
+      dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
     }
-  }, [videoId, playerConfig.rememberPosition])
+  }, [videoId]);
 
   // Handle fullscreen change events
   useEffect(() => {
@@ -165,26 +166,26 @@ const EnhancedVideoPlayer = ({
   // Auto-hide controls after inactivity
   useEffect(() => {
     const handleMouseMove = () => {
-      setShowControls(true)
+      setShowControls(true);
 
       if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
+        clearTimeout(controlsTimeoutRef.current);
       }
 
       if (playing) {
         controlsTimeoutRef.current = setTimeout(() => {
-          setShowControls(false)
-        }, 3000)
+          setShowControls(false);
+        }, 3000);
       }
     }
 
     if (typeof document !== "undefined") {
-      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mousemove", handleMouseMove);
 
       return () => {
-        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mousemove", handleMouseMove);
         if (controlsTimeoutRef.current) {
-          clearTimeout(controlsTimeoutRef.current)
+          clearTimeout(controlsTimeoutRef.current);
         }
       }
     }
@@ -194,17 +195,17 @@ const EnhancedVideoPlayer = ({
   useEffect(() => {
     // Change from 0.95 to 0.98 to ensure video plays closer to the end
     if (played > 0.99 && !videoCompleted) {
-      setVideoCompleted(true)
-      setPlaying(false) // Pause the video when it's completed
+      setVideoCompleted(true);
+      setPlaying(false); // Pause the video when it's completed
 
       if (onChapterComplete) {
-        onChapterComplete()
+        onChapterComplete();
       }
-      setShowCompletionToast(true)
+      setShowCompletionToast(true);
 
       setTimeout(() => {
-        setShowCompletionToast(false)
-      }, 3000)
+        setShowCompletionToast(false);
+      }, 3000);
     }
   }, [played, videoCompleted, onChapterComplete])
 
@@ -214,197 +215,275 @@ const EnhancedVideoPlayer = ({
       if (!playerRef.current?.getInternalPlayer()?.seeking) {
         // Only update state if the change is significant enough
         if (Math.abs(state.played - played) > 0.01) {
-          setPlayed(state.played)
+          setPlayed(state.played);
         }
         if (Math.abs(state.loaded - loaded) > 0.01) {
-          setLoaded(state.loaded)
+          setLoaded(state.loaded);
         }
 
         if (onProgress && Math.abs(state.played - played) > 0.01) {
-          onProgress(state.played)
+          onProgress(state.played);
         }
 
-        // Only save position if it's changed significantly (throttling)
-        if (
-          Math.abs(state.played - lastSavedPosition) > 0.01 &&
-          playerConfig.rememberPosition &&
-          typeof window !== "undefined"
-        ) {
-          localStorage.setItem(`video-position-${videoId}`, state.played.toString())
-          setLastSavedPosition(state.played)
+        // Store progress in Redux instead of localStorage
+        if (Math.abs(state.played - lastSavedPosition) > 0.01) {
+          dispatch(setVideoProgress({ 
+            videoId, 
+            time: state.played,
+            playedSeconds: state.playedSeconds,
+            duration: duration
+          }));
+          setLastSavedPosition(state.played);
         }
       }
-    },
-    [onProgress, videoId, playerConfig.rememberPosition, lastSavedPosition, played, loaded],
-  )
 
-  const handleDuration = (duration: number) => setDuration(duration)
+      if (courseId) {
+        dispatch(setResumePoint({ courseId, resumePoint: state.played }));
+        dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
+      }
+    },
+    [onProgress, videoId, lastSavedPosition, played, loaded, dispatch, duration, courseId]
+  );
+
+  const handleDuration = (duration: number) => setDuration(duration);
 
   const handleVideoEnd = () => {
     // Pause the video
-    setPlaying(false)
+    setPlaying(false);
 
-    // Mark video as completed by setting position to end
-    if (playerConfig.rememberPosition && typeof window !== "undefined") {
-      localStorage.setItem(`video-position-${videoId}`, "1.0")
-    }
+    // Store final position in Redux
+    dispatch(setVideoProgress({ 
+      videoId, 
+      time: 1.0,
+      playedSeconds: duration,
+      duration: duration 
+    }));
 
     // Always call onEnded when the video actually ends
-    onEnded()
+    onEnded();
   }
 
-  const handleBuffer = () => setIsBuffering(true)
-  const handleBufferEnd = () => setIsBuffering(false)
+  const handleBuffer = () => setIsBuffering(true);
+  const handleBufferEnd = () => setIsBuffering(false);
 
   // Add this useEffect to handle player initialization errors
   useEffect(() => {
     const handlePlayerError = () => {
-      console.error("Error initializing video player.")
-      setPlayerError(true) // Set error state to show fallback UI
+      console.error("Error initializing video player.");
+      setPlayerError(true); // Set error state to show fallback UI
     }
 
     if (typeof window !== "undefined") {
-      window.addEventListener("error", handlePlayerError)
-      return () => window.removeEventListener("error", handlePlayerError)
+      window.addEventListener("error", handlePlayerError);
+      return () => window.removeEventListener("error", handlePlayerError);
     }
-  }, [])
+  }, []);
 
   // Handlers for VideoControls component
   const handlePlayPause = useCallback(() => {
-    setPlaying((prev) => !prev)
-  }, [])
+    setPlaying((prev) => !prev);
+  }, []);
 
   const handleSkip = useCallback(
     (seconds: number) => {
-      const currentTime = playerRef.current?.getCurrentTime() || 0
-      const newTime = currentTime + seconds
-      const newPosition = Math.max(0, Math.min(newTime / duration, 0.999))
-      playerRef.current?.seekTo(newPosition)
-      setPlayed(newPosition)
+      const currentTime = playerRef.current?.getCurrentTime() || 0;
+      const newTime = currentTime + seconds;
+      const newPosition = Math.max(0, Math.min(newTime / duration, 0.999));
+      playerRef.current?.seekTo(newPosition);
+      setPlayed(newPosition);
 
-      if (playerConfig.rememberPosition && typeof window !== "undefined") {
-        localStorage.setItem(`video-position-${videoId}`, newPosition.toString())
-        setLastSavedPosition(newPosition)
-      }
+      // Update progress in Redux
+      dispatch(setVideoProgress({ 
+        videoId, 
+        time: newPosition,
+        playedSeconds: newTime,
+        duration: duration 
+      }));
+      setLastSavedPosition(newPosition);
     },
-    [duration, playerConfig.rememberPosition, videoId],
-  )
+    [duration, videoId, dispatch]
+  );
 
   const handleMute = useCallback(() => {
     setMuted((prev) => {
-      const newMutedState = !prev
-      if (typeof window !== "undefined") {
-        localStorage.setItem("global-player-mute", newMutedState.toString())
-      }
-      return newMutedState
-    })
-  }, [])
+      const newMutedState = !prev;
+      // Update Redux state
+      dispatch(setPlaybackSettings({
+        ...playbackSettings,
+        muted: newMutedState
+      }));
+      return newMutedState;
+    });
+  }, [dispatch, playbackSettings]);
 
   const handleVolumeChange = useCallback((newVolume: number) => {
-    setVolume(newVolume)
-    setMuted(newVolume === 0)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("global-player-mute", (newVolume === 0).toString())
-      localStorage.setItem("global-player-volume", newVolume.toString())
-    }
-  }, [])
+    setVolume(newVolume);
+    setMuted(newVolume === 0);
+    // Update Redux state
+    dispatch(setPlaybackSettings({
+      ...playbackSettings,
+      volume: newVolume,
+      muted: newVolume === 0
+    }));
+  }, [dispatch, playbackSettings]);
 
   const handleFullscreenToggle = useCallback(() => {
     if (typeof document !== "undefined") {
       if (!document.fullscreenElement) {
         containerRef.current?.requestFullscreen().catch((err) => {
-          console.error(`Error attempting to enable fullscreen: ${err.message}`)
-        })
+          console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
       } else {
         document.exitFullscreen().catch((err) => {
-          console.error(`Error attempting to exit fullscreen: ${err.message}`)
-        })
+          console.error(`Error attempting to exit fullscreen: ${err.message}`);
+        });
       }
     }
-  }, [])
+  }, []);
 
   const handleNextVideo = useCallback(() => {
     if (nextVideoId) {
-      if (playerConfig.rememberPosition && typeof window !== "undefined") {
-        localStorage.setItem(`video-position-${videoId}`, played.toString())
-      }
-      onEnded()
+      // Save current position in Redux
+      dispatch(setVideoProgress({ 
+        videoId, 
+        time: played,
+        playedSeconds: played * duration,
+        duration: duration
+      }));
+      onEnded();
     }
-  }, [nextVideoId, onEnded, playerConfig.rememberPosition, played, videoId])
+  }, [nextVideoId, onEnded, played, videoId, dispatch, duration]);
 
   const handleAddBookmark = useCallback(() => {
-    if (onBookmark && playerRef.current) {
-      const currentTime = playerRef.current.getCurrentTime()
-      onBookmark(currentTime)
-      setShowBookmarkTooltip(true)
+    if (playerRef.current) {
+      const currentTime = playerRef.current.getCurrentTime();
+      
+      // Add bookmark to Redux
+      dispatch(addBookmark({
+        videoId,
+        time: currentTime
+      }));
+      
+      // Call the prop callback if available
+      if (onBookmark) {
+        onBookmark(currentTime);
+      }
+      
+      setShowBookmarkTooltip(true);
 
       toast({
         title: "Bookmark Added",
         description: `Bookmark added at ${formatTime(currentTime)}`,
         duration: 3000,
-      })
+      });
 
       setTimeout(() => {
-        setShowBookmarkTooltip(false)
-      }, 2000)
+        setShowBookmarkTooltip(false);
+      }, 2000);
     }
-  }, [onBookmark, toast])
+  }, [onBookmark, toast, videoId, dispatch]);
 
   const handleSeekChange = useCallback(
     (newPlayed: number) => {
-      setPlayed(newPlayed)
-      playerRef.current?.seekTo(newPlayed)
-      if (playerConfig.rememberPosition && typeof window !== "undefined") {
-        localStorage.setItem(`video-position-${videoId}`, newPlayed.toString())
-        setLastSavedPosition(newPlayed)
-      }
+      setPlayed(newPlayed);
+      playerRef.current?.seekTo(newPlayed);
+      
+      // Update progress in Redux
+      const newPlayedSeconds = newPlayed * duration;
+      dispatch(setVideoProgress({ 
+        videoId, 
+        time: newPlayed,
+        playedSeconds: newPlayedSeconds,
+        duration: duration 
+      }));
+      setLastSavedPosition(newPlayed);
+      
       // Ensure time display updates immediately on mobile
       if (onProgress) {
-        onProgress(newPlayed)
+        onProgress(newPlayed);
+      }
+
+      if (courseId) {
+        dispatch(setResumePoint({ courseId, resumePoint: newPlayed }));
+        dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
       }
     },
-    [playerConfig.rememberPosition, videoId, onProgress],
-  )
+    [videoId, onProgress, dispatch, duration, courseId]
+  );
 
   const handlePlaybackSpeedChange = useCallback((newSpeed: number) => {
-    setPlaybackSpeed(newSpeed)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("global-player-speed", newSpeed.toString())
-    }
-  }, [])
+    setPlaybackSpeed(newSpeed);
+    // Update Redux state
+    dispatch(setPlaybackSettings({
+      ...playbackSettings,
+      playbackSpeed: newSpeed
+    }));
+  }, [dispatch, playbackSettings]);
 
   const handleAutoplayToggle = useCallback(() => {
-    setAutoplayNext((prev) => {
-      const newState = !prev
-      if (typeof window !== "undefined") {
-        localStorage.setItem("global-player-autoplay", newState.toString())
-      }
+    // Update autoplay in Redux instead of local state
+    dispatch(setAutoplayEnabled(!autoplayEnabled));
 
-      toast({
-        title: newState ? "Autoplay enabled" : "Autoplay disabled",
-        description: newState ? "Videos will play automatically" : "Videos will not play automatically",
-        duration: 2000,
-      })
-
-      return newState
-    })
-  }, [toast])
+    toast({
+      title: !autoplayEnabled ? "Autoplay enabled" : "Autoplay disabled",
+      description: !autoplayEnabled ? "Videos will play automatically" : "Videos will not play automatically",
+      duration: 2000,
+    });
+  }, [autoplayEnabled, dispatch, toast]);
 
   const handleSeekToBookmark = useCallback(
     (time: number) => {
       if (playerRef.current) {
-        playerRef.current.seekTo(time / duration)
-        setPlayed(time / duration)
+        playerRef.current.seekTo(time / duration);
+        setPlayed(time / duration);
 
         toast({
           title: "Jumped to Bookmark",
           description: `Playback resumed at ${formatTime(time)}`,
           duration: 2000,
-        })
+        });
       }
     },
-    [duration, toast],
-  )
+    [duration, toast]
+  );
+
+  // Fix: Implement proper onReady handler to ensure video plays
+  const handlePlayerReady = useCallback(() => {
+    // Mark player as loaded
+    playerLoaded.current = true;
+    
+    console.debug("[EnhancedVideoPlayer] onReady fired - autoPlay:", autoPlay, "autoplayEnabled:", autoplayEnabled);
+
+    // Start playing if autoPlay or autoplayEnabled is true
+    if (autoPlay || autoplayEnabled) {
+      console.debug("[EnhancedVideoPlayer] Setting playing to true");
+      setPlaying(true);
+    }
+
+    // If there's an initial time, seek to it
+    if (initialTime > 0 && playerRef.current) {
+      console.debug("[EnhancedVideoPlayer] Seeking to initialTime:", initialTime);
+      playerRef.current.seekTo(initialTime);
+    }
+  }, [autoPlay, autoplayEnabled, initialTime]);
+
+  // Handle player errors
+  const handlePlayerError = useCallback((error: any) => {
+    console.error("Video player error:", error);
+    setPlayerError(true);
+    
+    // Try to recover by reloading the player
+    if (playerRef.current) {
+      try {
+        const internalPlayer = playerRef.current.getInternalPlayer();
+        if (internalPlayer && internalPlayer.loadVideoById) {
+          internalPlayer.loadVideoById(videoId, initialTime);
+        }
+      } catch (e) {
+        console.error("Failed to recover from player error:", e);
+      }
+    }
+  }, [videoId, initialTime]);
 
   return (
     <div
@@ -425,20 +504,21 @@ const EnhancedVideoPlayer = ({
           playing={playing}
           volume={volume}
           muted={muted}
+          onReady={handlePlayerReady}
           onProgress={handleProgress}
           onDuration={handleDuration}
           onEnded={handleVideoEnd}
           onBuffer={handleBuffer}
           onBufferEnd={handleBufferEnd}
-          onError={() => setPlayerError(true)} // Handle player-specific errors
+          onError={handlePlayerError}
           progressInterval={1000}
           playbackRate={playbackSpeed}
           style={{ backgroundColor: "transparent" }}
           config={{
             youtube: {
               playerVars: {
-                autoplay: autoPlay ? 1 : 0,
-                start: Math.floor(initialTime),
+                autoplay: 1, // Set to 1 to enable autoplay via API
+                start: Math.floor(initialTime * duration), // Convert from percentage to seconds
                 modestbranding: 1,
                 rel: 0,
                 showinfo: 0,
@@ -449,6 +529,10 @@ const EnhancedVideoPlayer = ({
                 playsinline: 1,
                 enablejsapi: 1,
                 origin: typeof window !== "undefined" ? window.location.origin : "",
+              },
+              onStateChange: (event) => {
+                // Track YouTube player state
+                console.debug("[EnhancedVideoPlayer] YouTube player state:", event.data);
               },
             },
           }}
@@ -502,7 +586,7 @@ const EnhancedVideoPlayer = ({
         duration={duration}
         fullscreen={fullscreen}
         playbackSpeed={playbackSpeed}
-        autoplayNext={autoplayNext}
+        autoplayNext={autoplayEnabled}
         bookmarks={bookmarks}
         nextVideoId={nextVideoId}
         onPlayPause={handlePlayPause}

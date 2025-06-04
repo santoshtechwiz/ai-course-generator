@@ -75,8 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               },
               "query-input": "required name=search_term_string",
             },
-          }}
-        />
+          }} type={"course"}        />
       </body>
     </html>
   )

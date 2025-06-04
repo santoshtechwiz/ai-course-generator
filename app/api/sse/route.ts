@@ -1,48 +1,110 @@
-import { NextResponse } from "next/server"
+import { NextRequest } from "next/server"
+import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const chapterId = searchParams.get("chapterId")
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
-  if (!chapterId) {
-    return NextResponse.json({ error: "Chapter ID is required" }, { status: 400 })
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url)
+  const courseId = url.searchParams.get("courseId")
+
+  if (!courseId) {
+    return new Response("Course ID is required", { status: 400 })
   }
 
+  const session = await getAuthSession()
+  const userId = session?.user?.id || ""
+
+  // Create an encoder for sending text data
+  const encoder = new TextEncoder()
+
+  // Create a ReadableStream
   const stream = new ReadableStream({
     async start(controller) {
-      const sendEvent = (data: object) => {
-        controller.enqueue(`data: ${JSON.stringify(data)}\n\n`)
-      }
+      let stopped = false
+      const sendProgress = async () => {
+        if (!userId) {
+          // For unauthenticated users, send empty progress and close
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                progress: {
+                  id: 0,
+                  userId: "",
+                  courseId: Number.parseInt(courseId),
+                  progress: 0,
+                  completedChapters: [],
+                  lastAccessedAt: new Date().toISOString(),
+                  isCompleted: false,
+                },
+              })}\n\n`
+            )
+          )
+          controller.close()
+          return
+        }
 
-      const intervalId = setInterval(async () => {
-        const chapter = await prisma.chapter.findUnique({
-          where: { id: Number.parseInt(chapterId) },
-          select: { videoId: true, videoStatus: true },
+        const progress = await prisma.courseProgress.findUnique({
+          where: {
+            unique_user_course_progress: {
+              userId,
+              courseId: Number.parseInt(courseId),
+            },
+          },
         })
 
-        if (chapter) {
-          sendEvent({ videoId: chapter.videoId, videoStatus: chapter.videoStatus })
-
-          if (chapter.videoStatus === "completed" || chapter.videoStatus === "error") {
-            clearInterval(intervalId)
-            controller.close()
+        let completedChapters = []
+        if (progress && typeof progress.completedChapters === "string") {
+          try {
+            completedChapters = JSON.parse(progress.completedChapters)
+          } catch {
+            completedChapters = []
           }
+        } else if (progress && Array.isArray(progress.completedChapters)) {
+          completedChapters = progress.completedChapters
         }
+
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              progress: progress
+                ? { ...progress, completedChapters }
+                : {
+                    id: 0,
+                    userId,
+                    courseId: Number.parseInt(courseId),
+                    progress: 0,
+                    completedChapters: [],
+                    lastAccessedAt: new Date().toISOString(),
+                    isCompleted: false,
+                  },
+            })}\n\n`
+          )
+        )
+      }
+
+      // Send initial progress
+      await sendProgress()
+
+      // Poll every 5 seconds for updates
+      const interval = setInterval(async () => {
+        if (stopped) return
+        await sendProgress()
       }, 5000)
 
-      // Clean up the interval when the client closes the connection
       req.signal.addEventListener("abort", () => {
-        clearInterval(intervalId)
+        stopped = true
+        clearInterval(interval)
         controller.close()
       })
     },
   })
 
-  return new NextResponse(stream, {
+  return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
     },
   })

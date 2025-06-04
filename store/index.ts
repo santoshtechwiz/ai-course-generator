@@ -1,6 +1,7 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import type { TypedUseSelectorHook } from "react-redux";
-import { useDispatch, useSelector } from "react-redux";
+import { persistReducer, persistStore } from "redux-persist";
+import storage from "redux-persist/lib/storage";
+import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 // Reducers
 import authReducer from "./slices/authSlice";
@@ -10,31 +11,52 @@ import userReducer from "./slices/userSlice";
 import flashcardReducer from "./slices/flashcardSlice";
 import courseReducer from "./slices/courseSlice";
 
-// Combine reducers
+// Configure persistence
+const coursePersistConfig = {
+  key: "course",
+  storage,
+  whitelist: [
+    "autoplayEnabled",
+    "bookmarks",
+    "videoProgress",
+    "playbackSettings",
+    "courseProgress",
+    "currentVideoId",
+    "currentCourseId",
+    "currentCourseSlug",
+    "courseCompletionStatus",
+  ],
+};
+
 const rootReducer = combineReducers({
   auth: authReducer,
   quiz: quizReducer,
   subscription: subscriptionReducer,
   user: userReducer,
   flashcard: flashcardReducer,
-  course: courseReducer,
+  course: persistReducer(coursePersistConfig, courseReducer),
 });
 
-// Store setup
-const store = configureStore({
+export const store = configureStore({
   reducer: rootReducer,
-  devTools: process.env.NODE_ENV !== "production",
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+      },
+    }),
 });
 
-// Types
+export const persistor = persistStore(store);
+
+// Add these hooks for typed usage in app
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-// Hooks
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
 // Exports
 export * from "./slices/courseSlice";
 export * from "./slices/quizSlice";
-export { store };
+export { store, persistor };
