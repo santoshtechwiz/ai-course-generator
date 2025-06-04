@@ -12,7 +12,7 @@ import { SessionProvider } from "next-auth/react"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import SubscriptionProvider from "./SubscriptionProvider"
-import { SessionSync } from "./session-provider"
+
 import { LoadingProvider } from "@/components/ui/loading/loading-provider"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -54,7 +54,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
 
   // Memoize more components that don't need to re-render frequently
   const jsonLd = useMemo(() => <JsonLd type="default" data={undefined} />, [])
-  const sessionSync = useMemo(() => <SessionSync />, [])
+
 
   return (
     <React.StrictMode>
@@ -74,7 +74,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
                 <SubscriptionProvider>
                   <LoadingProvider>
                     <AnimationProvider>
-                      {sessionSync}
+                 
                       {navbar}
                       <Suspense fallback={<div>Loading...</div>}></Suspense>
                       {jsonLd}

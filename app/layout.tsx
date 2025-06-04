@@ -5,6 +5,9 @@ import { JsonLd } from "@/app/schema/components/json-ld"
 
 import { Inter } from "next/font/google"
 import { RootLayoutProvider } from "@/providers/root-layout-provider"
+import SessionProvider from "@/providers/session-provider"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 import Footer from "@/components/shared/Footer"
 import { getAuthSession } from "@/lib/auth"
@@ -47,7 +50,7 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getAuthSession()
+  const session = await getServerSession(authOptions)
 
   return (
     <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
@@ -55,10 +58,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
       <body className={`font-sans antialiased min-h-screen flex flex-col`}>
-        <RootLayoutProvider session={undefined}>
-          <main className="flex-1 flex flex-col pt-16">{children}</main>
-          <Footer />
-        </RootLayoutProvider>
+        <SessionProvider session={session}>
+          <RootLayoutProvider session={undefined}>
+            <main className="flex-1 flex flex-col pt-16">{children}</main>
+            <Footer />
+          </RootLayoutProvider>
+        </SessionProvider>
 
         <JsonLd
           data={{
