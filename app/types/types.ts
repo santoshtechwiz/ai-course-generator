@@ -219,6 +219,47 @@ export type {
 
 import { Prisma } from "@prisma/client"
 
+// Video and chapter related types
+export interface VideoMetadata {
+  id: string;
+  title?: string;
+  duration?: number;
+  thumbnail?: string;
+}
+
+export interface FullChapterType {
+  id: number | string;
+  title: string;
+  description?: string;
+  videoId: string;
+  order?: number;
+  summary?: string | null;
+  questions?: CourseQuestion[];
+  name?: string; // Legacy support
+}
+
+export interface CourseUnitType {
+  id: number | string;
+  title: string;
+  description?: string;
+  order?: number;
+  chapters: FullChapterType[];
+}
+
+export interface FullCourseType {
+  id: number | string;
+  title: string;
+  description?: string;
+  slug: string;
+  image?: string;
+  courseUnits: CourseUnitType[];
+  isPublic?: boolean;
+  category?: {
+    id: number | string;
+    name: string;
+  };
+}
+
 // Enhanced course type with full relationship data
 export interface FullCourseType {
   id: number
@@ -285,30 +326,16 @@ export interface CourseQuestion {
 
 // User progress tracking for courses
 export interface CourseProgress {
-  id: number
-  userId: number
-  courseId: number
-  currentChapterId: number | null
-  currentUnitId: number | null
-  completedChapters: number[]
+  id: number | string
+  userId: string
+  courseId: number | string
   progress: number
-  lastAccessedAt: Date | null
-  timeSpent: number
-  isCompleted: boolean
-  completionDate: Date | null
-  quizProgress: Prisma.JsonValue | null
-  notes: Prisma.JsonValue | null
-  bookmarks: Prisma.JsonValue | null
-  lastInteractionType: string | null
-  interactionCount: number
-  engagementScore: number | null
-  createdAt: Date
-  updatedAt: Date | null
-  user?: {
-    id: number
-    name: string | null
-    email: string | null
-  }
+  completedChapters: Array<number | string>
+  currentChapterId?: number | string
+  lastAccessedAt?: Date | string
+  isCompleted?: boolean
+  course?: FullCourseType
+  timeSpent?: number
 }
 
 // Define specific quiz progress type for better type safety

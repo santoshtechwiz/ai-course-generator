@@ -21,7 +21,6 @@ import { useChapterSummary } from "@/hooks/useChapterSummary"
 import { processMarkdown } from "@/lib/markdownProcessor"
 import { MarkdownRenderer } from "./markdownUtils"
 import { useToast } from "@/hooks/use-toast"
-import PDFGenerator from "@/components/shared/PDFGenerator"
 import AIEmoji from "@/app/dashboard/create/components/AIEmoji"
 import { useSession } from "next-auth/react"
 
@@ -391,7 +390,7 @@ const SummaryContent: React.FC<{
         )}
       </CardContent>
     </Card>
-    <PDFGenerator markdown={processedContent} chapterName={name} />
+    {/* <PDFGenerator markdown={processedContent} chapterName={name} /> */}
   </motion.div>
 )
 

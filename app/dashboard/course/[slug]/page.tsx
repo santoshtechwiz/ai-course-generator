@@ -115,7 +115,7 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
 }
 
 export default async function Page({ params }: CoursePageParams) {
-  const { slug } = await params
+  const { slug } = params;
   const course = await getCourseData(slug)
 
   if (!course) {

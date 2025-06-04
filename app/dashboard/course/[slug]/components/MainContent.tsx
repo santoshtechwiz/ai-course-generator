@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback, Suspense } from "react"
+import { useState, useEffect, useCallback, Suspense, useRef } from "react"
 import EnhancedVideoPlayer from "./EnhancedVideoPlayer"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, PlayCircle, CheckCircle, Clock } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Loader2, PlayCircle, Clock } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import CourseDetailsQuiz from "./CourseDetailsQuiz"
@@ -14,26 +13,33 @@ import CourseCompletionOverlay from "./CourseCompletionOverlay"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
-  fetchCourseDataApi,
   setCurrentVideoApi,
   markChapterAsCompleted,
   setCourseCompletionStatus,
+  setAutoplayEnabled,
 } from "@/store/slices/courseSlice"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 
 interface MainContentProps {
-  slug: string
-  initialVideoId?: string
-  nextVideoId?: string
-  prevVideoId?: string
-  onVideoEnd: () => void
-  onVideoSelect: (videoId: string) => void
-  currentTime?: number
-  onWatchAnotherCourse: () => void
-  onTimeUpdate?: (time: number) => void
-  planId?: string
-  isLastVideo?: boolean
+  slug: string;
+  initialVideoId?: string;
+  nextVideoId?: string;
+  prevVideoId?: string;
+  onVideoEnd: () => void;
+  onVideoSelect: (videoId: string) => void;
+  currentChapter?: FullChapterType;
+  currentTime?: number;
+  onWatchAnotherCourse: () => void;
+  onTimeUpdate?: (time: number) => void;
+  planId?: string;
+  isLastVideo?: boolean;
+  autoPlay?: boolean;
+  progress?: CourseProgress;
+  onChapterComplete?: () => void;
+  courseCompleted?: boolean;
+  course: FullCourseType;
 }
 
 export default function MainContent({
@@ -43,28 +49,62 @@ export default function MainContent({
   prevVideoId,
   onVideoEnd,
   onVideoSelect,
+  currentChapter,
   currentTime = 0,
   onWatchAnotherCourse,
   onTimeUpdate,
   planId = "FREE",
   isLastVideo = false,
+  autoPlay = false,
+  progress,
+  onChapterComplete,
+  courseCompleted = false,
+  course,
 }: MainContentProps) {
   const [activeTab, setActiveTab] = useState("notes")
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
-  const [autoplayEnabled, setAutoplayEnabled] = useState(true)
   const [nextVideoCountdown, setNextVideoCountdown] = useState<number | null>(null)
+  const dispatch = useAppDispatch()
+  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
   const { data: session, status } = useSession()
   const { toast } = useToast()
   const isAuthenticated = status === "authenticated"
-  const dispatch = useAppDispatch()
-  const courseState = useAppSelector((state) => state.course)
-  const currentChapter = courseState.currentCourse?.courseUnits
-    ?.flatMap((unit) => unit.chapters)
-    ?.find((chapter) => chapter.id === courseState.currentChapterId)
+  const bookmarks = useAppSelector((state) => state.course.bookmarks[currentVideoId || ''] || [])
+  const didSetInitialVideo = useRef(false)
 
+  // Effect to show completion overlay when courseCompleted changes
   useEffect(() => {
-    dispatch(fetchCourseDataApi(slug))
-  }, [slug, dispatch])
+    if (courseCompleted) {
+      setShowCompletionOverlay(true);
+    }
+  }, [courseCompleted]);
+
+  // Set initial video only once on mount or when dependencies change
+  useEffect(() => {
+    if (
+      !didSetInitialVideo.current &&
+      !currentVideoId &&
+      (initialVideoId || (course?.courseUnits && course.courseUnits.length > 0))
+    ) {
+      if (initialVideoId) {
+        dispatch(setCurrentVideoApi(initialVideoId));
+      } else {
+        const firstVideoId = course?.courseUnits?.flatMap((unit) =>
+          unit.chapters).find((chapter) => !!chapter.videoId)?.videoId;
+
+        if (firstVideoId) {
+          dispatch(setCurrentVideoApi(firstVideoId));
+        }
+      }
+      didSetInitialVideo.current = true;
+    }
+  }, [currentVideoId, initialVideoId, dispatch, course.courseUnits]);
+
+  // Debug: log autoplay state
+  useEffect(() => {
+    console.debug("[MainContent] autoplayEnabled:", autoplayEnabled);
+  }, [autoplayEnabled]);
 
   const handleNextVideo = useCallback(() => {
     if (nextVideoId) {
@@ -110,7 +150,7 @@ export default function MainContent({
             }
           >
             <CourseAISummary
-              chapterId={currentChapter?.id.toString() || ""}
+              chapterId={currentChapter?.id?.toString() || ""}
               name={currentChapter?.title || ""}
               existingSummary={currentChapter?.summary || ""}
               isPremium={planId === "PRO" || planId === "ULTIMATE"}
@@ -135,9 +175,9 @@ export default function MainContent({
           >
             <CourseDetailsQuiz
               isPremium={planId === "PRO" || planId === "ULTIMATE"}
-              isPublicCourse={courseState.currentCourse?.isPublic || false}
+              isPublicCourse={course?.isPublic || false}
               chapter={currentChapter || {}}
-              course={courseState.currentCourse || {}}
+              course={course || {}}
             />
           </Suspense>
         ) : (
@@ -153,24 +193,41 @@ export default function MainContent({
     }
   }
 
+  // Handle playlist video selection
+  const handlePlaylistVideoSelect = useCallback(
+    (videoId: string) => {
+      // Debug: log playlist video selection
+      console.debug("[MainContent] Playlist video selected:", videoId);
+      
+      dispatch(setCurrentVideoApi(videoId));
+      dispatch(setAutoplayEnabled(true));
+      
+      // Call parent handler if available
+      if (typeof onVideoSelect === "function") {
+        onVideoSelect(videoId);
+      }
+    },
+    [dispatch, onVideoSelect]
+  )
+
   return (
     <div className="space-y-6">
       {/* Video Player */}
       <div className="relative rounded-lg overflow-hidden border border-border shadow-md">
-        {initialVideoId ? (
+        {currentVideoId ? (
           <EnhancedVideoPlayer
-            videoId={initialVideoId}
+            videoId={currentVideoId}
             onEnded={handleVideoEnd}
-            autoPlay={autoplayEnabled}
+            autoPlay={autoPlay || autoplayEnabled}
             onProgress={onTimeUpdate}
             initialTime={currentTime}
             isLastVideo={isLastVideo}
-            onVideoSelect={onVideoSelect}
-            courseName={courseState.currentCourse?.title || ""}
+            onVideoSelect={handlePlaylistVideoSelect}
+            courseName={course?.title || ""}
             nextVideoId={nextVideoId}
-            bookmarks={courseState.bookmarks[initialVideoId] || []}
+            bookmarks={bookmarks}
             isAuthenticated={isAuthenticated}
-            onChapterComplete={() => dispatch(markChapterAsCompleted(currentChapter?.id || ""))}
+            onChapterComplete={onChapterComplete || (() => currentChapter && dispatch(markChapterAsCompleted(currentChapter.id)))}
             playerConfig={{
               showRelatedVideos: false,
               rememberPosition: true,
@@ -185,7 +242,7 @@ export default function MainContent({
           </div>
         )}
       </div>
-
+      
       {/* Autoplay Controls */}
       {nextVideoCountdown !== null && (
         <div className="text-center text-sm text-muted-foreground">
@@ -213,7 +270,7 @@ export default function MainContent({
           variant={autoplayEnabled ? "primary" : "outline"}
           size="sm"
           className="transition-all"
-          onClick={() => setAutoplayEnabled((prev) => !prev)}
+          onClick={() => dispatch(setAutoplayEnabled(!autoplayEnabled))}
         >
           {autoplayEnabled ? "Disable Autoplay" : "Enable Autoplay"}
         </Button>
@@ -258,7 +315,7 @@ export default function MainContent({
 
       {showCompletionOverlay && (
         <CourseCompletionOverlay
-          courseName={courseState.currentCourse?.title || ""}
+          courseName={course?.title || ""}
           onClose={() => setShowCompletionOverlay(false)}
           onWatchAnotherCourse={onWatchAnotherCourse}
         />

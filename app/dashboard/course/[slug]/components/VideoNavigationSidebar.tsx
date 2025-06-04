@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, memo, useMemo } from "react"
+import { useState, useEffect, memo, useMemo, useCallback } from "react"
 import { signIn } from "next-auth/react"
 import { Lock, PlayCircle, ChevronDown, CheckCircle, ChevronUp, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,10 @@ import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/type
 import { cn } from "@/lib/tailwindUtils"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { motion } from "framer-motion"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { setCurrentVideoApi, markChapterAsStarted } from "@/store/slices/courseSlice"
+import { formatDuration } from "@/lib/formatters"
 
 // Simple Info icon without tooltip to avoid infinite loops
 const InfoIcon = () => <Info className="h-4 w-4 text-muted-foreground" />
@@ -24,7 +28,7 @@ interface VideoNavigationSidebarProps {
   progress: CourseProgress | null
   nextVideoId?: string
   prevVideoId?: string
-  completedChapters: string | string[]
+  completedChapters?: number[]
 }
 
 // Separate VideoPlaylist component to avoid re-renders
@@ -37,7 +41,7 @@ const VideoPlaylist = memo(function VideoPlaylist({
   nextVideoId,
   prevVideoId,
 }: {
-  courseUnits: FullCourseType["courseUnits"]
+  courseUnits: FullCourseType["courseUnits"] | undefined
   currentChapter?: FullChapterType
   onVideoSelect: (videoId: string) => void
   currentVideoId: string
@@ -50,10 +54,10 @@ const VideoPlaylist = memo(function VideoPlaylist({
 
   // Initialize expanded state based on current chapter
   useEffect(() => {
-    if (currentChapter) {
+    if (currentChapter && Array.isArray(courseUnits)) {
       const currentUnitId = courseUnits
-        ?.find((unit) => unit.chapters.some((chapter) => chapter.id === currentChapter.id))
-        ?.id.toString()
+        ?.find((unit) => unit?.chapters?.some((chapter) => chapter?.id === currentChapter?.id))
+        ?.id?.toString()
 
       if (currentUnitId) {
         setExpandedUnits((prev) => ({
@@ -71,34 +75,60 @@ const VideoPlaylist = memo(function VideoPlaylist({
     }))
   }
 
+  // Debug function to log when videos are clicked
+  const handleVideoClick = useCallback(
+    (videoId: string) => {
+      console.debug("[VideoPlaylist] Video clicked:", videoId)
+      if (showFullContent && videoId) {
+        onVideoSelect(videoId)
+      }
+    },
+    [onVideoSelect, showFullContent],
+  )
+
+  // Check if courseUnits is undefined or empty
+  if (!courseUnits || courseUnits.length === 0) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-muted-foreground">No content available for this course</p>
+      </div>
+    )
+  }
+
   return (
     <div className="p-4">
-      {courseUnits?.map((unit) => {
-        const isCurrentUnit = unit.chapters.some((chapter) => chapter.id === currentChapter?.id)
-        const isExpanded = expandedUnits[unit.id.toString()] || isCurrentUnit
-        const completedChaptersInUnit = unit.chapters.filter((chapter) =>
-          progress?.completedChapters.includes(chapter.id),
-        ).length
-        const totalChaptersInUnit = unit.chapters.length
+      {courseUnits.map((unit) => {
+        if (!unit) return null // Skip undefined units
+
+        const isCurrentUnit = unit.chapters?.some((chapter) => chapter?.id === currentChapter?.id) || false
+        const isExpanded = expandedUnits[unit.id?.toString() || ""] || isCurrentUnit
+
+        const completedChaptersInUnit = unit.chapters?.filter((chapter) =>
+          progress?.completedChapters?.includes(chapter?.id || ""),
+        )?.length || 0
+
+        const totalChaptersInUnit = unit.chapters?.length || 0
         const unitProgress = totalChaptersInUnit > 0 ? (completedChaptersInUnit / totalChaptersInUnit) * 100 : 0
 
         return (
           <Collapsible
-            key={unit.id}
+            key={unit.id || `unit-${Math.random()}`}
             open={isExpanded}
-            onOpenChange={() => toggleUnit(unit.id.toString())}
+            onOpenChange={() => toggleUnit(unit.id?.toString() || "")}
             className="mb-4 border rounded-lg overflow-hidden"
           >
             <CollapsibleTrigger className="flex w-full items-center justify-between p-3 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
               <div className="flex flex-col w-full">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold">{unit.title}</span>
+                  <span className="font-semibold">{unit.title || "Untitled Unit"}</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-xs text-muted-foreground">
                       {completedChaptersInUnit}/{totalChaptersInUnit}
                     </span>
                     <ChevronDown
-                      className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                      className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
                     />
                   </div>
                 </div>
@@ -107,15 +137,17 @@ const VideoPlaylist = memo(function VideoPlaylist({
             </CollapsibleTrigger>
 
             <CollapsibleContent className="space-y-1 p-2 bg-muted/20">
-              {unit.chapters.map((chapter, index) => {
-                const isCompleted = showFullContent && progress?.completedChapters.includes(chapter.id)
+              {unit.chapters?.map((chapter, index) => {
+                if (!chapter) return null // Skip undefined chapters
+
+                const isCompleted = showFullContent && progress?.completedChapters?.includes(chapter.id || "")
                 const isCurrent = chapter.videoId === currentVideoId
                 const isNext = chapter.videoId === nextVideoId
 
                 return (
                   <button
-                    key={chapter.id}
-                    onClick={() => showFullContent && chapter.videoId && onVideoSelect(chapter.videoId)}
+                    key={chapter.id || `chapter-${index}`}
+                    onClick={() => chapter.videoId && handleVideoClick(chapter.videoId)}
                     disabled={!showFullContent || !chapter.videoId}
                     className={cn(
                       "group relative w-full rounded-md p-3 text-left text-sm transition-all duration-200",
@@ -149,7 +181,7 @@ const VideoPlaylist = memo(function VideoPlaylist({
                         )}
                       </div>
                       <span className={cn("flex-1 truncate", isCurrent && "font-medium")}>
-                        {index + 1}. {chapter.title}
+                        {index + 1}. {chapter.title || "Untitled Chapter"}
                       </span>
                       {isNext && (
                         <Badge
@@ -170,7 +202,7 @@ const VideoPlaylist = memo(function VideoPlaylist({
                     </div>
                   </button>
                 )
-              })}
+              }) || <div className="p-2 text-center text-muted-foreground">No chapters available</div>}
             </CollapsibleContent>
           </Collapsible>
         )
@@ -188,64 +220,49 @@ function VideoNavigationSidebar({
   progress,
   nextVideoId,
   prevVideoId,
+  completedChapters,
 }: VideoNavigationSidebarProps) {
-  // Allow unauthenticated users to see content but with limited functionality
-  const showFullContent = course.isPublic || isAuthenticated
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
-  const [localProgress, setLocalProgress] = useState<{
-    completedChapters: string[]
-    progress: number
-    currentChapterId: string | null
-  }>({
-    completedChapters: [],
-    progress: 0,
-    currentChapterId: null,
-  })
+  const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false
+  const dispatch = useAppDispatch()
+  const playingVideoId = useAppSelector((state) => state.course.currentVideoId)
 
-  // Load local progress for unauthenticated users - only once on mount
-  useEffect(() => {
-    if (!isAuthenticated) {
-      try {
-        const savedProgress = localStorage.getItem(`local-course-progress-${course.id}`)
-        if (savedProgress) {
-          setLocalProgress(JSON.parse(savedProgress))
-        }
-      } catch (e) {
-        console.error("Error loading local progress:", e)
+  // Use progress data if available, otherwise create a default structure
+  // Added null checking for course
+  const effectiveProgress = useMemo(() => {
+    if (!course) {
+      return {
+        id: 0,
+        userId: "",
+        courseId: 0,
+        progress: 0,
+        completedChapters: [],
+        currentChapterId: currentChapter?.id || null,
       }
     }
-  }, [isAuthenticated, course.id])
 
-  // Calculate effective progress outside of render to prevent infinite loops
-  const effectiveProgress = useMemo(() => {
-    if (isAuthenticated && progress) {
-      return progress
+    return progress || {
+      id: 0,
+      userId: "",
+      courseId: typeof course.id === "string" ? parseInt(course.id) : (course.id || 0),
+      progress: 0,
+      completedChapters: [],
+      currentChapterId: currentChapter?.id || null,
     }
+  }, [progress, course, currentChapter?.id])
 
-    // Create a fallback progress object for unauthenticated users
-    const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
-    const progressPercentage = totalChapters > 0 ? (localProgress.completedChapters.length / totalChapters) * 100 : 0
+  // Ensure course is defined before accessing its properties
+  const totalChapters = useMemo(() => {
+    if (!course?.courseUnits) return 0
+    return course.courseUnits.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0)
+  }, [course])
 
-    return {
-      completedChapters: localProgress.completedChapters,
-      progress: progressPercentage,
-      currentChapterId: localProgress.currentChapterId,
-    }
-  }, [isAuthenticated, progress, localProgress, course.courseUnits])
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024)
-    }
-
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
+  // Calculate progress for display
+  const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
+  const progressPercentage = totalChapters > 0 ? Math.round((completedCount / totalChapters) * 100) : 0
 
   // Memoize the content to prevent unnecessary re-renders
+  // Add proper null checking throughout
   const sidebarContent = useMemo(
     () => (
       <div className={cn("flex h-full flex-col bg-background transition-all duration-300", isCollapsed && "w-16")}>
@@ -283,8 +300,8 @@ function VideoNavigationSidebar({
               <Progress value={effectiveProgress.progress} className="h-2" />
               <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  {effectiveProgress.completedChapters.length} /{" "}
-                  {course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0)} chapters
+                  {(Array.isArray(effectiveProgress.completedChapters) ? effectiveProgress.completedChapters.length : 0)} /{" "}
+                  {totalChapters} chapters
                 </span>
                 <span>{Math.round(effectiveProgress.progress)}% complete</span>
               </div>
@@ -311,7 +328,7 @@ function VideoNavigationSidebar({
                 style={{ maxHeight: "calc(100vh - 200px)" }}
               >
                 <VideoPlaylist
-                  courseUnits={course.courseUnits}
+                  courseUnits={course?.courseUnits}
                   currentChapter={currentChapter}
                   onVideoSelect={onVideoSelect}
                   currentVideoId={currentVideoId}
@@ -326,7 +343,7 @@ function VideoNavigationSidebar({
       </div>
     ),
     [
-      course.courseUnits,
+      course?.courseUnits,
       currentChapter,
       currentVideoId,
       effectiveProgress,
@@ -336,6 +353,7 @@ function VideoNavigationSidebar({
       nextVideoId,
       onVideoSelect,
       prevVideoId,
+      totalChapters,
     ],
   )
 

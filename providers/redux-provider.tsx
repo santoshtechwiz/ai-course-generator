@@ -1,23 +1,16 @@
 "use client"
 
-import { useState, useEffect, type ReactNode } from "react"
+import React from "react"
 import { Provider } from "react-redux"
-import { store } from "@/store"
+import { PersistGate } from "redux-persist/integration/react"
+import { store, persistor } from "@/store"
 
-export function ReduxProvider({ children }: { children: ReactNode }) {
-  // Add client-side only logic to handle persist gate
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
+export function ReduxProvider({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-    
-       
+      <PersistGate loading={null} persistor={persistor}>
         {children}
-     
+      </PersistGate>
     </Provider>
   )
 }

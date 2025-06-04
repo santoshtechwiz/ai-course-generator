@@ -1,237 +1,209 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { FullCourseType, CourseProgress } from "@/app/types/types";
 
 // Define the state interface
+interface VideoProgress {
+  time: number;
+  playedSeconds: number;
+  duration: number;
+}
+
+interface CourseProgress {
+  courseId: number;
+  progress: number;
+  completedChapters: number[];
+  currentChapterId?: number;
+  isCompleted: boolean;
+  lastPlayedAt?: string;
+  resumePoint?: number;
+}
+
+interface BookmarkData {
+  videoId: string;
+  time: number;
+}
+
+interface PlaybackSettings {
+  volume: number;
+  muted: boolean;
+  playbackSpeed: number;
+}
+
 interface CourseState {
-  currentCourse: FullCourseType | null;
-  courseProgress: CourseProgress | null;
-  currentChapterId: number | string | null;
   currentVideoId: string | null;
-  isLoading: boolean;
-  error: string | null;
-  completedChapters: (string | number)[];
+  videoProgress: Record<string, VideoProgress>;
+  autoplayEnabled: boolean;
   bookmarks: Record<string, number[]>;
+  courseProgress: Record<number, CourseProgress>;
+  currentCourseId: number | null;
+  currentCourseSlug: string | null;
   courseCompletionStatus: boolean;
-  videoProgress: Record<string, number>; // New state for video progress
+  playbackSettings: PlaybackSettings;
 }
 
 // Initial state
 const initialState: CourseState = {
-  currentCourse: null,
-  courseProgress: null,
-  currentChapterId: null,
   currentVideoId: null,
-  isLoading: false,
-  error: null,
-  completedChapters: [],
+  videoProgress: {},
+  autoplayEnabled: true,
   bookmarks: {},
+  courseProgress: {},
+  currentCourseId: null,
+  currentCourseSlug: null,
   courseCompletionStatus: false,
-  videoProgress: {}, // Initialize video progress state
+  playbackSettings: {
+    volume: 0.8,
+    muted: false,
+    playbackSpeed: 1.0,
+  },
 };
 
-// Async thunk for fetching course data
-export const fetchCourseDataApi = createAsyncThunk(
-  "course/fetchCourseData",
-  async (slug: string, { rejectWithValue }) => {
-    try {
-      console.log(`Fetching course data for slug: ${slug}`);
-      const response = await fetch(`/api/course/${slug}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error fetching course data: ${response.status}`, errorText);
-        return rejectWithValue(`Failed to fetch course data: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("Course data fetched successfully:", data);
-      
-      // Validate the response data
-      if (!data || !data.id) {
-        console.error("Invalid course data received:", data);
-        return rejectWithValue("Invalid course data received");
-      }
-      
-      return data;
-    } catch (error: any) {
-      console.error("Exception in fetchCourseDataApi:", error);
-      return rejectWithValue(error.message || "Failed to fetch course data");
-    }
-  }
-);
-
-// Async thunk for updating course progress
-export const updateCourseProgressApi = createAsyncThunk(
-  "course/updateCourseProgress",
-  async (
-    data: {
-      courseId: number | string;
-      chapterId?: number | string;
-      completedChapters?: (number | string)[];
-      progress?: number;
-      isCompleted?: boolean;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await axios.post(
-        `/api/courses/${data.courseId}/progress`,
-        data
-      );
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update course progress"
-      );
-    }
-  }
-);
-
-// Course slice
 const courseSlice = createSlice({
   name: "course",
   initialState,
   reducers: {
-    setCurrentChapterApi: (state, action: PayloadAction<number | string>) => {
-      state.currentChapterId = action.payload;
-    },
-    setCurrentVideoApi: (state, action: PayloadAction<string>) => {
+    setCurrentVideoApi(state, action: PayloadAction<string>) {
       state.currentVideoId = action.payload;
     },
-    // Mark a chapter as completed
-    markChapterAsCompleted: (state, action: PayloadAction<number | string>) => {
-      const chapterId = action.payload;
-      if (!state.completedChapters.includes(chapterId)) {
-        state.completedChapters.push(chapterId);
-
-        // Update the progress object if it exists
-        if (state.courseProgress) {
-          if (!state.courseProgress.completedChapters.includes(chapterId)) {
-            state.courseProgress.completedChapters.push(chapterId);
-
-            // Recalculate overall progress percentage if we have a current course
-            if (state.currentCourse?.courseUnits) {
-              const totalChapters = state.currentCourse.courseUnits.reduce(
-                (acc, unit) => acc + unit.chapters.length,
-                0
-              );
-
-              if (totalChapters > 0) {
-                state.courseProgress.progress =
-                  (state.courseProgress.completedChapters.length / totalChapters) *
-                  100;
-              }
-            }
-          }
-        }
-      }
-    },
-    // Set bookmarks for a specific video
-    setBookmarks: (
+    setVideoProgress(
       state,
-      action: PayloadAction<{ videoId: string; bookmarks: number[] }>
-    ) => {
-      const { videoId, bookmarks } = action.payload;
-      state.bookmarks[videoId] = bookmarks;
+      action: PayloadAction<{
+        videoId: string;
+        time: number;
+        playedSeconds?: number;
+        duration?: number;
+      }>
+    ) {
+      const { videoId, time, playedSeconds, duration } = action.payload;
+      state.videoProgress[videoId] = {
+        time,
+        playedSeconds: playedSeconds || (state.videoProgress[videoId]?.playedSeconds || 0),
+        duration: duration || (state.videoProgress[videoId]?.duration || 0),
+      };
     },
-    // Add a single bookmark
-    addBookmark: (
-      state,
-      action: PayloadAction<{ videoId: string; timePosition: number }>
-    ) => {
-      const { videoId, timePosition } = action.payload;
-
+    setAutoplayEnabled(state, action: PayloadAction<boolean>) {
+      state.autoplayEnabled = action.payload;
+    },
+    addBookmark(state, action: PayloadAction<BookmarkData>) {
+      const { videoId, time } = action.payload;
       if (!state.bookmarks[videoId]) {
         state.bookmarks[videoId] = [];
       }
-
-      // Only add if not already present
-      if (!state.bookmarks[videoId].includes(timePosition)) {
-        state.bookmarks[videoId] = [
-          ...state.bookmarks[videoId],
-          timePosition,
-        ].sort((a, b) => a - b);
+      // Prevent duplicate bookmarks
+      if (!state.bookmarks[videoId].includes(time)) {
+        state.bookmarks[videoId].push(time);
+        // Sort bookmarks by time
+        state.bookmarks[videoId].sort((a, b) => a - b);
       }
     },
-    // Set course completion status
-    setCourseCompletionStatus: (state, action: PayloadAction<boolean>) => {
+    removeBookmark(state, action: PayloadAction<BookmarkData>) {
+      const { videoId, time } = action.payload;
+      if (state.bookmarks[videoId]) {
+        state.bookmarks[videoId] = state.bookmarks[videoId].filter(
+          (bookmark) => Math.abs(bookmark - time) > 1 // Add a small tolerance
+        );
+      }
+    },
+    updateProgress(state, action: PayloadAction<CourseProgress>) {
+      const { courseId, progress, completedChapters, currentChapterId, isCompleted, lastPlayedAt, resumePoint } = action.payload;
+      state.courseProgress[courseId] = {
+        courseId,
+        progress,
+        completedChapters,
+        currentChapterId,
+        isCompleted,
+        lastPlayedAt,
+        resumePoint,
+      };
+    },
+    setResumePoint(state, action: PayloadAction<{ courseId: number; resumePoint: number }>) {
+      const { courseId, resumePoint } = action.payload;
+      if (state.courseProgress[courseId]) {
+        state.courseProgress[courseId].resumePoint = resumePoint;
+      }
+    },
+    setLastPlayedAt(state, action: PayloadAction<{ courseId: number; lastPlayedAt: string }>) {
+      const { courseId, lastPlayedAt } = action.payload;
+      if (state.courseProgress[courseId]) {
+        state.courseProgress[courseId].lastPlayedAt = lastPlayedAt;
+      }
+    },
+    markChapterAsStarted(state, action: PayloadAction<{ courseId: number; chapterId: number }>) {
+      const { courseId, chapterId } = action.payload;
+      if (state.courseProgress[courseId]) {
+        state.courseProgress[courseId].currentChapterId = chapterId;
+      }
+    },
+    markChapterAsCompleted(state, action: PayloadAction<{ courseId: number; chapterId: number }>) {
+      const { courseId, chapterId } = action.payload;
+      if (state.courseProgress[courseId]) {
+        const completedChapters = [...state.courseProgress[courseId].completedChapters];
+        if (!completedChapters.includes(chapterId)) {
+          completedChapters.push(chapterId);
+          state.courseProgress[courseId].completedChapters = completedChapters;
+
+          // Recalculate progress (would need total chapter count for accuracy)
+          // This is simplified - actual calculation would need total chapter count
+          // state.courseProgress[courseId].progress = (completedChapters.length / totalChapters) * 100;
+        }
+      }
+    },
+    initializeCourseState(
+      state,
+      action: PayloadAction<{
+        courseId: number;
+        courseSlug: string;
+        initialVideoId?: string;
+      }>
+    ) {
+      const { courseId, courseSlug, initialVideoId } = action.payload;
+      state.currentCourseId = courseId;
+      state.currentCourseSlug = courseSlug;
+
+      if (initialVideoId) {
+        state.currentVideoId = initialVideoId;
+      }
+
+      // Initialize course progress if not exists
+      if (!state.courseProgress[courseId]) {
+        state.courseProgress[courseId] = {
+          courseId,
+          progress: 0,
+          completedChapters: [],
+          isCompleted: false,
+        };
+      }
+    },
+    setCourseCompletionStatus(state, action: PayloadAction<boolean>) {
       state.courseCompletionStatus = action.payload;
-
-      // If course is completed, also update the progress
-      if (action.payload && state.courseProgress) {
-        state.courseProgress.isCompleted = true;
-        state.courseProgress.progress = 100;
-      }
     },
-    // Track video progress
-    setVideoProgress: (state, action: PayloadAction<{ videoId: string; time: number }>) => {
-      state.videoProgress[action.payload.videoId] = action.payload.time;
+    setPlaybackSettings(state, action: PayloadAction<PlaybackSettings>) {
+      state.playbackSettings = action.payload;
     },
-  },
-  extraReducers: (builder) => {
-    // Handle fetch course data action states
-    builder
-      .addCase(fetchCourseDataApi.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-        console.log("Course data fetch pending");
-      })
-      .addCase(fetchCourseDataApi.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.currentCourse = action.payload.course;
-        state.courseProgress = action.payload.progress;
-
-        // Initialize other related state
-        if (action.payload.progress) {
-          state.completedChapters = action.payload.progress.completedChapters || [];
-          state.courseCompletionStatus = !!action.payload.progress.isCompleted;
-        }
-
-        // Set initial chapter/video if not already set
-        if (!state.currentChapterId && action.payload.courseUnits && action.payload.courseUnits.length > 0) {
-          const firstUnit = action.payload.courseUnits[0];
-          if (firstUnit.chapters && firstUnit.chapters.length > 0) {
-            const firstChapter = firstUnit.chapters[0];
-            state.currentChapterId = firstChapter.id;
-            console.log(`Setting initial chapter ID: ${firstChapter.id}`);
-          }
-        }
-        console.log("Course data fetch fulfilled");
-      })
-      .addCase(fetchCourseDataApi.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || "Failed to fetch course data";
-        console.error("Course data fetch rejected:", action.payload);
-      })
-
-      // Handle update course progress action states
-      .addCase(updateCourseProgressApi.pending, (state) => {
-        // We can optionally set a loading state specifically for progress updates
-      })
-      .addCase(updateCourseProgressApi.fulfilled, (state, action) => {
-        state.courseProgress = action.payload;
-        if (action.payload) {
-          state.completedChapters = action.payload.completedChapters || [];
-          state.courseCompletionStatus = !!action.payload.isCompleted;
-        }
-      })
-      .addCase(updateCourseProgressApi.rejected, (state, action) => {
-        state.error = action.payload as string || "Failed to update course progress";
-      });
+    resetCourseState(state) {
+      state.currentVideoId = null;
+      state.currentCourseId = null;
+      state.currentCourseSlug = null;
+      state.courseCompletionStatus = false;
+    },
   },
 });
 
-// Export actions
 export const {
-  setCurrentChapterApi,
   setCurrentVideoApi,
-  markChapterAsCompleted,
-  setBookmarks,
-  addBookmark,
-  setCourseCompletionStatus,
   setVideoProgress,
+  setAutoplayEnabled,
+  addBookmark,
+  removeBookmark,
+  updateProgress,
+  setResumePoint,
+  setLastPlayedAt,
+  markChapterAsStarted,
+  markChapterAsCompleted,
+  initializeCourseState,
+  setCourseCompletionStatus,
+  setPlaybackSettings,
+  resetCourseState,
 } = courseSlice.actions;
 
-// Export reducer
 export default courseSlice.reducer;
