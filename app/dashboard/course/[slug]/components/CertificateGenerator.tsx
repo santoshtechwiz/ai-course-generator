@@ -98,51 +98,65 @@ const styles = StyleSheet.create({
   },
 })
 
-// Certificate component
-export const Certificate = ({ userName, courseName }: { userName: string; courseName: string }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <View style={styles.border} />
-      <Text style={styles.watermark}>CERTIFIED</Text>
-      <Image src="/logo.png" style={styles.logo} />
-      <Text style={styles.header}>CERTIFICATE OF COMPLETION</Text>
-      <Text style={styles.title}>Achievement Unlocked</Text>
-      <Text style={styles.content}>This is to certify that</Text>
-      <Text style={styles.name}>{userName}</Text>
-      <Text style={styles.content}>has successfully completed the course</Text>
-      <Text style={styles.courseName}>{courseName}</Text>
-      <Text style={styles.date}>
-        Completed on{" "}
-        {new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </Text>
-      <Text style={styles.footer}>
-        This certificate is proudly presented by CourseAI • Verify this certificate at: https://courseai.com/verify/
-        {userName.replace(/\s+/g, "-").toLowerCase()}/{courseName.replace(/\s+/g, "-").toLowerCase()}
-      </Text>
-    </Page>
-  </Document>
-)
+// Fixed Certificate component with safe handling of userName
+export const Certificate = ({ userName = "Student", courseName = "Course" }: { userName?: string; courseName?: string }) => {
+  // Safely handle userName and courseName to prevent undefined errors
+  const safeUserName = userName || "Student"
+  const safeCourseName = courseName || "Course"
+  
+  // Generate a safe certificate ID that won't cause errors
+  const safeCertificateId = `${safeUserName.replace(/\s+/g, "-").toLowerCase()}_${safeCourseName.replace(/\s+/g, "-").toLowerCase()}`
+  
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.border} />
+        <Text style={styles.watermark}>CERTIFIED</Text>
+        <Image src="/logo.png" style={styles.logo} />
+        <Text style={styles.header}>CERTIFICATE OF COMPLETION</Text>
+        <Text style={styles.title}>Achievement Unlocked</Text>
+        <Text style={styles.content}>This is to certify that</Text>
+        <Text style={styles.name}>{safeUserName}</Text>
+        <Text style={styles.content}>has successfully completed the course</Text>
+        <Text style={styles.courseName}>{safeCourseName}</Text>
+        <Text style={styles.date}>
+          Completed on{" "}
+          {new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </Text>
+        <Text style={styles.footer}>
+          This certificate is proudly presented by CourseAI • Verify this certificate at: https://courseai.com/verify/{safeCertificateId}
+        </Text>
+      </Page>
+    </Document>
+  )
+}
 
 interface CertificateGeneratorProps {
-  courseName: string
+  courseName?: string
   isEligible?: boolean
   progress?: number
 }
 
 const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
-  courseName,
+  courseName = "Course",  // Provide default value
   isEligible = true,
   progress = 100,
 }) => {
   const { data: session } = useSession()
-  const userName = session?.user?.name || "Student"
+  const userName = session?.user?.name || "Student"  // Ensure userName has a fallback
   const [isGenerating, setIsGenerating] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { toast } = useToast()
+  
+  // Ensure courseName is safe to use
+  const safeCourseName = courseName || "Course"
+  
+  // Create a safe filename for download that won't cause errors
+  const safeFileName = `${safeCourseName.replace(/\s+/g, "_")}_Certificate.pdf`
 
   const handleDownload = () => {
     setIsGenerating(true)
@@ -161,16 +175,20 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
 
   const handleShare = async () => {
     try {
+      const shareTitle = `${userName}'s Certificate for ${safeCourseName}`
+      const shareText = `Check out my certificate for completing ${safeCourseName} on CourseAI!`
+      const shareUrl = `https://courseai.io/certificate/${encodeURIComponent(safeCourseName)}`
+
       if (navigator.share) {
         await navigator.share({
-          title: `${userName}'s Certificate for ${courseName}`,
-          text: `Check out my certificate for completing ${courseName} on CourseAI!`,
-          url: `https://courseai.io/certificate/${encodeURIComponent(courseName)}`,
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
         })
       } else {
         // Fallback for browsers that don't support the Web Share API
         navigator.clipboard
-          .writeText(`https://courseai.io/certificate/${encodeURIComponent(courseName)}`)
+          .writeText(shareUrl)
           .then(() => {
             toast({
               title: "Link Copied",
@@ -257,9 +275,9 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
 
       <div className="flex flex-col sm:flex-row gap-3 w-full">
         <PDFDownloadLink
-          document={<Certificate userName={userName} courseName={courseName} />}
-          fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
-          className="flex-1 max-w-xs mx-auto" // Added max-width and centered
+          document={<Certificate userName={userName} courseName={safeCourseName} />}
+          fileName={safeFileName}
+          className="flex-1 max-w-xs mx-auto"
           onClick={handleDownload}
         >
           {({ blob, url, loading, error }) => (

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle, Edit, Trash2, Save, X, Loader2, Lock } from "lucide-react"
+import { AlertCircle, Edit, Trash2, Save, X, Loader2, Lock, Copy } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -261,9 +261,49 @@ const AIPreparingContent: React.FC = () => (
     transition={{ duration: 0.5 }}
     className="flex flex-col items-center justify-center space-y-4 bg-card/20 p-8 rounded-lg"
   >
-    <AIEmoji />
-    <p className="text-lg font-semibold text-primary">Preparing your AI summary...</p>
+    <div className="relative">
+      <AIEmoji />
+      <motion.div
+        className="absolute inset-0 bg-primary/20 rounded-full"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.5, 0.8, 0.5],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Number.POSITIVE_INFINITY,
+          repeatType: "reverse",
+        }}
+      />
+    </div>
+    <motion.p
+      className="text-lg font-semibold text-primary"
+      animate={{
+        opacity: [0.7, 1, 0.7],
+      }}
+      transition={{
+        duration: 1.5,
+        repeat: Number.POSITIVE_INFINITY,
+        repeatType: "reverse",
+      }}
+    >
+      Preparing your AI summary...
+    </motion.p>
     <p className="text-sm text-muted-foreground">This may take a minute</p>
+    <motion.div className="w-full max-w-xs bg-muted/50 h-1 rounded-full overflow-hidden">
+      <motion.div
+        className="h-full bg-primary"
+        animate={{
+          width: ["0%", "100%"],
+          x: ["-100%", "0%"],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Number.POSITIVE_INFINITY,
+          ease: "linear",
+        }}
+      />
+    </motion.div>
   </motion.div>
 )
 
@@ -375,7 +415,7 @@ const SummaryContent: React.FC<{
       </div>
     )}
     <Card className="bg-card">
-      <CardContent className="p-6">
+      <CardContent className="p-6 relative">
         {isEditing ? (
           <div className="space-y-4">
             <textarea
@@ -386,7 +426,18 @@ const SummaryContent: React.FC<{
             />
           </div>
         ) : (
-          <MarkdownRenderer content={processedContent} />
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute top-2 right-2 h-8 w-8 p-0"
+              onClick={() => copyToClipboard(processedContent)}
+            >
+              <Copy className="h-4 w-4" />
+              <span className="sr-only">Copy summary</span>
+            </Button>
+            <MarkdownRenderer content={processedContent} />
+          </>
         )}
       </CardContent>
     </Card>
@@ -410,3 +461,7 @@ const NoContentAvailable: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 )
 
 export default CourseAISummary
+function copyToClipboard(processedContent: string): void {
+  throw new Error("Function not implemented.")
+}
+

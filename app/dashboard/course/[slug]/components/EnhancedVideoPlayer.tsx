@@ -3,20 +3,20 @@
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
-import { Loader2, Bookmark, CheckCircle } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VideoControls } from "./VideoControls"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { 
-  setVideoProgress, 
-  setAutoplayEnabled, 
+import {
+  setVideoProgress,
+  setAutoplayEnabled,
   addBookmark,
   setPlaybackSettings,
   setResumePoint,
-  setLastPlayedAt
+  setLastPlayedAt,
 } from "@/store/slices/courseSlice"
-import { Debug } from "./Debug" // Add this new import
+import { Debug } from "./Debug"
+import { cn } from "@/lib/utils"
 
 interface VideoPlayerProps {
   videoId: string
@@ -51,14 +51,22 @@ const formatTime = (seconds: number): string => {
   return `${minutes}:${secs.toString().padStart(2, "0")}`
 }
 
-// Add this fallback component for when the player fails to load
-const VideoPlayerFallback = () => (
+const VideoPlayerFallback = ({ onReload }: { onReload?: () => void }) => (
   <div className="flex flex-col items-center justify-center w-full h-full bg-background rounded-lg border border-border aspect-video">
-    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-    <p className="text-muted-foreground mb-4">Unable to load video player</p>
-    <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
-      Reload Page
-    </Button>
+    <div className="text-destructive mb-2">Unable to load video player</div>
+    <p className="text-muted-foreground mb-6 text-center max-w-sm">
+      There was an error loading the video. This may be due to network issues or the video being unavailable.
+    </p>
+    <div className="flex gap-4">
+      <Button variant="outline" onClick={() => window.location.reload()}>
+        Reload Page
+      </Button>
+      {onReload && (
+        <Button variant="default" onClick={onReload}>
+          Try Again
+        </Button>
+      )}
+    </div>
   </div>
 )
 
@@ -83,84 +91,400 @@ const EnhancedVideoPlayer = ({
     showCertificateButton: false,
   },
 }: VideoPlayerProps) => {
-  // Get autoplayEnabled state from Redux
-  const dispatch = useAppDispatch();
-  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled);
-  const playbackSettings = useAppSelector((state) => state.course.playbackSettings);
-  const courseId = useAppSelector((state) => state.course.currentCourseId);
-  
-  const [playing, setPlaying] = useState(false); // Start as false and enable in onReady
-  const [volume, setVolume] = useState(playbackSettings.volume ?? 0.8);
-  const [muted, setMuted] = useState(playbackSettings.muted ?? false);
-  const [played, setPlayed] = useState(0);
-  const [loaded, setLoaded] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [showControls, setShowControls] = useState(true);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(playbackSettings.playbackSpeed ?? 1);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [showBookmarkTooltip, setShowBookmarkTooltip] = useState(false);
-  const [showCompletionToast, setShowCompletionToast] = useState(false);
-  const [videoCompleted, setVideoCompleted] = useState(false);
-  const [lastSavedPosition, setLastSavedPosition] = useState(0);
-  const playerRef = useRef<ReactPlayer>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-  const [playerError, setPlayerError] = useState(false);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const playerLoaded = useRef<boolean>(false);
-  const videoIdRef = useRef<string>(videoId);
-  const didSetInitialVideo = useRef<boolean>(false);
+  const dispatch = useAppDispatch()
+  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
+  const playbackSettings = useAppSelector((state) => state.course.playbackSettings)
+  const courseId = useAppSelector((state) => state.course.currentCourseId)
+
+  const [playing, setPlaying] = useState(false) // Start as false and enable in onReady
+  const [volume, setVolume] = useState(playbackSettings.volume ?? 0.8)
+  const [muted, setMuted] = useState(playbackSettings.muted ?? false)
+  const [played, setPlayed] = useState(0)
+  const [loaded, setLoaded] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [showControls, setShowControls] = useState(true)
+  const [fullscreen, setFullscreen] = useState(false)
+  const [playbackSpeed, setPlaybackSpeed] = useState(playbackSettings.playbackSpeed ?? 1)
+  const [isBuffering, setIsBuffering] = useState(false)
+  const [showBookmarkTooltip, setShowBookmarkTooltip] = useState(false)
+  const [showCompletionToast, setShowCompletionToast] = useState(false)
+  const [videoCompleted, setVideoCompleted] = useState(false)
+  const [lastSavedPosition, setLastSavedPosition] = useState(0)
+  const [isLoading, setIsLoading] = useState(true) // Add a new state for player loading
+  const [isPlayerReady, setIsPlayerReady] = useState(false) // Fix: Add proper loading state handling
+  const playerRef = useRef<ReactPlayer>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
+  const [playerError, setPlayerError] = useState(false)
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const playerLoaded = useRef<boolean>(false)
+  const videoIdRef = useRef<string>("")
+  const didSetInitialVideo = useRef<boolean>(false)
+
+  // Keyboard shortcuts for better UX
+  const handlePlayPause = useCallback(() => {
+    setPlaying((prev) => !prev)
+  }, [])
+
+  const handleSkip = useCallback(
+    (seconds: number) => {
+      const currentTime = playerRef.current?.getCurrentTime() || 0
+      const newTime = currentTime + seconds
+      const newPosition = Math.max(0, Math.min(newTime / duration, 0.999))
+      playerRef.current?.seekTo(newPosition)
+      setPlayed(newPosition)
+
+      // Update progress in Redux
+      dispatch(
+        setVideoProgress({
+          videoId,
+          time: newPosition,
+          playedSeconds: newTime,
+          duration: duration,
+        }),
+      )
+      setLastSavedPosition(newPosition)
+    },
+    [duration, videoId, dispatch],
+  )
+
+  const handleMute = useCallback(() => {
+    setMuted((prev) => {
+      const newMutedState = !prev
+      // Update Redux state
+      dispatch(
+        setPlaybackSettings({
+          ...playbackSettings,
+          muted: newMutedState,
+        }),
+      )
+      return newMutedState
+    })
+  }, [dispatch, playbackSettings])
+
+  const handleVolumeChange = useCallback(
+    (newVolume: number) => {
+      setVolume(newVolume)
+      setMuted(newVolume === 0)
+      // Update Redux state
+      dispatch(
+        setPlaybackSettings({
+          ...playbackSettings,
+          volume: newVolume,
+          muted: newVolume === 0,
+        }),
+      )
+    },
+    [dispatch, playbackSettings],
+  )
+
+  const handleFullscreenToggle = useCallback(() => {
+    if (typeof document !== "undefined") {
+      if (!document.fullscreenElement) {
+        containerRef.current?.requestFullscreen().catch((err) => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`)
+        })
+      } else {
+        document.exitFullscreen().catch((err) => {
+          console.error(`Error attempting to exit fullscreen: ${err.message}`)
+        })
+      }
+    }
+  }, [])
+
+  const handleNextVideo = useCallback(() => {
+    if (nextVideoId) {
+      // Save current position in Redux
+      dispatch(
+        setVideoProgress({
+          videoId,
+          time: played,
+          playedSeconds: played * duration,
+          duration: duration,
+        }),
+      )
+      onEnded()
+    }
+  }, [nextVideoId, onEnded, played, videoId, dispatch, duration])
+
+  const handleAddBookmark = useCallback(() => {
+    if (playerRef.current) {
+      const currentTime = playerRef.current.getCurrentTime()
+
+      // Add bookmark to Redux
+      dispatch(
+        addBookmark({
+          videoId,
+          time: currentTime,
+        }),
+      )
+
+      // Call the prop callback if available
+      if (onBookmark) {
+        onBookmark(currentTime)
+      }
+
+      setShowBookmarkTooltip(true)
+
+      toast({
+        title: "Bookmark Added",
+        description: `Bookmark added at ${formatTime(currentTime)}`,
+        duration: 3000,
+      })
+
+      setTimeout(() => {
+        setShowBookmarkTooltip(false)
+      }, 2000)
+    }
+  }, [onBookmark, toast, videoId, dispatch])
+
+  const handleSeekChange = useCallback(
+    (newPlayed: number) => {
+      setPlayed(newPlayed)
+      playerRef.current?.seekTo(newPlayed)
+
+      // Update progress in Redux
+      const newPlayedSeconds = newPlayed * duration
+      dispatch(
+        setVideoProgress({
+          videoId,
+          time: newPlayed,
+          playedSeconds: newPlayedSeconds,
+          duration: duration,
+        }),
+      )
+      setLastSavedPosition(newPlayed)
+
+      // Ensure time display updates immediately on mobile
+      if (onProgress) {
+        onProgress(newPlayed)
+      }
+
+      if (courseId) {
+        dispatch(setResumePoint({ courseId, resumePoint: newPlayed }))
+        dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
+      }
+    },
+    [videoId, onProgress, dispatch, duration, courseId],
+  )
+
+  const handlePlaybackSpeedChange = useCallback(
+    (newSpeed: number) => {
+      setPlaybackSpeed(newSpeed)
+      // Update Redux state
+      dispatch(
+        setPlaybackSettings({
+          ...playbackSettings,
+          playbackSpeed: newSpeed,
+        }),
+      )
+    },
+    [dispatch, playbackSettings],
+  )
+
+  const handleAutoplayToggle = useCallback(() => {
+    // Update autoplay in Redux instead of local state
+    dispatch(setAutoplayEnabled(!autoplayEnabled))
+
+    toast({
+      title: !autoplayEnabled ? "Autoplay enabled" : "Autoplay disabled",
+      description: !autoplayEnabled ? "Videos will play automatically" : "Videos will not play automatically",
+      duration: 2000,
+    })
+  }, [autoplayEnabled, dispatch, toast])
+
+  const handleSeekToBookmark = useCallback(
+    (time: number) => {
+      if (playerRef.current) {
+        playerRef.current.seekTo(time / duration)
+        setPlayed(time / duration)
+
+        toast({
+          title: "Jumped to Bookmark",
+          description: `Playback resumed at ${formatTime(time)}`,
+          duration: 2000,
+        })
+      }
+    },
+    [duration, toast],
+  )
+
+  // Fix: Implement proper onReady handler to ensure video plays
+  const handlePlayerReady = useCallback(() => {
+    // Mark player as loaded
+    playerLoaded.current = true
+    setIsPlayerReady(true)
+    setIsLoading(false)
+
+    console.debug("[EnhancedVideoPlayer] onReady fired - autoPlay:", autoPlay, "autoplayEnabled:", autoplayEnabled)
+
+    // Start playing if autoPlay or autoplayEnabled is true
+    if (autoPlay || autoplayEnabled) {
+      console.debug("[EnhancedVideoPlayer] Setting playing to true")
+      setPlaying(true)
+    }
+  }, [autoPlay, autoplayEnabled])
+
+  // Add play event handler for additional safety
+  const handlePlay = useCallback(() => {
+    // Also mark video as ready when it starts playing (double safety)
+    setIsPlayerReady(true)
+    setIsLoading(false)
+  }, [])
+
+  // Handle player errors with better error handling and recovery
+  const handlePlayerError = useCallback(
+    (error: any) => {
+      try {
+        // Log error details for debugging
+        console.debug("[EnhancedVideoPlayer] Player error:", error)
+
+        // Set error state to show fallback UI if needed
+        setPlayerError(true)
+
+        // Update debug info - ensure we're not mutating existing state
+        setDebugInfo((prev) => ({
+          ...prev,
+          playerState: "error",
+          lastEvent: "error",
+          errors: [
+            ...prev.errors,
+            typeof error === "string" ? error : error?.message || JSON.stringify(error) || "Unknown player error",
+          ],
+        }))
+
+        // Try to recover from some known error types
+        if (playerRef.current) {
+          const internalPlayer = playerRef.current.getInternalPlayer()
+          if (internalPlayer) {
+            try {
+              // For YouTube player, try to reload the video
+              if (internalPlayer.loadVideoById) {
+                // Add a small delay before attempting to reload
+                setTimeout(() => {
+                  try {
+                    internalPlayer.loadVideoById(videoId, initialTime || 0)
+                    setPlayerError(false)
+                  } catch (reloadError) {
+                    console.debug("[EnhancedVideoPlayer] Failed to reload video:", reloadError)
+                  }
+                }, 1000)
+              }
+            } catch (e) {
+              console.debug("[EnhancedVideoPlayer] Recovery attempt failed:", e)
+            }
+          }
+        }
+      } catch (handlerError) {
+        // Catch any errors in the error handler itself to prevent recursive errors
+        console.error("[EnhancedVideoPlayer] Error in error handler:", handlerError)
+      }
+    },
+    [videoId, initialTime],
+  )
+
+  // Fix for React object errors - ensure we're not passing/returning invalid objects
+  const resetPlayerState = useCallback(() => {
+    setPlayerError(false)
+    setIsLoading(true)
+    setIsPlayerReady(false)
+    setDebugInfo({
+      playerState: "reloading",
+      lastEvent: "reset",
+      errors: [],
+    })
+  }, [])
+
+  // Add this function to handle picture-in-picture mode
+  const handlePictureInPicture = useCallback(async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture()
+      } else if (playerRef.current) {
+        const videoElement = playerRef.current.getInternalPlayer()
+        if (videoElement && typeof videoElement.requestPictureInPicture === "function") {
+          await videoElement.requestPictureInPicture()
+        }
+      }
+    } catch (error) {
+      console.error("Picture-in-picture error:", error)
+      toast({
+        title: "Feature not supported",
+        description: "Picture-in-picture mode is not supported in your browser.",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
+  // Add this state for theater mode
+  const [theaterMode, setTheaterMode] = useState(false)
+
+  // Add this function to toggle theater mode
+  const handleTheaterMode = useCallback(() => {
+    setTheaterMode((prev) => !prev)
+  }, [])
+
+  // Add this state for subtitle display
+  const [showSubtitles, setShowSubtitles] = useState(false)
+
+  // Add this function to toggle subtitles
+  const handleToggleSubtitles = useCallback(() => {
+    setShowSubtitles((prev) => !prev)
+    toast({
+      title: showSubtitles ? "Subtitles disabled" : "Subtitles enabled",
+      description: showSubtitles ? "Subtitles have been turned off" : "Subtitles have been turned on",
+    })
+  }, [showSubtitles, toast])
 
   // Debug: log autoplay state
   useEffect(() => {
     // eslint-disable-next-line no-console
-    console.debug("[EnhancedVideoPlayer] autoplayEnabled:", autoplayEnabled, "autoPlay:", autoPlay);
-  }, [autoplayEnabled, autoPlay]);
+    console.debug("[EnhancedVideoPlayer] autoplayEnabled:", autoplayEnabled, "autoPlay:", autoPlay)
+  }, [autoplayEnabled, autoPlay])
 
   // Update videoIdRef when videoId changes - for comparisons in effects
   useEffect(() => {
-    videoIdRef.current = videoId;
-  }, [videoId]);
+    videoIdRef.current = videoId
+  }, [videoId])
 
   // Load global player settings from Redux on mount
   useEffect(() => {
     // Apply playback settings from Redux
-    setVolume(playbackSettings.volume);
-    setMuted(playbackSettings.muted);
-    setPlaybackSpeed(playbackSettings.playbackSpeed);
-  }, [playbackSettings]);
+    setVolume(playbackSettings.volume)
+    setMuted(playbackSettings.muted)
+    setPlaybackSpeed(playbackSettings.playbackSpeed)
+  }, [playbackSettings])
 
   // On videoId change, update resume point in Redux
   useEffect(() => {
     // Reset the player loaded flag when video ID changes
-    playerLoaded.current = false;
-    
+    playerLoaded.current = false
+
     // Debug log
-    console.debug("[EnhancedVideoPlayer] videoId changed:", videoId);
-    
+    console.debug("[EnhancedVideoPlayer] videoId changed:", videoId)
+
     // Don't auto-start playing here, wait for onReady
-    setPlaying(false);
-    setVideoCompleted(false);
-    
+    setPlaying(false)
+    setVideoCompleted(false)
+
     // Reset player state for new video
-    setPlayed(0);
-    setLoaded(0);
+    setPlayed(0)
+    setLoaded(0)
 
     if (courseId) {
-      dispatch(setResumePoint({ courseId, resumePoint: 0 }));
-      dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
+      dispatch(setResumePoint({ courseId, resumePoint: 0 }))
+      dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
     }
-  }, [videoId, courseId, dispatch]);
+  }, [videoId, courseId, dispatch])
 
   // Seek to initial time if provided
   useEffect(() => {
     if (!didSetInitialVideo.current && initialTime > 0 && playerRef.current) {
-      console.debug("[EnhancedVideoPlayer] Seeking to initialTime:", initialTime);
-      playerRef.current.seekTo(initialTime);
-      didSetInitialVideo.current = true;
+      console.debug("[EnhancedVideoPlayer] Seeking to initialTime:", initialTime)
+      playerRef.current.seekTo(initialTime)
+      didSetInitialVideo.current = true
     }
-  }, [initialTime]);
+  }, [initialTime])
 
   // Handle fullscreen change events
   useEffect(() => {
@@ -177,26 +501,26 @@ const EnhancedVideoPlayer = ({
   // Auto-hide controls after inactivity
   useEffect(() => {
     const handleMouseMove = () => {
-      setShowControls(true);
+      setShowControls(true)
 
       if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current);
+        clearTimeout(controlsTimeoutRef.current)
       }
 
       if (playing) {
         controlsTimeoutRef.current = setTimeout(() => {
-          setShowControls(false);
-        }, 3000);
+          setShowControls(false)
+        }, 3000)
       }
     }
 
     if (typeof document !== "undefined") {
-      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mousemove", handleMouseMove)
 
       return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mousemove", handleMouseMove)
         if (controlsTimeoutRef.current) {
-          clearTimeout(controlsTimeoutRef.current);
+          clearTimeout(controlsTimeoutRef.current)
         }
       }
     }
@@ -204,314 +528,125 @@ const EnhancedVideoPlayer = ({
 
   // 1. Define handleVideoEnd first, before any hooks that use it
   const handleVideoEnd = useCallback(() => {
-    console.debug("[EnhancedVideoPlayer] Video ended");
-    setPlaying(false);
-    setVideoCompleted(true);
+    console.debug("[EnhancedVideoPlayer] Video ended")
+    setPlaying(false)
+    setVideoCompleted(true)
 
-    dispatch(setVideoProgress({ 
-      videoId, 
-      time: 1.0,
-      playedSeconds: duration,
-      duration: duration 
-    }));
+    dispatch(
+      setVideoProgress({
+        videoId,
+        time: 1.0,
+        playedSeconds: duration,
+        duration: duration,
+      }),
+    )
 
     if (onChapterComplete) {
-      onChapterComplete();
+      onChapterComplete()
     }
 
-    setShowCompletionToast(true);
-    setTimeout(() => setShowCompletionToast(false), 3000);
+    setShowCompletionToast(true)
+    setTimeout(() => setShowCompletionToast(false), 3000)
 
-    onEnded();
-  }, [videoId, dispatch, duration, onEnded, onChapterComplete]);
+    onEnded()
+  }, [videoId, dispatch, duration, onEnded, onChapterComplete])
 
   // 2. Now the useEffect can safely use handleVideoEnd
   useEffect(() => {
     if (!videoCompleted && duration > 0 && played > 0.97) {
-      setVideoCompleted(true);
-      handleVideoEnd();
+      setVideoCompleted(true)
+      handleVideoEnd()
     }
-  }, [played, duration, videoCompleted, handleVideoEnd]);
+  }, [played, duration, videoCompleted, handleVideoEnd])
 
   // 3. Update handleProgress to use handleVideoEnd
   const handleProgress = useCallback(
     (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
       try {
-        setPlayed(state.played);
-        setLoaded(state.loaded);
-        setDebugInfo(prev => ({
+        setPlayed(state.played)
+        setLoaded(state.loaded)
+        setDebugInfo((prev) => ({
           ...prev,
           playerState: `progress: ${Math.round(state.played * 100)}%`,
-          lastEvent: "progress update"
-        }));
+          lastEvent: "progress update",
+        }))
 
         if (onProgress) {
-          onProgress(state.played);
+          onProgress(state.played)
         }
 
         if (Math.abs(state.played - lastSavedPosition) > 0.01) {
-          dispatch(setVideoProgress({ 
-            videoId, 
-            time: state.played,
-            playedSeconds: state.playedSeconds,
-            duration: duration 
-          }));
-          setLastSavedPosition(state.played);
+          dispatch(
+            setVideoProgress({
+              videoId,
+              time: state.played,
+              playedSeconds: state.playedSeconds,
+              duration: duration,
+            }),
+          )
+          setLastSavedPosition(state.played)
         }
 
         if (courseId) {
-          dispatch(setResumePoint({ courseId, resumePoint: state.played }));
-          dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
+          dispatch(setResumePoint({ courseId, resumePoint: state.played }))
+          dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error in progress handler";
-        console.error("[EnhancedVideoPlayer] Progress error:", errorMessage);
-        setDebugInfo(prev => ({
+        const errorMessage = error instanceof Error ? error.message : "Unknown error in progress handler"
+        console.error("[EnhancedVideoPlayer] Progress error:", errorMessage)
+        setDebugInfo((prev) => ({
           ...prev,
-          errors: [...prev.errors, errorMessage]
-        }));
+          errors: [...prev.errors, errorMessage],
+        }))
       }
     },
-    [onProgress, videoId, lastSavedPosition, dispatch, duration, courseId]
-  );
+    [onProgress, videoId, lastSavedPosition, dispatch, duration, courseId],
+  )
 
-  // 2. Add debug state
-  const [debugInfo, setDebugInfo] = useState({
+  // 2. Fixed: Initialize debug state properly
+  const [debugInfo, setDebugInfo] = useState<{
+    playerState: string
+    lastEvent: string
+    errors: string[]
+  }>({
     playerState: "initial",
     lastEvent: "",
-    errors: [] as string[],
-  });
+    errors: [],
+  })
 
   // 3. Other handler functions follow
-  const handleDuration = (duration: number) => setDuration(duration);
+  const handleDuration = (duration: number) => setDuration(duration)
 
   // Buffering handlers
-  const handleBuffer = () => setIsBuffering(true);
-  const handleBufferEnd = () => setIsBuffering(false);
+  const handleBuffer = () => setIsBuffering(true)
+  const handleBufferEnd = () => setIsBuffering(false)
 
   // Add this useEffect to handle player initialization errors
   useEffect(() => {
     const handlePlayerError = () => {
-      console.error("Error initializing video player.");
-      setPlayerError(true); // Set error state to show fallback UI
+      console.error("Error initializing video player.")
+      setPlayerError(true) // Set error state to show fallback UI
     }
 
     if (typeof window !== "undefined") {
-      window.addEventListener("error", handlePlayerError);
-      return () => window.removeEventListener("error", handlePlayerError);
+      window.addEventListener("error", handlePlayerError)
+      return () => window.removeEventListener("error", handlePlayerError)
     }
-  }, []);
-
-  // Handlers for VideoControls component
-  const handlePlayPause = useCallback(() => {
-    setPlaying((prev) => !prev);
-  }, []);
-
-  const handleSkip = useCallback(
-    (seconds: number) => {
-      const currentTime = playerRef.current?.getCurrentTime() || 0;
-      const newTime = currentTime + seconds;
-      const newPosition = Math.max(0, Math.min(newTime / duration, 0.999));
-      playerRef.current?.seekTo(newPosition);
-      setPlayed(newPosition);
-
-      // Update progress in Redux
-      dispatch(setVideoProgress({ 
-        videoId, 
-        time: newPosition,
-        playedSeconds: newTime,
-        duration: duration 
-      }));
-      setLastSavedPosition(newPosition);
-    },
-    [duration, videoId, dispatch]
-  );
-
-  const handleMute = useCallback(() => {
-    setMuted((prev) => {
-      const newMutedState = !prev;
-      // Update Redux state
-      dispatch(setPlaybackSettings({
-        ...playbackSettings,
-        muted: newMutedState
-      }));
-      return newMutedState;
-    });
-  }, [dispatch, playbackSettings]);
-
-  const handleVolumeChange = useCallback((newVolume: number) => {
-    setVolume(newVolume);
-    setMuted(newVolume === 0);
-    // Update Redux state
-    dispatch(setPlaybackSettings({
-      ...playbackSettings,
-      volume: newVolume,
-      muted: newVolume === 0
-    }));
-  }, [dispatch, playbackSettings]);
-
-  const handleFullscreenToggle = useCallback(() => {
-    if (typeof document !== "undefined") {
-      if (!document.fullscreenElement) {
-        containerRef.current?.requestFullscreen().catch((err) => {
-          console.error(`Error attempting to enable fullscreen: ${err.message}`);
-        });
-      } else {
-        document.exitFullscreen().catch((err) => {
-          console.error(`Error attempting to exit fullscreen: ${err.message}`);
-        });
-      }
-    }
-  }, []);
-
-  const handleNextVideo = useCallback(() => {
-    if (nextVideoId) {
-      // Save current position in Redux
-      dispatch(setVideoProgress({ 
-        videoId, 
-        time: played,
-        playedSeconds: played * duration,
-        duration: duration
-      }));
-      onEnded();
-    }
-  }, [nextVideoId, onEnded, played, videoId, dispatch, duration]);
-
-  const handleAddBookmark = useCallback(() => {
-    if (playerRef.current) {
-      const currentTime = playerRef.current.getCurrentTime();
-      
-      // Add bookmark to Redux
-      dispatch(addBookmark({
-        videoId,
-        time: currentTime
-      }));
-      
-      // Call the prop callback if available
-      if (onBookmark) {
-        onBookmark(currentTime);
-      }
-      
-      setShowBookmarkTooltip(true);
-
-      toast({
-        title: "Bookmark Added",
-        description: `Bookmark added at ${formatTime(currentTime)}`,
-        duration: 3000,
-      });
-
-      setTimeout(() => {
-        setShowBookmarkTooltip(false);
-      }, 2000);
-    }
-  }, [onBookmark, toast, videoId, dispatch]);
-
-  const handleSeekChange = useCallback(
-    (newPlayed: number) => {
-      setPlayed(newPlayed);
-      playerRef.current?.seekTo(newPlayed);
-      
-      // Update progress in Redux
-      const newPlayedSeconds = newPlayed * duration;
-      dispatch(setVideoProgress({ 
-        videoId, 
-        time: newPlayed,
-        playedSeconds: newPlayedSeconds,
-        duration: duration 
-      }));
-      setLastSavedPosition(newPlayed);
-      
-      // Ensure time display updates immediately on mobile
-      if (onProgress) {
-        onProgress(newPlayed);
-      }
-
-      if (courseId) {
-        dispatch(setResumePoint({ courseId, resumePoint: newPlayed }));
-        dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
-      }
-    },
-    [videoId, onProgress, dispatch, duration, courseId]
-  );
-
-  const handlePlaybackSpeedChange = useCallback((newSpeed: number) => {
-    setPlaybackSpeed(newSpeed);
-    // Update Redux state
-    dispatch(setPlaybackSettings({
-      ...playbackSettings,
-      playbackSpeed: newSpeed
-    }));
-  }, [dispatch, playbackSettings]);
-
-  const handleAutoplayToggle = useCallback(() => {
-    // Update autoplay in Redux instead of local state
-    dispatch(setAutoplayEnabled(!autoplayEnabled));
-
-    toast({
-      title: !autoplayEnabled ? "Autoplay enabled" : "Autoplay disabled",
-      description: !autoplayEnabled ? "Videos will play automatically" : "Videos will not play automatically",
-      duration: 2000,
-    });
-  }, [autoplayEnabled, dispatch, toast]);
-
-  const handleSeekToBookmark = useCallback(
-    (time: number) => {
-      if (playerRef.current) {
-        playerRef.current.seekTo(time / duration);
-        setPlayed(time / duration);
-
-        toast({
-          title: "Jumped to Bookmark",
-          description: `Playback resumed at ${formatTime(time)}`,
-          duration: 2000,
-        });
-      }
-    },
-    [duration, toast]
-  );
-
-  // Fix: Implement proper onReady handler to ensure video plays
-  const handlePlayerReady = useCallback(() => {
-    // Mark player as loaded
-    playerLoaded.current = true;
-    
-    console.debug("[EnhancedVideoPlayer] onReady fired - autoPlay:", autoPlay, "autoplayEnabled:", autoplayEnabled);
-
-    // Start playing if autoPlay or autoplayEnabled is true
-    if (autoPlay || autoplayEnabled) {
-      console.debug("[EnhancedVideoPlayer] Setting playing to true");
-      setPlaying(true);
-    }
-  }, [autoPlay, autoplayEnabled]);
-
-  // Handle player errors
-  const handlePlayerError = useCallback((error: any) => {
-    console.error("Video player error:", error);
-    setPlayerError(true);
-    
-    // Try to recover by reloading the player
-    if (playerRef.current) {
-      try {
-        const internalPlayer = playerRef.current.getInternalPlayer();
-        if (internalPlayer && internalPlayer.loadVideoById) {
-          internalPlayer.loadVideoById(videoId, initialTime);
-        }
-      } catch (e) {
-        console.error("Failed to recover from player error:", e);
-      }
-    }
-  }, [videoId, initialTime]);
+  }, [])
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-video rounded-lg overflow-hidden bg-background border border-border shadow-sm group"
+      className={cn(
+        "relative w-full aspect-video rounded-lg overflow-hidden bg-background border border-border shadow-sm group",
+        theaterMode && "fixed top-0 left-0 w-full h-full z-50 aspect-auto rounded-none",
+      )}
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => playing && setShowControls(false)}
       onClick={() => setShowControls(true)}
     >
       {playerError ? (
-        <VideoPlayerFallback />
+        <VideoPlayerFallback onReload={resetPlayerState} />
       ) : (
         <ReactPlayer
           ref={playerRef}
@@ -522,11 +657,13 @@ const EnhancedVideoPlayer = ({
           volume={volume}
           muted={muted}
           onReady={handlePlayerReady}
+          onPlay={handlePlay}
+          onStart={() => setIsLoading(false)}
           onProgress={handleProgress}
           onDuration={handleDuration}
           onEnded={handleVideoEnd}
-          onBuffer={handleBuffer}
-          onBufferEnd={handleBufferEnd}
+          onBuffer={() => setIsBuffering(true)}
+          onBufferEnd={() => setIsBuffering(false)}
           onError={handlePlayerError}
           progressInterval={1000}
           playbackRate={playbackSpeed}
@@ -534,8 +671,8 @@ const EnhancedVideoPlayer = ({
           config={{
             youtube: {
               playerVars: {
-                autoplay: 1, // Set to 1 to enable autoplay via API
-                start: Math.floor(initialTime * duration), // Convert from percentage to seconds
+                autoplay: autoPlay ? 1 : 0,
+                start: Math.floor((initialTime || 0) * (duration || 0)),
                 modestbranding: 1,
                 rel: 0,
                 showinfo: 0,
@@ -548,51 +685,40 @@ const EnhancedVideoPlayer = ({
                 origin: typeof window !== "undefined" ? window.location.origin : "",
               },
               onStateChange: (event) => {
-                // Track YouTube player state
-                console.debug("[EnhancedVideoPlayer] YouTube player state:", event.data);
+                // Safe update of debug info with proper state management
+                setDebugInfo((prev) => ({
+                  ...prev,
+                  playerState: `YouTube state: ${event.data}`,
+                  lastEvent: "stateChange",
+                }))
+
+                // YouTube state 1 means "playing" - ensure loader is hidden
+                if (event.data === 1) {
+                  setIsLoading(false)
+                  setIsPlayerReady(true)
+                }
+                // YouTube state 3 means "buffering" - show loading indicator
+                if (event.data === 3) {
+                  setIsBuffering(true)
+                }
+              },
+              // Add YouTube-specific error handling with proper parameter typing
+              onError: (event: { data: number }) => {
+                handlePlayerError(`YouTube Error Code: ${event.data}`)
               },
             },
           }}
         />
       )}
 
-      {/* Bookmark Tooltip */}
-      <AnimatePresence>
-        {showBookmarkTooltip && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-lg z-50 flex items-center shadow-lg"
-          >
-            <Bookmark className="h-5 w-5 mr-2" />
-            <span className="text-sm font-medium">Bookmark added!</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Completion Toast */}
-      <AnimatePresence>
-        {showCompletionToast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full z-50 flex items-center shadow-lg"
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            <span className="text-sm font-medium">Chapter completed!</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {isBuffering && (
+      {/* Fix loading indicator to only show when actually loading or buffering */}
+      {(!isPlayerReady || isBuffering) && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-40">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
 
-      {/* Video Controls - Extracted to a separate component */}
+      {/* Video Controls - Ensure we pass stable non-mutating functions */}
       <VideoControls
         show={showControls}
         playing={playing}
@@ -620,23 +746,25 @@ const EnhancedVideoPlayer = ({
         formatTime={formatTime}
       />
 
-      {/* Add Debug Overlay */}
+      {/* Debug component - ensure we pass properly formatted info object */}
       <Debug
         info={{
-          videoId,
-          playing,
-          duration,
-          played: Math.round(played * 100),
-          loaded: Math.round(loaded * 100),
-          playerState: debugInfo.playerState,
-          lastEvent: debugInfo.lastEvent,
-          errors: debugInfo.errors,
+          videoId: videoId || "",
+          playing: !!playing,
+          duration: duration || 0,
+          played: Math.round((played || 0) * 100),
+          loaded: Math.round((loaded || 0) * 100),
+          playerState: debugInfo.playerState || "unknown",
+          lastEvent: debugInfo.lastEvent || "none",
+          errors: Array.isArray(debugInfo.errors) ? debugInfo.errors : [],
         }}
+        onReset={resetPlayerState}
       />
     </div>
   )
 }
 
-// Export with proper memo
+// Export with proper memo and displayName for better debugging
 const MemoizedEnhancedVideoPlayer = React.memo(EnhancedVideoPlayer)
+MemoizedEnhancedVideoPlayer.displayName = "EnhancedVideoPlayer"
 export default MemoizedEnhancedVideoPlayer

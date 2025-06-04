@@ -20,7 +20,7 @@ export const CourseCompletionOverlay = ({
 }: {
   onClose: () => void
   onWatchAnotherCourse: () => void
-  courseName: string
+  courseName?: string
   fetchRelatedCourses?: () => Promise<any[]>
 }) => {
   const { data: session } = useSession()
@@ -28,6 +28,9 @@ export const CourseCompletionOverlay = ({
   const [isDownloading, setIsDownloading] = useState(false)
   const [relatedCourses, setRelatedCourses] = useState<any[]>([])
   const { toast } = useToast()
+
+  // Ensure courseName is safe to use
+  const safeCourseName = courseName || "Course"
 
   // Add useEffect to fetch related courses
   useEffect(() => {
@@ -86,16 +89,20 @@ export const CourseCompletionOverlay = ({
 
   const handleShare = async () => {
     try {
+      const shareTitle = `${userName}'s Certificate for ${safeCourseName}`
+      const shareText = `Check out my certificate for completing ${safeCourseName} on CourseAI!`
+      const shareUrl = `https://courseai.com/certificate/${encodeURIComponent(safeCourseName)}`
+
       if (navigator.share) {
         await navigator.share({
-          title: `${userName}'s Certificate for ${courseName}`,
-          text: `Check out my certificate for completing ${courseName} on CourseAI!`,
-          url: `https://courseai.com/certificate/${encodeURIComponent(courseName)}`,
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
         })
       } else {
         // Fallback for browsers that don't support the Web Share API
         navigator.clipboard
-          .writeText(`https://courseai.com/certificate/${encodeURIComponent(courseName)}`)
+          .writeText(shareUrl)
           .then(() => {
             toast({
               title: "Link Copied",
@@ -175,10 +182,10 @@ export const CourseCompletionOverlay = ({
 
             <div className="grid gap-4 mt-8">
               <PDFDownloadLink
-                document={<Certificate courseName={courseName} />}
-                fileName={`${courseName.replace(/\s+/g, "_")}_Certificate.pdf`}
+                document={<Certificate courseName={safeCourseName} userName={userName} />}
+                fileName={`${safeCourseName.replace(/\s+/g, "_")}_Certificate.pdf`}
                 onClick={handleDownload}
-                className="mx-auto max-w-xs w-full" // Added max-width and centered
+                className="mx-auto max-w-xs w-full"
               >
                 {({ blob, url, loading, error }) => (
                   <Button

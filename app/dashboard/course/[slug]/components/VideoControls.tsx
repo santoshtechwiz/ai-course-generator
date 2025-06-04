@@ -15,6 +15,13 @@ import {
   Minimize2,
   Settings,
   Bookmark,
+  PictureInPictureIcon as Picture,
+  Subtitles,
+  RotateCcw,
+  RotateCw,
+  Maximize,
+  Minimize,
+  CheckCircle,
 } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
 
@@ -137,6 +144,8 @@ interface VideoControlsProps {
   autoplayNext: boolean
   bookmarks: number[]
   nextVideoId?: string
+  theaterMode?: boolean
+  showSubtitles?: boolean
   onPlayPause: () => void
   onSkip: (seconds: number) => void
   onMute: () => void
@@ -148,6 +157,9 @@ interface VideoControlsProps {
   onAutoplayToggle: () => void
   onSeekToBookmark: (time: number) => void
   onAddBookmark: () => void
+  onPictureInPicture?: () => void
+  onTheaterMode?: () => void
+  onToggleSubtitles?: () => void
   formatTime: (seconds: number) => string
 }
 
@@ -164,6 +176,8 @@ export const VideoControls = ({
   autoplayNext,
   bookmarks,
   nextVideoId,
+  theaterMode = false,
+  showSubtitles = false,
   onPlayPause,
   onSkip,
   onMute,
@@ -175,6 +189,9 @@ export const VideoControls = ({
   onAutoplayToggle,
   onSeekToBookmark,
   onAddBookmark,
+  onPictureInPicture = () => {},
+  onTheaterMode = () => {},
+  onToggleSubtitles = () => {},
   formatTime,
 }: VideoControlsProps) => {
   const progressBarRef = useRef<HTMLDivElement>(null)
@@ -335,6 +352,25 @@ export const VideoControls = ({
           </span>
         </div>
         <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSkip.bind(null, -10)}
+            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
+            title="Rewind 10 seconds"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSkip.bind(null, 10)}
+            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
+            title="Forward 10 seconds"
+          >
+            <RotateCw className="h-4 w-4" />
+          </Button>
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
@@ -365,7 +401,12 @@ export const VideoControls = ({
               <div className="grid grid-cols-2 gap-1">
                 {PLAYBACK_SPEEDS.map((speed) => (
                   <SimpleMenuItem key={speed.value} onClick={() => onPlaybackSpeedChange(speed.value)}>
-                    {speed.label}
+                    <div
+                      className={cn("flex items-center", playbackSpeed === speed.value && "text-primary font-medium")}
+                    >
+                      {playbackSpeed === speed.value && <CheckCircle className="h-3 w-3 mr-1" />}
+                      {speed.label}
+                    </div>
                   </SimpleMenuItem>
                 ))}
               </div>
@@ -386,6 +427,36 @@ export const VideoControls = ({
                     className={`absolute w-3 h-3 rounded-full bg-white top-0.5 transition-transform ${autoplayNext ? "translate-x-4" : "translate-x-1"}`}
                   />
                 </div>
+              </div>
+            </SimpleMenuItem>
+
+            <SimpleMenuItem onClick={onToggleSubtitles}>
+              <div className="flex items-center justify-between w-full">
+                <span className="flex items-center">
+                  <Subtitles className="w-4 h-4 mr-2" />
+                  <span>Subtitles</span>
+                </span>
+                <div
+                  className={`w-8 h-4 rounded-full transition-colors ${showSubtitles ? "bg-primary" : "bg-muted"} relative`}
+                >
+                  <div
+                    className={`absolute w-3 h-3 rounded-full bg-white top-0.5 transition-transform ${showSubtitles ? "translate-x-4" : "translate-x-1"}`}
+                  />
+                </div>
+              </div>
+            </SimpleMenuItem>
+
+            <SimpleMenuItem onClick={onPictureInPicture}>
+              <div className="flex items-center">
+                <Picture className="h-4 w-4 mr-2" />
+                <span>Picture-in-Picture</span>
+              </div>
+            </SimpleMenuItem>
+
+            <SimpleMenuItem onClick={onTheaterMode}>
+              <div className="flex items-center">
+                {theaterMode ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
+                <span>{theaterMode ? "Exit Theater Mode" : "Theater Mode"}</span>
               </div>
             </SimpleMenuItem>
 
