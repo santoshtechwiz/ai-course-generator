@@ -15,7 +15,6 @@ interface CourseProgress {
   isCompleted: boolean
   lastPlayedAt?: string
   resumePoint?: number
-  isAvailableOffline?: boolean // New field for offline availability
 }
 
 interface BookmarkData {
@@ -41,6 +40,10 @@ interface CourseState {
   currentCourseSlug: string | null
   courseCompletionStatus: boolean
   playbackSettings: PlaybackSettings
+  videoCache?: Record<string, any>
+  performanceSettings?: Record<string, any>
+  userPreferences?: Record<string, any>
+  analytics?: { events: any[] }
 }
 
 // Initial state
@@ -107,16 +110,8 @@ const courseSlice = createSlice({
       }
     },
     updateProgress(state, action: PayloadAction<CourseProgress>) {
-      const {
-        courseId,
-        progress,
-        completedChapters,
-        currentChapterId,
-        isCompleted,
-        lastPlayedAt,
-        resumePoint,
-        isAvailableOffline,
-      } = action.payload
+      const { courseId, progress, completedChapters, currentChapterId, isCompleted, lastPlayedAt, resumePoint } =
+        action.payload
       state.courseProgress[courseId] = {
         courseId,
         progress,
@@ -125,7 +120,6 @@ const courseSlice = createSlice({
         isCompleted,
         lastPlayedAt,
         resumePoint,
-        isAvailableOffline,
       }
     },
     setResumePoint(state, action: PayloadAction<{ courseId: number; resumePoint: number }>) {
@@ -198,13 +192,62 @@ const courseSlice = createSlice({
       state.currentCourseSlug = null
       state.courseCompletionStatus = false
     },
-    setOfflineAvailability(
-      state,
-      action: PayloadAction<{ courseId: number; videoId: string; isAvailableOffline: boolean }>,
-    ) {
-      const { courseId, videoId, isAvailableOffline } = action.payload
-      if (state.courseProgress[courseId]) {
-        state.courseProgress[courseId].isAvailableOffline = isAvailableOffline
+    cacheVideoData(state, action) {
+      const { videoId, data } = action.payload
+      if (!state.videoCache) {
+        state.videoCache = {}
+      }
+      state.videoCache[videoId] = {
+        ...data,
+        cachedAt: new Date().toISOString(),
+      }
+    },
+    setPerformanceSettings(state, action) {
+      state.performanceSettings = {
+        ...(state.performanceSettings || {}),
+        ...action.payload,
+      }
+    },
+    setUserPreferences(state, action) {
+      state.userPreferences = {
+        ...(state.userPreferences || {}),
+        ...action.payload,
+      }
+    },
+    trackAnalytics(state, action) {
+      const { eventType, data } = action.payload
+      if (!state.analytics) {
+        state.analytics = {
+          events: [],
+        }
+      }
+
+      // Keep only the last 50 events to prevent state bloat
+      state.analytics.events = [
+        {
+          eventType,
+          data,
+          timestamp: new Date().toISOString(),
+        },
+        ...state.analytics.events.slice(0, 49),
+      ]
+    },
+    optimizeState(state) {
+      // Remove old cached data
+      if (state.videoCache) {
+        const now = new Date()
+        Object.keys(state.videoCache).forEach((key) => {
+          const cachedAt = new Date(state.videoCache[key].cachedAt)
+          // Remove cache items older than 1 hour
+          if (now.getTime() - cachedAt.getTime() > 3600000) {
+            delete state.videoCache[key]
+          }
+        })
+      }
+
+      // Limit analytics data
+      if (state.analytics && state.analytics.events && state.analytics.events.length > 100) {
+        state.analytics.events = state.analytics.events.slice(0, 100)
       }
     },
   },
@@ -313,6 +356,84 @@ export const enableOfflineMode = (courseId, videoId) => async (dispatch) => {
   }
 }
 
+// Add a new action to preload video data for smoother transitions
+export const preloadNextVideo = (nextVideoId) => (dispatch, getState) => {
+  if (!nextVideoId) return
+
+  // Create a hidden video element to preload the next video
+  const preloadElement = document.createElement("link")
+  preloadElement.rel = "preload"
+  preloadElement.as = "fetch"
+  preloadElement.href = `https://www.youtube.com/watch?v=${nextVideoId}`
+  document.head.appendChild(preloadElement)
+
+  // Remove the preload element after 10 seconds
+  setTimeout(() => {
+    if (document.head.contains(preloadElement)) {
+      document.head.removeChild(preloadElement)
+    }
+  }, 10000)
+
+  // Cache the preload status
+  dispatch({
+    type: "course/cacheVideoData",
+    payload: {
+      videoId: nextVideoId,
+      data: {
+        preloaded: true,
+      },
+    },
+  })
+}
+
+// Add a new action to optimize memory usage
+export const optimizeMemoryUsage = () => (dispatch) => {
+  // Clean up unused resources
+  dispatch({ type: "course/optimizeState" })
+
+  // Force garbage collection if possible
+  if (window.gc) {
+    try {
+      window.gc()
+    } catch (e) {
+      console.debug("Manual garbage collection not available")
+    }
+  }
+}
+
+// Add a new action to save user preferences
+export const saveUserPreferences = (preferences) => (dispatch) => {
+  // Save to Redux
+  dispatch({
+    type: "course/setUserPreferences",
+    payload: preferences,
+  })
+
+  // Also save to localStorage for persistence
+  try {
+    localStorage.setItem("courseUserPreferences", JSON.stringify(preferences))
+  } catch (e) {
+    console.warn("Failed to save preferences to localStorage", e)
+  }
+}
+
+// Add a new action to load user preferences
+export const loadUserPreferences = () => (dispatch) => {
+  try {
+    const savedPreferences = localStorage.getItem("courseUserPreferences")
+    if (savedPreferences) {
+      dispatch({
+        type: "course/setUserPreferences",
+        payload: JSON.parse(savedPreferences),
+      })
+      return true
+    }
+  } catch (e) {
+    console.warn("Failed to load preferences from localStorage", e)
+  }
+  return false
+}
+
 export const {
   setCurrentVideo,
   setVideoProgress,
@@ -328,7 +449,11 @@ export const {
   setCourseCompletionStatus,
   setPlaybackSettings,
   resetCourseState,
-  setOfflineAvailability,
+  cacheVideoData,
+  setPerformanceSettings,
+  setUserPreferences,
+  trackAnalytics,
+  optimizeState,
 } = courseSlice.actions
 
 export default courseSlice.reducer

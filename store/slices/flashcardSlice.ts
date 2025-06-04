@@ -284,14 +284,38 @@ export const selectQuizId = createSelector(
   }
 );
 
-// Add additional derived selectors
+// Add enhanced selectors
+export const selectCurrentFlashcard = createSelector(
+  [selectFlashcardState],
+  (state) => {
+    const currentCard = state.flashCards[state.currentQuestion] || null;
+    
+    if (!currentCard) return null;
+    
+    return {
+      ...currentCard,
+      isSaved: state.savedCardIds.includes(currentCard.id || ''),
+      isAnswered: state.answers.some(a => a.questionId === currentCard.id),
+      position: {
+        current: state.currentQuestion + 1,
+        total: state.flashCards.length,
+        isFirst: state.currentQuestion === 0,
+        isLast: state.currentQuestion === state.flashCards.length - 1
+      }
+    };
+  }
+);
+
 export const selectFlashcardStats = createSelector(
   [selectFlashcardState],
   (state) => ({
     totalCards: state.flashCards.length,
     savedCards: state.savedCardIds.length,
     completedCards: state.answers.length,
-    progress: state.flashCards.length ? Math.round((state.answers.length / state.flashCards.length) * 100) : 0
+    progress: state.flashCards.length ? Math.round((state.answers.length / state.flashCards.length) * 100) : 0,
+    remainingCards: state.flashCards.length - state.answers.length,
+    isComplete: state.answers.length >= state.flashCards.length,
+    progressFormatted: `${state.answers.length}/${state.flashCards.length}`,
   })
 );
 

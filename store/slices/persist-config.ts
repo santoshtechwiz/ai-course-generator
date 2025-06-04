@@ -7,29 +7,43 @@ import { RootState } from ".."
 export const persistConfig: PersistConfig<RootState> = {
   key: "root",
   storage,
-  whitelist: ["auth", "quiz", "user"], // Only persist these slices
+  whitelist: ["auth", "quiz", "user", "subscription"], // Add subscription to persisted slices
   blacklist: [], // Don't persist these fields within the slices
   // Optional transforms for data serialization/deserialization
   transforms: [],
 }
 
 // Specific config for quiz state if needed
-export const quizPersistConfig = {
+export const quizPersistConfig: PersistConfig<RootState["quiz"]> = {
   key: "quiz",
   storage,
-  blacklist: ["isLoading", "error"], // Don't persist loading states and errors
+  blacklist: ["isLoading", "error", "status"],
 }
 
 // Specific config for auth state
-export const authPersistConfig = {
+export const authPersistConfig: PersistConfig<RootState["auth"]> = {
   key: "auth",
   storage,
-  blacklist: ["isLoading", "error"],
+  blacklist: ["loading", "error"],
 }
 
 // Specific config for user state
-export const userPersistConfig = {
+export const userPersistConfig: PersistConfig<RootState["user"]> = {
   key: "user",
   storage,
-  blacklist: ["isLoading"],
+  blacklist: ["loading", "error"],
+}
+
+// Add specific config for subscription
+export const subscriptionPersistConfig: PersistConfig<RootState["subscription"]> = {
+  key: "subscription",
+  storage,
+  blacklist: ["isLoading", "error", "isFetching"],
+}
+
+// Add specific config for flashcard
+export const flashcardPersistConfig: PersistConfig<RootState["flashcard"]> = {
+  key: "flashcard",
+  storage,
+  blacklist: ["loading", "error"],
 }

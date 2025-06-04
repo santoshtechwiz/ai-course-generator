@@ -6,11 +6,11 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 // Reducers
 import authReducer from "./slices/authSlice";
 import quizReducer from "./slices/quizSlice";
-import subscriptionReducer from "./slices/subscription-slice";
+import subscriptionReducer from "./slices/subscriptionSlice"; // Updated import path
 import userReducer from "./slices/userSlice";
 import flashcardReducer from "./slices/flashcardSlice";
 import courseReducer from "./slices/courseSlice";
-
+import certificateReducer from "./slices/certificateSlice";
 // Configure persistence
 const coursePersistConfig = {
   key: "course",
@@ -35,6 +35,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   flashcard: flashcardReducer,
   course: persistReducer(coursePersistConfig, courseReducer),
+  certificateReducer: certificateReducer,
 });
 
 export const store = configureStore({
@@ -56,7 +57,11 @@ export type AppDispatch = typeof store.dispatch;
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-// Exports
+// Export slices functionality
+export * from "./slices/authSlice";
 export * from "./slices/courseSlice";
 export * from "./slices/quizSlice";
+export * from "./slices/subscriptionSlice"; // Updated export path
+export * from "./slices/userSlice";
+export * from "./slices/flashcardSlice";
 export { store, persistor };

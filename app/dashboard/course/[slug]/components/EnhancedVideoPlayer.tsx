@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import ReactPlayer from "react-player"
+import { useInView } from "react-intersection-observer"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -17,6 +17,7 @@ import {
 } from "@/store/slices/courseSlice"
 import { Debug } from "./Debug"
 import { cn } from "@/lib/utils"
+import ReactPlayer from "react-player" // Declare ReactPlayer variable
 
 interface VideoPlayerProps {
   videoId: string
@@ -634,9 +635,87 @@ const EnhancedVideoPlayer = ({
     }
   }, [])
 
+  const [ref, inView] = useInView({
+    threshold: 0.1,
+    triggerOnce: false,
+  })
+
+  useEffect(() => {
+    if (!inView && playing) {
+      // Only pause if we're currently playing and scroll out of view
+      setPlaying(false)
+    }
+  }, [inView, playing])
+
+  const getYouTubeConfig = useCallback(() => {
+    // Check if we're on a mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+    // Check if we're on a slow connection
+    const isSlowConnection =
+      navigator.connection &&
+      (navigator.connection.effectiveType === "2g" ||
+        navigator.connection.effectiveType === "slow-2g" ||
+        navigator.connection.saveData)
+
+    return {
+      youtube: {
+        playerVars: {
+          autoplay: autoPlay ? 1 : 0,
+          start: Math.floor((initialTime || 0) * (duration || 0)),
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+          iv_load_policy: 3,
+          fs: 1,
+          controls: 0,
+          disablekb: 0,
+          playsinline: 1,
+          enablejsapi: 1,
+          origin: typeof window !== "undefined" ? window.location.origin : "",
+          // Optimize for mobile or slow connections
+          ...(isMobile || isSlowConnection
+            ? {
+                vq: "medium", // Lower quality for mobile/slow connections
+                hl: "en", // Set language to English
+                cc_load_policy: 0, // Don't load captions by default
+              }
+            : {
+                vq: "hd720", // Higher quality for desktop
+              }),
+        },
+        onStateChange: (event) => {
+          // Safe update of debug info with proper state management
+          setDebugInfo((prev) => ({
+            ...prev,
+            playerState: `YouTube state: ${event.data}`,
+            lastEvent: "stateChange",
+          }))
+
+          // YouTube state 1 means "playing" - ensure loader is hidden
+          if (event.data === 1) {
+            setIsLoading(false)
+            setIsPlayerReady(true)
+          }
+          // YouTube state 3 means "buffering" - show loading indicator
+          if (event.data === 3) {
+            setIsBuffering(true)
+          }
+        },
+        // Add YouTube-specific error handling with proper parameter typing
+        onError: (event: { data: number }) => {
+          handlePlayerError(`YouTube Error Code: ${event.data}`)
+        },
+      },
+    }
+  }, [autoPlay, initialTime, duration, handlePlayerError])
+
   return (
     <div
-      ref={containerRef}
+      ref={(el) => {
+        containerRef.current = el
+        ref(el)
+      }}
       className={cn(
         "relative w-full aspect-video rounded-lg overflow-hidden bg-background border border-border shadow-sm group",
         theaterMode && "fixed top-0 left-0 w-full h-full z-50 aspect-auto rounded-none",
@@ -668,46 +747,7 @@ const EnhancedVideoPlayer = ({
           progressInterval={1000}
           playbackRate={playbackSpeed}
           style={{ backgroundColor: "transparent" }}
-          config={{
-            youtube: {
-              playerVars: {
-                autoplay: autoPlay ? 1 : 0,
-                start: Math.floor((initialTime || 0) * (duration || 0)),
-                modestbranding: 1,
-                rel: 0,
-                showinfo: 0,
-                iv_load_policy: 3,
-                fs: 1,
-                controls: 0,
-                disablekb: 0,
-                playsinline: 1,
-                enablejsapi: 1,
-                origin: typeof window !== "undefined" ? window.location.origin : "",
-              },
-              onStateChange: (event) => {
-                // Safe update of debug info with proper state management
-                setDebugInfo((prev) => ({
-                  ...prev,
-                  playerState: `YouTube state: ${event.data}`,
-                  lastEvent: "stateChange",
-                }))
-
-                // YouTube state 1 means "playing" - ensure loader is hidden
-                if (event.data === 1) {
-                  setIsLoading(false)
-                  setIsPlayerReady(true)
-                }
-                // YouTube state 3 means "buffering" - show loading indicator
-                if (event.data === 3) {
-                  setIsBuffering(true)
-                }
-              },
-              // Add YouTube-specific error handling with proper parameter typing
-              onError: (event: { data: number }) => {
-                handlePlayerError(`YouTube Error Code: ${event.data}`)
-              },
-            },
-          }}
+          config={getYouTubeConfig()}
         />
       )}
 
