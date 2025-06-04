@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback, Suspense, useRef } from "react"
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import EnhancedVideoPlayer from "./EnhancedVideoPlayer"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, PlayCircle, Clock } from "lucide-react"
+import { Loader2, PlayCircle, Clock, Video, BookOpen } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import CourseDetailsQuiz from "./CourseDetailsQuiz"
@@ -21,6 +21,13 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Switch } from "@/components/ui/switch"
+import { PauseCircle } from "lucide-react"
+import CertificateGenerator from "./CertificateGenerator"
+import { Award } from "lucide-react"
 
 interface MainContentProps {
   slug: string;
@@ -40,9 +47,11 @@ interface MainContentProps {
   onChapterComplete?: () => void;
   courseCompleted?: boolean;
   course: FullCourseType;
+  relatedCourses?: Array<{ id: string | number; title: string; slug: string; category?: { name: string }; image?: string }>;
+
 }
 
-export default function MainContent({
+function MainContent({
   slug,
   initialVideoId,
   nextVideoId,
@@ -60,25 +69,43 @@ export default function MainContent({
   onChapterComplete,
   courseCompleted = false,
   course,
+  relatedCourses = [],
 }: MainContentProps) {
-  const [activeTab, setActiveTab] = useState("notes")
-  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
-  const [nextVideoCountdown, setNextVideoCountdown] = useState<number | null>(null)
-  const dispatch = useAppDispatch()
-  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
-  const { data: session, status } = useSession()
-  const { toast } = useToast()
-  const isAuthenticated = status === "authenticated"
-  const bookmarks = useAppSelector((state) => state.course.bookmarks[currentVideoId || ''] || [])
-  const didSetInitialVideo = useRef(false)
+  const [activeTab, setActiveTab] = useState("notes");
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
+  const [autoplayOverlay, setAutoplayOverlay] = useState(false);
+  const [autoplayCountdown, setAutoplayCountdown] = useState(5);
+  const dispatch = useAppDispatch();
+  const currentVideoId = useAppSelector((state) => state.course.currentVideoId);
+  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled);
+  const { data: session } = useSession();
+  const { toast } = useToast();
+  const isAuthenticated = !!session;
+  const bookmarks = useAppSelector((state) => state.course.bookmarks[currentVideoId || ''] || []);
+  const didSetInitialVideo = useRef(false);
+  const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Effect to show completion overlay when courseCompleted changes
+  // Clear timeout on unmount
   useEffect(() => {
-    if (courseCompleted) {
-      setShowCompletionOverlay(true);
+    return () => {
+      if (autoplayTimeoutRef.current) {
+        clearTimeout(autoplayTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // 1. Define handleNextVideo first
+  const handleNextVideo = useCallback(() => {
+    if (nextVideoId) {
+      dispatch(setCurrentVideoApi(nextVideoId));
+      onVideoSelect(nextVideoId);
+      toast({ title: "Next Video", description: "Playing the next video." });
+    } else if (isLastVideo) {
+      dispatch(setCourseCompletionStatus(true));
     }
-  }, [courseCompleted]);
+  }, [nextVideoId, isLastVideo, dispatch, onVideoSelect, toast]);
+
+
 
   // Set initial video only once on mount or when dependencies change
   useEffect(() => {
@@ -106,34 +133,60 @@ export default function MainContent({
     console.debug("[MainContent] autoplayEnabled:", autoplayEnabled);
   }, [autoplayEnabled]);
 
-  const handleNextVideo = useCallback(() => {
-    if (nextVideoId) {
-      dispatch(setCurrentVideoApi(nextVideoId))
-      onVideoSelect(nextVideoId)
-      toast({ title: "Next Video", description: "Playing the next video." })
-    } else if (isLastVideo) {
-      dispatch(setCourseCompletionStatus(true))
+  // 3. Cancel autoplay overlay
+  const handleCancelAutoplay = useCallback(() => {
+    setAutoplayOverlay(false);
+    setAutoplayCountdown(5);
+    if (autoplayTimeoutRef.current) {
+      clearTimeout(autoplayTimeoutRef.current);
     }
-  }, [nextVideoId, isLastVideo, dispatch, onVideoSelect, toast])
+  }, [])
 
+  // Handle playlist video selection
+  const handlePlaylistVideoSelect = useCallback(
+    (videoId: string) => {
+      console.debug("[MainContent] Playlist video selected:", videoId);
+      dispatch(setCurrentVideoApi(videoId));
+      dispatch(setAutoplayEnabled(true));
+      if (typeof onVideoSelect === "function") {
+        onVideoSelect(videoId);
+      }
+    },
+    [dispatch, onVideoSelect]
+  )
+  // 2. Then define handleVideoEnd which uses handleNextVideo
   const handleVideoEnd = useCallback(() => {
-    if (nextVideoId) {
-      setNextVideoCountdown(5) // Start countdown for next video
-      const countdownInterval = setInterval(() => {
-        setNextVideoCountdown((prev) => {
-          if (prev === null || prev <= 1) {
-            clearInterval(countdownInterval)
-            if (autoplayEnabled) handleNextVideo()
-            return null
-          }
-          return prev - 1
-        })
-      }, 1000)
-    } else if (isLastVideo) {
-      dispatch(setCourseCompletionStatus(true))
-    }
-  }, [nextVideoId, isLastVideo, dispatch, handleNextVideo, autoplayEnabled])
+    if (nextVideoId && autoplayEnabled) {
+      setAutoplayOverlay(true);
+      setAutoplayCountdown(5);
+      
+      if (autoplayTimeoutRef.current) {
+        clearTimeout(autoplayTimeoutRef.current);
+      }
 
+      let count = 5;
+      const tick = () => {
+        setAutoplayCountdown((prev) => {
+          if (prev <= 1) {
+            handleNextVideo();
+            setAutoplayOverlay(false);
+            return 5;
+          }
+          return prev - 1;
+        });
+        count--;
+        if (count > 0) {
+          autoplayTimeoutRef.current = setTimeout(tick, 1000);
+        }
+      };
+      
+      autoplayTimeoutRef.current = setTimeout(tick, 1000);
+    } else if (isLastVideo) {
+      setShowCompletionOverlay(true);
+    }
+    
+    onVideoEnd();
+  }, [nextVideoId, autoplayEnabled, isLastVideo, onVideoEnd, handleNextVideo]);
   const renderTabContent = () => {
     switch (activeTab) {
       case "notes":
@@ -193,25 +246,96 @@ export default function MainContent({
     }
   }
 
-  // Handle playlist video selection
-  const handlePlaylistVideoSelect = useCallback(
-    (videoId: string) => {
-      // Debug: log playlist video selection
-      console.debug("[MainContent] Playlist video selected:", videoId);
-      
-      dispatch(setCurrentVideoApi(videoId));
-      dispatch(setAutoplayEnabled(true));
-      
-      // Call parent handler if available
-      if (typeof onVideoSelect === "function") {
-        onVideoSelect(videoId);
-      }
-    },
-    [dispatch, onVideoSelect]
+  // Autoplay toggle UI (ShadCN Switch + Button)
+  const AutoplayToggle = (
+    <div className="flex items-center gap-3">
+      <Switch
+        checked={autoplayEnabled}
+        onCheckedChange={(checked) => dispatch(setAutoplayEnabled(checked))}
+        id="autoplay-switch"
+      />
+      <label htmlFor="autoplay-switch" className="flex items-center gap-2 cursor-pointer select-none text-sm">
+        {autoplayEnabled ? (
+          <PlayCircle className="h-5 w-5 text-primary" />
+        ) : (
+          <PauseCircle className="h-5 w-5 text-muted-foreground" />
+        )}
+        Autoplay {autoplayEnabled ? "On" : "Off"}
+      </label>
+    </div>
   )
+
+  // Related Courses Section (ShadCN Card grid)
+  const RelatedCoursesSection = relatedCourses && relatedCourses.length > 0 ? (
+    <div className="mt-8">
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Related Courses</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {relatedCourses.map((course) => (
+              <a
+                key={course.id}
+                href={`/dashboard/course/${course.slug}`}
+                className="block group"
+                tabIndex={0}
+                aria-label={`Go to course ${course.title}`}
+              >
+                <Card className="transition-all hover:shadow-lg hover:border-primary/60 group-hover:scale-105">
+                  <CardContent className="p-4">
+                    <div className="font-medium mb-1 truncate">{course.title}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {course.category?.name || "Uncategorized"}
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  ) : null
+
+  // Show course completion overlay/modal when last video ends
+  const showCourseComplete =
+    isLastVideo && showCompletionOverlay && courseCompleted;
 
   return (
     <div className="space-y-6">
+      {/* Autoplay Overlay */}
+      <AnimatePresence>
+        {autoplayOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+          >
+            <Card className="w-full max-w-sm mx-auto shadow-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-6 w-6 text-primary" />
+                  Next video starting in {autoplayCountdown}...
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Progress value={((5 - autoplayCountdown) / 5) * 100} className="mb-4" />
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelAutoplay}
+                  className="w-full"
+                  aria-label="Cancel autoplay"
+                >
+                  Cancel
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Video Player */}
       <div className="relative rounded-lg overflow-hidden border border-border shadow-md">
         {currentVideoId ? (
@@ -242,38 +366,10 @@ export default function MainContent({
           </div>
         )}
       </div>
-      
-      {/* Autoplay Controls */}
-      {nextVideoCountdown !== null && (
-        <div className="text-center text-sm text-muted-foreground">
-          <Clock className="inline-block h-4 w-4 mr-1" />
-          Next video starts in {nextVideoCountdown} seconds...
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-2"
-            onClick={() => {
-              setNextVideoCountdown(null)
-              handleNextVideo()
-            }}
-          >
-            Skip
-          </Button>
-        </div>
-      )}
+
+      {/* Autoplay Toggle */}
       <div className="flex items-center justify-between mt-4">
-        <span className={cn("text-sm flex items-center", autoplayEnabled ? "text-primary" : "text-muted-foreground")}>
-          <PlayCircle className={cn("inline-block h-4 w-4 mr-1", autoplayEnabled ? "text-primary" : "text-muted-foreground")} />
-          Autoplay is {autoplayEnabled ? "On" : "Off"}
-        </span>
-        <Button
-          variant={autoplayEnabled ? "primary" : "outline"}
-          size="sm"
-          className="transition-all"
-          onClick={() => dispatch(setAutoplayEnabled(!autoplayEnabled))}
-        >
-          {autoplayEnabled ? "Disable Autoplay" : "Enable Autoplay"}
-        </Button>
+        {AutoplayToggle}
       </div>
 
       {/* Tabs for Notes and Quiz */}
@@ -313,13 +409,59 @@ export default function MainContent({
         </AnimatePresence>
       </Tabs>
 
+      {/* Course Completion Overlay/Modal */}
+      <AnimatePresence>
+        {showCourseComplete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          >
+            <Card className="w-full max-w-lg mx-auto shadow-2xl relative">
+              <CardHeader className="flex flex-col items-center">
+                <Award className="h-16 w-16 text-primary mb-4 animate-bounce" />
+                <CardTitle className="text-3xl font-bold text-center mb-2">Course Completed!</CardTitle>
+                <div className="text-muted-foreground text-center mb-2">
+                  Congratulations on finishing <span className="font-semibold text-foreground">{course?.title}</span>!
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <CertificateGenerator courseName={course?.title || "Course"} />
+                </div>
+                {RelatedCoursesSection}
+                <Button
+                  variant="secondary"
+                  className="w-full mt-6"
+                  onClick={() => {
+                    setShowCompletionOverlay(false)
+                    onWatchAnotherCourse()
+                  }}
+                >
+                  Explore More Courses
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Related Courses Section (for non-final video view) */}
+      {!showCourseComplete && RelatedCoursesSection}
+
       {showCompletionOverlay && (
         <CourseCompletionOverlay
           courseName={course?.title || ""}
           onClose={() => setShowCompletionOverlay(false)}
           onWatchAnotherCourse={onWatchAnotherCourse}
+          fetchRelatedCourses={async () => relatedCourses}
         />
       )}
     </div>
   )
 }
+
+// Use React.memo for performance optimization
+const MemoizedMainContent = React.memo(MainContent);
+export default MemoizedMainContent;

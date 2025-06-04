@@ -121,24 +121,26 @@ export const CourseCompletionOverlay = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="relative bg-card rounded-xl shadow-2xl max-w-md w-full mx-auto overflow-hidden"
+          className="relative bg-card rounded-xl shadow-2xl w-full max-w-2xl mx-auto my-8" // Adjusted max-width and margins
         >
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="absolute top-4 right-4 z-10">
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-          <div className="p-8 text-center">
+          <div className="p-6 sm:p-8 max-h-[80vh] overflow-y-auto">
             <div className="mb-8 flex justify-center">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
@@ -158,14 +160,15 @@ export const CourseCompletionOverlay = ({
             >
               <h2 className="text-3xl font-bold">Course Completed!</h2>
               <p className="text-muted-foreground text-lg">
-                Congratulations on completing <span className="font-semibold text-foreground">{courseName}</span>!
-                You've earned your certificate.
+                Congratulations on completing{" "}
+                <span className="font-semibold text-foreground">{courseName}</span>! You've earned your certificate.
               </p>
 
               <div className="bg-primary/5 rounded-lg p-4 mt-4 border border-primary/10">
                 <p className="text-sm text-muted-foreground">
-                  This certificate verifies that <span className="font-medium text-foreground">{userName}</span> has
-                  successfully completed all chapters and assessments in this course.
+                  This certificate verifies that{" "}
+                  <span className="font-medium text-foreground">{userName}</span> has successfully completed all chapters
+                  and assessments in this course.
                 </p>
               </div>
             </motion.div>
@@ -215,24 +218,30 @@ export const CourseCompletionOverlay = ({
                 Explore More Courses
               </Button>
             </div>
-          </div>
-          {relatedCourses.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-border">
-              <h3 className="text-lg font-semibold mb-4">Continue Learning</h3>
-              <div className="grid gap-4 sm:grid-cols-3">
-                {relatedCourses.slice(0, 3).map((course) => (
-                  <Link
-                    key={course.id}
-                    href={`/dashboard/course/${course.slug}`}
-                    className="block p-3 border rounded-lg hover:bg-accent transition-colors"
-                  >
-                    <div className="font-medium text-sm mb-1 truncate">{course.title}</div>
-                    <div className="text-xs text-muted-foreground">{course.category?.name || "Uncategorized"}</div>
-                  </Link>
-                ))}
+
+            {/* Improved related courses grid */}
+            {relatedCourses.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-border">
+                <h3 className="text-lg font-semibold mb-4">Continue Learning</h3>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {relatedCourses.slice(0, 3).map((course) => (
+                    <Link
+                      key={course.id}
+                      href={`/dashboard/course/${course.slug}`}
+                      className="block p-4 border rounded-lg hover:bg-accent transition-colors group"
+                    >
+                      <div className="font-medium mb-1 truncate group-hover:text-primary transition-colors">
+                        {course.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {course.category?.name || "Uncategorized"}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
