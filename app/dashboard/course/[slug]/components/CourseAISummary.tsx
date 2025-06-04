@@ -23,6 +23,7 @@ import { MarkdownRenderer } from "./markdownUtils"
 import { useToast } from "@/hooks/use-toast"
 import AIEmoji from "@/app/dashboard/create/components/AIEmoji"
 import { useSession } from "next-auth/react"
+import { copyToClipboard } from "@/lib/utils"
 
 interface CourseAISummaryProps {
   chapterId: number | string
@@ -461,7 +462,3 @@ const NoContentAvailable: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 )
 
 export default CourseAISummary
-function copyToClipboard(processedContent: string): void {
-  throw new Error("Function not implemented.")
-}
-

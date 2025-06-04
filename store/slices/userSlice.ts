@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/store";
+import { useAuth } from "@/hooks/useAuth";
 
 // Types
 export interface UserPreferences {
@@ -207,3 +208,9 @@ export const selectUserStats = createSelector(
     };
   }
 );
+
+// Custom hook to get the current user
+export function useCurrentUser() {
+  const { user } = useAuth()
+  return user
+}

@@ -1,75 +1,134 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { useToast } from './use-toast';
+import { useCallback, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  selectAuth,
+  selectIsAuthenticated,
+  selectUser,
+  selectToken,
+  selectIsAdmin,
+  selectAuthStatus,
+  selectIsAuthLoading,
+  initializeAuth,
+  loginSuccess,
+  loginFailure,
+  logout as logoutAction,
+  setUser,
+  AuthUser
+} from "@/store/slices/authSlice";
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession } from "next-auth/react";
 
-// Hook for managing authentication state and actions
 export function useAuth() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Check if user is authenticated
-  const isAuthenticated = status === 'authenticated';
-  
-  // Get user data from session
-  const user = session?.user || null;
-  
-  // Redirect to login if not authenticated
-  const requireAuth = useCallback(
-    (callbackUrl?: string) => {
-      if (status === 'loading') {
-        setIsLoading(true);
-        return;
-      }
-      
-      setIsLoading(false);
-      
-      if (!isAuthenticated) {
-        const redirectUrl = callbackUrl ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/auth/signin';
-        router.push(redirectUrl);
-        
-        toast({
-          type: 'info',
-          message: 'Please sign in to continue',
-          duration: 3000,
-        });
-      }
-    },
-    [isAuthenticated, router, status, toast]
-  );
-  
-  // Redirect to dashboard if already authenticated
-  const requireGuest = useCallback(() => {
-    if (status === 'loading') {
-      setIsLoading(true);
-      return;
+  const dispatch = useAppDispatch();
+  const auth = useAppSelector(selectAuth);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const user = useAppSelector(selectUser);
+  const token = useAppSelector(selectToken);
+  const isAdmin = useAppSelector(selectIsAdmin);
+  const status = useAppSelector(selectAuthStatus);
+  const isLoading = useAppSelector(selectIsAuthLoading);
+
+  // Use next-auth session directly
+  const { data: session, status: sessionStatus } = useSession();
+
+  // Initialize auth state using the session from next-auth
+  const initialize = useCallback(() => {
+    if (sessionStatus === 'loading') {
+      return; // Wait until session is loaded
     }
-    
-    setIsLoading(false);
-    
-    if (isAuthenticated) {
-      router.push('/dashboard');
+
+    if (session?.user) {
+      // If session exists, use it to populate the Redux store
+      dispatch(loginSuccess({ 
+        user: {
+          id: session.user.id,
+          name: session.user.name,
+          email: session.user.email,
+          image: session.user.image,
+          isAdmin: (session.user as any).isAdmin || false,
+          credits: (session.user as any).credits || 0,
+          userType: (session.user as any).userType || 'FREE'
+        },
+        token: (session.user as any).accessToken || null
+      }));
+    } else {
+      // If no session, mark as unauthenticated
+      dispatch(logoutAction());
     }
-  }, [isAuthenticated, router, status]);
-  
-  // Update loading state when auth status changes
+  }, [dispatch, session, sessionStatus]);
+
+  // Initialize auth state on component mount or session change
   useEffect(() => {
-    if (status !== 'loading') {
-      setIsLoading(false);
+    initialize();
+  }, [initialize, session]);
+
+  // Wrap next-auth signIn function to update Redux state
+  const signIn = useCallback(async (provider?: string, options?: any) => {
+    try {
+      dispatch(logoutAction()) // Clear previous state
+      const result = await nextAuthSignIn(provider, options)
+      
+      // If signIn was successful and we have the response,
+      // we'll wait for the session to be updated and Redux will get that
+      // via initializeAuth or the auth provider
+      
+      return result
+    } catch (error) {
+      console.error("Sign in error:", error)
+      dispatch(loginFailure(error instanceof Error ? error.message : "Sign in failed"))
+      return null
     }
-  }, [status]);
-  
+  }, [dispatch])
+
+  // Wrap next-auth signOut function to update Redux state
+  const signOut = useCallback(async (options?: any) => {
+    try {
+      await nextAuthSignOut(options)
+      dispatch(logoutAction())
+    } catch (error) {
+      console.error("Sign out error:", error)
+    }
+  }, [dispatch])
+
+  // Update user in Redux store
+  const updateUser = useCallback((user: AuthUser | null) => {
+    dispatch(setUser(user))
+  }, [dispatch])
+
   return {
     user,
+    token,
+    isAdmin,
     isAuthenticated,
-    isLoading: status === 'loading' || isLoading,
-    requireAuth,
-    requireGuest,
+    status,
+    isLoading,
+    signIn,
+    signOut,
+    updateUser,
+    initialize,
+    error: auth.error,
+    isInitialized: auth.isInitialized,
   };
 }
 
-export function _createMockUseAuth() {
-  // ...mock implementation...
+// Temporarily provide adapter functions for existing auth hooks
+export function useCurrentUser() {
+  const { user } = useAuth();
+  return user;
 }
+
+export function useToken() {
+  const { token } = useAuth();
+  return token;
+}
+
+export function useIsAdmin() {
+  const { isAdmin } = useAuth();
+  return isAdmin;
+}
+
+export function useAuthStatus() {
+  const { status } = useAuth();
+  return status;
+}
+
+export default useAuth;

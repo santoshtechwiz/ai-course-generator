@@ -5,6 +5,9 @@ import clsx, { ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 
+export function copyToClipboard(text: string): Promise<void> {
+  return navigator.clipboard.writeText(text);
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -33,4 +36,12 @@ export function formatDuration(seconds: number): string {
   const remainingSeconds = Math.floor(seconds % 60);
   
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+export function saveToken(token: string) {
+  localStorage.setItem("authToken", token)
+}
+
+export function getToken() {
+  return localStorage.getItem("authToken")
 }

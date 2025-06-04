@@ -17,6 +17,9 @@ import { LoadingProvider } from "@/components/ui/loading/loading-provider"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 import React from "react"
+import { Provider } from "react-redux"
+import { PersistGate } from "redux-persist/integration/react"
+import { store, persistor } from "@/store"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -86,5 +89,15 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
         </ReduxProvider>
       </SessionProvider>
     </React.StrictMode>
+  )
+}
+
+export default function RootLayoutProviderWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        {children}
+      </PersistGate>
+    </Provider>
   )
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from "react
 import EnhancedVideoPlayer from "./EnhancedVideoPlayer"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, PlayCircle } from "lucide-react"
+import { Loader2, PlayCircle, BookOpen, MessageSquare, Star, Info } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import CourseDetailsQuiz from "./CourseDetailsQuiz"
@@ -78,10 +78,11 @@ function MainContent({
   course,
   relatedCourses = [],
 }: MainContentProps) {
-  const [activeTab, setActiveTab] = useState("notes")
+  const [activeTab, setActiveTab] = useState("overview")
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
   const [autoplayOverlay, setAutoplayOverlay] = useState(false)
   const [autoplayCountdown, setAutoplayCountdown] = useState(5)
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const dispatch = useAppDispatch()
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
@@ -93,17 +94,12 @@ function MainContent({
   const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
-  // Improve quiz prompt visibility state with additional flag for completed status
   const [showQuizPrompt, setShowQuizPrompt] = useState(false)
   const [chapterCompleted, setChapterCompleted] = useState(false)
-  // Add this state
-  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
 
-  // Add a global keyboard shortcut to show the modal
-  // Add this inside the component before the return statement
+  // Add keyboard shortcut for showing keyboard shortcuts modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Show keyboard shortcuts modal when pressing ?
       if (e.key === "?" || (e.key === "/" && e.shiftKey)) {
         e.preventDefault()
         setShowKeyboardShortcuts(true)
@@ -123,7 +119,6 @@ function MainContent({
     }
   }, [])
 
-  // 1. Define isLastChapterInUnit first since it's used in handleVideoEnd
   const isLastChapterInUnit = useCallback(() => {
     if (!currentChapter) return false
 
@@ -139,18 +134,15 @@ function MainContent({
     return chapterIndex === currentUnit.chapters.length - 1
   }, [currentChapter, course.courseUnits])
 
-  // Check if the current chapter is already completed
   const isCurrentChapterCompleted = useCallback(() => {
     if (!currentChapter || !progress || !progress.completedChapters) return false
     return progress.completedChapters.includes(+currentChapter.id)
   }, [currentChapter, progress])
 
-  // 2. Define handleNextVideo with proper error handling
   const handleNextVideo = useCallback(() => {
     try {
       if (nextVideoId) {
         dispatch(setCurrentVideoApi(nextVideoId))
-        // Add a small delay before calling onVideoSelect to avoid race conditions
         setTimeout(() => {
           if (typeof onVideoSelect === "function") {
             onVideoSelect(nextVideoId)
@@ -171,7 +163,6 @@ function MainContent({
     }
   }, [nextVideoId, isLastVideo, dispatch, onVideoSelect, toast])
 
-  // 3. Cancel autoplay overlay
   const handleCancelAutoplay = useCallback(() => {
     setAutoplayOverlay(false)
     setAutoplayCountdown(5)
@@ -180,18 +171,12 @@ function MainContent({
     }
   }, [])
 
-  // Handle playlist video selection with error handling
   const handlePlaylistVideoSelect = useCallback(
     (videoId: string) => {
       try {
-        console.debug("[MainContent] Playlist video selected:", videoId)
-        // First update redux state
         dispatch(setCurrentVideoApi(videoId))
-
-        // Then enable autoplay if needed
         dispatch(setAutoplayEnabled(true))
 
-        // Finally call the parent handler after a small delay
         setTimeout(() => {
           if (typeof onVideoSelect === "function") {
             onVideoSelect(videoId)
@@ -208,9 +193,8 @@ function MainContent({
     },
     [dispatch, onVideoSelect, toast],
   )
-  // 4. Define handleCreateQuiz
+
   const handleCreateQuiz = useCallback(() => {
-    // Navigate to quiz creation page with context
     if (currentChapter) {
       router.push(
         `/dashboard/create/quiz?topic=${encodeURIComponent(currentChapter.title || "")}&videoId=${currentVideoId || ""}&chapterId=${currentChapter.id || ""}`,
@@ -218,16 +202,13 @@ function MainContent({
     }
   }, [router, currentChapter, currentVideoId])
 
-  // 5. Then define handleVideoEnd which uses handleNextVideo
   const handleVideoEnd = useCallback(() => {
-    setChapterCompleted(true) // Mark the chapter as completed
+    setChapterCompleted(true)
 
-    // Only show quiz prompt when the chapter is completed
     if (isLastVideo || isLastChapterInUnit()) {
       setShowQuizPrompt(true)
     }
 
-    // Handle autoplay logic
     if (nextVideoId && autoplayEnabled) {
       try {
         setAutoplayOverlay(true)
@@ -241,7 +222,6 @@ function MainContent({
         const tick = () => {
           setAutoplayCountdown((prev) => {
             if (prev <= 1) {
-              // Handle next video action
               handleNextVideo()
               setAutoplayOverlay(false)
               return 5
@@ -257,25 +237,21 @@ function MainContent({
         autoplayTimeoutRef.current = setTimeout(tick, 1000)
       } catch (error) {
         console.error("[MainContent] Error in autoplay handling:", error)
-        // Fallback behavior if autoplay fails
         setAutoplayOverlay(false)
       }
     } else if (isLastVideo) {
       setShowCompletionOverlay(true)
     }
 
-    // Always call parent handler
     if (typeof onVideoEnd === "function") {
       onVideoEnd()
     }
   }, [nextVideoId, autoplayEnabled, isLastVideo, onVideoEnd, handleNextVideo, isLastChapterInUnit])
 
-  // Fix: Reset chapterCompleted state when video is changed
   useEffect(() => {
     setChapterCompleted(false)
     setShowQuizPrompt(false)
 
-    // Check if current chapter is already completed to show quiz prompt
     if (isCurrentChapterCompleted()) {
       setChapterCompleted(true)
 
@@ -285,7 +261,6 @@ function MainContent({
     }
   }, [currentChapter?.id, isCurrentChapterCompleted, isLastVideo, isLastChapterInUnit])
 
-  // Set initial video only once on mount or when dependencies change
   useEffect(() => {
     if (
       !didSetInitialVideo.current &&
@@ -307,19 +282,38 @@ function MainContent({
     }
   }, [currentVideoId, initialVideoId, dispatch, course.courseUnits])
 
-  // Debug: log autoplay state
-  useEffect(() => {
-    console.debug("[MainContent] autoplayEnabled:", autoplayEnabled)
-  }, [autoplayEnabled])
-
-  // Fix the renderTabContent function to ensure it never returns undefined
   const renderTabContent = () => {
     switch (activeTab) {
+      case "overview":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-3">About this lesson</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {currentChapter?.description || "No description available for this lesson."}
+              </p>
+            </div>
+
+            {currentChapter?.objectives && currentChapter.objectives.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Learning objectives</h3>
+                <ul className="space-y-2">
+                  {currentChapter.objectives.map((objective, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                      <span className="text-muted-foreground">{objective}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )
       case "notes":
         return planId === "PRO" || planId === "ULTIMATE" ? (
           <Suspense
             fallback={
-              <div className="space-y-4 p-4">
+              <div className="space-y-4">
                 <Skeleton className="h-8 w-1/3 mb-4" />
                 <Skeleton className="h-4 w-full mb-2" />
                 <Skeleton className="h-4 w-5/6 mb-2" />
@@ -337,13 +331,18 @@ function MainContent({
             />
           </Suspense>
         ) : (
-          <div className="text-center text-muted-foreground">Upgrade to access AI summaries.</div>
+          <div className="text-center py-8">
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
+            <p className="text-muted-foreground mb-4">Upgrade to access AI-generated notes and summaries.</p>
+            <Button onClick={() => router.push("/dashboard/subscription")}>Upgrade Now</Button>
+          </div>
         )
       case "quiz":
         return planId === "PRO" || planId === "ULTIMATE" ? (
           <Suspense
             fallback={
-              <div className="space-y-4 p-4">
+              <div className="space-y-4">
                 <Skeleton className="h-8 w-1/3 mb-4" />
                 <Skeleton className="h-12 w-full mb-3" />
                 <Skeleton className="h-12 w-full mb-3" />
@@ -360,75 +359,28 @@ function MainContent({
             />
           </Suspense>
         ) : (
-          <div className="text-center text-muted-foreground">Upgrade to access quizzes.</div>
+          <div className="text-center py-8">
+            <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
+            <p className="text-muted-foreground mb-4">Upgrade to access interactive quizzes.</p>
+            <Button onClick={() => router.push("/dashboard/subscription")}>Upgrade Now</Button>
+          </div>
         )
       default:
         return (
-          <div className="flex items-center justify-center w-full aspect-video bg-background rounded-lg">
-            <Loader2 className="h-10 w-10 mb-4 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground">Loading video...</p>
+          <div className="flex items-center justify-center w-full py-12">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground">Loading content...</p>
           </div>
         )
     }
   }
 
-  // Autoplay toggle UI (ShadCN Switch + Button)
-  const AutoplayToggle = (
-    <div className="flex items-center gap-3">
-      <Switch
-        checked={autoplayEnabled}
-        onCheckedChange={(checked) => dispatch(setAutoplayEnabled(checked))}
-        id="autoplay-switch"
-      />
-      <label htmlFor="autoplay-switch" className="flex items-center gap-2 cursor-pointer select-none text-sm">
-        {autoplayEnabled ? (
-          <PlayCircle className="h-5 w-5 text-primary" />
-        ) : (
-          <PauseCircle className="h-5 w-5 text-muted-foreground" />
-        )}
-        Autoplay {autoplayEnabled ? "On" : "Off"}
-      </label>
-    </div>
-  )
-
-  // Related Courses Section (ShadCN Card grid)
-  const RelatedCoursesSection =
-    relatedCourses && relatedCourses.length > 0 ? (
-      <div className="mt-8">
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle>Related Courses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {relatedCourses.map((course) => (
-                <a
-                  key={course.id}
-                  href={`/dashboard/course/${course.slug}`}
-                  className="block group"
-                  tabIndex={0}
-                  aria-label={`Go to course ${course.title}`}
-                >
-                  <Card className="transition-all hover:shadow-lg hover:border-primary/60 group-hover:scale-105">
-                    <CardContent className="p-4">
-                      <div className="font-medium mb-1 truncate">{course.title}</div>
-                      <div className="text-sm text-muted-foreground">{course.category?.name || "Uncategorized"}</div>
-                    </CardContent>
-                  </Card>
-                </a>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    ) : null
-
-  // Show course completion overlay/modal when last video ends
   const showCourseComplete = isLastVideo && showCompletionOverlay && courseCompleted
 
   return (
-    <div className="space-y-6 relative">
-      {/* Quiz Creation Floating Button - Only show after video completion */}
+    <div className="max-w-5xl mx-auto">
+      {/* Quiz Creation Floating Button */}
       {chapterCompleted && showQuizPrompt && (
         <TooltipProvider>
           <Tooltip>
@@ -476,8 +428,8 @@ function MainContent({
         )}
       </AnimatePresence>
 
-      {/* Video Player - Fix the props we pass to ensure no undefined/invalid objects */}
-      <div className="relative rounded-lg overflow-hidden border border-border shadow-md">
+      {/* Video Player */}
+      <div className="mb-6">
         {currentVideoId ? (
           <EnhancedVideoPlayer
             videoId={currentVideoId}
@@ -505,43 +457,97 @@ function MainContent({
               rememberPosition: true,
               rememberMute: true,
               showCertificateButton: !!isLastVideo,
-              enableKeyboardShortcuts: true, // Add this line
-              enableTheaterMode: true, // Add this line
-              enablePictureInPicture: true, // Add this line
-              enableSubtitles: true, // Add this line
             }}
           />
         ) : (
-          <div className="flex items-center justify-center w-full aspect-video bg-background rounded-lg">
-            <Loader2 className="h-10 w-10 mb-4 animate-spin text-primary mx-auto" />
+          <div className="flex items-center justify-center w-full aspect-video bg-background rounded-lg border">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
             <p className="text-muted-foreground">Loading video...</p>
           </div>
         )}
       </div>
 
-      <div className="mt-2 text-xs text-muted-foreground flex items-center justify-end">
-        <KeyboardShortcutsModal />
+      {/* Chapter Title and Info */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">{currentChapter?.title || "Loading..."}</h1>
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          {currentChapter?.duration && (
+            <span className="flex items-center gap-1">
+              <PlayCircle className="h-4 w-4" />
+              {Math.floor(currentChapter.duration / 60)}:{(currentChapter.duration % 60).toString().padStart(2, "0")}
+            </span>
+          )}
+          <span className="hidden sm:inline">•</span>
+          <span>
+            Lesson{" "}
+            {course.courseUnits?.flatMap((unit) => unit.chapters).findIndex((ch) => ch.id === currentChapter?.id) + 1 ||
+              1}{" "}
+            of {course.courseUnits?.flatMap((unit) => unit.chapters).length || 0}
+          </span>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 text-xs"
+              onClick={() => setShowKeyboardShortcuts(true)}
+            >
+              <Info className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Keyboard shortcuts</span>
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Autoplay Toggle */}
-      <div className="flex items-center justify-between mt-4">{AutoplayToggle}</div>
+      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-6">
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={autoplayEnabled}
+            onCheckedChange={(checked) => dispatch(setAutoplayEnabled(checked))}
+            id="autoplay-switch"
+          />
+          <label htmlFor="autoplay-switch" className="flex items-center gap-2 cursor-pointer select-none text-sm">
+            {autoplayEnabled ? (
+              <PlayCircle className="h-4 w-4 text-primary" />
+            ) : (
+              <PauseCircle className="h-4 w-4 text-muted-foreground" />
+            )}
+            Autoplay {autoplayEnabled ? "On" : "Off"}
+          </label>
+        </div>
+        <span className="text-xs text-muted-foreground hidden sm:block">
+          Automatically play the next lesson when this one ends
+        </span>
+      </div>
 
-      {/* Tabs for Notes and Quiz */}
-      <Tabs defaultValue="notes" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 mb-6 bg-background border border-border/30 rounded-lg p-1">
+      {/* Content Tabs */}
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-3 mb-4 bg-muted/30 rounded-lg p-1 w-full">
+          <TabsTrigger
+            value="overview"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all flex items-center gap-2"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Overview</span>
+            <span className="sm:hidden">Info</span>
+          </TabsTrigger>
           <TabsTrigger
             value="notes"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all flex items-center gap-2"
           >
-            AI Summary
+            <Star className="h-4 w-4" />
+            <span>Notes</span>
           </TabsTrigger>
           <TabsTrigger
             value="quiz"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all flex items-center gap-2"
           >
-            Quiz
+            <MessageSquare className="h-4 w-4" />
+            <span>Quiz</span>
           </TabsTrigger>
         </TabsList>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -550,20 +556,20 @@ function MainContent({
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            <TabsContent
-              value="notes"
-              className="space-y-4 bg-background rounded-lg p-4 border border-border/30 shadow-sm"
-            >
+            <TabsContent value="overview" className="bg-background rounded-lg p-5 border shadow-sm">
               {renderTabContent()}
             </TabsContent>
-            <TabsContent value="quiz" className="bg-background rounded-lg p-4 border border-border/30 shadow-sm">
+            <TabsContent value="notes" className="bg-background rounded-lg p-5 border shadow-sm">
+              {renderTabContent()}
+            </TabsContent>
+            <TabsContent value="quiz" className="bg-background rounded-lg p-5 border shadow-sm">
               {renderTabContent()}
             </TabsContent>
           </motion.div>
         </AnimatePresence>
       </Tabs>
 
-      {/* Course Completion Overlay/Modal */}
+      {/* Course Completion Overlay */}
       <AnimatePresence>
         {showCourseComplete && (
           <motion.div
@@ -584,7 +590,6 @@ function MainContent({
                 <div className="mb-6">
                   <CertificateGenerator courseName={course?.title || "Course"} />
                 </div>
-                {RelatedCoursesSection}
                 <Button
                   variant="secondary"
                   className="w-full mt-6"
@@ -601,9 +606,6 @@ function MainContent({
         )}
       </AnimatePresence>
 
-      {/* Related Courses Section (for non-final video view) */}
-      {!showCourseComplete && RelatedCoursesSection}
-
       {showCompletionOverlay && (
         <CourseCompletionOverlay
           courseName={course?.title || ""}
@@ -612,11 +614,11 @@ function MainContent({
           fetchRelatedCourses={async () => relatedCourses}
         />
       )}
+
+      {/* Keyboard shortcuts modal */}
+      {showKeyboardShortcuts && <KeyboardShortcutsModal onClose={() => setShowKeyboardShortcuts(false)} />}
     </div>
   )
 }
 
-// Use React.memo for performance optimization
-const MemoizedMainContent = React.memo(MainContent)
-MemoizedMainContent.displayName = "MainContent" // Add displayName for better debugging
-export default MemoizedMainContent
+export default React.memo(MainContent)

@@ -295,33 +295,12 @@ if (typeof window === "undefined") {
   setInterval(clearCaches, 5 * 60 * 1000) // Clean every 5 minutes
 }
 
-export const getAuthSession = async () => {
-  const cacheKey = "global"
-  const now = Date.now()
-
-  // Check cache
-  const cached = SESSION_CACHE.get(cacheKey)
-  if (cached && now - cached.timestamp < SESSION_CACHE_MAX_AGE) {
-    return cached.session
-  }
-
-  // Fetch a new session if not cached or expired
-  try {
-    const session = await getServerSession(authOptions)
-
-    // Cache the result
-    if (session) {
-      SESSION_CACHE.set(cacheKey, {
-        session,
-        timestamp: now,
-      })
-    }
-
-    return session
-  } catch (error) {
-    console.error("Error fetching auth session:", error)
-    return null
-  }
+/**
+ * Gets the current authentication session safely in any context.
+ * Avoids using headers() which requires a request context.
+ */
+export async function getAuthSession() {
+  return await getServerSession(authOptions);
 }
 
 // Helper to check if user is authenticated

@@ -21,10 +21,10 @@ export const quizPersistConfig: PersistConfig<RootState["quiz"]> = {
 }
 
 // Specific config for auth state
-export const authPersistConfig: PersistConfig<RootState["auth"]> = {
+export const authPersistConfig = {
   key: "auth",
   storage,
-  blacklist: ["loading", "error"],
+  whitelist: ["user", "token"], // Persist only user and token fields
 }
 
 // Specific config for user state

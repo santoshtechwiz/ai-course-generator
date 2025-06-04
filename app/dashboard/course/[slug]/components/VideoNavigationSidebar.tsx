@@ -2,16 +2,14 @@
 
 import { useState, useMemo, useCallback } from "react"
 import { signIn } from "next-auth/react"
-import { ChevronDown, CheckCircle, ChevronUp, Info, Play, ChevronRight, Clock } from "lucide-react"
+import { ChevronDown, CheckCircle, ChevronUp, Play, ChevronRight, Clock, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { cn } from "@/lib/tailwindUtils"
-import { motion } from "framer-motion"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
-
-// Simple Info icon without tooltip to avoid infinite loops
-const InfoIcon = () => <Info className="h-4 w-4 text-muted-foreground" />
+import { motion, AnimatePresence } from "framer-motion"
 
 interface VideoNavigationSidebarProps {
   course: FullCourseType
@@ -26,7 +24,6 @@ interface VideoNavigationSidebarProps {
   prevVideoId?: string
 }
 
-// Helper function for formatting duration - define outside component to avoid circular reference
 function formatDuration(seconds: number): string {
   if (!seconds || isNaN(seconds)) return "--:--"
 
@@ -36,7 +33,6 @@ function formatDuration(seconds: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
 }
 
-// Helper function to determine the total duration of previous chapters - define outside component
 function calculateStartTime(unit: any, chapterIndex: number): number {
   let startTime = 0
   for (let i = 0; i < chapterIndex; i++) {
@@ -58,16 +54,10 @@ export default function VideoNavigationSidebar({
   prevVideoId,
 }: VideoNavigationSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false
-  const dispatch = useAppDispatch()
-  const playingVideoId = useAppSelector((state) => state.course.currentVideoId)
-
-  // Add a search filter for chapters
-  // Add this state at the top of the component
   const [searchQuery, setSearchQuery] = useState("")
+  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
+  const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false
 
-  // Use progress data if available, otherwise create a default structure
-  // Added null checking for course
   const effectiveProgress = useMemo(() => {
     if (!course) {
       return {
@@ -92,17 +82,13 @@ export default function VideoNavigationSidebar({
     )
   }, [progress, course, currentChapter?.id])
 
-  // Ensure course is defined before accessing its properties
   const totalChapters = useMemo(() => {
     if (!course?.courseUnits) return 0
     return course.courseUnits.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0)
   }, [course])
 
-  // Calculate progress for display
   const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
-  const progressPercentage = totalChapters > 0 ? Math.round((completedCount / totalChapters) * 100) : 0
 
-  // Add this function to filter chapters
   const filteredUnits = useMemo(() => {
     if (!searchQuery.trim() || !course?.courseUnits) return course?.courseUnits || []
 
@@ -114,256 +100,247 @@ export default function VideoNavigationSidebar({
       .filter((unit) => unit.chapters.length > 0)
   }, [course?.courseUnits, searchQuery])
 
-  // Enhance the sidebar with better UX
-  // Add this function inside the component before the return statement
+  const toggleUnit = useCallback((unitId: string) => {
+    setExpandedUnits((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(unitId)) {
+        newSet.delete(unitId)
+      } else {
+        newSet.add(unitId)
+      }
+      return newSet
+    })
+  }, [])
 
   const handleChapterClick = useCallback(
     (chapter) => {
       if (chapter.videoId) {
-        // Add a visual feedback animation when clicking a chapter
-        const element = document.getElementById(`chapter-${chapter.id}`)
-        if (element) {
-          element.classList.add("bg-primary/10")
-          setTimeout(() => {
-            element.classList.remove("bg-primary/10")
-          }, 300)
-        }
+        onVideoSelect(chapter.videoId)
 
-        // Track the click for analytics
+        // Analytics tracking
         if (typeof window !== "undefined" && window.gtag) {
           window.gtag("event", "select_chapter", {
             chapter_id: chapter.id,
             chapter_title: chapter.title,
           })
         }
-
-        onVideoSelect(chapter.videoId)
       }
     },
     [onVideoSelect],
   )
 
-  // Memoize the content to prevent unnecessary re-renders
-  // Add proper null checking throughout
-  const sidebarContent = useMemo(
-    () => (
-      <div className={cn("flex h-full flex-col bg-background transition-all duration-300", isCollapsed && "w-16")}>
-        <div className="flex items-center justify-between p-4 border-b">
-          {!isCollapsed ? (
-            <h2 className="text-lg font-semibold tracking-tight">Course Content</h2>
-          ) : (
-            <span className="sr-only">Course Content</span>
-          )}
-          {!isMobile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className={cn("transition-all duration-200 hover:bg-accent", isCollapsed ? "mx-auto" : "ml-auto")}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <motion.div animate={{ rotate: isCollapsed ? 0 : 180 }} transition={{ duration: 0.2 }}>
-                <ChevronUp className="h-4 w-4" />
-              </motion.div>
-            </Button>
-          )}
+  // Auto-expand unit containing current chapter
+  useMemo(() => {
+    if (currentChapter && course?.courseUnits) {
+      const unitWithCurrentChapter = course.courseUnits.find((unit) =>
+        unit.chapters.some((chapter) => chapter.id === currentChapter.id),
+      )
+      if (unitWithCurrentChapter) {
+        setExpandedUnits((prev) => new Set([...prev, unitWithCurrentChapter.id.toString()]))
+      }
+    }
+  }, [currentChapter, course?.courseUnits])
+
+  return (
+    <div className="flex h-full flex-col bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Course Content</h2>
+          <Badge variant="secondary" className="text-xs">
+            {completedCount}/{totalChapters}
+          </Badge>
         </div>
-
-        {!isCollapsed && (
-          <div className="px-4 py-2 sticky top-0 bg-background z-10 border-b">
-            <input
-              type="text"
-              placeholder="Search chapters..."
-              className="w-full px-3 py-1 text-sm bg-muted/50 border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+        {!isMobile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hover:bg-accent"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <motion.div animate={{ rotate: isCollapsed ? 0 : 180 }} transition={{ duration: 0.2 }}>
+              <ChevronUp className="h-4 w-4" />
+            </motion.div>
+          </Button>
         )}
+      </div>
 
-        <div className="flex-1 flex flex-col min-h-0 z-0">
-          {effectiveProgress && !isCollapsed && (
-            <div className="px-6 py-4 sticky top-0 bg-background z-10 border-b">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium">Course Progress</h3>
-                <Button variant="ghost" size="icon" className="h-auto w-auto p-0 hover:bg-transparent">
-                  <InfoIcon />
-                  <span className="sr-only">Course progress info</span>
+      {!isCollapsed && (
+        <>
+          {/* Search */}
+          <div className="p-4 border-b bg-background sticky top-[73px] z-10">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search chapters..."
+                className="pl-10 pr-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-3 w-3" />
                 </Button>
-              </div>
-              <Progress value={effectiveProgress.progress} className="h-2" />
-              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {Array.isArray(effectiveProgress.completedChapters) ? effectiveProgress.completedChapters.length : 0}{" "}
-                  / {totalChapters} chapters
-                </span>
-                <span>{Math.round(effectiveProgress.progress)}% complete</span>
-              </div>
-
-              {!isAuthenticated && (
-                <div className="mt-2 pt-2 border-t border-dashed border-muted">
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
-                    className="text-xs p-0 h-auto text-primary"
-                  >
-                    Sign in to save your progress
-                  </Button>
-                </div>
               )}
             </div>
-          )}
+          </div>
 
-          {!isCollapsed && (
-            <div className="flex-1 overflow-hidden">
-              <div
-                className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
-                style={{ maxHeight: "calc(100vh - 200px)" }}
-              >
-                {filteredUnits.map((unit, unitIndex) => (
-                  <div key={unit.id} className="mb-4">
-                    {/* Unit title section - Collapsible trigger removed for simplicity */}
-                    <div className="flex items-center justify-between p-3 text-sm font-medium text-foreground">
-                      <div className="flex flex-col w-full">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold">{unit.title || "Untitled Unit"}</span>
-                          <div className="flex items-center space-x-2">
+          {/* Progress */}
+          <div className="p-4 border-b bg-muted/30">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium">Your Progress</h3>
+              <span className="text-xs text-muted-foreground">{Math.round(effectiveProgress.progress)}%</span>
+            </div>
+            <Progress value={effectiveProgress.progress} className="h-2 mb-2" />
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {completedCount} of {totalChapters} complete
+              </span>
+              {!isAuthenticated && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
+                  className="text-xs p-0 h-auto text-primary"
+                >
+                  Sign in to save
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Course Content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="space-y-1">
+              {filteredUnits.map((unit, unitIndex) => {
+                const unitProgress = unit.chapters.filter((chapter) =>
+                  completedChapters.includes(Number(chapter.id)),
+                ).length
+                const isExpanded = expandedUnits.has(unit.id.toString())
+
+                return (
+                  <div key={unit.id} className="border-b border-border/50 last:border-b-0">
+                    {/* Unit Header */}
+                    <button
+                      onClick={() => toggleUnit(unit.id.toString())}
+                      className="w-full p-4 text-left hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm truncate">{unit.title || "Untitled Unit"}</h3>
+                          <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-muted-foreground">
-                              {unit.chapters?.filter((chapter) =>
-                                progress?.completedChapters?.includes(chapter?.id || ""),
-                              ).length || 0}
-                              /{unit.chapters?.length || 0}
+                              {unitProgress}/{unit.chapters.length} lessons
                             </span>
-                            <ChevronDown
-                              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                                false ? "rotate-180" : ""
-                              }`}
+                            <Progress
+                              value={(unitProgress / unit.chapters.length) * 100}
+                              className="h-1 flex-1 max-w-20"
                             />
                           </div>
                         </div>
-                        <Progress value={0} className="h-1" />
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                        />
                       </div>
-                    </div>
+                    </button>
 
-                    {/* Chapter list - Directly rendered without collapsible for simplicity */}
-                    <div className="space-y-1 mt-2">
-                      {unit.chapters.map((chapter, chapterIndex) => {
-                        const isCurrentChapter = chapter.videoId === currentVideoId
-                        const isNextChapter = chapter.videoId === nextVideoId
-                        const isCompleted = completedChapters?.includes(+chapter.id)
+                    {/* Unit Content */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-0">
+                            {unit.chapters.map((chapter, chapterIndex) => {
+                              const isCurrentChapter = chapter.videoId === currentVideoId
+                              const isNextChapter = chapter.videoId === nextVideoId
+                              const isCompleted = completedChapters?.includes(+chapter.id)
+                              const startTime = calculateStartTime(unit, chapterIndex)
 
-                        // Calculate timestamps for the chapter
-                        const startTime = calculateStartTime(unit, chapterIndex)
-                        const endTime = startTime + (chapter.duration || 0)
-
-                        return (
-                          <motion.div
-                            id={`chapter-${chapter.id}`}
-                            key={chapter.id}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.98 }}
-                            className={cn(
-                              "relative rounded-md px-3 py-2 transition-all cursor-pointer",
-                              isCurrentChapter
-                                ? "bg-primary/15 border-l-4 border-primary text-primary pl-2"
-                                : isCompleted
-                                  ? "bg-muted/50 hover:bg-muted/80"
-                                  : isNextChapter
-                                    ? "bg-accent/10 hover:bg-accent/20 border-l-2 border-accent pl-[10px]"
-                                    : "hover:bg-muted/50",
-                            )}
-                            onClick={() => handleChapterClick(chapter)}
-                          >
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-2">
-                                {/* Status indicator */}
-                                <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                                  {isCompleted ? (
-                                    <motion.div
-                                      initial={{ scale: 0 }}
-                                      animate={{ scale: 1 }}
-                                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                                    >
-                                      <CheckCircle className="h-4 w-4 text-primary" />
-                                    </motion.div>
-                                  ) : isCurrentChapter ? (
-                                    <motion.div
-                                      animate={{ scale: [0.8, 1.2, 0.8] }}
-                                      transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
-                                    >
-                                      <Play className="h-4 w-4 fill-primary text-primary" />
-                                    </motion.div>
-                                  ) : isNextChapter ? (
-                                    <ChevronRight className="h-4 w-4 text-accent" />
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground font-medium">
-                                      {unitIndex + 1}.{chapterIndex + 1}
-                                    </span>
+                              return (
+                                <motion.button
+                                  key={chapter.id}
+                                  onClick={() => handleChapterClick(chapter)}
+                                  className={cn(
+                                    "w-full text-left p-3 pl-8 transition-all duration-200 group",
+                                    "hover:bg-muted/50 border-l-2 border-transparent",
+                                    isCurrentChapter && "bg-primary/10 border-l-primary text-primary font-medium",
+                                    isCompleted && !isCurrentChapter && "text-muted-foreground",
+                                    isNextChapter && "border-l-orange-400 bg-orange-50 dark:bg-orange-950/20",
                                   )}
-                                </span>
+                                  whileHover={{ x: 2 }}
+                                  whileTap={{ scale: 0.98 }}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {/* Status Icon */}
+                                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center mt-0.5">
+                                      {isCompleted ? (
+                                        <CheckCircle className="h-4 w-4 text-green-600" />
+                                      ) : isCurrentChapter ? (
+                                        <motion.div
+                                          animate={{ scale: [0.8, 1.2, 0.8] }}
+                                          transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
+                                        >
+                                          <Play className="h-4 w-4 fill-primary text-primary" />
+                                        </motion.div>
+                                      ) : isNextChapter ? (
+                                        <ChevronRight className="h-4 w-4 text-orange-500" />
+                                      ) : (
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                          {chapterIndex + 1}
+                                        </span>
+                                      )}
+                                    </div>
 
-                                {/* Title */}
-                                <div className="flex-1 text-sm truncate">
-                                  <span
-                                    className={cn(
-                                      "truncate line-clamp-2",
-                                      isCurrentChapter ? "font-medium" : "",
-                                      isCompleted && !isCurrentChapter ? "text-muted-foreground" : "",
-                                    )}
-                                  >
-                                    {chapter.title}
-                                  </span>
-                                </div>
+                                    {/* Chapter Info */}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <h4 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                                          {chapter.title}
+                                        </h4>
+                                        {isNextChapter && (
+                                          <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+                                            Next
+                                          </Badge>
+                                        )}
+                                      </div>
 
-                                {/* Next badge for upcoming video */}
-                                {isNextChapter && (
-                                  <span className="text-[10px] uppercase font-semibold bg-accent/20 text-accent px-1.5 py-0.5 rounded">
-                                    Next
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Duration indicator */}
-                              {chapter.videoId && chapter.duration > 0 && (
-                                <div className="flex items-center text-xs text-muted-foreground ml-7">
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  <span>
-                                    {formatDuration(startTime)} - {formatDuration(endTime)}
-                                    <span className="ml-1">({formatDuration(chapter.duration || 0)})</span>
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        )
-                      })}
-                    </div>
+                                      {/* Duration */}
+                                      {chapter.duration > 0 && (
+                                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                                          <Clock className="h-3 w-3" />
+                                          <span>{formatDuration(chapter.duration)}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </motion.button>
+                              )
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                ))}
-              </div>
+                )
+              })}
             </div>
-          )}
-        </div>
-      </div>
-    ),
-    [
-      course?.courseUnits,
-      currentChapter,
-      currentVideoId,
-      effectiveProgress,
-      isAuthenticated,
-      isCollapsed,
-      isMobile,
-      nextVideoId,
-      onVideoSelect,
-      prevVideoId,
-      totalChapters,
-      filteredUnits,
-      handleChapterClick,
-      searchQuery,
-    ],
+          </div>
+        </>
+      )}
+    </div>
   )
-
-  return <div className="flex flex-col h-full overflow-hidden">{sidebarContent}</div>
 }

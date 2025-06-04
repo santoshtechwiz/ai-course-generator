@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { Clock, X, PlayCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { useAuth } from "@/hooks/useAuth"
 
 interface AutoplayOverlayProps {
   countdown: number
@@ -16,6 +17,7 @@ interface AutoplayOverlayProps {
 }
 
 export const AutoplayOverlay = ({ countdown, onCancel, onNextVideo, nextVideoTitle }: AutoplayOverlayProps) => {
+  const { isAuthenticated } = useAuth()
   const [progress, setProgress] = useState(((5 - countdown) / 5) * 100)
 
   useEffect(() => {
