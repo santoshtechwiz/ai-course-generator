@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation"
 import { PlusCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import AutoplayOverlay from "./AutoplayOverlay"
+import KeyboardShortcutsModal from "./KeyboardShortcutsModal"
 
 interface MainContentProps {
   slug: string
@@ -95,6 +96,23 @@ function MainContent({
   // Improve quiz prompt visibility state with additional flag for completed status
   const [showQuizPrompt, setShowQuizPrompt] = useState(false)
   const [chapterCompleted, setChapterCompleted] = useState(false)
+  // Add this state
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
+
+  // Add a global keyboard shortcut to show the modal
+  // Add this inside the component before the return statement
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Show keyboard shortcuts modal when pressing ?
+      if (e.key === "?" || (e.key === "/" && e.shiftKey)) {
+        e.preventDefault()
+        setShowKeyboardShortcuts(true)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   // Clear timeout on unmount
   useEffect(() => {
@@ -502,30 +520,7 @@ function MainContent({
       </div>
 
       <div className="mt-2 text-xs text-muted-foreground flex items-center justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs"
-          onClick={() => {
-            toast({
-              title: "Keyboard Shortcuts",
-              description: (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div>Space/K: Play/Pause</div>
-                  <div>J: Rewind 10s</div>
-                  <div>L: Forward 10s</div>
-                  <div>F: Fullscreen</div>
-                  <div>M: Mute/Unmute</div>
-                  <div>↑: Volume Up</div>
-                  <div>↓: Volume Down</div>
-                </div>
-              ),
-              duration: 5000,
-            })
-          }}
-        >
-          Keyboard Shortcuts
-        </Button>
+        <KeyboardShortcutsModal />
       </div>
 
       {/* Autoplay Toggle */}
