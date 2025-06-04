@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
 import { Loader2, Bookmark, CheckCircle } from "lucide-react"
@@ -16,6 +16,7 @@ import {
   setResumePoint,
   setLastPlayedAt
 } from "@/store/slices/courseSlice"
+import { Debug } from "./Debug" // Add this new import
 
 interface VideoPlayerProps {
   videoId: string
@@ -109,6 +110,7 @@ const EnhancedVideoPlayer = ({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playerLoaded = useRef<boolean>(false);
   const videoIdRef = useRef<string>(videoId);
+  const didSetInitialVideo = useRef<boolean>(false);
 
   // Debug: log autoplay state
   useEffect(() => {
@@ -149,7 +151,16 @@ const EnhancedVideoPlayer = ({
       dispatch(setResumePoint({ courseId, resumePoint: 0 }));
       dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
     }
-  }, [videoId]);
+  }, [videoId, courseId, dispatch]);
+
+  // Seek to initial time if provided
+  useEffect(() => {
+    if (!didSetInitialVideo.current && initialTime > 0 && playerRef.current) {
+      console.debug("[EnhancedVideoPlayer] Seeking to initialTime:", initialTime);
+      playerRef.current.seekTo(initialTime);
+      didSetInitialVideo.current = true;
+    }
+  }, [initialTime]);
 
   // Handle fullscreen change events
   useEffect(() => {
@@ -191,67 +202,12 @@ const EnhancedVideoPlayer = ({
     }
   }, [playing])
 
-  // Check if video is near completion
-  useEffect(() => {
-    // Change from 0.95 to 0.98 to ensure video plays closer to the end
-    if (played > 0.99 && !videoCompleted) {
-      setVideoCompleted(true);
-      setPlaying(false); // Pause the video when it's completed
-
-      if (onChapterComplete) {
-        onChapterComplete();
-      }
-      setShowCompletionToast(true);
-
-      setTimeout(() => {
-        setShowCompletionToast(false);
-      }, 3000);
-    }
-  }, [played, videoCompleted, onChapterComplete])
-
-  // Throttled progress update
-  const handleProgress = useCallback(
-    (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
-      if (!playerRef.current?.getInternalPlayer()?.seeking) {
-        // Only update state if the change is significant enough
-        if (Math.abs(state.played - played) > 0.01) {
-          setPlayed(state.played);
-        }
-        if (Math.abs(state.loaded - loaded) > 0.01) {
-          setLoaded(state.loaded);
-        }
-
-        if (onProgress && Math.abs(state.played - played) > 0.01) {
-          onProgress(state.played);
-        }
-
-        // Store progress in Redux instead of localStorage
-        if (Math.abs(state.played - lastSavedPosition) > 0.01) {
-          dispatch(setVideoProgress({ 
-            videoId, 
-            time: state.played,
-            playedSeconds: state.playedSeconds,
-            duration: duration
-          }));
-          setLastSavedPosition(state.played);
-        }
-      }
-
-      if (courseId) {
-        dispatch(setResumePoint({ courseId, resumePoint: state.played }));
-        dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
-      }
-    },
-    [onProgress, videoId, lastSavedPosition, played, loaded, dispatch, duration, courseId]
-  );
-
-  const handleDuration = (duration: number) => setDuration(duration);
-
-  const handleVideoEnd = () => {
-    // Pause the video
+  // 1. Define handleVideoEnd first, before any hooks that use it
+  const handleVideoEnd = useCallback(() => {
+    console.debug("[EnhancedVideoPlayer] Video ended");
     setPlaying(false);
+    setVideoCompleted(true);
 
-    // Store final position in Redux
     dispatch(setVideoProgress({ 
       videoId, 
       time: 1.0,
@@ -259,10 +215,77 @@ const EnhancedVideoPlayer = ({
       duration: duration 
     }));
 
-    // Always call onEnded when the video actually ends
-    onEnded();
-  }
+    if (onChapterComplete) {
+      onChapterComplete();
+    }
 
+    setShowCompletionToast(true);
+    setTimeout(() => setShowCompletionToast(false), 3000);
+
+    onEnded();
+  }, [videoId, dispatch, duration, onEnded, onChapterComplete]);
+
+  // 2. Now the useEffect can safely use handleVideoEnd
+  useEffect(() => {
+    if (!videoCompleted && duration > 0 && played > 0.97) {
+      setVideoCompleted(true);
+      handleVideoEnd();
+    }
+  }, [played, duration, videoCompleted, handleVideoEnd]);
+
+  // 3. Update handleProgress to use handleVideoEnd
+  const handleProgress = useCallback(
+    (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
+      try {
+        setPlayed(state.played);
+        setLoaded(state.loaded);
+        setDebugInfo(prev => ({
+          ...prev,
+          playerState: `progress: ${Math.round(state.played * 100)}%`,
+          lastEvent: "progress update"
+        }));
+
+        if (onProgress) {
+          onProgress(state.played);
+        }
+
+        if (Math.abs(state.played - lastSavedPosition) > 0.01) {
+          dispatch(setVideoProgress({ 
+            videoId, 
+            time: state.played,
+            playedSeconds: state.playedSeconds,
+            duration: duration 
+          }));
+          setLastSavedPosition(state.played);
+        }
+
+        if (courseId) {
+          dispatch(setResumePoint({ courseId, resumePoint: state.played }));
+          dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }));
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error in progress handler";
+        console.error("[EnhancedVideoPlayer] Progress error:", errorMessage);
+        setDebugInfo(prev => ({
+          ...prev,
+          errors: [...prev.errors, errorMessage]
+        }));
+      }
+    },
+    [onProgress, videoId, lastSavedPosition, dispatch, duration, courseId]
+  );
+
+  // 2. Add debug state
+  const [debugInfo, setDebugInfo] = useState({
+    playerState: "initial",
+    lastEvent: "",
+    errors: [] as string[],
+  });
+
+  // 3. Other handler functions follow
+  const handleDuration = (duration: number) => setDuration(duration);
+
+  // Buffering handlers
   const handleBuffer = () => setIsBuffering(true);
   const handleBufferEnd = () => setIsBuffering(false);
 
@@ -459,13 +482,7 @@ const EnhancedVideoPlayer = ({
       console.debug("[EnhancedVideoPlayer] Setting playing to true");
       setPlaying(true);
     }
-
-    // If there's an initial time, seek to it
-    if (initialTime > 0 && playerRef.current) {
-      console.debug("[EnhancedVideoPlayer] Seeking to initialTime:", initialTime);
-      playerRef.current.seekTo(initialTime);
-    }
-  }, [autoPlay, autoplayEnabled, initialTime]);
+  }, [autoPlay, autoplayEnabled]);
 
   // Handle player errors
   const handlePlayerError = useCallback((error: any) => {
@@ -602,8 +619,24 @@ const EnhancedVideoPlayer = ({
         onAddBookmark={handleAddBookmark}
         formatTime={formatTime}
       />
+
+      {/* Add Debug Overlay */}
+      <Debug
+        info={{
+          videoId,
+          playing,
+          duration,
+          played: Math.round(played * 100),
+          loaded: Math.round(loaded * 100),
+          playerState: debugInfo.playerState,
+          lastEvent: debugInfo.lastEvent,
+          errors: debugInfo.errors,
+        }}
+      />
     </div>
   )
 }
 
-export default EnhancedVideoPlayer
+// Export with proper memo
+const MemoizedEnhancedVideoPlayer = React.memo(EnhancedVideoPlayer)
+export default MemoizedEnhancedVideoPlayer
