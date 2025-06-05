@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import type { ReactNode } from "react"
 import { useEffect, useState, useRef } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { signOut, useSession } from "next-auth/react"
+import { signOut, signIn, useSession } from "next-auth/react"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
 
@@ -53,7 +53,15 @@ export function UserMenu({ children }: UserMenuProps) {
 
   const handleSignOut = async () => {
     const currentUrl = window.location.pathname
-    await signOut({ callbackUrl: currentUrl })
+    await signOut({
+      callbackUrl: currentUrl,
+      redirect: true,
+    })
+  }
+
+  const handleSignIn = () => {
+    const callbackUrl = window.location.pathname
+    signIn(undefined, { callbackUrl })
   }
 
   const getSubscriptionBadge = () => {
@@ -162,13 +170,7 @@ export function UserMenu({ children }: UserMenuProps) {
               <span>Log out</span>
             </DropdownMenuItem>
           </>
-        ) : (
-          <DropdownMenuItem asChild>
-            <Link href="/sign-in" className="w-full text-center">
-              <span>Sign In</span>
-            </Link>
-          </DropdownMenuItem>
-        )}
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )
