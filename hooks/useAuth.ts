@@ -39,9 +39,9 @@ export function useAuth() {
           name: session.user.name,
           email: session.user.email,
           image: session.user.image,
-          isAdmin: session.user.isAdmin || false,
-          credits: session.user.credits || 0,
-          userType: session.user.userType || 'FREE'
+        //  isAdmin: session.user.isAdmin || false,
+        //  credits: session.user.credits || 0,
+        //  userType: session.user.userType || 'FREE'
         },
         token: session.user.accessToken || null
       }));
@@ -51,10 +51,10 @@ export function useAuth() {
   }, [session, sessionStatus, dispatch]);
 
   // Wrap next-auth signIn function to update Redux state
-  const signIn = useCallback(async (provider?: string, options?: any) => {
+  const signIn = useCallback(async (provider?: string, options?: any): Promise<any> => {
     try {
       dispatch(logoutAction()) // Clear previous state
-      const result = await nextAuthSignIn(provider, options)
+      const result: any = await signIn(provider, options)
       
       // If signIn was successful and we have the response,
       // we'll wait for the session to be updated and Redux will get that
@@ -71,7 +71,7 @@ export function useAuth() {
   // Wrap next-auth signOut function to update Redux state
   const signOut = useCallback(async (options?: any) => {
     try {
-      await nextAuthSignOut(options)
+      await signOut(options)
       dispatch(logoutAction())
     } catch (error) {
       console.error("Sign out error:", error)
