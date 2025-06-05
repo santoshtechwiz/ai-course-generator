@@ -2,10 +2,10 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 
-import { Loader2, CheckCircle, XCircle } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, MessageSquarePlus } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
 
 export type FeedbackState = "idle" | "loading" | "success" | "error"
@@ -47,6 +47,7 @@ export function FeedbackButton({
 }: FeedbackButtonProps) {
   const [feedbackState, setFeedbackState] = useState<FeedbackState>("idle")
   const [buttonText, setButtonText] = useState<React.ReactNode>(children)
+  const ref = useRef<HTMLButtonElement>(null)
 
   // Reset to idle state after feedback duration
   useEffect(() => {
@@ -132,17 +133,37 @@ export function FeedbackButton({
     }
   }
 
+  // Check if we're inside a <p> tag and add warning in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      const button = ref.current
+      if (button) {
+        let parent = button.parentElement
+        while (parent) {
+          if (parent.tagName.toLowerCase() === "p") {
+            console.warn(
+              "FeedbackButton is inside a <p> tag. This may cause hydration errors. Consider wrapping the parent text in a <span> instead."
+            )
+            break
+          }
+          parent = parent.parentElement
+        }
+      }
+    }
+  }, [])
+
   return (
-    <motion.div
+    <motion.span
       whileHover={feedbackState === "idle" ? { scale: 1.05 } : {}}
       whileTap={feedbackState === "idle" ? { scale: 0.98 } : {}}
       transition={{ duration: 0.3, ease: DEFAULT_EASING }}
-      className="inline-flex" // Ensure proper button sizing
+      className="inline-flex" // Keep inline-flex for proper button sizing
     >
       <Button
+        ref={ref}
         {...props}
         className={cn(
-          "transition-colors duration-200", // Smooth color transitions
+          "transition-colors duration-200",
           getButtonStyles(),
           className,
         )}
@@ -156,6 +177,6 @@ export function FeedbackButton({
           {buttonText}
         </span>
       </Button>
-    </motion.div>
+    </motion.span>
   )
 }
