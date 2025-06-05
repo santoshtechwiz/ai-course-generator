@@ -1,5 +1,13 @@
 "use client"
 
+import { TooltipContent } from "@/components/ui/tooltip"
+
+import { TooltipTrigger } from "@/components/ui/tooltip"
+
+import { Tooltip } from "@/components/ui/tooltip"
+
+import { TooltipProvider } from "@/components/ui/tooltip"
+
 import type React from "react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -49,13 +57,20 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
   const [showPreview, setShowPreview] = useState(!isPremium && !isAuthenticated)
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null
+
     if (!existingSummary && !isPremium) {
       setShowAIEmoji(true)
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         setShowAIEmoji(false)
         refetch()
       }, 60000) // 1 minute delay
-      return () => clearTimeout(timer)
+    }
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer)
+      }
     }
   }, [existingSummary, isPremium, refetch])
 
@@ -64,8 +79,11 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
   const handleEdit = () => setIsEditing(true)
 
   const handleSave = async () => {
+    if (!chapterId) return
+
     try {
       setIsSaving(true)
+
       const response = await fetch(`/api/chapter/${chapterId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -73,12 +91,18 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
       })
 
       if (response.ok) {
+        // Wait for the state update to complete before showing toast
         setIsEditing(false)
+
         toast({
           title: "Summary updated",
           description: "The chapter summary has been successfully updated.",
         })
-        refetch() // Refresh the summary data
+
+        // Refetch after a short delay to ensure state is updated
+        setTimeout(() => {
+          refetch()
+        }, 100)
       } else {
         throw new Error("Failed to update summary")
       }
@@ -125,27 +149,32 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
   // For unauthenticated users, show a preview with blur effect
   if (showPreview) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-3xl font-bold mb-6">{name}</h2>
-        <Card className="bg-card relative overflow-hidden">
-          <CardContent className="p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="space-y-6"
+      >
+        <h2 className="text-3xl font-bold">{name}</h2>
+        <Card className="bg-card relative overflow-hidden shadow-md">
+          <CardContent className="p-8">
             <div className="relative">
               {/* Blurred content */}
               <div className="filter blur-sm">
                 <div className="prose dark:prose-invert max-w-none">
-                  <h3>Chapter Summary</h3>
-                  <p>
+                  <h3 className="text-xl font-semibold mb-4">Chapter Summary</h3>
+                  <p className="leading-relaxed mb-4">
                     This chapter explores the fundamental concepts of programming, including variables, data types, and
                     control structures. We begin by examining how to declare and initialize variables, understanding
                     their scope and lifetime within a program.
                   </p>
-                  <p>
+                  <p className="leading-relaxed mb-6">
                     Next, we delve into various data types such as integers, floating-point numbers, characters, and
                     booleans. The chapter also covers complex data structures like arrays, lists, and dictionaries,
                     explaining how they store and organize information.
                   </p>
-                  <h3>Key Concepts</h3>
-                  <ul>
+                  <h3 className="text-xl font-semibold mb-2">Key Concepts</h3>
+                  <ul className="space-y-1.5">
                     <li>Variable declaration and initialization</li>
                     <li>Understanding data types and type conversion</li>
                     <li>Control structures: conditionals and loops</li>
@@ -156,24 +185,37 @@ const CourseAISummary: React.FC<CourseAISummaryProps> = ({ chapterId, name, exis
 
               {/* Overlay with sign-in prompt */}
               <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-                <div className="text-center p-6 max-w-md">
-                  <Lock className="h-12 w-12 text-primary/50 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Premium Content</h3>
-                  <p className="text-muted-foreground mb-4">
+                <motion.div
+                  className="text-center p-8 max-w-md"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2, duration: 0.5, type: "spring" }}
+                >
+                  <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Lock className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-semibold mb-3">Premium Content</h3>
+                  <p className="text-muted-foreground mb-6">
                     Sign in or upgrade to access AI-generated summaries for this chapter.
                   </p>
-                  <div className="flex space-x-4 justify-center">
-                    <Button onClick={() => (window.location.href = "/api/auth/signin")}>Sign In</Button>
-                    <Button variant="outline" onClick={() => (window.location.href = "/dashboard/subscription")}>
-                      Upgrade
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button size="lg" onClick={() => (window.location.href = "/api/auth/signin")}>
+                      Sign In
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => (window.location.href = "/dashboard/subscription")}
+                    >
+                      Upgrade to Premium
                     </Button>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     )
   }
 
@@ -384,7 +426,7 @@ const SummaryContent: React.FC<{
   >
     <h2 className="text-3xl font-bold mb-6">{name}</h2>
     {isAdmin && (
-      <div className="flex space-x-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-6">
         {isEditing ? (
           <>
             <Button onClick={onSave} variant="outline" size="sm" disabled={isSaving}>
@@ -415,8 +457,9 @@ const SummaryContent: React.FC<{
         )}
       </div>
     )}
-    <Card className="bg-card">
-      <CardContent className="p-6 relative">
+
+    <Card className="bg-card shadow-md">
+      <CardContent className="p-8 relative">
         {isEditing ? (
           <div className="space-y-4">
             <textarea
@@ -428,21 +471,29 @@ const SummaryContent: React.FC<{
           </div>
         ) : (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute top-2 right-2 h-8 w-8 p-0"
-              onClick={() => copyToClipboard(processedContent)}
-            >
-              <Copy className="h-4 w-4" />
-              <span className="sr-only">Copy summary</span>
-            </Button>
-            <MarkdownRenderer content={processedContent} />
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-4 right-4 h-8 w-8 p-0 opacity-70 hover:opacity-100 transition-opacity"
+                    onClick={() => copyToClipboard(processedContent)}
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span className="sr-only">Copy summary</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy to clipboard</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <article className="prose dark:prose-invert prose-headings:scroll-m-20 prose-headings:font-semibold prose-h3:text-xl prose-h4:text-lg prose-p:leading-relaxed prose-p:mb-4 prose-blockquote:border-l-2 prose-blockquote:pl-6 prose-blockquote:italic max-w-none">
+              <MarkdownRenderer content={processedContent} />
+            </article>
           </>
         )}
       </CardContent>
     </Card>
-    {/* <PDFGenerator markdown={processedContent} chapterName={name} /> */}
   </motion.div>
 )
 

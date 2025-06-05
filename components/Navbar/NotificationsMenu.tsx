@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
+import { useSession } from "next-auth/react"
+import { useAuth } from "@/hooks/useAuth"
 
 import useSubscription from "@/hooks/use-subscription"
 
@@ -26,20 +28,32 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
   const [creditCount, setCreditCount] = useState(initialCount)
   const { data, setRefreshing } = useSubscription()
   const [isClient, setIsClient] = useState(false)
+  const { data: session } = useSession()
+  const { user } = useAuth()
 
   // Set isClient to true when component mounts (client-side only)
   useEffect(() => {
     setIsClient(true)
   }, [])
-
   // Update credit count when subscription status changes
   useEffect(() => {
+    // First check subscription data
     if (data && typeof data.credits === "number") {
       setCreditCount(data.credits - (data.tokensUsed ?? 0))
-    } else if (initialCount > 0) {
+    } 
+    // Then check user data from Redux
+    else if (user?.credits) {
+      setCreditCount(user.credits)
+    }
+    // Then check session data
+    else if (session?.user?.credits) {
+      setCreditCount(session.user.credits)
+    }
+    // Fallback to initialCount
+    else if (initialCount > 0) {
       setCreditCount(initialCount)
     }
-  }, [data, initialCount])
+  }, [data, user, session, initialCount])
 
   // Refresh credits when the dropdown is opened
   const handleOpen = (open: boolean) => {

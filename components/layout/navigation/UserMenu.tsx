@@ -18,7 +18,6 @@ import type { ReactNode } from "react"
 import { useEffect, useState, useRef } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { signOut, useSession } from "next-auth/react"
-
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
 
@@ -36,10 +35,8 @@ export function UserMenu({ children }: UserMenuProps) {
   const isLoading = status === "loading"
   const user = session?.user
 
-  // Use ref to prevent multiple fetch calls
   const hasInitializedRef = useRef(false)
 
-  // Refresh subscription data when menu is opened - this avoids the infinite loop
   const handleMenuOpen = (open: boolean) => {
     setIsMenuOpen(open)
     if (open && isAuthenticated && !isLoadingSubscription) {
@@ -47,7 +44,6 @@ export function UserMenu({ children }: UserMenuProps) {
     }
   }
 
-  // Fetch subscription data only ONCE on initial mount
   useEffect(() => {
     if (isAuthenticated && !hasInitializedRef.current) {
       hasInitializedRef.current = true
@@ -60,7 +56,6 @@ export function UserMenu({ children }: UserMenuProps) {
     await signOut({ callbackUrl: currentUrl })
   }
 
-  // Improved subscription badge display with loading state
   const getSubscriptionBadge = () => {
     if (isLoadingSubscription) {
       return (
@@ -80,13 +75,15 @@ export function UserMenu({ children }: UserMenuProps) {
     } as const
 
     return (
-      <Badge variant={variants[plan as keyof typeof variants] || "outline"} className="ml-auto">
+      <Badge
+        variant={variants[plan as keyof typeof variants] === "success" ? "default" : variants[plan as keyof typeof variants] || "outline"}
+        className="ml-auto"
+      >
         {plan}
       </Badge>
     )
   }
 
-  // Display credits badge with loading state
   const getCreditsDisplay = () => {
     if (isLoadingSubscription) {
       return <Skeleton className="h-4 w-12 ml-1" />
@@ -96,7 +93,6 @@ export function UserMenu({ children }: UserMenuProps) {
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
-  // Show loading state when auth is loading
   if (isLoading) {
     return (
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -105,29 +101,28 @@ export function UserMenu({ children }: UserMenuProps) {
     )
   }
 
-  if (!isAuthenticated || !user) return null
-
   return (
     <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
-            <AvatarFallback>
-              {isLoadingSubscription ? <Loader2 className="h-4 w-4 animate-spin" /> : (user?.name?.[0] ?? "U")}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
+        {children || (
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
+              <AvatarFallback>
+                {isLoadingSubscription ? <Loader2 className="h-4 w-4 animate-spin" /> : user?.name?.[0] ?? "U"}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        )}
       </DropdownMenuTrigger>
+
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        {children ? (
-          children
-        ) : (
+        {isAuthenticated && user ? (
           <>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                {user?.name ? <p className="font-medium text-sm">{user.name}</p> : <Skeleton className="h-4 w-24" />}
-                {user?.email ? (
+                {user.name ? <p className="font-medium text-sm">{user.name}</p> : <Skeleton className="h-4 w-24" />}
+                {user.email ? (
                   <p className="w-full truncate text-xs text-muted-foreground">{user.email}</p>
                 ) : (
                   <Skeleton className="h-3 w-32" />
@@ -151,7 +146,8 @@ export function UserMenu({ children }: UserMenuProps) {
                   {getCreditsDisplay()}
                 </Link>
               </DropdownMenuItem>
-              {user?.isAdmin && (
+
+              {user.isAdmin && (
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/admin" className="cursor-pointer">
                     <Crown className="mr-2 h-4 w-4" />
@@ -166,6 +162,12 @@ export function UserMenu({ children }: UserMenuProps) {
               <span>Log out</span>
             </DropdownMenuItem>
           </>
+        ) : (
+          <DropdownMenuItem asChild>
+            <Link href="/sign-in" className="w-full text-center">
+              <span>Sign In</span>
+            </Link>
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

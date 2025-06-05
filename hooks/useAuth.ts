@@ -29,19 +29,19 @@ export function useAuth() {
 
   // Use next-auth session directly
   const { data: session, status: sessionStatus } = useSession();
-
   // Update Redux state when session changes
   useEffect(() => {
     if (sessionStatus === "authenticated" && session?.user) {
+      // Ensure we have all the user data we need
       dispatch(loginSuccess({ 
         user: {
           id: session.user.id,
           name: session.user.name,
           email: session.user.email,
           image: session.user.image,
-        //  isAdmin: session.user.isAdmin || false,
-        //  credits: session.user.credits || 0,
-        //  userType: session.user.userType || 'FREE'
+          isAdmin: session.user.isAdmin || false,
+          credits: session.user.credits || 0,
+          userType: session.user.userType || 'FREE'
         },
         token: session.user.accessToken || null
       }));

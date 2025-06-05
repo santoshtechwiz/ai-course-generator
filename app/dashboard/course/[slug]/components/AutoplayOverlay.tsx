@@ -4,10 +4,12 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Clock, X, PlayCircle } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/hooks/useAuth"
+import { Clock, X, PlayCircle } from "lucide-react"
+
 
 interface AutoplayOverlayProps {
   countdown: number

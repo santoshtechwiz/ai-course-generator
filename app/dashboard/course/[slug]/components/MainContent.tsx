@@ -378,58 +378,13 @@ function MainContent({
 
   const showCourseComplete = isLastVideo && showCompletionOverlay && courseCompleted
 
+  const videoId = initialVideoId || ""
+  const hasVideoId = !!videoId
+
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Quiz Creation Floating Button */}
-      {chapterCompleted && showQuizPrompt && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.button
-                className="fixed right-6 bottom-24 sm:bottom-10 z-40 bg-primary text-primary-foreground shadow-lg rounded-full p-3 flex items-center gap-2"
-                onClick={handleCreateQuiz}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 15,
-                  delay: 0.2,
-                }}
-              >
-                <PlusCircle className="h-5 w-5" />
-                <span className="hidden sm:inline">Create Quiz</span>
-              </motion.button>
-            </TooltipTrigger>
-            <TooltipContent side="left" sideOffset={10}>
-              <p>Create a custom quiz based on this chapter</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-
-      {/* Autoplay Overlay */}
-      <AnimatePresence>
-        {autoplayOverlay && (
-          <AutoplayOverlay
-            countdown={autoplayCountdown}
-            onCancel={handleCancelAutoplay}
-            onNextVideo={handleNextVideo}
-            nextVideoTitle={
-              nextVideoId
-                ? course.courseUnits
-                    ?.flatMap((unit) => unit.chapters)
-                    .find((chapter) => chapter.videoId === nextVideoId)?.title
-                : undefined
-            }
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Video Player */}
-      <div className="mb-6">
+    <div className="flex flex-col w-full">
+      {/* Video player takes full width within its container */}
+      <div className="w-full">
         {currentVideoId ? (
           <EnhancedVideoPlayer
             videoId={currentVideoId}

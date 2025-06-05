@@ -168,14 +168,26 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
   isEligible = true,
   progress = 100,
 }) => {
-  const { data: session } = useSession()
+  // Fix for useSession not being in SessionProvider context
+  // Use try/catch to handle potential errors when useSession is not available
+  const sessionData = (() => {
+    try {
+      // Return the session data if available
+      return useSession()?.data || null
+    } catch (error) {
+      // If useSession throws an error, return null
+      console.warn("Session provider not available:", error)
+      return null
+    }
+  })()
+  
   const { toast } = useToast()
 
   // Memoize values to prevent unnecessary re-renders - ensure they're never null/undefined
   const effectiveUserName = useMemo(() => {
-    const name = userName || session?.user?.name || "Student"
+    const name = userName || sessionData?.user?.name || "Student"
     return name ? String(name).trim() || "Student" : "Student"
-  }, [userName, session?.user?.name])
+  }, [userName, sessionData?.user?.name])
   
   const safeCourseName = useMemo(() => {
     return courseName ? String(courseName).trim() || "Course" : "Course"
@@ -258,7 +270,7 @@ const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
   }
 
   // If this component is being rendered for PDF only
-  if (userName && !session) {
+  if (userName && !sessionData) {
     return <Certificate userName={effectiveUserName} courseName={safeCourseName} />
   }
 
