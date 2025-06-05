@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
-import { Loader2, Bookmark } from "lucide-react"
+import { Loader2, Bookmark, RefreshCw } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/hooks/use-toast"
 import { VideoControls } from "./VideoControls"
@@ -52,17 +52,29 @@ const formatTime = (seconds: number): string => {
 
 const VideoPlayerFallback = ({ onReload }: { onReload?: () => void }) => (
   <div className="flex flex-col items-center justify-center w-full h-full bg-background rounded-lg border border-border aspect-video">
-    <div className="text-destructive mb-2">Unable to load video player</div>
-    <p className="text-muted-foreground mb-6 text-center max-w-sm">
-      There was an error loading the video. This may be due to network issues or the video being unavailable.
-    </p>
-    <div className="flex gap-4">
-      <Button variant="outline" onClick={() => window.location.reload()}>
-        Reload Page
-      </Button>
+    <div className="space-y-4 text-center p-6">
+      <div className="flex justify-center">
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.5, 1, 0.5],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+          }}
+        >
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </motion.div>
+      </div>
+      <div className="space-y-2">
+        <p className="text-lg font-medium">Preparing your video...</p>
+        <p className="text-sm text-muted-foreground">This may take a few moments</p>
+      </div>
       {onReload && (
-        <Button variant="default" onClick={onReload}>
-          Try Again
+        <Button variant="outline" size="sm" onClick={onReload} className="mt-4">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Retry
         </Button>
       )}
     </div>
@@ -114,6 +126,7 @@ const EnhancedVideoPlayer = ({
   const [videoCompleted, setVideoCompleted] = useState(false)
   const [lastSavedPosition, setLastSavedPosition] = useState(videoProgress?.time || 0)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(0)
   const [isPlayerReady, setIsPlayerReady] = useState(false)
   const [showSubtitles, setShowSubtitles] = useState(false)
   const playerRef = useRef<ReactPlayer>(null)
@@ -433,6 +446,11 @@ const EnhancedVideoPlayer = ({
     [duration, toast],
   )
 
+  const handleVideoReady = useCallback(() => {
+    setLoadingProgress(100)
+    setTimeout(() => setIsLoading(false), 500)
+  }, [])
+
   const handlePlayerReady = useCallback(() => {
     setIsPlayerReady(true)
     setIsLoading(false)
@@ -598,6 +616,19 @@ const EnhancedVideoPlayer = ({
       onMouseLeave={() => playing && setShowControls(false)}
       onClick={() => setShowControls(true)}
     >
+      <AnimatePresence mode="wait">
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-10"
+          >
+            <VideoPlayerFallback />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {playerError ? (
         <VideoPlayerFallback onReload={resetPlayerState} />
       ) : (
