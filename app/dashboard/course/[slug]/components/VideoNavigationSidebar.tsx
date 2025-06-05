@@ -235,6 +235,7 @@ export default function VideoNavigationSidebar({
                   const isCompleted = effectiveCompletedChapters?.includes(Number(chapter.id)) || false
                   const isLocked = !isAuthenticated && !chapter.isFree
                   const isNextVideo = chapter.videoId === nextVideoId
+                  const duration = chapter.duration ? formatDuration(chapter.duration) : null
 
                   return (
                     <div
@@ -279,7 +280,7 @@ export default function VideoNavigationSidebar({
                           </span>
 
                           <div className="flex items-center gap-2 mt-1 text-xs">
-                            {chapter.duration && <span className="text-muted-foreground">{chapter.duration}</span>}
+                            {duration && <span className="text-muted-foreground">{duration}</span>}
 
                             <div className="flex items-center gap-1">
                               {isNextVideo && (

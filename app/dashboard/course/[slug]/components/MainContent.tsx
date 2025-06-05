@@ -467,12 +467,15 @@ function MainContent({
             </span>
           )}
           <span className="hidden sm:inline">•</span>
-          <span>
-            Lesson{" "}
-            {course.courseUnits?.flatMap((unit) => unit.chapters).findIndex((ch) => ch.id === currentChapter?.id) + 1 ||
-              1}{" "}
-            of {course.courseUnits?.flatMap((unit) => unit.chapters).length || 0}
-          </span>
+          {course.courseUnits ? (
+            <span>
+              Lesson{" "}
+              {course.courseUnits?.flatMap((unit) => unit.chapters).findIndex((ch) => ch.id === currentChapter?.id) + 1 || 1}{" "}
+              of {course.courseUnits?.flatMap((unit) => unit.chapters).length || 0}
+            </span>
+          ) : (
+            <span className="h-4 w-16 bg-muted animate-pulse rounded"></span>
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             <Button
