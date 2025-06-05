@@ -146,6 +146,7 @@ interface VideoControlsProps {
   nextVideoId?: string
   theaterMode?: boolean
   showSubtitles?: boolean
+  isDragging?: boolean
   onPlayPause: () => void
   onSkip: (seconds: number) => void
   onMute: () => void
@@ -160,6 +161,8 @@ interface VideoControlsProps {
   onPictureInPicture?: () => void
   onTheaterMode?: () => void
   onToggleSubtitles?: () => void
+  onDragStart?: () => void
+  onDragEnd?: () => void
   formatTime: (seconds: number) => string
 }
 
@@ -178,6 +181,7 @@ export const VideoControls = ({
   nextVideoId,
   theaterMode = false,
   showSubtitles = false,
+  isDragging: parentIsDragging = false,
   onPlayPause,
   onSkip,
   onMute,
@@ -192,12 +196,16 @@ export const VideoControls = ({
   onPictureInPicture = () => {},
   onTheaterMode = () => {},
   onToggleSubtitles = () => {},
+  onDragStart = () => {},
+  onDragEnd = () => {},
   formatTime,
 }: VideoControlsProps) => {
   const progressBarRef = useRef<HTMLDivElement>(null)
 
-  // Add a new state to track scrubbing position
+  // Add a new state to track scrubbing position and hover preview
   const [scrubbingPosition, setScrubbingPosition] = useState<number | null>(null)
+  const [hoverPosition, setHoverPosition] = useState<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   // Calculate progress bar bookmark positions
   const getBookmarkPositions = () => {
@@ -207,22 +215,26 @@ export const VideoControls = ({
     }))
   }
 
-  // Modify the progress bar click handler to update display during scrubbing
+  // Improved progress bar click handler
   const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (progressBarRef.current) {
+    if (progressBarRef.current && !isDragging) {
       const rect = progressBarRef.current.getBoundingClientRect()
       const offsetX = e.clientX - rect.left
-      const newPosition = offsetX / rect.width
+      const newPosition = Math.max(0, Math.min(1, offsetX / rect.width))
       onSeekChange(newPosition)
     }
   }
 
-  // Add new mouse events for scrubbing
+  // Enhanced mouse events for better scrubbing experience
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(true)
+    onDragStart() // Notify parent component
+    
     const rect = progressBarRef.current?.getBoundingClientRect()
     if (rect) {
       const offsetX = e.clientX - rect.left
-      const newPosition = offsetX / rect.width
+      const newPosition = Math.max(0, Math.min(1, offsetX / rect.width))
       setScrubbingPosition(newPosition)
 
       // Add event listeners for drag and release
@@ -231,25 +243,56 @@ export const VideoControls = ({
     }
   }
 
-  // New function to handle mouse movement during scrubbing
+  // Improved mouse movement during scrubbing
   const handleMouseMove = (e: MouseEvent) => {
     const rect = progressBarRef.current?.getBoundingClientRect()
     if (rect) {
       const offsetX = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
       const newPosition = offsetX / rect.width
       setScrubbingPosition(newPosition)
+      
+      // Update position during drag without triggering loading state
+      onSeekChange(newPosition)
     }
   }
 
-  // New function to handle mouse up (end of scrubbing)
+  // Enhanced mouse up handling
   const handleMouseUp = (e: MouseEvent) => {
     document.removeEventListener("mousemove", handleMouseMove)
     document.removeEventListener("mouseup", handleMouseUp)
+    setIsDragging(false)
+    onDragEnd() // Notify parent component
 
     const rect = progressBarRef.current?.getBoundingClientRect()
     if (rect && scrubbingPosition !== null) {
+      // Final seek when drag ends
       onSeekChange(scrubbingPosition)
       setScrubbingPosition(null)
+    }
+  }
+
+  // Add hover preview functionality
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = progressBarRef.current?.getBoundingClientRect()
+    if (rect) {
+      const offsetX = e.clientX - rect.left
+      const position = Math.max(0, Math.min(1, offsetX / rect.width))
+      setHoverPosition(position)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    setHoverPosition(null)
+  }
+
+  const handleMouseMoveOnBar = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) {
+      const rect = progressBarRef.current?.getBoundingClientRect()
+      if (rect) {
+        const offsetX = e.clientX - rect.left
+        const position = Math.max(0, Math.min(1, offsetX / rect.width))
+        setHoverPosition(position)
+      }
     }
   }
 
@@ -279,23 +322,46 @@ export const VideoControls = ({
         show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
       )}
     >
-      {/* Progress bar with bookmarks */}
+      {/* Enhanced progress bar with hover preview and bookmarks */}
       <div
         ref={progressBarRef}
         className="relative w-full h-2 mb-3 bg-white/30 rounded-full cursor-pointer group"
         onClick={handleProgressBarClick}
         onMouseDown={handleMouseDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMoveOnBar}
       >
+        {/* Loaded progress */}
+        <div className="h-full bg-primary/40 rounded-full absolute top-0" style={{ width: `${loaded * 100}%` }} />
+        
+        {/* Played progress */}
         <div
-          className="h-full bg-primary rounded-full"
+          className="h-full bg-primary rounded-full transition-all duration-150"
           style={{ width: `${(scrubbingPosition !== null ? scrubbingPosition : played) * 100}%` }}
         />
-        <div className="h-full bg-primary/40 rounded-full absolute top-0" style={{ width: `${loaded * 100}%` }} />
 
-        {/* Add scrubbing handle that only appears during scrubbing */}
+        {/* Hover preview indicator */}
+        {hoverPosition !== null && !isDragging && (
+          <>
+            <div
+              className="absolute top-1/2 w-3 h-3 bg-white/80 rounded-full transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              style={{ left: `${hoverPosition * 100}%` }}
+            />
+            {/* Hover time tooltip */}
+            <div
+              className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              style={{ left: `${hoverPosition * 100}%` }}
+            >
+              {formatTime(duration * hoverPosition)}
+            </div>
+          </>
+        )}
+
+        {/* Scrubbing handle that appears during scrubbing */}
         {scrubbingPosition !== null && (
           <div
-            className="absolute top-1/2 w-4 h-4 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-md"
+            className="absolute top-1/2 w-4 h-4 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-lg border-2 border-primary"
             style={{ left: `${scrubbingPosition * 100}%` }}
           />
         )}
@@ -305,12 +371,13 @@ export const VideoControls = ({
           getBookmarkPositions().map((bookmark, index) => (
             <div
               key={index}
-              className="absolute top-1/2 w-2 h-4 bg-yellow-400 rounded-sm transform -translate-y-1/2 cursor-pointer hover:bg-yellow-300 transition-colors"
+              className="absolute top-1/2 w-2 h-4 bg-yellow-400 rounded-sm transform -translate-y-1/2 cursor-pointer hover:bg-yellow-300 transition-colors shadow-sm"
               style={{ left: bookmark.position }}
               onClick={(e) => {
                 e.stopPropagation()
                 onSeekToBookmark(bookmark.time)
               }}
+              title={`Bookmark: ${formatTime(bookmark.time)}`}
             />
           ))}
       </div>
@@ -383,7 +450,6 @@ export const VideoControls = ({
             </Button>
             <VolumeControl volume={volume} onChange={onVolumeChange} muted={muted} />
           </div>
-
           <SimpleMenu
             trigger={
               <Button
@@ -446,6 +512,8 @@ export const VideoControls = ({
               </div>
             </SimpleMenuItem>
 
+            <SimpleDivider />
+
             <SimpleMenuItem onClick={onPictureInPicture}>
               <div className="flex items-center">
                 <Picture className="h-4 w-4 mr-2" />
@@ -468,7 +536,10 @@ export const VideoControls = ({
                   <div className="max-h-40 overflow-y-auto">
                     {bookmarks.map((time, index) => (
                       <SimpleMenuItem key={index} onClick={() => onSeekToBookmark(time)}>
-                        Bookmark {index + 1}: {formatTime(time)}
+                        <div className="flex items-center justify-between w-full">
+                          <span>Bookmark {index + 1}</span>
+                          <span className="text-xs text-muted-foreground">{formatTime(time)}</span>
+                        </div>
                       </SimpleMenuItem>
                     ))}
                   </div>

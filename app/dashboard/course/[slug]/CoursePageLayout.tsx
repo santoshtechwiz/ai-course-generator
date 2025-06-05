@@ -1,20 +1,33 @@
 "use client"
 
+import { FullCourseType } from "@/app/types/types"
 import { type ReactNode, useState, useEffect } from "react"
 import { BookOpen, Menu, X, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { cn } from "@/lib/tailwindUtils"
 import { useAppSelector } from "@/store/hooks"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 import FloatingCourseActions from "./components/FloatingCourseActions"
 import VideoNavigationSidebar from "./components/VideoNavigationSidebar"
+import CoursePage from "./components/CoursePage"
 
 interface CoursePageLayoutProps {
-  children: ReactNode
-  slug: string
+  course: FullCourseType
+  children?: ReactNode
+  params?: {
+    slug?: string
+  }
+  searchParams?: {
+    chapterId?: string
+  }
 }
 
-export default function CoursePageLayout({ children, slug }: CoursePageLayoutProps) {
+export default function CoursePageLayout({
+  course,
+  params,
+  searchParams,
+}: CoursePageLayoutProps) {
   const courseState = useAppSelector((state) => state.course)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMediaQuery("(max-width: 1024px)")
@@ -44,6 +57,46 @@ export default function CoursePageLayout({ children, slug }: CoursePageLayoutPro
   const completedChapters = courseState.courseProgress?.completedChapters?.length || 0
   const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
 
+  // Perform a basic validation to ensure course has the minimum required data
+  const isCourseValid = course && 
+                       course.id && 
+                       course.title && 
+                       course.slug && 
+                       Array.isArray(course.courseUnits);
+
+  const hasValidUnits = isCourseValid && 
+                       course.courseUnits?.length > 0 && 
+                       course.courseUnits.some(unit => 
+                         Array.isArray(unit.chapters) && unit.chapters.length > 0
+                       );
+  
+  // If course data is invalid or missing key components, show error
+  if (!isCourseValid || !hasValidUnits) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Course</AlertTitle>
+          <AlertDescription>
+            The course data is incomplete or invalid. Please try again or contact support.
+          </AlertDescription>
+        </Alert>
+        
+        <div className="my-8 text-center">
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const initialChapterId = searchParams?.chapterId;
+
+  // Render the course page if validation passes
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Top Navigation Bar */}
@@ -113,7 +166,9 @@ export default function CoursePageLayout({ children, slug }: CoursePageLayoutPro
         </aside>
 
         {/* Main Content */}
-        <main className={cn("flex-1 overflow-y-auto", "px-4 py-6 md:px-6 lg:px-8")}>{children}</main>
+        <main className={cn("flex-1 overflow-y-auto", "px-4 py-6 md:px-6 lg:px-8")}>
+          <CoursePage course={course} initialChapterId={initialChapterId} />
+        </main>
       </div>
     </div>
   )

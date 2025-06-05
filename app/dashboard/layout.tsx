@@ -1,12 +1,9 @@
 import type React from "react"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
-import { getAuthSession } from "@/lib/auth"
-import { Chatbot } from "@/components/features/chat/Chatbot"
 import { NavigationEvents } from "./NavigationEvents"
 import { FullPageLoader } from "@/components/ui/loader"
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
-import dynamic from "next/dynamic"
 
 import  CourseAIState  from "@/components/development/CourseAIState"
 import ReduxBootstrap from "@/components/development/ReduxBootstrap"

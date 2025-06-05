@@ -16,17 +16,22 @@ import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import useSubscription from "@/hooks/use-subscription"
 import { useAuth } from "@/hooks/useAuth"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar"
 
 export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session } = useSession()
-  const { user, isAuthenticated } = useAuth()
+  const { data: session, status: sessionStatus } = useSession()
+  const { user, isAuthenticated, status: authStatus } = useAuth()
   const { totalTokens, tokenUsage, subscriptionPlan, isLoading: isSubscriptionLoading } = useSubscription()
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Use a single source of truth for authentication status
+  const isLoggedIn = sessionStatus === "authenticated" || isAuthenticated
 
   // Handle scroll effect
   useEffect(() => {
@@ -76,7 +81,7 @@ export default function MainNavbar() {
           {/* Credit display for authenticated users */}
           {isAuthenticated && !showLoading && (
             <div className="hidden md:flex items-center space-x-1" data-testid="credits-display">
-              <div className="text-sm font-medium">Credits: {availableCredits}</div>
+              <div className="text-sm font-medium">Credits: </div>
               {subscriptionPlan !== "FREE" && (
                 <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">{subscriptionPlan}</span>
               )}
@@ -112,12 +117,29 @@ export default function MainNavbar() {
             }}
           />
 
-          <ThemeToggle />
-
-          {session && <NotificationsMenu />}
+          <ThemeToggle />          {/* Notification Menu - Only show when authenticated */}
+          {isLoggedIn && <NotificationsMenu />}
 
           {/* User Menu */}
-          <UserMenu />
+          <UserMenu>
+            {isLoggedIn ? (
+              // User is logged in - show avatar/profile
+              <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={session?.user?.image || user?.image || ""} />
+                  <AvatarFallback>{(session?.user?.name || user?.name || "U").charAt(0)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            ) : sessionStatus === "loading" || authStatus === "loading" ? (
+              // Auth is loading - show skeleton
+              <Skeleton className="h-8 w-8 rounded-full" />
+            ) : (
+              // User is not logged in - show sign in button
+              <Button variant="ghost" size="sm" onClick={() => router.push("/api/auth/signin")}>
+                Sign In
+              </Button>
+            )}
+          </UserMenu>
 
           {/* Mobile Menu */}
           <MobileMenu />

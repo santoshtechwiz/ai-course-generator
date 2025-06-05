@@ -228,10 +228,10 @@ export interface VideoMetadata {
 }
 
 export interface FullChapterType {
-  id: number | string;
+  id: number;
   title: string;
   description?: string;
-  videoId: string;
+  videoId: string; // Make this required
   order?: number;
   summary?: string | null;
   questions?: CourseQuestion[];
@@ -239,25 +239,27 @@ export interface FullChapterType {
 }
 
 export interface CourseUnitType {
-  id: number | string;
+  id: number;
   title: string;
-  description?: string;
-  order?: number;
+  order: number;
   chapters: FullChapterType[];
 }
 
 export interface FullCourseType {
-  id: number | string;
+  id: number;
   title: string;
-  description?: string;
   slug: string;
+  description?: string;
   image?: string;
-  courseUnits: CourseUnitType[];
-  isPublic?: boolean;
+  courseUnits: CourseUnitType[]; 
   category?: {
-    id: number | string;
+    id: number;
     name: string;
   };
+  user?: any; // User who created the course
+  ratings?: any[]; // Course ratings
+  favorites?: any[]; // Course favorites
+  courseProgress?: any[]; // Course progress records
 }
 
 // Enhanced course type with full relationship data
@@ -374,6 +376,51 @@ export function generateBreadcrumbItemsFromPath(path: string): { name: string; i
     name: part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, ' '),
     item: `/${parts.slice(0, index + 1).join('/')}`,
   }))
+}
+
+// Add or modify these types to ensure proper type checking
+
+export interface FullChapterType {
+  id: number;
+  title: string;
+  description?: string;
+  videoId: string; // Make this required
+  order?: number;
+  summary?: string | null;
+  questions?: CourseQuestion[];
+  name?: string; // Legacy support
+}
+
+export interface CourseUnitType {
+  id: number;
+  title: string;
+  order: number;
+  chapters: FullChapterType[];
+}
+
+export interface FullCourseType {
+  id: number;
+  title: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  courseUnits: CourseUnitType[]; // Ensure this is properly typed
+  category?: {
+    id: number;
+    name: string;
+  };
+}
+
+// Add a type guard function for checking course validity
+export function isValidCourse(course: any): course is FullCourseType {
+  return (
+    course &&
+    typeof course.id === 'number' &&
+    typeof course.title === 'string' &&
+    typeof course.slug === 'string' &&
+    Array.isArray(course.courseUnits) &&
+    course.courseUnits.length > 0
+  );
 }
 
 

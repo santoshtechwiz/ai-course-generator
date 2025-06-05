@@ -8,6 +8,9 @@ export interface AuthUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  isAdmin?: boolean;
+  credits?: number;
+  userType?: string;
 }
 
 export interface AuthState {
@@ -16,6 +19,7 @@ export interface AuthState {
   status: "idle" | "loading" | "authenticated" | "unauthenticated";
   error: string | null;
   isInitialized: boolean;
+  isAdmin?: boolean;
 }
 
 // Initial state

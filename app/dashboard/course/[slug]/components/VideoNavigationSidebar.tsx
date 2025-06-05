@@ -1,14 +1,17 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useMemo, useState, useCallback } from "react"
 import { signIn } from "next-auth/react"
-import { ChevronDown, CheckCircle, Play, ChevronUp, Clock, Lock, FileText } from "lucide-react"
+import { CheckCircle, Lock, ChevronRight, Circle, PlayCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { cn } from "@/lib/tailwindUtils"
-import { motion, AnimatePresence } from "framer-motion"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
+import { useAppSelector } from "@/store/hooks"
 
 interface VideoNavigationSidebarProps {
   course: FullCourseType
@@ -40,11 +43,28 @@ export default function VideoNavigationSidebar({
   currentVideoId,
   isAuthenticated,
   progress,
-  completedChapters,
   nextVideoId,
+  prevVideoId,
+  completedChapters,
 }: VideoNavigationSidebarProps) {
+  // Safety check for course and courseUnits
+  if (!course || !Array.isArray(course.courseUnits) || course.courseUnits.length === 0) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-muted-foreground">No course content available</p>
+      </div>
+    )
+  }
+
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
+
+  // Get Redux state for course progress
+  const reduxCourseProgress = useAppSelector((state) => state.course.courseProgress[+courseId])
+  const reduxCompletedChapters = reduxCourseProgress?.completedChapters || []
+
+  // Use Redux state if available, otherwise fall back to props
+  const effectiveCompletedChapters = reduxCompletedChapters.length > 0 ? reduxCompletedChapters : completedChapters
 
   const effectiveProgress = useMemo(() => {
     if (!course) {
@@ -58,24 +78,32 @@ export default function VideoNavigationSidebar({
       }
     }
 
+    // Use Redux progress if available
+    if (reduxCourseProgress) {
+      return {
+        ...reduxCourseProgress,
+        completedChapters: effectiveCompletedChapters,
+      }
+    }
+
     return (
       progress || {
         id: 0,
         userId: "",
         courseId: typeof course.id === "string" ? Number.parseInt(course.id) : course.id || 0,
         progress: 0,
-        completedChapters: [],
+        completedChapters: effectiveCompletedChapters,
         currentChapterId: currentChapter?.id || null,
       }
     )
-  }, [progress, course, currentChapter?.id])
+  }, [progress, course, currentChapter?.id, reduxCourseProgress, effectiveCompletedChapters])
 
   const totalChapters = useMemo(() => {
     if (!course?.courseUnits) return 0
     return course.courseUnits.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0)
   }, [course])
 
-  const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
+  const completedCount = Array.isArray(effectiveCompletedChapters) ? effectiveCompletedChapters.length : 0
 
   const filteredUnits = useMemo(() => {
     if (!searchQuery.trim() || !course?.courseUnits) return course?.courseUnits || []
@@ -121,19 +149,39 @@ export default function VideoNavigationSidebar({
     }
   }, [currentChapter, course?.courseUnits])
 
+  // Calculate the overall progress percentage
+  const courseProgress = useMemo(() => {
+    if (!effectiveCompletedChapters?.length) return 0
+
+    const totalChapters = course?.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
+
+    return totalChapters ? Math.round((effectiveCompletedChapters.length / totalChapters) * 100) : 0
+  }, [effectiveCompletedChapters?.length, course?.courseUnits])
+
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Course Content Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-bold">Course Content</h2>
-          <span className="text-sm text-muted-foreground">
-            {completedCount}/{totalChapters}
+      {/* Header section with course title and progress */}
+      <div className="p-5 sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b" aria-label="Course progress">
+        <h3 className="text-lg font-medium leading-none line-clamp-1 mb-2">{course?.title || "Course Content"}</h3>
+
+        <div className="flex items-center justify-between text-sm mb-2">
+          <span className="text-muted-foreground flex items-center gap-1.5">
+            <CheckCircle className="h-3.5 w-3.5 text-primary/80" />
+            <span>
+              {effectiveCompletedChapters?.length || 0} of {totalChapters} completed
+            </span>
           </span>
+          <span className="text-muted-foreground font-medium">{Math.round(effectiveProgress.progress)}%</span>
         </div>
-        <Button variant="ghost" size="sm" className="p-1 h-auto">
-          <ChevronUp className="h-5 w-5" />
-        </Button>
+
+        <Progress
+          value={courseProgress}
+          className="h-1.5"
+          aria-label={`Course progress: ${courseProgress}%`}
+          aria-valuenow={courseProgress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        />
       </div>
 
       {/* Search */}
@@ -173,156 +221,126 @@ export default function VideoNavigationSidebar({
       </div>
 
       {/* Course Content */}
-      <div className="flex-1 overflow-y-auto">
-        {filteredUnits.map((unit, unitIndex) => {
-          const unitProgress = unit.chapters.filter((chapter) => completedChapters.includes(Number(chapter.id))).length
-          const isExpanded = expandedUnits.has(unit.id.toString())
+      <ScrollArea className="flex-1">
+        <div className="divide-y divide-border/40">
+          {course?.courseUnits?.map((unit) => (
+            <div key={unit.id} className="mb-1 last:mb-0">
+              {/* Unit heading */}
+              <div className="px-5 py-2.5 bg-muted/40 sticky top-0 z-10 font-medium text-sm">{unit.title}</div>
 
-          return (
-            <div key={unit.id} className="border-b">
-              {/* Unit Header */}
-              <button
-                onClick={() => toggleUnit(unit.id.toString())}
-                className="w-full px-4 py-3 text-left hover:bg-muted/30 transition-colors flex items-center justify-between"
-              >
-                <div className="flex-1">
-                  <h3 className="font-bold text-base">{unit.title || "Untitled Unit"}</h3>
-                  <div className="flex items-center text-sm text-muted-foreground mt-1">
-                    <span>
-                      {unitProgress}/{unit.chapters.length} lessons
-                    </span>
-                  </div>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "h-5 w-5 text-muted-foreground transition-transform duration-200",
-                    isExpanded && "rotate-180",
-                  )}
-                />
-              </button>
+              {/* Chapter list */}
+              <div>
+                {unit.chapters.map((chapter) => {
+                  const isActive = currentChapter?.id === chapter.id
+                  const isCompleted = effectiveCompletedChapters?.includes(Number(chapter.id)) || false
+                  const isLocked = !isAuthenticated && !chapter.isFree
+                  const isNextVideo = chapter.videoId === nextVideoId
 
-              {/* Unit Content */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden bg-muted/10"
-                  >
-                    <div className="border-t border-border/30">
-                      {unit.chapters.map((chapter, chapterIndex) => {
-                        const isCurrentChapter = chapter.videoId === currentVideoId
-                        const isNextChapter = chapter.videoId === nextVideoId
-                        const isCompleted = completedChapters?.includes(+chapter.id)
-                        const isLocked = false // Replace with your logic for locked content
+                  return (
+                    <div
+                      key={chapter.id}
+                      className={cn(
+                        "border-l-2 border-transparent transition-all",
+                        isActive ? "border-l-primary bg-accent/50" : "hover:border-l-primary/30",
+                      )}
+                    >
+                      <button
+                        className={cn(
+                          "flex items-center w-full px-5 py-3 text-sm transition-colors",
+                          isActive ? "text-foreground font-medium" : "text-muted-foreground",
+                          "hover:text-foreground group",
+                          isLocked && "opacity-70",
+                        )}
+                        onClick={() => !isLocked && onVideoSelect(chapter.videoId || "")}
+                        disabled={isLocked}
+                        aria-current={isActive ? "true" : "false"}
+                        aria-label={`${chapter.title || "Untitled Chapter"}${isCompleted ? " (completed)" : ""}${isLocked ? " (locked)" : ""}`}
+                      >
+                        <div
+                          className={cn(
+                            "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mr-3.5",
+                            isActive ? "text-primary" : isCompleted ? "text-green-500" : "text-muted-foreground",
+                          )}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle className="h-5 w-5 fill-green-500/20" />
+                          ) : isLocked ? (
+                            <Lock className="h-4 w-4" />
+                          ) : isActive ? (
+                            <PlayCircle className="h-5 w-5 fill-primary/20" />
+                          ) : (
+                            <Circle className="h-5 w-5" />
+                          )}
+                        </div>
 
-                        return (
-                          <button
-                            key={chapter.id}
-                            onClick={() => handleChapterClick(chapter)}
-                            className={cn(
-                              "w-full text-left py-3 px-4 border-b last:border-b-0 border-border/30 flex items-start gap-3 transition-colors",
-                              isCurrentChapter ? "bg-primary/5" : "hover:bg-muted/30",
-                              isLocked && "opacity-70",
-                            )}
-                            disabled={isLocked}
-                          >
-                            {/* Number or Status Icon */}
-                            <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full border">
-                              {isCompleted ? (
-                                <CheckCircle className="h-4 w-4 text-primary fill-primary" />
-                              ) : isCurrentChapter ? (
-                                <Play className="h-3 w-3 fill-primary text-primary" />
-                              ) : isLocked ? (
-                                <Lock className="h-3 w-3 text-muted-foreground" />
-                              ) : (
-                                <span className="text-sm font-medium">{chapterIndex + 1}</span>
+                        <div className="flex flex-col items-start text-left">
+                          <span className={cn("line-clamp-2 leading-tight", isActive && "font-medium text-foreground")}>
+                            {chapter.title || "Untitled Chapter"}
+                          </span>
+
+                          <div className="flex items-center gap-2 mt-1 text-xs">
+                            {chapter.duration && <span className="text-muted-foreground">{chapter.duration}</span>}
+
+                            <div className="flex items-center gap-1">
+                              {isNextVideo && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] py-0 h-4 bg-primary/10 text-primary border-primary/20"
+                                >
+                                  Next
+                                </Badge>
+                              )}
+
+                              {chapter.isFree && (
+                                <Badge variant="outline" className="text-[10px] py-0 h-4">
+                                  Free
+                                </Badge>
                               )}
                             </div>
+                          </div>
+                        </div>
 
-                            {/* Chapter Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between">
-                                <h4
-                                  className={cn(
-                                    "text-sm font-medium line-clamp-2",
-                                    isCurrentChapter && "text-primary",
-                                    isCompleted && !isCurrentChapter && "text-muted-foreground",
-                                  )}
-                                >
-                                  {chapter.title}
-                                </h4>
-                              </div>
+                        <ChevronRight
+                          className={cn(
+                            "ml-auto h-4 w-4 text-muted-foreground/70 transition-opacity",
+                            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-70",
+                          )}
+                        />
+                      </button>
 
-                              {/* Content type and duration */}
-                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                <div className="flex items-center">
-                                  <FileText className="h-3 w-3 mr-1" />
-                                  <span>Video</span>
-                                </div>
-
-                                {chapter.duration > 0 && (
-                                  <div className="flex items-center">
-                                    <Clock className="h-3 w-3 mr-1" />
-                                    <span>{formatDuration(chapter.duration)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Preview button for locked content */}
-                            {isLocked && (
-                              <Button variant="outline" size="sm" className="text-xs h-7">
-                                Preview
-                              </Button>
-                            )}
-                          </button>
-                        )
-                      })}
+                      {/* Bottom divider for better visual separation */}
+                      <div className={cn("h-px mx-10 bg-border/40", isActive && "bg-transparent")}></div>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  )
+                })}
+              </div>
             </div>
-          )
-        })}
-      </div>
+          )) || <div className="p-5 text-center text-muted-foreground">No chapters available.</div>}
 
-      {/* CourseAIState */}
-      <div className="border-t p-4 bg-blue-50 dark:bg-blue-950/20">
-        <button className="w-full flex items-center justify-between text-primary">
-          <div className="flex items-center">
-            <div className="mr-2 text-primary">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M12 3L4 9V21H20V9L12 3Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M16 13C16 15.2091 14.2091 17 12 17C9.79086 17 8 15.2091 8 13C8 10.7909 9.79086 9 12 9C14.2091 9 16 10.7909 16 13Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M12 17V21"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <span className="font-medium">CourseAIState</span>
-          </div>
-          <ChevronDown className="h-5 w-5" />
-        </button>
+          {/* Bottom spacing for better scrolling experience */}
+          <div className="h-8"></div>
+        </div>
+      </ScrollArea>
+
+      {/* Footer area for additional course information */}
+      <div className="border-t p-4 bg-muted/30 text-xs text-muted-foreground">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-between cursor-help">
+                <span>Course ID: {courseId}</span>
+                {Math.round(effectiveProgress.progress) === 100 && (
+                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                    Completed
+                  </Badge>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Your progress is saved automatically</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   )

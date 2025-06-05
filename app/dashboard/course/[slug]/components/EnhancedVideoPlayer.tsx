@@ -91,16 +91,20 @@ const EnhancedVideoPlayer = ({
   },
 }: VideoPlayerProps) => {
   const dispatch = useAppDispatch()
+
+  // Redux state selectors
   const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
   const playbackSettings = useAppSelector((state) => state.course.playbackSettings)
   const courseId = useAppSelector((state) => state.course.currentCourseId)
+  const videoProgress = useAppSelector((state) => state.course.videoProgress[videoId])
+  const videoBookmarks = useAppSelector((state) => state.course.bookmarks[videoId] || [])
 
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(playbackSettings.volume ?? 0.8)
   const [muted, setMuted] = useState(playbackSettings.muted ?? false)
-  const [played, setPlayed] = useState(0)
+  const [played, setPlayed] = useState(videoProgress?.time || initialTime)
   const [loaded, setLoaded] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [duration, setDuration] = useState(videoProgress?.duration || 0)
   const [showControls, setShowControls] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
   const [theaterMode, setTheaterMode] = useState(false)
@@ -108,7 +112,7 @@ const EnhancedVideoPlayer = ({
   const [isBuffering, setIsBuffering] = useState(false)
   const [showBookmarkTooltip, setShowBookmarkTooltip] = useState(false)
   const [videoCompleted, setVideoCompleted] = useState(false)
-  const [lastSavedPosition, setLastSavedPosition] = useState(0)
+  const [lastSavedPosition, setLastSavedPosition] = useState(videoProgress?.time || 0)
   const [isLoading, setIsLoading] = useState(true)
   const [isPlayerReady, setIsPlayerReady] = useState(false)
   const [showSubtitles, setShowSubtitles] = useState(false)
@@ -117,6 +121,8 @@ const EnhancedVideoPlayer = ({
   const { toast } = useToast()
   const [playerError, setPlayerError] = useState(false)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const progressUpdateRequestRef = useRef<number | null>(null)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -313,33 +319,80 @@ const EnhancedVideoPlayer = ({
     }
   }, [onBookmark, toast, videoId, dispatch])
 
+  // Add a handler for when seeking is finished
+  const handleSeek = useCallback((seekedTo: number) => {
+    setIsLoading(false)
+    setIsBuffering(false)
+    if (seekTimeoutRef.current) {
+      clearTimeout(seekTimeoutRef.current)
+      seekTimeoutRef.current = null
+    }
+  }, [])
+
   const handleSeekChange = useCallback(
     (newPlayed: number) => {
+      // Cancel any pending seek timeout
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current)
+        seekTimeoutRef.current = null
+      }
+
       setPlayed(newPlayed)
+      setIsLoading(true)
+
+      // Use a ref to track the current seek operation
       playerRef.current?.seekTo(newPlayed)
 
-      const newPlayedSeconds = newPlayed * duration
-      dispatch(
-        setVideoProgress({
-          videoId,
-          time: newPlayed,
-          playedSeconds: newPlayedSeconds,
-          duration: duration,
-        }),
-      )
-      setLastSavedPosition(newPlayed)
+      // Set a fallback timeout in case onSeek doesn't fire
+      seekTimeoutRef.current = setTimeout(() => {
+        setIsLoading(false)
+        seekTimeoutRef.current = null
+      }, 3000)
 
-      if (onProgress) {
-        onProgress(newPlayed)
-      }
+      // Only update progress for authenticated users
+      if (isAuthenticated) {
+        const newPlayedSeconds = newPlayed * duration
 
-      if (courseId) {
-        dispatch(setResumePoint({ courseId, resumePoint: newPlayed }))
-        dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
+        // Debounce progress updates to prevent excessive API calls
+        if (Math.abs(newPlayed - lastSavedPosition) > 0.01) {
+          dispatch(
+            setVideoProgress({
+              videoId,
+              time: newPlayed,
+              playedSeconds: newPlayedSeconds,
+              duration: duration,
+            }),
+          )
+          setLastSavedPosition(newPlayed)
+
+          if (onProgress) {
+            onProgress(newPlayed)
+          }
+
+          if (courseId) {
+            dispatch(setResumePoint({ courseId, resumePoint: newPlayed }))
+            dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
+          }
+        }
       }
     },
-    [videoId, onProgress, dispatch, duration, courseId],
+    [videoId, onProgress, dispatch, duration, courseId, isAuthenticated, lastSavedPosition],
   )
+
+  // Clean up seek timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current)
+        seekTimeoutRef.current = null
+      }
+
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current)
+        controlsTimeoutRef.current = null
+      }
+    }
+  }, [])
 
   const handlePlaybackSpeedChange = useCallback(
     (newSpeed: number) => {
@@ -384,10 +437,16 @@ const EnhancedVideoPlayer = ({
     setIsPlayerReady(true)
     setIsLoading(false)
 
+    // Resume from saved position if available
+    if (videoProgress?.time && videoProgress.time > 0.01) {
+      playerRef.current?.seekTo(videoProgress.time)
+      setPlayed(videoProgress.time)
+    }
+
     if (autoPlay || autoplayEnabled) {
       setPlaying(true)
     }
-  }, [autoPlay, autoplayEnabled])
+  }, [autoPlay, autoplayEnabled, videoProgress])
 
   const handlePlay = useCallback(() => {
     setIsPlayerReady(true)
@@ -416,6 +475,9 @@ const EnhancedVideoPlayer = ({
 
   const handleProgress = useCallback(
     (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
+      // Don't update progress while seeking to prevent jumps
+      if (seekTimeoutRef.current) return
+
       setPlayed(state.played)
       setLoaded(state.loaded)
 
@@ -423,24 +485,37 @@ const EnhancedVideoPlayer = ({
         onProgress(state.played)
       }
 
-      if (Math.abs(state.played - lastSavedPosition) > 0.01) {
-        dispatch(
-          setVideoProgress({
-            videoId,
-            time: state.played,
-            playedSeconds: state.playedSeconds,
-            duration: duration,
-          }),
-        )
-        setLastSavedPosition(state.played)
-      }
+      // Only update progress for authenticated users and when change is significant
+      if (isAuthenticated && Math.abs(state.played - lastSavedPosition) > 0.01) {
+        // Use a debounced update to prevent excessive state changes
+        const updateProgressData = () => {
+          dispatch(
+            setVideoProgress({
+              videoId,
+              time: state.played,
+              playedSeconds: state.playedSeconds,
+              duration: duration,
+            }),
+          )
+          setLastSavedPosition(state.played)
 
-      if (courseId) {
-        dispatch(setResumePoint({ courseId, resumePoint: state.played }))
-        dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
+          // Only update course progress for authenticated users
+          if (courseId) {
+            dispatch(setResumePoint({ courseId, resumePoint: state.played }))
+            dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
+          }
+        }
+
+        // Use requestAnimationFrame for smoother updates
+        if (!progressUpdateRequestRef.current) {
+          progressUpdateRequestRef.current = requestAnimationFrame(() => {
+            updateProgressData()
+            progressUpdateRequestRef.current = null
+          })
+        }
       }
     },
-    [onProgress, videoId, lastSavedPosition, dispatch, duration, courseId],
+    [onProgress, videoId, lastSavedPosition, dispatch, duration, courseId, isAuthenticated],
   )
 
   const handleDuration = (duration: number) => setDuration(duration)
@@ -504,6 +579,15 @@ const EnhancedVideoPlayer = ({
     }
   }, [played, duration, videoCompleted, handleVideoEnd])
 
+  useEffect(() => {
+    return () => {
+      if (progressUpdateRequestRef.current) {
+        cancelAnimationFrame(progressUpdateRequestRef.current)
+        progressUpdateRequestRef.current = null
+      }
+    }
+  }, [])
+
   return (
     <div
       ref={containerRef}
@@ -534,6 +618,7 @@ const EnhancedVideoPlayer = ({
           onBuffer={() => setIsBuffering(true)}
           onBufferEnd={() => setIsBuffering(false)}
           onError={handlePlayerError}
+          onSeek={handleSeek}
           progressInterval={1000}
           playbackRate={playbackSpeed}
           style={{ backgroundColor: "transparent" }}
@@ -558,8 +643,8 @@ const EnhancedVideoPlayer = ({
         />
       )}
 
-      {/* Loading indicator */}
-      {(!isPlayerReady || isBuffering) && (
+      {/* Single Loading indicator (only one loader at a time) */}
+      {(!isPlayerReady || isBuffering || isLoading) && !playerError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-40">
           <Loader2 className="h-8 w-8 animate-spin text-white" />
         </div>
@@ -577,7 +662,7 @@ const EnhancedVideoPlayer = ({
         fullscreen={fullscreen}
         playbackSpeed={playbackSpeed}
         autoplayNext={autoplayEnabled}
-        bookmarks={bookmarks}
+        bookmarks={videoBookmarks}
         nextVideoId={nextVideoId}
         theaterMode={theaterMode}
         showSubtitles={showSubtitles}
