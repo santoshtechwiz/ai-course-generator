@@ -90,7 +90,7 @@ export default function CoursePageLayout({ children, slug }: CoursePageLayoutPro
         <aside
           id="course-sidebar"
           className={cn(
-            "w-72 border-r bg-background z-20",
+            "w-80 border-r bg-background z-20",
             "transition-all duration-300 ease-in-out",
             isMobile ? "fixed inset-y-14 left-0 bottom-0 shadow-xl" : "relative",
             isMobile && !sidebarOpen ? "-translate-x-full" : "translate-x-0",

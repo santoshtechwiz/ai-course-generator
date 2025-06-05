@@ -16,8 +16,8 @@ export interface SubscriptionData {
 }
 
 // Define the subscription state interface
-interface SubscriptionState {
-  data: any | null
+export interface SubscriptionState {
+  data: SubscriptionData | null
   isLoading: boolean
   error: string | null
   lastFetched: number | null
