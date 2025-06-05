@@ -5,7 +5,7 @@ import { BookOpen, Menu, X, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/tailwindUtils"
 import { useAppSelector } from "@/store/hooks"
-import { useMediaQuery } from "@/hooks/use-media-query"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 import FloatingCourseActions from "./components/FloatingCourseActions"
 import VideoNavigationSidebar from "./components/VideoNavigationSidebar"
 
