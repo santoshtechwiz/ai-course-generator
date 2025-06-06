@@ -23,6 +23,7 @@ import {
   CheckCircle,
   Monitor,
   Clock,
+  Keyboard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -74,6 +75,7 @@ interface VideoControlsProps {
   showSubtitles?: boolean
   quality?: string
   bufferHealth?: number
+  isPictureInPicture?: boolean
   onPlayPause: () => void
   onSkip: (seconds: number) => void
   onMute: () => void
@@ -88,6 +90,7 @@ interface VideoControlsProps {
   onPictureInPicture?: () => void
   onTheaterMode?: () => void
   onToggleSubtitles?: () => void
+  onShowKeyboardShortcuts?: () => void
   formatTime: (seconds: number) => string
 }
 
@@ -188,7 +191,7 @@ const VolumeControl = ({ volume, onChange, muted, show }: VolumeControlProps) =>
 
   if (!show) return null
 
-  const displayVolume: number = muted ? 0 : volume
+  const displayVolume: number = muted ? 0 : isNaN(volume) ? 0 : volume
   const volumePercentage: number = Math.round(displayVolume * 100)
 
   return (
@@ -226,6 +229,9 @@ const ProgressBar = ({
   const [hoverPosition, setHoverPosition] = useState<number>(0)
   const [isDragging, setIsDragging] = useState<boolean>(false)
   const progressRef = useRef<HTMLDivElement>(null)
+
+  const safeLoaded = isNaN(loaded) ? 0 : loaded
+  const safePlayed = isNaN(played) ? 0 : played
 
   const handleMouseMove = useCallback((e: React.MouseEvent): void => {
     if (!progressRef.current) return
@@ -276,13 +282,13 @@ const ProgressBar = ({
     }
   }, [isDragging, onSeekChange])
 
-  const hoverTime: string = formatTime(duration * hoverPosition)
+  const validDuration = duration > 0 ? duration : 0
+  const hoverTime: string = formatTime(validDuration * hoverPosition)
   const progressHeight: string = isHovering || isDragging ? "h-2" : "h-1"
 
   return (
     <div className="relative group">
-      {/* Hover Preview */}
-      {isHovering && duration > 0 && (
+      {isHovering && validDuration > 0 && (
         <div
           className="absolute bottom-full mb-2 bg-black/90 text-white px-2 py-1 rounded text-xs font-medium pointer-events-none z-10 transform -translate-x-1/2"
           style={{ left: `${hoverPosition * 100}%` }}
@@ -303,26 +309,27 @@ const ProgressBar = ({
         onClick={handleClick}
         onMouseDown={handleMouseDown}
       >
-        {/* Loaded Progress */}
-        <div className="h-full bg-white/40 rounded-full absolute top-0 left-0" style={{ width: `${loaded * 100}%` }} />
-
-        {/* Played Progress */}
         <div
-          className="h-full bg-red-500 rounded-full absolute top-0 left-0 transition-all duration-150"
-          style={{ width: `${played * 100}%` }}
+          className="h-full bg-white/40 rounded-full absolute top-0 left-0"
+          style={{ width: `${safeLoaded * 100}%` }}
         />
 
-        {/* Scrubber Handle */}
+        <div
+          className="h-full bg-red-500 rounded-full absolute top-0 left-0 transition-all duration-150"
+          style={{ width: `${safePlayed * 100}%` }}
+        />
+
         {(isHovering || isDragging) && (
           <div
             className="absolute top-1/2 w-4 h-4 bg-red-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-lg transition-all duration-150"
-            style={{ left: `${played * 100}%` }}
+            style={{ left: `${safePlayed * 100}%` }}
           />
         )}
 
-        {/* Bookmarks */}
         {bookmarks.map((time: number, index: number) => {
-          const bookmarkPosition: number = duration > 0 ? (time / duration) * 100 : 0
+          if (!validDuration) return null
+
+          const bookmarkPosition: number = (time / validDuration) * 100
           return (
             <div
               key={index}
@@ -337,7 +344,6 @@ const ProgressBar = ({
           )
         })}
 
-        {/* Hover Position Indicator */}
         {isHovering && (
           <div
             className="absolute top-0 w-px h-full bg-white/60 pointer-events-none"
@@ -387,6 +393,7 @@ export const VideoControls = ({
   showSubtitles = false,
   quality = "auto",
   bufferHealth = 0,
+  isPictureInPicture = false,
   onPlayPause,
   onSkip,
   onMute,
@@ -401,14 +408,21 @@ export const VideoControls = ({
   onPictureInPicture = () => {},
   onTheaterMode = () => {},
   onToggleSubtitles = () => {},
+  onShowKeyboardShortcuts = () => {},
   formatTime,
 }: VideoControlsProps) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState<boolean>(false)
   const [showSettings, setShowSettings] = useState<boolean>(false)
 
+  const safeVolume = isNaN(volume) ? 0 : volume
+  const safePlayed = isNaN(played) ? 0 : played
+  const safeLoaded = isNaN(loaded) ? 0 : loaded
+  const safeDuration = isNaN(duration) || duration <= 0 ? 0 : duration
+  const safeBufferHealth = isNaN(bufferHealth) ? 0 : bufferHealth
+
   const getVolumeIcon = (): React.ReactElement => {
-    if (muted || volume === 0) return <VolumeX className="h-5 w-5" />
-    if (volume < 0.5) return <Volume1 className="h-5 w-5" />
+    if (muted || safeVolume === 0) return <VolumeX className="h-5 w-5" />
+    if (safeVolume < 0.5) return <Volume1 className="h-5 w-5" />
     return <Volume2 className="h-5 w-5" />
   }
 
@@ -419,8 +433,8 @@ export const VideoControls = ({
     return quality.toUpperCase()
   }
 
-  const currentTime: string = formatTime(duration * played)
-  const totalTime: string = formatTime(duration)
+  const currentTime: string = formatTime(safeDuration * safePlayed)
+  const totalTime: string = formatTime(safeDuration)
 
   return (
     <div
@@ -429,12 +443,11 @@ export const VideoControls = ({
         show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none",
       )}
     >
-      {/* Progress Bar */}
       <div className="px-4 pb-2">
         <ProgressBar
-          played={played}
-          loaded={loaded}
-          duration={duration}
+          played={safePlayed}
+          loaded={safeLoaded}
+          duration={safeDuration}
           bookmarks={bookmarks}
           onSeekChange={onSeekChange}
           onSeekToBookmark={onSeekToBookmark}
@@ -442,9 +455,7 @@ export const VideoControls = ({
         />
       </div>
 
-      {/* Controls */}
       <div className="flex items-center justify-between px-4 pb-4">
-        {/* Left Controls */}
         <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
@@ -488,7 +499,6 @@ export const VideoControls = ({
             </Button>
           )}
 
-          {/* Volume Control */}
           <div className="relative">
             <Button
               variant="ghost"
@@ -501,18 +511,16 @@ export const VideoControls = ({
             >
               {getVolumeIcon()}
             </Button>
-            <VolumeControl volume={volume} onChange={onVolumeChange} muted={muted} show={showVolumeSlider} />
+            <VolumeControl volume={safeVolume} onChange={onVolumeChange} muted={muted} show={showVolumeSlider} />
           </div>
 
-          {/* Time Display */}
           <div className="text-white text-sm font-medium ml-2 min-w-max">
             <span>{currentTime}</span>
             <span className="text-white/60 mx-1">/</span>
             <span className="text-white/80">{totalTime}</span>
           </div>
 
-          {/* Buffer Health Indicator */}
-          {bufferHealth > 0 && bufferHealth < 50 && (
+          {safeBufferHealth > 0 && safeBufferHealth < 50 && (
             <div className="flex items-center space-x-1 text-white/60">
               <div className="w-1 h-1 bg-red-400 rounded-full animate-pulse" />
               <span className="text-xs">Buffering</span>
@@ -520,9 +528,7 @@ export const VideoControls = ({
           )}
         </div>
 
-        {/* Right Controls */}
         <div className="flex items-center space-x-2">
-          {/* Quality Badge */}
           <div className="bg-black/60 text-white text-xs px-2 py-1 rounded border border-white/20">
             {getQualityBadge()}
           </div>
@@ -541,8 +547,11 @@ export const VideoControls = ({
             variant="ghost"
             size="icon"
             onClick={onPictureInPicture}
-            className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-            title="Picture-in-picture"
+            className={cn(
+              "h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200",
+              isPictureInPicture && "bg-white/20",
+            )}
+            title={isPictureInPicture ? "Exit Picture-in-Picture (p)" : "Picture-in-Picture (p)"}
           >
             <Picture className="h-5 w-5" />
           </Button>
@@ -551,13 +560,15 @@ export const VideoControls = ({
             variant="ghost"
             size="icon"
             onClick={onTheaterMode}
-            className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
+            className={cn(
+              "h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200",
+              theaterMode && "bg-white/20",
+            )}
             title={theaterMode ? "Exit theater mode (t)" : "Theater mode (t)"}
           >
             {theaterMode ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
           </Button>
 
-          {/* Settings Menu */}
           <SettingsMenu
             trigger={
               <Button
@@ -572,7 +583,6 @@ export const VideoControls = ({
             open={showSettings}
             onOpenChange={setShowSettings}
           >
-            {/* Playback Speed */}
             <div className="p-3 border-b border-white/20">
               <div className="text-white font-medium text-sm mb-3 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
@@ -597,7 +607,6 @@ export const VideoControls = ({
               </div>
             </div>
 
-            {/* Quality */}
             <div className="p-3 border-b border-white/20">
               <div className="text-white font-medium text-sm mb-3 flex items-center gap-2">
                 <Monitor className="h-4 w-4" />
@@ -620,7 +629,6 @@ export const VideoControls = ({
               </div>
             </div>
 
-            {/* Features */}
             <div className="p-3">
               <SettingsMenuItem onClick={onAutoplayToggle}>
                 <div className="flex items-center justify-between">
@@ -666,7 +674,15 @@ export const VideoControls = ({
                 </div>
               </SettingsMenuItem>
 
-              {bookmarks.length > 0 && (
+              <SettingsMenuItem onClick={onShowKeyboardShortcuts}>
+                <div className="flex items-center gap-2">
+                  <Keyboard className="h-4 w-4" />
+                  Keyboard Shortcuts
+                  <span className="text-white/60 text-xs ml-auto">?</span>
+                </div>
+              </SettingsMenuItem>
+
+              {bookmarks && bookmarks.length > 0 && (
                 <>
                   <SettingsDivider />
                   <div className="text-white font-medium text-sm mb-2 flex items-center gap-2">
@@ -699,7 +715,10 @@ export const VideoControls = ({
             variant="ghost"
             size="icon"
             onClick={onFullscreenToggle}
-            className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
+            className={cn(
+              "h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200",
+              fullscreen && "bg-white/20",
+            )}
             title={fullscreen ? "Exit fullscreen (f)" : "Fullscreen (f)"}
           >
             {fullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
