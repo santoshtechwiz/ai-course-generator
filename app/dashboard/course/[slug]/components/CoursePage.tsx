@@ -552,7 +552,7 @@ export default function CoursePage({ course, initialChapterId }: {
                   progress={progress || null}
                   nextVideoId={nextVideoId || undefined}
                   prevVideoId={prevVideoId || undefined}
-                  completedChapters={progress?.completedChapters || []}
+                  completedChapters={(progress?.completedChapters || []).map((chapter) => Number(chapter)).filter((chapter) => !isNaN(chapter))}
                 />
               </div>
             </motion.aside>

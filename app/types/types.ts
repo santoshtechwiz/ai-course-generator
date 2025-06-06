@@ -245,53 +245,6 @@ export interface CourseUnitType {
   chapters: FullChapterType[];
 }
 
-export interface FullCourseType {
-  id: number;
-  title: string;
-  slug: string;
-  description?: string;
-  image?: string;
-  courseUnits: CourseUnitType[]; 
-  category?: {
-    id: number;
-    name: string;
-  };
-  user?: any; // User who created the course
-  ratings?: any[]; // Course ratings
-  favorites?: any[]; // Course favorites
-  courseProgress?: any[]; // Course progress records
-}
-
-// Enhanced course type with full relationship data
-export interface FullCourseType {
-  id: number
-  title: string
-  description: string | null
-  image: string | null
-  viewCount: number
-  userId: number
-  categoryId: number | null
-  isCompleted: boolean
-  isPublic: boolean
-  slug: string
-  difficulty: string | null
-  estimatedHours: number | null
-  category: {
-    id: number
-    name: string
-  } | null
-  ratings: {
-    id: number
-    rating: number
-    userId: number
-    createdAt: Date
-  }[]
-  courseUnits: FullCourseUnit[]
-  courseProgress: CourseProgress[]
-  createdAt: Date
-  updatedAt: Date | null
-}
-
 // Course unit with expanded chapter data
 export interface FullCourseUnit {
   id: number
@@ -379,24 +332,6 @@ export function generateBreadcrumbItemsFromPath(path: string): { name: string; i
 }
 
 // Add or modify these types to ensure proper type checking
-
-export interface FullChapterType {
-  id: number;
-  title: string;
-  description?: string;
-  videoId: string; // Make this required
-  order?: number;
-  summary?: string | null;
-  questions?: CourseQuestion[];
-  name?: string; // Legacy support
-}
-
-export interface CourseUnitType {
-  id: number;
-  title: string;
-  order: number;
-  chapters: FullChapterType[];
-}
 
 export interface FullCourseType {
   id: number;

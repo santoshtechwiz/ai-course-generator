@@ -62,22 +62,10 @@ type CoursePageParams = {
   params: Promise<{ slug: string }>
 }
 
-// Fix type mismatch and improve error handling
+// Generate metadata for the course page with improved typing
 export async function generateMetadata({ params }: CoursePageParams): Promise<Metadata> {
   const { slug } = await params
-  let course: FullCourseType | null = null
-
-  try {
-    course = await getCourseData(slug)
-  } catch (error) {
-    console.error("Error fetching course data:", error)
-    return generatePageMetadata({
-      title: "Course Not Found | CourseAI",
-      description: "The requested programming course could not be found. Explore our other coding education resources.",
-      path: `/dashboard/course/${slug}`,
-      noIndex: true,
-    })
-  }
+  const course = (await getCourseData(slug)) as FullCourseType | null
 
   if (!course) {
     return generatePageMetadata({
@@ -88,11 +76,14 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
     })
   }
 
-  // Extract keywords safely
+  // Extract keywords from course content
   const contentKeywords = course.description ? extractKeywords(course.description, 5) : []
+
+  // Extract keywords from course title and category
   const courseKeywords = course.title?.toLowerCase().split(" ") || []
   const categoryKeyword = course.category?.name?.toLowerCase() || ""
 
+  // Create a more detailed description
   const enhancedDescription = course.description
     ? generateMetaDescription(course.description, 160)
     : `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`
@@ -118,20 +109,13 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
       course.image ||
       `/api/og?title=${encodeURIComponent(course.title)}&description=${encodeURIComponent("Interactive Programming Course")}`,
     ogType: "article",
- 
+   
   })
 }
 
 export default async function Page({ params }: CoursePageParams) {
   const { slug } = await params
-  let course: FullCourseType | null = null
-
-  try {
-    course = await getCourseData(slug)
-  } catch (error) {
-    console.error("Error fetching course data:", error)
-    notFound()
-  }
+  const course = await getCourseData(slug)
 
   if (!course) {
     notFound()
