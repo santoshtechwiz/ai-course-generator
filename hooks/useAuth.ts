@@ -1,122 +1,94 @@
-import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+"use client";
+
 import { useSession } from "next-auth/react";
-import {
-  selectAuth,
-  selectIsAuthenticated,
-  selectUser,
-  selectToken,
-  selectIsAdmin,
-  selectAuthStatus,
-  selectIsAuthLoading,
-  initializeAuth,
-  loginSuccess,
-  loginFailure,
-  logout as logoutAction,
-  setUser,
-  AuthUser
-} from "@/store/slices/authSlice";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { v4 as uuidv4 } from 'uuid'; // Add this or install it with npm
 
 export function useAuth() {
-  const dispatch = useAppDispatch();
-  const auth = useAppSelector(selectAuth);
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const user = useAppSelector(selectUser);
-  const token = useAppSelector(selectToken);
-  const isAdmin = useAppSelector(selectIsAdmin);
-  const status = useAppSelector(selectAuthStatus);
-  const isLoading = useAppSelector(selectIsAuthLoading);
+  const { data: session, status } = useSession();
+  const guestIdRef = useRef<string | null>(null);
+  
+  const isAuthenticated = status === "authenticated";
+  const userId = session?.user?.id;
+  const isLoading = status === "loading";
+  
+  // Generate a consistent guest ID for the current browser session
+  const getGuestId = useCallback(() => {
+    if (typeof window === 'undefined') return 'server';
+    
+    // If we already generated an ID, use it
+    if (guestIdRef.current) return guestIdRef.current;
+    
+    // Try to get existing guest ID from session storage first
+    let guestId = sessionStorage.getItem('guestUserId');
+    
+    // If not found in session storage, check local storage (more persistent)
+    if (!guestId) {
+      guestId = localStorage.getItem('guestUserId');
+    }
+    
+    // Create new one if needed
+    if (!guestId) {
+      // First try built-in random function
+      try {
+        guestId = `guest_${Math.random().toString(36).substring(2, 15)}`;
+      } catch (e) {
+        // Fallback to date-based ID if random fails
+        guestId = `guest_${Date.now().toString(36)}`;
+      }
+      
+      // Store in both places for redundancy
+      try {
+        sessionStorage.setItem('guestUserId', guestId);
+        localStorage.setItem('guestUserId', guestId);
+      } catch (e) {
+        console.error("Failed to store guest ID:", e);
+      }
+    }
+    
+    // Store in ref for future use
+    guestIdRef.current = guestId;
+    return guestId;
+  }, []);
 
-  // Use next-auth session directly
-  const { data: session, status: sessionStatus } = useSession();
-  // Update Redux state when session changes
+  // Create a stable guestId that doesn't change during component lifecycle
+  const guestId = useMemo(() => {
+    if (isAuthenticated) return null;
+    return getGuestId();
+  }, [isAuthenticated, getGuestId]);
+
+  // Switch to authenticated ID when session loads
   useEffect(() => {
-    if (sessionStatus === "authenticated" && session?.user) {
-      // Ensure we have all the user data we need
-      dispatch(loginSuccess({ 
-        user: {
-          id: session.user.id,
-          name: session.user.name,
-          email: session.user.email,
-          image: session.user.image,
-          isAdmin: session.user.isAdmin || false,
-          credits: session.user.credits || 0,
-          userType: session.user.userType || 'FREE'
-        },
-        token: session.user.accessToken || null
-      }));
-    } else if (sessionStatus === "unauthenticated") {
-      dispatch(logoutAction());
-    }
-  }, [session, sessionStatus, dispatch]);
-
-  // Wrap next-auth signIn function to update Redux state
-  const signIn = useCallback(async (provider?: string, options?: any): Promise<any> => {
-    try {
-      dispatch(logoutAction()) // Clear previous state
-      const result: any = await signIn(provider, options)
+    if (isAuthenticated && userId && window.localStorage) {
+      // Migrate any guest progress to the authenticated user
+      const guestProgressKeys = Object.keys(localStorage).filter(key => key.startsWith('guest-progress-'));
       
-      // If signIn was successful and we have the response,
-      // we'll wait for the session to be updated and Redux will get that
-      // via initializeAuth or the auth provider
-      
-      return result
-    } catch (error) {
-      console.error("Sign in error:", error)
-      dispatch(loginFailure(error instanceof Error ? error.message : "Sign in failed"))
-      return null
+      guestProgressKeys.forEach(key => {
+        try {
+          // Extract course ID from key
+          const courseId = key.replace('guest-progress-', '');
+          // Get guest progress
+          const guestProgress = localStorage.getItem(key);
+          
+          if (guestProgress) {
+            // Store as user progress
+            localStorage.setItem(`user-progress-${userId}-${courseId}`, guestProgress);
+            // Clean up guest progress
+            localStorage.removeItem(key);
+          }
+        } catch (e) {
+          console.error("Failed to migrate guest progress", e);
+        }
+      });
     }
-  }, [dispatch])
-
-  // Wrap next-auth signOut function to update Redux state
-  const signOut = useCallback(async (options?: any) => {
-    try {
-      await signOut(options)
-      dispatch(logoutAction())
-    } catch (error) {
-      console.error("Sign out error:", error)
-    }
-  }, [dispatch])
-
-  // Update user in Redux store
-  const updateUser = useCallback((user: AuthUser | null) => {
-    dispatch(setUser(user))
-  }, [dispatch])
+  }, [isAuthenticated, userId]);
 
   return {
-    user,
-    token,
-    isAdmin,
     isAuthenticated,
-    status,
+    userId,
     isLoading,
-    signIn,
-    signOut,
-    updateUser,
-    error: auth.error,
-    isInitialized: auth.isInitialized,
+    user: session?.user,
+    getGuestId,
+    guestId
   };
 }
-
-// Temporarily provide adapter functions for existing auth hooks
-export function useCurrentUser() {
-  const { user } = useAuth();
-  return user;
-}
-
-export function useToken() {
-  const { token } = useAuth();
-  return token;
-}
-
-export function useIsAdmin() {
-  const { isAdmin } = useAuth();
-  return isAdmin;
-}
-
-export function useAuthStatus() {
-  const { status } = useAuth();
-  return status;
-}
-
-export default useAuth;

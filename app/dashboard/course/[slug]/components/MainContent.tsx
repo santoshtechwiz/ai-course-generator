@@ -56,6 +56,8 @@ interface MainContentProps {
     category?: { name: string }
     image?: string
   }>
+  isProgressLoading: boolean // Add loading prop
+  profileError: string | null // Add profile error prop
 }
 
 function MainContent({
@@ -77,6 +79,8 @@ function MainContent({
   courseCompleted = false,
   course,
   relatedCourses = [],
+  isProgressLoading, // Add loading prop
+  profileError, // Add profile error prop
 }: MainContentProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
@@ -282,6 +286,25 @@ function MainContent({
     }
   }, [currentVideoId, initialVideoId, dispatch, course.courseUnits])
 
+  // Add recovery for stuck loading state
+  useEffect(() => {
+    let timeout: NodeJS.Timeout
+
+    if (isProgressLoading) {
+      timeout = setTimeout(() => {
+        console.log("[MainContent] Forcing progress due to timeout")
+
+        if (typeof onChapterComplete === "function" && currentChapter) {
+          onChapterComplete()
+        }
+      }, 8000)
+    }
+
+    return () => {
+      clearTimeout(timeout)
+    }
+  }, [isProgressLoading, onChapterComplete, currentChapter])
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "overview":
@@ -416,43 +439,42 @@ function MainContent({
     </div>
   )
 
+  function handleAddBookmark(time: number): void {
+    throw new Error("Function not implemented.")
+  }
+
   return (
     <div className="flex flex-col w-full">
       {/* Video player takes full width within its container */}
       <div className="w-full">
-        {currentVideoId ? (
+        {!hasVideoId ? (
+          <LoadingUI />
+        ) : isProgressLoading || profileError ? (
+          <div className="relative">
+            <LoadingUI error={profileError || "Loading..."} />
+            <div className="absolute inset-0 bg-transparent" />
+          </div>
+        ) : (
           <EnhancedVideoPlayer
-            videoId={currentVideoId}
+            videoId={videoId}
             onEnded={handleVideoEnd}
-            autoPlay={autoPlay || autoplayEnabled}
-            onProgress={onTimeUpdate}
-            initialTime={currentTime}
-            isLastVideo={isLastVideo}
             onVideoSelect={handlePlaylistVideoSelect}
-            courseName={course?.title || ""}
+            courseName={course.title}
             nextVideoId={nextVideoId}
-            bookmarks={bookmarks || []}
-            isAuthenticated={!!isAuthenticated}
-            onChapterComplete={
-              onChapterComplete ||
-              (() => {
-                if (currentChapter) {
-                  dispatch(markChapterAsCompleted(currentChapter.id))
-                  setChapterCompleted(true)
-                }
-              })
-            }
+            onBookmark={handleAddBookmark}
+            bookmarks={bookmarks}
+            isAuthenticated={isAuthenticated}
+            onChapterComplete={onChapterComplete}
             playerConfig={{
               showRelatedVideos: false,
               rememberPosition: true,
               rememberMute: true,
               showCertificateButton: !!isLastVideo,
             }}
+            courseCompleted={courseCompleted}
+            isMobile={false}
+            autoPlay={autoPlay}
           />
-        ) : (
-          <div className="relative w-full">
-            <LoadingUI />
-          </div>
         )}
       </div>
 

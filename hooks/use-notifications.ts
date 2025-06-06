@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useToast } from "./use-toast"
 
 interface Notification {
@@ -9,29 +9,50 @@ interface Notification {
   createdAt?: string
 }
 
+const mockNotifications: Notification[] = [
+  {
+    id: "1",
+    title: "Welcome!",
+    message: "Thanks for joining.",
+    read: false,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "2",
+    title: "Update",
+    message: "We’ve just launched a new feature.",
+    read: false,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "3",
+    title: "Reminder",
+    message: "Don’t forget to verify your email.",
+    read: true,
+    createdAt: new Date().toISOString()
+  }
+]
+
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
   const { toast } = useToast()
 
-  // Calculate unread count
+  // Count of unread notifications
   const unreadCount = notifications.filter(n => !n.read).length
 
+  // Simulate fetching notifications from "memory"
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
-      // Replace with your actual API call
-      const response = await fetch("/api/notifications")
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching notifications: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      setNotifications(data.notifications || [])
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Use mock data
+      setNotifications(mockNotifications)
     } catch (err) {
       console.error("Failed to fetch notifications:", err)
       setError(err instanceof Error ? err : new Error(String(err)))
@@ -41,75 +62,45 @@ export function useNotifications() {
   }, [])
 
   const markAllAsRead = useCallback(async () => {
-    try {
-      // Replace with your actual API call
-      const response = await fetch("/api/notifications/read-all", {
-        method: "POST"
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to mark all as read: ${response.status}`)
-      }
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, read: true }))
-      )
-      
-      return true
-    } catch (err) {
-      console.error("Failed to mark all as read:", err)
-      throw err
-    }
-  }, [])
+    // Simulate async operation
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    setNotifications(prev =>
+      prev.map(notification => ({ ...notification, read: true }))
+    )
+
+    toast({ title: "All notifications marked as read" })
+    return true
+  }, [toast])
 
   const markAsRead = useCallback(async (id: string) => {
-    try {
-      // Replace with your actual API call
-      const response = await fetch(`/api/notifications/${id}/read`, {
-        method: "POST"
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to mark notification as read: ${response.status}`)
-      }
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification.id === id 
-            ? { ...notification, read: true } 
-            : notification
-        )
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    setNotifications(prev =>
+      prev.map(notification =>
+        notification.id === id ? { ...notification, read: true } : notification
       )
-      
-      return true
-    } catch (err) {
-      console.error(`Failed to mark notification ${id} as read:`, err)
-      throw err
-    }
-  }, [])
+    )
+
+    toast({ title: "Notification marked as read" })
+    return true
+  }, [toast])
 
   const deleteNotification = useCallback(async (id: string) => {
-    try {
-      // Replace with your actual API call
-      const response = await fetch(`/api/notifications/${id}`, {
-        method: "DELETE"
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to delete notification: ${response.status}`)
-      }
-      
-      // Update local state
-      setNotifications(prev => prev.filter(notification => notification.id !== id))
-      
-      return true
-    } catch (err) {
-      console.error(`Failed to delete notification ${id}:`, err)
-      throw err
-    }
-  }, [])
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    setNotifications(prev =>
+      prev.filter(notification => notification.id !== id)
+    )
+
+    toast({ title: "Notification deleted" })
+    return true
+  }, [toast])
+
+  // Optional: Auto-fetch on mount
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
 
   return {
     notifications,

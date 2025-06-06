@@ -26,8 +26,8 @@ interface PlaybackSettings {
   volume: number
   muted: boolean
   playbackSpeed: number
-  autoQuality?: boolean // New field for auto quality adjustment
-  preload?: string // New field for preload setting
+  autoQuality?: boolean
+  preload?: string
 }
 
 interface CourseState {
@@ -35,15 +35,22 @@ interface CourseState {
   videoProgress: Record<string, VideoProgress>
   autoplayEnabled: boolean
   bookmarks: Record<string, number[]>
-  courseProgress: Record<number, CourseProgress>
+  courseProgress: Record<number, CourseProgress> // Legacy - keep for backward compatibility
+  userProgress: Record<string, Record<number | string, CourseProgress>> // Per-user progress
+  guestProgress: Record<number | string, CourseProgress> // Guest-only progress
   currentCourseId: number | null
   currentCourseSlug: string | null
   courseCompletionStatus: boolean
   playbackSettings: PlaybackSettings
+  userPlaybackSettings: Record<string, PlaybackSettings> // Per-user settings
+  guestPlaybackSettings: PlaybackSettings // Guest settings
   videoCache?: Record<string, any>
   performanceSettings?: Record<string, any>
   userPreferences?: Record<string, any>
   analytics?: { events: any[] }
+  nextVideoId: string | null
+  prevVideoId: string | null
+  isLoading: boolean
 }
 
 // Initial state
@@ -53,6 +60,8 @@ const initialState: CourseState = {
   autoplayEnabled: true,
   bookmarks: {},
   courseProgress: {},
+  userProgress: {},
+  guestProgress: {},
   currentCourseId: null,
   currentCourseSlug: null,
   courseCompletionStatus: false,
@@ -61,6 +70,15 @@ const initialState: CourseState = {
     muted: false,
     playbackSpeed: 1.0,
   },
+  userPlaybackSettings: {},
+  guestPlaybackSettings: {
+    volume: 0.8,
+    muted: false,
+    playbackSpeed: 1.0,
+  },
+  nextVideoId: null,
+  prevVideoId: null,
+  isLoading: true,
 }
 
 const courseSlice = createSlice({
@@ -68,7 +86,7 @@ const courseSlice = createSlice({
   initialState,
   reducers: {
     setCurrentVideo(state, action: PayloadAction<string>) {
-      state.currentVideoId = action.payload
+      state.currentVideoId = action.payload;
     },
     setVideoProgress(
       state,
@@ -77,41 +95,47 @@ const courseSlice = createSlice({
         time: number
         playedSeconds?: number
         duration?: number
+        userId?: string
       }>,
     ) {
-      const { videoId, time, playedSeconds, duration } = action.payload
+      const { videoId, time, playedSeconds, duration, userId } = action.payload;
+      
+      // Basic video progress info shared across users
       state.videoProgress[videoId] = {
         time,
         playedSeconds: playedSeconds || state.videoProgress[videoId]?.playedSeconds || 0,
         duration: duration || state.videoProgress[videoId]?.duration || 0,
-      }
+      };
     },
     setAutoplayEnabled(state, action: PayloadAction<boolean>) {
       state.autoplayEnabled = action.payload
     },
-    addBookmark(state, action: PayloadAction<BookmarkData>) {
-      const { videoId, time } = action.payload
+    addBookmark(state, action: PayloadAction<BookmarkData & { userId?: string }>) {
+      const { videoId, time, userId } = action.payload;
+      
       if (!state.bookmarks[videoId]) {
-        state.bookmarks[videoId] = []
+        state.bookmarks[videoId] = [];
       }
       // Prevent duplicate bookmarks
       if (!state.bookmarks[videoId].includes(time)) {
-        state.bookmarks[videoId].push(time)
+        state.bookmarks[videoId].push(time);
         // Sort bookmarks by time
-        state.bookmarks[videoId].sort((a, b) => a - b)
+        state.bookmarks[videoId].sort((a, b) => a - b);
       }
     },
-    removeBookmark(state, action: PayloadAction<BookmarkData>) {
-      const { videoId, time } = action.payload
+    removeBookmark(state, action: PayloadAction<BookmarkData & { userId?: string }>) {
+      const { videoId, time } = action.payload;
       if (state.bookmarks[videoId]) {
         state.bookmarks[videoId] = state.bookmarks[videoId].filter(
           (bookmark) => Math.abs(bookmark - time) > 1, // Add a small tolerance
-        )
+        );
       }
     },
     updateProgress(state, action: PayloadAction<CourseProgress>) {
       const { courseId, progress, completedChapters, currentChapterId, isCompleted, lastPlayedAt, resumePoint } =
-        action.payload
+        action.payload;
+      
+      // Legacy state update
       state.courseProgress[courseId] = {
         courseId,
         progress,
@@ -120,7 +144,9 @@ const courseSlice = createSlice({
         isCompleted,
         lastPlayedAt,
         resumePoint,
-      }
+      };
+      
+      // If we have a current user in the session, also update user-specific state
     },
     setResumePoint(state, action: PayloadAction<{ courseId: number; resumePoint: number }>) {
       const { courseId, resumePoint } = action.payload
@@ -141,19 +167,50 @@ const courseSlice = createSlice({
       }
     },
     markChapterAsCompleted(state, action: PayloadAction<{ courseId: number; chapterId: number }>) {
-      const { courseId, chapterId } = action.payload
+      const { courseId, chapterId } = action.payload;
+      
       if (state.courseProgress[courseId]) {
-        const completedChapters = [...state.courseProgress[courseId].completedChapters]
+        const completedChapters = [...state.courseProgress[courseId].completedChapters];
+        
+        // Only add if not already included to prevent unnecessary updates
         if (!completedChapters.includes(chapterId)) {
-          completedChapters.push(chapterId)
-          state.courseProgress[courseId].completedChapters = completedChapters
-
-          // Recalculate progress (would need total chapter count for accuracy)
-          // This is simplified - actual calculation would need total chapter count
-          // state.courseProgress[courseId].progress = (completedChapters.length / totalChapters) * 100;
+          completedChapters.push(chapterId);
+          state.courseProgress[courseId].completedChapters = completedChapters;
+          
+          // Also update user-specific progress if available
+          if (state.userProgress) {
+            Object.keys(state.userProgress).forEach(userId => {
+              if (state.userProgress[userId][courseId]) {
+                const userCompletedChapters = [...state.userProgress[userId][courseId].completedChapters];
+                if (!userCompletedChapters.includes(chapterId)) {
+                  userCompletedChapters.push(chapterId);
+                  state.userProgress[userId][courseId].completedChapters = userCompletedChapters;
+                }
+              }
+            });
+          }
         }
       }
     },
+    // Add new reducers for navigation with stable updates
+    setNextVideoId(state, action: PayloadAction<string | undefined>) {
+      // Only update if the value is defined and changed to prevent render loops
+      if (action.payload !== undefined) {
+        state.nextVideoId = action.payload;
+      }
+    },
+    
+    setPrevVideoId(state, action: PayloadAction<string | undefined>) {
+      // Only update if the value is defined and changed to prevent render loops
+      if (action.payload !== undefined) {
+        state.prevVideoId = action.payload;
+      }
+    },
+    
+    setLoading(state, action: PayloadAction<boolean>) {
+      state.isLoading = action.payload;
+    },
+    
     initializeCourseState(
       state,
       action: PayloadAction<{
@@ -250,190 +307,73 @@ const courseSlice = createSlice({
         state.analytics.events = state.analytics.events.slice(0, 100)
       }
     },
+    // User-specific reducers
+    updateUserProgress(
+      state,
+      action: PayloadAction<{
+        userId: string,
+        courseId: number | string,
+        progress: CourseProgress
+      }>
+    ) {
+      const { userId, courseId, progress } = action.payload;
+      
+      if (!state.userProgress[userId]) {
+        state.userProgress[userId] = {};
+      }
+      
+      state.userProgress[userId][courseId] = progress;
+      
+      // Also update the legacy field for backward compatibility
+      if (typeof courseId === 'number') {
+        state.courseProgress[courseId] = progress;
+      }
+    },
+    
+    setUserPlaybackSettings(
+      state,
+      action: PayloadAction<{
+        userId: string,
+        settings: PlaybackSettings
+      }>
+    ) {
+      const { userId, settings } = action.payload;
+      state.userPlaybackSettings[userId] = settings;
+      
+      // Also update the global settings for backwards compatibility
+      state.playbackSettings = settings;
+    },
+    
+    // Guest-specific reducers
+    initializeGuestProgress(
+      state,
+      action: PayloadAction<{
+        courseId: number | string,
+        progress: CourseProgress
+      }>
+    ) {
+      const { courseId, progress } = action.payload;
+      state.guestProgress[courseId] = progress;
+      
+      // Also update the legacy field for backward compatibility
+      if (typeof courseId === 'number') {
+        state.courseProgress[courseId] = progress;
+      }
+    },
+    
+    setGuestPlaybackSettings(
+      state,
+      action: PayloadAction<PlaybackSettings>
+    ) {
+      state.guestPlaybackSettings = action.payload;
+      
+      // Also update the global settings for backwards compatibility
+      state.playbackSettings = action.payload;
+    },
   },
 })
 
-// Fix the setCurrentVideoApi function to properly handle errors and improve performance
-export const setCurrentVideoApi = (videoId: string) => (dispatch, getState) => {
-  try {
-    // Check if we're already on this video to prevent unnecessary updates
-    const currentState = getState()
-    if (currentState.course.currentVideoId === videoId) {
-      return // No need to update if it's the same video
-    }
-
-    console.debug("[courseSlice] Setting current video:", videoId)
-    dispatch(courseSlice.actions.setCurrentVideo(videoId))
-
-    // Persist to local storage for better recovery
-    try {
-      localStorage.setItem("currentVideoId", videoId)
-    } catch (storageError) {
-      console.warn("[courseSlice] Error saving to local storage:", storageError)
-    }
-
-    // Track video change for analytics
-    if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("event", "video_change", {
-        video_id: videoId,
-        course_id: currentState.course.currentCourseId,
-      })
-    }
-  } catch (error) {
-    console.error("[courseSlice] Error setting current video:", error)
-    // Dispatch error action if needed
-  }
-}
-
-// Add a new action to optimize video playback
-export const optimizeVideoPlayback = () => (dispatch, getState) => {
-  const state = getState()
-  const { playbackSettings } = state.course
-
-  // Detect network conditions
-  if (navigator.connection) {
-    const connection = navigator.connection
-
-    // Automatically adjust quality based on network
-    if (connection.effectiveType === "2g" || connection.effectiveType === "slow-2g") {
-      // On slow connections, reduce quality and preload
-      dispatch(
-        courseSlice.actions.setPlaybackSettings({
-          ...playbackSettings,
-          autoQuality: true,
-          preload: "metadata",
-        }),
-      )
-    } else if (connection.saveData) {
-      // If data saver is enabled
-      dispatch(
-        courseSlice.actions.setPlaybackSettings({
-          ...playbackSettings,
-          autoQuality: true,
-          preload: "metadata",
-        }),
-      )
-    }
-  }
-}
-
-// Add a new action to batch update progress for better performance
-export const batchUpdateProgress = (progressData) => (dispatch, getState) => {
-  // Debounce progress updates to reduce state changes
-  if (!window._progressUpdateTimeout) {
-    window._progressUpdateTimeout = setTimeout(() => {
-      dispatch(courseSlice.actions.updateProgress(progressData))
-      window._progressUpdateTimeout = null
-    }, 2000) // Update at most every 2 seconds
-  }
-}
-
-// Add a new action to handle offline mode
-export const enableOfflineMode = (courseId, videoId) => async (dispatch) => {
-  try {
-    // Check if the browser supports service workers
-    if ("serviceWorker" in navigator && "caches" in window) {
-      // Cache the current video for offline viewing
-      const cache = await caches.open("video-cache")
-      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
-      await cache.add(videoUrl)
-
-      dispatch({
-        type: "course/setOfflineAvailability",
-        payload: {
-          courseId,
-          videoId,
-          isAvailableOffline: true,
-        },
-      })
-
-      return true
-    }
-    return false
-  } catch (error) {
-    console.error("Failed to cache video for offline use:", error)
-    return false
-  }
-}
-
-// Add a new action to preload video data for smoother transitions
-export const preloadNextVideo = (nextVideoId) => (dispatch, getState) => {
-  if (!nextVideoId) return
-
-  // Create a hidden video element to preload the next video
-  const preloadElement = document.createElement("link")
-  preloadElement.rel = "preload"
-  preloadElement.as = "fetch"
-  preloadElement.href = `https://www.youtube.com/watch?v=${nextVideoId}`
-  document.head.appendChild(preloadElement)
-
-  // Remove the preload element after 10 seconds
-  setTimeout(() => {
-    if (document.head.contains(preloadElement)) {
-      document.head.removeChild(preloadElement)
-    }
-  }, 10000)
-
-  // Cache the preload status
-  dispatch({
-    type: "course/cacheVideoData",
-    payload: {
-      videoId: nextVideoId,
-      data: {
-        preloaded: true,
-      },
-    },
-  })
-}
-
-// Add a new action to optimize memory usage
-export const optimizeMemoryUsage = () => (dispatch) => {
-  // Clean up unused resources
-  dispatch({ type: "course/optimizeState" })
-
-  // Force garbage collection if possible
-  if (window.gc) {
-    try {
-      window.gc()
-    } catch (e) {
-      console.debug("Manual garbage collection not available")
-    }
-  }
-}
-
-// Add a new action to save user preferences
-export const saveUserPreferences = (preferences) => (dispatch) => {
-  // Save to Redux
-  dispatch({
-    type: "course/setUserPreferences",
-    payload: preferences,
-  })
-
-  // Also save to localStorage for persistence
-  try {
-    localStorage.setItem("courseUserPreferences", JSON.stringify(preferences))
-  } catch (e) {
-    console.warn("Failed to save preferences to localStorage", e)
-  }
-}
-
-// Add a new action to load user preferences
-export const loadUserPreferences = () => (dispatch) => {
-  try {
-    const savedPreferences = localStorage.getItem("courseUserPreferences")
-    if (savedPreferences) {
-      dispatch({
-        type: "course/setUserPreferences",
-        payload: JSON.parse(savedPreferences),
-      })
-      return true
-    }
-  } catch (e) {
-    console.warn("Failed to load preferences from localStorage", e)
-  }
-  return false
-}
-
+// Add the new actions to the exports
 export const {
   setCurrentVideo,
   setVideoProgress,
@@ -454,6 +394,52 @@ export const {
   setUserPreferences,
   trackAnalytics,
   optimizeState,
+  // New exports:
+  updateUserProgress,
+  setUserPlaybackSettings,
+  initializeGuestProgress,
+  setGuestPlaybackSettings,
+  setNextVideoId,
+  setPrevVideoId,
+  setLoading,
 } = courseSlice.actions
+
+// Fix the setCurrentVideoApi function to properly handle user-specific state
+export const setCurrentVideoApi = (videoId: string, userId?: string) => (dispatch, getState) => {
+  try {
+    // Check if we're already on this video to prevent unnecessary updates
+    const currentState = getState();
+    if (currentState.course.currentVideoId === videoId) {
+      return; // No need to update if it's the same video
+    }
+
+    console.debug("[courseSlice] Setting current video:", videoId);
+    dispatch(courseSlice.actions.setCurrentVideo(videoId));
+
+    // Persist to local storage for better recovery
+    try {
+      if (userId) {
+        // For authenticated users, store in user-specific key
+        localStorage.setItem(`currentVideoId_${userId}`, videoId);
+      } else {
+        // For guests
+        localStorage.setItem("currentVideoId_guest", videoId);
+      }
+    } catch (storageError) {
+      console.warn("[courseSlice] Error saving to local storage:", storageError);
+    }
+
+    // Track video change for analytics
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "video_change", {
+        video_id: videoId,
+        course_id: currentState.course.currentCourseId,
+        user_type: userId ? 'authenticated' : 'guest'
+      });
+    }
+  } catch (error) {
+    console.error("[courseSlice] Error setting current video:", error);
+  }
+};
 
 export default courseSlice.reducer

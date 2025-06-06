@@ -1,77 +1,33 @@
 "use client"
 
-import React, { useReducer, useEffect, useMemo, useCallback, useRef, useState } from "react"
+import React, { useEffect, useMemo, useCallback, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import MainContent from "./MainContent"
 import VideoNavigationSidebar from "./VideoNavigationSidebar"
-import useProgress from "@/hooks/useProgress"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-
 import { throttle } from "lodash"
 import { Loader2, X } from "lucide-react"
-
 import { AnimatePresence, motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/tailwindUtils"
 import { CourseCompletionOverlay } from "./CourseCompletionOverlay"
-
 import MobilePlayList from "./MobilePlayList"
 import { useAuth } from "@/hooks"
-import { useAppDispatch } from "@/store/hooks"
-import { setCurrentVideoApi } from "@/store/slices/courseSlice"
-
-// Ensure proper typing for the reducer state and actions
-interface State {
-  selectedVideoId: string | undefined
-  currentChapter: FullChapterType | undefined
-  nextVideoId: string | undefined
-  prevVideoId: string | undefined
-}
-
-type Action =
-  | { type: "SET_VIDEO"; payload: { videoId: string; chapter: FullChapterType } }
-  | { type: "SET_NAVIGATION"; payload: { next?: string; prev?: string } }
-  | { type: "RESET" }
-
-// Reducer Function
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "SET_VIDEO":
-      return {
-        ...state,
-        selectedVideoId: action.payload.videoId,
-        currentChapter: action.payload.chapter,
-      }
-    case "SET_NAVIGATION":
-      return {
-        ...state,
-        nextVideoId: action.payload.next,
-        prevVideoId: action.payload.prev,
-      }
-    case "RESET":
-      return {
-        selectedVideoId: undefined,
-        currentChapter: undefined,
-        nextVideoId: undefined,
-        prevVideoId: undefined,
-      }
-    default:
-      return state
-  }
-}
-
-// Props Interface
-interface CoursePageProps {
-  course: FullCourseType
-  initialChapterId?: string
-}
-
-// Memoized Components
-const MemoizedMainContent = React.memo(MainContent)
-const MemoizedVideoNavigationSidebar = React.memo(VideoNavigationSidebar)
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { 
+  setCurrentVideoApi, 
+  initializeCourseState, 
+  setCourseCompletionStatus,
+  updateProgress as updateProgressAction,
+  markChapterAsCompleted as markChapterAsCompletedAction,
+  setNextVideoId,
+  setPrevVideoId
+} from "@/store/slices/courseSlice"
+import useProgress from "@/hooks/useProgress"
+import YouTubeOptimizer from './YouTubeOptimizer'
 
 // Custom Hook for Video Playlist
 function useVideoPlaylist(course: FullCourseType) {
@@ -90,231 +46,211 @@ function useVideoPlaylist(course: FullCourseType) {
   }, [course.courseUnits])
 }
 
-export default function CoursePage({ course, initialChapterId }: CoursePageProps) {
-  const { user, isLoading: isProfileLoading } = useAuth()
-  const [state, dispatch] = useReducer(reducer, {
-    selectedVideoId: undefined,
-    currentChapter: undefined,
-    nextVideoId: undefined,
-    prevVideoId: undefined,
-  })
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [isSmallScreen, setIsSmallScreen] = useState(false)
-  const [isLastVideo, setIsLastVideo] = useState(false)
+export default function CoursePage({ course, initialChapterId }: {
+  course: FullCourseType
+  initialChapterId?: string
+}) {
+  const router = useRouter()
   const { data: session } = useSession()
   const { toast } = useToast()
-  const router = useRouter()
-  const isInitialMount = useRef(true)
-  const hasSetInitialVideo = useRef(false)
-  const [courseCompleted, setCourseCompleted] = useState(false)
+  const dispatch = useAppDispatch()
+  const { user, isLoading: isProfileLoading } = useAuth()
+  
+  // These hooks must be called in the same order every time,
+  // so we define all state hooks first
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSmallScreen, setIsSmallScreen] = useState(false)
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
+  const [forceShowContent, setForceShowContent] = useState(false)
+  
+  // Then define all refs
+  const hasInitialized = useRef(false)
+  const forceShowTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const prevNextRef = useRef({ prev: null, next: null })
+  const updateProgressRef = useRef<any>(null)
+  const sessionUserIdRef = useRef(session?.user?.id)
+  const currentChapterIdRef = useRef<string | undefined>(undefined)
+  const pendingProgressUpdatesRef = useRef<{[key: string]: any}>({})
+  const progressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastChapterIdRef = useRef<string | undefined>()
+  const lastTimeProgressRef = useRef<number>(0)
+  const lastSelectedVideoRef = useRef<string | null>(null)
+  
+  // Redux selectors
+  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const nextVideoId = useAppSelector((state) => state.course.nextVideoId)
+  const prevVideoId = useAppSelector((state) => state.course.prevVideoId)
+  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
+  const isLoading = useAppSelector((state) => state.course.isLoading)
+  const courseCompleted = useAppSelector((state) => state.course.courseCompletionStatus)
 
+  // Data processing with useMemo
   const videoPlaylist = useVideoPlaylist(course)
-
-  const findChapterByVideoId = useCallback(
-    (videoId: string): FullChapterType | undefined => {
-      return videoPlaylist.find((entry) => entry.videoId === videoId)?.chapter
-    },
-    [videoPlaylist],
-  )
-
-  // Set Initial Video
-  useEffect(() => {
-    if (!state.selectedVideoId && !hasSetInitialVideo) {
-      const initialVideo = initialChapterId
-        ? videoPlaylist.find((entry) => entry.chapter.id.toString() === initialChapterId)
-        : videoPlaylist[0]
-
-      if (initialVideo) {
-        dispatch({
-          type: "SET_VIDEO",
-          payload: { videoId: initialVideo.videoId, chapter: initialVideo.chapter },
-        })
-        setHasSetInitialVideo(true)
-      }
-    }
-  }, [videoPlaylist, state.selectedVideoId, initialChapterId, hasSetInitialVideo])
-
-  // Update Navigation (Next/Prev Video)
-  useEffect(() => {
-    if (!isInitialMount.current && state.selectedVideoId) {
-      const currentIndex = videoPlaylist.findIndex((entry) => entry.videoId === state.selectedVideoId)
-      const nextVideo = currentIndex < videoPlaylist.length - 1 ? videoPlaylist[currentIndex + 1]?.videoId : undefined
-      const prevVideo = currentIndex > 0 ? videoPlaylist[currentIndex - 1]?.videoId : undefined
-
-      dispatch({
-        type: "SET_NAVIGATION",
-        payload: {
-          next: nextVideo,
-          prev: prevVideo,
-        },
-      })
-    } else {
-      isInitialMount.current = false
-    }
-  }, [state.selectedVideoId, videoPlaylist])
-
-  // Memoize these values to prevent unnecessary re-renders
+  const currentChapter = useMemo(() => {
+    if (!currentVideoId) return undefined
+    return videoPlaylist.find((entry) => entry.videoId === currentVideoId)?.chapter
+  }, [currentVideoId, videoPlaylist])
+  
+  const isLastVideo = useMemo(() => {
+    if (!currentVideoId) return false
+    const currentIndex = videoPlaylist.findIndex((entry) => entry.videoId === currentVideoId)
+    return currentIndex === videoPlaylist.length - 1
+  }, [currentVideoId, videoPlaylist])
+  
   const courseId = useMemo(() => +course.id, [course.id])
-  const currentChapterId = useMemo(() => state.currentChapter?.id?.toString(), [state.currentChapter?.id])
-
+  const currentChapterId = useMemo(() => currentChapter?.id?.toString(), [currentChapter?.id])
+  
   // Use the progress hook with memoized values
-  const { progress, isLoading, updateProgress } = useProgress({
+  const { progress, isLoading: isProgressLoading, updateProgress } = useProgress({
     courseId,
     initialProgress: undefined,
     currentChapterId,
   })
-
-  // Only update progress when chapter changes, not on every render
-  useEffect(() => {
-    if (state.currentChapter && session) {
-      throttledUpdateProgress({
-        currentChapterId: Number(state.currentChapter.id),
-      })
+  
+  // Add pre-existing callbacks before adding the new ones
+  // First, add the processPendingProgressUpdates callback
+  const processPendingProgressUpdates = useCallback(() => {
+    const pendingUpdates = pendingProgressUpdatesRef.current;
+    if (Object.keys(pendingUpdates).length === 0) return;
+    
+    // Get the latest update (most important one)
+    const keys = Object.keys(pendingUpdates).sort();
+    const latestUpdate = pendingUpdates[keys[keys.length - 1]];
+    
+    // Reset pending updates
+    pendingProgressUpdatesRef.current = {};
+    
+    // Call the progress update function with the latest data
+    if (sessionUserIdRef.current && latestUpdate) {
+      console.debug("[CoursePage] Processing batched progress update:", latestUpdate);
+      
+      updateProgressRef.current(latestUpdate)
+        .catch((error: Error) => {
+          console.error("[CoursePage] Error processing progress update:", error);
+        });
     }
-    // Only run when chapter or session changes, not on progress update
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.currentChapter?.id, session?.user?.id])
-
-  // Create a stable throttled update function
+  }, []);
+  
+  // Now add the throttledUpdateProgress callback
   const throttledUpdateProgress = useCallback(
-    throttle(
-      (updateData: {
-        currentChapterId?: number | string
-        completedChapters?: number[]
-        progress?: number
-        currentUnitId?: number
-        isCompleted?: boolean
-        lastAccessedAt?: Date
-      }) => {
-        if (session?.user?.id) {
-          // Ensure currentChapterId is present and valid
-          if (!updateData.currentChapterId && state.currentChapter?.id) {
-            updateData.currentChapterId = Number(state.currentChapter.id);
-          }
-          
-          // Debug logs to track the progress update
-          console.debug("[CoursePage] Updating progress with:", { 
-            courseId, 
-            chapterId: updateData.currentChapterId,
-            data: updateData 
-          });
-          
-          updateProgress(updateData)
-            .catch(error => {
-              console.error("[CoursePage] Error updating progress:", error);
-              // You could add toast notification here
-            });
+    (updateData: {
+      currentChapterId?: number | string
+      completedChapters?: number[]
+      progress?: number
+      currentUnitId?: number
+      isCompleted?: boolean
+      lastAccessedAt?: Date
+    }) => {
+      if (!sessionUserIdRef.current) return;
+      
+      // Ensure currentChapterId is present
+      if (!updateData.currentChapterId && currentChapterIdRef.current) {
+        updateData.currentChapterId = Number(currentChapterIdRef.current);
+      }
+      
+      // Store update with timestamp key for ordering
+      const updateKey = `${Date.now()}_${updateData.currentChapterId || 0}`;
+      pendingProgressUpdatesRef.current[updateKey] = updateData;
+      
+      // If this is a critical update (like chapter completion), process immediately
+      const isCriticalUpdate = updateData.isCompleted === true || 
+                               (updateData.lastAccessedAt !== undefined);
+      
+      if (isCriticalUpdate) {
+        if (progressUpdateTimerRef.current) {
+          clearTimeout(progressUpdateTimerRef.current);
         }
-      },
-      5000,
-      { leading: true, trailing: true },
-    ),
-    [updateProgress, session?.user?.id, state.currentChapter?.id],
-  )
-
+        
+        // Schedule immediate update (give a tiny delay for batching)
+        progressUpdateTimerRef.current = setTimeout(() => {
+          processPendingProgressUpdates();
+          progressUpdateTimerRef.current = null;
+        }, 50);
+      }
+    },
+    [processPendingProgressUpdates]
+  );
+  
+  // Add markChapterAsCompleted callback
   const markChapterAsCompleted = useCallback(() => {
-    if (!state.currentChapter || !progress) return;
+    if (!currentChapter) return;
 
-    const currentChapterId = Number(state.currentChapter.id);
-    if (isNaN(currentChapterId)) {
-      console.error("[CoursePage] Invalid chapter ID:", state.currentChapter.id);
+    const chapterId = Number(currentChapter.id);
+    if (isNaN(chapterId)) {
+      console.error("[CoursePage] Invalid chapter ID:", currentChapter.id);
       return;
     }
 
-    const updatedCompletedChapters = Array.isArray(progress.completedChapters) 
-      ? [...progress.completedChapters] 
-      : [];
-
-    if (!updatedCompletedChapters.includes(currentChapterId)) {
-      updatedCompletedChapters.push(currentChapterId);
-      const totalChapters = videoPlaylist.length;
-      const newProgress = Math.round((updatedCompletedChapters.length / totalChapters) * 100);
-
-      // Check if course is completed
-      if (updatedCompletedChapters.length === totalChapters) {
-        setCourseCompleted(true);
-      }
-
-      throttledUpdateProgress({
-        currentChapterId: currentChapterId,
-        completedChapters: updatedCompletedChapters,
-        progress: newProgress,
-        isCompleted: updatedCompletedChapters.length === totalChapters,
-      });
+    // Use Redux action to mark chapter as completed
+    dispatch(markChapterAsCompletedAction({ 
+      courseId, 
+      chapterId 
+    }));
+    
+    // Check if course is now completed
+    const updatedCompletedChapters = [
+      ...(courseProgress?.completedChapters || []),
+      chapterId
+    ];
+    
+    const isAllChaptersCompleted = videoPlaylist.length > 0 && 
+      updatedCompletedChapters.length >= videoPlaylist.length;
+    
+    if (isAllChaptersCompleted && !courseCompleted) {
+      dispatch(setCourseCompletionStatus(true));
     }
-  }, [state.currentChapter, progress, throttledUpdateProgress, videoPlaylist.length])
-
-  // Modify the handleVideoEnd function to ensure video stops and overlay shows
+    
+    // Track this as a critical update - send to backend
+    throttledUpdateProgress({
+      currentChapterId: chapterId,
+      completedChapters: updatedCompletedChapters,
+      isCompleted: isAllChaptersCompleted,
+      lastAccessedAt: new Date()
+    });
+    
+  }, [courseId, currentChapter, courseProgress, dispatch, videoPlaylist.length, throttledUpdateProgress, courseCompleted]);
+  
+  // Add handleVideoEnd callback
   const handleVideoEnd = useCallback(() => {
-    markChapterAsCompleted()
-
-    if (state.nextVideoId) {
-      const nextChapter = findChapterByVideoId(state.nextVideoId)
-      if (nextChapter) {
-        dispatch({
-          type: "SET_VIDEO",
-          payload: { videoId: state.nextVideoId, chapter: nextChapter },
-        })
-        throttledUpdateProgress({
-          currentChapterId: Number(nextChapter.id),
-        })
-      }
-    } else {
-      // This is the last video - mark as completed and show completion overlay
-      setIsLastVideo(true)
-      setCourseCompleted(true)
-      setShowCompletionOverlay(true) // Show completion overlay immediately
-
-      throttledUpdateProgress({
-        currentChapterId: state.currentChapter?.id ? Number(state.currentChapter.id) : undefined,
-        isCompleted: true,
-        progress: 100,
-      })
-
-      toast({
-        title: "Course Completed",
-        description: "Congratulations! You've completed all videos in this course.",
-        variant: "default",
-      })
+    if (currentChapter) {
+      markChapterAsCompleted();
     }
-  }, [
-    state.nextVideoId,
-    state.currentChapter,
-    findChapterByVideoId,
-    throttledUpdateProgress,
-    toast,
-    markChapterAsCompleted,
-  ])
-
-  const reduxDispatch = useAppDispatch();
-
+    
+    if (nextVideoId) {
+      dispatch(setCurrentVideoApi(nextVideoId));
+    } else if (isLastVideo) {
+      // Last video completed
+      dispatch(setCourseCompletionStatus(true));
+      setShowCompletionOverlay(true);
+    }
+  }, [nextVideoId, dispatch, markChapterAsCompleted, isLastVideo, currentChapter]);
+  
+  // Add handleVideoSelect callback
   const handleVideoSelect = useCallback(
     (videoId: string) => {
       try {
-        // Debug: Log video selection
-        console.debug("[CoursePage] handleVideoSelect:", videoId);
+        // Skip if we're already on this video or selected it very recently
+        if (currentVideoId === videoId || lastSelectedVideoRef.current === videoId) return;
         
-        if (state.currentChapter) {
+        // Remember this selection to prevent duplicates
+        lastSelectedVideoRef.current = videoId;
+        setTimeout(() => {
+          if (lastSelectedVideoRef.current === videoId) {
+            lastSelectedVideoRef.current = null;
+          }
+        }, 1000);
+        
+        // If we're changing videos, mark current chapter complete
+        if (currentVideoId && currentVideoId !== videoId && currentChapter) {
           markChapterAsCompleted();
         }
 
-        const selectedChapter = findChapterByVideoId(videoId);
+        // Update Redux state with selected video
+        dispatch(setCurrentVideoApi(videoId));
+        
+        // Update progress in backend
+        const selectedChapter = videoPlaylist.find((entry) => entry.videoId === videoId)?.chapter;
         if (selectedChapter) {
-          // First update local state
-          dispatch({
-            type: "SET_VIDEO",
-            payload: { videoId, chapter: selectedChapter },
-          });
-          
-          // Then update Redux state safely
-          try {
-            reduxDispatch(setCurrentVideoApi(videoId));
-          } catch (error) {
-            console.error("[CoursePage] Error updating Redux state:", error);
-          }
-          
-          // Finally update progress in backend
           throttledUpdateProgress({
             currentChapterId: Number(selectedChapter.id),
             lastAccessedAt: new Date(),
@@ -324,17 +260,142 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         console.error("[CoursePage] Error in handleVideoSelect:", error);
       }
     },
-    [findChapterByVideoId, throttledUpdateProgress, markChapterAsCompleted, state.currentChapter, reduxDispatch]
+    [currentChapter, currentVideoId, markChapterAsCompleted, dispatch, throttledUpdateProgress, videoPlaylist]
   );
-
+  
+  // Now add the new functions in the correct order
   const handleWatchAnotherCourse = useCallback(() => {
-    router.push("/dashboard")
-  }, [router])
-
+    router.push('/dashboard/courses')
+  }, [router]);
+  
   const handleCloseCompletionOverlay = useCallback(() => {
     setShowCompletionOverlay(false)
-    router.push("/dashboard")
-  }, [router])
+  }, []);
+  
+  // Add fetchRelatedCourses callback
+  const fetchRelatedCourses = useCallback(async () => {
+    try {
+      const response = await fetch("/api/courses?limit=3")
+      if (response.ok) {
+        const data = await response.json()
+        return data.courses
+      }
+      return []
+    } catch (error) {
+      console.error("Error fetching related courses:", error)
+      return []
+    }
+  }, []);
+  
+  // Update refs when values change
+  useEffect(() => {
+    updateProgressRef.current = updateProgress;
+    sessionUserIdRef.current = session?.user?.id;
+    currentChapterIdRef.current = currentChapterId;
+  }, [updateProgress, session?.user?.id, currentChapterId]);
+  
+  // Initialize course state in Redux - only once
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      const initialVideo = initialChapterId
+        ? videoPlaylist.find((entry) => entry.chapter.id.toString() === initialChapterId)
+        : videoPlaylist[0]
+
+      dispatch(initializeCourseState({
+        courseId: course.id,
+        courseSlug: course.slug,
+        initialVideoId: initialVideo?.videoId,
+      }))
+      
+      hasInitialized.current = true
+    }
+  }, [dispatch, course.id, course.slug, initialChapterId, videoPlaylist]);
+
+  // Get real video ID for initial load to avoid empty player
+  const initialOrFirstVideoId = useMemo(() => currentVideoId || videoPlaylist[0]?.videoId, [currentVideoId, videoPlaylist]);
+
+  // Update next and previous video IDs in Redux with proper comparison
+  useEffect(() => {
+    if (currentVideoId) {
+      const currentIndex = videoPlaylist.findIndex(entry => entry.videoId === currentVideoId);
+      const nextVideo = currentIndex < videoPlaylist.length - 1 ? videoPlaylist[currentIndex + 1]?.videoId : undefined;
+      const prevVideo = currentIndex > 0 ? videoPlaylist[currentIndex - 1]?.videoId : undefined;
+
+      // Only dispatch if values actually changed and are valid
+      if (nextVideo !== prevNextRef.current.next && nextVideo !== undefined) {
+        prevNextRef.current.next = nextVideo;
+        dispatch(setNextVideoId(nextVideo));
+      }
+      
+      if (prevVideo !== prevNextRef.current.prev && prevVideo !== undefined) {
+        prevNextRef.current.prev = prevVideo;
+        dispatch(setPrevVideoId(prevVideo));
+      }
+    }
+  }, [currentVideoId, videoPlaylist, dispatch]);
+
+  // Set up batch processing interval
+  useEffect(() => {
+    // Process updates every 10 seconds
+    const interval = setInterval(processPendingProgressUpdates, 10000);
+    
+    return () => {
+      clearInterval(interval);
+      // Process any pending updates before unmounting
+      processPendingProgressUpdates();
+    };
+  }, [processPendingProgressUpdates]);
+  
+  // Only update progress when chapter changes - now with smarter change detection
+  useEffect(() => {
+    if (!currentChapter || !session || !currentChapter.id) return;
+    
+    const chapterId = currentChapter.id.toString();
+    const now = Date.now();
+    
+    // Update in any of these cases:
+    // 1. Chapter ID changed
+    // 2. It's been more than 30 seconds since last update for this chapter
+    if (chapterId !== lastChapterIdRef.current || 
+        now - lastTimeProgressRef.current > 30000) {
+      
+      lastChapterIdRef.current = chapterId;
+      lastTimeProgressRef.current = now;
+      
+      throttledUpdateProgress({
+        currentChapterId: Number(chapterId),
+        lastAccessedAt: new Date(),
+      });
+    }
+  }, [currentChapter?.id, session, throttledUpdateProgress]);
+
+  // Add auto-timeout to force content display if loading gets stuck
+  useEffect(() => {
+    // Force content to show after 5 seconds regardless of loading state
+    forceShowTimeoutRef.current = setTimeout(() => {
+      if (isLoading || isProgressLoading) {
+        console.warn("[CoursePage] Force showing content after timeout - loading got stuck");
+        setForceShowContent(true);
+      }
+    }, 5000);
+    
+    return () => {
+      if (forceShowTimeoutRef.current) {
+        clearTimeout(forceShowTimeoutRef.current);
+        forceShowTimeoutRef.current = null;
+      }
+    };
+  }, [isLoading, isProgressLoading]);
+
+  // Clean up event listeners and pending operations
+  useEffect(() => {
+    return () => {
+      if (progressUpdateTimerRef.current) {
+        clearTimeout(progressUpdateTimerRef.current);
+        processPendingProgressUpdates();
+      }
+    };
+  }, [processPendingProgressUpdates]);
 
   // Responsive Sidebar Handling
   useEffect(() => {
@@ -352,33 +413,32 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [isSidebarOpen])
+  }, [isSidebarOpen]);
 
-  // Cleanup on Unmount
+  // Add a state to track profile loading error
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Use useEffect to catch profile loading errors
   useEffect(() => {
-    return () => {
-      dispatch({ type: "RESET" })
+    if (isProfileLoading) {
+      setProfileError(null); // Clear any previous errors while loading
+    } else if (!user && !isProfileLoading) {
+      setProfileError("Failed to load user profile.");
+      toast({
+        title: "Profile Error",
+        description: "Failed to load user profile. Some features may be limited.",
+        variant: "destructive",
+      });
+    } else {
+      setProfileError(null); // Clear error if user is loaded successfully
     }
-  }, [])
+  }, [user, isProfileLoading, toast]);
 
-  // Add related courses section to the completion overlay
-  // First, add a new function to fetch related courses:
-  const fetchRelatedCourses = useCallback(async () => {
-    try {
-      const response = await fetch("/api/courses?limit=3")
-      if (response.ok) {
-        const data = await response.json()
-        return data.courses
-      }
-      return []
-    } catch (error) {
-      console.error("Error fetching related courses:", error)
-      return []
-    }
-  }, [])
+  // Update loading condition to include forceShowContent and profileError
+  const shouldShowSkeleton = (isLoading || isProfileLoading) && !forceShowContent && !profileError;
 
   // Improve the loading state with more realistic skeleton
-  if (isLoading || isProfileLoading) {
+  if (shouldShowSkeleton) {
     return (
       <div className="min-h-screen bg-background">
         <div className="lg:hidden">
@@ -418,6 +478,9 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
 
   return (
     <div className="min-h-screen bg-background">
+      {/* YouTube Optimizer */}
+      <YouTubeOptimizer />
+      
       <div className="lg:hidden">
         <MobilePlayList courseName={course.title} onSidebarOpen={() => setIsSidebarOpen(true)} />
       </div>
@@ -426,26 +489,22 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
         <main className="flex-1 min-w-0">
           <div className="relative">
             <div className="aspect-video w-full bg-background">
-              <MemoizedMainContent
-                course={course}
-                initialVideoId={state.selectedVideoId}
-                nextVideoId={state.nextVideoId}
-                prevVideoId={state.prevVideoId}
+              <MainContent
+                slug={course.slug}
+                initialVideoId={initialOrFirstVideoId || undefined}
+                nextVideoId={nextVideoId || undefined}
+                prevVideoId={prevVideoId || undefined}
                 onVideoEnd={handleVideoEnd}
                 onVideoSelect={handleVideoSelect}
-                currentChapter={state.currentChapter}
+                currentChapter={currentChapter || videoPlaylist[0]?.chapter}
                 currentTime={0}
                 onWatchAnotherCourse={handleWatchAnotherCourse}
-                onTimeUpdate={
-                  // Only update progress on time update if chapter changes
-                  undefined
-                }
-                progress={progress || undefined}
-                onChapterComplete={markChapterAsCompleted}
-                planId={user?.subscriptionPlan || "FREE"}
+                planId={"FREE"}
                 isLastVideo={isLastVideo}
                 courseCompleted={courseCompleted}
-                autoPlay={!hasSetInitialVideo}
+                course={course}
+                relatedCourses={[]}
+                isProgressLoading={isProgressLoading && !forceShowContent}
               />
             </div>
           </div>
@@ -480,19 +539,19 @@ export default function CoursePage({ course, initialChapterId }: CoursePageProps
               )}
 
               <div className="flex-1 overflow-hidden">
-                <MemoizedVideoNavigationSidebar
+                <VideoNavigationSidebar
                   course={course}
-                  currentChapter={state.currentChapter}
+                  currentChapter={currentChapter}
                   courseId={course.id.toString()}
                   onVideoSelect={(videoId) => {
                     handleVideoSelect(videoId)
                     if (isSmallScreen) setIsSidebarOpen(false)
                   }}
-                  currentVideoId={state.selectedVideoId || ""}
+                  currentVideoId={currentVideoId || ""}
                   isAuthenticated={!!session}
                   progress={progress || null}
-                  nextVideoId={state.nextVideoId}
-                  prevVideoId={state.prevVideoId}
+                  nextVideoId={nextVideoId || undefined}
+                  prevVideoId={prevVideoId || undefined}
                   completedChapters={progress?.completedChapters || []}
                 />
               </div>
