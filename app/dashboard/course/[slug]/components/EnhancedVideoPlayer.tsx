@@ -7,6 +7,7 @@ import { Bookmark, AlertCircle, RotateCcw } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/hooks/use-toast"
 import { VideoControls } from "./VideoControls"
+
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import {
   setVideoProgress,
@@ -16,6 +17,8 @@ import {
   setResumePoint,
   setLastPlayedAt,
 } from "@/store/slices/courseSlice"
+import { CourseAILogo } from "./CourseAILogo"
+import KeyboardShortcutsModal from "./KeyboardShortcutsModal"
 
 // Enhanced TypeScript interfaces
 interface VideoPlayerProps {
@@ -61,6 +64,8 @@ interface VideoPlayerState {
   playerError: boolean
   quality: string
   hasStarted: boolean
+  isPictureInPicture: boolean
+  showKeyboardShortcuts: boolean
 }
 
 interface ProgressState {
@@ -88,13 +93,14 @@ interface YouTubeConfig {
       cc_load_policy: 0
       widget_referrer: string
       vq?: string
+      end?: number
     }
   }
 }
 
 // Utility functions
 const formatTime = (seconds: number): string => {
-  if (!seconds || isNaN(seconds)) return "0:00"
+  if (isNaN(seconds) || seconds === undefined || seconds === null) return "0:00"
 
   const hours: number = Math.floor(seconds / 3600)
   const minutes: number = Math.floor((seconds % 3600) / 60)
@@ -161,9 +167,9 @@ const EnhancedVideoPlayer = React.memo(
       showCertificateButton: false,
     },
   }: VideoPlayerProps) => {
-    // Redux state
+    // Redux state - safely access with defaults
     const dispatch = useAppDispatch()
-    const autoplayEnabled: boolean = useAppSelector((state) => state.course?.autoplayEnabled ?? true)
+    const autoplayEnabled = useAppSelector((state) => state.course?.autoplayEnabled ?? true)
     const playbackSettings = useAppSelector(
       (state) =>
         state.course?.playbackSettings ?? {
@@ -172,7 +178,7 @@ const EnhancedVideoPlayer = React.memo(
           playbackSpeed: 1,
         },
     )
-    const courseId: number | null = useAppSelector((state) => state.course?.currentCourseId ?? null)
+    const courseId = useAppSelector((state) => state.course?.currentCourseId ?? null)
 
     // Component state with proper initialization
     const [state, setState] = useState<VideoPlayerState>({
@@ -184,7 +190,7 @@ const EnhancedVideoPlayer = React.memo(
       duration: 0,
       playbackSpeed: playbackSettings?.playbackSpeed ?? 1,
       isBuffering: false,
-      isLoading: false, // No loading overlay
+      isLoading: false,
       isPlayerReady: false,
       videoCompleted: false,
       lastSavedPosition: 0,
@@ -196,6 +202,8 @@ const EnhancedVideoPlayer = React.memo(
       playerError: false,
       quality: "auto",
       hasStarted: false,
+      isPictureInPicture: false,
+      showKeyboardShortcuts: false,
     })
 
     // Performance tracking
@@ -209,19 +217,27 @@ const EnhancedVideoPlayer = React.memo(
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const progressUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const initialRenderRef = useRef<boolean>(true)
+    const keyboardHandlerRef = useRef<((e: KeyboardEvent) => void) | null>(null)
 
     // Hooks
     const { toast } = useToast()
 
-    // Optimized YouTube configuration for smooth playback
+    // Optimized YouTube configuration for smooth playback with disabled related videos
     const optimizedPlayerConfig = useMemo<YouTubeConfig>(() => {
+      // Calculate start time safely
+      let startTime: number | undefined = undefined
+      if (initialTime && state.duration && state.duration > 0) {
+        startTime = Math.floor(initialTime * state.duration)
+      }
+
       const baseConfig: YouTubeConfig = {
         youtube: {
           playerVars: {
-            autoplay: autoPlay || autoplayEnabled ? 1 : 0,
-            start: Math.floor((initialTime || 0) * (state.duration || 0)),
+            autoplay: 0,
+            start: startTime,
             modestbranding: 1,
-            rel: 0,
+            rel: 0, // Disable related videos
             showinfo: 0,
             iv_load_policy: 3,
             fs: 1,
@@ -244,17 +260,34 @@ const EnhancedVideoPlayer = React.memo(
       }
 
       return baseConfig
-    }, [autoPlay, autoplayEnabled, initialTime, state.duration, networkQuality])
+    }, [initialTime, state.duration, networkQuality])
+
+    // Handle autoplay separately in useEffect to avoid render-time state updates
+    useEffect(() => {
+      if (!initialRenderRef.current && state.isPlayerReady) {
+        if (autoPlay || autoplayEnabled) {
+          const timer = setTimeout(() => {
+            setState((prev) => ({ ...prev, playing: true, hasStarted: true }))
+          }, 100)
+          return () => clearTimeout(timer)
+        }
+      }
+    }, [state.isPlayerReady, autoPlay, autoplayEnabled])
+
+    // Mark initial render complete
+    useEffect(() => {
+      initialRenderRef.current = false
+    }, [])
 
     // Throttled progress update to prevent excessive API calls
     const throttledProgressUpdate = useCallback(
-      (progressData: ProgressState) => {
+      (progressData: ProgressState): void => {
         if (progressUpdateTimeoutRef.current) {
           clearTimeout(progressUpdateTimeoutRef.current)
         }
 
         progressUpdateTimeoutRef.current = setTimeout(() => {
-          if (isAuthenticated && Math.abs(progressData.played - state.lastSavedPosition) > 0.01) {
+          if (isAuthenticated && Math.abs(progressData.played - state.lastSavedPosition) > 0.01 && state.duration > 0) {
             dispatch(
               setVideoProgress({
                 videoId,
@@ -275,54 +308,91 @@ const EnhancedVideoPlayer = React.memo(
               dispatch(setLastPlayedAt({ courseId, lastPlayedAt: new Date().toISOString() }))
             }
           }
-        }, 500) // Throttle to 500ms
+        }, 500)
       },
       [videoId, state.lastSavedPosition, state.duration, courseId, isAuthenticated, dispatch, onProgress],
     )
 
-    // Enhanced keyboard shortcuts
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent): void => {
+    // Enhanced keyboard shortcuts with performance optimization
+    const createKeyboardHandler = useCallback(() => {
+      return (e: KeyboardEvent): void => {
         const target = e.target as HTMLElement
-        if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") {
+        if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
           return
+        }
+
+        // Prevent default for all our handled keys
+        const handledKeys = [
+          " ",
+          "k",
+          "ArrowLeft",
+          "j",
+          "ArrowRight",
+          "l",
+          "m",
+          "f",
+          "t",
+          "ArrowUp",
+          "ArrowDown",
+          "p",
+          "?",
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+        ]
+
+        if (handledKeys.includes(e.key)) {
+          e.preventDefault()
         }
 
         switch (e.key) {
           case " ":
           case "k":
-            e.preventDefault()
-            setState((prev) => ({ ...prev, playing: !prev.playing }))
+            handlePlayPause()
             break
           case "ArrowLeft":
           case "j":
-            e.preventDefault()
             handleSkip(-10)
             break
           case "ArrowRight":
           case "l":
-            e.preventDefault()
             handleSkip(10)
             break
           case "m":
-            e.preventDefault()
             handleMute()
             break
           case "f":
-            e.preventDefault()
             handleFullscreenToggle()
             break
           case "t":
-            e.preventDefault()
-            setState((prev) => ({ ...prev, theaterMode: !prev.theaterMode }))
+            handleTheaterModeToggle()
+            break
+          case "p":
+            handlePictureInPictureToggle()
             break
           case "ArrowUp":
-            e.preventDefault()
-            handleVolumeChange(Math.min(1, state.volume + 0.1))
+            if (e.shiftKey) {
+              handleSkip(60) // Skip 1 minute with Shift+Up
+            } else {
+              handleVolumeChange(Math.min(1, state.volume + 0.1))
+            }
             break
           case "ArrowDown":
-            e.preventDefault()
-            handleVolumeChange(Math.max(0, state.volume - 0.1))
+            if (e.shiftKey) {
+              handleSkip(-60) // Skip back 1 minute with Shift+Down
+            } else {
+              handleVolumeChange(Math.max(0, state.volume - 0.1))
+            }
+            break
+          case "?":
+            setState((prev) => ({ ...prev, showKeyboardShortcuts: !prev.showKeyboardShortcuts }))
             break
           case "0":
           case "1":
@@ -334,7 +404,6 @@ const EnhancedVideoPlayer = React.memo(
           case "7":
           case "8":
           case "9":
-            e.preventDefault()
             const percentage: number = Number.parseInt(e.key) / 10
             if (playerRef.current) {
               playerRef.current.seekTo(percentage)
@@ -342,15 +411,35 @@ const EnhancedVideoPlayer = React.memo(
             break
         }
       }
-
-      window.addEventListener("keydown", handleKeyDown)
-      return () => window.removeEventListener("keydown", handleKeyDown)
     }, [state.volume])
+
+    // Setup keyboard event listeners with cleanup
+    useEffect(() => {
+      // Remove previous handler if it exists
+      if (keyboardHandlerRef.current) {
+        window.removeEventListener("keydown", keyboardHandlerRef.current)
+      }
+
+      // Create and store new handler
+      keyboardHandlerRef.current = createKeyboardHandler()
+      window.addEventListener("keydown", keyboardHandlerRef.current, { passive: false })
+
+      return () => {
+        if (keyboardHandlerRef.current) {
+          window.removeEventListener("keydown", keyboardHandlerRef.current)
+        }
+      }
+    }, [createKeyboardHandler])
+
+    // Play/Pause handler
+    const handlePlayPause = useCallback((): void => {
+      setState((prev) => ({ ...prev, playing: !prev.playing }))
+    }, [])
 
     // Skip function with proper error handling
     const handleSkip = useCallback(
       (seconds: number): void => {
-        if (!playerRef.current || !state.duration) return
+        if (!playerRef.current || !state.duration || state.duration <= 0) return
 
         const currentTime: number = playerRef.current.getCurrentTime() || 0
         const newTime: number = currentTime + seconds
@@ -360,14 +449,16 @@ const EnhancedVideoPlayer = React.memo(
         setState((prev) => ({ ...prev, played: newPosition }))
 
         if (isAuthenticated) {
-          dispatch(
-            setVideoProgress({
-              videoId,
-              time: newPosition,
-              playedSeconds: newTime,
-              duration: state.duration,
-            }),
-          )
+          setTimeout(() => {
+            dispatch(
+              setVideoProgress({
+                videoId,
+                time: newPosition,
+                playedSeconds: newTime,
+                duration: state.duration,
+              }),
+            )
+          }, 0)
         }
       },
       [state.duration, videoId, dispatch, isAuthenticated],
@@ -377,12 +468,16 @@ const EnhancedVideoPlayer = React.memo(
     const handleMute = useCallback((): void => {
       setState((prev) => {
         const newMutedState: boolean = !prev.muted
-        dispatch(
-          setPlaybackSettings({
-            ...playbackSettings,
-            muted: newMutedState,
-          }),
-        )
+
+        setTimeout(() => {
+          dispatch(
+            setPlaybackSettings({
+              ...playbackSettings,
+              muted: newMutedState,
+            }),
+          )
+        }, 0)
+
         return { ...prev, muted: newMutedState }
       })
     }, [dispatch, playbackSettings])
@@ -396,33 +491,116 @@ const EnhancedVideoPlayer = React.memo(
           volume: clampedVolume,
           muted: clampedVolume === 0,
         }))
-        dispatch(
-          setPlaybackSettings({
-            ...playbackSettings,
-            volume: clampedVolume,
-            muted: clampedVolume === 0,
-          }),
-        )
+
+        setTimeout(() => {
+          dispatch(
+            setPlaybackSettings({
+              ...playbackSettings,
+              volume: clampedVolume,
+              muted: clampedVolume === 0,
+            }),
+          )
+        }, 0)
       },
       [dispatch, playbackSettings],
     )
 
-    // Fullscreen toggle
+    // Enhanced fullscreen toggle with better error handling
     const handleFullscreenToggle = useCallback((): void => {
       if (typeof document === "undefined") return
 
-      if (!document.fullscreenElement) {
-        containerRef.current?.requestFullscreen().catch((err: Error) => {
-          console.error(`Error attempting to enable fullscreen: ${err.message}`)
-        })
-      } else {
-        document.exitFullscreen().catch((err: Error) => {
-          console.error(`Error attempting to exit fullscreen: ${err.message}`)
-        })
+      try {
+        if (!document.fullscreenElement) {
+          containerRef.current?.requestFullscreen()
+        } else {
+          document.exitFullscreen()
+        }
+      } catch (err) {
+        console.error("Fullscreen error:", err)
+        if (toast) {
+          toast({
+            title: "Fullscreen Error",
+            description: "Unable to toggle fullscreen mode.",
+            variant: "destructive",
+          })
+        }
       }
+    }, [toast])
+
+    // Enhanced theater mode toggle with smooth transitions
+    const handleTheaterModeToggle = useCallback((): void => {
+      setState((prev) => {
+        const newTheaterMode = !prev.theaterMode
+
+        // Add/remove theater mode class to body for better styling control
+        if (typeof document !== "undefined") {
+          if (newTheaterMode) {
+            document.body.classList.add("theater-mode")
+            document.body.style.overflow = "hidden"
+          } else {
+            document.body.classList.remove("theater-mode")
+            document.body.style.overflow = ""
+          }
+        }
+
+        return { ...prev, theaterMode: newTheaterMode }
+      })
     }, [])
 
-    // Player ready handler - optimized for smooth autoplay
+    // Enhanced Picture-in-Picture toggle with better browser support
+    const handlePictureInPictureToggle = useCallback(async (): Promise<void> => {
+      try {
+        if (!playerRef.current) return
+
+        // Check if PiP is supported
+        if (!document.pictureInPictureEnabled) {
+          if (toast) {
+            toast({
+              title: "Feature not supported",
+              description: "Picture-in-picture mode is not supported in your browser.",
+              variant: "destructive",
+            })
+          }
+          return
+        }
+
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture()
+          setState((prev) => ({ ...prev, isPictureInPicture: false }))
+        } else {
+          const internalPlayer = playerRef.current.getInternalPlayer()
+
+          // For YouTube player, we need to get the actual video element
+          if (internalPlayer && typeof internalPlayer.getIframe === "function") {
+            const iframe = internalPlayer.getIframe()
+            const videoElement = iframe?.contentDocument?.querySelector("video")
+
+            if (videoElement && typeof videoElement.requestPictureInPicture === "function") {
+              await videoElement.requestPictureInPicture()
+              setState((prev) => ({ ...prev, isPictureInPicture: true }))
+            } else {
+              throw new Error("Video element not accessible for PiP")
+            }
+          } else if (internalPlayer && typeof internalPlayer.requestPictureInPicture === "function") {
+            await internalPlayer.requestPictureInPicture()
+            setState((prev) => ({ ...prev, isPictureInPicture: true }))
+          } else {
+            throw new Error("PiP not available for this video type")
+          }
+        }
+      } catch (error) {
+        console.error("Picture-in-Picture error:", error)
+        if (toast) {
+          toast({
+            title: "Picture-in-Picture Error",
+            description: "Unable to toggle picture-in-picture mode.",
+            variant: "destructive",
+          })
+        }
+      }
+    }, [toast])
+
+    // Player ready handler
     const handlePlayerReady = useCallback((): void => {
       setIsInitialized(true)
       setState((prev) => ({
@@ -430,14 +608,7 @@ const EnhancedVideoPlayer = React.memo(
         isPlayerReady: true,
         isLoading: false,
       }))
-
-      // Auto-play with slight delay for smooth experience
-      if (autoPlay || autoplayEnabled) {
-        setTimeout(() => {
-          setState((prev) => ({ ...prev, playing: true, hasStarted: true }))
-        }, 100)
-      }
-    }, [autoPlay, autoplayEnabled])
+    }, [])
 
     // Enhanced progress handler
     const handleProgress = useCallback(
@@ -448,11 +619,9 @@ const EnhancedVideoPlayer = React.memo(
           loaded: progressState.loaded,
         }))
 
-        // Calculate buffer health
         const newBufferHealth: number = (progressState.loaded - progressState.played) * 100
         setBufferHealth(newBufferHealth)
 
-        // Update buffering state only for severe buffer issues
         if (newBufferHealth < 5 && state.playing && state.hasStarted) {
           setState((prev) => ({ ...prev, isBuffering: true }))
         } else if (newBufferHealth > 15) {
@@ -480,14 +649,16 @@ const EnhancedVideoPlayer = React.memo(
 
         if (isAuthenticated && state.duration > 0) {
           const newPlayedSeconds: number = clampedPosition * state.duration
-          dispatch(
-            setVideoProgress({
-              videoId,
-              time: clampedPosition,
-              playedSeconds: newPlayedSeconds,
-              duration: state.duration,
-            }),
-          )
+          setTimeout(() => {
+            dispatch(
+              setVideoProgress({
+                videoId,
+                time: clampedPosition,
+                playedSeconds: newPlayedSeconds,
+                duration: state.duration,
+              }),
+            )
+          }, 0)
         }
       },
       [videoId, dispatch, state.duration, isAuthenticated],
@@ -498,21 +669,27 @@ const EnhancedVideoPlayer = React.memo(
       setState((prev) => ({ ...prev, playing: false, videoCompleted: true }))
 
       if (isAuthenticated && state.duration > 0) {
-        dispatch(
-          setVideoProgress({
-            videoId,
-            time: 1.0,
-            playedSeconds: state.duration,
-            duration: state.duration,
-          }),
-        )
+        setTimeout(() => {
+          dispatch(
+            setVideoProgress({
+              videoId,
+              time: 1.0,
+              playedSeconds: state.duration,
+              duration: state.duration,
+            }),
+          )
+        }, 0)
       }
 
       if (onChapterComplete) {
-        onChapterComplete()
+        setTimeout(() => {
+          onChapterComplete()
+        }, 0)
       }
 
-      onEnded()
+      setTimeout(() => {
+        onEnded()
+      }, 0)
     }, [videoId, dispatch, state.duration, onEnded, onChapterComplete, isAuthenticated])
 
     // Error handler
@@ -567,9 +744,9 @@ const EnhancedVideoPlayer = React.memo(
         }
       }
 
-      document.addEventListener("mousemove", handleMouseActivity)
-      document.addEventListener("click", handleMouseActivity)
-      document.addEventListener("keydown", handleKeyboardActivity)
+      document.addEventListener("mousemove", handleMouseActivity, { passive: true })
+      document.addEventListener("click", handleMouseActivity, { passive: true })
+      document.addEventListener("keydown", handleKeyboardActivity, { passive: true })
 
       return () => {
         document.removeEventListener("mousemove", handleMouseActivity)
@@ -589,6 +766,21 @@ const EnhancedVideoPlayer = React.memo(
 
       document.addEventListener("fullscreenchange", handleFullscreenChange)
       return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    }, [])
+
+    // Handle Picture-in-Picture changes
+    useEffect(() => {
+      const handlePiPChange = (): void => {
+        setState((prev) => ({ ...prev, isPictureInPicture: !!document.pictureInPictureElement }))
+      }
+
+      document.addEventListener("enterpictureinpicture", handlePiPChange)
+      document.addEventListener("leavepictureinpicture", handlePiPChange)
+
+      return () => {
+        document.removeEventListener("enterpictureinpicture", handlePiPChange)
+        document.removeEventListener("leavepictureinpicture", handlePiPChange)
+      }
     }, [])
 
     // Network quality detection
@@ -615,9 +807,16 @@ const EnhancedVideoPlayer = React.memo(
       }
     }, [])
 
-    // Cleanup timeouts on unmount
+    // Cleanup on unmount
     useEffect(() => {
       return () => {
+        // Clean up theater mode on unmount
+        if (typeof document !== "undefined") {
+          document.body.classList.remove("theater-mode")
+          document.body.style.overflow = ""
+        }
+
+        // Clear timeouts
         if (controlsTimeoutRef.current) {
           clearTimeout(controlsTimeoutRef.current)
         }
@@ -630,159 +829,188 @@ const EnhancedVideoPlayer = React.memo(
       }
     }, [])
 
+    // Handle bookmark addition
+    const handleAddBookmark = useCallback(() => {
+      if (!playerRef.current) return
+
+      const currentTime: number = playerRef.current.getCurrentTime()
+
+      setTimeout(() => {
+        dispatch(addBookmark({ videoId, time: currentTime }))
+
+        if (onBookmark) {
+          onBookmark(currentTime)
+        }
+      }, 0)
+
+      setState((prev) => ({ ...prev, showBookmarkTooltip: true }))
+      setTimeout(() => {
+        setState((prev) => ({ ...prev, showBookmarkTooltip: false }))
+      }, 2000)
+
+      if (toast) {
+        toast({
+          title: "Bookmark Added",
+          description: `Bookmark added at ${formatTime(currentTime)}`,
+          duration: 3000,
+        })
+      }
+    }, [videoId, dispatch, onBookmark, toast])
+
     return (
-      <div
-        ref={containerRef}
-        className={`relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-2xl group transition-all duration-500 ${
-          state.theaterMode ? "fixed top-0 left-0 w-full h-full z-50 aspect-auto rounded-none" : ""
-        }`}
-        onMouseEnter={() => setState((prev) => ({ ...prev, showControls: true }))}
-        onMouseLeave={() => state.playing && setState((prev) => ({ ...prev, showControls: false }))}
-        onClick={() => setState((prev) => ({ ...prev, showControls: true }))}
-      >
-        {/* Video Player */}
-        {!state.playerError && (
-          <ReactPlayer
-            ref={playerRef}
-            url={`https://www.youtube.com/watch?v=${videoId}`}
-            width="100%"
-            height="100%"
-            playing={state.playing}
-            volume={state.volume}
-            muted={state.muted}
-            onReady={handlePlayerReady}
-            onPlay={() => setState((prev) => ({ ...prev, isPlayerReady: true, hasStarted: true }))}
-            onStart={() => setState((prev) => ({ ...prev, hasStarted: true }))}
-            onProgress={handleProgress}
-            onDuration={(duration: number) => setState((prev) => ({ ...prev, duration }))}
-            onEnded={handleVideoEnd}
-            onBuffer={() => {}} // No buffer overlay
-            onBufferEnd={() => setState((prev) => ({ ...prev, isBuffering: false }))}
-            onError={handlePlayerError}
-            onSeek={() => {}} // No seek loading
-            progressInterval={1000}
-            playbackRate={state.playbackSpeed}
-            style={{ backgroundColor: "transparent" }}
-            config={optimizedPlayerConfig}
+      <>
+        <div
+          ref={containerRef}
+          className={`relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-2xl group transition-all duration-500 ${
+            state.theaterMode ? "fixed top-0 left-0 w-full h-full z-50 aspect-auto rounded-none" : ""
+          }`}
+          onMouseEnter={() => setState((prev) => ({ ...prev, showControls: true }))}
+          onMouseLeave={() => state.playing && setState((prev) => ({ ...prev, showControls: false }))}
+          onClick={() => setState((prev) => ({ ...prev, showControls: true }))}
+        >
+          {/* Video Player */}
+          {!state.playerError && (
+            <ReactPlayer
+              ref={playerRef}
+              url={`https://www.youtube.com/watch?v=${videoId}`}
+              width="100%"
+              height="100%"
+              playing={state.playing}
+              volume={state.volume}
+              muted={state.muted}
+              onReady={handlePlayerReady}
+              onPlay={() => setState((prev) => ({ ...prev, isPlayerReady: true, hasStarted: true }))}
+              onStart={() => setState((prev) => ({ ...prev, hasStarted: true }))}
+              onProgress={handleProgress}
+              onDuration={(duration: number) => setState((prev) => ({ ...prev, duration }))}
+              onEnded={handleVideoEnd}
+              onBuffer={() => {}}
+              onBufferEnd={() => setState((prev) => ({ ...prev, isBuffering: false }))}
+              onError={handlePlayerError}
+              onSeek={() => {}}
+              progressInterval={1000}
+              playbackRate={state.playbackSpeed}
+              style={{ backgroundColor: "transparent" }}
+              config={optimizedPlayerConfig}
+            />
+          )}
+
+          {/* Error State */}
+          {state.playerError && (
+            <VideoPlayerFallback onReload={resetPlayerState} error="This video is currently unavailable" />
+          )}
+
+          {/* CourseAI Logo Overlay */}
+          <CourseAILogo
+            show={state.isPlayerReady && !state.playerError}
+            theaterMode={state.theaterMode}
+            showControls={state.showControls}
           />
-        )}
 
-        {/* Error State */}
-        {state.playerError && (
-          <VideoPlayerFallback onReload={resetPlayerState} error="This video is currently unavailable" />
-        )}
-
-        {/* Enhanced Video Controls */}
-        <VideoControls
-          show={state.showControls}
-          playing={state.playing}
-          muted={state.muted}
-          volume={state.volume}
-          played={state.played}
-          loaded={state.loaded}
-          duration={state.duration}
-          fullscreen={state.fullscreen}
-          playbackSpeed={state.playbackSpeed}
-          autoplayNext={autoplayEnabled}
-          bookmarks={bookmarks || []}
-          nextVideoId={nextVideoId}
-          theaterMode={state.theaterMode}
-          showSubtitles={state.showSubtitles}
-          quality={state.quality}
-          bufferHealth={bufferHealth}
-          onPlayPause={() => setState((prev) => ({ ...prev, playing: !prev.playing }))}
-          onSkip={handleSkip}
-          onMute={handleMute}
-          onVolumeChange={handleVolumeChange}
-          onFullscreenToggle={handleFullscreenToggle}
-          onNextVideo={() => nextVideoId && onEnded()}
-          onSeekChange={handleSeekChange}
-          onPlaybackSpeedChange={(speed: number) => setState((prev) => ({ ...prev, playbackSpeed: speed }))}
-          onAutoplayToggle={() => dispatch(setAutoplayEnabled(!autoplayEnabled))}
-          onSeekToBookmark={(time: number) => {
-            if (playerRef.current && state.duration > 0) {
-              const position: number = time / state.duration
-              playerRef.current.seekTo(position)
-              setState((prev) => ({ ...prev, played: position }))
-            }
-          }}
-          onAddBookmark={() => {
-            if (playerRef.current) {
-              const currentTime: number = playerRef.current.getCurrentTime()
-              dispatch(addBookmark({ videoId, time: currentTime }))
-              if (onBookmark) {
-                onBookmark(currentTime)
+          {/* Enhanced Video Controls */}
+          <VideoControls
+            show={state.showControls}
+            playing={state.playing}
+            muted={state.muted}
+            volume={state.volume}
+            played={state.played}
+            loaded={state.loaded}
+            duration={state.duration || 0}
+            fullscreen={state.fullscreen}
+            playbackSpeed={state.playbackSpeed}
+            autoplayNext={autoplayEnabled}
+            bookmarks={bookmarks || []}
+            nextVideoId={nextVideoId}
+            theaterMode={state.theaterMode}
+            showSubtitles={state.showSubtitles}
+            quality={state.quality}
+            bufferHealth={bufferHealth}
+            isPictureInPicture={state.isPictureInPicture}
+            onPlayPause={handlePlayPause}
+            onSkip={handleSkip}
+            onMute={handleMute}
+            onVolumeChange={handleVolumeChange}
+            onFullscreenToggle={handleFullscreenToggle}
+            onNextVideo={() => {
+              if (nextVideoId) {
+                setTimeout(() => {
+                  onEnded()
+                }, 0)
               }
-
-              setState((prev) => ({ ...prev, showBookmarkTooltip: true }))
+            }}
+            onSeekChange={handleSeekChange}
+            onPlaybackSpeedChange={(speed: number) => setState((prev) => ({ ...prev, playbackSpeed: speed }))}
+            onAutoplayToggle={() => {
               setTimeout(() => {
-                setState((prev) => ({ ...prev, showBookmarkTooltip: false }))
-              }, 2000)
-
-              if (toast) {
-                toast({
-                  title: "Bookmark Added",
-                  description: `Bookmark added at ${formatTime(currentTime)}`,
-                  duration: 3000,
-                })
+                dispatch(setAutoplayEnabled(!autoplayEnabled))
+              }, 0)
+            }}
+            onSeekToBookmark={(time: number) => {
+              if (playerRef.current && state.duration && state.duration > 0) {
+                const position: number = time / state.duration
+                playerRef.current.seekTo(position)
+                setState((prev) => ({ ...prev, played: position }))
               }
-            }
-          }}
-          onPictureInPicture={async () => {
-            try {
-              if (document.pictureInPictureElement) {
-                await document.exitPictureInPicture()
-              } else if (playerRef.current) {
-                const videoElement = playerRef.current.getInternalPlayer()
-                if (videoElement && typeof videoElement.requestPictureInPicture === "function") {
-                  await videoElement.requestPictureInPicture()
-                }
-              }
-            } catch (error) {
-              if (toast) {
-                toast({
-                  title: "Feature not supported",
-                  description: "Picture-in-picture mode is not supported in your browser.",
-                  variant: "destructive",
-                })
-              }
-            }
-          }}
-          onTheaterMode={() => setState((prev) => ({ ...prev, theaterMode: !prev.theaterMode }))}
-          onToggleSubtitles={() => setState((prev) => ({ ...prev, showSubtitles: !prev.showSubtitles }))}
-          formatTime={formatTime}
-        />
+            }}
+            onAddBookmark={handleAddBookmark}
+            onPictureInPicture={handlePictureInPictureToggle}
+            onTheaterMode={handleTheaterModeToggle}
+            onToggleSubtitles={() => setState((prev) => ({ ...prev, showSubtitles: !prev.showSubtitles }))}
+            onShowKeyboardShortcuts={() => setState((prev) => ({ ...prev, showKeyboardShortcuts: true }))}
+            formatTime={formatTime}
+          />
 
-        {/* Theater Mode Indicator */}
-        <AnimatePresence>
-          {state.theaterMode && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="absolute top-6 left-6 bg-black/90 text-white px-4 py-2 rounded-lg text-sm z-50 backdrop-blur-sm border border-white/20"
-            >
-              <span className="font-medium">Theater Mode</span>
-              <span className="text-white/70 ml-2">• Press T to exit</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          {/* Theater Mode Indicator */}
+          <AnimatePresence>
+            {state.theaterMode && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute top-6 left-6 bg-black/90 text-white px-4 py-2 rounded-lg text-sm z-50 backdrop-blur-sm border border-white/20"
+              >
+                <span className="font-medium">Theater Mode</span>
+                <span className="text-white/70 ml-2">• Press T to exit</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Bookmark Tooltip */}
-        <AnimatePresence>
-          {state.showBookmarkTooltip && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 10 }}
-              className="absolute top-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg text-sm z-50 flex items-center gap-2 shadow-lg"
-            >
-              <Bookmark className="h-4 w-4" />
-              <span className="font-medium">Bookmark added!</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+          {/* Picture-in-Picture Indicator */}
+          <AnimatePresence>
+            {state.isPictureInPicture && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute top-6 right-6 bg-black/90 text-white px-4 py-2 rounded-lg text-sm z-50 backdrop-blur-sm border border-white/20"
+              >
+                <span className="font-medium">Picture-in-Picture</span>
+                <span className="text-white/70 ml-2">• Press P to exit</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Bookmark Tooltip */}
+          <AnimatePresence>
+            {state.showBookmarkTooltip && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                className="absolute top-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg text-sm z-50 flex items-center gap-2 shadow-lg"
+              >
+                <Bookmark className="h-4 w-4" />
+                <span className="font-medium">Bookmark added!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Keyboard Shortcuts Modal */}
+        {state.showKeyboardShortcuts && (
+          <KeyboardShortcutsModal onClose={() => setState((prev) => ({ ...prev, showKeyboardShortcuts: false }))} />
+        )}
+      </>
     )
   },
 )
