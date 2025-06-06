@@ -14,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   setCurrentVideoApi,
-  markChapterAsCompleted,
   setCourseCompletionStatus,
   setAutoplayEnabled,
 } from "@/store/slices/courseSlice"
@@ -26,9 +25,6 @@ import { PauseCircle } from "lucide-react"
 import CertificateGenerator from "./CertificateGenerator"
 import { Award } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { PlusCircle } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import AutoplayOverlay from "./AutoplayOverlay"
 import KeyboardShortcutsModal from "./KeyboardShortcutsModal"
 
 interface MainContentProps {
