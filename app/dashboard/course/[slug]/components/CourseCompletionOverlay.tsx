@@ -220,6 +220,23 @@ export const CourseCompletionOverlay = ({
                 Find Another Course
               </Button>
             </div>
+
+            {/* Related Courses Section */}
+            {relatedCourses.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">Related Courses</h3>
+                <ul className="space-y-2">
+                  {relatedCourses.map((course) => (
+                    <li key={course.id} className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
+                      <span className="text-sm font-medium text-foreground">{course.title}</span>
+                      <Link href={`/dashboard/course/${course.slug}`} className="text-primary hover:underline">
+                        <ArrowRight className="h-5 w-5" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </motion.div>
       </motion.div>

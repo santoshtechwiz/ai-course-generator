@@ -19,10 +19,7 @@ function LoadingProviders() {
 export default function SignInClientPage() {
   const { isLoading, isAuthenticated, callbackUrl } = useAuthRedirect()
 
-  // If already authenticated, the hook will handle the redirect
-  if (isLoading) {
-    return <div>Loading...</div> // Or your loading component
-  }
+
 
   // Only render the sign-in page if not authenticated
   if (!isAuthenticated) {

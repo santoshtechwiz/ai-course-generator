@@ -1,8 +1,6 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useEffect } from "react"
-
-import { Button } from "@/components/ui/button"
+import React, { useState, useRef } from "react";
 import {
   Play,
   Pause,
@@ -22,151 +20,60 @@ import {
   Maximize,
   Minimize,
   CheckCircle,
-} from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
-
-// Simple menu component to replace DropdownMenu
-const SimpleMenu = ({
-  trigger,
-  children,
-}: {
-  trigger: React.ReactNode
-  children: React.ReactNode
-}) => {
-  const [open, setOpen] = React.useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  // Close when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  return (
-    <div className="relative" ref={ref}>
-      <div onClick={() => setOpen(!open)}>{trigger}</div>
-      {open && (
-        <div className="absolute right-0 bottom-full mb-2 bg-background border rounded-md shadow-md z-50 w-56">
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Simple menu item component
-const SimpleMenuItem = ({
-  onClick,
-  children,
-}: {
-  onClick: () => void
-  children: React.ReactNode
-}) => {
-  return (
-    <div
-      className="px-3 py-2 text-sm cursor-pointer hover:bg-accent"
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
-// Simple divider component
-const SimpleDivider = () => <div className="h-px bg-border my-1" />
-
-// Volume control component
-const VolumeControl = ({
-  volume,
-  onChange,
-  muted,
-}: {
-  volume: number
-  onChange: (vol: number) => void
-  muted: boolean
-}) => {
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const offsetX = e.clientX - rect.left
-    const newVolume = Math.max(0, Math.min(1, offsetX / rect.width))
-    onChange(newVolume)
-  }
-
-  return (
-    <div
-      className="w-20 h-1 bg-white/30 rounded-full cursor-pointer relative"
-      onClick={handleClick}
-      title={`Volume: ${Math.round(volume * 100)}%`}
-    >
-      <div
-        className="h-full bg-primary rounded-full absolute top-0 left-0"
-        style={{ width: `${muted ? 0 : volume * 100}%` }}
-      />
-      <div
-        className="w-3 h-3 bg-white rounded-full absolute top-50% transform -translate-y-1/3 cursor-grab"
-        style={{ left: `calc(${muted ? 0 : volume * 100}% - 6px)` }}
-      />
-    </div>
-  )
-}
-
-// Playback speed options
-const PLAYBACK_SPEEDS = [
-  { value: 0.25, label: "0.25x" },
-  { value: 0.5, label: "0.5x" },
-  { value: 0.75, label: "0.75x" },
-  { value: 1, label: "1x" },
-  { value: 1.25, label: "1.25x" },
-  { value: 1.5, label: "1.5x" },
-  { value: 1.75, label: "1.75x" },
-  { value: 2, label: "2x" },
-]
+  Trash,
+  RotateCcw as RestartIcon,
+  Plus,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/tailwindUtils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface VideoControlsProps {
-  show: boolean
-  playing: boolean
-  muted: boolean
-  volume: number
-  played: number
-  loaded: number
-  duration: number
-  fullscreen: boolean
-  playbackSpeed: number
-  autoplayNext: boolean
-  bookmarks: number[]
-  nextVideoId?: string
-  theaterMode?: boolean
-  showSubtitles?: boolean
-  isDragging?: boolean
-  onPlayPause: () => void
-  onSkip: (seconds: number) => void
-  onMute: () => void
-  onVolumeChange: (volume: number) => void
-  onFullscreenToggle: () => void
-  onNextVideo: () => void
-  onSeekChange: (position: number) => void
-  onPlaybackSpeedChange: (speed: number) => void
-  onAutoplayToggle: () => void
-  onSeekToBookmark: (time: number) => void
-  onAddBookmark: () => void
-  onPictureInPicture?: () => void
-  onTheaterMode?: () => void
-  onToggleSubtitles?: () => void
-  onDragStart?: () => void
-  onDragEnd?: () => void
-  formatTime: (seconds: number) => string
+  show: boolean;
+  playing: boolean;
+  muted: boolean;
+  volume: number;
+  played: number;
+  loaded: number;
+  duration: number;
+  fullscreen: boolean;
+  playbackSpeed: number;
+  autoplayNext: boolean;
+  bookmarks?: number[];
+  nextVideoId?: string;
+  theaterMode: boolean;
+  showSubtitles: boolean;
+  isMobile?: boolean;
+  courseCompleted?: boolean;
+  onPlayPause: () => void;
+  onSkip: (seconds: number) => void;
+  onMute: () => void;
+  onVolumeChange: (volume: number) => void;
+  onFullscreenToggle: () => void;
+  onNextVideo?: () => void;
+  onSeekMouseDown: (value: number) => void;
+  onSeekChange: (value: number) => void;
+  onSeekMouseUp: () => void;
+  onPlaybackSpeedChange: (speed: number) => void;
+  onAutoplayToggle: () => void;
+  onSeekToBookmark: (time: number) => void;
+  onAddBookmark: () => void;
+  onPictureInPicture: () => void;
+  onTheaterMode: () => void;
+  onToggleSubtitles: () => void;
+  onRestartCourse?: () => void;
+  formatTime: (seconds: number) => string;
 }
 
-export const VideoControls = ({
+export const VideoControls: React.FC<VideoControlsProps> = ({
   show,
   playing,
   muted,
@@ -177,396 +84,335 @@ export const VideoControls = ({
   fullscreen,
   playbackSpeed,
   autoplayNext,
-  bookmarks,
+  bookmarks = [],
   nextVideoId,
-  theaterMode = false,
-  showSubtitles = false,
-  isDragging: parentIsDragging = false,
+  theaterMode,
+  showSubtitles,
+  isMobile = false,
+  courseCompleted = false,
   onPlayPause,
   onSkip,
   onMute,
   onVolumeChange,
   onFullscreenToggle,
   onNextVideo,
+  onSeekMouseDown,
   onSeekChange,
+  onSeekMouseUp,
   onPlaybackSpeedChange,
   onAutoplayToggle,
   onSeekToBookmark,
   onAddBookmark,
-  onPictureInPicture = () => {},
-  onTheaterMode = () => {},
-  onToggleSubtitles = () => {},
-  onDragStart = () => {},
-  onDragEnd = () => {},
+  onPictureInPicture,
+  onTheaterMode,
+  onToggleSubtitles,
+  onRestartCourse = () => {}, // Add default empty function
   formatTime,
-}: VideoControlsProps) => {
-  const progressBarRef = useRef<HTMLDivElement>(null)
+}) => {
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [showBookmarkMenu, setShowBookmarkMenu] = useState(false);
+  const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Add a new state to track scrubbing position and hover preview
-  const [scrubbingPosition, setScrubbingPosition] = useState<number | null>(null)
-  const [hoverPosition, setHoverPosition] = useState<number | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
+  // Count valid bookmarks for UI
+  const validBookmarks = bookmarks.filter((time) => time >= 0 && time <= duration);
 
-  // Calculate progress bar bookmark positions
-  const getBookmarkPositions = () => {
-    return bookmarks.map((time) => ({
-      time,
-      position: `${(time / duration) * 100}%`,
-    }))
-  }
+  // Memoize formatted currentTime and totalTime for performance
+  const currentTimeFormatted = formatTime(Math.floor(duration * played));
+  const totalTimeFormatted = formatTime(Math.floor(duration));
 
-  // Improved progress bar click handler
-  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (progressBarRef.current && !isDragging) {
-      const rect = progressBarRef.current.getBoundingClientRect()
-      const offsetX = e.clientX - rect.left
-      const newPosition = Math.max(0, Math.min(1, offsetX / rect.width))
-      onSeekChange(newPosition)
+  // Fix for mobile controls being too small
+  const controlSize = isMobile ? "h-6 w-6" : "h-5 w-5";
+  const buttonSize = isMobile ? "p-2" : "p-1.5";
+
+  const handleVolumeMouseEnter = () => {
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current);
+      volumeTimeoutRef.current = null;
     }
-  }
+    setShowVolumeSlider(true);
+  };
 
-  // Enhanced mouse events for better scrubbing experience
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(true)
-    onDragStart() // Notify parent component
-    
-    const rect = progressBarRef.current?.getBoundingClientRect()
-    if (rect) {
-      const offsetX = e.clientX - rect.left
-      const newPosition = Math.max(0, Math.min(1, offsetX / rect.width))
-      setScrubbingPosition(newPosition)
-
-      // Add event listeners for drag and release
-      document.addEventListener("mousemove", handleMouseMove)
-      document.addEventListener("mouseup", handleMouseUp)
-    }
-  }
-
-  // Improved mouse movement during scrubbing
-  const handleMouseMove = (e: MouseEvent) => {
-    const rect = progressBarRef.current?.getBoundingClientRect()
-    if (rect) {
-      const offsetX = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
-      const newPosition = offsetX / rect.width
-      setScrubbingPosition(newPosition)
-      
-      // Update position during drag without triggering loading state
-      onSeekChange(newPosition)
-    }
-  }
-
-  // Enhanced mouse up handling
-  const handleMouseUp = (e: MouseEvent) => {
-    document.removeEventListener("mousemove", handleMouseMove)
-    document.removeEventListener("mouseup", handleMouseUp)
-    setIsDragging(false)
-    onDragEnd() // Notify parent component
-
-    const rect = progressBarRef.current?.getBoundingClientRect()
-    if (rect && scrubbingPosition !== null) {
-      // Final seek when drag ends
-      onSeekChange(scrubbingPosition)
-      setScrubbingPosition(null)
-    }
-  }
-
-  // Add hover preview functionality
-  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = progressBarRef.current?.getBoundingClientRect()
-    if (rect) {
-      const offsetX = e.clientX - rect.left
-      const position = Math.max(0, Math.min(1, offsetX / rect.width))
-      setHoverPosition(position)
-    }
-  }
-
-  const handleMouseLeave = () => {
-    setHoverPosition(null)
-  }
-
-  const handleMouseMoveOnBar = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) {
-      const rect = progressBarRef.current?.getBoundingClientRect()
-      if (rect) {
-        const offsetX = e.clientX - rect.left
-        const position = Math.max(0, Math.min(1, offsetX / rect.width))
-        setHoverPosition(position)
-      }
-    }
-  }
-
-  // Cleanup event listeners on component unmount
-  useEffect(() => {
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove)
-      document.removeEventListener("mouseup", handleMouseUp)
-    }
-  }, [])
-
-  // Get volume icon based on volume level
-  const getVolumeIcon = () => {
-    if (muted || volume === 0) return <VolumeX className="h-4 w-4" />
-    if (volume < 0.5) return <Volume1 className="h-4 w-4" />
-    return <Volume2 className="h-4 w-4" />
-  }
-
-  // Update the time display to show scrubbing position when available
-  const displayedTime =
-    scrubbingPosition !== null ? formatTime(duration * scrubbingPosition) : formatTime(duration * played)
+  const handleVolumeMouseLeave = () => {
+    volumeTimeoutRef.current = setTimeout(() => {
+      setShowVolumeSlider(false);
+    }, 500);
+  };
 
   return (
     <div
       className={cn(
-        "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 py-3 transition-all duration-300 z-20",
-        show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
+        "absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 py-6 transition-opacity duration-300",
+        show ? "opacity-100" : "opacity-0 pointer-events-none"
       )}
     >
-      {/* Enhanced progress bar with hover preview and bookmarks */}
-      <div
-        ref={progressBarRef}
-        className="relative w-full h-2 mb-3 bg-white/30 rounded-full cursor-pointer group"
-        onClick={handleProgressBarClick}
-        onMouseDown={handleMouseDown}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onMouseMove={handleMouseMoveOnBar}
-      >
-        {/* Loaded progress */}
-        <div className="h-full bg-primary/40 rounded-full absolute top-0" style={{ width: `${loaded * 100}%` }} />
-        
-        {/* Played progress */}
+      {/* Progress bar with smooth hover effect */}
+      <div className="relative h-1.5 mb-3 cursor-pointer group hover:h-2.5 transition-all duration-150">
+        <div className="absolute inset-0 bg-white/30 rounded-full" />
         <div
-          className="h-full bg-primary rounded-full transition-all duration-150"
-          style={{ width: `${(scrubbingPosition !== null ? scrubbingPosition : played) * 100}%` }}
+          className="absolute inset-y-0 left-0 bg-white/50 rounded-full"
+          style={{ width: `${loaded * 100}%` }}
         />
-
-        {/* Hover preview indicator */}
-        {hoverPosition !== null && !isDragging && (
-          <>
-            <div
-              className="absolute top-1/2 w-3 h-3 bg-white/80 rounded-full transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              style={{ left: `${hoverPosition * 100}%` }}
-            />
-            {/* Hover time tooltip */}
-            <div
-              className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              style={{ left: `${hoverPosition * 100}%` }}
-            >
-              {formatTime(duration * hoverPosition)}
-            </div>
-          </>
-        )}
-
-        {/* Scrubbing handle that appears during scrubbing */}
-        {scrubbingPosition !== null && (
+        <Slider
+          value={[played * 100]}
+          max={100}
+          onValueChange={(value) => {
+            onSeekChange(value[0] / 100);
+          }}
+          onPointerDown={() => {
+            onSeekMouseDown(played);
+          }}
+          onPointerUp={() => {
+            onSeekMouseUp();
+          }}
+          className="relative rounded-full bg-primary"
+        />
+        {/* Render bookmarks only if they're valid */}
+        {validBookmarks.map((time, index) => (
           <div
-            className="absolute top-1/2 w-4 h-4 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-lg border-2 border-primary"
-            style={{ left: `${scrubbingPosition * 100}%` }}
+            key={`bookmark-${index}-${time}`}
+            className="absolute top-1/2 -translate-y-1/2 w-1.5 h-4 bg-yellow-400 rounded-sm transition-all duration-150 hover:scale-125"
+            style={{ left: `${(time / duration) * 100}%`, transform: "translateX(-50%) translateY(-50%)" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSeekToBookmark(time);
+            }}
           />
-        )}
-
-        {/* Bookmarks on progress bar */}
-        {bookmarks.length > 0 &&
-          getBookmarkPositions().map((bookmark, index) => (
-            <div
-              key={index}
-              className="absolute top-1/2 w-2 h-4 bg-yellow-400 rounded-sm transform -translate-y-1/2 cursor-pointer hover:bg-yellow-300 transition-colors shadow-sm"
-              style={{ left: bookmark.position }}
-              onClick={(e) => {
-                e.stopPropagation()
-                onSeekToBookmark(bookmark.time)
-              }}
-              title={`Bookmark: ${formatTime(bookmark.time)}`}
-            />
-          ))}
+        ))}
       </div>
 
+      {/* Main controls row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2 md:gap-3">
           <Button
             variant="ghost"
             size="icon"
+            className={buttonSize}
             onClick={onPlayPause}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-            title={playing ? "Pause" : "Play"}
+            aria-label={playing ? "Pause" : "Play"}
           >
-            {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {playing ? <Pause className={controlSize} /> : <Play className={controlSize} />}
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onSkip(-10)}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-            title="Rewind 10 seconds"
-          >
-            <SkipBack className="h-4 w-4" />
-          </Button>
+          {/* Skip buttons - not shown on mobile to save space */}
+          {!isMobile && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={buttonSize}
+                onClick={() => onSkip(-10)}
+                aria-label="Skip back 10 seconds"
+              >
+                <SkipBack className={controlSize} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={buttonSize}
+                onClick={() => onSkip(10)}
+                aria-label="Skip forward 10 seconds"
+              >
+                <SkipForward className={controlSize} />
+              </Button>
+            </>
+          )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={nextVideoId ? onNextVideo : () => onSkip(10)}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-            title={nextVideoId ? "Next video" : "Forward 10 seconds"}
+          <div
+            className="relative"
+            onMouseEnter={handleVolumeMouseEnter}
+            onMouseLeave={handleVolumeMouseLeave}
           >
-            <SkipForward className="h-4 w-4" />
-          </Button>
-
-          <span className="text-white text-xs ml-2 font-medium">
-            {displayedTime} / {formatTime(duration)}
-          </span>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSkip.bind(null, -10)}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-            title="Rewind 10 seconds"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSkip.bind(null, 10)}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-            title="Forward 10 seconds"
-          >
-            <RotateCw className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={onMute}
-              className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-              title={muted ? "Unmute" : "Mute"}
+              className={buttonSize}
+              aria-label={muted ? "Unmute" : "Mute"}
             >
-              {getVolumeIcon()}
+              {muted ? (
+                <VolumeX className={controlSize} />
+              ) : volume > 0.5 ? (
+                <Volume2 className={controlSize} />
+              ) : (
+                <Volume1 className={controlSize} />
+              )}
             </Button>
-            <VolumeControl volume={volume} onChange={onVolumeChange} muted={muted} />
+
+            {showVolumeSlider && (
+              <div className="absolute left-1/2 bottom-full transform -translate-x-1/2 mb-2 bg-black/80 rounded-md p-2 w-24">
+                <Slider
+                  value={[muted ? 0 : volume * 100]}
+                  max={100}
+                  step={1}
+                  onValueChange={(value) => onVolumeChange(value[0] / 100)}
+                  aria-label="volume"
+                />
+              </div>
+            )}
           </div>
-          <SimpleMenu
-            trigger={
+
+          {/* Time display */}
+          <span className="text-xs md:text-sm text-white">
+            {currentTimeFormatted} / {totalTimeFormatted}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Bookmarks dropdown - hidden on mobile */}
+          {!isMobile && (
+            <DropdownMenu open={showBookmarkMenu} onOpenChange={setShowBookmarkMenu}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={buttonSize}
+                  aria-label="Bookmarks"
+                >
+                  <Bookmark className={controlSize} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={onAddBookmark}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Bookmark
+                </DropdownMenuItem>
+
+                {validBookmarks.length > 0 && <DropdownMenuSeparator />}
+
+                {validBookmarks.map((time, index) => (
+                  <DropdownMenuItem
+                    key={`bookmark-menu-${index}`}
+                    onClick={() => onSeekToBookmark(time)}
+                  >
+                    <span className="flex-1">Bookmark at {formatTime(time)}</span>
+                  </DropdownMenuItem>
+                ))}
+
+                {validBookmarks.length === 0 && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
+                    No bookmarks yet
+                  </div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Settings dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-                title="Settings"
+                className={buttonSize}
+                aria-label="Settings"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className={controlSize} />
               </Button>
-            }
-          >
-            <div className="p-2">
-              <div className="font-medium text-sm mb-2">Playback Speed: {playbackSpeed}x</div>
-              <div className="grid grid-cols-2 gap-1">
-                {PLAYBACK_SPEEDS.map((speed) => (
-                  <SimpleMenuItem key={speed.value} onClick={() => onPlaybackSpeedChange(speed.value)}>
-                    <div
-                      className={cn("flex items-center", playbackSpeed === speed.value && "text-primary font-medium")}
-                    >
-                      {playbackSpeed === speed.value && <CheckCircle className="h-3 w-3 mr-1" />}
-                      {speed.label}
-                    </div>
-                  </SimpleMenuItem>
-                ))}
-              </div>
-            </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onFullscreenToggle}>
+                {fullscreen ? (
+                  <Minimize2 className="h-4 w-4 mr-2" />
+                ) : (
+                  <Maximize2 className="h-4 w-4 mr-2" />
+                )}
+                {fullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              </DropdownMenuItem>
 
-            <SimpleDivider />
-
-            <SimpleMenuItem onClick={onAutoplayToggle}>
-              <div className="flex items-center justify-between w-full">
-                <span className="flex items-center">
-                  <Play className="w-4 h-4 mr-2" />
-                  <span>Autoplay Next</span>
-                </span>
-                <div
-                  className={`w-8 h-4 rounded-full transition-colors ${autoplayNext ? "bg-primary" : "bg-muted"} relative`}
-                >
-                  <div
-                    className={`absolute w-3 h-3 rounded-full bg-white top-0.5 transition-transform ${autoplayNext ? "translate-x-4" : "translate-x-1"}`}
-                  />
-                </div>
-              </div>
-            </SimpleMenuItem>
-
-            <SimpleMenuItem onClick={onToggleSubtitles}>
-              <div className="flex items-center justify-between w-full">
-                <span className="flex items-center">
-                  <Subtitles className="w-4 h-4 mr-2" />
-                  <span>Subtitles</span>
-                </span>
-                <div
-                  className={`w-8 h-4 rounded-full transition-colors ${showSubtitles ? "bg-primary" : "bg-muted"} relative`}
-                >
-                  <div
-                    className={`absolute w-3 h-3 rounded-full bg-white top-0.5 transition-transform ${showSubtitles ? "translate-x-4" : "translate-x-1"}`}
-                  />
-                </div>
-              </div>
-            </SimpleMenuItem>
-
-            <SimpleDivider />
-
-            <SimpleMenuItem onClick={onPictureInPicture}>
-              <div className="flex items-center">
+              <DropdownMenuItem onClick={onPictureInPicture}>
                 <Picture className="h-4 w-4 mr-2" />
-                <span>Picture-in-Picture</span>
-              </div>
-            </SimpleMenuItem>
+                Picture-in-Picture
+              </DropdownMenuItem>
 
-            <SimpleMenuItem onClick={onTheaterMode}>
-              <div className="flex items-center">
-                {theaterMode ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
-                <span>{theaterMode ? "Exit Theater Mode" : "Theater Mode"}</span>
-              </div>
-            </SimpleMenuItem>
+              <DropdownMenuItem onClick={onTheaterMode}>
+                {theaterMode ? (
+                  <Minimize className="h-4 w-4 mr-2" />
+                ) : (
+                  <Maximize className="h-4 w-4 mr-2" />
+                )}
+                {theaterMode ? "Exit Theater Mode" : "Theater Mode"}
+              </DropdownMenuItem>
 
-            {bookmarks && bookmarks.length > 0 && (
-              <>
-                <SimpleDivider />
-                <div className="p-2">
-                  <div className="font-medium text-sm mb-2">Bookmarks ({bookmarks.length})</div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {bookmarks.map((time, index) => (
-                      <SimpleMenuItem key={index} onClick={() => onSeekToBookmark(time)}>
-                        <div className="flex items-center justify-between w-full">
-                          <span>Bookmark {index + 1}</span>
-                          <span className="text-xs text-muted-foreground">{formatTime(time)}</span>
-                        </div>
-                      </SimpleMenuItem>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+              <DropdownMenuItem onClick={onToggleSubtitles}>
+                <Subtitles className="h-4 w-4 mr-2" />
+                {showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
+              </DropdownMenuItem>
 
-            <SimpleDivider />
-            <SimpleMenuItem onClick={onAddBookmark}>
-              <div className="flex items-center">
-                <Bookmark className="h-4 w-4 mr-2" />
-                <span>Add Bookmark</span>
-              </div>
-            </SimpleMenuItem>
-          </SimpleMenu>
+              <DropdownMenuItem onClick={onAutoplayToggle}>
+                {autoplayNext ? (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                ) : (
+                  <div className="h-4 w-4 mr-2 border border-foreground/50 rounded-full" />
+                )}
+                {autoplayNext ? "Disable Autoplay" : "Enable Autoplay"}
+              </DropdownMenuItem>
 
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={() => onPlaybackSpeedChange(0.5)}
+                className={playbackSpeed === 0.5 ? "bg-accent" : ""}
+              >
+                <span className="w-4 mr-2 text-center text-xs">0.5x</span>
+                Speed: 0.5x
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => onPlaybackSpeedChange(0.75)}
+                className={playbackSpeed === 0.75 ? "bg-accent" : ""}
+              >
+                <span className="w-4 mr-2 text-center text-xs">0.75x</span>
+                Speed: 0.75x
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => onPlaybackSpeedChange(1)}
+                className={playbackSpeed === 1 ? "bg-accent" : ""}
+              >
+                <span className="w-4 mr-2 text-center text-xs">1x</span>
+                Speed: Normal
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => onPlaybackSpeedChange(1.5)}
+                className={playbackSpeed === 1.5 ? "bg-accent" : ""}
+              >
+                <span className="w-4 mr-2 text-center text-xs">1.5x</span>
+                Speed: 1.5x
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => onPlaybackSpeedChange(2)}
+                className={playbackSpeed === 2 ? "bg-accent" : ""}
+              >
+                <span className="w-4 mr-2 text-center text-xs">2x</span>
+                Speed: 2x
+              </DropdownMenuItem>
+
+              {courseCompleted && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onRestartCourse}>
+                    <RestartIcon className="h-4 w-4 mr-2" />
+                    Restart Course
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Fullscreen button */}
           <Button
             variant="ghost"
             size="icon"
+            className={buttonSize}
             onClick={onFullscreenToggle}
-            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-            title={fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           >
-            {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            {fullscreen ? <Minimize2 className={controlSize} /> : <Maximize2 className={controlSize} />}
           </Button>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
