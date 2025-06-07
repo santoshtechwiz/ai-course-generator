@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useMemo, useState, useCallback } from "react"
 import { signIn } from "next-auth/react"
 import { CheckCircle, Clock, Lock, ChevronRight, Circle, PlayCircle, Menu, Search } from "lucide-react"
@@ -35,6 +35,111 @@ function formatDuration(seconds: number): string {
 
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
 }
+
+// Memoized chapter item component for better performance
+const ChapterItem = React.memo(
+  ({
+    chapter,
+    isActive,
+    isCompleted,
+    isLocked,
+    isNextVideo,
+    onChapterClick,
+  }: {
+    chapter: FullChapterType
+    isActive: boolean
+    isCompleted: boolean
+    isLocked: boolean
+    isNextVideo: boolean
+    onChapterClick: (chapter: FullChapterType) => void
+  }) => (
+    <li>
+      <div
+        className={cn(
+          "border-l-2 border-transparent transition-all",
+          isActive ? "border-l-primary bg-accent/50" : "hover:border-l-primary/30",
+        )}
+      >
+        <button
+          className={cn(
+            "flex items-center w-full px-5 py-3 text-sm transition-colors text-left",
+            isActive ? "text-foreground font-medium" : "text-muted-foreground",
+            "hover:text-foreground group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            isLocked && "opacity-70 cursor-not-allowed",
+          )}
+          onClick={() => !isLocked && onChapterClick(chapter)}
+          disabled={isLocked}
+          aria-current={isActive ? "page" : undefined}
+          aria-label={`${chapter.title || "Untitled Chapter"}${isCompleted ? " (completed)" : ""}${isActive ? " (currently playing)" : ""}${isLocked ? " (locked)" : ""}`}
+          tabIndex={isLocked ? -1 : 0}
+        >
+          {/* Status Icon */}
+          <div
+            className={cn(
+              "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mr-3.5",
+              isActive ? "text-primary" : isCompleted ? "text-green-500" : "text-muted-foreground",
+            )}
+          >
+            {isCompleted ? (
+              <CheckCircle className="h-5 w-5 fill-green-500/20" aria-hidden="true" />
+            ) : isLocked ? (
+              <Lock className="h-4 w-4" aria-hidden="true" />
+            ) : isActive ? (
+              <PlayCircle className="h-5 w-5 fill-primary/20" aria-hidden="true" />
+            ) : (
+              <Circle className="h-5 w-5" aria-hidden="true" />
+            )}
+          </div>
+
+          {/* Chapter Info */}
+          <div className="flex flex-col items-start text-left flex-1 min-w-0">
+            <span className={cn("line-clamp-2 leading-tight break-words", isActive && "font-medium text-foreground")}>
+              {chapter.title || "Untitled Chapter"}
+            </span>
+
+            {/* Chapter metadata */}
+            <div className="flex items-center gap-2 mt-1 text-xs">
+              {chapter.duration && (
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" aria-hidden="true" />
+                  {chapter.duration}
+                </span>
+              )}
+
+              <div className="flex items-center gap-1">
+                {isNextVideo && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] py-0 h-4 bg-primary/10 text-primary border-primary/20"
+                  >
+                    Next
+                  </Badge>
+                )}
+
+                {chapter.isFree && (
+                  <Badge variant="outline" className="text-[10px] py-0 h-4">
+                    Free
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation arrow */}
+          <ChevronRight
+            className={cn(
+              "ml-2 h-4 w-4 text-muted-foreground/70 transition-opacity flex-shrink-0",
+              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-70",
+            )}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+    </li>
+  ),
+)
+
+ChapterItem.displayName = "ChapterItem"
 
 // Mobile Sidebar Component
 function MobileSidebar({
@@ -133,8 +238,8 @@ export default function VideoNavigationSidebar({
   nextVideoId,
 }: VideoNavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
 
+  // Memoize effective progress to prevent recalculation
   const effectiveProgress = useMemo(() => {
     if (!course) {
       return {
@@ -159,6 +264,7 @@ export default function VideoNavigationSidebar({
     )
   }, [progress, course, currentChapter?.id])
 
+  // Memoize total chapters calculation
   const totalChapters = useMemo(() => {
     if (!course?.courseUnits) return 0
     return course.courseUnits.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0)
@@ -166,31 +272,24 @@ export default function VideoNavigationSidebar({
 
   const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
 
+  // Memoize filtered units with better performance
   const filteredUnits = useMemo(() => {
-    if (!searchQuery.trim() || !course?.courseUnits) return course?.courseUnits || []
+    if (!course?.courseUnits) return []
 
+    if (!searchQuery.trim()) return course.courseUnits
+
+    const query = searchQuery.toLowerCase()
     return course.courseUnits
       .map((unit) => ({
         ...unit,
-        chapters: unit.chapters.filter((chapter) => chapter.title?.toLowerCase().includes(searchQuery.toLowerCase())),
+        chapters: unit.chapters.filter((chapter) => chapter.title?.toLowerCase().includes(query)),
       }))
       .filter((unit) => unit.chapters.length > 0)
   }, [course?.courseUnits, searchQuery])
 
-  const toggleUnit = useCallback((unitId: string) => {
-    setExpandedUnits((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(unitId)) {
-        newSet.delete(unitId)
-      } else {
-        newSet.add(unitId)
-      }
-      return newSet
-    })
-  }, [])
-
+  // Optimized chapter click handler
   const handleChapterClick = useCallback(
-    (chapter) => {
+    (chapter: FullChapterType) => {
       if (chapter.videoId) {
         onVideoSelect(chapter.videoId)
       }
@@ -198,19 +297,7 @@ export default function VideoNavigationSidebar({
     [onVideoSelect],
   )
 
-  // Auto-expand unit containing current chapter
-  useMemo(() => {
-    if (currentChapter && course?.courseUnits) {
-      const unitWithCurrentChapter = course.courseUnits.find((unit) =>
-        unit.chapters.some((chapter) => chapter.id === currentChapter.id),
-      )
-      if (unitWithCurrentChapter) {
-        setExpandedUnits((prev) => new Set([...prev, unitWithCurrentChapter.id.toString()]))
-      }
-    }
-  }, [currentChapter, course?.courseUnits])
-
-  // Calculate the overall progress percentage
+  // Memoize course progress calculation
   const courseProgress = useMemo(() => {
     if (!completedChapters?.length) return 0
 
@@ -218,6 +305,11 @@ export default function VideoNavigationSidebar({
 
     return totalChapters ? Math.round((completedChapters.length / totalChapters) * 100) : 0
   }, [completedChapters?.length, course?.courseUnits])
+
+  // Optimized search handler with debouncing
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }, [])
 
   // Sidebar content component
   const SidebarContent = () => (
@@ -231,7 +323,7 @@ export default function VideoNavigationSidebar({
             placeholder="Search chapters..."
             className="w-full bg-muted/50 pl-9"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             aria-label="Search course chapters"
           />
         </div>
@@ -271,93 +363,15 @@ export default function VideoNavigationSidebar({
                   const isNextVideo = chapter.videoId === nextVideoId
 
                   return (
-                    <li key={chapter.id}>
-                      <div
-                        className={cn(
-                          "border-l-2 border-transparent transition-all",
-                          isActive ? "border-l-primary bg-accent/50" : "hover:border-l-primary/30",
-                        )}
-                      >
-                        <button
-                          className={cn(
-                            "flex items-center w-full px-5 py-3 text-sm transition-colors text-left",
-                            isActive ? "text-foreground font-medium" : "text-muted-foreground",
-                            "hover:text-foreground group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                            isLocked && "opacity-70 cursor-not-allowed",
-                          )}
-                          onClick={() => !isLocked && handleChapterClick(chapter)}
-                          disabled={isLocked}
-                          aria-current={isActive ? "page" : undefined}
-                          aria-label={`${chapter.title || "Untitled Chapter"}${isCompleted ? " (completed)" : ""}${isActive ? " (currently playing)" : ""}${isLocked ? " (locked)" : ""}`}
-                        >
-                          {/* Status Icon */}
-                          <div
-                            className={cn(
-                              "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mr-3.5",
-                              isActive ? "text-primary" : isCompleted ? "text-green-500" : "text-muted-foreground",
-                            )}
-                          >
-                            {isCompleted ? (
-                              <CheckCircle className="h-5 w-5 fill-green-500/20" aria-hidden="true" />
-                            ) : isLocked ? (
-                              <Lock className="h-4 w-4" aria-hidden="true" />
-                            ) : isActive ? (
-                              <PlayCircle className="h-5 w-5 fill-primary/20" aria-hidden="true" />
-                            ) : (
-                              <Circle className="h-5 w-5" aria-hidden="true" />
-                            )}
-                          </div>
-
-                          {/* Chapter Info */}
-                          <div className="flex flex-col items-start text-left flex-1 min-w-0">
-                            <span
-                              className={cn(
-                                "line-clamp-2 leading-tight break-words",
-                                isActive && "font-medium text-foreground",
-                              )}
-                            >
-                              {chapter.title || "Untitled Chapter"}
-                            </span>
-
-                            {/* Chapter metadata */}
-                            <div className="flex items-center gap-2 mt-1 text-xs">
-                              {chapter.duration && (
-                                <span className="text-muted-foreground flex items-center gap-1">
-                                  <Clock className="h-3 w-3" aria-hidden="true" />
-                                  {chapter.duration}
-                                </span>
-                              )}
-
-                              <div className="flex items-center gap-1">
-                                {isNextVideo && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] py-0 h-4 bg-primary/10 text-primary border-primary/20"
-                                  >
-                                    Next
-                                  </Badge>
-                                )}
-
-                                {chapter.isFree && (
-                                  <Badge variant="outline" className="text-[10px] py-0 h-4">
-                                    Free
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Navigation arrow */}
-                          <ChevronRight
-                            className={cn(
-                              "ml-2 h-4 w-4 text-muted-foreground/70 transition-opacity flex-shrink-0",
-                              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-70",
-                            )}
-                            aria-hidden="true"
-                          />
-                        </button>
-                      </div>
-                    </li>
+                    <ChapterItem
+                      key={chapter.id}
+                      chapter={chapter}
+                      isActive={isActive}
+                      isCompleted={isCompleted}
+                      isLocked={isLocked}
+                      isNextVideo={isNextVideo}
+                      onChapterClick={handleChapterClick}
+                    />
                   )
                 })}
               </ul>

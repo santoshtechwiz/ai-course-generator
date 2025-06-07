@@ -1,28 +1,42 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 
-// Define the state interface
-interface VideoProgress {
+// --- Improved TypeScript interfaces ---
+export interface VideoProgress {
   time: number
   playedSeconds: number
   duration: number
+  lastUpdated?: number // Add timestamp for cache invalidation
 }
 
-interface CourseProgress {
-  courseId: number
+export interface CourseProgress {
+  courseId: number | string
   progress: number
   completedChapters: number[]
   currentChapterId?: number
   isCompleted: boolean
   lastPlayedAt?: string
   resumePoint?: number
+  lastUpdated?: number // Add timestamp for cache invalidation
 }
 
-interface BookmarkData {
+export interface BookmarkItem {
+  id: string
   videoId: string
   time: number
+  title: string
+  description: string
+  createdAt: string
 }
 
-interface PlaybackSettings {
+export interface BookmarkData {
+  videoId: string
+  time: number
+  title?: string
+  description?: string
+  bookmarkId?: string
+}
+
+export interface PlaybackSettings {
   volume: number
   muted: boolean
   playbackSpeed: number
@@ -30,11 +44,11 @@ interface PlaybackSettings {
   preload?: string
 }
 
-interface CourseState {
+export interface CourseState {
   currentVideoId: string | null
   videoProgress: Record<string, VideoProgress>
   autoplayEnabled: boolean
-  bookmarks: Record<string, number[]>
+  bookmarks: Record<string, BookmarkItem[]>
   courseProgress: Record<number, CourseProgress> // Legacy - keep for backward compatibility
   userProgress: Record<string, Record<number | string, CourseProgress>> // Per-user progress
   guestProgress: Record<number | string, CourseProgress> // Guest-only progress
@@ -44,16 +58,13 @@ interface CourseState {
   playbackSettings: PlaybackSettings
   userPlaybackSettings: Record<string, PlaybackSettings> // Per-user settings
   guestPlaybackSettings: PlaybackSettings // Guest settings
-  videoCache?: Record<string, any>
-  performanceSettings?: Record<string, any>
-  userPreferences?: Record<string, any>
-  analytics?: { events: any[] }
   nextVideoId: string | null
   prevVideoId: string | null
   isLoading: boolean
+  certificateStatus?: { generated: boolean }
 }
 
-// Initial state
+// Initial state with strong typing
 const initialState: CourseState = {
   currentVideoId: null,
   videoProgress: {},
@@ -79,8 +90,10 @@ const initialState: CourseState = {
   nextVideoId: null,
   prevVideoId: null,
   isLoading: true,
+  certificateStatus: { generated: false }
 }
 
+// --- Optimized slice with improved type safety ---
 const courseSlice = createSlice({
   name: "course",
   initialState,
@@ -88,6 +101,7 @@ const courseSlice = createSlice({
     setCurrentVideo(state, action: PayloadAction<string>) {
       state.currentVideoId = action.payload;
     },
+
     setVideoProgress(
       state,
       action: PayloadAction<{
@@ -98,36 +112,63 @@ const courseSlice = createSlice({
         userId?: string
       }>,
     ) {
-      const { videoId, time, playedSeconds, duration, userId } = action.payload;
+      const { videoId, time, playedSeconds, duration } = action.payload;
       
-      // Basic video progress info shared across users
+      if (!videoId) return; // Validate required fields
+      
+      // Update with new values or keep existing ones
       state.videoProgress[videoId] = {
         time,
-        playedSeconds: playedSeconds || state.videoProgress[videoId]?.playedSeconds || 0,
-        duration: duration || state.videoProgress[videoId]?.duration || 0,
+        playedSeconds: playedSeconds ?? state.videoProgress[videoId]?.playedSeconds ?? 0,
+        duration: duration ?? state.videoProgress[videoId]?.duration ?? 0,
+        lastUpdated: Date.now(),
       };
     },
+
     setAutoplayEnabled(state, action: PayloadAction<boolean>) {
-      state.autoplayEnabled = action.payload
+      state.autoplayEnabled = action.payload;
     },
-    addBookmark(state, action: PayloadAction<BookmarkData & { userId?: string }>) {
-      const { videoId, time, userId } = action.payload;
+
+    addBookmark(state, action: PayloadAction<BookmarkData>) {
+      const { videoId, time, title, description } = action.payload;
       
+      if (!videoId || time === undefined) return; // Validate required fields
+      
+      // Initialize bookmarks array for this video if needed
       if (!state.bookmarks[videoId]) {
         state.bookmarks[videoId] = [];
       }
-      // Prevent duplicate bookmarks
-      if (!state.bookmarks[videoId].includes(time)) {
-        state.bookmarks[videoId].push(time);
-        // Sort bookmarks by time
-        state.bookmarks[videoId].sort((a, b) => a - b);
-      }
+      
+      // Create a unique ID for the bookmark
+      const bookmarkId = `bookmark_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // Add new bookmark with properly typed fields
+      state.bookmarks[videoId].push({
+        id: bookmarkId,
+        videoId,
+        time,
+        title: title || `Bookmark at ${Math.floor(time)}s`,
+        description: description || '',
+        createdAt: new Date().toISOString(),
+      });
     },
-    removeBookmark(state, action: PayloadAction<BookmarkData & { userId?: string }>) {
-      const { videoId, time } = action.payload;
-      if (state.bookmarks[videoId]) {
-        state.bookmarks[videoId] = state.bookmarks[videoId].filter(
-          (bookmark) => Math.abs(bookmark - time) > 1, // Add a small tolerance
+
+    removeBookmark(state, action: PayloadAction<{ bookmarkId?: string; videoId?: string; time?: number }>) {
+      const { bookmarkId, videoId, time } = action.payload;
+      
+      // Handle removal by ID (preferred)
+      if (bookmarkId && videoId && state.bookmarks[videoId]) {
+        state.bookmarks[videoId] = state.bookmarks[videoId].filter(bookmark => 
+          bookmark.id !== bookmarkId
+        );
+        return;
+      }
+      
+      // Fallback: handle removal by approximate time
+      if (videoId && time !== undefined && state.bookmarks[videoId]) {
+        const TOLERANCE = 1; // 1 second tolerance
+        state.bookmarks[videoId] = state.bookmarks[videoId].filter(bookmark => 
+          Math.abs(bookmark.time - time) > TOLERANCE
         );
       }
     },
@@ -373,7 +414,40 @@ const courseSlice = createSlice({
   },
 })
 
-// Add the new actions to the exports
+// --- Optimized action creator with proper error handling ---
+export const setCurrentVideoApi = (videoId: string, userId?: string) => (dispatch, getState) => {
+  try {
+    // Check if we're already on this video to prevent unnecessary updates
+    const currentState = getState();
+    if (currentState.course.currentVideoId === videoId) {
+      return; // No need to update if it's the same video
+    }
+
+    // Dispatch the action to update current video
+    dispatch(courseSlice.actions.setCurrentVideo(videoId));
+
+    // Persist to local storage for recovery
+    try {
+      const storageKey = userId ? `currentVideoId_${userId}` : "currentVideoId_guest";
+      localStorage.setItem(storageKey, videoId);
+    } catch (storageError) {
+      // Silent fail for storage errors
+    }
+
+    // Track analytics if available
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "video_change", {
+        video_id: videoId,
+        course_id: currentState.course.currentCourseId,
+        user_type: userId ? 'authenticated' : 'guest'
+      });
+    }
+  } catch (error) {
+    console.error("[courseSlice] Error setting current video:", error);
+  }
+};
+
+// Export actions
 export const {
   setCurrentVideo,
   setVideoProgress,
@@ -403,43 +477,5 @@ export const {
   setPrevVideoId,
   setLoading,
 } = courseSlice.actions
-
-// Fix the setCurrentVideoApi function to properly handle user-specific state
-export const setCurrentVideoApi = (videoId: string, userId?: string) => (dispatch, getState) => {
-  try {
-    // Check if we're already on this video to prevent unnecessary updates
-    const currentState = getState();
-    if (currentState.course.currentVideoId === videoId) {
-      return; // No need to update if it's the same video
-    }
-
-    console.debug("[courseSlice] Setting current video:", videoId);
-    dispatch(courseSlice.actions.setCurrentVideo(videoId));
-
-    // Persist to local storage for better recovery
-    try {
-      if (userId) {
-        // For authenticated users, store in user-specific key
-        localStorage.setItem(`currentVideoId_${userId}`, videoId);
-      } else {
-        // For guests
-        localStorage.setItem("currentVideoId_guest", videoId);
-      }
-    } catch (storageError) {
-      console.warn("[courseSlice] Error saving to local storage:", storageError);
-    }
-
-    // Track video change for analytics
-    if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("event", "video_change", {
-        video_id: videoId,
-        course_id: currentState.course.currentCourseId,
-        user_type: userId ? 'authenticated' : 'guest'
-      });
-    }
-  } catch (error) {
-    console.error("[courseSlice] Error setting current video:", error);
-  }
-};
 
 export default courseSlice.reducer

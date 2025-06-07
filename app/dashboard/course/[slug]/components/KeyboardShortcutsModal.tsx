@@ -1,131 +1,115 @@
-import type React from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+import React, { useEffect, useRef } from "react"
 import {
-  Play,
-  SkipForward,
-  SkipBack,
-  Volume2,
-  VolumeX,
-  Maximize2,
-  Monitor,
-  PictureInPictureIcon as Picture,
-  Bookmark,
-  Settings,
-} from "lucide-react"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 interface KeyboardShortcutsModalProps {
-  onClose: () => void
+  onClose: () => void;
+  show: boolean; // Add missing prop
 }
 
-interface ShortcutItem {
-  key: string
-  description: string
-  icon?: React.ReactNode
-}
+const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ onClose, show }) => {
+  // Use ref for focus management
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-interface ShortcutCategory {
-  title: string
-  icon: React.ReactNode
-  shortcuts: ShortcutItem[]
-}
+  // Focus the close button when the modal opens
+  useEffect(() => {
+    if (show) {
+      // Small delay to ensure the modal is rendered
+      const timer = setTimeout(() => {
+        closeButtonRef.current?.focus();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [show]);
 
-const shortcutCategories: ShortcutCategory[] = [
-  {
-    title: "Playback Controls",
-    icon: <Play className="h-4 w-4" />,
-    shortcuts: [
-      { key: "Space / K", description: "Play/Pause", icon: <Play className="h-3 w-3" /> },
-      { key: "← / J", description: "Rewind 10 seconds", icon: <SkipBack className="h-3 w-3" /> },
-      { key: "→ / L", description: "Forward 10 seconds", icon: <SkipForward className="h-3 w-3" /> },
-      { key: "Shift + ↑", description: "Skip forward 1 minute" },
-      { key: "Shift + ↓", description: "Skip backward 1 minute" },
-    ],
-  },
-  {
-    title: "Audio Controls",
-    icon: <Volume2 className="h-4 w-4" />,
-    shortcuts: [
-      { key: "M", description: "Mute/Unmute", icon: <VolumeX className="h-3 w-3" /> },
-      { key: "↑", description: "Volume up", icon: <Volume2 className="h-3 w-3" /> },
-      { key: "↓", description: "Volume down" },
-    ],
-  },
-  {
-    title: "Display Controls",
-    icon: <Monitor className="h-4 w-4" />,
-    shortcuts: [
-      { key: "F", description: "Toggle fullscreen", icon: <Maximize2 className="h-3 w-3" /> },
-      { key: "T", description: "Toggle theater mode", icon: <Monitor className="h-3 w-3" /> },
-      { key: "P", description: "Picture-in-Picture", icon: <Picture className="h-3 w-3" /> },
-    ],
-  },
-  {
-    title: "Navigation & Features",
-    icon: <Settings className="h-4 w-4" />,
-    shortcuts: [
-      { key: "0-9", description: "Jump to % of video" },
-      { key: "?", description: "Show keyboard shortcuts" },
-      { key: "B", description: "Add bookmark", icon: <Bookmark className="h-3 w-3" /> },
-    ],
-  },
-]
+  // Handle escape key press
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && show) {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [show, onClose]);
 
-export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps) {
   return (
-    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+    <Dialog open={show} onOpenChange={onClose}>
+      <DialogContent className="fixed left-[50%] max-h-[70vh] max-w-[600px] overflow-auto top-[50%] translate-x-[-50%] translate-y-[-50%]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Settings className="h-5 w-5 text-primary" />
-            </div>
-            Keyboard Shortcuts
-          </DialogTitle>
-          <DialogDescription>Use these keyboard shortcuts to control the video player efficiently.</DialogDescription>
+          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogDescription>
+            These shortcuts make navigating and controlling the video player easier.
+          </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {shortcutCategories.map((category, categoryIndex) => (
-            <div key={categoryIndex} className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <div className="p-1.5 bg-muted rounded">{category.icon}</div>
-                {category.title}
+        <div className="grid gap-4 grid-cols-2">
+          <div>
+            <h4 className="mb-2 font-medium text-sm">Global</h4>
+            <div className="space-y-1">
+              <div className="flex items-center">
+                <div className="text-xs text-muted-foreground text-center">
+                  <Badge variant="outline" className="mx-1 font-normal">
+                    Press
+                  </Badge>
+                  <Badge variant="outline" className="mx-1 font-normal">
+                    ?
+                  </Badge>
+                  <Badge variant="outline" className="mx-1 font-normal">
+                    or Shift + /
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">Show shortcuts</p>
               </div>
-
-              <div className="grid gap-2">
-                {category.shortcuts.map((shortcut, shortcutIndex) => (
-                  <div
-                    key={shortcutIndex}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {shortcut.icon && <div className="text-muted-foreground">{shortcut.icon}</div>}
-                      <span className="text-sm text-foreground">{shortcut.description}</span>
-                    </div>
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      {shortcut.key}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-
-              {categoryIndex < shortcutCategories.length - 1 && <Separator className="mt-4" />}
             </div>
-          ))}
+          </div>
+          <div>
+            <h4 className="mb-2 font-medium text-sm">Player Controls</h4>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">Space</p>
+                <p className="text-xs text-muted-foreground">Play / Pause</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">F</p>
+                <p className="text-xs text-muted-foreground">Fullscreen</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">T</p>
+                <p className="text-xs text-muted-foreground">Theater Mode</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">B</p>
+                <p className="text-xs text-muted-foreground">Add Bookmark</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">← / →</p>
+                <div>
+                  <p className="text-xs text-muted-foreground">Skip Back / Forward</p>
+                  <p className="text-xs text-muted-foreground">(10 seconds)</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div className="flex items-center justify-center pt-4 border-t">
-          <p className="text-xs text-muted-foreground text-center">
-            Press{" "}
-            <Badge variant="outline" className="mx-1 font-mono">
-              ?
-            </Badge>{" "}
-            anytime to toggle this help
-          </p>
-        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button ref={closeButtonRef} variant="secondary">Close</Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
+
+export default KeyboardShortcutsModal
