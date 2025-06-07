@@ -31,14 +31,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-import type { PlayerControlsProps } from "../types"
 import ProgressBar from "./ProgressBar"
-
+import type { PlayerControlsProps } from "../types"
 
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
-export const PlayerControls: React.FC<PlayerControlsProps> = ({
+const PlayerControls: React.FC<PlayerControlsProps> = ({
   playing,
   muted,
   volume,
@@ -127,6 +125,18 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
 
   const VolumeIcon = getVolumeIcon()
 
+  // Handle skip backward
+  const handleSkipBackward = useCallback(() => {
+    const newTime = Math.max(0, duration * played - 10)
+    onSeekChange(newTime)
+  }, [duration, played, onSeekChange])
+
+  // Handle skip forward
+  const handleSkipForward = useCallback(() => {
+    const newTime = Math.min(duration, duration * played + 10)
+    onSeekChange(newTime)
+  }, [duration, played, onSeekChange])
+
   return (
     <TooltipProvider delayDuration={300}>
       <AnimatePresence>
@@ -136,10 +146,10 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent backdrop-blur-sm z-30"
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent backdrop-blur-sm z-30 p-4"
           >
             {/* Progress bar */}
-            <div className="px-4 pb-2">
+            <div className="mb-4">
               <ProgressBar
                 played={played}
                 loaded={loaded}
@@ -148,11 +158,12 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
                 formatTime={formatTime}
                 bookmarks={bookmarks}
                 onSeekToBookmark={onSeekToBookmark}
+                bufferHealth={bufferHealth}
               />
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-between px-4 pb-4">
+            <div className="flex items-center justify-between">
               {/* Left controls */}
               <div className="flex items-center space-x-2">
                 {/* Play/Pause */}
@@ -178,7 +189,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleSeek(Math.max(0, duration * played - 10))}
+                      onClick={handleSkipBackward}
                       className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
                     >
                       <RotateCcw className="h-5 w-5" />
@@ -195,7 +206,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleSeek(Math.min(duration, duration * played + 10))}
+                      onClick={handleSkipForward}
                       className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
                     >
                       <RotateCw className="h-5 w-5" />
@@ -274,16 +285,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
                   </AnimatePresence>
                 </div>
 
-                {/* Time display */}
-                <div className="text-white text-sm font-medium ml-2 min-w-max">
-                  <span>{formatTime(duration * played)}</span>
-                  <span className="text-white/60 mx-1">/</span>
-                  <span className="text-white/80">{formatTime(duration)}</span>
-                </div>
-
                 {/* Buffer indicator */}
                 {isBuffering && (
-                  <div className="flex items-center space-x-1 text-white/60">
+                  <div className="flex items-center space-x-1 text-white/60 ml-2">
                     <div className="w-1 h-1 bg-red-400 rounded-full animate-pulse" />
                     <span className="text-xs">Buffering</span>
                   </div>
