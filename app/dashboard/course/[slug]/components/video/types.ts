@@ -1,166 +1,251 @@
-import { ReactNode } from "react";
-import type { BookmarkItem } from "@/store/slices/courseSlice";
+import type React from "react"
 
-// Video metadata type
+// Base video player types
 export interface VideoMetadata {
-  id: string;
-  title?: string;
-  duration?: number;
-  thumbnail?: string;
+  title: string
+  duration: number
+  thumbnail?: string
+  description?: string
 }
 
-// YouTube player config type
-export interface YouTubePlayerConfig {
-  youtube: {
-    playerVars: {
-      autoplay: 0 | 1;
-      modestbranding: 0 | 1;
-      rel: 0 | 1;
-      showinfo: 0 | 1;
-      iv_load_policy: 1 | 3;
-      fs: 0 | 1;
-      controls: 0 | 1 | 2;
-      disablekb: 0 | 1;
-      playsinline: 0 | 1;
-      enablejsapi: 0 | 1;
-      origin: string;
-      cc_load_policy: 0 | 1;
-      start?: number;
-      end?: number;
-    };
-  };
+export interface BookmarkData {
+  id: string
+  videoId: string
+  time: number
+  title: string
+  description?: string
+  createdAt: string
 }
 
-// Video player configuration
-export interface VideoPlayerConfig {
-  showRelatedVideos?: boolean;
-  rememberPosition?: boolean;
-  rememberMute?: boolean;
-  showCertificateButton?: boolean;
-  disablePlaylist?: boolean;
-  allowAnnotations?: boolean;
+export interface PlayerConfig {
+  showCaptions?: boolean
+  showCertificateButton?: boolean
+  autoAdvance?: boolean
+  rememberPosition?: boolean
 }
 
-// Video player props
+export interface VideoPlayerState {
+  playing: boolean
+  muted: boolean
+  volume: number
+  playbackRate: number
+  played: number
+  loaded: number
+  duration: number
+  isFullscreen: boolean
+  isBuffering: boolean
+  isLoading: boolean
+  playerError: Error | null
+  isPlayerReady: boolean
+  hasStarted: boolean
+  lastPlayedTime: number
+  showKeyboardShortcuts: boolean
+  theaterMode: boolean
+  userInteracted: boolean
+}
+
+export interface ProgressState {
+  played: number
+  loaded: number
+  playedSeconds: number
+}
+
 export interface VideoPlayerProps {
-  videoId: string;
-  onEnded?: () => void;
-  onProgress?: (state: { played: number; loaded: number; playedSeconds: number }) => void;
-  onTimeUpdate?: (time: number) => void;
-  rememberPlaybackPosition?: boolean;
-  rememberPlaybackSettings?: boolean;
-  onBookmark?: (time: number, title?: string) => void;
-  autoPlay?: boolean;
-  onVideoLoad?: (metadata: VideoMetadata) => void;
-  onCertificateClick?: () => void;
-  height?: string | number;
-  width?: string | number;
-  className?: string;
-  showControls?: boolean;
-  bookmarks?: number[];
-  isAuthenticated?: boolean;
-  playerConfig?: VideoPlayerConfig;
-  onChapterComplete?: () => void;
-  courseCompleted?: boolean;
-  isMobile?: boolean;
+  videoId: string
+  onEnded?: () => void
+  onProgress?: (state: ProgressState) => void
+  onTimeUpdate?: (time: number) => void
+  rememberPlaybackPosition?: boolean
+  rememberPlaybackSettings?: boolean
+  onBookmark?: (time: number, title?: string) => void
+  autoPlay?: boolean
+  onVideoLoad?: (metadata: VideoMetadata) => void
+  onCertificateClick?: () => void
+  height?: string | number
+  width?: string | number
+  className?: string
+  showControls?: boolean
+  bookmarks?: BookmarkData[]
+  isAuthenticated?: boolean
+  playerConfig?: PlayerConfig
+  onChapterComplete?: () => void
+  onNextVideo?: () => void
+  nextVideoTitle?: string
+  courseName?: string
 }
 
-// Player controls props
 export interface PlayerControlsProps {
-  playing: boolean;
-  muted: boolean;
-  volume: number;
-  playbackRate: number;
-  played: number;
-  loaded: number;
-  duration: number;
-  isFullscreen: boolean;
-  isBuffering: boolean;
-  bufferHealth: number;
-  onPlayPause: () => void;
-  onMute: () => void;
-  onVolumeChange: (volume: number) => void;
-  onSeek: (time: number) => void;
-  onPlaybackRateChange: (rate: number) => void;
-  onToggleFullscreen: () => void;
-  onAddBookmark: (time: number, title?: string) => void;
-  formatTime: (seconds: number) => string;
-  bookmarks: number[];
-  onSeekToBookmark: (time: number) => void;
-  isAuthenticated: boolean;
-  onCertificateClick?: () => void;
-  playerConfig?: VideoPlayerConfig;
+  playing: boolean
+  muted: boolean
+  volume: number
+  playbackRate: number
+  played: number
+  loaded: number
+  duration: number
+  isFullscreen: boolean
+  isBuffering: boolean
+  bufferHealth: number
+  onPlayPause: () => void
+  onMute: () => void
+  onVolumeChange: (volume: number) => void
+  onSeekChange: (time: number) => void
+  onPlaybackRateChange: (rate: number) => void
+  onToggleFullscreen: () => void
+  onAddBookmark?: (time: number) => void
+  formatTime: (seconds: number) => string
+  bookmarks?: number[]
+  onSeekToBookmark?: (time: number) => void
+  isAuthenticated?: boolean
+  onCertificateClick?: () => void
+  playerConfig?: PlayerConfig
+  show?: boolean
+  onShowKeyboardShortcuts?: () => void
+  onTheaterMode?: () => void
+  onNextVideo?: () => void
+  onToggleBookmarkPanel?: () => void
 }
 
-// Progress bar props
 export interface ProgressBarProps {
-  played: number;
-  loaded: number;
-  onSeek: (time: number) => void;
-  bufferHealth: number;
-  duration: number;
-  formatTime: (seconds: number) => string;
-  bookmarks?: number[];
-  onSeekToBookmark?: (time: number) => void;
+  played: number
+  loaded: number
+  onSeek: (time: number) => void
+  bufferHealth: number
+  duration: number
+  formatTime: (seconds: number) => string
+  bookmarks?: number[]
+  onSeekToBookmark?: (time: number) => void
 }
 
-// Loading overlay props
-export interface VideoLoadingOverlayProps {
-  isVisible: boolean;
-}
-
-// Error state props
-export interface VideoErrorStateProps {
-  message?: string;
-  onRetry?: () => void;
-}
-
-// Playback speed menu props
-export interface PlaybackSpeedMenuProps {
-  currentSpeed: number;
-  onSpeedChange: (speed: number) => void;
-}
-
-// Bookmark manager props
 export interface BookmarkManagerProps {
-  videoId: string;
-  bookmarks: BookmarkItem[];
-  currentTime: number;
-  duration: number;
-  onSeekToBookmark: (time: number) => void;
-  onAddBookmark: (time: number, title?: string) => void;
-  onRemoveBookmark: (bookmarkId: string) => void;
-  formatTime: (seconds: number) => string;
+  videoId: string
+  bookmarks: BookmarkData[]
+  currentTime: number
+  duration: number
+  onSeekToBookmark: (time: number) => void
+  onAddBookmark: (time: number, title?: string) => void
+  onRemoveBookmark: (bookmarkId: string) => void
+  formatTime: (seconds: number) => string
 }
 
-// Theatre mode props
-export interface TheaterModeProps {
-  isActive: boolean;
-  onToggle: () => void;
-  children: ReactNode;
+export interface BookmarkTimelineProps {
+  bookmarks: BookmarkData[]
+  duration: number
+  currentTime: number
+  onSeekToBookmark: (time: number) => void
+  formatTime: (seconds: number) => string
+}
+
+export interface PlaybackSpeedMenuProps {
+  currentSpeed: number
+  onSpeedChange: (speed: number) => void
 }
 
 export interface TheaterModeManagerProps {
-  isTheaterMode: boolean;
-  onToggle: () => void;
-  onExit: () => void;
-  className?: string;
+  isTheaterMode: boolean
+  onToggle: () => void
+  onExit: () => void
+  className?: string
 }
 
-// Keyboard shortcuts modal props
-export interface KeyboardShortcutsModalProps {
-  onClose: () => void;
-  show: boolean;
+export interface VideoErrorStateProps {
+  onReload: () => void
+  onRetry: () => void
+  error?: Error
 }
 
-// Constants
-export const CONTROLS_HIDE_DELAY = 3000;
-export const OVERLAY_TIMEOUT = 3000;
+export interface VideoLoadingOverlayProps {
+  isVisible: boolean
+  message?: string
+}
 
-// Add more comprehensive types
-export interface VideoProgressEvent {
-  played: number;
-  playedSeconds: number;
-  loaded: number;
-  loadedSeconds: number;
+// Progress tracking types
+export interface ProgressMilestone {
+  percentage: number
+  reached: boolean
+  timestamp?: number
+}
+
+export interface CourseProgress {
+  courseId: string
+  currentChapterId?: string
+  completedChapters: string[]
+  totalProgress: number
+  lastAccessedAt: Date
+  milestones: ProgressMilestone[]
+}
+
+// Certificate types
+export interface CertificateData {
+  id: string
+  userId: string
+  courseId: string
+  courseName: string
+  completedAt: Date
+  certificateUrl?: string
+}
+
+// YouTube player specific types
+export interface YouTubePlayerConfig {
+  youtube: {
+    playerVars: {
+      autoplay: 0 | 1
+      modestbranding: 0 | 1
+      rel: 0 | 1
+      showinfo: 0 | 1
+      iv_load_policy: 1 | 3
+      fs: 0 | 1
+      controls: 0 | 1
+      disablekb: 0 | 1
+      playsinline: 0 | 1
+      enablejsapi: 0 | 1
+      origin: string
+      cc_load_policy?: 0 | 1
+      preload?: "auto" | "metadata" | "none"
+    }
+  }
+}
+
+// Event handler types
+export type VideoEventHandler = () => void
+export type ProgressEventHandler = (state: ProgressState) => void
+export type TimeUpdateHandler = (time: number) => void
+export type BookmarkEventHandler = (time: number, title?: string) => void
+export type ErrorEventHandler = (error: Error) => void
+export type SeekEventHandler = (time: number) => void
+export type VolumeChangeHandler = (volume: number) => void
+export type PlaybackRateChangeHandler = (rate: number) => void
+
+// Utility types
+export type VideoPlayerMode = "normal" | "theater" | "fullscreen"
+export type BufferHealthLevel = "poor" | "fair" | "good" | "excellent"
+export type PlaybackSpeed = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2
+
+// Hook return types
+export interface UseVideoPlayerReturn {
+  state: VideoPlayerState
+  playerRef: React.RefObject<any>
+  containerRef: React.RefObject<HTMLDivElement>
+  bufferHealth: number
+  youtubeUrl: string
+  handleProgress: ProgressEventHandler
+  handlers: {
+    onPlay: VideoEventHandler
+    onPause: VideoEventHandler
+    onPlayPause: VideoEventHandler
+    onVolumeChange: VolumeChangeHandler
+    onMute: VideoEventHandler
+    onSeek: SeekEventHandler
+    onPlaybackRateChange: PlaybackRateChangeHandler
+    onToggleFullscreen: VideoEventHandler
+    onReady: VideoEventHandler
+    onBuffer: VideoEventHandler
+    onBufferEnd: VideoEventHandler
+    onError: ErrorEventHandler
+    addBookmark: BookmarkEventHandler
+    removeBookmark: (bookmarkId: string) => void
+    handleShowKeyboardShortcuts: VideoEventHandler
+    handleHideKeyboardShortcuts: VideoEventHandler
+    handleTheaterModeToggle: VideoEventHandler
+    handleShowControls: VideoEventHandler
+  }
 }

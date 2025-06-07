@@ -6,7 +6,7 @@ interface VideoLoadingOverlayProps {
 
 const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ isVisible }) => {
   if (!isVisible) return null;
-  
+
   return (
     <div className="absolute inset-0 flex items-center justify-center w-full h-full bg-black/80 z-10">
       <div className="flex flex-col items-center text-center">
@@ -18,4 +18,4 @@ const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ isVisible }) 
   );
 };
 
-export default VideoLoadingOverlay;
+export default React.memo(VideoLoadingOverlay);

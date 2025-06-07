@@ -1,364 +1,401 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import ReactPlayer from "react-player";
-import { useToast } from "@/hooks/use-toast";
-import { useCourseProgress } from "@/hooks/useCourseProgress";
-import { useAppDispatch, useSelector } from "@/store";
-import { addBookmark, removeBookmark } from "@/store/slices/courseSlice";
-import type { BookmarkData, VideoMetadata } from "@/app/types/types";
+"use client"
 
-interface VideoPlayerState {
-  playing: boolean;
-  muted: boolean;
-  volume: number;
-  playbackRate: number;
-  played: number;
-  loaded: number;
-  duration: number;
-  isFullscreen: boolean;
-  showControls: boolean;
-  isBuffering: boolean;
-  isLoading: boolean;
-  playerError: Error | null;
-  isPlayerReady: boolean;
-  hasStarted: boolean;
-  lastPlayedTime: number;
-  showKeyboardShortcuts: boolean; // Added this state property
-  theaterMode: boolean; // Added this state property
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import type ReactPlayer from "react-player"
+import { useToast } from "@/hooks/use-toast"
+import screenfull from "screenfull"
+import { useAppDispatch } from "@/store/hooks"
+import { addBookmark, removeBookmark } from "@/store/slices/courseSlice"
+import { loadPlayerPreferences, savePlayerPreferences, calculateBufferHealth, formatTime } 
+
+from "./progressUtils"
+import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, 
+  YouTubePlayerConfig } from "../types"
+
+interface VideoPlayerHookOptions {
+  videoId: string
+  onEnded?: () => void
+  onProgress?: (state: ProgressState) => void
+  onTimeUpdate?: (time: number) => void
+  rememberPlaybackPosition?: boolean
+  rememberPlaybackSettings?: boolean
+  onBookmark?: (time: number, title?: string) => void
+  autoPlay?: boolean
+  onVideoLoad?: (metadata: any) => void
+  onCertificateClick?: () => void
 }
 
-interface VideoPlayerOptions {
-  videoId: string;
-  onEnded?: () => void;
-  onProgress?: (state: { played: number; loaded: number; playedSeconds: number }) => void;
-  onTimeUpdate?: (time: number) => void;
-  rememberPlaybackPosition?: boolean;
-  rememberPlaybackSettings?: boolean;
-  onBookmark?: (time: number, title?: string) => void;
-  autoPlay?: boolean;
-  onVideoLoad?: (metadata: VideoMetadata) => void;
-  onCertificateClick?: () => void;
-}
+export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerReturn {
+  const playerRef = useRef<ReactPlayer>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
+  const dispatch = useAppDispatch()
 
-export const useVideoPlayer = (options: VideoPlayerOptions) => {
-  // Initialize state and refs inside the hook function
-  const playerRef = useRef<ReactPlayer>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  
+  // Load saved preferences
+  const savedPreferences = useMemo(() => loadPlayerPreferences(), [])
+
   const [state, setState] = useState<VideoPlayerState>({
     playing: !!options.autoPlay,
-    muted: false,
-    volume: 0.8,
-    playbackRate: 1.0,
+    muted: savedPreferences.muted,
+    volume: savedPreferences.volume,
+    playbackRate: savedPreferences.playbackRate,
     played: 0,
     loaded: 0,
     duration: 0,
     isFullscreen: false,
-    showControls: true,
     isBuffering: false,
     isLoading: true,
     playerError: null,
     isPlayerReady: false,
     hasStarted: false,
     lastPlayedTime: 0,
-    showKeyboardShortcuts: false, // Initialize keyboard shortcuts state
-    theaterMode: false, // Initialize theater mode state
-  });
-  
-  const [bufferHealth, setBufferHealth] = useState(100);
-  const [isPlayerFocused, setIsPlayerFocused] = useState(false);
-  
-  // Move all other hooks and effects inside this function
-  const { toast } = useToast();
-  const dispatch = useAppDispatch();
-  const youtubeUrl = useMemo(() => {
-    return `https://www.youtube.com/watch?v=${options.videoId}`;
-  }, [options.videoId]);
+    showKeyboardShortcuts: false,
+    theaterMode: false,
+    userInteracted: !!options.autoPlay,
+  })
 
-  // Track if player is focused
-  const handlePlayerFocus = useCallback(() => {
-    setIsPlayerFocused(true);
-  }, []);
-  
-  const handlePlayerBlur = useCallback(() => {
-    setIsPlayerFocused(false);
-  }, []);
-  
-  // Define the missing handlers
+  const [bufferHealth, setBufferHealth] = useState(100)
+  const [isPlayerFocused, setIsPlayerFocused] = useState(false)
+
+  // Memoized YouTube URL
+  const youtubeUrl = useMemo(() => `https://www.youtube.com/watch?v=${options.videoId}`, [options.videoId])
+
+  // Memoized YouTube config
+  const youtubeConfig = useMemo(
+    (): YouTubePlayerConfig => ({
+      youtube: {
+        playerVars: {
+          autoplay: options.autoPlay ? 1 : 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+          iv_load_policy: 3,
+          fs: 1,
+          controls: 0,
+          disablekb: 0,
+          playsinline: 1,
+          enablejsapi: 1,
+          origin: typeof window !== "undefined" ? window.location.origin : "",
+          preload: state.userInteracted ? "auto" : "none",
+        },
+      },
+    }),
+    [options.autoPlay, state.userInteracted],
+  )
+
+  // Event handlers
   const onPlay = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
+    setState((prev) => ({
+      ...prev,
       playing: true,
-      hasStarted: true
-    }));
-  }, []);
+      hasStarted: true,
+      userInteracted: true,
+    }))
+  }, [])
 
   const onPause = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
-      playing: false
-    }));
-  }, []);
+    setState((prev) => ({ ...prev, playing: false }))
+  }, [])
 
   const onPlayPause = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
-      playing: !prevState.playing,
-      hasStarted: true
-    }));
-  }, []);
+    setState((prev) => ({
+      ...prev,
+      playing: !prev.playing,
+      hasStarted: true,
+      userInteracted: true,
+    }))
+  }, [])
 
   const onVolumeChange = useCallback((volume: number) => {
-    setState(prevState => ({
-      ...prevState,
+    setState((prev) => ({
+      ...prev,
       volume,
-      muted: volume === 0
-    }));
-  }, []);
+      muted: volume === 0,
+    }))
+
+    savePlayerPreferences({ volume, muted: volume === 0 })
+  }, [])
 
   const onMute = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
-      muted: !prevState.muted
-    }));
-  }, []);
+    setState((prev) => {
+      const newMuted = !prev.muted
+      savePlayerPreferences({ muted: newMuted })
+      return { ...prev, muted: newMuted }
+    })
+  }, [])
 
   const onSeek = useCallback((time: number) => {
     if (playerRef.current) {
-      playerRef.current.seekTo(time);
+      playerRef.current.seekTo(time)
     }
-  }, []);
+  }, [])
 
   const onPlaybackRateChange = useCallback((rate: number) => {
-    setState(prevState => ({
-      ...prevState,
-      playbackRate: rate
-    }));
-  }, []);
+    setState((prev) => ({ ...prev, playbackRate: rate }))
+    savePlayerPreferences({ playbackRate: rate })
+  }, [])
 
+  // Fixed fullscreen implementation
   const onToggleFullscreen = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
-      isFullscreen: !prevState.isFullscreen
-    }));
-  }, []);
+    if (!containerRef.current) return
+
+    if (screenfull.isEnabled) {
+      screenfull.toggle(containerRef.current).catch((error) => {
+        console.error("Fullscreen error:", error)
+        toast({
+          title: "Fullscreen Error",
+          description: "Could not enter fullscreen mode. Try using theater mode instead.",
+          variant: "destructive",
+        })
+      })
+    } else {
+      toast({
+        title: "Fullscreen Not Supported",
+        description: "Your browser doesn't support fullscreen mode.",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
 
   const onReady = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
+    setState((prev) => ({
+      ...prev,
       isLoading: false,
-      isPlayerReady: true
-    }));
-  }, []);
+      isPlayerReady: true,
+    }))
+
+    // Get video duration
+    if (playerRef.current) {
+      const duration = playerRef.current.getDuration()
+      setState((prev) => ({ ...prev, duration }))
+    }
+  }, [])
 
   const onBuffer = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
-      isBuffering: true
-    }));
-  }, []);
+    setState((prev) => ({ ...prev, isBuffering: true }))
+  }, [])
 
   const onBufferEnd = useCallback(() => {
-    setState(prevState => ({
-      ...prevState,
-      isBuffering: false
-    }));
-  }, []);
+    setState((prev) => ({ ...prev, isBuffering: false }))
+  }, [])
 
   const onError = useCallback((error: Error) => {
-    setState(prevState => ({
-      ...prevState,
+    setState((prev) => ({
+      ...prev,
       playerError: error,
-      isLoading: false
-    }));
-    console.error("Video player error:", error);
-  }, []);
+      isLoading: false,
+    }))
+    console.error("Video player error:", error)
+  }, [])
+
+  // Theater mode handlers
+  const handleTheaterModeToggle = useCallback(() => {
+    setState((prev) => ({ ...prev, theaterMode: !prev.theaterMode }))
+
+    if (typeof document !== "undefined") {
+      if (!state.theaterMode) {
+        document.body.classList.add("theater-mode-active")
+      } else {
+        document.body.classList.remove("theater-mode-active")
+      }
+    }
+  }, [state.theaterMode])
 
   // Keyboard shortcuts handlers
   const handleShowKeyboardShortcuts = useCallback(() => {
-    setState(prevState => ({ ...prevState, showKeyboardShortcuts: true }));
-  }, []);
-  
+    setState((prev) => ({ ...prev, showKeyboardShortcuts: true }))
+  }, [])
+
   const handleHideKeyboardShortcuts = useCallback(() => {
-    setState(prevState => ({ ...prevState, showKeyboardShortcuts: false }));
-  }, []);
-  
-  const handleTheaterModeToggle = useCallback(() => {
-    setState(prevState => ({ ...prevState, theaterMode: !prevState.theaterMode }));
-  }, []);
-  
+    setState((prev) => ({ ...prev, showKeyboardShortcuts: false }))
+  }, [])
+
   const handleShowControls = useCallback(() => {
-    setState(prevState => ({ ...prevState, showControls: true }));
-  }, []);
+    // This can be used to show controls programmatically
+  }, [])
 
   // Bookmark handlers
-  const handleAddBookmark = useCallback((time: number, title?: string): void => {
-    if (!options.videoId) return;
-    
-    const bookmarkData: BookmarkData = {
-      videoId: options.videoId,
-      time,
-      title,
-      description: title ? `Bookmark at ${time}s: ${title}` : `Bookmark at ${time}s`,
-    };
-    
-    dispatch(addBookmark(bookmarkData));
-    
-    if (typeof options.onBookmark === 'function') {
-      options.onBookmark(time, title);
-    }
-    
-    toast({
-      title: "Bookmark added",
-      description: "You can access your bookmarks in the timeline or bookmarks panel."
-    });
-  }, [options.videoId, options.onBookmark, dispatch, toast]);
+  const handleAddBookmark = useCallback(
+    (time: number, title?: string) => {
+      if (!options.videoId) return
 
-  const handleRemoveBookmark = useCallback((bookmarkId: string): void => {
-    dispatch(removeBookmark({ bookmarkId, videoId: options.videoId }));
-    
-    toast({
-      title: "Bookmark removed",
-      description: "The bookmark has been removed."
-    });
-  }, [options.videoId, dispatch, toast]);
-
-  // Handle progress updates
-  const handleProgress = useCallback((progressState: { played: number; loaded: number; playedSeconds: number }): void => {
-    setState(prev => ({
-      ...prev,
-      played: progressState.played,
-      loaded: progressState.loaded,
-    }));
-  
-    // Only update buffer health if the value changed significantly (>2%)
-    const newBufferHealth = (progressState.loaded - progressState.played) * 100;
-    setBufferHealth(prev => Math.abs(prev - newBufferHealth) > 2 ? newBufferHealth : prev);
-  
-    if (newBufferHealth < 5 && state.playing && state.hasStarted) {
-      setState(prev => ({ ...prev, isBuffering: true }));
-    } else if (newBufferHealth > 15) {
-      setState(prev => ({ ...prev, isBuffering: false }));
-    }
-  
-    options.onProgress?.(progressState);
-  }, [state.playing, state.hasStarted, options.onProgress]);
-
-  // All other useEffects and logic
-  useEffect(() => {
-    // Handle keyboard events only when player is focused
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only process keyboard events when:
-      // 1. Player is focused
-      // 2. Not typing in form elements
-      const target = e.target as HTMLElement;
-      if (!isPlayerFocused || 
-          target?.tagName === "INPUT" || 
-          target?.tagName === "TEXTAREA" || 
-          target?.isContentEditable) {
-        return;
+      const bookmarkData: BookmarkData = {
+        id: `${options.videoId}-${Date.now()}`,
+        videoId: options.videoId,
+        time,
+        title: title || `Bookmark at ${formatTime(time)}`,
+        description: title ? `${title} at ${formatTime(time)}` : `Bookmark at ${formatTime(time)}`,
+        createdAt: new Date().toISOString(),
       }
-      
-      // Rest of keyboard handler logic
-      switch (e.key.toLowerCase()) {
-        case " ": // Space
-          e.preventDefault();
-          onPlayPause();
-          break;
-        case "arrowleft": // Left arrow
-          e.preventDefault();
-          onSeek(Math.max(0, (playerRef.current?.getCurrentTime() || 0) - 5));
-          break;
-        case "arrowright": // Right arrow
-          e.preventDefault();
-          onSeek(Math.min(state.duration, (playerRef.current?.getCurrentTime() || 0) + 5));
-          break;
-        case "m": // Mute
-          e.preventDefault();
-          onMute();
-          break;
-        case "f": // Fullscreen
-          e.preventDefault();
-          onToggleFullscreen();
-          break;
-        case "0":
-        case "1":
-        case "2":
-        case "3":
-        case "4":
-        case "5":
-        case "6":
-        case "7":
-        case "8":
-        case "9":
-          // Seek to percentage of video
-          e.preventDefault();
-          const percent = parseInt(e.key) * 0.1;
-          onSeek(state.duration * percent);
-          break;
-        case "h": // Show keyboard shortcuts
-          e.preventDefault();
-          handleShowKeyboardShortcuts();
-          break;
-        case "t": // Toggle theater mode
-          e.preventDefault();
-          handleTheaterModeToggle();
-          break;
-      }
-    };
 
-    window.addEventListener("keydown", handleKeyDown);
-    
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isPlayerFocused, state.duration, onPlayPause, onSeek, onMute, onToggleFullscreen, handleShowKeyboardShortcuts, handleTheaterModeToggle]);
+      dispatch(addBookmark(bookmarkData))
+      options.onBookmark?.(time, title)
 
-  // Add focus/blur event handlers to the player container
+      toast({
+        title: "Bookmark added",
+        description: "You can access your bookmarks in the timeline.",
+      })
+    },
+    [options.videoId, options.onBookmark, dispatch, toast],
+  )
+
+  const handleRemoveBookmark = useCallback(
+    (bookmarkId: string) => {
+      dispatch(removeBookmark({ bookmarkId, videoId: options.videoId }))
+
+      toast({
+        title: "Bookmark removed",
+        description: "The bookmark has been removed.",
+      })
+    },
+    [options.videoId, dispatch, toast],
+  )
+
+  // Progress handler with optimized buffer health calculation
+  const handleProgress = useCallback(
+    (progressState: ProgressState) => {
+      setState((prev) => ({
+        ...prev,
+        played: progressState.played,
+        loaded: progressState.loaded,
+        lastPlayedTime: progressState.playedSeconds,
+      }))
+
+      // Update buffer health efficiently
+      const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played)
+      setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev))
+
+      options.onProgress?.(progressState)
+    },
+    [options.onProgress],
+  )
+
+  // Fullscreen state tracking
   useEffect(() => {
-    const playerContainer = containerRef.current;
-    
-    if (playerContainer) {
-      playerContainer.addEventListener("mouseenter", handlePlayerFocus);
-      playerContainer.addEventListener("mouseleave", handlePlayerBlur);
-      playerContainer.addEventListener("click", handlePlayerFocus);
-      playerContainer.addEventListener("focus", handlePlayerFocus);
-      
-      // Handle clicking outside
-      const handleClickOutside = (e: MouseEvent) => {
-        if (playerContainer && !playerContainer.contains(e.target as Node)) {
-          setIsPlayerFocused(false);
-        }
-      };
-      
-      document.addEventListener("click", handleClickOutside);
-      
-      return () => {
-        playerContainer.removeEventListener("mouseenter", handlePlayerFocus);
-        playerContainer.removeEventListener("mouseleave", handlePlayerBlur);
-        playerContainer.removeEventListener("click", handlePlayerFocus);
-        playerContainer.removeEventListener("focus", handlePlayerFocus);
-        document.removeEventListener("click", handleClickOutside);
-      };
+    if (!screenfull.isEnabled) return
+
+    const handleFullscreenChange = () => {
+      setState((prev) => ({
+        ...prev,
+        isFullscreen: !!screenfull.isFullscreen,
+      }))
     }
-  }, [handlePlayerFocus, handlePlayerBlur]);
 
-  // Add this effect to handle keyboard shortcuts visibility
+    screenfull.on("change", handleFullscreenChange)
+    return () => screenfull.off("change", handleFullscreenChange)
+  }, [])
+
+  // Focus management for keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleHideKeyboardShortcuts();
-      }
-    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle keyboard events when player is focused and user has interacted
+      if (!isPlayerFocused || !state.userInteracted) return
 
-    // Only add this listener when shortcuts are shown
-    if (state.showKeyboardShortcuts) {
-      window.addEventListener("keydown", handleKeyDown);
+      // Don't handle keyboard events when typing in form elements
+      const target = event.target as HTMLElement
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
+        return
+      }
+
+      switch (event.key) {
+        case " ":
+          event.preventDefault()
+          onPlayPause()
+          break
+        case "ArrowRight":
+          event.preventDefault()
+          onSeek(Math.min(state.duration, state.lastPlayedTime + 10))
+          break
+        case "ArrowLeft":
+          event.preventDefault()
+          onSeek(Math.max(0, state.lastPlayedTime - 10))
+          break
+        case "m":
+          event.preventDefault()
+          onMute()
+          break
+        case "f":
+          event.preventDefault()
+          onToggleFullscreen()
+          break
+        case "t":
+          event.preventDefault()
+          handleTheaterModeToggle()
+          break
+        case "Escape":
+          if (state.isFullscreen || state.theaterMode) {
+            event.preventDefault()
+            if (state.isFullscreen) onToggleFullscreen()
+            if (state.theaterMode) handleTheaterModeToggle()
+          }
+          break
+        case "b":
+          event.preventDefault()
+          handleAddBookmark(state.lastPlayedTime)
+          break
+        case "?":
+          event.preventDefault()
+          handleShowKeyboardShortcuts()
+          break
+      }
+    }
+
+    if (isPlayerFocused && state.userInteracted) {
+      window.addEventListener("keydown", handleKeyDown)
     }
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [state.showKeyboardShortcuts, handleHideKeyboardShortcuts]);
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [
+    isPlayerFocused,
+    state.userInteracted,
+    state.duration,
+    state.lastPlayedTime,
+    state.isFullscreen,
+    state.theaterMode,
+    onPlayPause,
+    onSeek,
+    onMute,
+    onToggleFullscreen,
+    handleTheaterModeToggle,
+    handleShowKeyboardShortcuts,
+    handleAddBookmark,
+  ])
+
+  // Focus management
+  useEffect(() => {
+    const playerContainer = containerRef.current
+    if (!playerContainer) return
+
+    const handleFocus = () => setIsPlayerFocused(true)
+    const handleBlur = () => setIsPlayerFocused(false)
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!playerContainer.contains(e.target as Node)) {
+        setIsPlayerFocused(false)
+      }
+    }
+
+    playerContainer.addEventListener("click", handleFocus)
+    playerContainer.addEventListener("focus", handleFocus)
+    document.addEventListener("click", handleClickOutside)
+
+    return () => {
+      playerContainer.removeEventListener("click", handleFocus)
+      playerContainer.removeEventListener("focus", handleFocus)
+      document.removeEventListener("click", handleClickOutside)
+    }
+  }, [])
+
+  // Cleanup theater mode on unmount
+  useEffect(() => {
+    return () => {
+      if (state.theaterMode && typeof document !== "undefined") {
+        document.body.classList.remove("theater-mode-active")
+      }
+    }
+  }, [state.theaterMode])
 
   return {
     state,
@@ -382,12 +419,10 @@ export const useVideoPlayer = (options: VideoPlayerOptions) => {
       onError,
       addBookmark: handleAddBookmark,
       removeBookmark: handleRemoveBookmark,
-      handleShowKeyboardShortcuts, // Add these handlers to the returned object
+      handleShowKeyboardShortcuts,
       handleHideKeyboardShortcuts,
       handleTheaterModeToggle,
       handleShowControls,
-    }
-  };
-};
-
-export default useVideoPlayer;
+    },
+  }
+}

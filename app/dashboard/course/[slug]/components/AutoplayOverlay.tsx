@@ -62,30 +62,47 @@ export const AutoplayOverlay = ({ countdown, onCancel, onNextVideo, nextVideoTit
         exit={{ scale: 0.9, opacity: 0 }}
         className="bg-card border border-border shadow-lg rounded-xl p-4 max-w-xs w-full"
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-primary" />
-            <h3 className="font-medium text-sm">Up Next</h3>
+        <div className="flex items-start justify-between mb-2">
+          <div className="space-y-1 flex-1 pr-4">
+            <h3 className="text-sm font-medium">Next video starting in {countdown}...</h3>
+            {nextVideoTitle && (
+              <p className="text-xs text-muted-foreground line-clamp-1">{nextVideoTitle}</p>
+            )}
           </div>
-          <Button variant="ghost" size="icon" onClick={handleCancelClick} className="h-6 w-6 rounded-full">
-            <X className="h-3 w-3" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={handleCancelClick}
+            aria-label="Cancel autoplay"
+          >
+            <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {nextVideoTitle && <div className="mb-2 text-xs font-medium line-clamp-1">{nextVideoTitle}</div>}
-
-        <p className="text-muted-foreground text-xs mb-3">Playing in {countdown} seconds...</p>
-
-        <Progress value={progress} className="h-1 mb-3" />
-
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs h-8 px-3" onClick={handleCancelClick}>
-            Cancel
-          </Button>
-          <Button size="sm" className="text-xs h-8 px-3 gap-1 flex-1" onClick={handleNextVideoClick}>
-            <PlayCircle className="h-3 w-3" />
-            Play Now
-          </Button>
+        
+        <div className="space-y-3">
+          <Progress 
+            value={progress} 
+            className="h-1" 
+            aria-label={`Autoplay countdown: ${countdown} seconds remaining`} 
+          />
+          <div className="flex items-center justify-between gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleCancelClick} 
+              className="text-xs h-8"
+            >
+              Cancel
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={handleNextVideoClick} 
+              className="text-xs h-8"
+            >
+              Play Now
+            </Button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
