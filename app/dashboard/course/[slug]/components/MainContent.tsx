@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useCallback, Suspense } from "react"
-import EnhancedVideoPlayer from "./EnhancedVideoPlayer"
+import React, { useState, useEffect, useRef, useCallback, Suspense, FC } from "react"
+import { VideoPlayer } from './video'; // Update the import to use the new folder structure
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, PlayCircle, BookOpen, MessageSquare, Star, Info } from "lucide-react"
+import { Loader2, PlayCircle, BookOpen, MessageSquare, Star, Info, PauseCircle } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import CourseDetailsQuiz from "./CourseDetailsQuiz"
@@ -21,11 +21,19 @@ import { motion, AnimatePresence } from "framer-motion"
 import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { PauseCircle } from "lucide-react"
-import CertificateGenerator from "./CertificateGenerator"
-import { Award } from "lucide-react"
-import { useRouter } from "next/navigation"
 import KeyboardShortcutsModal from "./KeyboardShortcutsModal"
+import { useRouter } from "next/navigation"
+import { Award } from "lucide-react" // Add missing import
+import CertificateGenerator from "./CertificateGenerator" // Add missing import
+
+// --- Improved types ---
+interface RelatedCourse {
+  id: string | number
+  title: string
+  slug: string
+  category?: { name: string }
+  image?: string
+}
 
 interface MainContentProps {
   slug: string
@@ -45,18 +53,16 @@ interface MainContentProps {
   onChapterComplete?: () => void
   courseCompleted?: boolean
   course: FullCourseType
-  relatedCourses?: Array<{
-    id: string | number
-    title: string
-    slug: string
-    category?: { name: string }
-    image?: string
-  }>
-  isProgressLoading: boolean // Add loading prop
-  profileError: string | null // Add profile error prop
+  relatedCourses?: RelatedCourse[]
+  isProgressLoading: boolean
+  profileError: string | null
 }
 
-function MainContent({
+// Performance constants to avoid recreation
+const AUTOPLAY_COUNTDOWN_INITIAL = 5
+
+// --- MainContent ---
+const MainContent: FC<MainContentProps> = ({
   slug,
   initialVideoId,
   nextVideoId,
@@ -75,80 +81,78 @@ function MainContent({
   courseCompleted = false,
   course,
   relatedCourses = [],
-  isProgressLoading, // Add loading prop
-  profileError, // Add profile error prop
-}: MainContentProps) {
-  const [activeTab, setActiveTab] = useState("overview")
+  isProgressLoading,
+  profileError,
+}) => {
+  const [activeTab, setActiveTab] = useState<"overview" | "notes" | "quiz">("overview")
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
   const [autoplayOverlay, setAutoplayOverlay] = useState(false)
-  const [autoplayCountdown, setAutoplayCountdown] = useState(5)
+  const [autoplayCountdown, setAutoplayCountdown] = useState(AUTOPLAY_COUNTDOWN_INITIAL)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
-  const dispatch = useAppDispatch()
-  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
-  const { data: session } = useSession()
-  const { toast } = useToast()
-  const isAuthenticated = !!session
-  const bookmarks = useAppSelector((state) => state.course.bookmarks[currentVideoId || ""] || [])
-  const didSetInitialVideo = useRef(false)
-  const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const router = useRouter()
-
   const [showQuizPrompt, setShowQuizPrompt] = useState(false)
   const [chapterCompleted, setChapterCompleted] = useState(false)
 
-  // Add keyboard shortcut for showing keyboard shortcuts modal
+  const dispatch = useAppDispatch()
+  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
+  const bookmarks = useAppSelector((state) => state.course?.bookmarks[currentVideoId || ""] || [])
+
+  const { data: session } = useSession()
+  const { toast } = useToast()
+  const router = useRouter()
+  const isAuthenticated = !!session
+
+  const didSetInitialVideo = useRef(false)
+  const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // --- Utility hooks with memoization ---
+  const isLastChapterInUnit = useCallback((): boolean => {
+    if (!currentChapter) return false
+    const currentUnitIndex = course.courseUnits.findIndex((unit) =>
+      unit.chapters.some((chapter) => chapter.id === currentChapter.id),
+    )
+    if (currentUnitIndex === -1) return false
+    const currentUnit = course.courseUnits[currentUnitIndex]
+    const chapterIndex = currentUnit.chapters.findIndex((chapter) => chapter.id === currentChapter.id)
+    return chapterIndex === currentUnit.chapters.length - 1
+  }, [currentChapter, course.courseUnits])
+
+  const isCurrentChapterCompleted = useCallback((): boolean => {
+    if (!currentChapter || !progress || !progress.completedChapters) return false
+    return progress.completedChapters.includes(+currentChapter.id)
+  }, [currentChapter, progress])
+
+  // --- Keyboard shortcut handlers ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not in input fields
+      const target = e.target as HTMLElement
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return
+
       if (e.key === "?" || (e.key === "/" && e.shiftKey)) {
         e.preventDefault()
         setShowKeyboardShortcuts(true)
       }
     }
-
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [])
 
-  // Clear timeout on unmount
+  // --- Cleanup autoplay timeout ---
   useEffect(() => {
     return () => {
-      if (autoplayTimeoutRef.current) {
-        clearTimeout(autoplayTimeoutRef.current)
-      }
+      if (autoplayTimeoutRef.current) clearTimeout(autoplayTimeoutRef.current)
     }
   }, [])
 
-  const isLastChapterInUnit = useCallback(() => {
-    if (!currentChapter) return false
-
-    const currentUnitIndex = course.courseUnits.findIndex((unit) =>
-      unit.chapters.some((chapter) => chapter.id === currentChapter.id),
-    )
-
-    if (currentUnitIndex === -1) return false
-
-    const currentUnit = course.courseUnits[currentUnitIndex]
-    const chapterIndex = currentUnit.chapters.findIndex((chapter) => chapter.id === currentChapter.id)
-
-    return chapterIndex === currentUnit.chapters.length - 1
-  }, [currentChapter, course.courseUnits])
-
-  const isCurrentChapterCompleted = useCallback(() => {
-    if (!currentChapter || !progress || !progress.completedChapters) return false
-    return progress.completedChapters.includes(+currentChapter.id)
-  }, [currentChapter, progress])
-
+  // --- Handlers ---
   const handleNextVideo = useCallback(() => {
     try {
       if (nextVideoId) {
         dispatch(setCurrentVideoApi(nextVideoId))
         setTimeout(() => {
-          if (typeof onVideoSelect === "function") {
-            onVideoSelect(nextVideoId)
-          }
+          if (typeof onVideoSelect === "function") onVideoSelect(nextVideoId)
         }, 10)
-
         toast({ title: "Next Video", description: "Playing the next video." })
       } else if (isLastVideo) {
         dispatch(setCourseCompletionStatus(true))
@@ -165,10 +169,8 @@ function MainContent({
 
   const handleCancelAutoplay = useCallback(() => {
     setAutoplayOverlay(false)
-    setAutoplayCountdown(5)
-    if (autoplayTimeoutRef.current) {
-      clearTimeout(autoplayTimeoutRef.current)
-    }
+    setAutoplayCountdown(AUTOPLAY_COUNTDOWN_INITIAL)
+    if (autoplayTimeoutRef.current) clearTimeout(autoplayTimeoutRef.current)
   }, [])
 
   const handlePlaylistVideoSelect = useCallback(
@@ -176,11 +178,8 @@ function MainContent({
       try {
         dispatch(setCurrentVideoApi(videoId))
         dispatch(setAutoplayEnabled(true))
-
         setTimeout(() => {
-          if (typeof onVideoSelect === "function") {
-            onVideoSelect(videoId)
-          }
+          if (typeof onVideoSelect === "function") onVideoSelect(videoId)
         }, 10)
       } catch (error) {
         console.error("[MainContent] Error in handlePlaylistVideoSelect:", error)
@@ -204,60 +203,47 @@ function MainContent({
 
   const handleVideoEnd = useCallback(() => {
     setChapterCompleted(true)
+    if (isLastVideo || isLastChapterInUnit()) setShowQuizPrompt(true)
 
-    if (isLastVideo || isLastChapterInUnit()) {
-      setShowQuizPrompt(true)
-    }
-
-    if (nextVideoId && autoplayEnabled) {
+    const startAutoplay = () => {
       try {
         setAutoplayOverlay(true)
-        setAutoplayCountdown(5)
-
-        if (autoplayTimeoutRef.current) {
-          clearTimeout(autoplayTimeoutRef.current)
-        }
-
-        let count = 5
+        setAutoplayCountdown(AUTOPLAY_COUNTDOWN_INITIAL)
+        if (autoplayTimeoutRef.current) clearTimeout(autoplayTimeoutRef.current)
+        let count = AUTOPLAY_COUNTDOWN_INITIAL
         const tick = () => {
           setAutoplayCountdown((prev) => {
             if (prev <= 1) {
               handleNextVideo()
               setAutoplayOverlay(false)
-              return 5
+              return AUTOPLAY_COUNTDOWN_INITIAL
             }
             return prev - 1
           })
           count--
-          if (count > 0) {
-            autoplayTimeoutRef.current = setTimeout(tick, 1000)
-          }
+          if (count > 0) autoplayTimeoutRef.current = setTimeout(tick, 1000)
         }
-
         autoplayTimeoutRef.current = setTimeout(tick, 1000)
-      } catch (error) {
-        console.error("[MainContent] Error in autoplay handling:", error)
+      } catch {
         setAutoplayOverlay(false)
       }
+    }
+
+    if (nextVideoId && autoplayEnabled) {
+      startAutoplay()
     } else if (isLastVideo) {
       setShowCompletionOverlay(true)
     }
-
-    if (typeof onVideoEnd === "function") {
-      onVideoEnd()
-    }
+    if (typeof onVideoEnd === "function") onVideoEnd()
   }, [nextVideoId, autoplayEnabled, isLastVideo, onVideoEnd, handleNextVideo, isLastChapterInUnit])
 
+  // --- Effects ---
   useEffect(() => {
     setChapterCompleted(false)
     setShowQuizPrompt(false)
-
     if (isCurrentChapterCompleted()) {
       setChapterCompleted(true)
-
-      if (isLastVideo || isLastChapterInUnit()) {
-        setShowQuizPrompt(true)
-      }
+      if (isLastVideo || isLastChapterInUnit()) setShowQuizPrompt(true)
     }
   }, [currentChapter?.id, isCurrentChapterCompleted, isLastVideo, isLastChapterInUnit])
 
@@ -273,10 +259,7 @@ function MainContent({
         const firstVideoId = course?.courseUnits
           ?.flatMap((unit) => unit.chapters)
           .find((chapter) => !!chapter.videoId)?.videoId
-
-        if (firstVideoId) {
-          dispatch(setCurrentVideoApi(firstVideoId))
-        }
+        if (firstVideoId) dispatch(setCurrentVideoApi(firstVideoId))
       }
       didSetInitialVideo.current = true
     }
@@ -285,23 +268,103 @@ function MainContent({
   // Add recovery for stuck loading state
   useEffect(() => {
     let timeout: NodeJS.Timeout
-
     if (isProgressLoading) {
       timeout = setTimeout(() => {
-        console.log("[MainContent] Forcing progress due to timeout")
-
-        if (typeof onChapterComplete === "function" && currentChapter) {
-          onChapterComplete()
-        }
+        if (typeof onChapterComplete === "function" && currentChapter) onChapterComplete()
       }, 8000)
     }
-
     return () => {
       clearTimeout(timeout)
     }
   }, [isProgressLoading, onChapterComplete, currentChapter])
 
-  const renderTabContent = () => {
+  // --- Bookmark handler with proper type ---
+  const handleAddBookmark = useCallback(
+    (time: number) => {
+      toast({
+        title: "Bookmark Added",
+        description: `Bookmark added at ${time.toFixed(2)} seconds.`,
+      })
+    },
+    [toast],
+  )
+
+  // --- UI Components ---
+  const LoadingUI: FC<{ error?: string }> = ({ error }) => (
+    <div className="flex flex-col w-full h-full aspect-video bg-muted animate-pulse">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="space-y-4 text-center">
+          <motion.div
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          >
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50 mx-auto" />
+          </motion.div>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{error || "Loading your lesson..."}</p>
+            <div className="w-48 h-1 mx-auto bg-muted-foreground/20 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-primary"
+                initial={{ x: "-100%" }}
+                animate={{ x: "100%" }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1,
+                  ease: "linear",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  // --- VideoArea ---
+  const VideoArea: FC = () => (
+    <div className="w-full">
+      {!hasVideoId ? (
+        <LoadingUI />
+      ) : isProgressLoading || profileError ? (
+        <div className="relative">
+          <LoadingUI error={profileError || "Loading..."} />
+          <div className="absolute inset-0 bg-transparent" />
+        </div>
+      ) : (
+        <VideoPlayer
+          videoId={videoId}
+          onEnded={handleVideoEnd}
+          onVideoSelect={handlePlaylistVideoSelect}
+          courseName={course.title}
+          nextVideoId={nextVideoId}
+          onBookmark={handleAddBookmark}
+          bookmarks={bookmarks.map((b) => b.time)}
+          isAuthenticated={isAuthenticated}
+          onChapterComplete={onChapterComplete ? onChapterComplete : undefined}
+          playerConfig={{
+            showRelatedVideos: false,
+            rememberPosition: true,
+            rememberMute: true,
+            showCertificateButton: !!isLastVideo,
+          }}
+          courseCompleted={courseCompleted}
+          autoPlay={autoPlay}
+        />
+      )}
+    </div>
+  )
+
+  // --- Render ---
+  const showCourseComplete = isLastVideo && showCompletionOverlay && courseCompleted
+  const videoId = initialVideoId || ""
+  const hasVideoId = !!videoId
+
+  const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case "overview":
         return (
@@ -393,86 +456,11 @@ function MainContent({
           </div>
         )
     }
-  }
-
-  const showCourseComplete = isLastVideo && showCompletionOverlay && courseCompleted
-
-  const videoId = initialVideoId || ""
-  const hasVideoId = !!videoId
-
-  const LoadingUI = () => (
-    <div className="flex flex-col w-full h-full aspect-video bg-muted animate-pulse">
-      <div className="flex-1 flex items-center justify-center">
-        <div className="space-y-4 text-center">
-          <motion.div
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{
-              duration: 1,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          >
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50 mx-auto" />
-          </motion.div>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Loading your lesson...</p>
-            <div className="w-48 h-1 mx-auto bg-muted-foreground/20 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-primary"
-                initial={{ x: "-100%" }}
-                animate={{ x: "100%" }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 1,
-                  ease: "linear",
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
-  function handleAddBookmark(time: number): void {
-    throw new Error("Function not implemented.")
-  }
+  }, [activeTab, currentChapter, planId, course, session?.user?.isAdmin, router])
 
   return (
     <div className="flex flex-col w-full">
-      {/* Video player takes full width within its container */}
-      <div className="w-full">
-        {!hasVideoId ? (
-          <LoadingUI />
-        ) : isProgressLoading || profileError ? (
-          <div className="relative">
-            <LoadingUI error={profileError || "Loading..."} />
-            <div className="absolute inset-0 bg-transparent" />
-          </div>
-        ) : (
-          <EnhancedVideoPlayer
-            videoId={videoId}
-            onEnded={handleVideoEnd}
-            onVideoSelect={handlePlaylistVideoSelect}
-            courseName={course.title}
-            nextVideoId={nextVideoId}
-            onBookmark={handleAddBookmark}
-            bookmarks={bookmarks}
-            isAuthenticated={isAuthenticated}
-            onChapterComplete={onChapterComplete}
-            playerConfig={{
-              showRelatedVideos: false,
-              rememberPosition: true,
-              rememberMute: true,
-              showCertificateButton: !!isLastVideo,
-            }}
-            courseCompleted={courseCompleted}
-            isMobile={false}
-            autoPlay={autoPlay}
-          />
-        )}
-      </div>
+      <VideoArea />
 
       {/* Chapter Title and Info */}
       <div className="mb-6">
@@ -593,7 +581,8 @@ function MainContent({
                 <Award className="h-16 w-16 text-primary mb-4 animate-bounce" />
                 <CardTitle className="text-3xl font-bold text-center mb-2">Course Completed!</CardTitle>
                 <div className="text-muted-foreground text-center mb-2">
-                  Congratulations on finishing <span className="font-semibold text-foreground">{course?.title}</span>!
+                  Congratulations on finishing{" "}
+                  <span className="font-semibold text-foreground">{course?.title}</span>!
                 </div>
               </CardHeader>
               <CardContent>

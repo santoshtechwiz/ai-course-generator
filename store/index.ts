@@ -11,6 +11,10 @@ import userReducer from "./slices/userSlice";
 import flashcardReducer from "./slices/flashcardSlice";
 import courseReducer from "./slices/courseSlice";
 import certificateReducer from "./slices/certificateSlice";
+
+// Create a type for the certificate reducer to avoid naming conflict
+type CertificateReducer = typeof certificateReducer;
+
 // Configure persistence
 const coursePersistConfig = {
   key: "course",
@@ -41,7 +45,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   flashcard: flashcardReducer,
   course: persistReducer(coursePersistConfig, courseReducer),
-  certificateReducer: certificateReducer,
+  certificate: certificateReducer, // Fixed name to avoid collision with the import
 });
 
 export const store = configureStore({

@@ -2,7 +2,7 @@
 
 const nextConfig = {
   reactStrictMode: false,
-  distDir: ".next1",
+  distDir: ".next",
   poweredByHeader: false, // Remove X-Powered-By header for security
 
   // Optimize image loading
