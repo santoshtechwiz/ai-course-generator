@@ -1,473 +1,323 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
-import axios from "axios"
-import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, ChevronRight, AlertCircle, ChevronLeft, Lock } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import type React from "react"
+import { useState, useCallback, useMemo } from "react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/hooks/use-toast"
-import { useSession } from "next-auth/react"
 
-import QuizBackground from "./QuizBackground"
+import {
+  BookOpen,
+  Brain,
+  MessageSquare,
+  FileText,
+  Clock,
+  CheckCircle,
+  Star,
+  Download,
+  Users,
+  TrendingUp,
+} from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import CourseAISummary from "./CourseAISummary"
+import type { FullChapterType, FullCourseType } from "@/app/types/types"
+import CourseDetailsQuiz from "./CourseDetailsQuiz"
 
-import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
-
-type Props = {
-  isPremium: boolean
-  isPublicCourse: boolean
-  chapter: FullChapterType
+interface CoursePageTabsProps {
   course: FullCourseType
-  chapterId?: string
+  currentChapter?: FullChapterType
+  isAuthenticated: boolean
+  isPremium: boolean
+  isAdmin: boolean
 }
 
-// Improve the quiz experience for unauthenticated users
-export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublicCourse, chapterId }: Props) {
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [score, setScore] = useState(0)
-  const [showResults, setShowResults] = useState(false)
-  const [quizStarted, setQuizStarted] = useState(false)
-  const [quizProgress, setQuizProgress] = useState<Record<string, any>>({})
-  const { toast } = useToast()
-  const { data: session } = useSession()
-  const isAuthenticated = !!session
+export const CoursePageTabs: React.FC<CoursePageTabsProps> = ({
+  course,
+  currentChapter,
+  isAuthenticated,
+  isPremium,
+  isAdmin,
+}) => {
+  const [activeTab, setActiveTab] = useState("overview")
 
-  // Use the provided chapterId or fall back to chapter.id
-  const effectiveChapterId = chapterId || chapter?.id?.toString()
+  // Memoized course stats
+  const courseStats = useMemo(() => {
+    const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
+    const totalDuration =
+      course.courseUnits?.reduce(
+        (acc, unit) => acc + unit.chapters.reduce((chapterAcc, chapter) => chapterAcc + (chapter.duration || 0), 0),
+        0,
+      ) || 0
 
-  // Load saved quiz progress from localStorage
-  useEffect(() => {
-    if (effectiveChapterId) {
-      const savedProgress = localStorage.getItem(`quiz-progress-${effectiveChapterId}`)
-      if (savedProgress) {
-        try {
-          const progress = JSON.parse(savedProgress)
-          setQuizProgress(progress)
-
-          // If quiz was completed, show results
-          if (progress.completed) {
-            setQuizCompleted(true)
-            setScore(progress.score || 0)
-            setAnswers(progress.answers || {})
-          } else if (progress.currentIndex !== undefined) {
-            setCurrentQuestionIndex(progress.currentIndex)
-            setAnswers(progress.answers || {})
-            setQuizStarted(true)
-          }
-        } catch (e) {
-          console.error("Error parsing saved quiz progress:", e)
-        }
-      }
+    return {
+      totalChapters,
+      totalDuration,
+      difficulty: course.difficulty || "Beginner",
+      rating: 4.8, // This would come from your API
+      students: 12543, // This would come from your API
     }
-  }, [effectiveChapterId])
+  }, [course])
 
-  // Save quiz progress to localStorage
-  const saveProgress = useCallback(
-    (data: Record<string, any>) => {
-      if (effectiveChapterId) {
-        localStorage.setItem(
-          `quiz-progress-${effectiveChapterId}`,
-          JSON.stringify({
-            ...quizProgress,
-            ...data,
-            lastUpdated: new Date().toISOString(),
-          }),
-        )
-      }
-    },
-    [effectiveChapterId, quizProgress],
-  )
-
-  // Create a set of demo questions for unauthenticated users
-  const demoQuestions = useMemo(() => {
-    return [
-      {
-        id: "demo1",
-        question: "What is the primary purpose of this course?",
-        options: [
-          "To teach programming fundamentals",
-          "To explore advanced concepts",
-          "To provide practical examples",
-          "All of the above",
-        ],
-        answer: "All of the above",
-      },
-      {
-        id: "demo2",
-        question: "Which of the following is a key benefit of taking this course?",
-        options: [
-          "Hands-on coding exercises",
-          "Theoretical knowledge only",
-          "No practical applications",
-          "Limited examples",
-        ],
-        answer: "Hands-on coding exercises",
-      },
-      {
-        id: "demo3",
-        question: "What would you need to access the full quiz content?",
-        options: ["A premium subscription", "Nothing, it's all free", "A different browser", "Special software"],
-        answer: "A premium subscription",
-      },
-    ]
+  // Format duration
+  const formatDuration = useCallback((minutes: number): string => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
   }, [])
 
-  const {
-    data: questions,
-    isError,
-    error,
-    isLoading: isQuizLoading,
-  } = useQuery<CourseQuestion[]>({
-    queryKey: ["transcript", effectiveChapterId],
-    queryFn: async () => {
-      if (!chapter?.videoId || !effectiveChapterId) {
-        throw new Error("Required chapter data is missing.")
-      }
-      const response = await axios.post("/api/coursequiz", {
-        videoId: chapter.videoId,
-        chapterId: Number(effectiveChapterId),
-        chapterName: chapter.title || chapter.title,
-      })
-
-      // Also, let's improve the error handling and logging
-      if (response.data.error) {
-        console.error("Quiz API error:", response.data.error)
-        throw new Error(response.data.error)
-      }
-
-      // Add better logging to help diagnose the issue
-      console.log("Quiz data received:", response.data)
-
-      // Make sure we're properly handling empty responses
-      if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-        console.warn("Empty quiz data received for chapter:", effectiveChapterId)
-        throw new Error("No quiz questions available for this chapter")
-      }
-
-      // Ensure we're properly parsing the options
-      return response.data.map((question: any) => ({
-        ...question,
-        options: Array.isArray(question.options)
-          ? question.options
-          : typeof question.options === "string"
-            ? JSON.parse(question.options)
-            : [],
-      }))
-    },
-    retry: 3,
-    staleTime: 5 * 60 * 1000,
-    enabled: isPremium && quizStarted && isAuthenticated, // Only fetch if user is premium, authenticated and quiz has started
-  })
-
-  // Use demo questions for unauthenticated users
-  const effectiveQuestions = useMemo(() => {
-    if (!isPremium || !isAuthenticated) {
-      return demoQuestions
-    }
-    return questions || []
-  }, [isPremium, isAuthenticated, questions, demoQuestions])
-
-  const currentQuestion = useMemo(
-    () => (effectiveQuestions && effectiveQuestions.length > 0 ? effectiveQuestions[currentQuestionIndex] : null),
-    [effectiveQuestions, currentQuestionIndex],
-  )
-
-  const handleAnswer = useCallback(
-    (value: string) => {
-      if (currentQuestion) {
-        const newAnswers = { ...answers, [currentQuestion.id]: value }
-        setAnswers(newAnswers)
-        saveProgress({ answers: newAnswers, currentIndex: currentQuestionIndex })
-      }
-    },
-    [currentQuestion, answers, currentQuestionIndex, saveProgress],
-  )
-
-  const checkAnswer = useCallback(() => {
-    if (currentQuestion) {
-      const userAnswer = answers[currentQuestion.id]
-      const isCorrect = userAnswer?.trim() === currentQuestion.answer?.trim()
-
-      if (isCorrect) {
-        setScore((prev) => prev + 1)
-      }
-
-      if (currentQuestionIndex < (effectiveQuestions?.length ?? 0) - 1) {
-        const nextIndex = currentQuestionIndex + 1
-        setCurrentQuestionIndex(nextIndex)
-        saveProgress({ currentIndex: nextIndex })
-      } else {
-        const finalScore = score + (isCorrect ? 1 : 0)
-        setQuizCompleted(true)
-        saveProgress({
-          completed: true,
-          score: finalScore,
-          completedAt: new Date().toISOString(),
-        })
-
-        toast({
-          title: "Quiz Completed!",
-          description: `You scored ${finalScore} out of ${effectiveQuestions?.length}`,
-        })
-      }
-    }
-  }, [currentQuestion, answers, currentQuestionIndex, effectiveQuestions?.length, score, saveProgress, toast])
-
-  const retakeQuiz = useCallback(() => {
-    setAnswers({})
-    setCurrentQuestionIndex(0)
-    setQuizCompleted(false)
-    setScore(0)
-    setShowResults(false)
-    saveProgress({
-      completed: false,
-      currentIndex: 0,
-      answers: {},
-      score: 0,
-    })
-  }, [saveProgress])
-
-  const handleShowResults = useCallback(() => {
-    setShowResults(true)
+  // Handle tab change
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value)
   }, [])
-
-  const startQuiz = useCallback(() => {
-    setQuizStarted(true)
-    saveProgress({ started: true, startedAt: new Date().toISOString() })
-  }, [saveProgress])
-
-  // If not premium but public course, show demo quiz with a premium upgrade prompt
-  if (!isPremium && isPublicCourse) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto bg-card">
-        <CardHeader className="relative z-10 text-center">
-          <CardTitle className="text-2xl">Chapter Quiz Preview</CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10 p-6">
-          <div className="bg-background/50 rounded-lg p-6 border border-border mb-6">
-            <h3 className="text-lg font-semibold mb-2">Sample Question</h3>
-            <p className="mb-4">What is the primary purpose of this course?</p>
-            <div className="space-y-2">
-              {[
-                "To teach programming fundamentals",
-                "To explore advanced concepts",
-                "To provide practical examples",
-                "All of the above",
-              ].map((option, i) => (
-                <div key={i} className="p-3 border rounded-md bg-card/50">
-                  {option}
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 flex justify-between">
-              <Button variant="outline" disabled>
-                Previous
-              </Button>
-              <Button disabled>Next</Button>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
-            <p className="text-muted-foreground mb-4">
-              Upgrade to Premium to access interactive quizzes for all chapters.
-            </p>
-            <Button onClick={() => (window.location.href = "/dashboard/subscription")}>Upgrade to Premium</Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!isPremium) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="flex flex-col items-center justify-center h-40 text-center">
-          <Lock className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
-          <p className="text-muted-foreground mb-4">Upgrade to Premium to access quizzes.</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (isError) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="flex items-center justify-center h-40">
-          <div className="flex items-center space-x-2 text-destructive">
-            <AlertCircle className="w-6 h-6" />
-            <p className="text-lg">Error loading quiz: {(error as Error).message || "Please try again later."}</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (isQuizLoading) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="p-8">
-          <div className="flex items-center space-x-2 mb-4">
-            <Skeleton className="h-6 w-6 rounded-full" />
-            <Skeleton className="h-6 w-48" />
-          </div>
-          <Skeleton className="h-4 w-full mb-8" />
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full rounded-md" />
-            <Skeleton className="h-12 w-full rounded-md" />
-            <Skeleton className="h-12 w-full rounded-md" />
-            <Skeleton className="h-12 w-full rounded-md" />
-          </div>
-          <div className="flex justify-between mt-8">
-            <Skeleton className="h-10 w-24 rounded-md" />
-            <Skeleton className="h-10 w-24 rounded-md" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!effectiveQuestions || effectiveQuestions.length === 0) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="flex items-center justify-center h-40">
-          <p className="text-muted-foreground text-lg">No quiz available for this chapter.</p>
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto relative overflow-hidden bg-card">
-      <QuizBackground />
-      <CardHeader className="p-8 bg-background/50 relative z-10 border-b">
-        <CardTitle className="text-3xl flex items-center space-x-4">
-          <CheckCircle className="w-8 h-8 text-primary" />
-          <span>Concept Check</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-8 relative z-10">
-        <AnimatePresence mode="wait">
-          {!quizCompleted && currentQuestion ? (
+    <div className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="ai-summary" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            <span className="hidden sm:inline">AI Summary</span>
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Notes</span>
+          </TabsTrigger>
+         
+          {/* <TabsTrigger value="resources" className="flex items-center gap-2 hidden lg:flex">
+            <Download className="h-4 w-4" />
+            <span>Resources</span>
+          </TabsTrigger> */}
+          <TabsTrigger value="progress" className="flex items-center gap-2 hidden lg:flex">
+            <TrendingUp className="h-4 w-4" />
+            <span>Progress</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="mt-6">
+          <AnimatePresence mode="wait">
             <motion.div
-              key={currentQuestionIndex}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
             >
-              <Progress value={((currentQuestionIndex + 1) / effectiveQuestions.length) * 100} className="mb-6 h-2" />
-              <h2 className="text-xl font-semibold mb-6">{currentQuestion.question}</h2>
-              <RadioGroup onValueChange={handleAnswer} value={answers[currentQuestion.id]} className="space-y-2">
-                {currentQuestion.options.map((option: string, index: number) => (
-                  <div
-                    key={`${option}-${index}`}
-                    className={cn(
-                      "flex items-center space-x-3 p-3 rounded-lg transition-colors",
-                      answers[currentQuestion.id] === option
-                        ? "bg-primary/10 text-primary dark:bg-primary/20"
-                        : "hover:bg-accent/50 dark:hover:bg-accent/20",
-                    )}
-                  >
-                    <RadioGroupItem value={option} id={`option-${index}`} className="w-5 h-5" />
-                    <Label htmlFor={`option-${index}`} className="text-base flex-grow cursor-pointer">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </motion.div>
-          ) : quizCompleted ? (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
-              <h2 className="text-4xl font-bold mb-8">Quiz Completed!</h2>
-              <p className="text-2xl mb-8">
-                Your score:{" "}
-                <span className="text-primary font-bold">
-                  {score} / {effectiveQuestions.length}
-                </span>
-              </p>
-              <div className="space-x-4">
-                <Button onClick={handleShowResults} size="lg" className="text-xl px-10 py-6" variant="outline">
-                  Show Results
-                </Button>
-                <Button onClick={retakeQuiz} size="lg" className="text-xl px-10 py-6">
-                  Retake Quiz
-                </Button>
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-        {showResults && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
-            <h3 className="text-2xl font-bold mb-4">Quiz Results</h3>
-            {effectiveQuestions.map((question, index) => (
-              <div
-                key={`${question.id}-${index}`}
-                className={cn(
-                  "mb-6 p-4 rounded-lg",
-                  answers[question.id] === question.answer
-                    ? "bg-green-100/50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-                    : "bg-red-100/50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
-                )}
-              >
-                <p className="font-semibold mb-2">
-                  {index + 1}. {question.question}
-                </p>
-                <p
-                  className={cn(
-                    "text-sm mb-1",
-                    answers[question.id] === question.answer
-                      ? "text-green-700 dark:text-green-400"
-                      : "text-red-700 dark:text-red-400",
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Course Info */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BookOpen className="h-5 w-5" />
+                        Course Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Total Chapters</span>
+                        <Badge variant="secondary">{courseStats.totalChapters}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Duration</span>
+                        <Badge variant="secondary">{formatDuration(courseStats.totalDuration)}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Difficulty</span>
+                        <Badge variant="outline">{courseStats.difficulty}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Rating</span>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium">{courseStats.rating}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Students</span>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span className="text-sm font-medium">{courseStats.students.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Current Chapter */}
+                  {currentChapter && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Clock className="h-5 w-5" />
+                          Current Chapter
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <h3 className="font-medium mb-2">{currentChapter.title}</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {currentChapter.description || "Continue learning with this chapter."}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {currentChapter.duration || "5 min"}
+                          </Badge>
+                          {currentChapter.isFree && <Badge variant="secondary">Free</Badge>}
+                        </div>
+                      </CardContent>
+                    </Card>
                   )}
-                >
-                  Your answer: {answers[question.id] || "Not answered"}
-                </p>
-                <p className="text-sm text-primary font-medium">Correct answer: {question.answer}</p>
-              </div>
-            ))}
-            <div className="mt-6 text-center">
-              <Button onClick={retakeQuiz} size="lg">
-                Retake Quiz
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </CardContent>
-      {!quizCompleted && currentQuestion && (
-        <CardFooter className="flex justify-between p-8 bg-muted/50 border-t border-border relative z-10">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-            disabled={currentQuestionIndex === 0}
-            size="lg"
-            className="text-lg px-6 py-3"
-          >
-            <ChevronLeft className="w-6 h-6 mr-2" />
-            Previous
-          </Button>
-          <Button
-            onClick={checkAnswer}
-            disabled={!answers[currentQuestion.id]}
-            className={cn("text-lg px-6 py-3", {
-              "opacity-50 cursor-not-allowed": !answers[currentQuestion.id],
-            })}
-            size="lg"
-          >
-            {currentQuestionIndex === effectiveQuestions.length - 1 ? "Finish" : "Next"}
-            <ChevronRight className="w-6 h-6 ml-2" />
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+                </div>
+
+                {/* Course Description */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About This Course</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {course.description ||
+                        "This comprehensive course will take you through all the essential concepts and practical applications. You'll learn through hands-on examples and real-world projects."}
+                    </p>
+                  </CardContent>
+                </Card>
+
+             
+              </TabsContent>
+
+              {/* AI Summary Tab */}
+              <TabsContent value="ai-summary">
+                {currentChapter ? (
+                  <CourseAISummary
+                    chapterId={currentChapter.id}
+                    name={currentChapter.title || "Current Chapter"}
+                    existingSummary={null}
+                    isPremium={isPremium}
+                    isAdmin={isAdmin}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-12">
+                      <div className="text-center">
+                        <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No Chapter Selected</h3>
+                        <p className="text-muted-foreground">Select a chapter to view its AI-generated summary.</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              {/* Notes Tab */}
+              <TabsContent value="notes">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Your Notes
+                    </CardTitle>
+                    <CardDescription>Take notes while watching to enhance your learning experience.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No Notes Yet</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Start taking notes to keep track of important concepts and ideas.
+                      </p>
+                      <Button>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Add Your First Note
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Discussion Tab */}
+              <TabsContent value="discussion">
+              <CourseDetailsQuiz isPremium={false} isPublicCourse={false} chapter={undefined} course={undefined}></CourseDetailsQuiz>
+              </TabsContent>
+
+              {/* Resources Tab */}
+              <TabsContent value="resources">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Download className="h-5 w-5" />
+                      Course Resources
+                    </CardTitle>
+                    <CardDescription>Download additional materials and resources for this course.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <h4 className="font-medium">Course Slides</h4>
+                            <p className="text-sm text-muted-foreground">PDF • 2.4 MB</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-green-500" />
+                          <div>
+                            <h4 className="font-medium">Exercise Files</h4>
+                            <p className="text-sm text-muted-foreground">ZIP • 5.1 MB</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Progress Tab */}
+              <TabsContent value="progress">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Your Progress
+                    </CardTitle>
+                    <CardDescription>Track your learning progress and achievements.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Progress Tracking</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Your learning progress will be displayed here as you complete chapters.
+                      </p>
+                      <Button variant="outline">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        View Detailed Progress
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </Tabs>
+    </div>
   )
 }
+
+export default CoursePageTabs
