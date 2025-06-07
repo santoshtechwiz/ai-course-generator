@@ -1,32 +1,29 @@
 "use client"
 
-import type React from "react"
-import { useState, useRef, useCallback, useEffect } from "react"
+import React, { useState, useRef, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import type { BookmarkData } from "../types"
-import { Progress } from "@radix-ui/react-progress"
 
 interface ProgressBarProps {
   played: number
   loaded: number
-  duration: number
   onSeek: (time: number) => void
+  bufferHealth: number
+  duration: number
   formatTime: (seconds: number) => string
-  bookmarks?: BookmarkData[]
+  bookmarks?: number[]
   onSeekToBookmark?: (time: number) => void
-  className?: string
 }
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({
+const ProgressBar: React.FC<ProgressBarProps> = ({
   played,
   loaded,
-  duration,
   onSeek,
+  bufferHealth,
+  duration,
   formatTime,
   bookmarks = [],
   onSeekToBookmark,
-  className,
 }) => {
   const [isDragging, setIsDragging] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
@@ -63,17 +60,17 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       setIsDragging(true)
       const position = getPositionFromEvent(e)
       setDragPosition(position)
-      onSeek(position * duration)
     },
-    [getPositionFromEvent, onSeek, duration],
+    [getPositionFromEvent],
   )
 
   // Handle mouse up to end dragging
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
+      onSeek(dragPosition * duration)
       setIsDragging(false)
     }
-  }, [isDragging])
+  }, [isDragging, dragPosition, duration, onSeek])
 
   // Handle global mouse move during drag
   const handleGlobalMouseMove = useCallback(
@@ -81,9 +78,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       if (!isDragging || !progressRef.current) return
       const position = getPositionFromEvent(e)
       setDragPosition(position)
-      onSeek(position * duration)
     },
-    [isDragging, getPositionFromEvent, onSeek, duration],
+    [isDragging, getPositionFromEvent],
   )
 
   // Handle click on progress bar
@@ -98,17 +94,17 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
   // Handle bookmark click
   const handleBookmarkClick = useCallback(
-    (e: React.MouseEvent, bookmark: BookmarkData) => {
+    (e: React.MouseEvent, time: number) => {
       e.stopPropagation()
       if (onSeekToBookmark) {
-        onSeekToBookmark(bookmark.time)
+        onSeekToBookmark(time)
       }
     },
     [onSeekToBookmark],
   )
 
   // Global mouse events for dragging
-  useEffect(() => {
+  React.useEffect(() => {
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove)
       document.addEventListener("mouseup", handleMouseUp)
@@ -122,10 +118,9 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
   // Calculate time for hover/drag position
   const previewTime = duration * (isDragging ? dragPosition : hoverPosition)
-  const currentTime = duration * currentPosition
 
   return (
-    <div className={cn("relative group", className)}>
+    <div className="relative group">
       {/* Time preview tooltip */}
       <AnimatePresence>
         {(isHovering || isDragging) && duration > 0 && (
@@ -162,7 +157,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         aria-label="Video progress"
         aria-valuemin={0}
         aria-valuemax={duration}
-        aria-valuenow={currentTime}
+        aria-valuenow={duration * currentPosition}
         tabIndex={0}
       >
         {/* Buffer progress */}
@@ -200,22 +195,22 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         </AnimatePresence>
 
         {/* Bookmarks */}
-        {bookmarks.map((bookmark) => {
-          if (!duration || bookmark.time > duration) return null
+        {bookmarks.map((time, index) => {
+          if (!duration || time > duration) return null
 
-          const bookmarkPosition = (bookmark.time / duration) * 100
+          const bookmarkPosition = (time / duration) * 100
 
           return (
             <motion.div
-              key={bookmark.id}
+              key={`bookmark-${index}-${time}`}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               className="absolute top-1/2 w-2 h-3 bg-yellow-400 rounded-sm transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:bg-yellow-300 transition-colors shadow-sm z-10"
               style={{ left: `${bookmarkPosition}%` }}
-              onClick={(e) => handleBookmarkClick(e, bookmark)}
-              title={`${bookmark.title} - ${formatTime(bookmark.time)}`}
+              onClick={(e) => handleBookmarkClick(e, time)}
+              title={`Bookmark at ${formatTime(time)}`}
               role="button"
-              aria-label={`Bookmark: ${bookmark.title} at ${formatTime(bookmark.time)}`}
+              aria-label={`Bookmark at ${formatTime(time)}`}
             />
           )
         })}
@@ -223,7 +218,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
       {/* Current time display */}
       <div className="absolute -bottom-6 left-0 text-xs text-white/80 font-medium">
-        {formatTime(currentTime)} / {formatTime(duration)}
+        {formatTime(duration * currentPosition)} / {formatTime(duration)}
       </div>
     </div>
   )
