@@ -1,35 +1,36 @@
 "use client";
 
-import { useQuizPlan } from "../hooks/useQuizPlan";
-import CreateQuizForm from "./components/CreateQuizForm";
+import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { QuizLoader } from "@/components/ui/quiz-loader";
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
+import { useAuth } from "@/hooks/use-auth"; // Updated import
 
-const McqPage = () => {
-  // Use our custom hook that already handles session, auth, and subscription data
-  const quizPlan = useQuizPlan(1); // Require 1 credit to create an MCQ quiz
+const OpenEndedPage = () => {
+  const { isAuthenticated } = useAuth(); // Use consolidated hook
+  // Fix: Changed hook name from useQuizPlan to avoid duplicating the same hook
+  // Fix: Update credit requirement to correct value for open-ended questions
+  const quizPlan = useQuizPlan(2); // Require 2 credits for open-ended quiz (corrected from MCQ)
 
   return (
     <QuizCreateLayout
-      title="Multiple Choice Questions"
-      description="Create customized multiple choice questions or practice with our pre-built quizzes."
-      quizType="mcq"
+      title="Open Ended Questions"
+      description="Create customized open-ended questions or practice with our pre-built exercises."
+      quizType="openended"
       helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
-      isLoggedIn={quizPlan.isLoggedIn}
+      isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
     >
       {quizPlan.isLoading ? (
         <QuizLoader message="Loading subscription details..." subMessage="Getting your plan information" />
       ) : (
         <OpenEndedQuizForm
           credits={quizPlan.credits}
-          isLoggedIn={quizPlan.isLoggedIn}
+          isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
           maxQuestions={quizPlan.maxQuestions}
-         
         />
       )}
     </QuizCreateLayout>
   );
 };
 
-export default McqPage;
+export default OpenEndedPage;

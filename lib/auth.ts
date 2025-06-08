@@ -36,7 +36,8 @@ declare module "next-auth/jwt" {
 }
 
 // Track active refreshes to prevent duplicates
-const activeRefreshes = new Map<string, number>()
+// Use a more robust approach with timestamps to handle race conditions
+const activeRefreshes = new Map<string, { timestamp: number, promise?: Promise<any> }>()
 // Cache to reduce DB load
 const userCache = new Map<string, { data: any; timestamp: number }>()
 const USER_CACHE_TTL = 2 * 60 * 1000 // 2 minutes
@@ -77,48 +78,77 @@ export const authOptions: NextAuthOptions = {
       // Add refresh throttling to prevent loops
       const refreshCount = token.refreshCount || 0
       const userId = token.id as string
+      
+      // Skip refresh if no userId
+      if (!userId) return token
 
-      // Check if this user already has an active refresh
-      if (userId && activeRefreshes.has(userId)) {
-        const lastRefresh = activeRefreshes.get(userId) || 0
-        // If last refresh was less than 5 seconds ago, skip this one
-        if (now - lastRefresh < 5000) {
-          return token
-        }
-      }
-
-      if (token.id && shouldRefreshToken && refreshCount < 3) {
+      if (shouldRefreshToken && refreshCount < 3) {
         try {
-          // Mark this user as having an active refresh
-          if (userId) {
-            activeRefreshes.set(userId, now)
+          // Check if there's already a refresh in progress for this user
+          const existingRefresh = activeRefreshes.get(userId)
+          
+          // If there's a recent refresh in progress (within last 5 seconds), use its promise
+          if (existingRefresh && now - existingRefresh.timestamp < 5000) {
+            if (existingRefresh.promise) {
+              await existingRefresh.promise
+              // After the promise resolves, get the fresh user from cache
+              const cachedUser = userCache.get(userId)
+              if (cachedUser && now - cachedUser.timestamp < USER_CACHE_TTL) {
+                const dbUser = cachedUser.data
+                if (dbUser) {
+                  token.credits = dbUser.credits
+                  token.isAdmin = dbUser.isAdmin
+                  token.userType = dbUser.userType
+                  token.subscriptionPlan = dbUser.subscription?.planId || null
+                  token.subscriptionStatus = dbUser.subscription?.status || null
+                  token.updatedAt = now
+                  token.refreshCount = 0
+                }
+                return token
+              }
+            }
+            // If no promise or no cache hit, proceed with refresh
           }
 
           // Increment refresh count to prevent infinite loops
           token.refreshCount = refreshCount + 1
 
-          // Check cache first
-          const cachedUser = userCache.get(userId)
-          let dbUser
+          // Create a new refresh promise
+          const refreshPromise = (async () => {
+            let dbUser
+            // Check cache first
+            const cachedUser = userCache.get(userId)
 
-          if (cachedUser && now - cachedUser.timestamp < USER_CACHE_TTL) {
-            dbUser = cachedUser.data
-          } else {
-            dbUser = await prisma.user.findUnique({
-              where: { id: token.id },
-              include: {
-                subscription: true,
-              },
-            })
-
-            // Update cache
-            if (dbUser) {
-              userCache.set(userId, {
-                data: dbUser,
-                timestamp: now,
+            if (cachedUser && now - cachedUser.timestamp < USER_CACHE_TTL) {
+              dbUser = cachedUser.data
+            } else {
+              dbUser = await prisma.user.findUnique({
+                where: { id: userId },
+                include: {
+                  subscription: true,
+                },
               })
+
+              // Update cache
+              if (dbUser) {
+                userCache.set(userId, {
+                  data: dbUser,
+                  timestamp: now,
+                })
+              }
             }
-          }
+
+            return dbUser
+          })()
+
+          // Store the promise in activeRefreshes
+          activeRefreshes.set(userId, { 
+            timestamp: now,
+            promise: refreshPromise 
+          })
+
+          // Await the refresh promise
+          const dbUser = await refreshPromise
 
           if (dbUser) {
             token.credits = dbUser.credits
@@ -130,15 +160,23 @@ export const authOptions: NextAuthOptions = {
             token.refreshCount = 0 // Reset count after successful refresh
           }
 
-          // Clear the active refresh marker
-          if (userId) {
-            setTimeout(() => {
+          // Clean up refresh tracking after a delay
+          setTimeout(() => {
+            const current = activeRefreshes.get(userId)
+            if (current && current.timestamp === now) {
               activeRefreshes.delete(userId)
-            }, 5000)
-          }
+            }
+          }, 10000) // 10 seconds cleanup delay
+          
         } catch (error) {
           console.error("Error fetching user data for JWT:", error)
           // Don't update the token.updatedAt if there was an error
+          
+          // Clean up on error too
+          const current = activeRefreshes.get(userId)
+          if (current && current.timestamp === now) {
+            activeRefreshes.delete(userId)
+          }
         }
       }
 
@@ -166,15 +204,41 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async redirect({ url, baseUrl }) {
-      // Handle redirects more securely
-      if (url.startsWith("/")) {
-        return `${baseUrl}${url}`
-      } else if (new URL(url).origin === baseUrl) {
-        return url
+      // Handle redirects more securely with additional validation
+      
+      // First ensure the url is a string to avoid type errors
+      if (typeof url !== 'string' || typeof baseUrl !== 'string') {
+        return baseUrl
       }
-      return baseUrl
+      
+      // Create a safe list of allowed redirect domains
+      const allowedOrigins = [
+        new URL(baseUrl).origin,
+        // Add other trusted domains if needed
+      ]
+      
+      try {
+        // Handle relative URLs
+        if (url.startsWith("/")) {
+          return `${baseUrl}${url}`
+        }
+        
+        // Check if URL is absolute and in our allowed list
+        const urlObj = new URL(url)
+        if (allowedOrigins.includes(urlObj.origin)) {
+          return url
+        }
+        
+        // If URL is not in allowed list, redirect to baseUrl
+        return baseUrl
+      } catch (error) {
+        // If URL parsing fails, safely redirect to baseUrl
+        console.error("Invalid redirect URL:", url, error)
+        return baseUrl
+      }
     },
   },
+  
   events: {
     async signIn({ user, account, isNewUser }) {
       try {
@@ -234,10 +298,12 @@ export const authOptions: NextAuthOptions = {
       }
     },
   },
+  
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
+  
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -255,6 +321,7 @@ export const authOptions: NextAuthOptions = {
       allowDangerousEmailAccountLinking: true,
     }),
   ],
+  
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 }
@@ -263,21 +330,36 @@ export const authOptions: NextAuthOptions = {
 const SESSION_CACHE = new Map<string, { session: any; timestamp: number }>()
 const SESSION_CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes
 
-// Function to clear caches periodically
+// Function to clear caches periodically with lock protection to avoid concurrent cleanups
+let isClearingCache = false
 const clearCaches = () => {
-  const now = Date.now()
-  // Clear expired session cache entries
-  for (const [key, entry] of SESSION_CACHE.entries()) {
-    if (now - entry.timestamp > SESSION_CACHE_MAX_AGE) {
-      SESSION_CACHE.delete(key)
+  if (isClearingCache) return
+  isClearingCache = true
+  
+  try {
+    const now = Date.now()
+    // Clear expired session cache entries
+    for (const [key, entry] of SESSION_CACHE.entries()) {
+      if (now - entry.timestamp > SESSION_CACHE_MAX_AGE) {
+        SESSION_CACHE.delete(key)
+      }
     }
-  }
 
-  // Clear expired user cache entries
-  for (const [key, entry] of userCache.entries()) {
-    if (now - entry.timestamp > USER_CACHE_TTL) {
-      userCache.delete(key)
+    // Clear expired user cache entries
+    for (const [key, entry] of userCache.entries()) {
+      if (now - entry.timestamp > USER_CACHE_TTL) {
+        userCache.delete(key)
+      }
     }
+    
+    // Clear stale refresh entries (older than 30 seconds)
+    for (const [key, entry] of activeRefreshes.entries()) {
+      if (now - entry.timestamp > 30000) {
+        activeRefreshes.delete(key)
+      }
+    }
+  } finally {
+    isClearingCache = false
   }
 }
 
@@ -336,8 +418,28 @@ export async function clearExpiredSessions() {
   }
 }
 
-// Helper to update user data
+// Invalidate session cache
+export function invalidateSessionCache(userId?: string) {
+  if (userId) {
+    // Only clear specific user's cache if provided
+    SESSION_CACHE.delete(userId)
+    userCache.delete(userId)
+    const refresh = activeRefreshes.get(userId)
+    if (refresh) activeRefreshes.delete(userId)
+  } else {
+    // Clear all caches
+    SESSION_CACHE.clear()
+    userCache.clear()
+    activeRefreshes.clear()
+  }
+}
+
+// Helper to update user data with proper cache invalidation
 export async function updateUserData(userId: string, data: any) {
+  if (!userId || typeof userId !== 'string') {
+    throw new Error("Invalid user ID provided")
+  }
+  
   try {
     await prisma.user.update({
       where: { id: userId },
@@ -345,15 +447,9 @@ export async function updateUserData(userId: string, data: any) {
     })
 
     // Invalidate caches to ensure fresh data
-    invalidateSessionCache()
-    userCache.delete(userId)
+    invalidateSessionCache(userId)
   } catch (error) {
     console.error("Error updating user data:", error)
     throw error
   }
-}
-
-// Invalidate session cache
-export function invalidateSessionCache() {
-  SESSION_CACHE.clear()
 }

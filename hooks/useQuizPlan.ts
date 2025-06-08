@@ -192,7 +192,7 @@ export function useQuizPlanAsync(requiredCredits: number = 1, config?: Partial<Q
       } else {
         toast({
           title: "Insufficient Credits",
-          description: `You need at least ${requiredCredits} credits to perform this action. Please upgrade your plan or purchase more credits.`,
+          description: "You need more credits to perform this action",
           variant: "destructive",
         })
         router.push("/dashboard/subscription")
@@ -209,10 +209,9 @@ export function useQuizPlanAsync(requiredCredits: number = 1, config?: Partial<Q
       return result
     } catch (error) {
       if (isMounted.current) {
-        if (options?.onError) {
-          options.onError(error instanceof Error ? error : new Error(String(error)))
+        if (options?.onError && error instanceof Error) {
+          options.onError(error)
         } else {
-          console.error("Error in quiz action:", error)
           toast({
             title: "Operation Failed",
             description: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -226,31 +225,13 @@ export function useQuizPlanAsync(requiredCredits: number = 1, config?: Partial<Q
         setIsProcessing(false)
       }
     }
-  }, [quizPlan, requiredCredits, toast, router])
-  
-  const checkPlanRequirement = useCallback((requiredPlan: PlanType, onUpgradeNeeded?: () => void): boolean => {
-    if (quizPlan.meetsPlanRequirement(requiredPlan)) {
-      return true
-    }
-    
-    if (onUpgradeNeeded) {
-      onUpgradeNeeded()
-    } else {
-      toast({
-        title: "Upgrade Required",
-        description: `This feature requires a ${requiredPlan} plan or higher. Please upgrade to continue.`,
-        variant: "destructive",
-      })
-      router.push("/dashboard/subscription")
-    }
-    
-    return false
-  }, [quizPlan, toast, router])
+  }, [quizPlan, router, toast])
   
   return {
     ...quizPlan,
     isProcessing,
-    withCreditCheck,
-    checkPlanRequirement,
+    withCreditCheck
   }
 }
+
+export default useQuizPlan;

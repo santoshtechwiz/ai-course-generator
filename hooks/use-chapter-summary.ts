@@ -69,3 +69,6 @@ export function useChapterSummary(chapterId: number | undefined) {
     generationError: generateMutation.error,
   }
 }
+
+// Backward compatibility
+export default useChapterSummary

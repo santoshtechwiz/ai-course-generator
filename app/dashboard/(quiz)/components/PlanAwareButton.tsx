@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
-import { type PlanType } from "../hooks/useQuizPlan"
+import { type PlanType } from "../../../../hooks/useQuizPlan"
 
 interface CustomButtonStates {
   default?: {

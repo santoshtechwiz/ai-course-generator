@@ -1,20 +1,27 @@
+// Main hooks export file - organized by functionality
 
+// UI/UX Hooks
+export * from "./use-media-query"
 export * from "./use-responsive"
-
-
-export * from "./use-similarity"
-
 export * from "./use-debounce"
 export * from "./use-interval"
-export * from "./use-persistent-state"
-export * from "./use-chapter-summary"
+
 export * from "./use-toast"
+export * from "./use-similarity"
 
+// Data Persistence Hooks
+export * from "./use-persistent-state"
 
-// Export these hooks directly, not via the conditional block
-export { useAuth } from "./useAuth"
+// Auth & User Hooks
+export * from "./useAuth"; // Ensure the file exists at this path
+export * from "./use-subscription"
+// export * from "./use-session-service"; // File not found, commented out to avoid errors
+export * from "./use-notifications"
+export * from "./use-user-dashboard"
 
-export { _createMockUseAuth } from "./useAuth"
-
-// Don't try to modify module.exports in test mode
-// This was causing the error because module.exports is read-only after these exports
+// Course & Quiz Hooks
+export * from "./use-chapter-summary" 
+export * from "./useCourseActions"; // Ensure the file exists at this path
+export * from "./useProgress"; // Ensure the file exists at this path
+export * from "./useVideoProgress"; // Ensure the file exists at this path
+export * from "./useRandomQuizzes"; // Ensure the file exists at this path

@@ -2,6 +2,7 @@ import { useSelector } from "react-redux"
 import type { TypedUseSelectorHook } from "react-redux"
 import type { RootState } from "@/store"
 import { createSelector } from "@reduxjs/toolkit"
+import { useAuth } from "./use-auth"
 
 /**
  * @deprecated Use useAppSelector from @/store instead
@@ -27,8 +28,11 @@ export function useMemoSelector<TSelected>(
 /**
  * Hook to get authentication state
  * @returns Authentication state
+ * @deprecated Use useAuth from @/hooks/useAuth instead
  */
 export function useAuthState() {
+  // Return Redux auth state but log a deprecation warning
+  console.warn("useAuthState is deprecated. Use useAuth from @/hooks/useAuth instead for a consolidated auth solution.")
   return useSelector((state: RootState) => state.auth)
 }
 
