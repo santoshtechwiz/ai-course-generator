@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuizPlan } from "../hooks/useQuizPlan";
+import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { QuizLoader } from "@/components/ui/quiz-loader";

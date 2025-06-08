@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import useSubscription from "@/hooks/use-subscription"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/use-auth" // Updated path
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar"
 

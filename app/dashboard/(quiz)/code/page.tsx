@@ -2,7 +2,7 @@
 
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
-import { useQuizPlan } from "../hooks/useQuizPlan"
+import { useQuizPlan } from "../../../../hooks/useQuizPlan"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 
 const CodePage = () => {

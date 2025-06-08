@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/providers/unified-auth-provider"
+
 import { Loader2 } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 interface AuthGuardProps {
   children: ReactNode
@@ -20,21 +21,27 @@ export function AuthGuard({
   redirectTo = "/auth/signin",
   loadingComponent = null,
 }: AuthGuardProps) {
-  const { isAuthenticated, isLoading, isAdmin, user } = useAuth()
+  const { isAuthenticated, isLoading, isAdmin } = useAuth()
   const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
-    if (!isLoading) {
+    // Only redirect if not loading and not already redirecting
+    if (!isLoading && !isRedirecting) {
       if (!isAuthenticated) {
+        setIsRedirecting(true)
         const currentPath = window.location.pathname
-        router.push(`${redirectTo}?callbackUrl=${encodeURIComponent(currentPath)}`)
+        const encodedPath = encodeURIComponent(currentPath)
+        const safeRedirectTo = typeof redirectTo === "string" ? redirectTo : "/auth/signin"
+        router.push(`${safeRedirectTo}?callbackUrl=${encodedPath}`)
       } else if (requireAdmin && !isAdmin) {
+        setIsRedirecting(true)
         router.push("/unauthorized")
       }
     }
-  }, [isAuthenticated, isLoading, isAdmin, requireAdmin, redirectTo, router])
+  }, [isAuthenticated, isLoading, isAdmin, requireAdmin, redirectTo, router, isRedirecting])
 
-  if (isLoading) {
+  if (isLoading || isRedirecting) {
     return loadingComponent || (
       <div className="flex justify-center items-center min-h-[200px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

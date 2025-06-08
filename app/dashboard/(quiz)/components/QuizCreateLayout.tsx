@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
+import { useAuth } from "@/hooks/use-auth" // Updated path
 
 interface QuizCreateLayoutProps {
   children: React.ReactNode
   title: string
   description: string
-  quizType: "mcq" | "code" | "blanks" | "quiz" | "others"
+  quizType: "mcq" | "code" | "blanks" | "quiz" | "openended" | "video" | "pdf"
   helpText?: string
   practiceContent?: React.ReactNode
   myQuizzesContent?: React.ReactNode

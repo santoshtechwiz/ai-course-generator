@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Image, { type StaticImageData } from "next/image"
 import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
@@ -20,8 +20,13 @@ export interface AuthButtonProps {
 export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthButtonProps) {
   const [isButtonLoading, setIsButtonLoading] = useState(false)
   const { toast } = useToast()
+  const isClickInProgress = useRef(false)
 
   const handleClick = async (e: React.MouseEvent) => {
+    // Prevent duplicate clicks
+    if (isButtonLoading || isClickInProgress.current) return
+
+    // If custom onClick handler is provided, use it
     if (onClick) {
       return onClick(e)
     }
@@ -29,10 +34,21 @@ export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthB
     e.preventDefault()
     e.stopPropagation()
 
+    isClickInProgress.current = true
+    setIsButtonLoading(true)
+
     try {
-      setIsButtonLoading(true)
+      // Validate the provider string
+      if (!provider || typeof provider !== "string") {
+        throw new Error("Invalid authentication provider")
+      }
+
+      // Validate callbackUrl before using it
+      const safeCallbackUrl =
+        callbackUrl && typeof callbackUrl === "string" ? callbackUrl : "/dashboard"
+
       // Use signIn directly to ensure the redirect happens
-      await signIn(provider.toLowerCase(), { callbackUrl })
+      await signIn(provider.toLowerCase(), { callbackUrl: safeCallbackUrl })
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error)
       toast({
@@ -41,6 +57,7 @@ export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthB
         variant: "destructive",
       })
       setIsButtonLoading(false)
+      isClickInProgress.current = false
     }
     // Note: We don't set isButtonLoading to false here because we're redirecting
   }
@@ -56,7 +73,14 @@ export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthB
       {isButtonLoading ? (
         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
       ) : (
-        <Image src={logo || "/placeholder.svg"} alt={`${provider} Logo`} width={20} height={20} className="mr-3" />
+        <Image
+          src={logo || "/placeholder.svg"}
+          alt={`${provider} Logo`}
+          width={20}
+          height={20}
+          className="mr-3"
+          unoptimized={typeof logo === "string" && logo.startsWith("/")}
+        />
       )}
       <span className="truncate">{isButtonLoading ? "Signing in..." : text}</span>
     </motion.button>
