@@ -57,11 +57,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
-      <body className={`font-sans antialiased min-h-screen flex flex-col`}>
+      <body className="font-sans antialiased min-h-screen flex flex-col scrollbar-hide">
         <SessionProvider session={session}>
           <RootLayoutProvider session={undefined}>
             <main className="flex-1 flex flex-col pt-16">{children}</main>
-            <Footer />
           </RootLayoutProvider>
         </SessionProvider>
 
@@ -81,6 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               "query-input": "required name=search_term_string",
             },
           }} type={"course"}        />
+             <Footer />
       </body>
     </html>
   )

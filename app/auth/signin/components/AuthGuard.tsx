@@ -3,12 +3,14 @@
 import { useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/unified-auth-provider"
+import { Loader2 } from "lucide-react"
 
 interface AuthGuardProps {
   children: ReactNode
   fallback?: ReactNode
   requireAdmin?: boolean
   redirectTo?: string
+  loadingComponent?: ReactNode
 }
 
 export function AuthGuard({
@@ -16,8 +18,9 @@ export function AuthGuard({
   fallback = null,
   requireAdmin = false,
   redirectTo = "/auth/signin",
+  loadingComponent = null,
 }: AuthGuardProps) {
-  const { isAuthenticated, isLoading, isAdmin } = useAuth()
+  const { isAuthenticated, isLoading, isAdmin, user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -32,7 +35,11 @@ export function AuthGuard({
   }, [isAuthenticated, isLoading, isAdmin, requireAdmin, redirectTo, router])
 
   if (isLoading) {
-    return fallback
+    return loadingComponent || (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (!isAuthenticated) {

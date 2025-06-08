@@ -144,7 +144,6 @@ const ErrorContent = React.memo(({ onRetry }: { onRetry: () => void }) => (
 ErrorContent.displayName = "ErrorContent"
 
 const CourseAISummary: FC<CourseAISummaryProps> = ({ chapterId, name, existingSummary, isPremium, isAdmin }) => {
-  const [showAIEmoji, setShowAIEmoji] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editedSummary, setEditedSummary] = useState(existingSummary || "")
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
@@ -170,9 +169,7 @@ const CourseAISummary: FC<CourseAISummaryProps> = ({ chapterId, name, existingSu
   // Enhanced AI emoji effect with cleanup
   useEffect(() => {
     if (!existingSummary && !isPremium) {
-      setShowAIEmoji(true)
       timerRef.current = setTimeout(() => {
-        setShowAIEmoji(false)
         refetch()
       }, 60000) // 1 minute delay
     }
@@ -333,7 +330,7 @@ const CourseAISummary: FC<CourseAISummaryProps> = ({ chapterId, name, existingSu
   }
 
   const renderContent = () => {
-    if (showAIEmoji) {
+    if (!existingSummary && !isPremium) {
       return <AIPreparingContent />
     }
 
@@ -367,10 +364,10 @@ const CourseAISummary: FC<CourseAISummaryProps> = ({ chapterId, name, existingSu
   }
 
   return (
-    <div className="relative space-y-4">
+    <div className="space-y-4">
       <AnimatePresence mode="wait">
         <motion.div
-          key={showAIEmoji ? "ai-emoji" : isLoading ? "loading" : "content"}
+          key={!existingSummary && !isPremium ? "ai-emoji" : isLoading ? "loading" : "content"}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -439,7 +436,7 @@ const SummaryContent = React.memo(
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
-      <h2 className="text-3xl font-bold mb-6">{name}</h2>
+      <h2 className="text-3xl font-bold">{name}</h2>
       {isAdmin && (
         <div className="flex flex-wrap gap-2 mb-6">
           {isEditing ? (
@@ -504,7 +501,7 @@ const SummaryContent = React.memo(
                   <TooltipContent>Copy to clipboard</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <article className="prose dark:prose-invert prose-headings:scroll-m-20 prose-headings:font-semibold prose-h3:text-xl prose-h4:text-lg prose-p:leading-relaxed prose-p:mb-4 prose-blockquote:border-l-2 prose-blockquote:pl-6 prose-blockquote:italic max-w-none">
+              <article className="prose dark:prose-invert prose-headings:scroll-m-20 prose-headings:font-semibold prose-h3:text-xl prose-h4:text-lg prose-p:leading-relaxed prose-p:mb-4 prose-blockquote:border-l-2 prose-blockquote:pl-6 prose-blockquote:italic max-w-none max-h-[500px] overflow-auto">
                 <MarkdownRenderer content={processedContent} />
               </article>
             </>

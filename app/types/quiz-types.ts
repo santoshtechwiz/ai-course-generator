@@ -120,13 +120,10 @@ export interface QuizState {
   sessionId?: string;
 }
 
-// Authentication types
-export interface AuthState {
-  isAuthenticated: boolean;
-  userId: string | null;
-  status: 'idle' | 'loading' | 'error';
-  error: string | null;
-}
+// Import AuthState from auth-types instead of duplicating
+import { AuthState } from './auth-types';
+// Re-export for backward compatibility
+export { AuthState };
 
 // Quiz result types
 export interface QuizResult {

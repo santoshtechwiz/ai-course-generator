@@ -129,6 +129,7 @@ const UnitCard = React.memo<UnitCardProps>(
                               hideVideoControls={true}
                               generationStatus={generationStatuses[String(chapter.id)]}
                               onGenerateVideo={onGenerateVideo}
+                              isFree={chapterIndex === 0} // First chapter in each unit is free
                             />
                           </div>
                         </div>

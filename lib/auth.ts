@@ -8,25 +8,17 @@ import { NextResponse } from "next/server"
 import type { DefaultJWT } from "next-auth/jwt"
 import { prisma } from "./db"
 import { sendEmail } from "@/lib/email"
+import { UserData } from "@/app/types/auth-types"
 
+// Extend the default session type to include our custom fields
 declare module "next-auth" {
-  interface Session extends DefaultSession {
-    user: {
+  interface Session {
+    user: UserData & {
       id: string
-      credits: number
-      accessToken: string
-      isAdmin: boolean
-      userType: string
-      subscriptionPlan: string | null
-      subscriptionStatus: string | null
-      subscriptionExpirationDate?: string
-    } & DefaultSession["user"]
-  }
-
-  interface User extends DefaultUser {
-    credits: number
-    isAdmin: boolean
-    userType: string
+      name?: string | null
+      email?: string | null
+      image?: string | null
+    }
   }
 }
 

@@ -28,6 +28,7 @@ type Props = {
   hideVideoControls?: boolean
   generationStatus?: ChapterGenerationStatus
   onGenerateVideo?: (chapter: Chapter) => Promise<boolean>
+  isFree?: boolean // Add this property for first chapters
 }
 
 export type ChapterCardHandler = {
@@ -176,19 +177,7 @@ ActionButton.displayName = "ActionButton"
 
 const ChapterCard = React.memo(
   React.forwardRef<ChapterCardHandler, Props>(
-    (
-      {
-        chapter,
-        chapterIndex,
-        onChapterComplete,
-        isCompleted,
-        isGenerating,
-        generationStatus,
-        onGenerateVideo,
-        ...props
-      },
-      ref,
-    ) => {
+    ({ chapter, chapterIndex, onChapterComplete, isCompleted, isGenerating, isFree = false, ...props }, ref) => {
       const { toast } = useToast()
       const { state, triggerProcessing, isLoading, validateVideoId } = useChapterProcessing(chapter)
       const [isEditing, setIsEditing] = useState(false)
@@ -367,6 +356,15 @@ const ChapterCard = React.memo(
 
       return (
         <Card className={cardClassName}>
+          {/* Card content */}
+          {/* You can conditionally display a "Free" badge based on isFree prop */}
+          {isFree && (
+            <div className="absolute top-2 right-2">
+              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                Free
+              </Badge>
+            </div>
+          )}
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-base">
               {isEditing ? (

@@ -2,6 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Check } from "lucide-react"
+import { QuizType } from "@/app/types/auth-types"
 
 export interface FallbackAction {
   label: string
@@ -17,7 +18,12 @@ interface NonAuthenticatedUserSignInPromptProps {
     percentage: number
   }
   fallbackAction?: FallbackAction
-  resultData?: any
+  resultData?: {
+    percentage?: number
+    score?: number
+    maxScore?: number
+    [key: string]: any;
+  }
   handleRetake?: () => void
 }
 

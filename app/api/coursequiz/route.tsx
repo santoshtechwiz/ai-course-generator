@@ -124,9 +124,17 @@ async function generateAndSaveQuestions(
 
         await prisma.courseQuiz.createMany({
           data: batch.map((question: QuizQuestion) => {
-            const uniqueOptions = question.options.includes(question.answer)
+            // Ensure options is an array before processing
+            const questionOptions = Array.isArray(question.options)
               ? question.options
-              : [...question.options, question.answer]
+              : typeof question.options === "string"
+              ? JSON.parse(question.options)
+              : []
+
+            // Make sure answer is included in options
+            const uniqueOptions = questionOptions.includes(question.answer)
+              ? questionOptions
+              : [...questionOptions, question.answer]
 
             const sortedOptions = uniqueOptions.sort(() => Math.random() - 0.5)
 
