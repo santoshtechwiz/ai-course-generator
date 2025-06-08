@@ -214,7 +214,7 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
     if (onRetake) {
       onRetake()
     } else {
-      router.push(`/dashboard/${quizType}/${slug}?reset=true`)
+      router.push(`/dashboard/${quizType}/${slug}`)
     }
   }, [onRetake, router, quizType, slug])
 
