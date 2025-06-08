@@ -16,7 +16,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 
-import { NonAuthenticatedUserSignInPrompt } from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
 import { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
 import CodeQuizResult from "../../components/CodeQuizResult"
@@ -65,7 +64,7 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   }, [authStatus, quizResults, generatedResults, answers, router, slug])
 
   const handleRetakeQuiz = () => {
-    router.push(`/dashboard/code/${slug}?reset=true`)
+    router.push(`/dashboard/code/${slug}`)
   }
 
   const handleSignIn = async () => {

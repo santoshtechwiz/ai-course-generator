@@ -1,8 +1,9 @@
 "use client"
 
+import { useState, useEffect, useCallback } from "react"
 import { useSession, signOut } from "next-auth/react"
-import { useCallback, useMemo, useRef } from "react"
 import { useDispatch } from "react-redux"
+import { useSessionService } from "@/hooks/useSessionService"
 import type { AppDispatch } from "@/store"
 import { logout as reduxLogout } from "@/store/slices/authSlice"
 import { resetState as resetSubscriptionState } from "@/store/slices/subscription-slice"
@@ -27,41 +28,28 @@ export interface AuthHookResult {
  */
 export function useAuth(): AuthHookResult {
   const { data: session, status } = useSession()
-  const guestIdRef = useRef<string | null>(null)
+  const [isLoading, setIsLoading] = useState(status === "loading")
+  const [isAuthenticated, setIsAuthenticated] = useState(status === "authenticated")
+  const [isAdmin, setIsAdmin] = useState(false)
   const dispatch = useDispatch<AppDispatch>()
+  const { cleanupSessionData } = useSessionService()
 
-  const isAuthenticated = status === "authenticated"
-  const isLoading = status === "loading"
-  const user = session?.user || null
-  const userId = session?.user?.id
-  const isAdmin = !!session?.user?.isAdmin
+  useEffect(() => {
+    setIsLoading(status === "loading")
+    setIsAuthenticated(status === "authenticated")
 
-  // Generate guest ID once in-memory (no storage)
-  const getGuestId = useCallback((): string => {
-    if (guestIdRef.current) return guestIdRef.current
-
-    try {
-      const uuid = Math.random().toString(36).substring(2, 15)
-      guestIdRef.current = `guest_${uuid}`
-    } catch {
-      guestIdRef.current = `guest_${Date.now().toString(36)}`
+    // Check admin status
+    if (session?.user) {
+      setIsAdmin(!!session.user.isAdmin || (session as any).user.role === "admin")
+    } else {
+      setIsAdmin(false)
     }
+  }, [session, status])
 
-    return guestIdRef.current
-  }, [])
-
-  const guestId = useMemo(() => {
-    if (isAuthenticated) return null
-    return getGuestId()
-  }, [isAuthenticated, getGuestId])
-
+  // Enhanced logout that clears all session data
   const logout = useCallback(async () => {
-    // First, dispatch Redux logout actions to clear all state
-    dispatch(reduxLogout())
-    dispatch(resetSubscriptionState())
-    dispatch(resetUserState())
-    dispatch(resetCourseState())
-    dispatch(resetQuizState())
+    // First clean up all session data
+    cleanupSessionData()
 
     // Clear local/session storage
     if (typeof window !== 'undefined') {
@@ -76,31 +64,33 @@ export function useAuth(): AuthHookResult {
         }
       })
       
-      // Clear auth-related items from sessionStorage
-      const ssKeys = Object.keys(sessionStorage)
-      ssKeys.forEach(key => {
-        if (key.includes('token') || 
-            key.includes('user') || 
-            key.includes('auth') ||
-            key.includes('session')) {
-          sessionStorage.removeItem(key)
-        }
-      })
+      try {
+        // Clear auth-related items from sessionStorage
+        const ssKeys = Object.keys(sessionStorage);
+        ssKeys.forEach(key => {
+          // Clear auth and quiz-related data
+          if (key.includes('auth_') || key.includes('quiz_') || 
+              key.includes('pendingQuiz') || key === 'callbackUrl') {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.error("Error clearing session data:", e);
+      }
     }
     
     // Then sign out with NextAuth
     await signOut({ redirect: false })
-    guestIdRef.current = null
     
-  }, [dispatch])
+  }, [cleanupSessionData])
 
   return {
     isAuthenticated,
-    userId,
+    userId: session?.user?.id,
     isLoading,
     isAdmin,
-    user,
-    guestId,
+    user: session?.user || null,
+    guestId: null,
     logout,
     status,
     session,

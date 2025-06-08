@@ -16,10 +16,14 @@ import {
   completeFlashCardQuiz,
   resetFlashCards,
   setCurrentFlashCard,
-  nextFlashCard} from "@/store/slices/flashcardSlice"
+  nextFlashCard,
+  setRequiresFlashCardAuth,
+  setPendingFlashCardAuth
+} from "@/store/slices/flashcardSlice"
 
 import FlashCardResults from "./FlashCardQuizResults"
 import { handleAuthRedirect, isReturningFromAuth } from "@/store/utils/authUtils"
+import NonAuthenticatedUserSignInPrompt from "../../components/NonAuthenticatedUserSignInPrompt"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -500,10 +504,10 @@ export default function EnhancedFlashCardComponent({
     }
     
     return (
-      <EnhancedNonAuthenticatedUserSignInPrompt
+      <NonAuthenticatedUserSignInPrompt
         quizType="flashcard"
         onSignIn={handleAuthenticationRequired}
-        showSaveMessage
+    
         message="Please sign in to save your flashcard quiz results"
         previewData={previewData}
       />
