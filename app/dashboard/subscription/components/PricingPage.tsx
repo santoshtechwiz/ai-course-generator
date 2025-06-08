@@ -55,6 +55,13 @@ interface PricingPageProps {
   isMobile?: boolean
 }
 
+// Add this type for better plan subscription handling
+type SubscriptionPlanResult = {
+  success: boolean;
+  redirectUrl?: string;
+  message?: string;
+}
+
 export function PricingPage({
   userId,
   isProd = false,
@@ -118,7 +125,7 @@ export function PricingPage({
 
   // Replace the validatePromoCode function with this improved version
   const validatePromoCode = useCallback(
-    async (code: string) => {
+    async (code: string): Promise<boolean> => {
       if (!code) {
         toast({
           title: "Promo Code Required",
@@ -210,7 +217,7 @@ export function PricingPage({
   } = useSubscription({
     allowPlanChanges: false,
     allowDowngrades: false,
-    onSubscriptionSuccess: (result) => {
+    onSubscriptionSuccess: (result: SubscriptionResult) => {
       if (result.redirectUrl) {
         // Redirect will happen automatically
         return
@@ -228,7 +235,7 @@ export function PricingPage({
         window.location.reload()
       }, 1500)
     },
-    onSubscriptionError: (error) => {
+    onSubscriptionError: (error: any) => {
       setSubscriptionError(error.message)
     },
   })

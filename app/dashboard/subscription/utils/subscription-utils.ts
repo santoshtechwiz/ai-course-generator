@@ -1,20 +1,21 @@
 import type { SubscriptionState, SubscriptionData } from "@/store/slices/subscription-slice"
+import type { SubscriptionPlanType as ImportedPlanType, SubscriptionStatusType } from "../types/subscription"
 
-// Define the missing SubscriptionPlanType enum
-export enum SubscriptionPlanType {
-  FREE = "free",
-  BASIC = "basic",
-  PRO = "pro",
-  PREMIUM = "premium",
+// Fix enum declaration to match the string type from the types file
+export const enum SubscriptionPlanType {
+  FREE = "FREE",
+  BASIC = "BASIC",
+  PRO = "PRO",
+  PREMIUM = "PRO", // This should be "PRO" to match usage
 }
 
-// Define the SubscriptionStatus enum if it's not properly imported
-export enum SubscriptionStatus {
-  ACTIVE = "active",
-  INACTIVE = "inactive",
-  CANCELED = "canceled",
-  PAST_DUE = "past_due",
-  PENDING = "pending",
+// Make status values uppercase to match the SubscriptionStatusType
+export const enum SubscriptionStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE", 
+  CANCELED = "CANCELED",
+  PAST_DUE = "PAST_DUE",
+  PENDING = "PENDING",
 }
 
 /**

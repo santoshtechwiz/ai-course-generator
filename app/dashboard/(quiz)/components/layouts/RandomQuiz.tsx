@@ -20,11 +20,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils" // Fixed import from tailwindUtils to utils
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
-import React, { useEffect } from "react"
+import React from "react" // Removed unused useEffect
 
 // SVG Background Pattern Component
 const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
@@ -238,8 +238,7 @@ const RandomQuizCard: React.FC<{ quiz: any }> = ({ quiz }) => {
 export const RandomQuiz: React.FC = () => {
   const { quizzes, isLoading, error, refresh } = useRandomQuizzes(5)
   const [filter, setFilter] = useState<string | null>(null)
-  const quizTypes = ["openended", "fill-blanks", "flashcard", "code"]
-
+  
   // Filtered quizzes memoized
   const filteredQuizzes = useMemo(() => {
     return filter ? quizzes.filter((quiz) => quiz.quizType?.toLowerCase() === filter) : quizzes
@@ -249,6 +248,9 @@ export const RandomQuiz: React.FC = () => {
   const handleRefresh = useCallback(() => {
     refresh()
   }, [refresh])
+  
+  // Memoize the list of quiz types to avoid recreating on each render
+  const quizTypes = useMemo(() => ["openended", "fill-blanks", "flashcard", "code"], [])
 
   return (
     <div className="h-full flex flex-col bg-background">
