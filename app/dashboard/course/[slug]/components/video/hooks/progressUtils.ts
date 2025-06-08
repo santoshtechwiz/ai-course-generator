@@ -31,28 +31,41 @@ export function getNextMilestone(currentProgress: number): number | null {
 }
 
 /**
- * Calculate buffer health level
+ * Formats seconds into a human-readable time string (MM:SS or HH:MM:SS)
+ *
+ * @param seconds - The number of seconds to format
+ * @returns A formatted time string
  */
-export function calculateBufferHealth(loaded: number, played: number): number {
-  const bufferAhead = Math.max(0, loaded - played)
-  return Math.min(100, bufferAhead * 100)
-}
-
-/**
- * Format time for display
- */
-export function formatTime(seconds: number): string {
-  if (isNaN(seconds) || seconds < 0) return "0:00"
+export const formatTime = (seconds: number): string => {
+  if (isNaN(seconds)) return "0:00"
 
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   const s = Math.floor(seconds % 60)
 
-  if (h > 0) {
-    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
-  }
+  return h > 0
+    ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+    : `${m}:${s.toString().padStart(2, "0")}`
+}
 
-  return `${m}:${s.toString().padStart(2, "0")}`
+/**
+ * Calculates the buffer health percentage based on loaded seconds and playback position
+ *
+ * @param loadedSeconds - The number of seconds loaded in buffer
+ * @param playedSeconds - The current playback position in seconds
+ * @returns A buffer health percentage between 0 and 100
+ */
+export const calculateBufferHealth = (loadedSeconds: number, playedSeconds: number): number => {
+  if (loadedSeconds <= playedSeconds) return 0
+
+  // Calculate buffer ahead (seconds ahead that are loaded)
+  const bufferAhead = loadedSeconds - playedSeconds
+
+  // Buffer health increases up to 30 seconds ahead (considered 100% healthy)
+  const maxBufferAhead = 30
+  const bufferHealth = Math.min((bufferAhead / maxBufferAhead) * 100, 100)
+
+  return Math.round(bufferHealth)
 }
 
 /**
