@@ -5,11 +5,6 @@ import { useSession, signOut } from "next-auth/react"
 import { useDispatch } from "react-redux"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { AppDispatch } from "@/store"
-import { logout as reduxLogout } from "@/store/slices/authSlice"
-import { resetState as resetSubscriptionState } from "@/store/slices/subscription-slice"
-import { resetState as resetUserState } from "@/store/slices/userSlice"
-import { resetState as resetCourseState } from "@/store/slices/courseSlice"
-import { resetState as resetQuizState } from "@/store/slices/quizSlice"
 
 export interface AuthHookResult {
   isAuthenticated: boolean
