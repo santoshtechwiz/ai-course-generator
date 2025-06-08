@@ -1,97 +1,111 @@
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import { useSessionService } from "@/hooks/useSessionService";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
+  selectQuizId,
+  selectQuizError,
+  selectQuizStatus,
   selectIsQuizComplete,
   selectQuizResults,
-  selectQuizStatus,
-  selectQuizError,
-  selectQuizId,
 } from "@/store/slices/quizSlice";
-import { selectIsAuthenticated } from "@/store/slices/authSlice";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useSessionService } from "@/hooks/useSessionService";
+import { isReturningFromAuth } from "@/store/utils/authUtils";
 
-/**
- * Centralized auth guard for quiz results.
- * - Checks authentication and quiz completion.
- * - Redirects to login if unauthenticated.
- * - Restricts access if quiz is not completed or results unavailable.
- * - Works for all quiz types.
- */
-export interface QuizAuthGuardProps {
+interface QuizAuthGuardProps {
+  quizId: string;
   children: React.ReactNode;
-  // Optionally override the quizId/slug (otherwise uses quizSlice)
-  quizId?: string;
-  // Optionally override the redirect path (default: /auth/signin)
-  loginRedirectPath?: string;
-  // Optionally show a custom denied message
-  deniedMessage?: React.ReactNode;
+  requireAuth?: boolean;
 }
 
-export const QuizAuthGuard: React.FC<QuizAuthGuardProps> = ({
-  children,
+export default function QuizAuthGuard({
   quizId,
-  loginRedirectPath = "/auth/signin",
-  deniedMessage = "You are not authorized to view these quiz results.",
-}) => {
+  children,
+  requireAuth = false,
+}: QuizAuthGuardProps) {
   const router = useRouter();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const isQuizComplete = useSelector(selectIsQuizComplete);
-  const quizResults = useSelector(selectQuizResults);
-  const quizStatus = useSelector(selectQuizStatus);
-  const quizError = useSelector(selectQuizError);
-  const quizSlug = useSelector(selectQuizId);
+  const searchParams = useSearchParams();
+  const { data: session, status: authStatus } = useSession();
   const { saveAuthRedirectState } = useSessionService();
 
-  // Determine if user can view results
-  const canViewResults = useMemo(() => {
-    // Must be authenticated and quiz must be completed and results available
-    return (
-      isAuthenticated &&
-      isQuizComplete &&
-      !!quizResults &&
-      !quizError &&
-      quizStatus !== "failed"
-    );
-  }, [isAuthenticated, isQuizComplete, quizResults, quizError, quizStatus]);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
 
-  // If not authenticated, redirect to login and save intended state
+  const isCompleted = useSelector(selectIsQuizComplete);
+  const quizResults = useSelector(selectQuizResults);
+  const quizStatus = useSelector(selectQuizStatus);
+  const error = useSelector(selectQuizError);
+
+  const isAuthenticated = authStatus === "authenticated";
+  const isAuthLoading = authStatus === "loading";
+  const returning = isReturningFromAuth(searchParams);
+
+  // Handle authentication flow
   useEffect(() => {
-    if (isAuthenticated === false) {
-      // Save intended state for redirect after login
+    // Skip if we're already processing auth or no auth is required
+    if (isProcessingAuth || !requireAuth) return;
+
+    // If user is not authenticated and auth is required
+    if (!isAuthLoading && !isAuthenticated && requireAuth) {
+      setIsProcessingAuth(true);
+
+      // Save current state for restoration after auth
       saveAuthRedirectState({
-        returnPath: typeof window !== "undefined" ? window.location.pathname : "",
+        returnPath: window.location.pathname,
+        slug: quizId,
         quizState: {
-          slug: quizId || quizSlug,
-          // Optionally add more quiz state if needed
+          slug: quizId,
+          currentState: {
+            // Include relevant quiz state here
+            isCompleted,
+            showResults: !!quizResults,
+            results: quizResults,
+          },
         },
       });
-      router.replace(loginRedirectPath);
-    }
-  }, [isAuthenticated, router, loginRedirectPath, saveAuthRedirectState, quizId, quizSlug]);
 
-  // If authenticated but not allowed to view results, show denied
-  if (isAuthenticated && !canViewResults) {
+      // Redirect to sign in with callback to current URL
+      const currentPath = window.location.pathname;
+      const encodedPath = encodeURIComponent(currentPath);
+      router.push(`/auth/signin?callbackUrl=${encodedPath}`);
+      return;
+    }
+
+    // Reset processing flag when auth status changes
+    setIsProcessingAuth(false);
+  }, [
+    isAuthenticated,
+    isAuthLoading,
+    requireAuth,
+    isProcessingAuth,
+    saveAuthRedirectState,
+    quizId,
+    router,
+    isCompleted,
+    quizResults,
+  ]);
+
+  // Show loading state if auth is being checked
+  if (requireAuth && isAuthLoading) {
+    return null; // Return nothing to avoid flickering
+  }
+
+  // If we have an error that's not auth related
+  if (error && quizStatus === "failed" && !isAuthLoading) {
     return (
-      <div>
-        {deniedMessage}
-        {quizError && (
-          <div style={{ color: "red", marginTop: 8 }}>{quizError}</div>
-        )}
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <h2 className="text-xl font-bold mb-4">Error</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button onClick={() => router.push("/dashboard/quizzes")}>
+            Back to Quizzes
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
-  // If loading or checking auth, don't render children yet
-  if (isAuthenticated === false || !canViewResults) {
-    return null;
-  }
-
-  // Authorized: render children
-  return <>{children}</>;
-};
-
-export default QuizAuthGuard;
-
-// No changes needed in this file for the reported error.
-// The error is in ./store/slices/quizSlice.ts, not in QuizAuthGuard.ts.
+  // If all checks pass, render children
+  return children;
+}

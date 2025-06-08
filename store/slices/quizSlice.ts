@@ -2,6 +2,15 @@ import { createSlice, createAsyncThunk, type PayloadAction, createSelector } fro
 import type { RootState } from "../index"
 import { QuizType } from "@/types/quiz"
 
+// Export API endpoints for consistency across the app
+export const API_ENDPOINTS = {
+  mcq: '/api/quizzes/mcq',
+  code: '/api/quizzes/code',
+  blanks: '/api/quizzes/blanks',
+  openended: '/api/quizzes/openended',
+  flashcard: '/api/quizzes/flashcard',
+};
+
 export interface QuizState {
   quizId: string | null  // Keep for database compatibility
   quizType: QuizType | null  // Keep for database compatibility
@@ -661,7 +670,18 @@ const quizSlice = createSlice({
       state.sessionId = action.payload
     },
 
-    resetSaveStatus: (state) => {
+    setQuizLoading(state) {
+      state.status = "loading";
+      state.error = null;
+    },
+    setQuizSuccess(state) {
+      state.status = "succeeded";
+    },
+    setQuizFailed(state, action: PayloadAction<string>) {
+      state.status = "failed";
+      state.error = action.payload;
+    },
+    resetSaveStatus(state) {
       state.isSaving = false;
       state.isSaved = false;
       state.saveError = null;

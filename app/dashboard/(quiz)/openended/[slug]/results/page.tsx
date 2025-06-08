@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 
-import { NonAuthenticatedUserSignInPrompt } from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
+
 import { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
 import OpenEndedQuizResults from "../../components/QuizResultsOpenEnded"
@@ -64,7 +64,7 @@ export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
   }, [authStatus, quizResults, generatedResults, answers, router, slug])
 
   const handleRetakeQuiz = () => {
-    router.push(`/dashboard/openended/${slug}?reset=true`)
+    router.push(`/dashboard/openended/${slug}`)
   }
 
   const handleSignIn = async () => {

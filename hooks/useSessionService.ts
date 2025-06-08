@@ -11,6 +11,18 @@ import {
   setQuizResults
 } from "@/store/slices/quizSlice"
 import { selectPendingQuiz } from "@/store/slices/quizSlice"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { 
+  saveAuthRedirectState as saveAuthRedirectStateUtil, 
+  getAuthRedirectState, 
+  clearAuthRedirectState as clearAuthRedirectStateUtil,
+  type AuthRedirectState
+} from "@/store/utils/authUtils"
+
+// Session storage keys
+const QUIZ_RESULTS_PREFIX = "quiz_results_";
 
 export type QuizState = {
   slug: string
@@ -30,10 +42,11 @@ export type AuthRedirectState = {
 
 export function useSessionService() {
   const dispatch = useDispatch<AppDispatch>()
-  
-  // Get pending quiz from Redux state
+  const router = useRouter()
   const pendingQuiz = useSelector(selectPendingQuiz)
+  const { data: session, status: authStatus } = useSession()
 
+  // Get pending quiz from Redux state
   // Check sessionStorage on mount for any pending quiz state
   useEffect(() => {
     try {
@@ -67,166 +80,105 @@ export function useSessionService() {
     };
   }, [dispatch, pendingQuiz]);
 
-  const saveAuthRedirectState = useCallback(
-    (state: AuthRedirectState) => {
-      // Used by QuizAuthGuard to save intended path for redirect after login
-      try {
-        const { returnPath } = state
-        const quizState = state.quizState || {}
-        const { slug = "", quizData = null, currentState = {} } = quizState
-
-        // Validate required data
-        if (!slug || typeof slug !== "string") {
-          console.warn("saveAuthRedirectState: Invalid slug provided")
-          return
-        }
-
-        // Create a pendingQuiz with proper structure
-        const pendingQuizData = {
-          slug,
-          quizData,
-          currentState: {
-            ...currentState,
-            showResults: currentState.showResults || false,
-            results: currentState.results || null,
-            answers: currentState.answers || {},
-          },
-        }
-
-        // Save to Redux store
-        dispatch(setPendingQuiz(pendingQuizData))
-
-        // For results pages, explicitly save the results to ensure they're available immediately
-        if (currentState.showResults && currentState.results) {
-          dispatch(setQuizResults(currentState.results))
-        }
-
-        // Save in sessionStorage and localStorage for redundancy (no fromAuth or ?fromAuth=true)
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("callbackUrl", returnPath)
-          sessionStorage.setItem("pendingQuiz", JSON.stringify(pendingQuizData))
-          sessionStorage.setItem("authRedirectPath", returnPath)
-          try {
-            localStorage.setItem("pendingQuiz", JSON.stringify(pendingQuizData))
-            localStorage.setItem("authRedirectPath", returnPath)
-          } catch (e) {
-            // Ignore localStorage errors
-          }
-        }
-      } catch (error) {
-        console.error("Failed to save auth redirect state:", error)
-      }
-    },
-    [dispatch],
-  )
-
-  const restoreAuthRedirectState = useCallback(() => {
-    try {
-      // Get from Redux state first
-      let quizToRestore = pendingQuiz;
-      let redirectPath = null;
-
-      // If not in Redux, try sessionStorage
-      if (!quizToRestore && typeof window !== "undefined") {
-        const stored = sessionStorage.getItem("pendingQuiz")
-        if (stored) {
-          try {
-            quizToRestore = JSON.parse(stored)
-            redirectPath = sessionStorage.getItem("authRedirectPath");
-          } catch (e) {
-            console.error("Failed to parse stored quiz:", e)
-          }
-        }
-        // If still not found, try localStorage
-        if (!quizToRestore) {
-          const lsStored = localStorage.getItem("pendingQuiz")
-          if (lsStored) {
-            try {
-              quizToRestore = JSON.parse(lsStored)
-              redirectPath = localStorage.getItem("authRedirectPath");
-            } catch (e) {
-              console.error("Failed to parse localStorage quiz:", e)
-            }
-          }
-        }
-      }
-
-      if (quizToRestore?.slug) {
-        // Standard restoration
-        dispatch(hydrateQuiz(quizToRestore))
-
-        // Explicitly set results if they were stored
-        if (quizToRestore.currentState?.results) {
-          dispatch(setQuizResults(quizToRestore.currentState.results))
-        }
-
-        // Clean up storage
-        if (typeof window !== "undefined") {
-          sessionStorage.removeItem("callbackUrl")
-          sessionStorage.removeItem("pendingQuiz")
-          sessionStorage.removeItem("authRedirectPath")
-          localStorage.removeItem("pendingQuiz")
-          localStorage.removeItem("authRedirectPath")
-        }
-
-        return {
-          quizState: quizToRestore,
-          redirectPath
-        };
-      }
-
-      return null;
-    } catch (e) {
-      console.error("Failed to restore redirect state:", e);
-      return null;
+  // Save authentication redirect state with proper typing
+  const saveAuthRedirectState = useCallback((state: AuthRedirectState) => {
+    if (!state.returnPath) {
+      console.error("Missing returnPath in auth redirect state");
+      return;
     }
-  }, [dispatch, pendingQuiz]);
+    
+    // Save to session storage via the utility function
+    import("@/store/utils/authUtils").then(({ saveAuthRedirectState }) => {
+      saveAuthRedirectState(state);
+    });
+  }, []);
 
-  const clearAuthState = useCallback(() => {
-    try {
-      dispatch(resetPendingQuiz());
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem("callbackUrl");
-        sessionStorage.removeItem("pendingQuiz");
-        sessionStorage.removeItem("authRedirectPath");
-        
-        // Clear results-specific flags
-        const keys = Object.keys(sessionStorage);
-        keys.forEach(key => {
-          if (key.endsWith('_auth_for_results') || key.endsWith('_auth_restored')) {
-            sessionStorage.removeItem(key);
-          }
-        });
-        
-        try {
-          localStorage.removeItem("pendingQuiz");
-          localStorage.removeItem("authRedirectPath");
-        } catch (e) {
-          // Ignore localStorage errors
-        }
+  // Restore auth redirect state and dispatch appropriate actions
+  const restoreAuthRedirectState = useCallback((): AuthRedirectState | null => {
+    const state = getAuthRedirectState();
+    if (!state) return null;
+    
+    // If we have quiz state to restore
+    if (state.quizState) {
+      // Reset current quiz state before hydrating with saved state
+      dispatch(resetQuiz());
+      
+      // Hydrate quiz with saved state
+      if (state.quizState.slug) {
+        dispatch(hydrateQuiz({
+          slug: state.quizState.slug,
+          quizData: state.quizState.quizData,
+          currentState: state.quizState.currentState
+        }));
       }
-    } catch (error) {
-      console.warn("Failed to clear auth state:", error);
+      
+      // Set quiz results if they exist
+      if (state.quizState.currentState?.results) {
+        dispatch(setQuizResults(state.quizState.currentState.results));
+      }
     }
+    
+    return state;
   }, [dispatch]);
 
-  const clearQuizResults = useCallback(() => {
-    // Reset quiz results but keep quiz data
-    dispatch(resetQuiz());
+  // Clear auth state from session storage and Redux
+  const clearAuthState = useCallback(() => {
+    clearAuthRedirectStateUtil();
+    dispatch(resetPendingQuiz());
+  }, [dispatch]);
+
+  // Store quiz results in session storage
+  const storeResults = useCallback((quizId: string, results: any) => {
+    if (typeof window === 'undefined' || !sessionStorage) return;
     
-    // Also clean up sessionStorage
-    if (typeof window !== "undefined") {
-      const keys = Object.keys(sessionStorage);
-      keys.forEach(key => {
-        if (key.startsWith('quiz_results_')) {
+    try {
+      sessionStorage.setItem(
+        `${QUIZ_RESULTS_PREFIX}${quizId}`, 
+        JSON.stringify(results)
+      );
+    } catch (error) {
+      console.error("Failed to store quiz results:", error);
+    }
+  }, []);
+
+  // Get stored quiz results from session storage
+  const getStoredResults = useCallback((quizId: string) => {
+    if (typeof window === 'undefined' || !sessionStorage) return null;
+    
+    try {
+      const storedResults = sessionStorage.getItem(`${QUIZ_RESULTS_PREFIX}${quizId}`);
+      return storedResults ? JSON.parse(storedResults) : null;
+    } catch (error) {
+      console.error("Failed to get stored quiz results:", error);
+      return null;
+    }
+  }, []);
+
+  // Cleanup all quiz-related session data
+  const cleanupSessionData = useCallback(() => {
+    if (typeof window === 'undefined' || !sessionStorage) return;
+    
+    try {
+      // Clear any auth redirect state
+      clearAuthRedirectStateUtil();
+      
+      // Clean up all quiz-related sessions
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith(QUIZ_RESULTS_PREFIX) || key.startsWith("quiz_session_")) {
           sessionStorage.removeItem(key);
         }
       });
+      
+      // Reset redux state
+      dispatch(resetQuiz());
+      dispatch(resetPendingQuiz());
+    } catch (error) {
+      console.error("Failed to cleanup session data:", error);
     }
   }, [dispatch]);
 
   // New function to get stored results from sessionStorage
-  const getStoredResults = useCallback((slug: string) => {
+  const getStoredResultsLegacy = useCallback((slug: string) => {
     if (typeof window === "undefined") return null;
     
     try {
@@ -256,7 +208,7 @@ export function useSessionService() {
   }, []);
 
   // New function to store results in sessionStorage
-  const storeResults = useCallback((slug: string, results: any) => {
+  const storeResultsLegacy = useCallback((slug: string, results: any) => {
     if (typeof window === "undefined") return;
     
     try {
@@ -287,16 +239,15 @@ export function useSessionService() {
     } catch (error) {
       console.warn("Failed to clear auth redirect state:", error);
     }
-  }
-  , []);
+  }, []);
 
   return {
     saveAuthRedirectState,
     restoreAuthRedirectState,
     clearAuthState,
-    clearQuizResults,
-    getStoredResults,
     storeResults,
-    clearAuthRedirectState, // Add the missing function to the returned object
+    getStoredResults,
+    cleanupSessionData,
+    pendingQuiz
   }
 }

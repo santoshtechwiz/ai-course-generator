@@ -6,9 +6,37 @@ const SESSION_PREFIX = "quiz_session_";
 const RESULTS_PREFIX = "quiz_results_";
 const DEBOUNCE_DELAY = 300;
 const MAX_QUEUE_BATCH = 5;
+const AUTH_REDIRECT_STATE_KEY = "authRedirectState";
 
 // ========== Types ==========
 export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended' | 'flashcard';
+
+export interface AuthRedirectState {
+  returnPath: string;
+  slug?: string;
+  quizId?: string | number;
+  type?: QuizType;
+  answers?: Record<string, any>;
+  currentQuestionIndex?: number;
+  tempResults?: any;
+  quizState?: {
+    slug?: string;
+    quizData?: any;
+    currentState?: {
+      answers?: Record<string, any>;
+      currentQuestionIndex?: number;
+      isCompleted?: boolean;
+      showResults?: boolean;
+      results?: any;
+    };
+  };
+}
+
+interface QuizSessionData {
+  quizId: string;
+  answers: Record<string, any>;
+  lastSaved: number;
+}
 
 interface AuthRedirectParams {
   slug: string;
@@ -17,12 +45,6 @@ interface AuthRedirectParams {
   answers: Record<string, any>;
   currentQuestionIndex: number;
   tempResults?: any;
-}
-
-interface QuizSessionData {
-  quizId: string;
-  answers: Record<string, any>;
-  lastSaved: number;
 }
 
 // ========== Mutex for Storage ==========
@@ -69,15 +91,20 @@ export const handleAuthRedirect = (
   dispatch: AppDispatch,
   params: AuthRedirectParams
 ) => {
-  saveAuthRedirectState({
+  // Create a properly structured AuthRedirectState
+  const redirectState: AuthRedirectState = {
+    returnPath: `/dashboard/${params.type}/${params.slug}`,
     slug: params.slug,
     quizId: params.quizId.toString(),
     type: params.type,
     answers: params.answers,
     currentQuestionIndex: params.currentQuestionIndex,
     tempResults: params.tempResults
-  });
+  };
+  
+  saveAuthRedirectState(redirectState);
 
+  // Use a string URL format for the callback
   return signIn(undefined, {
     callbackUrl: `/dashboard/${params.type}/${params.slug}?fromAuth=true`,
   });
@@ -124,9 +151,12 @@ export const saveQuizSession = (
           answers,
           lastSaved: Date.now()
         };
-        sessionStorage.setItem(key, JSON.stringify(data));
+        // Check if storage is available
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          sessionStorage.setItem(key, JSON.stringify(data));
+        }
       } catch (err) {
-        console.error("Failed to save session:", err);
+        console.error(`Failed to save quiz session (${key}):`, err);
       }
     });
     delete debounceTimers[key];
@@ -191,13 +221,45 @@ export const setupAutoSave = (
   return () => clearInterval(intervalId);
 };
 
-// ========== Stub: Implement this based on your Redux slice ==========
-const saveAuthRedirectState = (state: any) => {
+// ========== Auth Redirect State Management ==========
+
+export const saveAuthRedirectState = (state: AuthRedirectState) => {
   if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
     try {
-      sessionStorage.setItem('authRedirectState', JSON.stringify(state));
+      // Check if the current state is different from what we're about to save
+      const currentStateStr = sessionStorage.getItem(AUTH_REDIRECT_STATE_KEY);
+      const newStateStr = JSON.stringify(state);
+      
+      // Only update storage if the state is different
+      if (currentStateStr !== newStateStr) {
+        sessionStorage.setItem(AUTH_REDIRECT_STATE_KEY, newStateStr);
+      }
     } catch (error) {
       console.error("Failed to save auth redirect state:", error);
+    }
+  }
+};
+
+export const getAuthRedirectState = (): AuthRedirectState | null => {
+  if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+    try {
+      const stateStr = sessionStorage.getItem(AUTH_REDIRECT_STATE_KEY);
+      if (!stateStr) return null;
+      return JSON.parse(stateStr);
+    } catch (error) {
+      console.error("Failed to retrieve auth redirect state:", error);
+      return null;
+    }
+  }
+  return null;
+};
+
+export const clearAuthRedirectState = () => {
+  if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.removeItem(AUTH_REDIRECT_STATE_KEY);
+    } catch (error) {
+      console.error("Failed to clear auth redirect state:", error);
     }
   }
 };

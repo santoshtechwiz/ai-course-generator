@@ -16,17 +16,18 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 
-import { NonAuthenticatedUserSignInPrompt } from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
+
 import { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
 import McqQuizResult from "../../components/McqQuizResult"
+import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
 }
 
 export default function McqResultsPage({ params }: ResultsPageProps) {
-  const slug = params instanceof Promise ? use(params) : params.slug
+  const slug = params instanceof Promise ? use(params).slug : typeof params === "object" ? params.slug : params
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { data: session, status: authStatus } = useSession()
@@ -64,7 +65,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   }, [authStatus, quizResults, generatedResults, answers, router, slug])
 
   const handleRetakeQuiz = () => {
-    router.push(`/dashboard/mcq/${slug}?reset=true`)
+    router.push(`/dashboard/mcq/${slug}`)
   }
 
   const handleSignIn = async () => {
@@ -104,13 +105,13 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
         <div className="container max-w-4xl py-6">
           <NonAuthenticatedUserSignInPrompt
             onSignIn={handleSignIn}
-            resultData={resultData}
+            previewData={resultData}
             handleRetake={handleRetakeQuiz}
           />
           <div className="mt-6 relative opacity-50 pointer-events-none select-none filter blur-sm">
             <Card>
               <CardContent className="p-4 sm:p-6">
-                <McqQuizResult result={resultData} isAuthenticated={false} slug={slug} onRetake={handleRetakeQuiz} />
+                <McqQuizResult result={resultData}  slug={slug} onRetake={handleRetakeQuiz} />
                 <div className="absolute inset-0 flex items-center justify-center" />
               </CardContent>
             </Card>
@@ -138,7 +139,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   // ✅ MISSING CASE FIXED: Authenticated user + results
   return (
     <div className="container max-w-4xl py-10">
-      <QuizResult quizType="mcq" result={resultData} slug={slug} onRetake={handleRetakeQuiz} />
+      <QuizResult quizType="mcq" result={resultData} slug={typeof slug === "string" ? slug : undefined} onRetake={handleRetakeQuiz} />
     </div>
   )
 }

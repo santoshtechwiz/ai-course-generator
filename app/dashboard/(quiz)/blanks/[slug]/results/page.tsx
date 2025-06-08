@@ -16,8 +16,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 import BlankQuizResults from "../../components/BlankQuizResults"
-import { NonAuthenticatedUserSignInPrompt } from "../../../components/EnhancedNonAuthenticatedUserSignInPrompt"
-import { useSessionService } from "@/hooks/useSessionService"
+simport { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
 
 interface ResultsPageProps {
