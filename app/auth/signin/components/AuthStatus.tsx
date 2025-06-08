@@ -8,9 +8,14 @@ import { useAuth } from "@/providers/unified-auth-provider"
 interface AuthStatusProps {
   children: React.ReactNode
   loadingComponent?: React.ReactNode
+  minLoadingTime?: number
 }
 
-export function AuthStatus({ children, loadingComponent }: AuthStatusProps) {
+export function AuthStatus({ 
+  children, 
+  loadingComponent,
+  minLoadingTime = 300 
+}: AuthStatusProps) {
   const { isLoading } = useAuth()
   const [isInitializing, setIsInitializing] = useState(true)
 
@@ -18,9 +23,9 @@ export function AuthStatus({ children, loadingComponent }: AuthStatusProps) {
     // Add a small delay to ensure UI consistency
     const timer = setTimeout(() => {
       setIsInitializing(false)
-    }, 300)
+    }, minLoadingTime)
     return () => clearTimeout(timer)
-  }, [])
+  }, [minLoadingTime])
 
   if (isInitializing || isLoading) {
     return (

@@ -169,7 +169,7 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
     (progressState: { played: number; playedSeconds: number }) => {
       // Show logo animation when video is about to end (last 5 seconds)
       if (progressState.playedSeconds > 0 && currentChapter) {
-        const timeRemaining = (currentChapter.duration || 300) - progressState.playedSeconds
+        const timeRemaining = (Number(currentChapter.duration) || 300) - progressState.playedSeconds
         if (timeRemaining <= 5 && timeRemaining > 0 && !videoEnding) {
           setVideoEnding(true)
         }
@@ -362,7 +362,7 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         <span>{currentChapter.duration || "5 min"}</span>
-                        {currentChapter.isFree && <Badge variant="secondary">Free</Badge>}
+                        {currentChapter && <Badge variant="secondary">Free</Badge>}
                       </div>
                     </div>
                   )}
@@ -384,8 +384,8 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
                 course={course}
                 currentChapter={currentChapter}
                 isAuthenticated={!!session}
-                isPremium={user?.planId === "premium"}
-                isAdmin={user?.role === "admin"}
+                isPremium={user?.subscription?.planId === "premium"}
+                isAdmin={user?.isAdmin}
               />
             </div>
           </div>

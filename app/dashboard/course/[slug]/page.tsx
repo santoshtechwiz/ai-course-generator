@@ -7,9 +7,8 @@ import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { JsonLd } from "@/app/schema/components/json-ld"
 import { extractKeywords, generateMetaDescription } from "@/lib/seo-utils"
-import CoursePage from "./components/CoursePage"
 import type { FullCourseType } from "@/app/types/types"
-
+import MainContent from "./components/MainContent"
 function LoadingSkeleton() {
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4 animate-pulse">
@@ -109,7 +108,7 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
       course.image ||
       `/api/og?title=${encodeURIComponent(course.title)}&description=${encodeURIComponent("Interactive Programming Course")}`,
     ogType: "article",
-   
+
   })
 }
 
@@ -125,9 +124,9 @@ export default async function Page({ params }: CoursePageParams) {
     <Suspense fallback={<LoadingSkeleton />}>
       <JsonLd type="course" data={course} />
 
-      <div className="animate-fade-in">
-        <CoursePage course={course} />
-      </div>
+      <main className="flex-1 h-full px-4 py-6 md:px-8 lg:px-16 pb-24">
+        <MainContent course={course} />
+      </main>
     </Suspense>
   )
 }

@@ -9,18 +9,23 @@ import { motion } from "framer-motion"
 import { signIn } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 
-interface AuthButtonProps {
+export interface AuthButtonProps {
   provider: string
   logo: string | StaticImageData
   text: string
   callbackUrl: string
+  onClick?: (e: React.MouseEvent) => Promise<void>
 }
 
-export function AuthButton({ provider, logo, text, callbackUrl }: AuthButtonProps) {
+export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthButtonProps) {
   const [isButtonLoading, setIsButtonLoading] = useState(false)
   const { toast } = useToast()
 
   const handleClick = async (e: React.MouseEvent) => {
+    if (onClick) {
+      return onClick(e)
+    }
+
     e.preventDefault()
     e.stopPropagation()
 

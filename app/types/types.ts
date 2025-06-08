@@ -231,11 +231,13 @@ export interface FullChapterType {
   id: number;
   title: string;
   description?: string;
-  videoId: string; // Make this required
+  videoId: string | null; // Allow null for videoId
   order?: number;
   summary?: string | null;
   questions?: CourseQuestion[];
   name?: string; // Legacy support
+  isFree?: boolean; // Added property - derived from context
+  duration?: number | string; // Added property - calculated or provided
 }
 
 export interface CourseUnitType {
@@ -269,14 +271,17 @@ export interface FullChapter {
   summaryStatus: string | null
   videoStatus: string | null
   questions: CourseQuestion[]
+  isFree?: boolean; // Added property
+  duration?: number | string; // Added property
 }
 
 // Course question with properly typed options
 export interface CourseQuestion {
-  id: number
+  id: number | string // Accept both number and string IDs
   question: string
   answer: string
-  options: string[]
+  options: string[] | string // Allow string (for JSON parsing) or string array
+  explanation?: string
 }
 
 // User progress tracking for courses
