@@ -30,10 +30,13 @@ export const AnimatedCourseAILogo: React.FC<AnimatedCourseAILogoProps> = ({
         setAnimationPhase("slide")
       }, 2000)
 
-      // After another 1 second, move to corner
+      // After another 1 second, move to corner and complete
       const cornerTimer = setTimeout(() => {
         setAnimationPhase("corner")
-        onAnimationComplete?.()
+        // Call completion after a brief delay
+        setTimeout(() => {
+          onAnimationComplete?.()
+        }, 500)
       }, 3000)
 
       return () => {
@@ -52,24 +55,24 @@ export const AnimatedCourseAILogo: React.FC<AnimatedCourseAILogoProps> = ({
           initial: { opacity: 0, scale: 0.5, x: 0, y: 0 },
           animate: { opacity: 1, scale: 1.2, x: 0, y: 0 },
           transition: { duration: 0.8, ease: "easeOut" },
-          className: "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
+          className: "flex items-center justify-center w-full h-full",
         }
       case "slide":
         return {
           animate: { opacity: 1, scale: 1, x: "200px", y: "-200px" },
           transition: { duration: 1, ease: "easeInOut" },
-          className: "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
+          className: "flex items-center justify-center w-full h-full",
         }
       case "corner":
         return {
           animate: { opacity: 0.8, scale: 0.8, x: 0, y: 0 },
           transition: { duration: 0.5, ease: "easeOut" },
-          className: "top-4 right-4",
+          className: "absolute top-4 right-4",
         }
       default:
         return {
           animate: { opacity: 0.6, scale: 0.8, x: 0, y: 0 },
-          className: "top-4 right-4",
+          className: "absolute top-4 right-4",
         }
     }
   }
@@ -82,7 +85,7 @@ export const AnimatedCourseAILogo: React.FC<AnimatedCourseAILogoProps> = ({
         <motion.div
           {...animationProps}
           exit={{ opacity: 0, scale: 0.5 }}
-          className={cn("absolute z-20 pointer-events-none select-none", animationProps.className, className)}
+          className={cn(animationProps.className, className)}
         >
           <div
             className={cn(

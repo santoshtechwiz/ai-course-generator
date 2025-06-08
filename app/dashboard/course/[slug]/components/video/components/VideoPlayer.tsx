@@ -56,6 +56,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isHovering, setIsHovering] = useState(false)
   const [showControlsState, setShowControlsState] = useState(showControls)
+  const [hasTriggeredAutoAdvance, setHasTriggeredAutoAdvance] = useState(false)
 
   // Check if user can play video (authenticated or first free video)
   useEffect(() => {
@@ -118,15 +119,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
         })
       }
-      
+
       // Pass the player reference to the parent component
       if (onPlayerReady) {
-        onPlayerReady(playerRef);
+        onPlayerReady(playerRef)
       }
     }
 
     handlers.onReady()
-  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady]);
+  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady])
 
   // Enhanced play handler with authentication check
   const handlePlayClick = useCallback(() => {
@@ -222,13 +223,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const container = containerRef.current
     if (container) {
       container.addEventListener("mousemove", handleMouseMove)
-      container.addEventListener("click", handleMouseMove)
     }
 
     return () => {
       if (container) {
         container.removeEventListener("mousemove", handleMouseMove)
-        container.removeEventListener("click", handleMouseMove)
       }
 
       if (controlsTimeoutRef.current) {
@@ -237,24 +236,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [containerRef, state.playing, isHovering])
 
-  // Show logo overlay before video ends
+  // Show logo overlay and handle auto-advance in last 10 seconds
   useEffect(() => {
     if (state.lastPlayedTime > 0 && videoDuration > 0) {
       const timeRemaining = videoDuration - state.lastPlayedTime
 
-      // Show logo 5 seconds before video ends
-      if (timeRemaining <= 5 && timeRemaining > 0 && !videoEnding) {
+      // Show logo overlay in last 10 seconds
+      if (timeRemaining <= 10 && timeRemaining > 0 && !videoEnding) {
         setVideoEnding(true)
         setShowLogoOverlay(true)
       }
 
+      // Auto-advance to next video in last 3 seconds (only once)
+      if (timeRemaining <= 3 && timeRemaining > 0 && !hasTriggeredAutoAdvance && onNextVideo) {
+        setHasTriggeredAutoAdvance(true)
+        // Small delay to let logo animation play
+        setTimeout(() => {
+          onNextVideo()
+        }, 1000)
+      }
+
       // Reset for next video
-      if (state.lastPlayedTime < 2 && videoEnding) {
+      if (state.lastPlayedTime < 2 && (videoEnding || hasTriggeredAutoAdvance)) {
         setVideoEnding(false)
         setShowLogoOverlay(false)
+        setHasTriggeredAutoAdvance(false)
       }
     }
-  }, [state.lastPlayedTime, videoDuration, videoEnding])
+  }, [state.lastPlayedTime, videoDuration, videoEnding, hasTriggeredAutoAdvance, onNextVideo])
+
+  // Reset auto-advance trigger when video changes
+  useEffect(() => {
+    setHasTriggeredAutoAdvance(false)
+    setVideoEnding(false)
+    setShowLogoOverlay(false)
+  }, [videoId])
 
   // Authentication prompt overlay
   if (showAuthPrompt && !canPlayVideo) {
@@ -297,14 +313,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     )
   }
 
-  // Update AnimatedCourseAILogo component behavior
-  const handleLogoAnimationComplete = useCallback(() => {
-    setShowLogoOverlay(false)
-    if (videoEnding && onNextVideo) {
-      onNextVideo()
-    }
-  }, [videoEnding, onNextVideo])
-
   return (
     <div
       ref={containerRef}
@@ -340,7 +348,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             setIsLoadingDuration(false)
           }}
           config={{
-          
+            youtube: {
               playerVars: {
                 autoplay: 0, // Always start paused for better UX
                 modestbranding: 1,
@@ -354,7 +362,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 enablejsapi: 1,
                 origin: typeof window !== "undefined" ? window.location.origin : "",
                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
-             
+              },
             },
           }}
         />
@@ -367,22 +375,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       </div>
 
-      {/* Click overlay for play/pause */}
-      <div className="absolute inset-0 z-10 cursor-pointer" onClick={handlePlayClick} />
-
       {/* Loading overlay */}
-      {(state.isLoading || state.isBuffering || isLoadingDuration) && (
-        <VideoLoadingOverlay
-          isVisible={true}
-          message={
-            isLoadingDuration
-              ? "Loading video information..."
-              : state.isLoading
-                ? "Loading video player..."
-                : "Buffering..."
-          }
-        />
-      )}
+      {(state.isLoading || state.isBuffering || isLoadingDuration) && <VideoLoadingOverlay isVisible={true} />}
 
       {/* Error state */}
       {state.playerError && (
@@ -394,37 +388,46 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               handlers.onPlay()
             }
           }}
-          error={state.playerError}
         />
       )}
 
-      {/* Play button overlay when paused */}
+      {/* Play button overlay when paused - REMOVED click overlay that was blocking controls */}
       {!state.playing && playerReady && canPlayVideo && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+        <div
+          className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
+          style={{ pointerEvents: "none" }} // Ensure this doesn't block controls
+        >
           <div
             className="bg-black/60 backdrop-blur-sm rounded-full p-4 cursor-pointer pointer-events-auto hover:bg-black/80 transition-all duration-200 hover:scale-110"
             onClick={handlePlayClick}
+            style={{ pointerEvents: "auto" }} // Only the play button should be clickable
           >
             <Play className="h-12 w-12 text-white ml-1" />
           </div>
         </div>
       )}
 
-      {/* CourseAI Logo Overlay - Updated to cover entire video */}
-      <AnimatedCourseAILogo
-        show={showLogoOverlay}
-        videoEnding={videoEnding}
-        onAnimationComplete={handleLogoAnimationComplete}
-        className="absolute inset-0 z-50 flex items-center justify-center"
-      />
+      {/* CourseAI Logo Overlay - Full video coverage with proper z-index */}
+      {showLogoOverlay && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20">
+          <AnimatedCourseAILogo
+            show={showLogoOverlay}
+            videoEnding={videoEnding}
+            onAnimationComplete={() => {
+              setShowLogoOverlay(false)
+            }}
+          />
+        </div>
+      )}
 
-      {/* Custom controls */}
+      {/* Custom controls - Fixed z-index to be below logo overlay */}
       {canPlayVideo && (
         <div
           className={cn(
-            "absolute bottom-0 left-0 right-0 z-20 transition-opacity duration-300",
+            "absolute bottom-0 left-0 right-0 z-40 transition-opacity duration-300",
             !showControlsState && !isHovering && state.playing && "opacity-0",
           )}
+          style={{ pointerEvents: showControlsState || isHovering || !state.playing ? "auto" : "none" }}
         >
           <PlayerControls
             playing={state.playing}
@@ -455,13 +458,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onTheaterMode={handlers.handleTheaterModeToggle}
             onNextVideo={onNextVideo}
             onToggleBookmarkPanel={handleToggleBookmarkPanel}
+            autoPlayNext={state.autoPlayNext}
+            onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
           />
         </div>
       )}
 
       {/* Bookmark panel */}
       {showBookmarkPanel && isAuthenticated && (
-        <div className="absolute top-0 right-0 bottom-16 w-72 bg-black/80 backdrop-blur-sm z-20 border-l border-white/10">
+        <div className="absolute top-0 right-0 bottom-16 w-72 bg-black/80 backdrop-blur-sm z-30 border-l border-white/10">
           <BookmarkManager
             videoId={videoId}
             bookmarks={bookmarks}
