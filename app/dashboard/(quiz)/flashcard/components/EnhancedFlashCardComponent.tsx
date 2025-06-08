@@ -1,16 +1,12 @@
 "use client"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown, Settings, X } from "lucide-react"
-import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
+import { useAnimation, type PanInfo } from "framer-motion"
 import type { FlashCard } from "@/app/types/types"
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Switch } from "@/components/ui/switch"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAppDispatch, useAppSelector } from "@/store"
 
 // Import the flashcard slice actions
@@ -20,14 +16,10 @@ import {
   completeFlashCardQuiz,
   resetFlashCards,
   setCurrentFlashCard,
-  nextFlashCard,
-  setRequiresFlashCardAuth,
-  setPendingFlashCardAuth
-} from "@/store/slices/flashcardSlice"
+  nextFlashCard} from "@/store/slices/flashcardSlice"
 
 import FlashCardResults from "./FlashCardQuizResults"
-import EnhancedNonAuthenticatedUserSignInPrompt from "../../components/EnhancedNonAuthenticatedUserSignInPrompt"
-import { handleAuthRedirect, isReturningFromAuth, shouldShowResults } from "@/store/utils/authUtils"
+import { handleAuthRedirect, isReturningFromAuth } from "@/store/utils/authUtils"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]

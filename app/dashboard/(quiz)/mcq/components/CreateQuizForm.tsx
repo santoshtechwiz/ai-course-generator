@@ -19,7 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { ConfirmDialog } from "./ConfirmDialog"
+import { ConfirmDialog } from "../../components/ConfirmDialog"
 
 import { quizSchema } from "@/schema/schema"
 
@@ -28,9 +28,14 @@ import { cn } from "@/lib/tailwindUtils"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
-import PlanAwareButton from "./PlanAwareButton"
-import { SubscriptionSlider } from "../../subscription/components/SubscriptionSlider"
+import PlanAwareButton from "../../components/PlanAwareButton"
+import { SubscriptionSlider } from "../../../subscription/components/SubscriptionSlider"
 import useSubscription from "@/hooks/use-subscription"
+
+// Define proper TypeScript interfaces for better type safety
+interface Subscription {
+  subscriptionPlan?: string;
+}
 
 type QuizFormData = z.infer<typeof quizSchema> & {
   userType?: string
@@ -41,15 +46,19 @@ interface CreateQuizFormProps {
   isLoggedIn: boolean
   maxQuestions: number
   params?: QueryParams
+  quizType?: string
 }
 
-export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, params }: CreateQuizFormProps) {
+export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, params, quizType = "mcq" }: CreateQuizFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-  const { data: session, status } = useSession()
-  const { status: subscriptionStatus } = useSubscription()
+  const { data: session } = useSession()
+  const { data: subscriptionData } = useSubscription() as { 
+    data?: Subscription;
+    status?: string;
+  }
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title || "",
@@ -76,7 +85,8 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
     }
     if (params?.amount) {
       const amount = Number.parseInt(params.amount, 10)
-      if (amount !== maxQuestions) {
+      // Only update if the parsed amount is valid and different from maxQuestions
+      if (!isNaN(amount) && amount !== maxQuestions) {
         setValue("amount", Math.min(amount, maxQuestions))
       }
     }
@@ -89,39 +99,40 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
 
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      data.userType = subscriptionStatus?.subscriptionPlan
-      const response = await axios.post("/api/quizzes/game", data)
+      // Set userType safely from subscriptionData
+      data.userType = subscriptionData?.subscriptionPlan || "free"
+      // Add quizType to the request payload
+      const response = await axios.post(`/api/quizzes/${quizType || 'game'}`, data)
       return response.data
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating quiz:", error)
       toast({
         title: "Error",
-        description: "Failed to create quiz. Please try again.",
+        description: error?.response?.data?.message || "Failed to create quiz. Please try again.",
         variant: "destructive",
       })
     },
   })
 
-  // Implement consistent validation patterns
-  // Add this function near the top of the component
-  const validateQuizData = (data: QuizFormData): string | null => {
+  // Improved validation with better type safety
+  const validateQuizData = React.useCallback((data: QuizFormData): string | null => {
     if (!data.title || data.title.trim().length < 3) {
       return "Quiz title must be at least 3 characters"
     }
 
-    if (!data.amount || data.amount < 1 || data.amount > maxQuestions) {
+    if (!data.amount || typeof data.amount !== 'number' || data.amount < 1 || data.amount > maxQuestions) {
       return `Number of questions must be between 1 and ${maxQuestions}`
     }
 
-    if (!data.difficulty) {
-      return "Please select a difficulty level"
+    if (!data.difficulty || !['easy', 'medium', 'hard'].includes(data.difficulty)) {
+      return "Please select a valid difficulty level"
     }
 
     return null // No validation errors
-  }
+  }, [maxQuestions])
 
-  // Modify the onSubmit function to use the validation
+  // Fix onSubmit dependency array to include validateQuizData
   const onSubmit = React.useCallback(
     (data: QuizFormData) => {
       if (isLoading) return
@@ -138,37 +149,40 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
       }
 
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: "/dashboard/mcq" })
+        signIn("credentials", { callbackUrl: `/dashboard/${quizType || 'mcq'}` })
         return
       }
 
       setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn, maxQuestions, toast],
+    [isLoading, isLoggedIn, validateQuizData, toast, quizType],
   )
 
   const handleConfirm = React.useCallback(async () => {
     setIsConfirmDialogOpen(false)
 
     try {
-      const response = await createQuizMutation(watch())
+      const formValues = watch();
+      const response = await createQuizMutation(formValues)
       const userQuizId = response?.userQuizId
+      const slug = response?.slug
 
-      if (!userQuizId) throw new Error("userQuizId ID not found")
+      if (!userQuizId) throw new Error("Quiz ID not found")
 
       toast({
         title: "Success!",
         description: "Your quiz has been created.",
       })
 
-      router.push(`/dashboard/mcq/${response?.slug}`)
+      router.push(`/dashboard/${quizType || 'mcq'}/${slug}`)
     } catch (error) {
       // Error is handled in the mutation's onError callback
+      setIsLoading(false)
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router])
+  }, [createQuizMutation, watch, toast, router, quizType])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -179,6 +193,16 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
   }, [title, amount, difficulty, isValid])
 
   const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
+
+  // Fix credit percentage calculation to be type-safe and display actual credits
+  const creditPercentage = React.useMemo(() => {
+    if (typeof credits !== 'number' || isNaN(credits) || credits <= 0) {
+      return 0;
+    }
+    // Use max value as 100 to create better visual scale for progress bar
+    const maxCreditDisplay = 100;
+    return Math.min((credits / maxCreditDisplay) * 100, 100);
+  }, [credits]);
 
   return (
     <motion.div
@@ -198,7 +222,9 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
               <Brain className="w-8 h-8 text-primary" />
             </motion.div>
           </div>
-          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">Create Your Quiz</CardTitle>
+          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
+            Create Your {quizType?.charAt(0).toUpperCase() + quizType?.slice(1) || 'Quiz'}
+          </CardTitle>
           <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
             Customize your quiz settings and challenge yourself!
           </p>
@@ -344,9 +370,9 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
               transition={{ delay: 0.5 }}
             >
               <h3 className="text-base font-semibold mb-2">Available Credits</h3>
-              <Progress value={(credits / 10) * 100} className="h-2" />
+              <Progress value={creditPercentage} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? 's' : ''} remaining.
               </p>
             </motion.div>
 

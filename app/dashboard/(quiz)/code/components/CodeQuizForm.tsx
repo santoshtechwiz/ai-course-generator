@@ -74,6 +74,11 @@ const LANGUAGE_GROUPS = {
   Other: ["Ruby", "PHP"],
 }
 
+// Define proper type for subscription data
+interface Subscription {
+  subscriptionPlan?: string;
+}
+
 export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params }: CodeQuizFormProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -82,7 +87,10 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   const { data: session, status } = useSession()
 
   // Type the status
-  const { data: subscriptionData, status: subStatus } = useSubscription()
+  const { data: subscriptionData } = useSubscription() as { 
+    data?: Subscription;
+    status?: string;
+  }
 
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
 
@@ -227,6 +235,16 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
     }
     return LANGUAGE_GROUPS[selectedLanguageGroup as keyof typeof LANGUAGE_GROUPS] || PROGRAMMING_LANGUAGES
   }, [selectedLanguageGroup])
+
+  // Fix credit percentage calculation to be type-safe and display actual credits
+  const creditPercentage = React.useMemo(() => {
+    if (typeof credits !== 'number' || isNaN(credits) || credits <= 0) {
+      return 0;
+    }
+    // Use max value as 100 to create better visual scale for progress bar
+    const maxCreditDisplay = 100;
+    return Math.min((credits / maxCreditDisplay) * 100, 100);
+  }, [credits]);
 
   return (
     <motion.div
@@ -485,9 +503,9 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
                 <Sparkles className="h-4 w-4 text-primary" />
                 Available Credits
               </h3>
-              <Progress value={(credits / 10) * 100} className="h-2" />
+              <Progress value={creditPercentage} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? 's' : ''} remaining.
               </p>
             </motion.div>
 
