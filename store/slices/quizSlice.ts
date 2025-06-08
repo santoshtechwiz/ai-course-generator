@@ -677,6 +677,11 @@ const quizSlice = createSlice({
       state.quizType = type as QuizType;
       state.status = "succeeded";
     },
+
+    // Add a reset state action
+    resetState: () => {
+      return initialState
+    }
   },
 
   extraReducers: (builder) => {
@@ -857,6 +862,7 @@ export const {
   setSessionId,
   resetSaveStatus,
   setQuiz, // Export the new action
+  resetState, // Export the new resetState action
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility

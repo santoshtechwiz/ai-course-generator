@@ -147,6 +147,10 @@ const subscriptionSlice = createSlice({
       state.data = null
       state.lastFetched = null
     },
+    // Add a reset state action
+    resetState: () => {
+      return initialState
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -229,7 +233,7 @@ const subscriptionSlice = createSlice({
 })
 
 // Export actions and reducer
-export const { clearSubscriptionData } = subscriptionSlice.actions
+export const { clearSubscriptionData, resetState } = subscriptionSlice.actions
 
 // Memoized selectors using createSelector for better performance
 import { createSelector } from "@reduxjs/toolkit"

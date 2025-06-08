@@ -19,7 +19,8 @@ import { useEffect, useState, useRef } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { signOut, signIn, useSession } from "next-auth/react"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { logout, useAppDispatch, useAppSelector } from "@/store"
+import { useRouter } from "next/navigation"
 
 interface UserMenuProps {
   children?: ReactNode
@@ -31,8 +32,10 @@ export function UserMenu({ children }: UserMenuProps) {
   const subscriptionData = useAppSelector(selectSubscription)
   const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
   const isAuthenticated = status === "authenticated"
-  const isLoading = status === "loading"
+  const isLoadingSession = status === "loading"
   const user = session?.user
 
   const hasInitializedRef = useRef(false)
@@ -52,11 +55,19 @@ export function UserMenu({ children }: UserMenuProps) {
   }, [isAuthenticated, dispatch])
 
   const handleSignOut = async () => {
-    const currentUrl = window.location.pathname
-    await signOut({
-      callbackUrl: currentUrl,
-      redirect: true,
-    })
+    setIsLoading(true)
+    try {
+      // Clear user data from Redux store
+      dispatch(logout());
+      // Redirect to the current page after logout
+      const callbackUrl = window.location.pathname
+      await signOut({ callbackUrl, redirect: true })
+      
+
+    } catch (error) {
+      console.error("Logout failed", error)
+      setIsLoading(false)
+    }
   }
 
   const handleSignIn = () => {
@@ -101,7 +112,7 @@ export function UserMenu({ children }: UserMenuProps) {
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
-  if (isLoading) {
+  if (isLoadingSession) {
     return (
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
         <Loader2 className="h-5 w-5 animate-spin text-primary/70" />
@@ -194,10 +205,20 @@ export function UserMenu({ children }: UserMenuProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               onClick={handleSignOut} 
+              disabled={isLoading}
               className="cursor-pointer hover:text-red-500 transition-colors"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              {isLoading ? (
+                <div className="flex items-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging out...
+                </div>
+              ) : (
+                <>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </>
+              )}
             </DropdownMenuItem>
           </>
         ) : null}

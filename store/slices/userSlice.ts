@@ -121,6 +121,10 @@ const userSlice = createSlice({
       state.error = null
       // Keep preferences even when logged out
     },
+    // Add a reset state action
+    resetState: () => {
+      return initialState
+    }
   },
   extraReducers: (builder) => {
     // Fetch user profile
@@ -158,7 +162,7 @@ const userSlice = createSlice({
 })
 
 // Export actions
-export const { setUserProfile, setUserPreferences, updateUserStatistics, recordQuizCompletion, clearUserState } =
+export const { setUserProfile, setUserPreferences, updateUserStatistics, recordQuizCompletion, clearUserState, resetState } =
   userSlice.actions
 
 // Export reducer

@@ -1,119 +1,110 @@
-"use client";
+"use client"
 
-import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store";
-import { v4 as uuidv4 } from 'uuid';
+import { useSession, signOut } from "next-auth/react"
+import { useCallback, useMemo, useRef } from "react"
+import { useDispatch } from "react-redux"
+import type { AppDispatch } from "@/store"
+import { logout as reduxLogout } from "@/store/slices/authSlice"
+import { resetState as resetSubscriptionState } from "@/store/slices/subscription-slice"
+import { resetState as resetUserState } from "@/store/slices/userSlice"
+import { resetState as resetCourseState } from "@/store/slices/courseSlice"
+import { resetState as resetQuizState } from "@/store/slices/quizSlice"
+
+export interface AuthHookResult {
+  isAuthenticated: boolean
+  userId: string | undefined
+  isLoading: boolean
+  isAdmin: boolean
+  user: any
+  guestId: string | null
+  logout: () => Promise<void>
+  status: "authenticated" | "loading" | "unauthenticated"
+  session: any
+}
 
 /**
- * Consolidated authentication hook that combines NextAuth session and Redux auth state
+ * useAuth – Secure auth hook using NextAuth only (no Redux, no storage)
  */
-export function useAuth() {
-  const { data: session, status } = useSession();
-  const reduxAuthState = useSelector((state: RootState) => state.auth);
-  const guestIdRef = useRef<string | null>(null);
-  
-  const isAuthenticated = status === "authenticated";
-  const userId = session?.user?.id || reduxAuthState?.userId;
-  const isLoading = status === "loading" || reduxAuthState?.loading;
-  const isAdmin = !!session?.user?.isAdmin || !!reduxAuthState?.user?.isAdmin;
-  
-  // Generate a consistent guest ID for the current browser session
-  const getGuestId = useCallback(() => {
-    if (typeof window === 'undefined') return 'server';
-    
-    // If we already generated an ID, use it
-    if (guestIdRef.current) return guestIdRef.current;
-    
-    // Try to get existing guest ID from session storage first
-    let guestId = sessionStorage.getItem('guestUserId');
-    
-    // If not found in session storage, check local storage (more persistent)
-    if (!guestId) {
-      guestId = localStorage.getItem('guestUserId');
-    }
-    
-    // Create new one if needed
-    if (!guestId) {
-      // Use UUID for better uniqueness
-      try {
-        guestId = `guest_${uuidv4()}`;
-      } catch (e) {
-        // Fallback to built-in random function
-        try {
-          guestId = `guest_${Math.random().toString(36).substring(2, 15)}`;
-        } catch (e) {
-          // Final fallback to date-based ID
-          guestId = `guest_${Date.now().toString(36)}`;
-        }
-      }
-      
-      // Store in both places for redundancy
-      try {
-        sessionStorage.setItem('guestUserId', guestId);
-        localStorage.setItem('guestUserId', guestId);
-      } catch (e) {
-        console.error("Failed to store guest ID:", e);
-      }
-    }
-    
-    // Store in ref for future use
-    guestIdRef.current = guestId;
-    return guestId;
-  }, []);
+export function useAuth(): AuthHookResult {
+  const { data: session, status } = useSession()
+  const guestIdRef = useRef<string | null>(null)
+  const dispatch = useDispatch<AppDispatch>()
 
-  // Create a stable guestId that doesn't change during component lifecycle
+  const isAuthenticated = status === "authenticated"
+  const isLoading = status === "loading"
+  const user = session?.user || null
+  const userId = session?.user?.id
+  const isAdmin = !!session?.user?.isAdmin
+
+  // Generate guest ID once in-memory (no storage)
+  const getGuestId = useCallback((): string => {
+    if (guestIdRef.current) return guestIdRef.current
+
+    try {
+      const uuid = Math.random().toString(36).substring(2, 15)
+      guestIdRef.current = `guest_${uuid}`
+    } catch {
+      guestIdRef.current = `guest_${Date.now().toString(36)}`
+    }
+
+    return guestIdRef.current
+  }, [])
+
   const guestId = useMemo(() => {
-    if (isAuthenticated) return null;
-    return getGuestId();
-  }, [isAuthenticated, getGuestId]);
+    if (isAuthenticated) return null
+    return getGuestId()
+  }, [isAuthenticated, getGuestId])
 
-  // Switch to authenticated ID when session loads
-  useEffect(() => {
-    if (isAuthenticated && userId && window.localStorage) {
-      // Migrate any guest progress to the authenticated user
-      const guestProgressKeys = Object.keys(localStorage).filter(key => key.startsWith('guest-progress-'));
-      
-      guestProgressKeys.forEach(key => {
-        try {
-          // Extract course ID from key
-          const courseId = key.replace('guest-progress-', '');
-          // Get guest progress
-          const guestProgress = localStorage.getItem(key);
-          
-          if (guestProgress) {
-            // Store as user progress
-            localStorage.setItem(`user-progress-${userId}-${courseId}`, guestProgress);
-            // Clean up guest progress
-            localStorage.removeItem(key);
-          }
-        } catch (e) {
-          console.error("Failed to migrate guest progress", e);
+  const logout = useCallback(async () => {
+    // First, dispatch Redux logout actions to clear all state
+    dispatch(reduxLogout())
+    dispatch(resetSubscriptionState())
+    dispatch(resetUserState())
+    dispatch(resetCourseState())
+    dispatch(resetQuizState())
+
+    // Clear local/session storage
+    if (typeof window !== 'undefined') {
+      // Clear auth-related items from localStorage
+      const lsKeys = Object.keys(localStorage)
+      lsKeys.forEach(key => {
+        if (key.includes('token') || 
+            key.includes('user') || 
+            key.includes('auth') ||
+            key.includes('session')) {
+          localStorage.removeItem(key)
         }
-      });
+      })
+      
+      // Clear auth-related items from sessionStorage
+      const ssKeys = Object.keys(sessionStorage)
+      ssKeys.forEach(key => {
+        if (key.includes('token') || 
+            key.includes('user') || 
+            key.includes('auth') ||
+            key.includes('session')) {
+          sessionStorage.removeItem(key)
+        }
+      })
     }
-  }, [isAuthenticated, userId]);
+    
+    // Then sign out with NextAuth
+    await signOut({ redirect: false })
+    guestIdRef.current = null
+    
+  }, [dispatch])
 
-  // Combine data from both sources
   return {
     isAuthenticated,
     userId,
     isLoading,
     isAdmin,
-    user: session?.user || reduxAuthState?.user,
-    getGuestId,
+    user,
     guestId,
-    // Include any additional fields from Redux auth state
-    role: reduxAuthState?.role || session?.user?.role,
-    permissions: reduxAuthState?.permissions,
-    // Add session status for more granular control
+    logout,
     status,
-    // Add the raw session and reduxAuthState for edge cases
     session,
-    reduxAuthState
-  };
+  }
 }
 
-// Export default and named export for backward compatibility
-export default useAuth;
+export default useAuth
