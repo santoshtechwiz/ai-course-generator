@@ -4,6 +4,7 @@ import { useQuizPlan } from "../hooks/useQuizPlan";
 import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { QuizLoader } from "@/components/ui/quiz-loader";
+import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 
 const McqPage = () => {
   // Use our custom hook that already handles session, auth, and subscription data
@@ -20,11 +21,11 @@ const McqPage = () => {
       {quizPlan.isLoading ? (
         <QuizLoader message="Loading subscription details..." subMessage="Getting your plan information" />
       ) : (
-        <CreateQuizForm
+        <OpenEndedQuizForm
           credits={quizPlan.credits}
           isLoggedIn={quizPlan.isLoggedIn}
           maxQuestions={quizPlan.maxQuestions}
-          quizType="mcq"
+         
         />
       )}
     </QuizCreateLayout>

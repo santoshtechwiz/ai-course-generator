@@ -1,26 +1,26 @@
 "use client"
 
-import BlankQuizForm from "./components/BlankQuizForm"
+import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../hooks/useQuizPlan"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 
-const BlankPage = () => {
+const CodePage = () => {
   // Use our standardized hook for all quiz pages
   const quizPlan = useQuizPlan();
   
   return (
     <QuizCreateLayout
-      title="Fill in the Blanks"
-      description="Create customized fill-in-the-blank exercises or practice with our pre-built quizzes."
-      quizType="blanks"
-      helpText="Create exercises where users fill in missing words or phrases. Great for language learning and vocabulary building."
+      title="Code Quiz"
+      description="Create programming challenges or learn with our pre-built coding exercises."
+      quizType="code"
+      helpText="Build exercises where users need to write or fix code. Perfect for programming practice and technical interviews."
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
         <QuizLoader message="Loading subscription details..." subMessage="Getting your plan information" />
       ) : (
-        <BlankQuizForm 
+        <CodeQuizForm 
           credits={quizPlan.credits} 
           isLoggedIn={quizPlan.isLoggedIn} 
           maxQuestions={quizPlan.maxQuestions} 
@@ -30,4 +30,4 @@ const BlankPage = () => {
   )
 }
 
-export default BlankPage
+export default CodePage
