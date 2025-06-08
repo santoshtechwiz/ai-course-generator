@@ -4,14 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import {
-  FileText,
-  MessageSquare,
-  BarChart3,
-  Award,
-  TrendingUp,
-  Bookmark,
-} from "lucide-react"
+import { FileText, MessageSquare, BarChart3, Award, TrendingUp, Bookmark } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/courseSlice"
@@ -90,12 +83,15 @@ export default function CourseDetailsTabs({
     [currentVideoId, dispatch],
   )
 
-  const handleSeekToBookmark = useCallback((time: number) => {
-    console.log("Seek to bookmark:", time);
-    if (onSeekToBookmark) {
-      onSeekToBookmark(time);
-    }
-  }, [onSeekToBookmark])
+  const handleSeekToBookmark = useCallback(
+    (time: number) => {
+      console.log("Seek to bookmark:", time)
+      if (onSeekToBookmark) {
+        onSeekToBookmark(time)
+      }
+    },
+    [onSeekToBookmark],
+  )
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
@@ -123,7 +119,13 @@ export default function CourseDetailsTabs({
         {/* Tabs Content */}
         <TabsContent value="summary" className="h-full overflow-auto p-4">
           {currentChapter ? (
-            <CourseAISummary course={course} currentChapter={currentChapter} isAuthenticated={isAuthenticated} />
+            <CourseAISummary
+              chapterId={currentChapter.id}
+              name={currentChapter.title || currentChapter.name || "Chapter Summary"}
+              existingSummary={currentChapter.summary || null}
+              isPremium={isPremium || false}
+              isAdmin={isAdmin || false}
+            />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               <div className="text-center">
@@ -226,8 +228,8 @@ export default function CourseDetailsTabs({
                 Bookmarks
               </CardTitle>
               <CardDescription>
-                {bookmarks.length > 0 
-                  ? "Jump to specific parts of the video you've saved" 
+                {bookmarks.length > 0
+                  ? "Jump to specific parts of the video you've saved"
                   : "You haven't saved any bookmarks for this video yet"}
               </CardDescription>
             </CardHeader>
@@ -235,8 +237,8 @@ export default function CourseDetailsTabs({
               {isAuthenticated && bookmarks.length > 0 ? (
                 <div className="space-y-3">
                   {bookmarks.map((bookmark) => (
-                    <div 
-                      key={bookmark.id} 
+                    <div
+                      key={bookmark.id}
                       onClick={() => handleSeekToBookmark(bookmark.time)}
                       className="flex items-center justify-between p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     >
@@ -246,12 +248,12 @@ export default function CourseDetailsTabs({
                         </div>
                         <span className="line-clamp-1">{bookmark.title}</span>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveBookmark(bookmark.id);
+                          e.stopPropagation()
+                          handleRemoveBookmark(bookmark.id)
                         }}
                       >
                         Remove
@@ -268,7 +270,9 @@ export default function CourseDetailsTabs({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>Sign in to save video bookmarks</p>
-                  <Button variant="outline" className="mt-4">Sign In</Button>
+                  <Button variant="outline" className="mt-4">
+                    Sign In
+                  </Button>
                 </div>
               )}
             </CardContent>

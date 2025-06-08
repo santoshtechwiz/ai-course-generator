@@ -13,7 +13,6 @@ import {
   Maximize2,
   Minimize2,
   SkipForward,
-  Switch,
   RotateCcw,
   PictureInPicture,
   Bookmark,
@@ -71,6 +70,12 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const settingsRef = useRef<HTMLDivElement>(null)
+
+  // Prevent event bubbling that could interfere with controls
+  const handleControlsClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
 
   // Handle volume slider visibility
   const handleVolumeMouseEnter = useCallback(() => {
@@ -139,6 +144,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     onSeekChange(newTime)
   }, [duration, played, onSeekChange])
 
+  // Add click handler to stop propagation for dropdown
+  const handleSettingsClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
+
   return (
     <TooltipProvider delayDuration={300}>
       <AnimatePresence>
@@ -149,6 +159,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
             className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent backdrop-blur-sm z-30 p-4"
+            onClick={handleControlsClick}
+            style={{ pointerEvents: "auto" }}
           >
             {/* Progress bar */}
             <div className="mb-4">
@@ -370,12 +382,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                             autoPlayNext ? "bg-primary/20" : "bg-transparent",
                           )}
                         >
-                          <SkipForward
-                            className={cn(
-                              "h-4 w-4",
-                              autoPlayNext ? "text-primary" : "text-white/80",
-                            )}
-                          />
+                          <SkipForward className={cn("h-4 w-4", autoPlayNext ? "text-primary" : "text-white/80")} />
                           <span className="sr-only">Auto Play Next</span>
                         </Button>
                       </TooltipTrigger>
@@ -387,41 +394,56 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                 )}
 
                 {/* Settings */}
-                <DropdownMenu open={showSettings} onOpenChange={setShowSettings}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
+                <div ref={settingsRef} onClick={handleSettingsClick}>
+                  <DropdownMenu open={showSettings} onOpenChange={setShowSettings}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
+                      >
+                        <Settings className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-48 bg-black/95 border-white/20 text-white"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Settings className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-black/95 border-white/20 text-white">
-                    <div className="p-2">
-                      <div className="text-sm font-medium mb-2">Playback Speed</div>
-                      <div className="grid grid-cols-2 gap-1">
-                        {PLAYBACK_SPEEDS.map((speed) => (
-                          <DropdownMenuItem
-                            key={speed}
-                            onClick={() => onPlaybackRateChange(speed)}
-                            className={cn(
-                              "text-center cursor-pointer",
-                              playbackRate === speed && "bg-red-600 text-white",
-                            )}
-                          >
-                            {speed === 1 ? "Normal" : `${speed}x`}
-                          </DropdownMenuItem>
-                        ))}
+                      <div className="p-2">
+                        <div className="text-sm font-medium mb-2">Playback Speed</div>
+                        <div className="grid grid-cols-2 gap-1">
+                          {PLAYBACK_SPEEDS.map((speed) => (
+                            <DropdownMenuItem
+                              key={speed}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onPlaybackRateChange(speed)
+                              }}
+                              className={cn(
+                                "text-center cursor-pointer",
+                                playbackRate === speed && "bg-red-600 text-white",
+                              )}
+                            >
+                              {speed === 1 ? "Normal" : `${speed}x`}
+                            </DropdownMenuItem>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <DropdownMenuSeparator className="bg-white/20" />
-                    <DropdownMenuItem onClick={onShowKeyboardShortcuts} className="cursor-pointer">
-                      <Keyboard className="h-4 w-4 mr-2" />
-                      Keyboard shortcuts
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onShowKeyboardShortcuts()
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <Keyboard className="h-4 w-4 mr-2" />
+                        Keyboard shortcuts
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
 
                 {/* Fullscreen */}
                 <Tooltip>
