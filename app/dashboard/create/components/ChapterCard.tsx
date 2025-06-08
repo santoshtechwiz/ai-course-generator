@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
-import VideoPlayer from "./VideoPlayer"
+
 import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
 import { Badge } from "@/components/ui/badge"
 import { useChapterProcessing } from "../hooks/useChapterProcessing"
 import { useToast } from "@/hooks"
+import VideoPlayer from "./VideoPlayer"
 
 
 type Props = {

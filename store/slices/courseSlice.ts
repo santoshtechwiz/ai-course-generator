@@ -411,6 +411,10 @@ const courseSlice = createSlice({
       // Also update the global settings for backwards compatibility
       state.playbackSettings = action.payload;
     },
+    // Add a reset state action
+    resetState: () => {
+      return initialState
+    }
   },
 })
 
@@ -476,6 +480,7 @@ export const {
   setNextVideoId,
   setPrevVideoId,
   setLoading,
+  resetState,
 } = courseSlice.actions
 
 export default courseSlice.reducer
