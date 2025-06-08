@@ -63,7 +63,7 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
   }, [authStatus, quizResults, generatedResults, answers, router, slug])
 
   const handleRetakeQuiz = () => {
-    router.push(`/dashboard/blanks/${slug}?reset=true`)
+    router.push(`/dashboard/blanks/${slug}`)
   }
 
   const handleSignIn = async () => {

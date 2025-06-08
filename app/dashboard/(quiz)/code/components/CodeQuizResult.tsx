@@ -181,7 +181,7 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
     if (onRetake) {
       onRetake()
     } else if (slug) {
-      router.push(`/dashboard/code/${slug}?reset=true`)
+      router.push(`/dashboard/code/${slug}`)
     }
   }, [onRetake, slug, router])
 
