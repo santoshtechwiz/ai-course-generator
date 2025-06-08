@@ -11,13 +11,20 @@ import {
   selectSubscriptionPlan,
   selectIsCancelled,
 } from "@/store/slices/subscription-slice"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
 
 const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
+
+type SubscriptionResult = {
+  redirectUrl?: string
+  message?: string
+  success?: boolean
+}
 
 type UseSubscriptionOptions = {
   allowPlanChanges?: boolean
   allowDowngrades?: boolean
-  onSubscriptionSuccess?: (result?: { redirectUrl?: string; message?: string }) => void
+  onSubscriptionSuccess?: (result: SubscriptionResult) => void
   onSubscriptionError?: (error: any) => void
 }
 
@@ -95,11 +102,16 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     [onSubscriptionSuccess, onSubscriptionError],
   )
 
+  // Fix the canSubscribeToPlan function to properly check plan availability
   const canSubscribeToPlan = useCallback(
-    (planId: string) => {
-      return subscriptionData?.planId !== planId
+    (currentPlan: string, targetPlan: string, status: SubscriptionStatusType | null): { canSubscribe: boolean; reason?: string } => {
+      // Default implementation - replace with your actual logic
+      if (currentPlan === targetPlan && status === "ACTIVE") {
+        return { canSubscribe: false, reason: "You are already subscribed to this plan" }
+      }
+      return { canSubscribe: true }
     },
-    [subscriptionData?.planId],
+    [],
   )
 
   // Memoize derived values
