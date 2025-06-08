@@ -59,7 +59,7 @@ export interface VideoPlayerProps {
   rememberPlaybackSettings?: boolean
   onBookmark?: (time: number, title?: string) => void
   autoPlay?: boolean
-  onVideoLoad?: (metadata: VideoMetadata) => void
+  onVideoLoad?: (VideoMetadata: any) => void
   onCertificateClick?: () => void
   height?: string | number
   width?: string | number

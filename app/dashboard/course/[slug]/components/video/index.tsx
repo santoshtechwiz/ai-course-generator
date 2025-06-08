@@ -3,10 +3,9 @@ import VideoLoadingOverlay from './components/VideoLoadingOverlay';
 import VideoErrorState from './components/VideoErrorState';
 import PlayerControls from './components/PlayerControls';
 import BookmarkTimeline from './components/BookmarkTimeline';
-import BookmarkManager from './components/BookmarkManager';
-import useVideoPlayer from './hooks/useVideoPlayer';
-import { TheaterModeManager, useTheaterMode } from './Theatre';
-import VideoErrorBoundary from './components/VideoErrorBoundary';
+import { TheaterModeManager } from './Theatre';
+import { useVideoPlayer } from './hooks/useVideoPlayer';
+
 import type {
   VideoPlayerProps,
   PlayerControlsProps,
@@ -14,11 +13,8 @@ import type {
   VideoLoadingOverlayProps,
   VideoErrorStateProps,
   PlaybackSpeedMenuProps,
-  BookmarkItem,
   VideoMetadata,
-  TheaterModeProps,
   TheaterModeManagerProps,
-  KeyboardShortcutsModalProps
 } from './types';
 
 export {
@@ -27,11 +23,8 @@ export {
   VideoErrorState,
   PlayerControls,
   BookmarkTimeline,
-  BookmarkManager,
-  useVideoPlayer,
   TheaterModeManager,
-  useTheaterMode,
-  VideoErrorBoundary
+  useVideoPlayer,
 };
 
 export type {
@@ -41,9 +34,6 @@ export type {
   VideoLoadingOverlayProps,
   VideoErrorStateProps,
   PlaybackSpeedMenuProps,
-  BookmarkItem,
   VideoMetadata,
-  TheaterModeProps,
   TheaterModeManagerProps,
-  KeyboardShortcutsModalProps
 };

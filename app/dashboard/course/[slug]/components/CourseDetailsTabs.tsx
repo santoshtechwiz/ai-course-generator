@@ -4,28 +4,19 @@ import { useState, useCallback, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import {
   FileText,
   MessageSquare,
   BarChart3,
-  Bookmark,
-  Clock,
   Award,
-  CheckCircle,
-  Play,
   TrendingUp,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-import CourseDetailsQuiz from "./CourseDetailsQuiz"
-import CourseAISummary from "./CourseAISummary"
-import BookmarkManager from "./video/components/BookmarkManager"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/courseSlice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
+import CourseDetailsQuiz from "./CourseQuiz"
+import CourseAISummary from "./CourseSummary"
 
 interface CourseDetailsTabsProps {
   course: FullCourseType
@@ -102,19 +93,12 @@ export default function CourseDetailsTabs({
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden"
->
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden">
         {/* Tab Navigation */}
-     <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/20 rounded-none flex-shrink-0">
-
+        <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/20 rounded-none flex-shrink-0">
           <TabsTrigger value="summary" className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4" />
             Summary
-          </TabsTrigger>
-          <TabsTrigger value="bookmarks" className="flex items-center gap-2 text-sm">
-            <Bookmark className="h-4 w-4" />
-            Bookmarks
           </TabsTrigger>
           <TabsTrigger value="quiz" className="flex items-center gap-2 text-sm">
             <MessageSquare className="h-4 w-4" />
@@ -136,29 +120,6 @@ export default function CourseDetailsTabs({
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">No Chapter Selected</h3>
                 <p className="text-sm">Select a chapter to view AI-generated summary</p>
-              </div>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="bookmarks" className="h-full overflow-auto p-4">
-          {currentVideoId && currentChapter ? (
-            <BookmarkManager
-              videoId={currentVideoId}
-              bookmarks={bookmarks}
-              currentTime={0}
-              duration={300}
-              onSeekToBookmark={handleSeekToBookmark}
-              onAddBookmark={handleAddBookmark}
-              onRemoveBookmark={handleRemoveBookmark}
-              formatTime={formatTime}
-            />
-          ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">No Video Selected</h3>
-                <p className="text-sm">Select a chapter to view and manage bookmarks</p>
               </div>
             </div>
           )}
