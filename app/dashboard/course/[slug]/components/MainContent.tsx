@@ -22,13 +22,15 @@ import { useAuth } from "@/hooks"
 import useProgress from "@/hooks/useProgress"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs from "./CourseDetailsTabs"
+import { formatDuration } from "../utils/formatUtils"
 
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
 }
 
-export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId }) => {
+const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId }) => {
+  // Always define all hooks at the top level - no early returns or conditions before hooks
   const router = useRouter()
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -47,6 +49,7 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
   const [autoplayCountdown, setAutoplayCountdown] = useState(0)
   const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
+  const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
 
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
@@ -144,7 +147,26 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
     }
   }, [progress, resumePromptShown, currentVideoId, videoPlaylist, dispatch, toast, session])
 
-  // Handle video load to get duration from YouTube API
+  // Define all handlers BEFORE any conditional returns
+  const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
+    setPlayerRef(player)
+  }, [])
+
+  const handleSeekToBookmark = useCallback(
+    (time: number, title?: string) => {
+      if (playerRef?.current) {
+        playerRef.current.seekTo(time)
+        if (title) {
+          toast({
+            title: "Seeking to Bookmark",
+            description: `Jumping to "${title}" at ${formatDuration(time)}`,
+          })
+        }
+      }
+    },
+    [playerRef, toast, formatDuration],
+  )
+
   const handleVideoLoad = useCallback(
     (metadata: { duration: number; title: string }) => {
       setIsVideoLoading(false)
@@ -158,23 +180,37 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
     [currentVideoId],
   )
 
-  // Autoplay countdown logic
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (showAutoplayOverlay && autoplayCountdown > 0) {
-      interval = setInterval(() => {
-        setAutoplayCountdown((prev) => {
-          if (prev <= 1) {
-            setShowAutoplayOverlay(false)
-            handleNextVideo()
-            return 0
-          }
-          return prev - 1
+  const handleVideoProgress = useCallback(
+    (progressState: { played: number; playedSeconds: number }) => {
+      // Show logo animation when video is about to end (last 10-15 seconds)
+      if (progressState.playedSeconds > 0 && currentChapter) {
+        const videoDuration = currentVideoId ? videoDurations[currentVideoId] || 300 : 300
+        const timeRemaining = videoDuration - progressState.playedSeconds
+
+        // Show CourseAI logo overlay in last 10 seconds
+        if (timeRemaining <= 10 && timeRemaining > 0 && !videoEnding) {
+          setVideoEnding(true)
+          setShowLogoOverlay(true)
+        }
+
+        // Reset for next video
+        if (timeRemaining > 10 && videoEnding) {
+          setVideoEnding(false)
+          setShowLogoOverlay(false)
+        }
+      }
+
+      // Update progress periodically
+      if (currentChapter && progressState.played > 0.1) {
+        updateProgress({
+          currentChapterId: Number(currentChapter.id),
+          progress: progressState.played,
+          lastAccessedAt: new Date(),
         })
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [showAutoplayOverlay, autoplayCountdown])
+      }
+    },
+    [currentChapter, videoEnding, updateProgress, videoDurations, currentVideoId],
+  )
 
   // Video event handlers
   const handleVideoEnd = useCallback(() => {
@@ -215,38 +251,6 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
     session,
     hasPlayedFreeVideo,
   ])
-
-  const handleVideoProgress = useCallback(
-    (progressState: { played: number; playedSeconds: number }) => {
-      // Show logo animation when video is about to end (last 10-15 seconds)
-      if (progressState.playedSeconds > 0 && currentChapter) {
-        const videoDuration = videoDurations[currentVideoId] || 300
-        const timeRemaining = videoDuration - progressState.playedSeconds
-
-        // Show CourseAI logo overlay in last 10 seconds
-        if (timeRemaining <= 10 && timeRemaining > 0 && !videoEnding) {
-          setVideoEnding(true)
-          setShowLogoOverlay(true)
-        }
-
-        // Reset for next video
-        if (timeRemaining > 10 && videoEnding) {
-          setVideoEnding(false)
-          setShowLogoOverlay(false)
-        }
-      }
-
-      // Update progress periodically
-      if (currentChapter && progressState.played > 0.1) {
-        updateProgress({
-          currentChapterId: Number(currentChapter.id),
-          progress: progressState.played,
-          lastAccessedAt: new Date(),
-        })
-      }
-    },
-    [currentChapter, videoEnding, updateProgress, videoDurations, currentVideoId],
-  )
 
   const handleChapterSelect = useCallback(
     (chapter: FullChapterType) => {
@@ -302,61 +306,68 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
     router.push(`/certificate/${course.id}`)
   }, [router, course.id])
 
-  // Course stats
-  const courseStats = useMemo(() => {
-    const totalChapters = videoPlaylist.length
-    const completedChapters = progress?.completedChapters?.length || 0
-    const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
-
-    return {
-      totalChapters,
-      completedChapters,
-      progressPercentage,
+  // Autoplay countdown logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (showAutoplayOverlay && autoplayCountdown > 0) {
+      interval = setInterval(() => {
+        setAutoplayCountdown((prev) => {
+          if (prev <= 1) {
+            setShowAutoplayOverlay(false)
+            handleNextVideo()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
     }
-  }, [videoPlaylist.length, progress?.completedChapters])
+    return () => clearInterval(interval)
+  }, [showAutoplayOverlay, autoplayCountdown, handleNextVideo])
 
-  // Format duration helper
-  const formatDuration = useCallback(
-    (videoId: string) => {
-      const duration = videoDurations[videoId]
-      if (!duration) return "Loading..."
+  // Course stats
+  const courseStats = useMemo(
+    () => {
+      const totalChapters = videoPlaylist.length
+      const completedChapters = progress?.completedChapters?.length || 0
+      const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
 
-      const minutes = Math.floor(duration / 60)
-      const seconds = Math.floor(duration % 60)
-      return `${minutes}:${seconds.toString().padStart(2, "0")}`
+      return {
+        totalChapters,
+        completedChapters,
+        progressPercentage,
+      }
     },
-    [videoDurations],
+    [videoPlaylist.length, progress?.completedChapters],
   )
 
-  // Authentication prompt overlay
-  if (showAuthPrompt) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-6 text-center">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
-              <Lock className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Sign in to continue watching</h3>
-            <p className="text-muted-foreground mb-6">
-              You've used your free video preview. Sign in to access all course content and features.
-            </p>
-            <div className="space-y-3">
-              <Button onClick={() => (window.location.href = "/api/auth/signin")} className="w-full" size="lg">
-                <User className="h-4 w-4 mr-2" />
-                Sign In
-              </Button>
-              <Button variant="outline" onClick={() => setShowAuthPrompt(false)} className="w-full">
-                Back to Course
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  // Create content for auth prompt here instead of doing an early return
+  const authPromptContent = (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="max-w-md w-full">
+        <CardContent className="p-6 text-center">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
+            <Lock className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Sign in to continue watching</h3>
+          <p className="text-muted-foreground mb-6">
+            You've used your free video preview. Sign in to access all course content and features.
+          </p>
+          <div className="space-y-3">
+            <Button onClick={() => (window.location.href = "/api/auth/signin")} className="w-full" size="lg">
+              <User className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+            <Button variant="outline" onClick={() => setShowAuthPrompt(false)} className="w-full">
+              Back to Course
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 
-  return (
+  // Regular content
+  const regularContent = (
     <div className="min-h-screen bg-background">
       {/* Mobile header */}
       <div className="lg:hidden border-b bg-background/95 backdrop-blur-sm sticky top-0 z-40">
@@ -415,6 +426,7 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
                       onEnded={handleVideoEnd}
                       onProgress={handleVideoProgress}
                       onVideoLoad={handleVideoLoad}
+                      onPlayerReady={handlePlayerReady}
                       autoPlay={false}
                       isAuthenticated={!!session}
                       onChapterComplete={() => {}}
@@ -505,6 +517,7 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
                 isAuthenticated={!!session}
                 isPremium={user?.subscription?.planId === "premium"}
                 isAdmin={user?.isAdmin}
+                onSeekToBookmark={handleSeekToBookmark}
               />
             </div>
           </div>
@@ -562,6 +575,9 @@ export const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialCh
       </AnimatePresence>
     </div>
   )
+
+  // Return the correct content based on auth state but without early return
+  return showAuthPrompt ? authPromptContent : regularContent
 }
 
 export default MainContent

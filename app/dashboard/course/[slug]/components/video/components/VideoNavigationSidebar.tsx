@@ -3,16 +3,16 @@
 import React from "react"
 import { useMemo, useState, useCallback } from "react"
 import { signIn } from "next-auth/react"
-import { CheckCircle, Clock, Lock, ChevronRight, Circle, PlayCircle, Menu, Search } from "lucide-react"
+import { CheckCircle, Clock, Lock, ChevronRight, Circle, PlayCircle, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import type { FullCourseType, FullChapterType, CourseProgress } from "@/app/types/types"
 import { cn } from "@/lib/tailwindUtils"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { FullCourseType, FullChapterType } from "@/app/types/user-types"
+import { CourseProgress } from "@prisma/client"
 
 interface VideoNavigationSidebarProps {
   course: FullCourseType
@@ -314,21 +314,6 @@ export default function VideoNavigationSidebar({
   // Sidebar content component
   const SidebarContent = () => (
     <>
-      {/* Search */}
-      <div className="p-4 border-b">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search chapters..."
-            className="w-full bg-muted/50 pl-9"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            aria-label="Search course chapters"
-          />
-        </div>
-      </div>
-
       {/* Authentication prompt for non-authenticated users */}
       {!isAuthenticated && (
         <div className="p-4 border-b bg-muted/30">

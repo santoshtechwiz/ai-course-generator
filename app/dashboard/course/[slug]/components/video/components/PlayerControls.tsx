@@ -9,17 +9,17 @@ import {
   Pause,
   Volume2,
   VolumeX,
-  Volume1,
-  SkipForward,
+  Settings,
   Maximize2,
   Minimize2,
-  Settings,
-  Bookmark,
-  PictureInPicture,
-  Monitor,
-  Keyboard,
+  SkipForward,
+  Switch,
   RotateCcw,
-  RotateCw,
+  PictureInPicture,
+  Bookmark,
+  Keyboard,
+  Monitor,
+  Volume1,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -65,6 +65,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onTheaterMode,
   onNextVideo,
   onToggleBookmarkPanel,
+  autoPlayNext,
+  onToggleAutoPlayNext,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -209,7 +211,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                       onClick={handleSkipForward}
                       className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
                     >
-                      <RotateCw className="h-5 w-5" />
+                      <RotateCcw className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -353,6 +355,36 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                     <p>Theater mode (T)</p>
                   </TooltipContent>
                 </Tooltip>
+
+                {/* Auto-play next toggle */}
+                {onNextVideo && onToggleAutoPlayNext && (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={onToggleAutoPlayNext}
+                          className={cn(
+                            "text-white/80 hover:text-white h-8 w-8 rounded-full",
+                            autoPlayNext ? "bg-primary/20" : "bg-transparent",
+                          )}
+                        >
+                          <SkipForward
+                            className={cn(
+                              "h-4 w-4",
+                              autoPlayNext ? "text-primary" : "text-white/80",
+                            )}
+                          />
+                          <span className="sr-only">Auto Play Next</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>{autoPlayNext ? "Disable auto-play next" : "Enable auto-play next"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
 
                 {/* Settings */}
                 <DropdownMenu open={showSettings} onOpenChange={setShowSettings}>
