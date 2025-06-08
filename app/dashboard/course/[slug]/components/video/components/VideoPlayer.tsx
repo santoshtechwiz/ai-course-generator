@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import ReactPlayer from "react-player/youtube"
+import { useSession } from "next-auth/react"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
 import PlayerControls from "./PlayerControls"
 import VideoLoadingOverlay from "./VideoLoadingOverlay"
@@ -10,7 +11,11 @@ import VideoErrorState from "./VideoErrorState"
 import BookmarkManager from "./BookmarkManager"
 import KeyboardShortcutsModal from "../../KeyboardShortcutsModal"
 import AnimatedCourseAILogo from "./AnimatedCourseAILogo"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Play, Lock, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 import type { VideoPlayerProps } from "../types"
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -36,23 +41,52 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   nextVideoTitle,
   courseName,
 }) => {
+  const { data: session } = useSession()
+  const { toast } = useToast()
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false)
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
   const [videoEnding, setVideoEnding] = useState(false)
+  const [videoDuration, setVideoDuration] = useState<number>(0)
+  const [isLoadingDuration, setIsLoadingDuration] = useState(true)
+  const [hasPlayedFreeVideo, setHasPlayedFreeVideo] = useState(false)
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
+  const [canPlayVideo, setCanPlayVideo] = useState(false)
+  const [playerReady, setPlayerReady] = useState(false)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isHovering, setIsHovering] = useState(false)
-  const [showControlsState, setShowControlsState] = useState(showControls) // Declare setShowControls
+  const [showControlsState, setShowControlsState] = useState(showControls)
+
+  // Check if user can play video (authenticated or first free video)
+  useEffect(() => {
+    const freeVideoPlayed = localStorage.getItem("hasPlayedFreeVideo")
+    const hasPlayed = freeVideoPlayed === "true"
+    setHasPlayedFreeVideo(hasPlayed)
+
+    if (isAuthenticated || !hasPlayed) {
+      setCanPlayVideo(true)
+    } else {
+      setCanPlayVideo(false)
+      setShowAuthPrompt(true)
+    }
+  }, [isAuthenticated])
 
   // Initialize video player hook
   const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
     videoId,
-    onEnded,
+    onEnded: () => {
+      // Mark free video as played if not authenticated
+      if (!isAuthenticated && !hasPlayedFreeVideo) {
+        localStorage.setItem("hasPlayedFreeVideo", "true")
+        setHasPlayedFreeVideo(true)
+      }
+      onEnded?.()
+    },
     onProgress,
     onTimeUpdate,
     rememberPlaybackPosition,
     rememberPlaybackSettings,
     onBookmark,
-    autoPlay,
+    autoPlay: autoPlay && canPlayVideo,
     onVideoLoad,
     onCertificateClick,
   })
@@ -68,12 +102,64 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       : `${m}:${s.toString().padStart(2, "0")}`
   }, [])
 
+  // Handle player ready and fetch duration
+  const handlePlayerReady = useCallback(() => {
+    setPlayerReady(true)
+    setIsLoadingDuration(false)
+
+    if (playerRef.current) {
+      const duration = playerRef.current.getDuration()
+      if (duration && duration > 0) {
+        setVideoDuration(duration)
+        onVideoLoad?.({
+          title: courseName || "Video",
+          duration,
+          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        })
+      }
+    }
+
+    handlers.onReady()
+  }, [handlers, onVideoLoad, courseName, videoId])
+
+  // Enhanced play handler with authentication check
+  const handlePlayClick = useCallback(() => {
+    if (!canPlayVideo) {
+      if (!isAuthenticated && hasPlayedFreeVideo) {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to watch more videos. You've used your free preview.",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    if (!playerReady) {
+      toast({
+        title: "Video loading",
+        description: "Please wait for the video to finish loading.",
+      })
+      return
+    }
+
+    handlers.onPlayPause()
+  }, [canPlayVideo, isAuthenticated, hasPlayedFreeVideo, playerReady, handlers, toast])
+
   // Handle bookmark actions
   const handleAddBookmark = useCallback(
     (time: number, title?: string) => {
+      if (!isAuthenticated) {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to add bookmarks.",
+          variant: "destructive",
+        })
+        return
+      }
       handlers.addBookmark(time, title)
     },
-    [handlers],
+    [handlers, isAuthenticated, toast],
   )
 
   const handleRemoveBookmark = useCallback(
@@ -85,15 +171,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const handleSeekToBookmark = useCallback(
     (time: number) => {
+      if (!canPlayVideo) {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to use video controls.",
+          variant: "destructive",
+        })
+        return
+      }
       handlers.onSeek(time)
     },
-    [handlers],
+    [handlers, canPlayVideo, toast],
   )
 
   // Toggle bookmark panel
   const handleToggleBookmarkPanel = useCallback(() => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to access bookmarks.",
+        variant: "destructive",
+      })
+      return
+    }
     setShowBookmarkPanel((prev) => !prev)
-  }, [])
+  }, [isAuthenticated, toast])
 
   // Auto-hide controls
   useEffect(() => {
@@ -131,8 +233,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Show logo overlay before video ends
   useEffect(() => {
-    if (state.lastPlayedTime > 0 && state.duration > 0) {
-      const timeRemaining = state.duration - state.lastPlayedTime
+    if (state.lastPlayedTime > 0 && videoDuration > 0) {
+      const timeRemaining = videoDuration - state.lastPlayedTime
 
       // Show logo 5 seconds before video ends
       if (timeRemaining <= 5 && timeRemaining > 0 && !videoEnding) {
@@ -146,13 +248,54 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setShowLogoOverlay(false)
       }
     }
-  }, [state.lastPlayedTime, state.duration, videoEnding])
+  }, [state.lastPlayedTime, videoDuration, videoEnding])
+
+  // Authentication prompt overlay
+  if (showAuthPrompt && !canPlayVideo) {
+    return (
+      <div
+        className={cn(
+          "relative w-full h-full bg-black overflow-hidden group flex items-center justify-center",
+          className,
+        )}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/70 to-black/90" />
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-30"
+          style={{
+            backgroundImage: `url(https://img.youtube.com/vi/${videoId}/maxresdefault.jpg)`,
+          }}
+        />
+
+        <Card className="relative z-10 max-w-md mx-4 bg-background/95 backdrop-blur-sm">
+          <CardContent className="p-6 text-center">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Sign in to continue watching</h3>
+            <p className="text-muted-foreground mb-6">
+              You've used your free video preview. Sign in to access all course content and features.
+            </p>
+            <div className="space-y-3">
+              <Button onClick={() => (window.location.href = "/api/auth/signin")} className="w-full" size="lg">
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+              <Button variant="outline" onClick={() => setShowAuthPrompt(false)} className="w-full">
+                Close
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        "relative  object-contain w-full h-full bg-black overflow-hidden group",
+        "relative object-contain w-full h-full bg-black overflow-hidden group",
         state.theaterMode && "theater-mode",
         className,
       )}
@@ -160,13 +303,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       onMouseLeave={() => setIsHovering(false)}
     >
       {/* YouTube Player */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0">
         <ReactPlayer
           ref={playerRef}
           url={youtubeUrl}
           width="100%"
           height="100%"
-          playing={state.playing}
+          playing={state.playing && canPlayVideo}
           volume={state.volume}
           muted={state.muted}
           playbackRate={state.playbackRate}
@@ -177,39 +320,46 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onBufferEnd={handlers.onBufferEnd}
           onError={handlers.onError}
           onEnded={onEnded}
-          onReady={handlers.onReady}
+          onReady={handlePlayerReady}
+          onDuration={(duration) => {
+            setVideoDuration(duration)
+            setIsLoadingDuration(false)
+          }}
           config={{
-            youtube: {
+          
               playerVars: {
-                autoplay: autoPlay ? 1 : 0,
+                autoplay: 0, // Always start paused for better UX
                 modestbranding: 1,
                 rel: 0,
                 showinfo: 0,
                 iv_load_policy: 3,
-                fs: 0, // Disable fullscreen button
-                controls: 0, // Hide controls
-                disablekb: 1, // Disable keyboard controls
+                fs: 1, // Enable fullscreen
+                controls: 0, // Hide YouTube controls
+                disablekb: 0, // Enable keyboard controls
                 playsinline: 1,
                 enablejsapi: 1,
                 origin: typeof window !== "undefined" ? window.location.origin : "",
                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
-              },
+            
             },
-          }}
-          style={{
-            pointerEvents: "none", // Prevent direct interaction with YouTube player
           }}
         />
       </div>
 
-      {/* Overlay to capture clicks and prevent YouTube UI interaction */}
-      <div className="absolute inset-0 z-10" onClick={handlers.onPlayPause} />
+      {/* Click overlay for play/pause */}
+      <div className="absolute inset-0 z-10 cursor-pointer" onClick={handlePlayClick} />
 
       {/* Loading overlay */}
-      {(state.isLoading || state.isBuffering) && (
+      {(state.isLoading || state.isBuffering || isLoadingDuration) && (
         <VideoLoadingOverlay
-          isVisible={state.isLoading || state.isBuffering}
-          message={state.isLoading ? "Loading video..." : "Buffering..."}
+          isVisible={true}
+          message={
+            isLoadingDuration
+              ? "Loading video information..."
+              : state.isLoading
+                ? "Loading video player..."
+                : "Buffering..."
+          }
         />
       )}
 
@@ -227,56 +377,74 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       )}
 
+      {/* Play button overlay when paused */}
+      {!state.playing && playerReady && canPlayVideo && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <div
+            className="bg-black/60 backdrop-blur-sm rounded-full p-4 cursor-pointer pointer-events-auto hover:bg-black/80 transition-all duration-200 hover:scale-110"
+            onClick={handlePlayClick}
+          >
+            <Play className="h-12 w-12 text-white ml-1" />
+          </div>
+        </div>
+      )}
+
       {/* CourseAI Logo Overlay */}
-      <AnimatedCourseAILogo show={showLogoOverlay} videoEnding={videoEnding} onAnimationComplete={() => {}} />
+      <AnimatedCourseAILogo
+        show={showLogoOverlay}
+        videoEnding={videoEnding}
+        onAnimationComplete={() => setShowLogoOverlay(false)}
+      />
 
       {/* Custom controls */}
-      <div
-        className={cn(
-          "absolute bottom-0 left-0 right-0 z-20 transition-opacity duration-300",
-          !showControlsState && !isHovering && "opacity-0",
-        )}
-      >
-        <PlayerControls
-          playing={state.playing}
-          muted={state.muted}
-          volume={state.volume}
-          playbackRate={state.playbackRate}
-          played={state.played}
-          loaded={state.loaded}
-          duration={state.duration}
-          isFullscreen={state.isFullscreen}
-          isBuffering={state.isBuffering}
-          bufferHealth={bufferHealth}
-          onPlayPause={handlers.onPlayPause}
-          onMute={handlers.onMute}
-          onVolumeChange={handlers.onVolumeChange}
-          onSeekChange={handlers.onSeek}
-          onPlaybackRateChange={handlers.onPlaybackRateChange}
-          onToggleFullscreen={handlers.onToggleFullscreen}
-          onAddBookmark={handleAddBookmark}
-          formatTime={formatTime}
-          bookmarks={bookmarks.map((b) => b.time)}
-          onSeekToBookmark={handleSeekToBookmark}
-          isAuthenticated={isAuthenticated}
-          onCertificateClick={onCertificateClick}
-          playerConfig={playerConfig}
-          show={showControlsState}
-          onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
-          onTheaterMode={handlers.handleTheaterModeToggle}
-          onNextVideo={onNextVideo}
-          onToggleBookmarkPanel={handleToggleBookmarkPanel}
-        />
-      </div>
+      {canPlayVideo && (
+        <div
+          className={cn(
+            "absolute bottom-0 left-0 right-0 z-20 transition-opacity duration-300",
+            !showControlsState && !isHovering && state.playing && "opacity-0",
+          )}
+        >
+          <PlayerControls
+            playing={state.playing}
+            muted={state.muted}
+            volume={state.volume}
+            playbackRate={state.playbackRate}
+            played={state.played}
+            loaded={state.loaded}
+            duration={videoDuration || state.duration}
+            isFullscreen={state.isFullscreen}
+            isBuffering={state.isBuffering}
+            bufferHealth={bufferHealth}
+            onPlayPause={handlePlayClick}
+            onMute={handlers.onMute}
+            onVolumeChange={handlers.onVolumeChange}
+            onSeekChange={handlers.onSeek}
+            onPlaybackRateChange={handlers.onPlaybackRateChange}
+            onToggleFullscreen={handlers.onToggleFullscreen}
+            onAddBookmark={handleAddBookmark}
+            formatTime={formatTime}
+            bookmarks={bookmarks.map((b) => b.time)}
+            onSeekToBookmark={handleSeekToBookmark}
+            isAuthenticated={isAuthenticated}
+            onCertificateClick={onCertificateClick}
+            playerConfig={playerConfig}
+            show={showControlsState}
+            onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
+            onTheaterMode={handlers.handleTheaterModeToggle}
+            onNextVideo={onNextVideo}
+            onToggleBookmarkPanel={handleToggleBookmarkPanel}
+          />
+        </div>
+      )}
 
       {/* Bookmark panel */}
-      {showBookmarkPanel && (
+      {showBookmarkPanel && isAuthenticated && (
         <div className="absolute top-0 right-0 bottom-16 w-72 bg-black/80 backdrop-blur-sm z-20 border-l border-white/10">
           <BookmarkManager
             videoId={videoId}
             bookmarks={bookmarks}
             currentTime={state.lastPlayedTime}
-            duration={state.duration}
+            duration={videoDuration || state.duration}
             onSeekToBookmark={handleSeekToBookmark}
             onAddBookmark={handleAddBookmark}
             onRemoveBookmark={handleRemoveBookmark}
@@ -286,7 +454,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
 
       {/* Keyboard shortcuts modal */}
-      {state.showKeyboardShortcuts && <KeyboardShortcutsModal onClose={handlers.handleHideKeyboardShortcuts} show={false} />}
+      {state.showKeyboardShortcuts && (
+        <KeyboardShortcutsModal onClose={handlers.handleHideKeyboardShortcuts} show={state.showKeyboardShortcuts} />
+      )}
     </div>
   )
 }
