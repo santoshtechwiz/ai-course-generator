@@ -42,6 +42,7 @@ export interface VideoPlayerState {
   showKeyboardShortcuts: boolean
   theaterMode: boolean
   userInteracted: boolean
+  autoPlayNext: boolean
 }
 
 export interface ProgressState {
@@ -60,6 +61,7 @@ export interface VideoPlayerProps {
   onBookmark?: (time: number, title?: string) => void
   autoPlay?: boolean
   onVideoLoad?: (VideoMetadata: any) => void
+  onPlayerReady?: (playerRef: React.RefObject<any>) => void
   onCertificateClick?: () => void
   height?: string | number
   width?: string | number
@@ -103,6 +105,8 @@ export interface PlayerControlsProps {
   onTheaterMode?: () => void
   onNextVideo?: () => void
   onToggleBookmarkPanel?: () => void
+  autoPlayNext?: boolean
+  onToggleAutoPlayNext?: () => void
 }
 
 export interface ProgressBarProps {
@@ -247,5 +251,6 @@ export interface UseVideoPlayerReturn {
     handleHideKeyboardShortcuts: VideoEventHandler
     handleTheaterModeToggle: VideoEventHandler
     handleShowControls: VideoEventHandler
+    toggleAutoPlayNext: VideoEventHandler
   }
 }

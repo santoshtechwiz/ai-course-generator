@@ -1,4 +1,22 @@
 /**
+ * Formats seconds into a human-readable time string (MM:SS or HH:MM:SS)
+ *
+ * @param seconds - The number of seconds to format
+ * @returns A formatted time string
+ */
+export const formatTime = (seconds: number): string => {
+  if (isNaN(seconds)) return "0:00"
+
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+
+  return h > 0
+    ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+    : `${m}:${s.toString().padStart(2, "0")}`
+}
+
+/**
  * Format seconds into a human-readable duration string (MM:SS)
  */
 export function formatDuration(seconds: number): string {

@@ -10,6 +10,7 @@ import {
   BarChart3,
   Award,
   TrendingUp,
+  Bookmark,
 } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
@@ -24,6 +25,7 @@ interface CourseDetailsTabsProps {
   isAuthenticated?: boolean
   isPremium?: boolean
   isAdmin?: boolean
+  onSeekToBookmark?: (time: number) => void
 }
 
 export default function CourseDetailsTabs({
@@ -32,6 +34,7 @@ export default function CourseDetailsTabs({
   isAuthenticated = true,
   isPremium = false,
   isAdmin = false,
+  onSeekToBookmark,
 }: CourseDetailsTabsProps) {
   const dispatch = useAppDispatch()
   const [activeTab, setActiveTab] = useState("summary")
@@ -88,8 +91,11 @@ export default function CourseDetailsTabs({
   )
 
   const handleSeekToBookmark = useCallback((time: number) => {
-    console.log("Seek to bookmark:", time)
-  }, [])
+    console.log("Seek to bookmark:", time);
+    if (onSeekToBookmark) {
+      onSeekToBookmark(time);
+    }
+  }, [onSeekToBookmark])
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
@@ -107,6 +113,10 @@ export default function CourseDetailsTabs({
           <TabsTrigger value="progress" className="flex items-center gap-2 text-sm">
             <BarChart3 className="h-4 w-4" />
             Progress
+          </TabsTrigger>
+          <TabsTrigger value="bookmarks" className="flex items-center gap-2 text-sm">
+            <Bookmark className="h-4 w-4" />
+            Bookmarks
           </TabsTrigger>
         </TabsList>
 
@@ -202,6 +212,63 @@ export default function CourseDetailsTabs({
                       Certificate
                     </Button>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bookmarks" className="h-full overflow-auto p-4">
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bookmark className="h-5 w-5" />
+                Bookmarks
+              </CardTitle>
+              <CardDescription>
+                {bookmarks.length > 0 
+                  ? "Jump to specific parts of the video you've saved" 
+                  : "You haven't saved any bookmarks for this video yet"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isAuthenticated && bookmarks.length > 0 ? (
+                <div className="space-y-3">
+                  {bookmarks.map((bookmark) => (
+                    <div 
+                      key={bookmark.id} 
+                      onClick={() => handleSeekToBookmark(bookmark.time)}
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/20 text-primary font-medium rounded px-2 py-1 text-xs">
+                          {formatTime(bookmark.time)}
+                        </div>
+                        <span className="line-clamp-1">{bookmark.title}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveBookmark(bookmark.id);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : isAuthenticated ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>No bookmarks yet</p>
+                  <p className="text-sm">Press 'B' while watching to add a bookmark</p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Sign in to save video bookmarks</p>
+                  <Button variant="outline" className="mt-4">Sign In</Button>
                 </div>
               )}
             </CardContent>

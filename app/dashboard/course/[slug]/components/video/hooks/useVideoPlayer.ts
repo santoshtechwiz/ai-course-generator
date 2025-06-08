@@ -52,6 +52,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     showKeyboardShortcuts: false,
     theaterMode: false,
     userInteracted: !!options.autoPlay,
+    autoPlayNext: savedPreferences.autoPlayNext ?? true,
   })
 
   const [bufferHealth, setBufferHealth] = useState(100)
@@ -397,6 +398,15 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }
   }, [state.theaterMode])
 
+  // Toggle autoPlayNext handler
+  const toggleAutoPlayNext = useCallback(() => {
+    setState((prev) => {
+      const newAutoPlayNext = !prev.autoPlayNext;
+      savePlayerPreferences({ autoPlayNext: newAutoPlayNext });
+      return { ...prev, autoPlayNext: newAutoPlayNext };
+    });
+  }, []);
+
   return {
     state,
     playerRef,
@@ -423,6 +433,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       handleHideKeyboardShortcuts,
       handleTheaterModeToggle,
       handleShowControls,
+      toggleAutoPlayNext,
     },
   }
 }

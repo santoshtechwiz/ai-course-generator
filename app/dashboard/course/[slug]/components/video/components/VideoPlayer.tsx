@@ -29,6 +29,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   autoPlay = false,
   onVideoLoad,
   onCertificateClick,
+  onPlayerReady,
   height = "100%",
   width = "100%",
   className,
@@ -117,10 +118,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
         })
       }
+      
+      // Pass the player reference to the parent component
+      if (onPlayerReady) {
+        onPlayerReady(playerRef);
+      }
     }
 
     handlers.onReady()
-  }, [handlers, onVideoLoad, courseName, videoId])
+  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady]);
 
   // Enhanced play handler with authentication check
   const handlePlayClick = useCallback(() => {
@@ -291,6 +297,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     )
   }
 
+  // Update AnimatedCourseAILogo component behavior
+  const handleLogoAnimationComplete = useCallback(() => {
+    setShowLogoOverlay(false)
+    if (videoEnding && onNextVideo) {
+      onNextVideo()
+    }
+  }, [videoEnding, onNextVideo])
+
   return (
     <div
       ref={containerRef}
@@ -340,10 +354,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 enablejsapi: 1,
                 origin: typeof window !== "undefined" ? window.location.origin : "",
                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
-            
+             
             },
           }}
         />
+      </div>
+
+      {/* Persistent CourseAI Logo */}
+      <div className="absolute top-4 right-4 z-30 opacity-70 hover:opacity-100 transition-opacity">
+        <div className="bg-black/20 backdrop-blur-sm rounded-full p-1.5 w-10 h-10 flex items-center justify-center">
+          <span className="text-white font-bold text-xs select-none">CourseAI</span>
+        </div>
       </div>
 
       {/* Click overlay for play/pause */}
@@ -389,11 +410,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* CourseAI Logo Overlay */}
+      {/* CourseAI Logo Overlay - Updated to cover entire video */}
       <AnimatedCourseAILogo
         show={showLogoOverlay}
         videoEnding={videoEnding}
-        onAnimationComplete={() => setShowLogoOverlay(false)}
+        onAnimationComplete={handleLogoAnimationComplete}
+        className="absolute inset-0 z-50 flex items-center justify-center"
       />
 
       {/* Custom controls */}

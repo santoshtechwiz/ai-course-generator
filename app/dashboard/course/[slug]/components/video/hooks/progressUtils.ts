@@ -108,6 +108,7 @@ export function savePlayerPreferences(preferences: {
   volume?: number
   muted?: boolean
   playbackRate?: number
+  autoPlayNext?: boolean
 }): void {
   try {
     if (preferences.volume !== undefined) {
@@ -118,6 +119,9 @@ export function savePlayerPreferences(preferences: {
     }
     if (preferences.playbackRate !== undefined) {
       localStorage.setItem("video-player-playback-rate", preferences.playbackRate.toString())
+    }
+    if (preferences.autoPlayNext !== undefined) {
+      localStorage.setItem("video-player-autoplay-next", preferences.autoPlayNext.toString())
     }
   } catch (error) {
     console.warn("Failed to save player preferences:", error)
@@ -131,22 +135,26 @@ export function loadPlayerPreferences(): {
   volume: number
   muted: boolean
   playbackRate: number
+  autoPlayNext: boolean
 } {
   const defaults = {
     volume: 0.8,
     muted: false,
     playbackRate: 1.0,
+    autoPlayNext: true,
   }
 
   try {
     const volume = localStorage.getItem("video-player-volume")
     const muted = localStorage.getItem("video-player-muted")
     const playbackRate = localStorage.getItem("video-player-playback-rate")
+    const autoPlayNext = localStorage.getItem("video-player-autoplay-next")
 
     return {
       volume: volume ? Number.parseFloat(volume) : defaults.volume,
       muted: muted ? muted === "true" : defaults.muted,
       playbackRate: playbackRate ? Number.parseFloat(playbackRate) : defaults.playbackRate,
+      autoPlayNext: autoPlayNext ? autoPlayNext === "true" : defaults.autoPlayNext,
     }
   } catch (error) {
     console.warn("Failed to load player preferences:", error)
