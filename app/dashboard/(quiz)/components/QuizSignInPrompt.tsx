@@ -11,7 +11,7 @@ export interface FallbackAction {
   variant?: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined
 }
 
-interface NonAuthenticatedUserSignInPromptProps {
+interface QuizSignInPromptProps {
   onSignIn: () => void
   title?: string
   message?: string
@@ -24,14 +24,14 @@ interface NonAuthenticatedUserSignInPromptProps {
   quizType?: QuizType
 }
 
-export function NonAuthenticatedUserSignInPrompt({
+export function QuizignInPrompt({
   onSignIn,
   title = "Sign In Required",
   message = "Sign in to see your detailed results, save your progress, and track your improvement over time.",
   previewData,
   fallbackAction,
   quizType,
-}: NonAuthenticatedUserSignInPromptProps) {
+}: QuizignInPromptProps) {
   return (
     <Card className="mb-6 bg-gradient-to-b from-background to-primary/10 border-primary/20">
       <CardContent className="p-6 text-center">
@@ -70,4 +70,4 @@ export function NonAuthenticatedUserSignInPrompt({
   )
 }
 
-export default NonAuthenticatedUserSignInPrompt
+export default QuizignInPrompt
