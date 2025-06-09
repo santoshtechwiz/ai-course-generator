@@ -93,6 +93,7 @@ export default function GenericQuizResultHandler({
   const quizSlug = slug || currentSlug;
 
   const [viewState, setViewState] = useState<ViewState>("loading");
+  const [isHydrating, setIsHydrating] = useState(true);
 
   const handleRetake = () => {
     dispatch(resetQuiz());
@@ -114,49 +115,47 @@ export default function GenericQuizResultHandler({
     await signIn(redirectState);
   };
 
-  // 🛡️ Effect to hydrate stored results safely
+  // 🔥 Single hydration flow to avoid race conditions
   useEffect(() => {
-    if (!quizResults && !generatedResults) {
+    const hydrate = async () => {
+      // 1️⃣ Auth restore
+      if (isAuthenticated) {
+        const restored = restoreAuthRedirectState();
+        if (restored?.quizState?.currentState?.results) {
+          dispatch(setQuizResults(restored.quizState.currentState.results));
+        }
+        clearAuthState();
+      }
+
+      // 2️⃣ Check stored results
       const storedResults = getStoredResults(quizSlug);
-      if (storedResults) {
-        dispatch(setQuizResults(storedResults));
-      }
-    }
-  }, [quizResults, generatedResults, quizSlug, dispatch, getStoredResults]);
 
-  // 🛡️ Effect to restore auth redirect state
-  useEffect(() => {
-    if (isAuthenticated) {
-      const restored = restoreAuthRedirectState();
-      if (restored?.quizState?.currentState?.results) {
-        dispatch(setQuizResults(restored.quizState.currentState.results));
-      }
-      clearAuthState();
-    }
-  }, [isAuthenticated, restoreAuthRedirectState, clearAuthState, dispatch]);
+      // 3️⃣ Determine final state
+      const finalResults =
+        quizResults || generatedResults || storedResults;
 
-  // 🛡️ Effect to determine view state
-  useEffect(() => {
-    if (quizStatus === "loading" || isSessionLoading) {
-      setViewState("loading");
-    } else if (isAuthenticated) {
-      const result =
-        quizResults ||
-        generatedResults ||
-        getStoredResults(quizSlug);
-      if (result) {
-        dispatch(setQuizResults(result));
-        storeResults(quizSlug, result);
-        setViewState("show_results");
+      if (quizStatus === "loading" || isSessionLoading) {
+        setViewState("loading");
+      } else if (isAuthenticated) {
+        if (finalResults) {
+          dispatch(setQuizResults(finalResults));
+          storeResults(quizSlug, finalResults);
+          setViewState("show_results");
+        } else {
+          setViewState("no_results");
+        }
       } else {
-        setViewState("no_results");
+        setViewState(generatedResults ? "show_signin" : "no_results");
       }
-    } else {
-      setViewState(generatedResults ? "show_signin" : "no_results");
-    }
+
+      // 4️⃣ Finish hydration
+      setIsHydrating(false);
+    };
+
+    hydrate();
   }, [
-    isSessionLoading,
     isAuthenticated,
+    isSessionLoading,
     quizStatus,
     quizResults,
     generatedResults,
@@ -164,9 +163,12 @@ export default function GenericQuizResultHandler({
     dispatch,
     getStoredResults,
     storeResults,
+    restoreAuthRedirectState,
+    clearAuthState,
   ]);
 
-  if (viewState === "loading") {
+  // 🔥 While hydrating, always show loader
+  if (isHydrating || viewState === "loading") {
     return (
       <QuizLoader
         message="Loading quiz results..."

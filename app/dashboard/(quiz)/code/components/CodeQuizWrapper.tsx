@@ -21,7 +21,6 @@ import {
 } from "@/store/slices/quizSlice"
 
 import CodeQuiz from "./CodeQuiz"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import type { QuizType } from "@/app/types/auth-types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -164,7 +163,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
 
   // No current question state
   if (!currentQuestion) {
-    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+    return <QuizLoader steps={[{ label: "Initializing quiz", status: "loading" }]} />
   }
 
   // Current answer from Redux

@@ -21,13 +21,12 @@ import {
 
 import { Button } from "@/components/ui/button"
 import McqQuiz from "./McqQuiz"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 import { ChevronLeft, ChevronRight, CheckCircle, Trophy } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import type { QuizType } from "@/types/quiz"
-import { QuizLoader } from "@/components/ui/quiz-loader"
 
 interface McqQuizWrapperProps {
   slug: string
@@ -168,7 +167,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
 
   // No current question state
   if (!currentQuestion) {
-    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+    return <QuizLoader steps={[{ label: "Initializing quiz", status: "loading" }]} />
   }
 
   // Get current answer

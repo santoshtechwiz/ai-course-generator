@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import FlashCardsPageClient from "../components/FlashCardsPageClient"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 
 export default function FlashCardPage({
   params,
@@ -21,7 +21,7 @@ export default function FlashCardPage({
 
   // Check for loading state
   if (authStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+    return <QuizLoader message="Initializing quiz" subMessage="Setting up flashcards" showTiming />
   }
 
   if (!slug) {
@@ -40,7 +40,7 @@ export default function FlashCardPage({
 
   return (
     <QuizPlayLayout>
-      <FlashCardsPageClient slug={slug} userId={ ""} />
+      <FlashCardsPageClient slug={slug} userId={""} />
     </QuizPlayLayout>
   )
 }
