@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useDispatch, useSelector } from "react-redux"
 import { useSession } from "next-auth/react"
+import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
 import {
   selectQuestions,
@@ -21,15 +21,15 @@ import {
   setQuizCompleted,
   fetchQuiz,
 } from "@/store/slices/quizSlice"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import BlanksQuiz from "./BlanksQuiz"
-import BlankQuizResults from "./BlankQuizResults"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { BlankQuestion } from "./types"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { RefreshCw } from "lucide-react"
+import BlankQuizResults from "./BlankQuizResults"
+import BlanksQuiz from "./BlanksQuiz"
 
 interface BlanksQuizWrapperProps {
   slug: string
@@ -58,6 +58,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
 
+  // State
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -244,7 +245,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
   // Loading state
   if (loading || quizStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Loading quiz data", status: "loading" }]} />
+    return <QuizLoader message="Loading quiz..." subMessage="Preparing your questions" />
   }
 
   // Error state

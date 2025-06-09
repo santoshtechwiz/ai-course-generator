@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Check } from "lucide-react"
+
 import { QuizType } from "@/app/types/auth-types"
 
 export interface FallbackAction {
@@ -24,14 +24,14 @@ interface QuizSignInPromptProps {
   quizType?: QuizType
 }
 
-export function QuizignInPrompt({
+export function QuizSignInPrompt({
   onSignIn,
   title = "Sign In Required",
   message = "Sign in to see your detailed results, save your progress, and track your improvement over time.",
   previewData,
   fallbackAction,
   quizType,
-}: QuizignInPromptProps) {
+}: QuizSignInPromptProps) {
   return (
     <Card className="mb-6 bg-gradient-to-b from-background to-primary/10 border-primary/20">
       <CardContent className="p-6 text-center">
@@ -70,4 +70,4 @@ export function QuizignInPrompt({
   )
 }
 
-export default QuizignInPrompt
+export default QuizSignInPrompt

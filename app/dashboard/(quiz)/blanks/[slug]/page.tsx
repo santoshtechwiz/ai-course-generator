@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 
 
@@ -23,7 +23,7 @@ export default function BlanksQuizPage({
 
   // Check for loading state
   if (authStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+    return <QuizLoader full message="Initializing quiz..." subMessage="Loading user session" />
   }
 
   if (!slug) {

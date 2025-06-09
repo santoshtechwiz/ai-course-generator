@@ -16,36 +16,32 @@ import {
   setCurrentQuestionIndex,
   saveAnswer,
   fetchQuiz,
-  submitQuiz,
   setQuizResults,
-  setPendingQuiz,
+  setQuizCompleted,
 } from "@/store/slices/quizSlice"
-import { selectIsAuthenticated } from "@/store/slices/authSlice"
 
 import CodeQuiz from "./CodeQuiz"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import type { CodeQuestion } from "./types"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 import type { QuizType } from "@/app/types/auth-types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle } from "lucide-react"
-import { useSessionService } from "@/hooks/useSessionService"
 
 interface CodeQuizWrapperProps {
   slug: string
   quizData?: {
     title?: string
-    questions?: CodeQuestion[]
+    questions?: any[]
   }
 }
 
 export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { saveAuthRedirectState } = useSessionService()
 
-  // Redux selectors
+  // Redux selectors - pure quiz state
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
   const quizStatus = useSelector(selectQuizStatus)
@@ -54,18 +50,6 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
   const currentQuestion = useSelector(selectCurrentQuestion)
   const quizTitle = useSelector(selectQuizTitle)
   const isQuizComplete = useSelector(selectIsQuizComplete)
-  const isAuthenticated = useSelector(selectIsAuthenticated)
-
-  // Generate a unique session ID for this quiz attempt if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated && typeof window !== 'undefined') {
-      const sessionKey = `code_session_${slug}`
-      if (!sessionStorage.getItem(sessionKey)) {
-        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-        sessionStorage.setItem(sessionKey, sessionId)
-      }
-    }
-  }, [slug, isAuthenticated])
 
   // Load quiz data on mount
   useEffect(() => {
@@ -90,65 +74,13 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
   // Handle quiz completion - only when explicitly triggered
   useEffect(() => {
     if (!isQuizComplete) return
-
+    
+    // When complete, navigate to results
     const safeSlug = typeof slug === "string" ? slug : String(slug)
+    router.push(`/dashboard/code/${safeSlug}/results`)
+  }, [isQuizComplete, router, slug])
 
-    if (isAuthenticated) {
-      dispatch(submitQuiz())
-        .then((res: any) => {
-          if (res?.payload) {
-            dispatch(setQuizResults(res.payload))
-            router.push(`/dashboard/code/${safeSlug}/results`)
-          } else {
-            console.error("Submit quiz failed: payload is undefined", res)
-            // Generate results through the selector and redirect
-            router.push(`/dashboard/code/${safeSlug}/results`)
-          }
-        })
-        .catch((error) => {
-          console.error("Error submitting quiz:", error)
-          // Still redirect to results - we can use generated results
-          router.push(`/dashboard/code/${safeSlug}/results`)
-        })
-    } else {
-      // For unauthenticated users, redirect to sign in
-      const pendingQuizData = {
-        slug,
-        quizData: {
-          title: quizTitle,
-          questions,
-        },
-        currentState: {
-          answers,
-          currentQuestionIndex,
-          isCompleted: true,
-          showResults: true,
-        },
-      }
-
-      dispatch(setPendingQuiz(pendingQuizData))
-      
-      // Save auth redirect state
-      saveAuthRedirectState({
-        returnPath: `/dashboard/code/${safeSlug}/results`,
-        quizState: {
-          slug,
-          quizData: {
-            title: quizTitle,
-            questions,
-          },
-          currentState: {
-            answers,
-            isCompleted: true,
-            showResults: true,
-          },
-        },
-      })
-      
-      router.push(`/dashboard/code/${safeSlug}/results`)
-    }
-  }, [isQuizComplete, isAuthenticated, dispatch, router, slug, quizTitle, questions, answers, currentQuestionIndex, saveAuthRedirectState])
-
+  // Answer handler - store the selected answer
   const handleAnswerQuestion = (selectedOption: string | undefined) => {
     if (!selectedOption || !currentQuestion) return
 
@@ -156,7 +88,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     if (!Array.isArray(currentQuestion.options)) return
     if (!currentQuestion.options.includes(selectedOption)) return
 
-    // Don't auto-advance - let user control navigation
+    // Store the answer in Redux
     dispatch(
       saveAnswer({
         questionId: currentQuestion.id,
@@ -170,23 +102,28 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     )
   }
 
+  // Navigation handlers
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }
 
+  // Complete the quiz
   const handleFinish = () => {
-    dispatch({ type: "quiz/setQuizCompleted" })
+    dispatch(setQuizCompleted())
   }
 
+  // UI calculations
   const answeredQuestions = Object.keys(answers).length
   const progressPercentage = (answeredQuestions / questions.length) * 100
 
+  // Loading state
   if (quizStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Loading quiz data", status: "loading" }]} />
+    return <QuizLoader message="Loading quiz data" subMessage="Preparing your code questions" />
   }
 
+  // Error state
   if (quizStatus === "failed") {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
@@ -208,6 +145,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     )
   }
 
+  // Empty questions state
   if (!Array.isArray(questions) || questions.length === 0) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
@@ -224,12 +162,19 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     )
   }
 
+  // No current question state
   if (!currentQuestion) {
     return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
   }
 
+  // Current answer from Redux
   const currentAnswer = answers[currentQuestion.id]
   const existingAnswer = currentAnswer?.selectedOptionId
+
+  // Submitting state
+  if (quizStatus === "submitting") {
+    return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8">

@@ -1,144 +1,58 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use } from "react"
 import { useRouter } from "next/navigation"
-import { useDispatch, useSelector } from "react-redux"
-import { useSession, signIn } from "next-auth/react"
-import type { AppDispatch } from "@/store"
-import {
-  selectQuizResults,
-  selectQuizStatus,
-  selectOrGenerateQuizResults,
-  selectAnswers,
-  setQuizResults,
-} from "@/store/slices/quizSlice"
+import QuizResultHandler from "../../../components/QuizResultHandler"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
-
-
-import { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
-import OpenEndedQuizResults from "../../components/QuizResultsOpenEnded"
 
 interface ResultsPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }> | { slug: string }  
 }
 
 export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
-  const slug = params.slug
   const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
-  const { data: session, status: authStatus } = useSession()
-  const { restoreAuthRedirectState, clearAuthState } = useSessionService()
-
-  const quizResults = useSelector(selectQuizResults)
-  const generatedResults = useSelector(selectOrGenerateQuizResults)
-  const quizStatus = useSelector(selectQuizStatus)
-  const answers = useSelector(selectAnswers)
-
-  const [hasRestoredState, setHasRestoredState] = useState(false)
-
-  useEffect(() => {
-    if (authStatus === "authenticated" && !hasRestoredState) {
-      const restoredState = restoreAuthRedirectState()
-      if (restoredState?.quizState?.currentState?.results) {
-        dispatch(setQuizResults(restoredState.quizState.currentState.results))
-      }
-      setHasRestoredState(true)
-      clearAuthState()
-    }
-  }, [authStatus, hasRestoredState, dispatch, restoreAuthRedirectState, clearAuthState])
-
-  useEffect(() => {
-    const hasResults = quizResults || generatedResults
-    const hasAnswers = Object.keys(answers || {}).length > 0
-
-    if (authStatus !== "loading" && !hasResults && !hasAnswers) {
-      const redirectTimer = setTimeout(() => {
-        router.push(`/dashboard/openended/${slug}`)
-      }, 1000)
-
-      return () => clearTimeout(redirectTimer)
-    }
-  }, [authStatus, quizResults, generatedResults, answers, router, slug])
-
+  const slug = params instanceof Promise ? use(params) : params.slug;
+  
   const handleRetakeQuiz = () => {
-    router.push(`/dashboard/openended/${slug}`)
+    // Use replace instead of push to avoid navigation loops
+    router.replace(`/dashboard/openended/${slug}`)
   }
 
-  const handleSignIn = async () => {
-    await signIn()
-  }
-
-  if (authStatus === "loading" || quizStatus === "loading") {
+  // If slug is missing, show error
+  if (!slug) {
     return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Checking authentication", status: authStatus === "loading" ? "loading" : "completed" },
-          { label: "Loading quiz results", status: quizStatus === "loading" ? "loading" : "completed" },
-        ]}
-      />
-    )
-  }
-
-  const resultData = quizResults || generatedResults
-
-  if (!resultData && Object.keys(answers || {}).length === 0) {
-    return (
-      <div className="container max-w-4xl py-10 text-center">
+      <div className="container max-w-4xl py-6">
         <Card>
-          <CardContent className="p-8">
-            <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
-            <p className="text-muted-foreground mb-6">You need to complete the quiz to see results.</p>
-            <Button onClick={handleRetakeQuiz}>Take Quiz Now</Button>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold mb-4">Error</h2>
+            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
+            <Button onClick={() => router.replace("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  if (authStatus !== "authenticated") {
-    if (resultData) {
-      return (
-        <div className="container max-w-4xl py-6">
-          <NonAuthenticatedUserSignInPrompt
-            onSignIn={handleSignIn}
-            resultData={resultData}
-            handleRetake={handleRetakeQuiz}
-          />
-          <div className="mt-6 relative opacity-50 pointer-events-none select-none filter blur-sm">
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <OpenEndedQuizResults result={resultData} isAuthenticated={false} slug={slug} onRetake={handleRetakeQuiz} />
-                <div className="absolute inset-0 flex items-center justify-center" />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="container max-w-md py-10">
-        <NonAuthenticatedUserSignInPrompt
-          onSignIn={handleSignIn}
-          title="Sign In to View Results"
-          message="Please sign in to view your detailed quiz results."
-          fallbackAction={{
-            label: "Take Quiz Instead",
-            onClick: () => router.push(`/dashboard/blanks/${slug}`),
-            variant: "outline",
-          }}
-        />
-      </div>
-    )
-  }
-
-  // ✅ MISSING CASE FIXED: Authenticated user + results
   return (
     <div className="container max-w-4xl py-10">
-      <QuizResult quizType="openended" result={resultData} slug={slug} onRetake={handleRetakeQuiz} />
+      <QuizResultHandler 
+        slug={slug} 
+        quizType="openended"
+        maxWaitTime={3000} // Shorten wait time to avoid long loading spinner
+      >
+        {({ result }) => (
+          result ? (
+            <QuizResult 
+              result={result} 
+              slug={slug} 
+              quizType="openended" 
+              onRetake={handleRetakeQuiz}
+            />
+          ) : null
+        )}
+      </QuizResultHandler>
     </div>
   )
 }

@@ -1,133 +1,136 @@
-"use client"
+"use client";
 
-import { useMemo, useCallback } from "react"
-import { useSelector } from "react-redux"
-import { useSessionService } from "@/hooks/useSessionService"
-import {
-  selectQuizResults,
-  selectQuizStatus,
-  selectQuizError,
-  selectQuizId,
-} from "@/store/slices/quizSlice"
-import { selectIsAuthenticated } from "@/store/slices/authSlice"
-import { QuizLoadingSteps } from "./QuizLoadingSteps"
-import QuizAuthGuard from "@/components/QuizAuthGuard"
-import McqQuizResult from "../mcq/components/McqQuizResult"
-import CodeQuizResult from "../code/components/CodeQuizResult"
-import BlanksQuizResult from "../blanks/components/BlankQuizResults"
-import OpenEndedQuizResult from "../openended/components/QuizResultsOpenEnded"
-import { Card, CardContent } from "@/components/ui/card"
-import { Trophy } from "lucide-react"
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { resetQuiz } from "@/store/slices/quizSlice";
+import { AppDispatch } from "@/store";
+import BlankQuizResults from "../blanks/components/BlankQuizResults";
+import McqQuizResult from "../mcq/components/McqQuizResult";
+import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded";
+import { QuizLoader } from "@/components/ui/quiz-loader";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
 
+// Import the quiz type definition
+import type { QuizType } from "@/types/quiz";
+
+// QuizResult props with appropriate typing
 interface QuizResultProps {
-  result?: any
-  quizType?: "mcq" | "code" | "blanks" | "openended"
-  slug?: string
-  onRetake?: () => void
-  hideAuthGuard?: boolean
+  /** Quiz result data */
+  result: any; 
+  /** Quiz slug for retaking or other operations */
+  slug: string;
+  /** Type of quiz being displayed */
+  quizType: QuizType;
+  /** Optional callback for retaking the quiz */
+  onRetake?: () => void;
 }
 
-export default function QuizResult({
-  result: propResult,
-  quizType: propQuizType,
-  slug: propSlug,
-  onRetake,
-  hideAuthGuard = false,
+export default function QuizResult({ 
+  result,
+  slug,
+  quizType = "mcq",
+  onRetake
 }: QuizResultProps) {
-  const { getStoredResults } = useSessionService()
-  const isAuthenticated = useSelector(selectIsAuthenticated)
-  const quizResults = useSelector(selectQuizResults)
-  const quizStatus = useSelector(selectQuizStatus)
-  const quizError = useSelector(selectQuizError)
-  const quizId = propSlug || useSelector(selectQuizId)
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const result = useMemo(
-    () => propResult || quizResults || (quizId ? getStoredResults(quizId) : null),
-    [propResult, quizResults, getStoredResults, quizId]
-  )
-
-  const quizType = useMemo(
-    () =>
-      propQuizType ||
-      result?.quizType ||
-      quizResults?.quizType ||
-      (result?.questions && result?.questions[0]?.type) ||
-      "mcq",
-    [propQuizType, result, quizResults]
-  )
-
-  if (quizStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Loading results", status: "loading" }]} />
-  }
-
-  if (quizStatus === "failed" || quizError) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center space-y-4">
-          <div className="w-16 h-16 mx-auto bg-destructive/10 rounded-full flex items-center justify-center">
-            <Trophy className="w-8 h-8 text-destructive" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Unable to Load Results</h3>
-            <p className="text-muted-foreground">{quizError || "An error occurred loading your quiz results."}</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
+  // Handle retake action
+  const handleRetake = () => {
+    if (onRetake) {
+      onRetake();
+    } else {
+      dispatch(resetQuiz());
+      router.push(`/dashboard/${quizType}/${slug}`);
+    }
+  };
+  
+  // Show error UI if no result is provided
   if (!result) {
     return (
       <Card>
-        <CardContent className="p-8 text-center space-y-4">
-          <div className="w-16 h-16 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
-            <Trophy className="w-8 h-8 text-muted-foreground" />
+        <CardContent className="p-6 text-center">
+          <div className="flex justify-center mb-4">
+            <AlertCircle className="h-12 w-12 text-destructive" />
           </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">No Results Available</h3>
-            <p className="text-muted-foreground">We couldn't find any quiz results. Try taking a quiz first!</p>
-          </div>
+          <h2 className="text-xl font-bold mb-4">Results Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            We couldn't load your quiz results. The quiz may not have been completed.
+          </p>
+          <Button onClick={handleRetake}>Take the Quiz</Button>
         </CardContent>
       </Card>
-    )
+    );
   }
-
-  const content = useCallback(() => {
-    switch (quizType) {
-      case "mcq":
-        return <McqQuizResult result={result} onRetake={onRetake} />
-      case "code":
-        return <CodeQuizResult result={result} onRetake={onRetake} />
-      case "blanks":
-        return <BlanksQuizResult result={result} onRetake={onRetake} />
-      case "openended":
-        return <OpenEndedQuizResult result={result} onRetake={onRetake} isAuthenticated={!!isAuthenticated} slug={quizId} />
-      default:
-        return (
-          <Card>
-            <CardContent className="p-8 text-center space-y-4">
-              <div className="w-16 h-16 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
-                <Trophy className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Unsupported Quiz Type</h3>
-                <p className="text-muted-foreground">
-                  This quiz type is not supported. Please contact support.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )
-    }
-  }, [quizType, result, onRetake, isAuthenticated, quizId])
-
-  if (hideAuthGuard) {
-    return content()
+  
+  // Verify the result has enough data to render
+  const isValidResult = 
+    result && 
+    (result.percentage !== undefined || 
+     result.score !== undefined || 
+     (result.questionResults && result.questionResults.length) || 
+     (result.questions && result.questions.length));
+  
+  if (!isValidResult) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <div className="flex justify-center mb-4">
+            <AlertCircle className="h-12 w-12 text-yellow-500" />
+          </div>
+          <h2 className="text-xl font-bold mb-4">Invalid Results</h2>
+          <p className="text-muted-foreground mb-6">
+            Your quiz results appear to be incomplete or invalid. 
+            It's recommended to retake the quiz.
+          </p>
+          <Button onClick={handleRetake}>Retake Quiz</Button>
+        </CardContent>
+      </Card>
+    );
   }
+  
+  return renderQuizResultComponent(quizType, result, slug, handleRetake);
+}
 
-  return (
-    <QuizAuthGuard quizId={quizId}>
-      {content()}
-    </QuizAuthGuard>
-  )
+// Helper function to render the appropriate quiz result component based on quiz type
+function renderQuizResultComponent(
+  quizType: QuizType,
+  result: any,
+  slug: string,
+  onRetake: () => void
+) {
+  if (!result) return null;
+  
+  // Return the appropriate result component based on quiz type
+  switch (quizType) {
+    case "mcq":
+      return <McqQuizResult result={result} />;
+    
+    case "blanks":
+      return (
+        <BlankQuizResults
+          result={result}
+          isAuthenticated={true} // Always true when rendered via QuizResultHandler
+          slug={slug}
+          onRetake={onRetake}
+        />
+      );
+    
+    case "openended":
+      return (
+        <OpenEndedQuizResults
+          result={result}
+          isAuthenticated={true} // Always true when rendered via QuizResultHandler
+          slug={slug}
+          onRetake={onRetake}
+        />
+      );
+    
+    case "code":
+      return <McqQuizResult result={result} />; // Fallback to MCQ for now
+    
+    default:
+      return <McqQuizResult result={result} />;
+  }
 }

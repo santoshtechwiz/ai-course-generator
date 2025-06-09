@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useDispatch } from "react-redux"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { AppDispatch } from "@/store"
+import { invalidateSessionCache } from "@/lib/auth"
 
 export interface AuthHookResult {
   isAuthenticated: boolean
@@ -73,10 +74,12 @@ export function useAuth(): AuthHookResult {
         console.error("Error clearing session data:", e);
       }
     }
-    
+
+    // Clear server-side session cache
+    invalidateSessionCache();
+
     // Then sign out with NextAuth
     await signOut({ redirect: false })
-    
   }, [cleanupSessionData])
 
   return {

@@ -57,8 +57,9 @@ export function UserMenu({ children }: UserMenuProps) {
   const handleSignOut = async () => {
     setIsLoading(true)
     try {
+     await signOut({ redirect: false }) // Sign out without redirecting immediately
       // Clear user data from Redux store
-      dispatch(logout());
+      dispatch(logout())
       // Redirect to the current page after logout
       const callbackUrl = window.location.pathname
       await signOut({ callbackUrl, redirect: true })
