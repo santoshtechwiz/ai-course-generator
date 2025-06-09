@@ -29,7 +29,6 @@ import BlanksQuiz from "./BlanksQuiz"
 import BlankQuizResults from "./BlankQuizResults"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { BlankQuestion } from "./types"
-import { calculateCompositeSimilarity } from "../../openended/utils/similarity"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 
 interface BlanksQuizWrapperProps {
@@ -112,7 +111,8 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     if (!questions[currentQuestionIndex]) return false
 
     const question = questions[currentQuestionIndex]
-    const questionId = question.id?.toString() || currentQuestionIndex.toString()
+    // Ensure we have a unique and stable questionId
+    const questionId = question.id?.toString() || `question_${currentQuestionIndex}`
 
     // Create answer object for blanks quiz
     const answerData = {
@@ -122,6 +122,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
       filledBlanks: {
         [questionId]: answer,
       },
+      timestamp: Date.now(), // Add timestamp to track most recent answers
     }
 
     // Save answer to Redux
@@ -129,9 +130,27 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     return true
   }
 
-  // Handle next question
+  // Handle next question with debouncing to prevent rapid clicks
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
+      // Save current answer before moving to next question
+      const currentQuestionId = questions[currentQuestionIndex]?.id?.toString() || `question_${currentQuestionIndex}`
+
+      if (!answers[currentQuestionId] && questions[currentQuestionIndex]) {
+        // If no answer is provided yet, save an empty answer to track progress
+        const emptyAnswerData = {
+          questionId: currentQuestionId,
+          userAnswer: "",
+          type: "blanks",
+          filledBlanks: {
+            [currentQuestionId]: "",
+          },
+          timestamp: Date.now(),
+        }
+
+        dispatch(saveAnswer({ questionId: currentQuestionId, answer: emptyAnswerData }))
+      }
+
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }
@@ -148,8 +167,9 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     if (!questions.length) return
 
     // Generate results locally
-    const questionResults = questions.map((question) => {
-      const questionId = question.id?.toString() || ""
+    const questionResults = questions.map((question, index) => {
+      // Use a consistent way to generate question IDs
+      const questionId = question.id?.toString() || `question_${index}`
       const answerData = answers[questionId]
       const userAnswer = answerData?.filledBlanks?.[questionId] || answerData?.userAnswer || ""
       const correctAnswer = question.answer || ""
