@@ -20,7 +20,7 @@ import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 import { useSessionService } from "@/hooks/useSessionService"
 import QuizResult from "../../../components/QuizResult"
 import McqQuizResult from "../../components/McqQuizResult"
-import NonAuthenticatedUserSignInPrompt from "../../../components/NonAuthenticatedUserSignInPrompt"
+import QuizSignInPrompt from "../../../components/QuizSignInPrompt"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }> | { slug: string }
@@ -103,7 +103,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
     if (resultData) {
       return (
         <div className="container max-w-4xl py-6">
-          <NonAuthenticatedUserSignInPrompt
+          <QuizSignInPrompt
             onSignIn={handleSignIn}
             previewData={resultData}
             handleRetake={handleRetakeQuiz}
@@ -122,7 +122,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
     return (
       <div className="container max-w-md py-10">
-        <NonAuthenticatedUserSignInPrompt
+        <QuizSignInPrompt
           onSignIn={handleSignIn}
           title="Sign In to View Results"
           message="Please sign in to view your detailed quiz results."
