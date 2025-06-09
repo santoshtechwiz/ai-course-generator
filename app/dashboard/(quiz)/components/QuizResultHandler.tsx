@@ -94,15 +94,6 @@ export default function GenericQuizResultHandler({
 
   const [viewState, setViewState] = useState<ViewState>("loading");
 
-  // 💡 Synchronously get results from localStorage
-  let storedResults = null;
-  if (typeof window !== "undefined" && !quizResults && !generatedResults) {
-    storedResults = getStoredResults(quizSlug);
-    if (storedResults) {
-      dispatch(setQuizResults(storedResults));
-    }
-  }
-
   const handleRetake = () => {
     dispatch(resetQuiz());
     router.replace(`/dashboard/${quizType}/${slug}`);
@@ -123,6 +114,17 @@ export default function GenericQuizResultHandler({
     await signIn(redirectState);
   };
 
+  // 🛡️ Effect to hydrate stored results safely
+  useEffect(() => {
+    if (!quizResults && !generatedResults) {
+      const storedResults = getStoredResults(quizSlug);
+      if (storedResults) {
+        dispatch(setQuizResults(storedResults));
+      }
+    }
+  }, [quizResults, generatedResults, quizSlug, dispatch, getStoredResults]);
+
+  // 🛡️ Effect to restore auth redirect state
   useEffect(() => {
     if (isAuthenticated) {
       const restored = restoreAuthRedirectState();
@@ -133,6 +135,7 @@ export default function GenericQuizResultHandler({
     }
   }, [isAuthenticated, restoreAuthRedirectState, clearAuthState, dispatch]);
 
+  // 🛡️ Effect to determine view state
   useEffect(() => {
     if (quizStatus === "loading" || isSessionLoading) {
       setViewState("loading");
@@ -140,7 +143,6 @@ export default function GenericQuizResultHandler({
       const result =
         quizResults ||
         generatedResults ||
-        storedResults ||
         getStoredResults(quizSlug);
       if (result) {
         dispatch(setQuizResults(result));
@@ -158,7 +160,6 @@ export default function GenericQuizResultHandler({
     quizStatus,
     quizResults,
     generatedResults,
-    storedResults,
     quizSlug,
     dispatch,
     getStoredResults,
