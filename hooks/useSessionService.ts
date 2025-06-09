@@ -8,7 +8,6 @@ import {
   setQuizResults,
   resetPendingQuiz,
 } from "@/store/slices/quizSlice";
-import { useRouter } from "next/navigation";
 import { signIn as nextSignIn } from "next-auth/react";
 
 const QUIZ_RESULTS_PREFIX = "quiz_results_";
