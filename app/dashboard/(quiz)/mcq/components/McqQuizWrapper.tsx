@@ -16,21 +16,18 @@ import {
   setCurrentQuestionIndex,
   saveAnswer,
   fetchQuiz,
-  submitQuiz,
-  setQuizResults,
-  setPendingQuiz,
+  setQuizCompleted,
 } from "@/store/slices/quizSlice"
-import { selectIsAuthenticated } from "@/store/slices/authSlice"
-import { useSessionService } from "@/hooks/useSessionService"
 
 import { Button } from "@/components/ui/button"
 import McqQuiz from "./McqQuiz"
 import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import { ChevronLeft, ChevronRight, CheckCircle, Trophy, Sparkles } from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle, Trophy } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import type { QuizType } from "@/types/quiz"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 
 interface McqQuizWrapperProps {
   slug: string
@@ -43,9 +40,8 @@ interface McqQuizWrapperProps {
 export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { saveAuthRedirectState } = useSessionService()
 
-  // Redux selectors
+  // Redux selectors - pure quiz state
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
   const quizStatus = useSelector(selectQuizStatus)
@@ -54,18 +50,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   const currentQuestion = useSelector(selectCurrentQuestion)
   const quizTitle = useSelector(selectQuizTitle)
   const isQuizComplete = useSelector(selectIsQuizComplete)
-  const isAuthenticated = useSelector(selectIsAuthenticated)
-
-  // Generate a unique session ID for this quiz attempt if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated && typeof window !== "undefined") {
-      const sessionKey = `mcq_session_${slug}`
-      if (!sessionStorage.getItem(sessionKey)) {
-        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-        sessionStorage.setItem(sessionKey, sessionId)
-      }
-    }
-  }, [slug, isAuthenticated])
 
   // Load quiz data on mount
   useEffect(() => {
@@ -91,88 +75,21 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   useEffect(() => {
     if (!isQuizComplete) return
 
-    const safeSlug = typeof slug === "string" ? slug : String(slug)
-
     // Show completion toast with celebration
     toast.success("🎉 Quiz completed! Calculating your results...", {
       duration: 2000,
     })
 
-    if (isAuthenticated) {
-      dispatch(submitQuiz())
-        .then((res: any) => {
-          if (res?.payload) {
-            dispatch(setQuizResults(res.payload))
-            // Add a small delay for better UX
-            setTimeout(() => {
-              router.push(`/dashboard/mcq/${safeSlug}/results`)
-            }, 1000)
-          } else {
-            // Generate results through the selector and redirect
-            setTimeout(() => {
-              router.push(`/dashboard/mcq/${safeSlug}/results`)
-            }, 1000)
-          }
-        })
-        .catch((error) => {
-          console.error("Error submitting quiz:", error)
-          // Still redirect to results - we can use generated results
-          setTimeout(() => {
-            router.push(`/dashboard/mcq/${safeSlug}/results`)
-          }, 1000)
-        })
-    } else {
-      // For unauthenticated users, redirect to sign in
-      const pendingQuizData = {
-        slug,
-        quizData: {
-          title: quizTitle,
-          questions,
-        },
-        currentState: {
-          answers,
-          currentQuestionIndex,
-          isCompleted: true,
-          showResults: true,
-        },
-      }
+    // Navigate to results page
+    const safeSlug = typeof slug === "string" ? slug : String(slug)
 
-      dispatch(setPendingQuiz(pendingQuizData))
+    // Add a small delay for better UX
+    setTimeout(() => {
+      router.push(`/dashboard/mcq/${safeSlug}/results`)
+    }, 1000)
+  }, [isQuizComplete, router, slug])
 
-      // Save auth redirect state
-      saveAuthRedirectState({
-        returnPath: `/dashboard/mcq/${safeSlug}/results`,
-        quizState: {
-          slug,
-          quizData: {
-            title: quizTitle,
-            questions,
-          },
-          currentState: {
-            answers,
-            isCompleted: true,
-            showResults: true,
-          },
-        },
-      })
-
-      setTimeout(() => {
-        router.push(`/dashboard/mcq/${safeSlug}/results`)
-      }, 1000)
-    }
-  }, [
-    isQuizComplete,
-    isAuthenticated,
-    dispatch,
-    router,
-    slug,
-    quizTitle,
-    questions,
-    answers,
-    currentQuestionIndex,
-    saveAuthRedirectState,
-  ])
-
+  // Handle answer selection
   const handleAnswerQuestion = (selectedOptionId: string) => {
     if (!currentQuestion) return
 
@@ -189,28 +106,28 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     )
   }
 
+  // Navigation handlers
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }
 
+  // Complete the quiz
   const handleFinish = () => {
-    // Show confirmation toast
-    toast.success("🏁 Finishing quiz...", {
-      duration: 1500,
-    })
-
-    dispatch({ type: "quiz/setQuizCompleted" })
+    dispatch(setQuizCompleted())
   }
 
+  // UI calculations
   const answeredQuestions = Object.keys(answers).length
   const progressPercentage = (answeredQuestions / questions.length) * 100
 
+  // Loading state
   if (quizStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Loading quiz data", status: "loading" }]} />
+    return <QuizLoader message="Loading quiz data" subMessage="Getting your questions ready" />
   }
 
+  // Error state
   if (quizStatus === "failed") {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
@@ -232,6 +149,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     )
   }
 
+  // Empty questions state
   if (!Array.isArray(questions) || questions.length === 0) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
@@ -248,34 +166,18 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     )
   }
 
+  // No current question state
   if (!currentQuestion) {
     return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
   }
 
+  // Get current answer
   const currentAnswer = answers[currentQuestion.id]
   const existingAnswer = currentAnswer?.selectedOptionId
 
-  // Show completion animation if quiz is being submitted
+  // Submitting state
   if (quizStatus === "submitting") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center space-y-6">
-            <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-              <Trophy className="w-10 h-10 text-primary" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Quiz Completed! 🎉</h2>
-              <p className="text-muted-foreground">Calculating your results...</p>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary animate-spin" />
-              <span className="text-sm text-muted-foreground">Processing answers</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
   }
 
   return (
@@ -361,9 +263,6 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
           totalQuestions={questions.length}
           isSubmitting={quizStatus === "submitting"}
           existingAnswer={existingAnswer}
-          onNext={handleNext}
-          onFinish={handleFinish}
-          showNavigation={false} // We handle navigation separately
         />
 
         {/* Bottom Navigation */}

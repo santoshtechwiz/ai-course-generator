@@ -426,7 +426,25 @@ const quizSlice = createSlice({
     setCurrentQuestionIndex: (state, action: PayloadAction<number>) => {
       state.currentQuestionIndex = action.payload
     },
-
+ resetQuiz: (state) => {
+      state.questions = [];
+      state.answers = {};
+      state.results = null;
+      state.status = "idle";
+    },
+    hydrateQuiz: (state, action: PayloadAction<any>) => {
+      const { slug, quizData, currentState } = action.payload;
+      state.slug = slug;
+      state.questions = quizData.questions || [];
+      state.answers = currentState?.answers || {};
+    },
+    setQuizResults: (state, action: PayloadAction<any>) => {
+      state.results = action.payload;
+      state.status = "succeeded";
+    },
+    resetPendingQuiz: (state) => {
+      // Clear redirect cache
+    },
     saveAnswer: (state, action: PayloadAction<{ questionId: string; answer: any }>) => {
       const { questionId, answer } = action.payload
       const normalizedId = String(questionId)
@@ -488,7 +506,7 @@ const quizSlice = createSlice({
 
     setQuizResults: (state, action: PayloadAction<any>) => {
       state.results = action.payload;
-      state.status = "success";
+      state.status = "succeeded";
       state.error = null;
     },
     
@@ -508,12 +526,10 @@ const quizSlice = createSlice({
     },
     // Rename to hydrateQuiz to avoid conflict with the async thunk
     hydrateQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
-      const { slug, quizData, currentState } = action.payload
-      
-      // Ensure slug is always a string and set as primary identifier
-      const sanitizedSlug = typeof slug === 'string' ? slug : String(slug)
-      state.slug = sanitizedSlug
-      state.quizId = sanitizedSlug  // Keep for database compatibility
+      const { slug, quizData, currentState } = action.payload;
+      const sanitizedSlug = typeof slug === 'string' ? slug : String(slug);
+      state.slug = sanitizedSlug;
+      state.quizId = sanitizedSlug;
       
       state.currentQuestionIndex = 0
       state.error = null
@@ -535,98 +551,24 @@ const quizSlice = createSlice({
       
       // Special handling for results when showResults is true
       if (currentState?.showResults) {
-        // If we have explicit results from currentState, use them
         if (currentState.results) {
-          state.results = currentState.results
-          state.status = "succeeded"
-          console.log("Using results from currentState")
+          state.results = currentState.results;
+          state.status = "succeeded";
         } else {
-          // Try to find results from storage using slug
+          // Try to restore from storage
           try {
             if (typeof window !== 'undefined') {
-              // Try with exact slug
-              const storedResults = sessionStorage.getItem(`quiz_results_${slug}`)
+              const storedResults = sessionStorage.getItem(`quiz_results_${slug}`) || localStorage.getItem(`quiz_results_${slug}`);
               if (storedResults) {
-                try {
-                  state.results = JSON.parse(storedResults)
-                  state.status = "succeeded"
-                  console.log("Restored results from sessionStorage", state.results)
-                } catch (e) {
-                  console.error("Failed to parse stored quiz results:", e)
-                }
+                state.results = JSON.parse(storedResults);
+                state.status = "succeeded";
               }
             }
           } catch (e) {
-            console.error("Error accessing sessionStorage:", e)
-          }
-          
-          // If still no results, try to compute them from questions and answers or from the quiz data itself
-          if (!state.results) {
-            // If we don't have answers but have quiz data, create a default set of answers
-            if (Object.keys(state.answers).length === 0 && state.questions.length > 0) {
-              // Create default answers for all questions (unmarked/incorrect)
-              state.questions.forEach(question => {
-                state.answers[String(question.id)] = {
-                  questionId: question.id,
-                  selectedOptionId: null,
-                  isCorrect: false,
-                  type: "mcq"
-                }
-              });
-            }
-            
-            // Generate results if we have both questions and answers
-            if (state.questions.length > 0) {
-              try {
-                // Process each question and check if the answer is correct
-                let score = 0
-                const questionResults = state.questions.map((question: any) => {
-                  const answer = state.answers[String(question.id)]
-                  const isCorrect = answer?.isCorrect === true
-                  if (isCorrect) score++
-                  return {
-                    questionId: question.id,
-                    isCorrect,
-                    userAnswer: answer?.selectedOptionId || null,
-                    correctAnswer: question.correctOptionId || question.answer,
-                    question: question.question || question.text,
-                    skipped: !answer || !answer.selectedOptionId
-                  }
-                })
-                
-                // Create complete results object
-                state.results = {
-                  quizId: state.quizId,
-                  slug: slug,
-                  title: state.title || "Quiz Results",
-                  score,
-                  maxScore: state.questions.length,
-                  percentage: state.questions.length > 0 ? Math.round((score / state.questions.length) * 100) : 0,
-                  completedAt: new Date().toISOString(),
-                  questions: state.questions,
-                  answers: Object.values(state.answers),
-                  questionResults,
-                }
-                state.status = "succeeded"
-                console.log("Generated quiz results from quiz data:", state.results)
-              } catch (e) {
-                console.error("Error generating results:", e)
-                state.status = "failed"
-                state.error = "Failed to generate results. Please try again."
-              }
-            } else {
-              state.status = "failed"
-              state.error = "No questions available to show results."
-            }
+            console.error("Failed to restore results from storage:", e);
           }
         }
-      } else {
-        state.currentQuestionIndex = currentState?.currentQuestionIndex || 0
-        // Only clear results if not showing results
-        state.results = null
       }
-      
-      state.pendingQuiz = null
     },
 
     clearPendingQuiz: (state) => {
@@ -691,7 +633,7 @@ const quizSlice = createSlice({
     setQuiz: (state, action: PayloadAction<{ quizId: string; title: string; questions: any[]; type: string }>) => {
       const { quizId, title, questions, type } = action.payload;
       state.quizId = quizId;
-      state.slug = quizId; // Set slug as primary identifier
+      state.slug = quizId; // Always set slug!
       state.title = title;
       state.questions = questions;
       state.quizType = type as QuizType;
@@ -895,7 +837,7 @@ export const selectCurrentQuestionIndex = createSelector([selectQuizState], (qui
 export const selectIsQuizComplete = createSelector([selectQuizState], (quiz) => quiz?.isCompleted ?? false);
 export const selectQuizResults = createSelector([selectQuizState], (quiz) => quiz?.results ?? null);
 export const selectQuizTitle = createSelector([selectQuizState], (quiz) => quiz?.title ?? "");
-export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz?.slug || quiz?.quizId || "");
+export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz?.slug);
 
 export const selectCurrentQuestion = createSelector(
   [selectQuestions, selectCurrentQuestionIndex],

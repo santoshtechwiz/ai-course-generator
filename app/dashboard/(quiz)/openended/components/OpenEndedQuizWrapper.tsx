@@ -21,16 +21,15 @@ import {
   setQuizCompleted,
   fetchQuiz,
 } from "@/store/slices/quizSlice"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { RefreshCw, Flag } from "lucide-react"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import OpenEndedQuiz from "./OpenEndedQuiz"
-
+import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { OpenEndedQuestion } from "@/types/quiz"
 import OpenEndedQuizResults from "./QuizResultsOpenEnded"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Flag, RefreshCw } from "lucide-react"
+import OpenEndedQuiz from "./OpenEndedQuiz"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -235,7 +234,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
 
   // Loading state
   if (loading || quizStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Loading quiz data", status: "loading" }]} />
+    return <QuizLoader message="Loading quiz data" subMessage="Preparing your questions" />
   }
 
   // Error state

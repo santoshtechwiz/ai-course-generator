@@ -5,6 +5,7 @@ import QuizResults from "../../components/TextQuizResults"
 import type { BlanksQuizResult } from "./types"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 
+// Helper functions that don't rely on auth state
 function getSimilarity(userAnswer: string, correctAnswer: string) {
   return getBestSimilarityScore(userAnswer || "", correctAnswer || "") / 100
 }
@@ -18,12 +19,12 @@ function getSimilarityLabel(similarity: number) {
 interface BlankQuizResultsProps {
   result?: BlanksQuizResult
   onRetake?: () => void
-  isAuthenticated: boolean
+  isAuthenticated: boolean // This is passed in from parent and not determined internally
   slug: string
 }
 
 export default function BlankQuizResults({ result, onRetake, isAuthenticated, slug }: BlankQuizResultsProps) {
-  // Enhance questionResults with similarity and label
+  // Pure data transformation logic with no auth or storage access
   const enhancedResults = result?.questionResults?.map(q => {
     const sim = getSimilarity(q.userAnswer || "", q.correctAnswer || "")
     return {
@@ -48,10 +49,9 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated, sl
           : undefined
       }
       onRetake={onRetake}
-      isAuthenticated={isAuthenticated}
+      isAuthenticated={isAuthenticated} // Pass through auth state from props
       slug={slug}
       quizType="blanks"
-      // @ts-ignore
       renderQuestionResult={(q) => (
         <div className="mb-4 p-3 rounded border" key={q.questionId}>
           <div className="font-semibold mb-1">{q.question}</div>

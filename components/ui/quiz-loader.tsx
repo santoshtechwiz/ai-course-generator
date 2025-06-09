@@ -1,58 +1,130 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { motion } from "framer-motion"
 import { Loader2 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 interface QuizLoaderProps {
+  /**
+   * Display as full-screen loader (true) or inline loader (false)
+   */
+  full?: boolean
+  /**
+   * Primary loading message
+   */
   message?: string
+  /**
+   * Optional secondary message displayed below the main message
+   */
   subMessage?: string
-  size?: "sm" | "md" | "lg"
+  /**
+   * Optional class name for additional styling
+   */
+  className?: string
 }
 
-export const QuizLoader: React.FC<QuizLoaderProps> = ({ message = "Loading...", subMessage, size = "md" }) => {
-  const sizeClasses = {
-    sm: "w-6 h-6",
-    md: "w-8 h-8",
-    lg: "w-12 h-12",
+export function QuizLoader({
+  full = false,
+  message = "Loading...",
+  subMessage,
+  className,
+}: QuizLoaderProps) {
+  const containerVariants = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
   }
 
-  return (
-    <Card className="w-full max-w-3xl mx-auto my-8 border border-border/50 shadow-sm">
-      <CardContent className="flex flex-col items-center justify-center py-12">
-        <motion.div
-          animate={{
-            rotate: 360,
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-          className="mb-4"
-        >
-          <Loader2 className={`text-primary ${sizeClasses[size]}`} />
-        </motion.div>
-        <motion.h3
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-lg font-medium text-foreground mb-2"
-        >
-          {message}
-        </motion.h3>
-        {subMessage && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-sm text-muted-foreground text-center max-w-md"
-          >
-            {subMessage}
-          </motion.p>
+  const loaderVariants = {
+    animate: {
+      rotate: 360,
+      transition: { duration: 1, repeat: Infinity, ease: "linear" },
+    },
+  }
+
+  const contentVariants = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0, transition: { delay: 0.2 } },
+  }
+
+  const secondaryTextVariants = {
+    initial: { opacity: 0, y: 5 },
+    animate: { opacity: 0.8, y: 0, transition: { delay: 0.3 } },
+  }
+
+  if (full) {
+    return (
+      <motion.div
+        className={cn(
+          "fixed inset-0 flex flex-col items-center justify-center bg-background z-50",
+          className
         )}
-      </CardContent>
-    </Card>
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={containerVariants}
+      >
+        <div className="text-center px-4">
+          <motion.div
+            className="mb-8 flex justify-center"
+            variants={loaderVariants}
+            animate="animate"
+          >
+            <Loader2 className="h-16 w-16 text-primary" />
+          </motion.div>
+          <motion.h2
+            className="text-2xl font-bold text-foreground mb-2"
+            variants={contentVariants}
+          >
+            {message}
+          </motion.h2>
+          {subMessage && (
+            <motion.p
+              className="text-muted-foreground"
+              variants={secondaryTextVariants}
+            >
+              {subMessage}
+            </motion.p>
+          )}
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Inline loader
+  return (
+    <motion.div
+      className={cn(
+        "flex flex-col items-center justify-center py-8 px-4",
+        className
+      )}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={containerVariants}
+    >
+      <motion.div
+        className="mb-4 flex justify-center"
+        variants={loaderVariants}
+        animate="animate"
+      >
+        <Loader2 className="h-10 w-10 text-primary" />
+      </motion.div>
+      <motion.p
+        className="text-lg font-medium text-center"
+        variants={contentVariants}
+      >
+        {message}
+      </motion.p>
+      {subMessage && (
+        <motion.p
+          className="text-sm text-muted-foreground text-center mt-1"
+          variants={secondaryTextVariants}
+        >
+          {subMessage}
+        </motion.p>
+      )}
+    </motion.div>
   )
 }
