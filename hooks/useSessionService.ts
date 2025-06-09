@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
@@ -6,32 +6,40 @@ import {
   resetQuiz,
   hydrateQuiz,
   setQuizResults,
-  resetPendingQuiz,
 } from "@/store/slices/quizSlice";
 import { signIn as nextSignIn } from "next-auth/react";
 
-const QUIZ_RESULTS_PREFIX = "quiz_results_";
-
+// Safe Storage with SSR support
 const safeStorage = {
-  getItem: (key: string) => {
-    if (typeof window === "undefined") return null;
-    return sessionStorage.getItem(key) || localStorage.getItem(key);
+  getItem(key: string) {
+    try {
+      if (typeof window !== "undefined") {
+        return sessionStorage.getItem(key) || localStorage.getItem(key);
+      }
+    } catch {}
+    return null;
   },
-  setItem: (key: string, value: string) => {
-    if (typeof window === "undefined") return;
-    sessionStorage.setItem(key, value);
-    localStorage.setItem(key, value);
+  setItem(key: string, value: string) {
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(key, value);
+        localStorage.setItem(key, value);
+      }
+    } catch {}
   },
-  removeItem: (key: string) => {
-    if (typeof window === "undefined") return;
-    sessionStorage.removeItem(key);
-    localStorage.removeItem(key);
-  }
+  removeItem(key: string) {
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
+      }
+    } catch {}
+  },
 };
 
 export function useSessionService() {
   const dispatch = useDispatch<AppDispatch>();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
 
@@ -60,16 +68,16 @@ export function useSessionService() {
 
   const clearAuthState = useCallback(() => {
     safeStorage.removeItem("authRedirectState");
-    dispatch(resetPendingQuiz());
+    dispatch(resetQuiz());
   }, [dispatch]);
 
   const storeResults = useCallback((quizId: string, results: any) => {
-    safeStorage.setItem(`${QUIZ_RESULTS_PREFIX}${quizId}`, JSON.stringify(results));
+    safeStorage.setItem(`quiz_results_${quizId}`, JSON.stringify(results));
   }, []);
 
   const getStoredResults = useCallback((quizId: string) => {
-    const raw = safeStorage.getItem(`${QUIZ_RESULTS_PREFIX}${quizId}`);
     try {
+      const raw = safeStorage.getItem(`quiz_results_${quizId}`);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -77,8 +85,11 @@ export function useSessionService() {
   }, []);
 
   const clearQuizResults = useCallback((quizId: string) => {
-    safeStorage.removeItem(`${QUIZ_RESULTS_PREFIX}${quizId}`);
+    safeStorage.removeItem(`quiz_results_${quizId}`);
   }, []);
+
+  // Deprecated — keep old quizService here but do not delete
+  // export const quizService = ... (deprecated)
 
   return {
     isAuthenticated,
