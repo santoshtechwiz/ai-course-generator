@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import type { FlashCard } from "@/app/types/types"
 import { FlashCardComponent } from "./FlashCardComponent"
@@ -26,9 +26,9 @@ export function FlashCardWrapper({
 }: FlashCardComponentProps) {
   const dispatch = useAppDispatch()
   const searchParams = useSearchParams()
-  const [key, setKey] = useState(Date.now())
+  const [key, setKey] = useState<number>(() => Date.now())
 
-  // Check for reset parameter
+  // Optimize effect to only run when reset param changes
   useEffect(() => {
     const reset = searchParams.get("reset")
     const timestamp = searchParams.get("t")
@@ -36,16 +36,20 @@ export function FlashCardWrapper({
     if (reset === "true" && timestamp) {
       dispatch(resetFlashCards())
       
-      // Force re-render of the component
-      setKey(Date.now())
+      // Force re-render with debounce to prevent multiple renders
+      const timerId = setTimeout(() => {
+        setKey(Date.now())
+      }, 10)
 
-      // Remove the reset parameter from the URL
-      const url = new URL(window.location.href)
-      url.searchParams.delete("reset")
-      url.searchParams.delete("t")
-      window.history.replaceState({}, "", url.toString())
+      // Clear timer on unmount
+      return () => clearTimeout(timerId)
     }
   }, [searchParams, dispatch])
+
+  // Memoize onSaveCard to prevent rerenders
+  const handleSaveCard = useCallback((card: FlashCard) => {
+    if (onSaveCard) onSaveCard(card)
+  }, [onSaveCard])
 
   return (
     <FlashCardComponent
@@ -54,7 +58,7 @@ export function FlashCardWrapper({
       quizId={quizId}
       slug={slug}
       title={title}
-      onSaveCard={onSaveCard}
+      onSaveCard={handleSaveCard}
       savedCardIds={savedCardIds}
     />
   )

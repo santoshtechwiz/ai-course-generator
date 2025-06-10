@@ -64,9 +64,9 @@ interface QuizResultsProps {
   renderQuestionResult?: (question: any) => React.ReactNode
 }
 
-export default function QuizResults({ result, onRetake, isAuthenticated, slug, quizType, renderQuestionResult }: QuizResultsProps) {
+export default function TextQuizResults({ result, onRetake, isAuthenticated, slug, quizType, renderQuestionResult }: QuizResultsProps) {
   const router = useRouter()
-  const { saveAuthRedirectState } = useSessionService()
+  
   const dispatch = useDispatch<AppDispatch>()
   const { toast } = useToast()
   const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({})

@@ -17,13 +17,11 @@ export default function FlashCardResultsPage({
 }) {
   const resolvedParams = params instanceof Promise ? use(params) : params
   const slug = resolvedParams.slug
-
+  const { status } = useSession()
   const router = useRouter()
 
-
-
   const handleRetakeQuiz = () => {
-    router.push(`/dashboard/flashcard/${slug}`)
+    router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)
   }
 
   if (status === "loading") {
@@ -53,7 +51,6 @@ export default function FlashCardResultsPage({
       <GenericQuizResultHandler
         slug={slug}
         quizType="flashcard"
-      
       >
         {({ result }) => (
           <QuizResult

@@ -44,7 +44,7 @@ export const fetchFlashCardQuiz = createAsyncThunk(
   "flashcard/fetchQuiz",
   async (slug: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/quizzes/common/openended/${slug}`);
+      const response = await fetch(`/api/quizzes/flashcard/${slug}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch flashcard quiz: ${response.status}`);
       }
@@ -96,7 +96,6 @@ export const fetchFlashCards = createAsyncThunk(
       }
       
       const data = await response.json();
-      console.log("Fetched flashcards:", data);
       return {
         cards: data.flashCards || [],
         title: data.title || "Flashcards",
@@ -168,6 +167,14 @@ const flashcardSlice = createSlice({
     },
     
     completeFlashCardQuiz: (state, action: PayloadAction<any>) => {
+      // Check if we're in review mode
+      if (action.payload.isReviewMode) {
+        // For review mode, we want to reset some state but not others
+        state.isCompleted = false;
+        return;
+      }
+      
+      // Normal completion
       state.isCompleted = true;
       state.results = {
         ...action.payload,

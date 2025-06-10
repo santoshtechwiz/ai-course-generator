@@ -17,7 +17,7 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
   
   const handleRetakeQuiz = () => {
     // Use replace instead of push to avoid navigation loops
-    router.replace(`/dashboard/blanks/${slug}`)
+    router.replace(`/dashboard/blanks/${slug}?reset=true&t=${Date.now()}`)
   }
 
   // If slug is missing, show error
@@ -40,17 +40,14 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
       <QuizResultHandler 
         slug={slug} 
         quizType="blanks"
-     
       >
         {({ result }) => (
-          result ? (
-            <QuizResult 
-              result={result} 
-              slug={slug} 
-              quizType="blanks" 
-              onRetake={handleRetakeQuiz}
-            />
-          ) : null
+          <QuizResult 
+            result={result} 
+            slug={slug} 
+            quizType="blanks" 
+            onRetake={handleRetakeQuiz}
+          />
         )}
       </QuizResultHandler>
     </div>
