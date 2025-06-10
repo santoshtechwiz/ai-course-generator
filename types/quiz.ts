@@ -1,133 +1,118 @@
-// Centralized type definitions for quiz functionality
+/**
+ * Comprehensive type definitions for quiz entities
+ */
 
-// Quiz types
-export type QuizType = "mcq" | "code" | "blanks" | "openended"
-
-// Question types
+// Quiz question types
 export interface BaseQuestion {
-  id: string
-  text: string
-  type: QuizType
-  isQuizComplete?: boolean
+  id: string;
+  text: string;
+  type: QuizType;
 }
 
 export interface MCQQuestion extends BaseQuestion {
-  type: "mcq"
+  type: 'mcq';
   options: Array<{
-    id: string
-    text: string
-  }>
-  correctOptionId: string
+    id: string;
+    text: string;
+  }>;
+  correctOptionId: string;
 }
 
 export interface CodeQuestion extends BaseQuestion {
-  type: "code"
-  language: string
-  correctAnswer: string
-  explanation?: string
-  codeSnippet?: string
-  // Removed duplicate 'question' field as 'text' from BaseQuestion serves the same purpose
+  type: 'code';
+  language: string;
+  codeSnippet: string;
+  options: string[];
+  correctAnswer: string;
 }
 
-export interface BlanksQuestion extends BaseQuestion {
-  type: "blanks"
-  textWithBlanks: string
-  blanks: Array<{
-    id: string
-    correctAnswer: string
-  }>
+export interface BlankQuestion extends BaseQuestion {
+  type: 'blanks';
+  question: string; // Text with ________ for blanks
+  answer: string;   // Correct answer
 }
 
 export interface OpenEndedQuestion extends BaseQuestion {
-  type: "openended"
-  modelAnswer?: string
-  keywords?: string[]
+  type: 'openended';
+  keywords?: string[]; // Optional keywords to check against
+  modelAnswer: string; // Reference answer for comparison
 }
 
-export type Question = MCQQuestion | CodeQuestion | BlanksQuestion | OpenEndedQuestion
+export type QuizQuestion = 
+  | MCQQuestion 
+  | CodeQuestion 
+  | BlankQuestion 
+  | OpenEndedQuestion;
 
-// Answer types
+// User answer types
 export interface BaseAnswer {
-  questionId: string
-  timestamp: number
+  questionId: string;
+  timeSpent: number;
 }
 
 export interface MCQAnswer extends BaseAnswer {
-  type: "mcq" // Added type discriminator for better type safety
-  selectedOptionId: string
+  selectedOptionId: string;
+  isCorrect: boolean;
 }
 
 export interface CodeAnswer extends BaseAnswer {
-  type: "code" // Added type discriminator
-  answer: string
-  isCorrect?: boolean
-  timeSpent?: number
+  code: string;
+  selectedAnswer: string;
+  isCorrect: boolean;
 }
 
-export interface BlanksAnswer extends BaseAnswer {
-  type: "blanks" // Added type discriminator
-  filledBlanks: Record<string, string>
+export interface BlankAnswer extends BaseAnswer {
+  userAnswer: string;
+  similarity?: number;
 }
 
 export interface OpenEndedAnswer extends BaseAnswer {
-  type: "openended" // Added type discriminator
-  text: string
+  text: string;
+  similarity?: number;
 }
 
-export type Answer = MCQAnswer | CodeAnswer | BlanksAnswer | OpenEndedAnswer
+export type QuizAnswer = 
+  | MCQAnswer 
+  | CodeAnswer 
+  | BlankAnswer 
+  | OpenEndedAnswer;
 
-// Results type
-export interface QuizResults {
-  score: number
-  maxScore: number
-  percentage: number
-  questionResults: Array<{
-    questionId: string
-    correct: boolean
-    feedback?: string
-    score?: number
-  }>
-  submittedAt: number
-}
+// Quiz types
+export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended' | 'flashcard';
 
-// Auth redirect state
-export interface AuthRedirectState {
-  slug: string
-  quizId: string
-  type: string
-  answers: Record<string, Answer>
-  currentQuestionIndex: number
-  tempResults: QuizResults | null // Changed 'any' to a more specific type
-}
-
-// Quiz answer interface
-export interface QuizAnswer {
-  questionId: string | number
-  selectedOption?: string
-  selectedOptionId?: string
-  text?: string
-  filledBlanks?: Record<string, string>
-  timestamp?: number
-  type?: string
-  isCorrect?: boolean
-}
-
-// Quiz state interface
+// Quiz state for Redux
 export interface QuizState {
-  quizId: string | number | null
-  quizType: string | null
-  title: string | null
-  questions: any[]
-  currentQuestionIndex: number
-  answers: Record<string | number, QuizAnswer>
-  status: "idle" | "loading" | "submitting" | "error"
-  error: string | null
-  isCompleted: boolean
-  results: any
-  sessionId: string
-  quizData?: any
-  description: string | null
-  totalQuestions: number
-  lastSaved: number | null
-  authRedirectState: any
+  slug: string | null;
+  quizId: string | null;
+  quizType: QuizType | null;
+  title: string;
+  questions: QuizQuestion[];
+  currentQuestionIndex: number;
+  answers: Record<string, QuizAnswer>;
+  isCompleted: boolean;
+  results: QuizResult | null;
+  error: string | null;
+  status: "idle" | "loading" | "succeeded" | "failed" | "submitting";
+  sessionId: string | null;
+  isSaving: boolean;
+  isSaved: boolean;
+  saveError: string | null;
+}
+
+// Quiz result type
+export interface QuizResult {
+  slug: string;
+  title: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  completedAt: string;
+  questions: QuizQuestion[];
+  questionResults: Array<{
+    questionId: string;
+    isCorrect: boolean;
+    userAnswer: string;
+    correctAnswer: string;
+    similarity?: number;
+  }>;
 }

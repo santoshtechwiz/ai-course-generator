@@ -35,7 +35,10 @@ export function QuizDebugger() {
           <div className="mb-2 pb-2 border-b border-white/20">
             <div className="font-bold">Question: {currentQuestionIndex + 1}/{questions.length}</div>
             <div>Status: {quizState.status}</div>
+            <div>Slug: {quizState.slug || 'Not set'}</div>
             <div>Answers: {Object.keys(answers).length}</div>
+            <div>Completed: {quizState.isCompleted ? 'Yes' : 'No'}</div>
+            <div>Has Results: {quizState.results ? 'Yes' : 'No'}</div>
           </div>
           
           <details>
@@ -47,13 +50,28 @@ export function QuizDebugger() {
                 status: quizState.status,
                 answersCount: Object.keys(answers).length,
                 isCompleted: quizState.isCompleted,
+                errors: quizState.error,
+                authStatus: quizState.authStatus,
+                hasPendingQuiz: !!quizState.pendingQuiz,
+              }, null, 2)}
+            </pre>
+          </details>
+          
+          <details>
+            <summary className="cursor-pointer">Auth Status</summary>
+            <pre className="text-xs mt-2 whitespace-pre-wrap">
+              {JSON.stringify({
+                authStatus: quizState.authStatus,
+                shouldRedirect: quizState.shouldRedirectToAuth,
+                redirectURL: quizState.authRedirectState?.callbackUrl,
+                hasStoredState: !!quizState.pendingQuiz
               }, null, 2)}
             </pre>
           </details>
           
           <div className="mt-2">
             <button 
-              className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs w-full"
+              className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs w-full mb-1"
               onClick={() => {
                 console.log("Quiz State:", quizState);
                 console.log("Questions:", questions);
@@ -61,6 +79,16 @@ export function QuizDebugger() {
               }}
             >
               Log to Console
+            </button>
+            <button 
+              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md text-xs w-full"
+              onClick={() => {
+                localStorage.removeItem('pendingQuizResults');
+                sessionStorage.removeItem('pendingQuiz');
+                console.log('Cleared quiz storage');
+              }}
+            >
+              Clear Storage
             </button>
           </div>
         </div>

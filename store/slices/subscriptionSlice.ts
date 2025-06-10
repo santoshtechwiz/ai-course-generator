@@ -4,6 +4,7 @@ import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/tool
 import type { RootState } from "@/store"
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { createSelector } from "@reduxjs/toolkit"
+import { subscriptionApiClient } from '@/app/dashboard/subscription/services/subscription-api-client';
 
 // Define types
 export interface SubscriptionData {
@@ -36,46 +37,15 @@ const initialState: SubscriptionState = {
 
 // Create the async thunk for fetching subscription data
 export const fetchSubscription = createAsyncThunk(
-  "subscription/fetchStatus",
-  async (_, { getState, rejectWithValue }) => {
-    const state = getState() as RootState
-
-    // Check if we're already fetching or if the data is fresh (less than 30 seconds old)
-    if (
-      state.subscription.isFetching ||
-      (state.subscription.lastFetched && Date.now() - state.subscription.lastFetched < 30000)
-    ) {
-      // Return existing data if it's fresh enough
-      return state.subscription.data
-    }
-
+  "subscription/fetchSubscription",
+  async (_, { rejectWithValue }) => {
     try {
-      // Add cache control headers to prevent browser caching
-      const response = await fetch("/api/subscriptions/status", {
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      return data as SubscriptionData
+      // Use API client instead of direct fetch
+      return await subscriptionApiClient.getDetails();
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch subscription data")
+      return rejectWithValue(error.message || "Failed to fetch subscription");
     }
-  },
-  {
-    // Only allow one pending fetchSubscription operation at a time
-    condition: (_, { getState }) => {
-      const state = getState() as RootState
-      return !state.subscription.isFetching
-    },
-  },
+  }
 )
 
 // Async thunk for canceling subscription
