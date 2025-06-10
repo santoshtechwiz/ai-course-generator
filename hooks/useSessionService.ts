@@ -11,7 +11,7 @@ import {
   selectQuizState,
 } from "@/store/slices/quizSlice";
 import { signIn as nextSignIn } from "next-auth/react";
-import { safeStorage } from "@/store/middleware/persistMiddleware";
+import { safeStorage } from "@/lib/client-utils";
 
 export function useSessionService() {
   const dispatch = useDispatch<AppDispatch>();

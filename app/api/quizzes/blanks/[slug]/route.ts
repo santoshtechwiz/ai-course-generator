@@ -5,12 +5,14 @@ import { getQuiz } from "@/app/actions/getQuiz";
 
 export async function GET(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise< { slug: string }> | { slug: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
     const isAuthenticated = !!session?.user;
-    const { slug } = params;
+    
+    // Fix: Properly access params.slug (it's already resolved in App Router v3)
+    const slug = (await params).slug;
 
     // Get quiz data
     const quizData = await getQuiz(slug);
