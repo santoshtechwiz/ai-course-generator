@@ -87,12 +87,11 @@ export default function GenericQuizResultHandler({
 
   // Get the full quiz state for debugging
   const quizState = useSelector(selectQuizState);
-  
+
   const {
     isAuthenticated,
     isLoading: isSessionLoading,
     restoreAuthRedirectState,
-    clearAuthState,
     signIn,
     restoreQuizResults,
   } = useSessionService();
@@ -105,19 +104,19 @@ export default function GenericQuizResultHandler({
   const isCompleted = useSelector(selectIsQuizComplete);
 
   // Normalize the slug value
-  const normalizedSlug = typeof slug === 'object' && slug.slug ? slug.slug : 
-                        typeof slug === 'string' ? slug : 
-                        currentSlug || '';
+  const normalizedSlug = typeof slug === 'object' && slug.slug ? slug.slug :
+    typeof slug === 'string' ? slug :
+      currentSlug || '';
 
   // Use a single view state to prevent flickering
   const [viewState, setViewState] = useState<ViewState>("loading");
-  
+
   // Hydration flag to ensure we don't render too early
   const [isHydrated, setIsHydrated] = useState(false);
-  
+
   // Recovery flag to track explicit recovery attempts
   const [hasAttemptedRecovery, setHasAttemptedRecovery] = useState(false);
-  
+
   // Track loading timeouts
   const [loadingPhase, setLoadingPhase] = useState<"initial" | "extended" | "complete">("initial");
 
@@ -144,7 +143,7 @@ export default function GenericQuizResultHandler({
       try {
         // Save current results to be able to show immediately after auth redirect
         setPreservedResults(generatedResults);
-        
+
         // Store complete quiz state with normalized slug format
         const storeData = {
           slug: normalizedSlug,
@@ -154,13 +153,13 @@ export default function GenericQuizResultHandler({
           questions: questions, // Include all questions
           title: generatedResults.title || `${quizType.toUpperCase()} Quiz`
         };
-        
+
         // Store in localStorage with more complete information
         localStorage.setItem('pendingQuizResults', JSON.stringify(storeData));
-        
+
         // Also store in sessionStorage as backup
         sessionStorage.setItem('pendingQuizResults', JSON.stringify(storeData));
-        
+
         console.log('Stored quiz results before auth redirect:', storeData);
       } catch (error) {
         console.error('Failed to store quiz results before auth:', error);
@@ -190,28 +189,28 @@ export default function GenericQuizResultHandler({
       restoreQuizResults();
       setHasAttemptedRecovery(true);
     }
-    
+
     // Progressive loading states to provide smooth transition
     const initialTimer = setTimeout(() => {
       setLoadingPhase("extended");
     }, 800);
-    
+
     const extendedTimer = setTimeout(() => {
       setLoadingPhase("complete");
     }, 2000);
-    
+
     // Log the initial state for debugging
     console.log('Initial quiz state:', quizState);
     console.log('Normalized slug:', normalizedSlug);
-    
+
     // If we're on the results page, double check local storage directly
     try {
       const pendingJson = localStorage.getItem('pendingQuizResults');
       const sessionJson = sessionStorage.getItem('pendingQuizResults');
-      
+
       console.log('Found in localStorage:', pendingJson ? 'yes' : 'no');
       console.log('Found in sessionStorage:', sessionJson ? 'yes' : 'no');
-      
+
       if (pendingJson) {
         const pendingData = JSON.parse(pendingJson);
         console.log('Pending quiz data slug:', pendingData.slug);
@@ -232,7 +231,7 @@ export default function GenericQuizResultHandler({
     } catch (error) {
       console.error('Error checking storage during initialization:', error);
     }
-    
+
     // Cleanup timers
     return () => {
       clearTimeout(initialTimer);
@@ -260,20 +259,20 @@ export default function GenericQuizResultHandler({
     if (isAuthenticated) {
       // Restore any auth redirect state
       restoreAuthRedirectState();
-      
+
       // Try explicit recovery if we have no results yet
       if (!quizResults && !generatedResults && !preservedResults && !hasAttemptedRecovery) {
         console.log('Attempting explicit recovery of quiz results');
         const recovered = restoreQuizResults();
         setHasAttemptedRecovery(true);
-        
+
         if (recovered) {
           console.log('Successfully recovered quiz results');
         } else {
           console.log('Could not recover quiz results');
         }
       }
-      
+
       // Check for results, prioritizing preserved results
       if (quizResults || generatedResults || preservedResults) {
         console.log('Setting view state to show_results');
@@ -294,15 +293,15 @@ export default function GenericQuizResultHandler({
         setViewState("no_results");
       }
     }
-    
+
     // Mark as hydrated to prevent flickering
     if (loadingPhase === "extended") {
       setIsHydrated(true);
     }
   }, [
-    isAuthenticated, 
-    isSessionLoading, 
-    quizResults, 
+    isAuthenticated,
+    isSessionLoading,
+    quizResults,
     generatedResults,
     preservedResults,
     restoreAuthRedirectState,
@@ -321,7 +320,7 @@ export default function GenericQuizResultHandler({
       />
     );
   }
-  
+
   // Show skeleton for extended loading phase - gives a visual preview of results coming
   if (loadingPhase === "extended" && viewState === "loading") {
     return <QuizResultSkeleton />;
@@ -345,10 +344,10 @@ export default function GenericQuizResultHandler({
             previewData={
               (generatedResults || preservedResults)
                 ? {
-                    percentage: (generatedResults || preservedResults).percentage,
-                    score: (generatedResults || preservedResults).score || (generatedResults || preservedResults).userScore,
-                    maxScore: (generatedResults || preservedResults).maxScore,
-                  }
+                  percentage: (generatedResults || preservedResults).percentage,
+                  score: (generatedResults || preservedResults).score || (generatedResults || preservedResults).userScore,
+                  maxScore: (generatedResults || preservedResults).maxScore,
+                }
                 : undefined
             }
           />
@@ -401,7 +400,7 @@ export function QuizResultHandler({ slug, quizType, onComplete }: {
   const results = useSelector(selectQuizResults);
   const isCompleted = useSelector(selectIsQuizComplete);
   const quizState = useSelector(selectQuizState);
-  
+
   // Handle quiz completion and result saving
   useEffect(() => {
     if (isInitialized && isCompleted && results && isAuthenticated) {
@@ -415,7 +414,7 @@ export function QuizResultHandler({ slug, quizType, onComplete }: {
               duration: 3000,
             });
           }
-          
+
           if (onComplete) {
             onComplete(results);
           }
@@ -426,7 +425,7 @@ export function QuizResultHandler({ slug, quizType, onComplete }: {
         });
     }
   }, [isInitialized, isCompleted, results, isAuthenticated, slug, quizType, dispatch, router, onComplete]);
-  
+
   // Redirect to results page if quiz is completed
   useEffect(() => {
     if (isInitialized && isCompleted && results && !router.pathname.includes('/results')) {
@@ -434,6 +433,6 @@ export function QuizResultHandler({ slug, quizType, onComplete }: {
       router.push(`/dashboard/${quizType}/${slug}/results`);
     }
   }, [isInitialized, isCompleted, results, router, slug, quizType]);
-  
+
   return null; // This is a logical component with no UI
 }

@@ -5,11 +5,9 @@ import { useDispatch, useSelector } from "react-redux"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { RefreshCcw } from "lucide-react"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import QuizActions from "../../components/QuizActions"
 import { FlashCardWrapper } from "./FlashCardWrapper"
 import {
   fetchFlashCards,

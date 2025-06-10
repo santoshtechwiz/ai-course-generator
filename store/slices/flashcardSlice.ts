@@ -44,7 +44,7 @@ export const fetchFlashCardQuiz = createAsyncThunk(
   "flashcard/fetchQuiz",
   async (slug: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/quizzes/flashcard/${slug}`);
+      const response = await fetch(`/api/quizzes/common/openended/${slug}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch flashcard quiz: ${response.status}`);
       }
@@ -96,8 +96,9 @@ export const fetchFlashCards = createAsyncThunk(
       }
       
       const data = await response.json();
+      console.log("Fetched flashcards:", data);
       return {
-        cards: data.cards || [],
+        cards: data.flashCards || [],
         title: data.title || "Flashcards",
         quizId: data.id || slug,
         slug,
