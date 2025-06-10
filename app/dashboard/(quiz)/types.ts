@@ -21,6 +21,9 @@ export interface BlankQuestion extends BaseQuestion {
     id: string | number;
     text: string;
     correctAnswer?: string;
+    hints?: string;
+    difficulty?: string;
+    tags?: string;
     [key: string]: any;
   };
 }
@@ -30,6 +33,9 @@ export interface OpenEndedQuestion extends BaseQuestion {
   keywords?: string[];
   explanation?: string;
   sampleAnswer?: string;
+  hints?: string;
+  difficulty?: string;
+  tags?: string[];
 }
 
 export interface CodeQuestion extends BaseQuestion {
@@ -42,28 +48,35 @@ export interface CodeQuestion extends BaseQuestion {
 export interface QuizAnswer {
   questionId: string | number;
   timestamp: number;
-  type: "mcq" | "blanks" | "openended" | "code";
+  type: "mcq" | "blank" | "openended" | "code";
   [key: string]: any;
 }
 
 export interface McqAnswer extends QuizAnswer {
   selectedOptionId: string;
+  isCorrect?: boolean;
 }
 
 export interface BlankAnswer extends QuizAnswer {
-  userAnswer: string;
+  textAnswer: string;
+  similarity?: number;
+  similarityLabel?: string;
+  completedAt?: string;
+  isCorrect?: boolean;
 }
 
 export interface OpenEndedAnswer extends QuizAnswer {
-  text: string;
+  textAnswer: string;
   similarity?: number;
   isCorrect?: boolean;
   hintsUsed?: boolean;
   timeSpent?: number;
+  completedAt?: string;
 }
 
 export interface CodeAnswer extends QuizAnswer {
   selectedOptionId: string;
+  isCorrect?: boolean;
 }
 
 export interface QuizResult {
@@ -75,9 +88,13 @@ export interface QuizResult {
   maxScore?: number;
   percentage?: number;
   questions?: BaseQuestion[];
+  duration?: number;
   questionResults?: Array<{
     questionId: string | number;
     isCorrect?: boolean;
+    userAnswer?: string;
+    correctAnswer?: string;
+    similarity?: number;
     [key: string]: any;
   }>;
   [key: string]: any;
