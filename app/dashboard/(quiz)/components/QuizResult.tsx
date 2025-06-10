@@ -14,6 +14,7 @@ import { AlertCircle } from "lucide-react";
 
 // Import the quiz type definition
 import type { QuizType } from "@/types/quiz";
+import FlashCardResults from "../flashcard/components/FlashCardQuizResults";
 
 // QuizResult props with appropriate typing
 interface QuizResultProps {
@@ -129,7 +130,8 @@ function renderQuizResultComponent(
     
     case "code":
       return <McqQuizResult result={result} />; // Fallback to MCQ for now
-    
+    case "flashcard":
+      return <FlashCardResults result={result} />;
     default:
       return <McqQuizResult result={result} />;
   }

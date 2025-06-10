@@ -1033,4 +1033,4 @@ function arePropsEqual(prevProps: FlashCardComponentProps, nextProps: FlashCardC
 }
 
 // Export memoized component with custom comparison
-export const FlashCardComponent = memo(FlashCardComponentInner, arePropsEqual)
+export  const FlashCardComponent = memo(FlashCardComponentInner, arePropsEqual)
