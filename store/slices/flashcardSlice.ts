@@ -1,322 +1,286 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
-import axios from "axios"
 import type { FlashCard } from "@/app/types/types"
-import type { RootState } from "@/store"
-import { createSelector } from "reselect"
+import type { RootState } from ".."
 
-// Define the answer format
-interface FlashCardAnswer {
-  questionId: string
-  answer: string | "correct" | "incorrect"
-  userAnswer?: string
-  isCorrect?: boolean
-  timeSpent?: number
+interface FlashcardQuizState {
+  quizId: string | null;
+  slug: string | null;
+  title: string;
+  questions: FlashCard[];
+  currentQuestion: number;
+  answers: any[];
+  isCompleted: boolean;
+  results: any | null;
+  error: string | null;
+  status: "idle" | "loading" | "succeeded" | "failed" | "submitting";
+  requiresAuth: boolean;
+  pendingAuthRequired: boolean;
+  cards: any[];
+  savedCardIds: string[];
+  ownerId: string | null;
+  loading: boolean;
 }
 
-// Define the state structure
-interface FlashcardState {
-  flashCards: FlashCard[]
-  savedCardIds: string[]
-  loading: boolean
-  error: string | null
-  ownerId: string
-  quizId: string
-  
-  // Quiz related fields
-  currentQuestion: number
-  answers: FlashCardAnswer[]
-  isCompleted: boolean
-  requiresAuth: boolean
-  pendingAuthRequired: boolean
-  title: string
-  slug: string
-  results: {
-    score?: number
-    answers?: FlashCardAnswer[]
-    completedAt?: string
-  } | null
-}
-
-const initialState: FlashcardState = {
-  flashCards: [],
-  savedCardIds: [],
-  loading: false,
-  error: null,
-  ownerId: "",
-  quizId: "",
-  
-  // Quiz related initial state
+const initialState: FlashcardQuizState = {
+  quizId: null,
+  slug: null,
+  title: "",
+  questions: [],
   currentQuestion: 0,
   answers: [],
   isCompleted: false,
+  results: null,
+  error: null,
+  status: "idle",
   requiresAuth: false,
   pendingAuthRequired: false,
-  title: "",
-  slug: "",
-  results: null
-}
+  cards: [],
+  savedCardIds: [],
+  ownerId: null,
+  loading: false,
+};
 
-// Fetch flashcards
-export const fetchFlashCards = createAsyncThunk(
-  "flashcard/fetchFlashCards",
+export const fetchFlashCardQuiz = createAsyncThunk(
+  "flashcard/fetchQuiz",
   async (slug: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/flashcard?slug=${slug}`)
-      return response.data.data
+      const response = await fetch(`/api/quizzes/flashcard/${slug}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch flashcard quiz: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        slug,
+        id: data.id || slug,
+        title: data.title || "Flashcard Quiz",
+        questions: data.cards || [],
+      };
     } catch (error: any) {
-      console.warn("Error fetching flash cards:", error)
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to load your flash cards"
-      )
+      return rejectWithValue(error.message);
     }
   }
-)
+);
 
-// Toggle save card
-export const toggleSaveCard = createAsyncThunk(
-  "flashcard/toggleSaveCard",
-  async (
-    { cardId, isSaved, toast }: { cardId: string, isSaved: boolean, toast: any }, 
-    { rejectWithValue }
-  ) => {
+export const saveFlashCardResults = createAsyncThunk(
+  "flashcard/saveResults",
+  async ({ slug, data }: { slug: string; data: any }, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(`/api/flashcard`, {
-        id: cardId,
-        isSaved: isSaved,
-      })
+      const response = await fetch(`/api/quizzes/flashcard/${slug}/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-      toast({
-        title: isSaved ? "Card saved" : "Card unsaved",
-        description: isSaved 
-          ? "Card added to your saved collection" 
-          : "Card removed from your saved collection",
-      })
+      if (!response.ok) {
+        throw new Error(`Failed to save results: ${response.status}`);
+      }
 
-      return { cardId, isSaved }
+      return await response.json();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to save the card. Please try again.",
-        variant: "destructive",
-      })
-      return rejectWithValue("Failed to update card saved status")
+      return rejectWithValue(error.message);
     }
   }
-)
+);
 
-// Quiz related thunks
-export const initFlashCardQuiz = createAsyncThunk(
-  "flashcard/initFlashCardQuiz",
-  async (payload: { 
-    id: string, 
-    slug: string, 
-    title: string, 
-    questions: FlashCard[] 
-  }) => {
-    return payload
+// Add missing fetch flashcards thunk
+export const fetchFlashCards = createAsyncThunk(
+  "flashcard/fetchCards",
+  async ({ slug }: { slug: string }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/quizzes/flashcard/${slug}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch flashcards: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        cards: data.cards || [],
+        title: data.title || "Flashcards",
+        quizId: data.id || slug,
+        slug,
+      };
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
   }
-)
+);
 
-export const submitFlashCardAnswer = createAsyncThunk(
-  "flashcard/submitFlashCardAnswer",
-  async (answer: { 
-    answer: any, 
-    userAnswer: any, 
-    timeSpent: number, 
-    isCorrect: boolean, 
-    questionId: string 
-  }) => {
-    return answer
+// Add missing toggle save card thunk
+export const toggleSaveCard = createAsyncThunk(
+  "flashcard/toggleSave",
+  async ({ cardId, isSaved }: { cardId: string; isSaved: boolean }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/user/cards/${cardId}`, {
+        method: isSaved ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isSaved: !isSaved })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${isSaved ? 'unsave' : 'save'} card: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        cardId,
+        isSaved: !isSaved,
+        savedCardIds: data.savedCardIds || []
+      };
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
   }
-)
+);
 
-export const completeFlashCardQuiz = createAsyncThunk(
-  "flashcard/completeFlashCardQuiz",
-  async (payload: { 
-    score: number, 
-    answers: FlashCardAnswer[], 
-    completedAt: string 
-  }) => {
-    return payload
-  }
-)
-
-// Create the slice
 const flashcardSlice = createSlice({
   name: "flashcard",
   initialState,
   reducers: {
-    resetFlashCards: (state) => {
-      state.currentQuestion = 0
-      state.answers = []
-      state.isCompleted = false
-      state.results = null
+    initFlashCardQuiz: (state, action: PayloadAction<{ id: string; slug: string; title: string; questions: FlashCard[] }>) => {
+      state.quizId = action.payload.id;
+      state.slug = action.payload.slug;
+      state.title = action.payload.title;
+      state.questions = action.payload.questions;
+      state.currentQuestion = 0;
+      state.answers = [];
+      state.isCompleted = false;
+      state.results = null;
+      state.error = null;
+      state.status = "succeeded";
     },
-    setCurrentFlashCard: (state, action: PayloadAction<number>) => {
-      state.currentQuestion = action.payload
-    },
-    nextFlashCard: (state) => {
-      if (state.currentQuestion < state.flashCards.length - 1) {
-        state.currentQuestion += 1
+    
+    submitFlashCardAnswer: (state, action: PayloadAction<any>) => {
+      const existingAnswerIndex = state.answers.findIndex(
+        (a) => a.questionId === action.payload.questionId
+      );
+      
+      if (existingAnswerIndex >= 0) {
+        state.answers[existingAnswerIndex] = action.payload;
+      } else {
+        state.answers.push(action.payload);
       }
     },
-    setRequiresFlashCardAuth: (state, action: PayloadAction<boolean>) => {
-      state.requiresAuth = action.payload
+    
+    completeFlashCardQuiz: (state, action: PayloadAction<any>) => {
+      state.isCompleted = true;
+      state.results = {
+        ...action.payload,
+        answers: state.answers,
+        totalQuestions: state.questions.length,
+      };
     },
+    
+    resetFlashCards: (state) => {
+      state.currentQuestion = 0;
+      state.answers = [];
+      state.isCompleted = false;
+      state.results = null;
+      state.error = null;
+      state.status = "idle";
+      state.requiresAuth = false;
+      state.pendingAuthRequired = false;
+    },
+    
+    setCurrentFlashCard: (state, action: PayloadAction<number>) => {
+      state.currentQuestion = action.payload;
+    },
+    
+    nextFlashCard: (state) => {
+      if (state.currentQuestion < state.questions.length - 1) {
+        state.currentQuestion += 1;
+      }
+    },
+    
+    setRequiresFlashCardAuth: (state, action: PayloadAction<boolean>) => {
+      state.requiresAuth = action.payload;
+    },
+    
     setPendingFlashCardAuth: (state, action: PayloadAction<boolean>) => {
-      state.pendingAuthRequired = action.payload
-    }
+      state.pendingAuthRequired = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Handle fetchFlashCards
+      .addCase(fetchFlashCardQuiz.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(fetchFlashCardQuiz.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.quizId = action.payload.id;
+        state.slug = action.payload.slug;
+        state.title = action.payload.title;
+        state.questions = action.payload.questions;
+      })
+      .addCase(fetchFlashCardQuiz.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+      .addCase(saveFlashCardResults.pending, (state) => {
+        state.status = "submitting";
+      })
+      .addCase(saveFlashCardResults.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.results = action.payload;
+      })
+      .addCase(saveFlashCardResults.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
       .addCase(fetchFlashCards.pending, (state) => {
-        state.loading = true
-        state.error = null
+        state.loading = true;
+        state.error = null;
       })
       .addCase(fetchFlashCards.fulfilled, (state, action) => {
-        state.loading = false
-        
-        if (action.payload?.flashCards) {
-          state.flashCards = action.payload.flashCards
-          state.ownerId = action.payload.quiz?.userId || ""
-          state.quizId = action.payload.quiz?.id || ""
-          state.title = action.payload.quiz?.title || ""
-          state.slug = action.payload.quiz?.slug || ""
-          
-          // Extract saved card IDs
-          state.savedCardIds = action.payload.flashCards
-            .filter((card: FlashCard) => card.isSaved)
-            .map((card: FlashCard) => card.id || "")
-        } else {
-          state.flashCards = []
-          state.savedCardIds = []
-        }
+        state.loading = false;
+        state.cards = action.payload.cards;
+        state.title = action.payload.title;
+        state.quizId = action.payload.quizId;
+        state.slug = action.payload.slug;
       })
       .addCase(fetchFlashCards.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload as string
+        state.loading = false;
+        state.error = action.payload as string;
       })
-
-      // Handle toggleSaveCard
       .addCase(toggleSaveCard.fulfilled, (state, action) => {
-        const { cardId, isSaved } = action.payload
-        
-        // Update the saved status in flashCards
-        const cardIndex = state.flashCards.findIndex(card => card.id === cardId)
-        if (cardIndex !== -1) {
-          state.flashCards[cardIndex].isSaved = isSaved
-        }
-        
-        // Update savedCardIds
+        const { cardId, isSaved } = action.payload;
         if (isSaved) {
-          state.savedCardIds.push(cardId)
+          state.savedCardIds = [...state.savedCardIds, cardId];
         } else {
-          state.savedCardIds = state.savedCardIds.filter(id => id !== cardId)
+          state.savedCardIds = state.savedCardIds.filter(id => id !== cardId);
         }
-      })
-      
-      // Handle quiz-related actions
-      .addCase(initFlashCardQuiz.fulfilled, (state, action) => {
-        state.quizId = action.payload.id
-        state.slug = action.payload.slug
-        state.title = action.payload.title
-        state.flashCards = action.payload.questions
-        state.currentQuestion = 0
-        state.answers = []
-        state.isCompleted = false
-        state.results = null
-      })
-      
-      .addCase(submitFlashCardAnswer.fulfilled, (state, action) => {
-        const answer = action.payload
-        
-        // Find existing answer index
-        const existingIndex = state.answers.findIndex(
-          a => a && a.questionId === answer.questionId
-        )
-        
-        // Update or add the answer
-        if (existingIndex >= 0) {
-          state.answers[existingIndex] = answer
-        } else {
-          state.answers.push(answer)
-        }
-      })
-      
-      .addCase(completeFlashCardQuiz.fulfilled, (state, action) => {
-        state.isCompleted = true
-        state.results = {
-          score: action.payload.score,
-          answers: action.payload.answers,
-          completedAt: action.payload.completedAt
-        }
-      })
+      });
   },
-})
+});
 
-export const { 
-  resetFlashCards, 
-  setCurrentFlashCard, 
+export const {
+  initFlashCardQuiz,
+  submitFlashCardAnswer,
+  completeFlashCardQuiz,
+  resetFlashCards,
+  setCurrentFlashCard,
   nextFlashCard,
   setRequiresFlashCardAuth,
-  setPendingFlashCardAuth
-} = flashcardSlice.actions
+  setPendingFlashCardAuth,
+} = flashcardSlice.actions;
 
-// Selectors
-export const selectFlashCards = (state: RootState) => state.flashcard.flashCards;
+export const selectFlashcardQuiz = (state: RootState) => state.flashcard;
+export const selectFlashcardQuestions = (state: RootState) => state.flashcard.questions;
+export const selectFlashcardCurrentIndex = (state: RootState) => state.flashcard.currentQuestion;
+export const selectFlashcardAnswers = (state: RootState) => state.flashcard.answers;
+export const selectFlashcardIsComplete = (state: RootState) => state.flashcard.isCompleted;
+export const selectFlashcardResults = (state: RootState) => state.flashcard.results;
+export const selectFlashcardError = (state: RootState) => state.flashcard.error;
+export const selectFlashcardStatus = (state: RootState) => state.flashcard.status;
+export const selectFlashCards = (state: RootState) => state.flashcard.cards;
 export const selectSavedCardIds = (state: RootState) => state.flashcard.savedCardIds;
 export const selectFlashCardsLoading = (state: RootState) => state.flashcard.loading;
 export const selectFlashCardsError = (state: RootState) => state.flashcard.error;
 export const selectOwnerId = (state: RootState) => state.flashcard.ownerId;
-export const selectFlashcardState = (state: RootState) => state.flashcard;
-
-// Fix the identity selector - transform the data
-export const selectQuizId = createSelector(
-  [selectFlashcardState], 
-  (flashcardState) => {
-    const id = flashcardState.quizId;
-    return {
-      id: id || null,
-      isValid: !!id && id.length > 0,
-      formattedId: id ? `quiz-${id}` : 'no-quiz'
-    };
-  }
-);
-
-// Add enhanced selectors
-export const selectCurrentFlashcard = createSelector(
-  [selectFlashcardState],
-  (state) => {
-    const currentCard = state.flashCards[state.currentQuestion] || null;
-    
-    if (!currentCard) return null;
-    
-    return {
-      ...currentCard,
-      isSaved: state.savedCardIds.includes(currentCard.id || ''),
-      isAnswered: state.answers.some(a => a.questionId === currentCard.id),
-      position: {
-        current: state.currentQuestion + 1,
-        total: state.flashCards.length,
-        isFirst: state.currentQuestion === 0,
-        isLast: state.currentQuestion === state.flashCards.length - 1
-      }
-    };
-  }
-);
-
-export const selectFlashcardStats = createSelector(
-  [selectFlashcardState],
-  (state) => ({
-    totalCards: state.flashCards.length,
-    savedCards: state.savedCardIds.length,
-    completedCards: state.answers.length,
-    progress: state.flashCards.length ? Math.round((state.answers.length / state.flashCards.length) * 100) : 0,
-    remainingCards: state.flashCards.length - state.answers.length,
-    isComplete: state.answers.length >= state.flashCards.length,
-    progressFormatted: `${state.answers.length}/${state.flashCards.length}`,
-  })
-);
-
-export default flashcardSlice.reducer
+export const selectQuizId = (state: RootState) => state.flashcard.quizId;
+export default flashcardSlice.reducer;

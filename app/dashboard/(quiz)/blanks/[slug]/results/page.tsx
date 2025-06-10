@@ -13,7 +13,7 @@ interface ResultsPageProps {
 
 export default function BlanksResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-  const slug = params instanceof Promise ? use(params) : params.slug;
+  const slug = params instanceof Promise ? use(params).slug : params.slug;
   
   const handleRetakeQuiz = () => {
     // Use replace instead of push to avoid navigation loops
@@ -40,7 +40,7 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
       <QuizResultHandler 
         slug={slug} 
         quizType="blanks"
-        maxWaitTime={3000} // Shorten wait time to avoid long loading spinner
+     
       >
         {({ result }) => (
           result ? (

@@ -27,7 +27,6 @@ import {
 
 import FlashCardResults from "./FlashCardQuizResults"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { NonAuthenticatedUserSignInPrompt } from "../../components/NonAuthenticatedUserSignInPrompt"
 
 interface FlashCardComponentProps {
   cards: FlashCard[]
@@ -581,10 +580,26 @@ function FlashCardComponentInner({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
           >
-            <NonAuthenticatedUserSignInPrompt
-              onSignIn={handleAuthenticationRequired}
-              redirectUrl={`${window.location.origin}/dashboard/flashcard/${slug}?fromAuth=true&completed=true`}
-            />
+            <div className="flex flex-col items-center justify-center gap-6 p-8 text-center max-w-md mx-auto">
+              <h2 className="text-2xl font-bold">Flashcards Complete!</h2>
+              <p className="text-gray-600">
+                Sign in to save your progress and view detailed results.
+              </p>
+              <div className="bg-gray-50 p-4 rounded text-center">
+                <div className="text-3xl font-bold text-blue-600">
+                  {correctCount} / {totalQuestions}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Total time: {Math.floor(totalTime / 60)}m {totalTime % 60}s
+                </p>
+              </div>
+              <Button onClick={handleAuthenticationRequired} className="w-full">
+                Sign In
+              </Button>
+              <Button onClick={handleRestartQuiz} variant="outline" className="w-full">
+                Restart Flashcards
+              </Button>
+            </div>
           </motion.div>
         )
       }

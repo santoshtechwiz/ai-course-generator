@@ -1,147 +1,185 @@
 "use client"
 
-import { useState } from "react"
+import React from "react"
+import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Award, Clock, Activity, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { AlertCircle, RefreshCw } from "lucide-react"
-
-
-import { resetFlashCards } from "@/store/slices/flashcardSlice"
-import { useAppDispatch } from "@/store"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface FlashCardResultsProps {
-  quizId: string
-  title: string
-  score: number
-  totalQuestions: number
-  totalTime: number
-  correctAnswers: number
+  quizId?: string
   slug: string
-  onRestart: () => void
+  title?: string
+  score?: number
+  totalQuestions?: number
+  correctAnswers?: number
+  totalTime?: number
+  onRestart?: () => void
+  onReview?: (cards: number[]) => void
 }
 
 export default function FlashCardResults({
-  quizId,
-  title,
-  score,
-  totalQuestions,
-  totalTime,
-  correctAnswers,
   slug,
+  title = "Flashcard Quiz",
+  score = 0,
+  totalQuestions = 0,
+  correctAnswers = 0,
+  totalTime = 0,
   onRestart,
+  onReview,
 }: FlashCardResultsProps) {
   const router = useRouter()
-  const dispatch = useAppDispatch()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isRestarting, setIsRestarting] = useState(false)
-
-  // Format time to show minutes and seconds
+  
+  // Format time from seconds to minutes and seconds
   const formatTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return "0s"
-
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-
-    if (minutes === 0) {
-      return `${remainingSeconds}s`
-    }
-
-    return `${minutes}m ${remainingSeconds}s`
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}m ${secs}s`
   }
-
-  const handleRetry = async () => {
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      // Submit results using Redux action if needed
-      // This would be implemented if we need to retry submission
-      setError(null)
-    } catch (err) {
-      console.error("Error retrying submission:", err)
-      setError("Failed to save results. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+  
+  // Calculate metrics
+  const accuracyPercentage = Math.round(score)
+  const cardsPerMinute = totalTime > 0 ? Math.round((totalQuestions / (totalTime / 60)) * 10) / 10 : 0
+  
+  const handleRetake = () => {
+    if (onRestart) {
+      onRestart()
+    } else {
+      router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)
     }
   }
 
-  const handleTryAgain = () => {
-    setIsRestarting(true)
-
-    // Reset the quiz state in Redux
-    dispatch(resetFlashCards())
-
-    // Add reset parameters to URL to force a fresh load
-    const url = new URL(window.location.href)
-    url.searchParams.set("reset", "true")
-    url.searchParams.set("t", Date.now().toString())
-
-    // Navigate to the same page with reset parameters
-    router.push(url.toString())
-
-    // Call the onRestart callback
-    onRestart()
+  const handleViewAll = () => {
+    router.push("/dashboard/quizzes")
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">{title} Results</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="text-center">
-          <p className="text-4xl font-bold mb-2">{Math.round(score)}%</p>
-          <Progress value={score} className="w-full h-2" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            You got {correctAnswers} out of {totalQuestions} cards correct
-          </p>
-        </div>
+    <div className="max-w-2xl mx-auto p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-6"
+      >
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">{title} Completed!</h1>
+        <p className="text-muted-foreground">You've completed your flashcard session.</p>
+      </motion.div>
 
-        <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+        >
           <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">Time Spent</p>
-              <p className="text-xl font-semibold">
-                {Math.floor(totalTime / 60)}m {Math.round(totalTime % 60)}s
-              </p>
-              <div className="text-sm text-muted-foreground">Total time: {formatTime(totalTime)}</div>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <Award className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Score</p>
+                  <p className="text-2xl font-bold">{correctAnswers} / {totalQuestions}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
           <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">Cards</p>
-              <p className="text-xl font-semibold">{totalQuestions}</p>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-amber-500/10 p-2 rounded-full">
+                  <Clock className="h-8 w-8 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Time</p>
+                  <p className="text-2xl font-bold">{formatTime(totalTime)}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
 
-        {error && (
-          <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-center gap-2 text-sm">
-            <AlertCircle className="h-4 w-4" />
-            <span>{error}</span>
-            <Button variant="outline" size="sm" onClick={handleRetry} disabled={isSubmitting} className="ml-auto">
-              {isSubmitting ? (
-                <RefreshCw className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <RefreshCw className="h-3 w-3 mr-1" />
-              )}
-              Retry
-            </Button>
-          </div>
-        )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-green-500/10 p-2 rounded-full">
+                  <BarChart3 className="h-8 w-8 text-green-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Accuracy</p>
+                  <p className="text-2xl font-bold">{accuracyPercentage}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <div className="flex justify-center gap-4">
-          <Button onClick={handleTryAgain} disabled={isRestarting}>
-            {isRestarting ? "Restarting..." : "Try Again"}
-          </Button>
-          <Button variant="outline" onClick={() => router.push("/dashboard/flashcard")}>
-            Back to Dashboard
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+        >
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-500/10 p-2 rounded-full">
+                  <Activity className="h-8 w-8 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Card Rate</p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-2xl font-bold">{cardsPerMinute}/min</p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Cards reviewed per minute</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+        className="mt-8 flex flex-col sm:flex-row gap-4 justify-center"
+      >
+        <Button onClick={handleRetake} className="sm:w-auto flex-1 max-w-xs">
+          Retake Flashcards
+        </Button>
+        <Button 
+          onClick={handleViewAll} 
+          variant="outline" 
+          className="sm:w-auto flex-1 max-w-xs"
+        >
+          View All Quizzes
+        </Button>
+      </motion.div>
+    </div>
   )
 }

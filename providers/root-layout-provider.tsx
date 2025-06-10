@@ -6,7 +6,6 @@ import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
 import { Suspense, useState, useEffect, useMemo } from "react"
 import { AnimationProvider } from "./animation-provider"
-import { ReduxProvider } from "./redux-provider"
 
 import { SessionProvider } from "next-auth/react"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
@@ -59,45 +58,38 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
   return (
     <React.StrictMode>
       <SessionProvider session={session}>
-        <ReduxProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem={true}
-            disableTransitionOnChange
-            // Add these props to fix hydration issues
-            storageKey="course-ai-theme"
-            enableColorScheme={true}
-          >
-            <QueryClientProvider client={queryClient}>
-              <TooltipProvider>
-                <SubscriptionProvider>
-                  <LoadingProvider>
-                    <AnimationProvider>
-                 
-                      {navbar}
-                      <Suspense fallback={<div>Loading...</div>}></Suspense>
-                      {jsonLd}
-                      <Toaster position="top-right" closeButton richColors />
-                      {mounted && children}
-                    </AnimationProvider>
-                  </LoadingProvider>
-                </SubscriptionProvider>
-              </TooltipProvider>
-            </QueryClientProvider>
-          </ThemeProvider>
-        </ReduxProvider>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem={true}
+              disableTransitionOnChange
+              // Add these props to fix hydration issues
+              storageKey="course-ai-theme"
+              enableColorScheme={true}
+            >
+              <QueryClientProvider client={queryClient}>
+                <TooltipProvider>
+                  <SubscriptionProvider>
+                    <LoadingProvider>
+                      <AnimationProvider>
+                        {navbar}
+                        <Suspense fallback={<div>Loading...</div>}></Suspense>
+                        {jsonLd}
+                        <Toaster position="top-right" closeButton richColors />
+                        {mounted && children}
+                      </AnimationProvider>
+                    </LoadingProvider>
+                  </SubscriptionProvider>
+                </TooltipProvider>
+              </QueryClientProvider>
+            </ThemeProvider>
+          </PersistGate>
+        </Provider>
       </SessionProvider>
     </React.StrictMode>
   )
 }
 
-export default function RootLayoutProviderWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        {children}
-      </PersistGate>
-    </Provider>
-  )
-}
+export default RootLayoutProvider

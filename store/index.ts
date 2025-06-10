@@ -2,11 +2,12 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
+import { createPersistMiddleware } from "./middleware/persistMiddleware";
 
 // Reducers
 import authReducer from "./slices/authSlice";
 import quizReducer from "./slices/quizSlice";
-import subscriptionReducer from "./slices/subscriptionSlice"; // Updated import path
+import subscriptionReducer from "./slices/subscriptionSlice";
 import userReducer from "./slices/userSlice";
 import flashcardReducer from "./slices/flashcardSlice";
 import courseReducer from "./slices/courseSlice";
@@ -48,6 +49,14 @@ const rootReducer = combineReducers({
   certificate: certificateReducer, // Fixed name to avoid collision with the import
 });
 
+// Create Redux middleware for persistence
+const middleware = [
+  createPersistMiddleware({
+    key: "redux_state",
+    whitelist: ["quiz", "flashcard", "subscription"],
+  }),
+];
+
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
@@ -55,9 +64,10 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }),
+    }).concat(middleware),
 });
 
+// Create the persistor
 export const persistor = persistStore(store);
 
 // Add these hooks for typed usage in app
@@ -68,10 +78,69 @@ export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
 // Export slices functionality
-export * from "./slices/authSlice";
+export {
+  initializeAuth,
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  logout,
+  setUser,
+  selectAuth,
+  selectUser,
+  selectToken,
+  selectAuthStatus,
+  selectIsAdmin,
+  selectIsAuthenticated,
+  selectIsAuthLoading,
+} from "./slices/authSlice";
+
+// Course slice exports - avoid conflicting names
 export * from "./slices/courseSlice";
-export * from "./slices/quizSlice";
-export * from "./slices/subscriptionSlice"; // Updated export path
-export * from "./slices/userSlice";
+
+// Quiz slice exports - avoid conflicting names
+export {
+  fetchQuiz,
+  submitQuiz,
+  initializeQuiz,
+  restoreQuizAfterAuth,
+  submitQuizAndPrepareResults,
+  checkAuthAndLoadResults,
+  fetchQuizResults,
+  setCurrentQuestionIndex,
+  saveAnswer,
+  resetQuiz,
+  clearResetFlag,
+  setQuizResults,
+  setPendingQuiz,
+  hydrateQuiz,
+  clearPendingQuiz,
+  setAuthRedirect,
+  clearAuthRedirect,
+  setResultsRedirect,
+  clearResultsRedirect,
+  setQuizCompleted,
+  setQuizType,
+  setSessionId,
+  resetSaveStatus,
+  setQuiz,
+  // Rename conflicting exports with prefixes
+  resetState as resetQuizState,
+  selectQuizId as selectCurrentQuizId,
+  hydrateStateFromStorage,
+} from "./slices/quizSlice";
+
+// Subscription slice exports
+export * from "./slices/subscriptionSlice";
+
+// User slice exports
+// Explicitly re-export conflicting members with unique names
+export {
+  resetState as resetUserState,
+  setUserPreferences as setUserPreferencesFromUserSlice,
+} from "./slices/userSlice";
+
+
+
+// Flashcard slice exports
 export * from "./slices/flashcardSlice";
-export { store, persistor };
+

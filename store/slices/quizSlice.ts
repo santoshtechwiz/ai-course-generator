@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction, createSelector } from "@reduxjs/toolkit"
 import type { RootState } from "../index"
 import { QuizType } from "@/types/quiz"
+import { hydrateFromStorage } from '../middleware/persistMiddleware';
 
 // Export API endpoints for consistency across the app
 export const API_ENDPOINTS = {
@@ -9,6 +10,8 @@ export const API_ENDPOINTS = {
   blanks: '/api/quizzes/blanks',
   openended: '/api/quizzes/openended',
   flashcard: '/api/quizzes/flashcard',
+  // Add a common endpoint for consistent API access
+  common: '/api/quizzes/common',
 };
 
 export interface QuizState {
@@ -35,6 +38,12 @@ export interface QuizState {
   saveError: string | null;
 }
 
+// Load persisted state from storage for hydration
+const loadPersistedState = (): Partial<QuizState> => {
+  const persisted = hydrateFromStorage<Partial<QuizState>>('quiz_state');
+  return persisted || {};
+};
+
 const initialState: QuizState = {
   slug: null, // Primary identifier for UI operations
   quizId: null, // Keep for database compatibility
@@ -56,6 +65,8 @@ const initialState: QuizState = {
   isSaving: false,
   isSaved: false,
   saveError: null,
+  // Restore persisted state during initialization
+  ...loadPersistedState(),
 }
 
 // Backward compatible: Keep existing fetchQuiz thunk
@@ -219,31 +230,82 @@ export const initializeQuiz = createAsyncThunk(
   },
 )
 
+// Helper function to normalize slug (added)
+export const normalizeSlug = (slugInput: any): string => {
+  if (typeof slugInput === 'object' && slugInput !== null) {
+    return slugInput.slug || slugInput.id || String(slugInput);
+  }
+  return String(slugInput);
+};
+
 // Thunk: Restore quiz after authentication
-export const restoreQuizAfterAuth = createAsyncThunk("quiz/restoreQuizAfterAuth", async (_, { getState, dispatch }) => {
-  const state = getState() as RootState
+export const restoreQuizAfterAuth = createAsyncThunk(
+  "quiz/restoreQuizAfterAuth", 
+  async (_, { getState, dispatch }) => {
+    const state = getState() as RootState;
 
-  // Try to get pending quiz from state or sessionStorage
-  let pendingQuiz = state.quiz.pendingQuiz
+    // Try to get pending quiz from state or localStorage
+    let pendingQuiz = state.quiz.pendingQuiz;
+    let pendingResults = null;
 
-  if (!pendingQuiz && typeof window !== "undefined") {
-    try {
-      const stored = sessionStorage.getItem("pendingQuiz")
-      if (stored) {
-        pendingQuiz = JSON.parse(stored)
+    if (typeof window !== "undefined") {
+      try {
+        // First check for any specific quiz results
+        const resultJson = localStorage.getItem('pendingQuizResults');
+        if (resultJson) {
+          pendingResults = JSON.parse(resultJson);
+          console.log("Restored pending quiz results:", pendingResults);
+        }
+
+        // Then check for general pending quiz state
+        if (!pendingQuiz) {
+          const stored = sessionStorage.getItem("pendingQuiz");
+          if (stored) {
+            pendingQuiz = JSON.parse(stored);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to restore pending quiz data:", err);
       }
-    } catch (err) {
-      console.error("Failed to restore pending quiz:", err)
     }
-  }
 
-  if (pendingQuiz) {
-    dispatch(clearAuthRedirect())
-    return pendingQuiz
-  }
+    // If we found pending results, return those directly
+    if (pendingResults?.results) {
+      // When we find results, clear the storage
+      localStorage.removeItem('pendingQuizResults');
+      
+      // Normalize the slug
+      const normalizedSlug = normalizeSlug(pendingResults.slug);
+      
+      return {
+        slug: normalizedSlug,
+        quizData: {
+          type: pendingResults.quizType || "mcq",
+          title: pendingResults.title || "Quiz Results",
+          questions: pendingResults.questions || []
+        },
+        currentState: {
+          results: pendingResults.results,
+          showResults: true
+        }
+      };
+    }
 
-  throw new Error("No pending quiz to restore")
-})
+    // Otherwise use the pending quiz if available
+    if (pendingQuiz) {
+      dispatch(clearAuthRedirect());
+      
+      // Normalize the slug
+      if (pendingQuiz.slug) {
+        pendingQuiz.slug = normalizeSlug(pendingQuiz.slug);
+      }
+      
+      return pendingQuiz;
+    }
+
+    throw new Error("No pending quiz to restore");
+  }
+)
 
 // Thunk: Submit quiz and prepare results
 export const submitQuizAndPrepareResults = createAsyncThunk(
@@ -438,8 +500,15 @@ const quizSlice = createSlice({
       state.questions = quizData.questions || [];
       state.answers = currentState?.answers || {};
     },
+    // Update setQuizResults to handle potential slug object structures
     setQuizResults: (state, action: PayloadAction<any>) => {
       state.results = action.payload;
+      
+      // If we have nested slug in the results, normalize it
+      if (action.payload?.slug && typeof action.payload.slug === 'object') {
+        state.slug = normalizeSlug(action.payload.slug);
+      }
+      
       state.status = "succeeded";
     },
     resetPendingQuiz: (state) => {
@@ -486,93 +555,34 @@ const quizSlice = createSlice({
       state.isCompleted = isComplete
     },
 
-    resetQuiz: (state) => {
-      // Reset all quiz state except for configuration preferences
-      state.status = 'idle'
-      state.questions = []
-      state.currentQuestionIndex = 0
-      state.answers = {}
-      state.isCompleted = false
-      state.results = null
-      state.error = null
-      state.pendingQuiz = null
-      // Add a flag to indicate the quiz was just reset
-      state.wasReset = true
-    },
+   
 
     clearResetFlag: (state) => {
       state.wasReset = false
     },
 
-    setQuizResults: (state, action: PayloadAction<any>) => {
-      state.results = action.payload;
-      state.status = "succeeded";
-      state.error = null;
-    },
     
     setPendingQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
       state.pendingQuiz = action.payload
-      if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
-        try {
-          sessionStorage.setItem('pendingQuiz', JSON.stringify(action.payload))
-        } catch (error) {
-          console.error("Failed to save pending quiz to sessionStorage:", error)
-        }
-      }
+      // Remove direct storage interaction - handled by middleware now
     },
 
-    resetPendingQuiz: (state) => {
-      state.pendingQuiz = null
-    },
-    // Rename to hydrateQuiz to avoid conflict with the async thunk
-    hydrateQuiz: (state, action: PayloadAction<{ slug: string; quizData: any; currentState?: any }>) => {
-      const { slug, quizData, currentState } = action.payload;
-      const sanitizedSlug = typeof slug === 'string' ? slug : String(slug);
-      state.slug = sanitizedSlug;
-      state.quizId = sanitizedSlug;
-      
-      state.currentQuestionIndex = 0
-      state.error = null
-      state.status = "idle"
-      state.quizType = "mcq"
-      
-      // Always populate the questions from quizData if available
-      if (quizData?.questions?.length) {
-        state.title = quizData?.title || state.title || ""
-        state.questions = quizData.questions
-      }
-      
-      // Don't reset answers if we have existing ones and currentState.showResults is true
-      if (!(currentState?.showResults && Object.keys(state.answers).length > 0)) {
-        state.answers = currentState?.answers || {}
-      }
-      
-      state.isCompleted = currentState?.isCompleted || false
-      
-      // Special handling for results when showResults is true
-      if (currentState?.showResults) {
-        if (currentState.results) {
-          state.results = currentState.results;
-          state.status = "succeeded";
-        } else {
-          // Try to restore from storage
-          try {
-            if (typeof window !== 'undefined') {
-              const storedResults = sessionStorage.getItem(`quiz_results_${slug}`) || localStorage.getItem(`quiz_results_${slug}`);
-              if (storedResults) {
-                state.results = JSON.parse(storedResults);
-                state.status = "succeeded";
-              }
-            }
-          } catch (e) {
-            console.error("Failed to restore results from storage:", e);
-          }
-        }
-      }
-    },
-
+    
     clearPendingQuiz: (state) => {
       state.pendingQuiz = null
+      // No direct storage manipulation needed
+    },
+
+    // New action to hydrate state from storage (useful on app init)
+    hydrateStateFromStorage: (state) => {
+      const persisted = hydrateFromStorage<Partial<QuizState>>('quiz_state');
+      if (persisted) {
+        Object.entries(persisted).forEach(([key, value]) => {
+          if (value !== undefined) {
+            (state as any)[key] = value;
+          }
+        });
+      }
     },
 
     setAuthRedirect: (state, action: PayloadAction<string>) => {
@@ -825,6 +835,7 @@ export const {
   resetSaveStatus,
   setQuiz, // Export the new action
   resetState, // Export the new resetState action
+  hydrateStateFromStorage, // Export the new action
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility
