@@ -5,7 +5,7 @@ import type ReactPlayer from "react-player"
 import { useToast } from "@/hooks/use-toast"
 import screenfull from "screenfull"
 import { useAppDispatch } from "@/store/hooks"
-import { addBookmark, removeBookmark } from "@/store/slices/courseSlice"
+import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
 import { loadPlayerPreferences, savePlayerPreferences, calculateBufferHealth, formatTime } 
 
 from "./progressUtils"

@@ -1,6 +1,6 @@
 "use server"
 
-import { API_ENDPOINTS } from "@/store/slices/quizSlice"
+import { API_ENDPOINTS } from "@/store/slices/quiz-slice"
 import type { QuizType } from "@/app/types/quiz-types"
 import { apiClient } from "@/lib/api-client"
 

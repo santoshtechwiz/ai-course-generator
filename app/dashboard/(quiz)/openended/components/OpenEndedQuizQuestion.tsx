@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { SendIcon, ChevronRightIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { OpenEndedQuestion } from "@/types/quiz"
-import { selectQuizStatus, saveAnswer, selectAnswerForQuestion } from "@/store/slices/quizSlice"
+import { selectQuizStatus, saveAnswer, selectAnswerForQuestion } from "@/store/slices/quiz-slice"
 
 
 interface QuizQuestionProps {

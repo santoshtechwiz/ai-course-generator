@@ -24,7 +24,7 @@ import courseReducer, {
   setNextVideoId,
   setPrevVideoId,
   setLoading,
-} from "@/store/slices/courseSlice"
+} from "@/store/slices/course-slice"
 import { configureStore } from "@reduxjs/toolkit"
 
 describe("courseSlice", () => {

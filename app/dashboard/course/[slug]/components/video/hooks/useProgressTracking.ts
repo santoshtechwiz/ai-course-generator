@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useEffect } from "react"
 import { useAppDispatch } from "@/store/hooks"
-import { updateUserProgress } from "@/store/slices/courseSlice"
+import { updateUserProgress } from "@/store/slices/course-slice"
 import { PROGRESS_MILESTONES, PROGRESS_UPDATE_DELAY, checkMilestoneReached, debounce } from "./progressUtils"
 import type { ProgressState } from "../types"
 

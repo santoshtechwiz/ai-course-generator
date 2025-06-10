@@ -9,7 +9,7 @@ import {
   setCourseCompletionStatus,
   setResumePoint,
   setLastPlayedAt,
-} from "@/store/slices/courseSlice"
+} from "@/store/slices/course-slice"
 
 interface VideoProgressOptions {
   videoId: string

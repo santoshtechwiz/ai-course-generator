@@ -17,7 +17,7 @@ import {
   saveAnswer,
   fetchQuiz,
   setQuizCompleted,
-} from "@/store/slices/quizSlice"
+} from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import type { BlankQuestion } from "./types"
 import { Button } from "@/components/ui/button"

@@ -17,7 +17,7 @@ import {
   saveAnswer,
   fetchQuiz,
   setQuizCompleted,
-} from "@/store/slices/quizSlice"
+} from "@/store/slices/quiz-slice"
 
 import { Button } from "@/components/ui/button"
 import McqQuiz from "./McqQuiz"

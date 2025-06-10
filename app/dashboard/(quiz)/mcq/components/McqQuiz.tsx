@@ -18,7 +18,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { saveAnswer } from "@/store/slices/quizSlice"
+import { saveAnswer } from "@/store/slices/quiz-slice"
 
 
 interface Option {

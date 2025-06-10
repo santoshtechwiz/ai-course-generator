@@ -7,7 +7,7 @@ import {
   selectCurrentQuestionIndex, 
   selectQuestions,
   selectAnswers
-} from "@/store/slices/quizSlice";
+} from "@/store/slices/quiz-slice";
 
 export function QuizDebugger() {
   const [isVisible, setIsVisible] = useState(false);

@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation"
 import type { FlashCard } from "@/app/types/types"
 import { FlashCardComponent } from "./FlashCardComponent"
 import { useAppDispatch } from "@/store"
-import { resetFlashCards } from "@/store/slices/flashcardSlice"
+import { resetFlashCards } from "@/store/slices/flashcard-slice"
 
 
 interface FlashCardComponentProps {

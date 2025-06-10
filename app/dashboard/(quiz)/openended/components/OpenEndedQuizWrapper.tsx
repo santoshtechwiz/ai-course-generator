@@ -20,7 +20,7 @@ import {
   setQuizResults,
   setQuizCompleted,
   fetchQuiz,
-} from "@/store/slices/quizSlice"
+} from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { OpenEndedQuestion } from "@/types/quiz"

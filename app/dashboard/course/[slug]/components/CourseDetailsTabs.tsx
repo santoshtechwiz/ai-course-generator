@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { FileText, MessageSquare, BarChart3, Award, TrendingUp, Bookmark } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { addBookmark, removeBookmark } from "@/store/slices/courseSlice"
+import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsQuiz from "./CourseQuiz"
 import CourseAISummary from "./CourseSummary"

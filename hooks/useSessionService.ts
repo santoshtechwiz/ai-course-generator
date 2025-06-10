@@ -9,7 +9,7 @@ import {
   setQuizResults,
   setQuiz,
   selectQuizState,
-} from "@/store/slices/quizSlice";
+} from "@/store/slices/quiz-slice";
 import { signIn as nextSignIn } from "next-auth/react";
 import { safeStorage } from "@/lib/client-utils";
 

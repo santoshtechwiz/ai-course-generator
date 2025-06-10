@@ -18,7 +18,7 @@ import {
   selectFlashCardsError,
   selectOwnerId,
   selectQuizId
-} from "@/store/slices/flashcardSlice"
+} from "@/store/slices/flashcard-slice"
 import { AppDispatch } from "@/store"
 
 interface FlashCardPageClientProps {

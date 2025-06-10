@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
-import { resetQuiz } from "@/store/slices/quizSlice";
+import { resetQuiz } from "@/store/slices/quiz-slice";
 import { AppDispatch } from "@/store";
 import BlankQuizResults from "../blanks/components/BlankQuizResults";
 import McqQuizResult from "../mcq/components/McqQuizResult";
