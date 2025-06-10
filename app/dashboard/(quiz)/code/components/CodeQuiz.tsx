@@ -48,7 +48,7 @@ const CodeQuiz = ({
     try {
       dispatch(
         saveAnswer({
-          questionId: question.id,
+          questionId: String(question.id),
           answer: {
             questionId: question.id,
             selectedOptionId: option,

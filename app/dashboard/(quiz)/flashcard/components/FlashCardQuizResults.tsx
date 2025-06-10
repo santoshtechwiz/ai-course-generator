@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useMemo, useCallback } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { Award, Clock, Activity, BarChart3 } from "lucide-react"
@@ -37,35 +37,78 @@ export default function FlashCardResults({
 }: FlashCardResultsProps) {
   const router = useRouter()
   
-  // Format time from seconds to minutes and seconds
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}m ${secs}s`
-  }
-  
-  // Calculate metrics
-  const accuracyPercentage = Math.round(score)
-  const cardsPerMinute = totalTime > 0 ? Math.round((totalQuestions / (totalTime / 60)) * 10) / 10 : 0
-  
-  const handleRetake = () => {
-    if (onRestart) {
-      onRestart()
-    } else {
-      router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)
-    }
-  }
+  // Memoize calculations to avoid recalculating on every render
+  const { formattedTime, accuracyPercentage, cardsPerMinute } = useMemo(() => {
+    // Format time from seconds to minutes and seconds
+    const mins = Math.floor(totalTime / 60);
+    const secs = totalTime % 60;
+    const formattedTime = `${mins}m ${secs}s`;
+    
+    // Calculate metrics
+    const accuracyPercentage = Math.round(score);
+    const cardsPerMinute = totalTime > 0 ? 
+      Math.round((totalQuestions / (totalTime / 60)) * 10) / 10 : 0;
+    
+    return { formattedTime, accuracyPercentage, cardsPerMinute };
+  }, [totalTime, score, totalQuestions]);
 
-  const handleViewAll = () => {
-    router.push("/dashboard/quizzes")
-  }
+  // Memoize handlers to prevent recreating functions on every render
+  const handleRetake = useCallback(() => {
+    if (onRestart) {
+      onRestart();
+    } else {
+      router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`);
+    }
+  }, [onRestart, router, slug]);
+
+  const handleViewAll = useCallback(() => {
+    router.push("/dashboard/quizzes");
+  }, [router]);
+
+  // Optimized animation variants with hardware acceleration and smoother transitions
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { 
+        when: "beforeChildren",
+        staggerChildren: 0.08, // Slightly faster stagger for better UX
+        ease: "easeOut",
+        duration: 0.4
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 15, // Slightly smaller movement for subtler animation
+      willChange: 'transform, opacity'
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      willChange: 'transform, opacity',
+      transition: {
+        type: "spring",
+        stiffness: 500, // More responsive spring
+        damping: 25,
+        mass: 0.8 // Lower mass for snappier feel
+      }
+    }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
+    <motion.div 
+      className="max-w-2xl mx-auto p-4"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      layout
+      layoutRoot // Optimize layout animations
+    >
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        variants={itemVariants}
         className="text-center mb-6"
       >
         <h1 className="text-2xl md:text-3xl font-bold mb-2">{title} Completed!</h1>
@@ -73,11 +116,7 @@ export default function FlashCardResults({
       </motion.div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-        >
+        <motion.div variants={itemVariants}>
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -93,11 +132,7 @@ export default function FlashCardResults({
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
+        <motion.div variants={itemVariants}>
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -106,18 +141,14 @@ export default function FlashCardResults({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Time</p>
-                  <p className="text-2xl font-bold">{formatTime(totalTime)}</p>
+                  <p className="text-2xl font-bold">{formattedTime}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
+        <motion.div variants={itemVariants}>
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -133,11 +164,7 @@ export default function FlashCardResults({
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
+        <motion.div variants={itemVariants}>
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -164,9 +191,7 @@ export default function FlashCardResults({
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
+        variants={itemVariants}
         className="mt-8 flex flex-col sm:flex-row gap-4 justify-center"
       >
         <Button onClick={handleRetake} className="sm:w-auto flex-1 max-w-xs">
@@ -180,6 +205,6 @@ export default function FlashCardResults({
           View All Quizzes
         </Button>
       </motion.div>
-    </div>
+    </motion.div>
   )
 }

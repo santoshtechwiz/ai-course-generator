@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,7 +30,7 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardPageClie
   const dispatch = useDispatch<AppDispatch>()
   const { data: session, status: authStatus } = useSession()
 
-  // Get state from Redux
+  // Get state from Redux with memoization
   const cards = useSelector(selectFlashCards)
   const savedCardIds = useSelector(selectSavedCardIds)
   const isLoading = useSelector(selectFlashCardsLoading)
@@ -41,26 +41,56 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardPageClie
   // Local state
   const [isLoadingCards, setIsLoadingCards] = useState(true)
   const [loadingError, setLoadingError] = useState<string | null>(null)
+  const [fetchAttempted, setFetchAttempted] = useState(false)
 
-  // Fetch flashcards on mount
+  // Fetch flashcards with optimized loading state management
   useEffect(() => {
+    // Skip if we already successfully fetched data
+    if (cards.length > 0 && !error) return;
+
+    // Skip if we already attempted a fetch
+    if (fetchAttempted) return;
+    
+    // Improved fetch with abort controller for cleanup
+    const controller = new AbortController();
+    
     const fetchCards = async () => {
       setIsLoadingCards(true)
+      setFetchAttempted(true)
+      
       try {
-        await dispatch(fetchFlashCards({ slug })).unwrap()
+        await dispatch(fetchFlashCards({ 
+          slug,
+          signal: controller.signal 
+        })).unwrap()
         setLoadingError(null)
       } catch (err: any) {
-        setLoadingError(err.message || "Failed to load flashcards")
+        // Don't set error if aborted
+        if (err.name !== 'AbortError') {
+          setLoadingError(err.message || "Failed to load flashcards")
+        }
       } finally {
+        // Only change loading state if component is still mounted
         setIsLoadingCards(false)
       }
     }
 
-    fetchCards()
-  }, [dispatch, slug])
+    // Use requestIdleCallback if available for non-critical fetch
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      // @ts-ignore - TypeScript doesn't recognize requestIdleCallback
+      window.requestIdleCallback(() => fetchCards(), { timeout: 1000 });
+    } else {
+      // Small timeout as fallback
+      const timerId = setTimeout(fetchCards, 10);
+      return () => clearTimeout(timerId);
+    }
+    
+    // Clean up fetch request on unmount
+    return () => controller.abort();
+  }, [dispatch, slug, cards.length, error, fetchAttempted])
 
-  // Handle save/unsave card
-  const handleSaveCard = async (card: any) => {
+  // Handle save/unsave card with useCallback to prevent rerenders
+  const handleSaveCard = useCallback(async (card: any) => {
     if (!session) return
 
     const cardId = card.id.toString()
@@ -74,14 +104,20 @@ export default function FlashCardsPageClient({ slug, userId }: FlashCardPageClie
     } catch (error) {
       console.error("Failed to toggle card save status", error)
     }
-  }
+  }, [session, savedCardIds, dispatch])
 
-  // Handle retry on error
-  const handleRetry = () => {
+  // Handle retry on error with useCallback
+  const handleRetry = useCallback(() => {
+    setFetchAttempted(false)
     dispatch(fetchFlashCards({ slug }))
-  }
+  }, [dispatch, slug])
 
-  if (isLoadingCards || isLoading) {
+  // Memoize loading state to prevent re-renders
+  const isPageLoading = useMemo(() => 
+    isLoadingCards || isLoading
+  , [isLoadingCards, isLoading])
+
+  if (isPageLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
 

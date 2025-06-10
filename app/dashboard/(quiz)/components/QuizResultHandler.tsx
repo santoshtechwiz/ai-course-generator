@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useLayoutEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store";
 import {
@@ -26,6 +26,8 @@ import type { QuizType } from "@/types/quiz";
 import { AnimatePresence, motion } from "framer-motion";
 import { QuizResultSkeleton } from "./QuizResultSkeleton";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { useQuizStateManager } from "@/hooks/useQuizStateManager";
 
 interface SignInPromptProps {
   onSignIn: () => void;
@@ -409,7 +411,8 @@ export function QuizResultHandler({ slug, quizType, onComplete }: {
         .unwrap()
         .then(() => {
           // Only show toast if we're on a quiz page, not results page
-          if (!router.pathname.includes('/results')) {
+          const pathname = usePathname();
+          if (!pathname.includes('/results')) {
             toast.success('Quiz results saved successfully!', {
               duration: 3000,
             });
@@ -428,7 +431,8 @@ export function QuizResultHandler({ slug, quizType, onComplete }: {
 
   // Redirect to results page if quiz is completed
   useEffect(() => {
-    if (isInitialized && isCompleted && results && !router.pathname.includes('/results')) {
+    const pathname = usePathname();
+    if (isInitialized && isCompleted && results && !pathname.includes('/results')) {
       // Don't redirect if we're already on the results page
       router.push(`/dashboard/${quizType}/${slug}/results`);
     }

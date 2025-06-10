@@ -1,6 +1,6 @@
 "use client"
 
-import QuizResults from "../../components/TextQuizResults"
+import TextQuizResults from "../../components/TextQuizResults"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 
 interface OpenEndedQuizResult {
@@ -61,7 +61,7 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
   })
 
   return (
-    <QuizResults
+    <TextQuizResults
       result={
         result
           ? {

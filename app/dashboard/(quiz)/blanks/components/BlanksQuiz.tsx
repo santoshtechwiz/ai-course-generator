@@ -32,13 +32,14 @@ import {
 // Define props interface for better type safety
 interface BlanksQuizProps {
   question: BlankQuestion
-  questionNumber: number
-  totalQuestions: number
+  questionNumber?: number
+  totalQuestions?: number
   existingAnswer?: string
   onAnswer: (answer: string) => void
   onNext?: () => void
   onPrevious?: () => void
   onSubmit?: () => void
+  isSubmitting?: boolean
   canGoNext?: boolean
   canGoPrevious?: boolean
   isLastQuestion?: boolean
@@ -55,7 +56,8 @@ const BlanksQuiz = memo(function BlanksQuiz({
   onSubmit,
   canGoNext = false,
   canGoPrevious = false,
-  isLastQuestion = false
+  isLastQuestion = false,
+  isSubmitting = false
 }: BlanksQuizProps) {
   // Better typing for refs
   const inputRef = useRef<HTMLInputElement>(null)
@@ -85,7 +87,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
   }, [question.question])
 
   const progressPercentage = useMemo(
-    () => (questionNumber / totalQuestions) * 100,
+    () => ((questionNumber ?? 0) / (totalQuestions ?? 1)) * 100,
     [questionNumber, totalQuestions]
   )
 

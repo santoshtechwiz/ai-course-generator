@@ -7,7 +7,6 @@ import { AppDispatch } from "@/store";
 import BlankQuizResults from "../blanks/components/BlankQuizResults";
 import McqQuizResult from "../mcq/components/McqQuizResult";
 import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded";
-import { QuizLoader } from "@/components/ui/quiz-loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
