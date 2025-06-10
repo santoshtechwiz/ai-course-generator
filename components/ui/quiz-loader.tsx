@@ -2,7 +2,7 @@
 
 import React from "react"
 import { motion } from "framer-motion"
-import { Loader2 } from "lucide-react"
+import { Loader2, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface QuizLoaderProps {
@@ -31,6 +31,14 @@ interface QuizLoaderProps {
    */
   showTiming?: boolean
   /**
+   * Optional display progress percentage (0-100)
+   */
+  displayProgress?: number
+  /**
+   * Whether to show the spinner (default: true)
+   */
+  showSpinner?: boolean
+  /**
    * Optional steps for loading process - if provided, will render a stepper
    */
   steps?: Array<{
@@ -46,12 +54,14 @@ export function QuizLoader({
   className,
   size = "md",
   showTiming = false,
+  displayProgress,
+  showSpinner = true,
   steps,
 }: QuizLoaderProps) {
   const containerVariants = {
     initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: { opacity: 0 },
+    animate: { opacity: 1, transition: { duration: 0.4 } },
+    exit: { opacity: 0, transition: { duration: 0.3 } },
   }
 
   const loaderVariants = {
@@ -63,12 +73,12 @@ export function QuizLoader({
 
   const contentVariants = {
     initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0, transition: { delay: 0.2 } },
+    animate: { opacity: 1, y: 0, transition: { delay: 0.2, duration: 0.4 } },
   }
 
   const secondaryTextVariants = {
     initial: { opacity: 0, y: 5 },
-    animate: { opacity: 0.8, y: 0, transition: { delay: 0.3 } },
+    animate: { opacity: 0.8, y: 0, transition: { delay: 0.3, duration: 0.4 } },
   }
 
   const loaderSizes = {
@@ -353,13 +363,15 @@ export function QuizLoader({
       exit="exit"
       variants={containerVariants}
     >
-      <motion.div
-        className={cn("flex justify-center", loaderSizes[size].container)}
-        variants={loaderVariants}
-        animate="animate"
-      >
-        <Loader2 className={cn("text-primary", loaderSizes[size].loader)} />
-      </motion.div>
+      {showSpinner && (
+        <motion.div
+          className={cn("flex justify-center", loaderSizes[size].container)}
+          variants={loaderVariants}
+          animate="animate"
+        >
+          <Loader2 className={cn("text-primary", loaderSizes[size].loader)} />
+        </motion.div>
+      )}
       <motion.p
         className="text-lg font-medium text-center"
         variants={contentVariants}

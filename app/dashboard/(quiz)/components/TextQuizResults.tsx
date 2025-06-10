@@ -33,6 +33,7 @@ interface QuizResult {
   score?: number
   percentage?: number
   completedAt?: string
+  quizType?: QuizType
   questionResults?: Array<{
     questionId: string | number
     userAnswer?: string
@@ -458,13 +459,7 @@ export default function QuizResults({ result, onRetake, isAuthenticated, slug, q
                   <Progress
                     value={averageSimilarity * 100}
                     className={cn("h-2 w-full max-w-xs bg-muted/60")}
-                    indicatorClassName={cn(
-                      averageSimilarity >= 0.7
-                        ? "bg-success"
-                        : averageSimilarity >= 0.5
-                        ? "bg-yellow-400"
-                        : "bg-destructive"
-                    )}
+                   
                   />
                 </div>
               )}
