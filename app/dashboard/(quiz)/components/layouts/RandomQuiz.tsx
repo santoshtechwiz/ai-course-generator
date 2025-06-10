@@ -1,12 +1,10 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import {
   Clock,
   HelpCircle,
   RotateCcw,
-  Filter,
-  Trophy,
   ChevronRight,
   FileText,
   ClipboardList,
@@ -14,17 +12,19 @@ import {
   StickyNote,
   Loader2,
   Sparkles,
+  TrendingUp,
 } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils" // Fixed import from tailwindUtils to utils
-import { Skeleton } from "@/components/ui/skeleton"
-import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
-import React from "react" // Removed unused useEffect
+import { apiClient } from "@/lib/api-client"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import React from "react"
 
 // SVG Background Pattern Component
 const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
@@ -108,9 +108,9 @@ const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => 
 }
 
 const difficultyColors = {
-  Easy: "bg-emerald-50 text-emerald-600",
-  Medium: "bg-orange-50 text-orange-600",
-  Hard: "bg-rose-50 text-rose-600",
+  Easy: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+  Medium: "bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400",
+  Hard: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
 }
 
 const quizTypeRoutes = {
@@ -129,26 +129,66 @@ const quizTypeIcons = {
   mcq: HelpCircle,
 }
 
-// Carousel-like RandomQuizCard with animation and no auto-refresh
-const RandomQuizCard: React.FC<{ quiz: any }> = ({ quiz }) => {
+// Enhanced animated quiz card with preloading support
+const QuizCard: React.FC<{
+  quiz: any
+  index: number
+  isVisible: boolean
+  isPrefetching?: boolean
+}> = ({ quiz, index, isVisible, isPrefetching = false }) => {
   const Icon = quizTypeIcons[quiz.quizType as keyof typeof quizTypeIcons] || HelpCircle
   const bgColor = quiz.difficulty
     ? difficultyColors[quiz.difficulty as keyof typeof difficultyColors]
     : difficultyColors.Medium
-  const color = "text-muted-foreground"
+
+  // Prefetch the quiz data when hovering
+  const handlePrefetch = useCallback(() => {
+    if (isPrefetching) {
+      const quizType = quiz.quizType as string
+      const slug = quiz.slug as string
+      const baseUrl = `/${quizTypeRoutes[quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${slug}`
+
+      // Use apiClient for prefetching
+      apiClient
+        .get(`/api/quizzes/${quizType}/${slug}`, {
+          cache: "force-cache",
+          skipAuthCheck: true,
+        })
+        .then(() => {
+          // Successfully prefetched
+          console.log(`Prefetched quiz: ${quiz.title}`)
+        })
+        .catch((err) => {
+          // Silently fail on prefetch errors
+          console.debug("Prefetch failed:", err)
+        })
+    }
+  }, [quiz, isPrefetching])
 
   return (
     <motion.div
       key={quiz.id}
-      initial={{ opacity: 0, scale: 0.95, y: 30 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 30 }}
-      transition={{ type: "spring", stiffness: 180, damping: 24 }}
+      initial={isVisible ? { opacity: 0, scale: 0.95, y: 30 } : false}
+      animate={
+        isVisible
+          ? { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 180, damping: 24 } }
+          : { opacity: 0, scale: 0.95, y: 30, transition: { duration: 0.2 } }
+      }
+      exit={{ opacity: 0, scale: 0.95, y: 30, transition: { duration: 0.2 } }}
       className="relative group mb-4 transition-all duration-300"
-      style={{ minHeight: 320 }}
+      style={{
+        minHeight: 320,
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        pointerEvents: isVisible ? "auto" : "none",
+        zIndex: isVisible ? 10 - index : 0,
+      }}
+      onMouseEnter={handlePrefetch}
     >
       <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-lg opacity-0 group-hover:opacity-100 blur transition-all duration-300 group-hover:duration-200 animate-tilt"></div>
-      <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden">
+      <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden h-full">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <QuizBackgroundPattern quizType={quiz.quizType || ""} />
         <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
@@ -164,7 +204,7 @@ const RandomQuizCard: React.FC<{ quiz: any }> = ({ quiz }) => {
                 bgColor,
               )}
             >
-              <Icon className={cn("h-4 w-4", color)} />
+              <Icon className="h-4 w-4" />
             </motion.div>
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
@@ -178,29 +218,35 @@ const RandomQuizCard: React.FC<{ quiz: any }> = ({ quiz }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
             <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
               <Clock className="h-4 w-4 mr-2 group-hover:text-primary/70" />
-              <span>{quiz.duration} minutes</span>
+              <span>{quiz.duration || "5"} min</span>
             </div>
             {quiz.bestScore !== null && (
               <div className="flex items-center text-muted-foreground group-hover:text-foreground/80">
-                <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
-                <span>Best: {quiz.bestScore}%</span>
+                <TrendingUp className="h-4 w-4 mr-2 text-primary/70" />
+                <span>Popularity: {quiz.popularity || "High"}</span>
               </div>
             )}
           </div>
+          {quiz.description && (
+            <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
+              {quiz.description}
+            </p>
+          )}
           {quiz.completionRate !== undefined && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">Progress</span>
+                <span className="text-xs text-muted-foreground">Completion</span>
                 <span className="text-xs font-medium">{quiz.completionRate}%</span>
               </div>
               <Progress value={quiz.completionRate} className="h-1.5" />
             </div>
           )}
         </CardContent>
-        <CardFooter className="relative z-10 p-4 pt-2">
+        <CardFooter className="relative z-10 p-4 pt-2 mt-auto">
           <Link
             href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}
             className="w-full"
+            prefetch={true}
           >
             <Button
               className={cn(
@@ -236,107 +282,233 @@ const RandomQuizCard: React.FC<{ quiz: any }> = ({ quiz }) => {
 }
 
 export const RandomQuiz: React.FC = () => {
-  const { quizzes, isLoading, error, refresh } = useRandomQuizzes(5)
-  const [filter, setFilter] = useState<string | null>(null)
-  
-  // Filtered quizzes memoized
-  const filteredQuizzes = useMemo(() => {
-    return filter ? quizzes.filter((quiz) => quiz.quizType?.toLowerCase() === filter) : quizzes
-  }, [filter, quizzes])
+  // Fetch random quizzes
+  const { quizzes, isLoading, error, refresh } = useRandomQuizzes(10)
+  const [activeCardIndex, setActiveCardIndex] = useState<number>(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [selectedType, setSelectedType] = useState<string | null>(null)
 
-  // Manual refresh only, no auto-refresh
+  // Process quizzes to add any missing data
+  const processedQuizzes = useMemo(() => {
+    if (!quizzes.length) return []
+
+    return quizzes.map((quiz) => ({
+      ...quiz,
+      // Add estimated duration if not provided
+      duration: quiz.duration || Math.floor(Math.random() * 5) + 5,
+      // Add description if not provided
+      description: quiz.description || `Test your knowledge with this interactive ${quiz.quizType} quiz.`,
+      // Add popularity for display
+      popularity: quiz.popularity || Math.random() > 0.5 ? "High" : "Medium",
+    }))
+  }, [quizzes])
+
+  // Get filtered quizzes
+  const displayQuizzes = useMemo(() => {
+    let filtered = processedQuizzes
+
+    // Apply type filter if selected
+    if (selectedType) {
+      filtered = filtered.filter((quiz) => quiz.quizType === selectedType)
+    }
+
+    return filtered
+  }, [processedQuizzes, selectedType])
+
+  // Show next card with smooth transition
+  const nextCard = useCallback(() => {
+    if (isTransitioning || displayQuizzes.length <= 1) return
+
+    setIsTransitioning(true)
+    setTimeout(() => {
+      setActiveCardIndex((prev) => (prev + 1) % displayQuizzes.length)
+      setIsTransitioning(false)
+    }, 200)
+  }, [displayQuizzes.length, isTransitioning])
+
+  // Show previous card with smooth transition
+  const prevCard = useCallback(() => {
+    if (isTransitioning || displayQuizzes.length <= 1) return
+
+    setIsTransitioning(true)
+    setTimeout(() => {
+      setActiveCardIndex((prev) => (prev === 0 ? displayQuizzes.length - 1 : prev - 1))
+      setIsTransitioning(false)
+    }, 200)
+  }, [displayQuizzes.length, isTransitioning])
+
+  // Manual refresh with loading indicator
   const handleRefresh = useCallback(() => {
+    setIsTransitioning(true)
     refresh()
+    setTimeout(() => {
+      setActiveCardIndex(0)
+      setIsTransitioning(false)
+    }, 300)
   }, [refresh])
-  
-  // Memoize the list of quiz types to avoid recreating on each render
-  const quizTypes = useMemo(() => ["openended", "fill-blanks", "flashcard", "code"], [])
+
+  // Memoize the list of quiz types
+  const quizTypes = useMemo(() => ["openended", "fill-blanks", "flashcard", "code", "mcq"], [])
+
+  // Reset card index when filters change
+  useEffect(() => {
+    setActiveCardIndex(0)
+  }, [selectedType])
+
+  // Animation variants for button groups
+  const buttonGroupVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        staggerChildren: 0.05,
+      },
+    },
+  }
+
+  const buttonVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 },
+  }
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="sticky top-0 z-10 p-4 bg-background/95 backdrop-blur border-b">
+      <div className="sticky top-0 z-20 p-4 bg-background/95 backdrop-blur-lg border-b">
         <div className="flex justify-between items-center gap-3 mb-3">
-          <div className="flex items-center space-x-2" />
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFilter(null)}
-              className={!filter ? "bg-primary/10 border-primary/30" : ""}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              <span>{filter ? filter.replace("-", " ") : "All"}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefresh}
-              className="h-8 w-8 rounded-full"
-              title="Refresh quizzes"
-            >
+          <h2 className="text-lg font-medium">Random Quizzes</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            className="h-8 w-8 rounded-full"
+            disabled={isLoading || isTransitioning}
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
               <RotateCcw className="h-4 w-4" />
-            </Button>
-          </div>
+            )}
+          </Button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {quizTypes.map((type) => (
+
+        <motion.div
+          className="flex flex-wrap gap-2"
+          variants={buttonGroupVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={buttonVariants}>
             <Badge
-              key={type}
               variant="outline"
-              className={`cursor-pointer hover:bg-primary/10 capitalize ${
-                filter === type ? "bg-primary/20 border-primary/50" : ""
+              className={`cursor-pointer hover:bg-primary/10 ${
+                !selectedType ? "bg-primary/20 border-primary/50" : ""
               }`}
-              onClick={() => setFilter(type)}
+              onClick={() => setSelectedType(null)}
             >
-              {type.replace("-", " ")}
+              All Types
             </Badge>
+          </motion.div>
+          {quizTypes.map((type) => (
+            <motion.div key={type} variants={buttonVariants}>
+              <Badge
+                variant="outline"
+                className={`cursor-pointer hover:bg-primary/10 capitalize ${
+                  selectedType === type ? "bg-primary/20 border-primary/50" : ""
+                }`}
+                onClick={() => setSelectedType(type)}
+              >
+                {type.replace("-", " ")}
+              </Badge>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-      <div className="flex-1 p-4 flex flex-col items-center justify-center min-h-[350px]">
-        {isLoading ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-            className="flex flex-col items-center justify-center h-full w-full"
-          >
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <span className="text-muted-foreground text-sm">Loading random quizzes...</span>
+
+      <div className="flex-1 flex flex-col min-h-[450px]">
+        <div className="flex-1 p-4 relative">
+          {isLoading ? (
+            <div className="relative w-full max-w-md mx-auto h-[320px] flex items-center justify-center">
+              <Card className="w-full h-full flex flex-col items-center justify-center bg-background/50 border-dashed">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground text-sm">Finding quizzes for you...</p>
+              </Card>
             </div>
-          </motion.div>
-        ) : error ? (
-          <div className="rounded-lg border p-4 text-center">
-            <div className="text-destructive mb-2">Failed to load quizzes</div>
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-          </div>
-        ) : filteredQuizzes.length > 0 ? (
-          <motion.div
-            key={filteredQuizzes[0]?.id}
-            className="relative w-full max-w-md mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{
-              type: "spring",
-              stiffness: 180,
-              damping: 20,
-            }}
-          >
-            <RandomQuizCard quiz={filteredQuizzes[0]} />
-          </motion.div>
-        ) : (
-          <div className="text-center p-8 border border-dashed rounded-lg bg-muted/30">
-            <div className="flex justify-center mb-4">
-              <Sparkles className="h-12 w-12 text-muted-foreground/50" />
+          ) : error ? (
+            <div className="rounded-lg border p-8 text-center max-w-md mx-auto">
+              <div className="text-destructive mb-4">Failed to load quizzes</div>
+              <Button variant="outline" size="sm" onClick={handleRefresh}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
             </div>
-            <p className="text-muted-foreground">No quizzes found for this filter.</p>
-          </div>
-        )}
+          ) : displayQuizzes.length > 0 ? (
+            <div className="relative w-full max-w-md mx-auto h-[320px] perspective-1000 overflow-visible">
+              {displayQuizzes.slice(0, 5).map((quiz, index) => (
+                <QuizCard
+                  key={`${quiz.id}-${index}`}
+                  quiz={quiz}
+                  index={index}
+                  isVisible={index === activeCardIndex}
+                  isPrefetching={
+                    index === activeCardIndex || index === (activeCardIndex + 1) % displayQuizzes.length
+                  }
+                />
+              ))}
+
+              {/* Card navigation controls */}
+              {displayQuizzes.length > 1 && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-30">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
+                    onClick={prevCard}
+                    disabled={isTransitioning}
+                  >
+                    <ChevronRight className="h-4 w-4 rotate-180" />
+                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    {displayQuizzes.slice(0, 5).map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`h-1.5 rounded-full transition-all ${
+                          idx === activeCardIndex ? "w-4 bg-primary" : "w-1.5 bg-primary/30"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
+                    onClick={nextCard}
+                    disabled={isTransitioning}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center p-8 border border-dashed rounded-lg bg-muted/30 max-w-md mx-auto">
+              <div className="flex justify-center mb-4">
+                <Sparkles className="h-12 w-12 text-muted-foreground/50" />
+              </div>
+              <p className="text-muted-foreground">No quizzes found for this filter.</p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  setSelectedType(null)
+                  handleRefresh()
+                }}
+              >
+                View All Quizzes
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

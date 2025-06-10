@@ -93,6 +93,7 @@ export interface McqQuizAnswer extends BaseAnswer {
   selectedOptionId: string;
   isCorrect?: boolean;
   type: 'mcq';
+  timeSpent?: number; // Time spent on question in seconds
 }
 
 export interface CodeQuizAnswer extends BaseAnswer {
@@ -128,14 +129,19 @@ export { AuthState };
 // Quiz result types
 export interface QuizResult {
   slug: string; // Primary identifier
+  quizId?: string | number; // For backward compatibility
   title: string;
   score: number;
   maxScore: number;
   percentage: number;
   completedAt: string;
-  submittedAt?: string;
-  questionResults?: QuizQuestionResult[];
-  type?: QuizType;
+  questions?: QuizQuestion[];
+  questionResults?: Array<{
+    questionId: string | number;
+    isCorrect: boolean;
+    userAnswer?: string | any;
+    correctAnswer?: string;
+  }>;
 }
 
 export interface QuizResultPreview {

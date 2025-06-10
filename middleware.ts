@@ -182,3 +182,43 @@ export async function middleware(req: NextRequest) {
   const response = NextResponse.next()
   return setCacheHeaders(response)
 }
+
+// CSRF protection middleware
+export async function csrfMiddleware(req: NextRequest) {
+  // Only apply to API routes that modify data
+  if (req.method !== "GET" && req.nextUrl.pathname.startsWith("/api/")) {
+    // Check for auth token
+    const sessionToken = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+
+    // Skip CSRF check for non-authenticated routes
+    if (!sessionToken) {
+      return NextResponse.next()
+    }
+
+    // Get CSRF token from header
+    const csrfToken = req.headers.get("x-csrf-token")
+
+    // If logged in but no CSRF token, reject with 403
+    if (!csrfToken) {
+      return new NextResponse(
+        JSON.stringify({ error: "CSRF token required" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
+    // Create expected token value based on session data
+    const expectedToken = `${sessionToken.sub?.substring(0, 8)}-${sessionToken.iat}`
+
+    // Compare tokens
+    if (csrfToken !== expectedToken) {
+      return new NextResponse(
+        JSON.stringify({ error: "Invalid CSRF token" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      )
+    }
+  }
+
+  // For all other requests, continue
+  return NextResponse.next()
+}
+

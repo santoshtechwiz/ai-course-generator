@@ -1,4 +1,5 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
+import { createSlice, type PayloadAction, createAsyncThunk } from "@reduxjs/toolkit"
+import { courseApiClient } from '@/app/dashboard/course/services/course-api-client';
 
 // --- Improved TypeScript interfaces ---
 export interface VideoProgress {
@@ -450,6 +451,19 @@ export const setCurrentVideoApi = (videoId: string, userId?: string) => (dispatc
     console.error("[courseSlice] Error setting current video:", error);
   }
 };
+
+// Update fetchCourseDetails thunk to use courseApiClient
+export const fetchCourseDetails = createAsyncThunk(
+  "course/fetchDetails",
+  async (slug: string, { rejectWithValue }) => {
+    try {
+      // Use API client instead of direct fetch
+      return await courseApiClient.getCourse(slug);
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch course details");
+    }
+  }
+);
 
 // Export actions
 export const {

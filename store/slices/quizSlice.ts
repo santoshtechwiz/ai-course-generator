@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, type PayloadAction, createSelector } fro
 import type { RootState } from "../index"
 import { QuizType } from "@/types/quiz"
 import { hydrateFromStorage } from '../middleware/persistMiddleware';
+import { apiClient } from '@/lib/api-client'; // Fixed import path
 
 // Export API endpoints for consistency across the app
 export const API_ENDPOINTS = {
@@ -69,7 +70,7 @@ const initialState: QuizState = {
   ...loadPersistedState(),
 }
 
-// Backward compatible: Keep existing fetchQuiz thunk
+// Modified fetchQuiz thunk to use apiClient
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetchQuiz",
   async ({ slug, data, type }: { slug: string; data?: any; type: QuizType }, { rejectWithValue }) => {
@@ -85,12 +86,8 @@ export const fetchQuiz = createAsyncThunk(
         };
       }
 
-      const response = await fetch(`/api/quizzes/${type}/${slug}`);
-      if (!response.ok) {
-        throw new Error(response.status === 404 ? `Quiz not found: ${slug}` : `Failed to fetch quiz: ${response.status}`);
-      }
-
-      const quizData = await response.json();
+      // Using apiClient instead of direct fetch
+      const quizData = await apiClient.get(`/api/quizzes/${type}/${slug}`);
 
       return {
         slug: quizData.slug || slug,
@@ -478,6 +475,42 @@ export const rehydrateQuizState = createAsyncThunk(
       console.error("Error rehydrating quiz:", error);
       return null;
     }
+  }
+);
+
+// Add to existing file - new action to centralize persistence logic
+
+// -- Add to the thunks section --
+export const persistQuizState = createAsyncThunk(
+  "quiz/persistState",
+  async (
+    { stateType, data, useLocalStorage = false }: 
+    { stateType: 'results' | 'progress' | 'pendingQuiz'; data: any; useLocalStorage?: boolean },
+    { dispatch }
+  ) => {
+    const storageService = StorageService.getInstance();
+    
+    // First update Redux (single source of truth)
+    switch (stateType) {
+      case 'results':
+        dispatch(setQuizResults(data));
+        break;
+      case 'pendingQuiz':
+        dispatch(setPendingQuiz(data));
+        break;
+    }
+    
+    // Then persist to browser storage as needed
+    const key = `quiz_${stateType}_${data.slug || 'current'}`;
+    
+    // Use the appropriate storage method
+    if (useLocalStorage) {
+      storageService.setPersistentQuizState(key, data);
+    } else {
+      storageService.setTemporaryQuizState(key, data);
+    }
+    
+    return { key, data };
   }
 );
 
@@ -971,36 +1004,12 @@ export const saveQuizResultsToDatabase = createAsyncThunk(
           isCorrect: qr.isCorrect || false,
           userAnswer: qr.userAnswer || "",
           answer: qr.userAnswer || ""
-        }))
+        })),
+        slug: slug, // Include slug separately for database lookup
       };
 
-      console.log("Sending quiz results to API:", JSON.stringify(resultData));
-
-      // Send results to API
-      const response = await fetch(`/api/quizzes/common/${slug}/complete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...resultData,
-          slug: slug, // Include slug separately for database lookup
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API error response:", errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          throw new Error(errorData.error || `Failed to save quiz results: ${response.status}`);
-        } catch (e) {
-          throw new Error(`Failed to save quiz results: ${response.status}`);
-        }
-      }
-
-      const data = await response.json();
-      return data;
+      // Use apiClient instead of direct fetch
+      return await apiClient.post(`/api/quizzes/common/${slug}/complete`, resultData);
     } catch (error: any) {
       console.error("Error in saveQuizResultsToDatabase:", error);
       return rejectWithValue(error.message || "Failed to save results");

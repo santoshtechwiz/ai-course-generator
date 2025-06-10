@@ -16,6 +16,8 @@ import {
   normalizeSlug,
   selectQuestions,
   selectQuizState,
+  selectIsQuizComplete,
+  saveQuizResultsToDatabase,
 } from "@/store/slices/quizSlice";
 import { Button } from "@/components/ui/button";
 import { QuizLoader } from "@/components/ui/quiz-loader";
@@ -23,6 +25,7 @@ import { useSessionService } from "@/hooks/useSessionService";
 import type { QuizType } from "@/types/quiz";
 import { AnimatePresence, motion } from "framer-motion";
 import { QuizResultSkeleton } from "./QuizResultSkeleton";
+import { toast } from "sonner";
 
 interface SignInPromptProps {
   onSignIn: () => void;
@@ -99,6 +102,7 @@ export default function GenericQuizResultHandler({
   const quizStatus = useSelector(selectQuizStatus);
   const currentSlug = useSelector(selectQuizId);
   const questions = useSelector(selectQuestions);
+  const isCompleted = useSelector(selectIsQuizComplete);
 
   // Normalize the slug value
   const normalizedSlug = typeof slug === 'object' && slug.slug ? slug.slug : 
@@ -381,4 +385,55 @@ export default function GenericQuizResultHandler({
       )}
     </AnimatePresence>
   );
+}
+
+// New component for handling quiz results persistently
+export function QuizResultHandler({ slug, quizType, onComplete }: {
+  slug: string;
+  quizType: string;
+  onComplete?: (results: any) => void;
+}) {
+  const { data: session, status: authStatus } = useSession();
+  const isAuthenticated = authStatus === 'authenticated';
+  const { isInitialized } = useQuizStateManager();
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const results = useSelector(selectQuizResults);
+  const isCompleted = useSelector(selectIsQuizComplete);
+  const quizState = useSelector(selectQuizState);
+  
+  // Handle quiz completion and result saving
+  useEffect(() => {
+    if (isInitialized && isCompleted && results && isAuthenticated) {
+      // Save results to database when completed while authenticated
+      dispatch(saveQuizResultsToDatabase({ slug, quizType }) as any)
+        .unwrap()
+        .then(() => {
+          // Only show toast if we're on a quiz page, not results page
+          if (!router.pathname.includes('/results')) {
+            toast.success('Quiz results saved successfully!', {
+              duration: 3000,
+            });
+          }
+          
+          if (onComplete) {
+            onComplete(results);
+          }
+        })
+        .catch((error: any) => {
+          console.error('Failed to save quiz results:', error);
+          toast.error('Failed to save quiz results. Please try again.');
+        });
+    }
+  }, [isInitialized, isCompleted, results, isAuthenticated, slug, quizType, dispatch, router, onComplete]);
+  
+  // Redirect to results page if quiz is completed
+  useEffect(() => {
+    if (isInitialized && isCompleted && results && !router.pathname.includes('/results')) {
+      // Don't redirect if we're already on the results page
+      router.push(`/dashboard/${quizType}/${slug}/results`);
+    }
+  }, [isInitialized, isCompleted, results, router, slug, quizType]);
+  
+  return null; // This is a logical component with no UI
 }
