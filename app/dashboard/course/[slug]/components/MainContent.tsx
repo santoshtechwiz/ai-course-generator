@@ -17,7 +17,7 @@ import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/courseSlice"
+import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import { useAuth } from "@/hooks"
 import useProgress from "@/hooks/useProgress"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"

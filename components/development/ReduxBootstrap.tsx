@@ -1,8 +1,8 @@
 "use client";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectIsAuthenticated, selectUser } from "@/store/slices/authSlice";
-import { fetchUserProfile } from "@/store/slices/userSlice";
+import { selectIsAuthenticated, selectUser } from "@/store/slices/auth-slice";
+import { fetchUserProfile } from "@/store/slices/user-slice";
 import { fetchSubscription } from "@/store/slices/subscription-slice";
 import { useSession } from "next-auth/react"; // Import useSession
 

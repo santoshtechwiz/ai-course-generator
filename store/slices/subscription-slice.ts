@@ -1,6 +1,7 @@
 "use client"
 
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+import { shallowEqual } from 'react-redux';
 import type { RootState } from "@/store"
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 
@@ -162,6 +163,12 @@ const subscriptionSlice = createSlice({
       .addCase(fetchSubscription.fulfilled, (state, action: PayloadAction<any>) => {
         state.isLoading = false
         state.isFetching = false
+
+        const incoming = JSON.stringify(action.payload)
+        const existing = JSON.stringify(state.data)
+
+        if (incoming === existing) return; // Prevent re-render
+
         state.data = action.payload
         state.lastFetched = Date.now()
       })
@@ -247,7 +254,7 @@ export const selectSubscriptionError = (state: RootState) => state.subscription.
 // Fix the identity selector - transform the data instead of returning it directly
 export const selectSubscription = createSelector([selectSubscriptionData], (data) => {
   if (!data) return null
-  return {
+    return {
     ...data,
     // Add derived fields to transform the data
     isActive: data.status === "ACTIVE" && !data.cancelAtPeriodEnd,
@@ -255,7 +262,7 @@ export const selectSubscription = createSelector([selectSubscriptionData], (data
     hasCreditsRemaining: (data.credits || 0) > (data.tokensUsed || 0),
   }
 })
-
+export const selectSubscriptionShallow = createSelector([selectSubscriptionData], data => data, { memoizeOptions: { resultEqualityCheck: shallowEqual } });
 // Token usage selector with memoization
 export const selectTokenUsage = createSelector([selectSubscriptionData], (subscription) => {
   if (!subscription) return null
@@ -272,15 +279,16 @@ export const selectTokenUsage = createSelector([selectSubscriptionData], (subscr
   }
 })
 
+
 // Additional memoized selectors for commonly used subscription properties
-export const selectIsSubscribed = createSelector([selectSubscriptionData], (data) => data?.isSubscribed ?? false)
+export const selectIsSubscribed = createSelector([selectSubscriptionData], (data) => data?.isSubscribed ?? false);
 
 export const selectSubscriptionPlan = createSelector(
   [selectSubscriptionData],
   (data) => data?.subscriptionPlan ?? "FREE",
 )
 
-export const selectSubscriptionStatus = createSelector([selectSubscriptionData], (data) => data?.status)
+export const selectSubscriptionStatus = createSelector([selectSubscriptionData], (data) => data?.status);
 
 export const selectIsCancelled = createSelector([selectSubscriptionData], (data) => data?.cancelAtPeriodEnd ?? false)
 

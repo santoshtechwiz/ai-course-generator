@@ -5,13 +5,13 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import { createPersistMiddleware } from "./middleware/persistMiddleware";
 
 // Reducers
-import authReducer from "./slices/authSlice";
-import quizReducer from "./slices/quizSlice";
-import subscriptionReducer from "./slices/subscriptionSlice";
-import userReducer from "./slices/userSlice";
-import flashcardReducer from "./slices/flashcardSlice";
-import courseReducer from "./slices/courseSlice";
-import certificateReducer from "./slices/certificateSlice";
+import authReducer from "./slices/auth-slice";
+import quizReducer from "./slices/quiz-slice";
+import subscriptionReducer from "./slices/subscription-slice";
+import userReducer from "./slices/user-slice";
+import flashcardReducer from "./slices/flashcard-slice";
+import courseReducer from "./slices/course-slice";
+import certificateReducer from "./slices/certificate-slice";
 
 // Create a type for the certificate reducer to avoid naming conflict
 type CertificateReducer = typeof certificateReducer;
@@ -92,10 +92,10 @@ export {
   selectIsAdmin,
   selectIsAuthenticated,
   selectIsAuthLoading,
-} from "./slices/authSlice";
+} from "./slices/auth-slice";
 
 // Course slice exports - avoid conflicting names
-export * from "./slices/courseSlice";
+export * from "./slices/course-slice";
 
 // Quiz slice exports - avoid conflicting names
 export {
@@ -127,7 +127,7 @@ export {
   resetState as resetQuizState,
   selectQuizId as selectCurrentQuizId,
   hydrateStateFromStorage,
-} from "./slices/quizSlice";
+} from "./slices/quiz-slice";
 
 // Subscription slice exports
 export * from "./slices/subscriptionSlice";
@@ -137,10 +137,10 @@ export * from "./slices/subscriptionSlice";
 export {
   resetState as resetUserState,
   setUserPreferences as setUserPreferencesFromUserSlice,
-} from "./slices/userSlice";
+} from "./slices/user-slice";
 
 
 
 // Flashcard slice exports
-export * from "./slices/flashcardSlice";
+export * from "./slices/flashcard-slice";
 

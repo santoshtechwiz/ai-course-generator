@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Code } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAppDispatch } from "@/store"
-import { saveAnswer } from "@/store/slices/quizSlice"
+import { saveAnswer } from "@/store/slices/quiz-slice"
 import type { CodeQuestion } from "./types"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"

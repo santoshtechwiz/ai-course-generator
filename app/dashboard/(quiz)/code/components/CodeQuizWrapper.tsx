@@ -18,7 +18,7 @@ import {
   fetchQuiz,
   setQuizResults,
   setQuizCompleted,
-} from "@/store/slices/quizSlice"
+} from "@/store/slices/quiz-slice"
 
 import CodeQuiz from "./CodeQuiz"
 import { QuizLoader } from "@/components/ui/quiz-loader"

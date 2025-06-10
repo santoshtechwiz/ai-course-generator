@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner"
 import { useState, useMemo, useCallback } from "react"
 import { useSelector } from "react-redux"
-import { selectOrGenerateQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quizSlice"
+import { selectOrGenerateQuizResults, selectQuestions, selectAnswers, selectQuizTitle } from "@/store/slices/quiz-slice"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"

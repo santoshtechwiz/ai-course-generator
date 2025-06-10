@@ -11,7 +11,7 @@ import {
   selectQuizStatus,
   selectOrGenerateQuizResults,
   selectQuizId,
-} from "@/store/slices/quizSlice";
+} from "@/store/slices/quiz-slice";
 
 import { Button } from "@/components/ui/button";
 import { QuizLoader } from "@/components/ui/quiz-loader";

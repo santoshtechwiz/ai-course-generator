@@ -23,7 +23,7 @@ import {
   nextFlashCard,
   setRequiresFlashCardAuth,
   setPendingFlashCardAuth
-} from "@/store/slices/flashcardSlice"
+} from "@/store/slices/flashcard-slice"
 
 import FlashCardResults from "./FlashCardQuizResults"
 import { useAppDispatch, useAppSelector } from "@/store"
