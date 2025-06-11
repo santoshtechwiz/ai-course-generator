@@ -159,13 +159,12 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const handleSubmitQuiz = () => {
     if (hasSubmitted) return
 
+    setHasSubmitted(true)
+
     const answeredCount = Object.keys(answers).length
     const totalQuestions = questions.length
 
-    // Allow submission regardless of how many questions are answered
     console.log(`Submitting quiz with ${answeredCount} out of ${totalQuestions} questions answered`)
-
-    setHasSubmitted(true)
 
     const questionResults = questions.map((question, index) => {
       const id = question.id?.toString() || index.toString()
@@ -179,7 +178,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         correctAnswer: question.answer || "",
         userAnswer,
         similarity,
-        isCorrect: isCorrect,
+        isCorrect,
         keywords: question.keywords,
         type: "openended",
       }
@@ -202,9 +201,11 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
       questions: questionResults,
     }
 
-    // Set results first, then mark as completed
     dispatch(setQuizResults(results))
     dispatch(setQuizCompleted())
+
+    // Ensure navigation to results page
+    router.push(`/dashboard/openended/${slug}/results`)
   }
 
   const handleRetake = () => {
@@ -290,8 +291,8 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
               {allQuestionsAnswered
                 ? "All questions answered. Ready to submit?"
                 : answeredQuestions > 0
-                  ? `${answeredQuestions} questions answered. Submit quiz?`
-                  : "Submit quiz? (No questions answered yet)"}
+                ? `${answeredQuestions} questions answered. Submit quiz?`
+                : "Submit quiz? (No questions answered yet)"}
             </p>
             <Button
               onClick={handleSubmitQuiz}
