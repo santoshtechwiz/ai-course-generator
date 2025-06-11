@@ -130,7 +130,11 @@ export {
 } from "./slices/quiz-slice";
 
 // Subscription slice exports
-export * from "./slices/subscriptionSlice";
+// Subscription slice exports
+export {
+  resetState as resetSubscriptionState,
+} from "./slices/subscription-slice";
+
 
 // User slice exports
 // Explicitly re-export conflicting members with unique names
