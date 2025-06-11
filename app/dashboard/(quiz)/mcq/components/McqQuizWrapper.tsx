@@ -17,6 +17,7 @@ import {
   saveAnswer,
   fetchQuiz,
   setQuizCompleted,
+  submitQuiz, // Use submitQuiz instead of setQuizCompleted
 } from "@/store/slices/quiz-slice"
 
 import { Button } from "@/components/ui/button"
@@ -112,9 +113,13 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     }
   }
 
-  // Complete the quiz
+  // Complete the quiz - now properly submits and generates results
   const handleFinish = () => {
+    // First mark as completed
     dispatch(setQuizCompleted())
+
+    // Then submit the quiz to generate results
+    dispatch(submitQuiz())
   }
 
   // UI calculations
@@ -297,5 +302,3 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
     </div>
   )
 }
-
-// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

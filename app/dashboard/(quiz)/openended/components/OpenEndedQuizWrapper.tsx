@@ -22,14 +22,12 @@ import {
   fetchQuiz,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import { useSessionService } from "@/hooks/useSessionService"
-import type { OpenEndedQuestion } from "@/types/quiz"
-import OpenEndedQuizResults from "./QuizResultsOpenEnded"
-import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
 import OpenEndedQuiz from "./OpenEndedQuiz"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import type { OpenEndedQuestion } from "@/types/quiz"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -45,11 +43,13 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const router = useRouter()
   const searchParams = useSearchParams()
   const reset = searchParams.get("reset") === "true"
-  const { data: session, status: authStatus } = useSession()
   const dispatch = useDispatch<AppDispatch>()
-  const { storeResults } = useSessionService()
+  const { data: session } = useSession()
 
-  // Redux selectors
+  // Track if we've already submitted to prevent double submissions
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+
+  // Redux state
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
@@ -61,17 +61,13 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Initialize quiz data
   useEffect(() => {
-    if (reset) {
-      dispatch(resetQuiz())
-    }
+    if (reset) dispatch(resetQuiz())
 
-    const initializeQuiz = async () => {
+    const init = async () => {
       setLoading(true)
 
       if (quizData) {
-        // Hydrate quiz with provided data
         dispatch(
           hydrateQuiz({
             slug,
@@ -86,16 +82,11 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         )
         setLoading(false)
       } else {
-        // Fetch quiz data from API
         try {
           const result = await dispatch(fetchQuiz({ slug, type: "openended" })).unwrap()
-          if (result) {
-            setError(null)
-          } else {
-            setError("Failed to load quiz data")
-          }
+          if (!result) throw new Error("No data received")
+          setError(null)
         } catch (err) {
-          console.error("Error fetching quiz:", err)
           setError("Failed to load quiz. Please try again.")
         } finally {
           setLoading(false)
@@ -103,86 +94,106 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
       }
     }
 
-    initializeQuiz()
-  }, [quizData, slug, reset, dispatch])
+    init()
+  }, [slug, quizData, reset, dispatch])
 
-  // Calculate similarity between user answer and correct answer
-  const calculateSimilarity = (userAnswer: string, correctAnswer: string, keywords?: string[]): number => {
-    return getBestSimilarityScore(userAnswer, correctAnswer) / 100
-  }
+  // Handle quiz completion
+  useEffect(() => {
+    if (!isCompleted || hasSubmitted) return
 
-  // Handle answer submission
+    // When complete, navigate to results page
+    const safeSlug = typeof slug === "string" ? slug : String(slug)
+
+    // Add a small delay for better UX
+    const timer = setTimeout(() => {
+      router.push(`/dashboard/openended/${safeSlug}/results`)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [isCompleted, router, slug, hasSubmitted])
+
+  const currentQuestion = useMemo(() => {
+    if (!questions.length || currentQuestionIndex >= questions.length) return null
+    return questions[currentQuestionIndex]
+  }, [questions, currentQuestionIndex])
+
+  const calculateSimilarity = (userAnswer: string, correctAnswer: string, keywords?: string[]) =>
+    getBestSimilarityScore(userAnswer, correctAnswer) / 100
+
   const handleAnswer = (answer: string) => {
-    if (!questions[currentQuestionIndex]) return false
+    if (!currentQuestion) return false
 
-    const question = questions[currentQuestionIndex]
-    const questionId = question.id?.toString() || currentQuestionIndex.toString()
+    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
+    const similarity = calculateSimilarity(answer, currentQuestion.answer || "", currentQuestion.keywords)
+    const isCorrect = similarity >= 0.7
 
-    // Calculate similarity with correct answer
-    const similarity = calculateSimilarity(answer, question.answer || "", question.keywords)
-    const similarityThreshold = 0.7 // 70% similarity threshold
-    const isCorrect = similarity >= similarityThreshold
-
-    // Create answer object for open-ended quiz
-    const answerData = {
-      questionId,
-      text: answer,
-      type: "openended",
-      similarity,
-      isCorrect,
-      timestamp: Date.now(),
-    }
-
-    // Save answer to Redux
-    dispatch(saveAnswer({ questionId, answer: answerData }))
+    dispatch(
+      saveAnswer({
+        questionId,
+        answer: {
+          questionId,
+          text: answer,
+          userAnswer: answer, // Add for consistency
+          type: "openended",
+          similarity,
+          isCorrect,
+          timestamp: Date.now(),
+        },
+      }),
+    )
     return true
   }
 
-  // Handle next question
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }
 
-  // Handle previous question
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
   }
 
-  // Submit quiz and calculate results
   const handleSubmitQuiz = () => {
-    if (!questions.length) return
+    if (hasSubmitted) return
 
-    // Generate results locally
-    const questionResults = questions.map((question) => {
-      const questionId = question.id?.toString() || ""
-      const answerData = answers[questionId]
-      const userAnswer = answerData?.text || ""
-      const correctAnswer = question.answer || ""
-      const similarity = calculateSimilarity(userAnswer, correctAnswer, question.keywords)
+    const answeredCount = Object.keys(answers).length
+    const totalQuestions = questions.length
+
+    // Allow submission regardless of how many questions are answered
+    console.log(`Submitting quiz with ${answeredCount} out of ${totalQuestions} questions answered`)
+
+    setHasSubmitted(true)
+
+    const questionResults = questions.map((question, index) => {
+      const id = question.id?.toString() || index.toString()
+      const userAnswer = answers[id]?.text || answers[id]?.userAnswer || ""
+      const similarity = calculateSimilarity(userAnswer, question.answer || "", question.keywords)
       const isCorrect = similarity >= 0.7
 
       return {
-        questionId,
-        userAnswer,
-        correctAnswer,
-        isCorrect,
-        similarity,
+        questionId: id,
         question: question.question || question.text,
+        correctAnswer: question.answer || "",
+        userAnswer,
+        similarity,
+        isCorrect: isCorrect,
         keywords: question.keywords,
+        type: "openended",
       }
     })
 
     const correctCount = questionResults.filter((q) => q.isCorrect).length
-    const totalCount = questions.length
-    const percentage = Math.round((correctCount / totalCount) * 100)
+    const percentage = Math.round((correctCount / questions.length) * 100)
 
-    const generatedResults = {
-      title: quizTitle,
-      maxScore: totalCount,
+    const results = {
+      quizId: slug,
+      slug: slug,
+      title: quizTitle || "Open Ended Quiz",
+      quizType: "openended",
+      maxScore: questions.length,
       userScore: correctCount,
       score: correctCount,
       percentage,
@@ -191,20 +202,11 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
       questions: questionResults,
     }
 
-    // Set results in Redux
-    dispatch(setQuizResults(generatedResults))
+    // Set results first, then mark as completed
+    dispatch(setQuizResults(results))
     dispatch(setQuizCompleted())
-
-    // Store results using session service
-    storeResults(slug, generatedResults)
-
-    // Navigate to results page for authenticated users
-    if (session?.user) {
-      router.push(`/dashboard/openended/${slug}/results`)
-    }
   }
 
-  // Handle retaking the quiz
   const handleRetake = () => {
     dispatch(resetQuiz())
     dispatch(
@@ -221,50 +223,57 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
     )
   }
 
-  // Current question
-  const currentQuestion = useMemo(() => {
-    if (!questions.length) return null
-    return questions[currentQuestionIndex]
-  }, [questions, currentQuestionIndex])
-
-  // Navigation state
   const canGoNext = currentQuestionIndex < questions.length - 1
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
-  // Loading state
   if (loading || quizStatus === "loading") {
-    return <QuizLoader message="Loading quiz data" subMessage="Preparing your questions" />
+    return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
   }
 
-  // Error state
   if (error || quizStatus === "failed") {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <h2 className="text-xl font-bold mb-4">Error Loading Quiz</h2>
-          <p className="text-muted-foreground mb-6">{error || "Quiz not found"}</p>
+          <h2 className="text-xl font-bold mb-4">Error</h2>
+          <p className="text-muted-foreground mb-6">{error || "Unable to load quiz."}</p>
           <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
         </CardContent>
       </Card>
     )
   }
 
-  // Show results if completed
-  if (isCompleted && results) {
+  if (!currentQuestion) {
     return (
-      <OpenEndedQuizResults result={results} onRetake={handleRetake} isAuthenticated={!!session?.user} slug={slug} />
+      <Card>
+        <CardContent className="p-6 text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading current question...</p>
+        </CardContent>
+      </Card>
     )
   }
 
-  // Show current question
-  return currentQuestion ? (
+  const currentAnswer =
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text ||
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
+    ""
+
+  const answeredQuestions = Object.keys(answers).length
+  const allQuestionsAnswered = answeredQuestions === questions.length
+
+  // Submitting state
+  if (quizStatus === "submitting") {
+    return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
+  }
+
+  return (
     <div className="space-y-6">
       <OpenEndedQuiz
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
-        existingAnswer={answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text || ""}
+        existingAnswer={currentAnswer}
         onAnswer={handleAnswer}
         onNext={handleNext}
         onPrevious={handlePrevious}
@@ -274,27 +283,28 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         isLastQuestion={isLastQuestion}
       />
 
-      {/* Add a prominent submit button at the bottom when all questions have answers */}
-      {Object.keys(answers).length === questions.length && (
+      {answeredQuestions >= 0 && (
         <Card className="border-2 border-success/30 bg-success/5">
           <CardContent className="p-4 text-center">
-            <p className="mb-4 font-medium">You've answered all questions! Ready to submit your quiz?</p>
-            <Button onClick={handleSubmitQuiz} size="lg" className="bg-success hover:bg-success/90 text-white">
+            <p className="mb-4 font-medium">
+              {allQuestionsAnswered
+                ? "All questions answered. Ready to submit?"
+                : answeredQuestions > 0
+                  ? `${answeredQuestions} questions answered. Submit quiz?`
+                  : "Submit quiz? (No questions answered yet)"}
+            </p>
+            <Button
+              onClick={handleSubmitQuiz}
+              size="lg"
+              className="bg-success hover:bg-success/90 text-white"
+              disabled={hasSubmitted || quizStatus === "submitting"}
+            >
               <Flag className="w-4 h-4 mr-2" />
-              Submit Quiz and See Results
+              {hasSubmitted ? "Submitting..." : "Submit Quiz and View Results"}
             </Button>
           </CardContent>
         </Card>
       )}
     </div>
-  ) : (
-    <Card>
-      <CardContent className="p-6 text-center">
-        <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-        <p>Loading questions...</p>
-      </CardContent>
-    </Card>
   )
 }
-
-// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.

@@ -1,13 +1,26 @@
-import type { BlankQuestion, BlankAnswer, QuizResult } from '../../types';
+// Types for Blanks quiz component
 
-export type { BlankQuestion, BlankAnswer };
+export interface BlankQuestion {
+  id: string;
+  question: string;
+  answer: string;
+  hints?: string[];
+}
 
-export interface BlanksQuizResult extends QuizResult {
+export interface BlankQuizResult {
+  title?: string;
+  maxScore?: number;
+  userScore?: number;
+  score?: number;
+  percentage?: number;
+  completedAt?: string | Date;
   questionResults?: Array<{
     questionId: string | number;
     userAnswer?: string;
     correctAnswer?: string;
     isCorrect?: boolean;
-    feedback?: string;
+    similarity?: number;
+    similarityLabel?: string;
+    question?: string;
   }>;
 }

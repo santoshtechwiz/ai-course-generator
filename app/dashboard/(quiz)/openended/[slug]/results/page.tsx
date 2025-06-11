@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button"
 import QuizResult from "../../../components/QuizResult"
 
 interface ResultsPageProps {
-  params: Promise<{ slug: string }> | { slug: string }  
+  params: Promise<{ slug: string }> | { slug: string }
 }
 
 export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-  const slug = params instanceof Promise ? use(params) : params.slug;
-  
+  const slug = params instanceof Promise ? use(params).slug : params.slug
+
   const handleRetakeQuiz = () => {
     // Use replace instead of push to avoid navigation loops
     router.replace(`/dashboard/openended/${slug}`)
@@ -37,21 +37,8 @@ export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
 
   return (
     <div className="container max-w-4xl py-10">
-      <QuizResultHandler 
-        slug={slug} 
-        quizType="openended"
-        maxWaitTime={3000} // Shorten wait time to avoid long loading spinner
-      >
-        {({ result }) => (
-          result ? (
-            <QuizResult 
-              result={result} 
-              slug={slug} 
-              quizType="openended" 
-              onRetake={handleRetakeQuiz}
-            />
-          ) : null
-        )}
+      <QuizResultHandler slug={slug} quizType="openended">
+        {({ result }) => <QuizResult result={result} slug={slug} quizType="openended" onRetake={handleRetakeQuiz} />}
       </QuizResultHandler>
     </div>
   )

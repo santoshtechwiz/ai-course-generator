@@ -1,11 +1,12 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState, useLayoutEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "@/store";
+import type React from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch } from "@/store"
 import {
-  resetQuiz,
+  safeResetQuiz,
   setQuizResults,
   selectQuizResults,
   selectQuizStatus,
@@ -13,45 +14,35 @@ import {
   selectQuizId,
   hydrateStateFromStorage,
   setQuiz,
-  normalizeSlug,
   selectQuestions,
-  selectQuizState,
   selectIsQuizComplete,
   saveQuizResultsToDatabase,
-} from "@/store/slices/quiz-slice";
-import { Button } from "@/components/ui/button";
-import { QuizLoader } from "@/components/ui/quiz-loader";
-import { useSessionService } from "@/hooks/useSessionService";
-import type { QuizType } from "@/types/quiz";
-import { AnimatePresence, motion } from "framer-motion";
-import { QuizResultSkeleton } from "./QuizResultSkeleton";
-import { toast } from "sonner";
-import { useSession } from "next-auth/react";
-import { useQuizStateManager } from "@/hooks/useQuizStateManager";
+  selectIsProcessingResults,
+  selectAnswers,
+  selectQuizTitle,
+} from "@/store/slices/quiz-slice"
+import { Button } from "@/components/ui/button"
+import { QuizLoader } from "@/components/ui/quiz-loader"
+import { useSessionService } from "@/hooks/useSessionService"
+import type { QuizType } from "@/types/quiz"
+import { AnimatePresence, motion } from "framer-motion"
+import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 interface SignInPromptProps {
-  onSignIn: () => void;
-  onRetake: () => void;
-  quizType: QuizType;
-  previewData?: { percentage: number; score: number; maxScore: number };
+  onSignIn: () => void
+  onRetake: () => void
+  quizType: QuizType
+  previewData?: { percentage: number; score: number; maxScore: number }
 }
 
-const GenericSignInPrompt: React.FC<SignInPromptProps> = ({
-  onSignIn,
-  onRetake,
-  quizType,
-  previewData,
-}) => (
+const GenericSignInPrompt: React.FC<SignInPromptProps> = ({ onSignIn, onRetake, quizType, previewData }) => (
   <div className="flex flex-col items-center justify-center gap-6 p-8 text-center max-w-md mx-auto">
     <h2 className="text-2xl font-bold">Quiz Complete!</h2>
-    <p className="text-gray-600">
-      Sign in to save your progress and view detailed results.
-    </p>
+    <p className="text-gray-600">Sign in to save your progress and view detailed results.</p>
     {previewData && (
       <div className="bg-gray-50 p-4 rounded text-center">
-        <div className="text-3xl font-bold text-blue-600">
-          {previewData.percentage}%
-        </div>
+        <div className="text-3xl font-bold text-blue-600">{previewData.percentage}%</div>
         <p>
           {previewData.score} out of {previewData.maxScore} correct
         </p>
@@ -64,271 +55,253 @@ const GenericSignInPrompt: React.FC<SignInPromptProps> = ({
       Retake Quiz
     </Button>
   </div>
-);
+)
 
 interface Props {
-  slug: string;
-  quizType: QuizType;
-  children: (props: { result: any }) => React.ReactNode;
+  slug: string
+  quizType: QuizType
+  children: (props: { result: any }) => React.ReactNode
 }
 
-type ViewState =
-  | "loading"
-  | "show_results"
-  | "show_signin"
-  | "no_results"
-  | "error";
+type ViewState = "loading" | "show_results" | "show_signin" | "no_results" | "error"
 
-export default function GenericQuizResultHandler({
-  slug,
-  quizType,
-  children,
-}: Props) {
-  const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
+export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
+  const dispatch = useDispatch<AppDispatch>()
+  const router = useRouter()
 
-  // Get the full quiz state for debugging
-  const quizState = useSelector(selectQuizState);
+  const { isAuthenticated, isLoading: isSessionLoading, signIn } = useSessionService()
 
-  const {
-    isAuthenticated,
-    isLoading: isSessionLoading,
-    restoreAuthRedirectState,
-    signIn,
-    restoreQuizResults,
-  } = useSessionService();
+  // Redux selectors
+  const quizResults = useSelector(selectQuizResults)
+  const generatedResults = useSelector(selectOrGenerateQuizResults)
+  const quizStatus = useSelector(selectQuizStatus)
+  const currentSlug = useSelector(selectQuizId)
+  const questions = useSelector(selectQuestions)
+  const answers = useSelector(selectAnswers)
+  const quizTitle = useSelector(selectQuizTitle)
+  const isCompleted = useSelector(selectIsQuizComplete)
+  const isProcessingResults = useSelector(selectIsProcessingResults)
 
-  const quizResults = useSelector(selectQuizResults);
-  const generatedResults = useSelector(selectOrGenerateQuizResults);
-  const quizStatus = useSelector(selectQuizStatus);
-  const currentSlug = useSelector(selectQuizId);
-  const questions = useSelector(selectQuestions);
-  const isCompleted = useSelector(selectIsQuizComplete);
+  // Normalize the slug value once
+  const normalizedSlug = useMemo(() => {
+    return typeof slug === "object" && slug.slug ? slug.slug : typeof slug === "string" ? slug : currentSlug || ""
+  }, [slug, currentSlug])
 
-  // Normalize the slug value
-  const normalizedSlug = typeof slug === 'object' && slug.slug ? slug.slug :
-    typeof slug === 'string' ? slug :
-      currentSlug || '';
+  // Single view state to prevent flickering
+  const [viewState, setViewState] = useState<ViewState>("loading")
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  // Use a single view state to prevent flickering
-  const [viewState, setViewState] = useState<ViewState>("loading");
+  // Track if we've already tried to generate results
+  const [hasTriedGeneration, setHasTriedGeneration] = useState(false)
 
-  // Hydration flag to ensure we don't render too early
-  const [isHydrated, setIsHydrated] = useState(false);
+  // Memoize the current result to prevent unnecessary re-renders
+  const currentResult = useMemo(() => {
+    return quizResults || generatedResults
+  }, [quizResults, generatedResults])
 
-  // Recovery flag to track explicit recovery attempts
-  const [hasAttemptedRecovery, setHasAttemptedRecovery] = useState(false);
+  // Handle retake action
+  const handleRetake = useCallback(() => {
+    dispatch(safeResetQuiz())
+    router.replace(`/dashboard/${quizType}/${normalizedSlug}`)
+  }, [dispatch, router, quizType, normalizedSlug])
 
-  // Track loading timeouts
-  const [loadingPhase, setLoadingPhase] = useState<"initial" | "extended" | "complete">("initial");
-
-  // Use preserveState to prevent flickering on state transitions
-  const [preservedResults, setPreservedResults] = useState<any>(null);
-
-  // Use layout effect to prioritize storage restoration before render
-  useLayoutEffect(() => {
-    if (isAuthenticated) {
-      // Try to hydrate state immediately to prevent flicker
-      dispatch(hydrateStateFromStorage());
-      restoreQuizResults();
-    }
-  }, [isAuthenticated, dispatch]);
-
-  const handleRetake = () => {
-    dispatch(resetQuiz());
-    router.replace(`/dashboard/${quizType}/${normalizedSlug}`);
-  };
-
-  const handleSignIn = async () => {
-    // Store quiz data more comprehensively
-    if (generatedResults) {
+  // Handle sign in action
+  const handleSignIn = useCallback(async () => {
+    if (currentResult) {
       try {
-        // Save current results to be able to show immediately after auth redirect
-        setPreservedResults(generatedResults);
-
-        // Store complete quiz state with normalized slug format
         const storeData = {
           slug: normalizedSlug,
           quizType,
-          results: generatedResults,
+          results: currentResult,
           timestamp: Date.now(),
-          questions: questions, // Include all questions
-          title: generatedResults.title || `${quizType.toUpperCase()} Quiz`
-        };
+          questions: questions,
+          title: currentResult.title || `${quizType.toUpperCase()} Quiz`,
+        }
 
-        // Store in localStorage with more complete information
-        localStorage.setItem('pendingQuizResults', JSON.stringify(storeData));
-
-        // Also store in sessionStorage as backup
-        sessionStorage.setItem('pendingQuizResults', JSON.stringify(storeData));
-
-        console.log('Stored quiz results before auth redirect:', storeData);
+        localStorage.setItem("pendingQuizResults", JSON.stringify(storeData))
+        sessionStorage.setItem("pendingQuizResults", JSON.stringify(storeData))
       } catch (error) {
-        console.error('Failed to store quiz results before auth:', error);
+        console.error("Failed to store quiz results before auth:", error)
       }
     }
 
-    const returnPath = `/dashboard/${quizType}/${normalizedSlug}/results`;
-    const redirectState = {
-      returnPath,
-      quizState: {
-        slug: normalizedSlug,
-        currentState: {
-          results: generatedResults,
-          showResults: true,
-        },
-      },
-    };
-    await signIn(redirectState);
-  };
+    await signIn({
+      returnPath: `/dashboard/${quizType}/${normalizedSlug}/results`,
+      quizState: { slug: normalizedSlug, results: currentResult },
+    })
+  }, [currentResult, normalizedSlug, quizType, questions, signIn])
 
-  // Hydrate state from storage on mount to ensure persistence
-  useEffect(() => {
-    dispatch(hydrateStateFromStorage());
-
-    // Immediately check for results in storage - early attempt
-    if (isAuthenticated && !hasAttemptedRecovery) {
-      restoreQuizResults();
-      setHasAttemptedRecovery(true);
+  // Generate results from state if needed
+  const generateResultsFromState = useCallback(() => {
+    if (!questions.length || !Object.keys(answers).length || hasTriedGeneration) {
+      return null
     }
 
-    // Progressive loading states to provide smooth transition
-    const initialTimer = setTimeout(() => {
-      setLoadingPhase("extended");
-    }, 800);
+    setHasTriedGeneration(true)
 
-    const extendedTimer = setTimeout(() => {
-      setLoadingPhase("complete");
-    }, 2000);
+    let score = 0
+    const questionResults = questions.map((question) => {
+      const qid = String(question.id)
+      const answer = answers[qid]
 
-    // Log the initial state for debugging
-    console.log('Initial quiz state:', quizState);
-    console.log('Normalized slug:', normalizedSlug);
-
-    // If we're on the results page, double check local storage directly
-    try {
-      const pendingJson = localStorage.getItem('pendingQuizResults');
-      const sessionJson = sessionStorage.getItem('pendingQuizResults');
-
-      console.log('Found in localStorage:', pendingJson ? 'yes' : 'no');
-      console.log('Found in sessionStorage:', sessionJson ? 'yes' : 'no');
-
-      if (pendingJson) {
-        const pendingData = JSON.parse(pendingJson);
-        console.log('Pending quiz data slug:', pendingData.slug);
-        console.log('Current page slug:', normalizedSlug);
-
-        // If this is the correct quiz and we have no results yet, restore immediately
-        if (pendingData.slug === normalizedSlug && !quizResults && !generatedResults) {
-          setPreservedResults(pendingData.results); // Cache results for immediate display
-          dispatch(setQuizResults(pendingData.results));
-          dispatch(setQuiz({
-            quizId: normalizedSlug,
-            title: pendingData.title || "Quiz Results",
-            questions: pendingData.questions || [],
-            type: pendingData.quizType || "mcq"
-          }));
+      if (!answer) {
+        return {
+          questionId: qid,
+          question: question.question || question.text,
+          correctAnswer: question.answer || question.correctAnswer || "",
+          userAnswer: "",
+          isCorrect: false,
+          type: question.type || quizType,
         }
       }
-    } catch (error) {
-      console.error('Error checking storage during initialization:', error);
+
+      let isCorrect = false
+      let userAnswer = ""
+
+      switch (question.type || quizType) {
+        case "mcq":
+        case "code":
+          userAnswer = answer.selectedOptionId || answer.userAnswer || ""
+          isCorrect = answer.isCorrect === true
+          break
+        case "blanks":
+          userAnswer = answer.userAnswer || answer.text || ""
+          isCorrect = answer.isCorrect === true
+          break
+        case "openended":
+          userAnswer = answer.text || answer.userAnswer || ""
+          isCorrect = answer.isCorrect === true
+          break
+        default:
+          userAnswer = answer.userAnswer || answer.text || ""
+          isCorrect = answer.isCorrect === true
+      }
+
+      if (isCorrect) score++
+
+      return {
+        questionId: qid,
+        question: question.question || question.text,
+        correctAnswer: question.answer || question.correctAnswer || "",
+        userAnswer,
+        isCorrect,
+        type: question.type || quizType,
+      }
+    })
+
+    const percentage = Math.round((score / questions.length) * 100)
+
+    const results = {
+      quizId: normalizedSlug,
+      slug: normalizedSlug,
+      title: quizTitle || `${quizType.toUpperCase()} Quiz`,
+      quizType,
+      score,
+      maxScore: questions.length,
+      percentage,
+      completedAt: new Date().toISOString(),
+      questionResults,
+      questions: questionResults,
     }
 
-    // Cleanup timers
-    return () => {
-      clearTimeout(initialTimer);
-      clearTimeout(extendedTimer);
-    };
-  }, [dispatch, normalizedSlug, isAuthenticated]);
+    // Store the generated results
+    dispatch(setQuizResults(results))
+    return results
+  }, [questions, answers, quizType, normalizedSlug, quizTitle, dispatch, hasTriedGeneration])
 
-  // Handle authentication and results state
+  // Initialize and restore state - single useEffect to prevent loops
   useEffect(() => {
-    // Don't proceed until session check is complete
-    if (isSessionLoading) {
-      console.log('Session still loading, waiting...');
-      return;
-    }
+    // Skip if already initialized
+    if (isInitialized) return
 
-    console.log('Auth status updated:', isAuthenticated ? 'authenticated' : 'not authenticated');
-    console.log('Current quiz state:', {
-      hasResults: !!quizResults,
-      hasGeneratedResults: !!generatedResults,
-      hasPreservedResults: !!preservedResults,
-      slug: normalizedSlug
-    });
+    // Don't proceed if session is still loading
+    if (isSessionLoading) return
 
-    // Once session is checked, handle results state
+    // Hydrate state from storage first
+    dispatch(hydrateStateFromStorage())
+
+    // Check for pending results in storage
     if (isAuthenticated) {
-      // Restore any auth redirect state
-      restoreAuthRedirectState();
+      try {
+        const pendingJson = localStorage.getItem("pendingQuizResults") || sessionStorage.getItem("pendingQuizResults")
 
-      // Try explicit recovery if we have no results yet
-      if (!quizResults && !generatedResults && !preservedResults && !hasAttemptedRecovery) {
-        console.log('Attempting explicit recovery of quiz results');
-        const recovered = restoreQuizResults();
-        setHasAttemptedRecovery(true);
+        if (pendingJson) {
+          const pendingData = JSON.parse(pendingJson)
 
-        if (recovered) {
-          console.log('Successfully recovered quiz results');
-        } else {
-          console.log('Could not recover quiz results');
+          if (pendingData.slug === normalizedSlug && pendingData.results) {
+            dispatch(setQuizResults(pendingData.results))
+            dispatch(
+              setQuiz({
+                quizId: normalizedSlug,
+                title: pendingData.title || "Quiz Results",
+                questions: pendingData.questions || [],
+                type: pendingData.quizType || quizType,
+              }),
+            )
+
+            // Clear storage after restoration
+            localStorage.removeItem("pendingQuizResults")
+            sessionStorage.removeItem("pendingQuizResults")
+          }
         }
-      }
-
-      // Check for results, prioritizing preserved results
-      if (quizResults || generatedResults || preservedResults) {
-        console.log('Setting view state to show_results');
-        setViewState("show_results");
-      } else if (loadingPhase === "complete") {
-        // Only show no_results after extended loading phase
-        console.log('Setting view state to no_results');
-        setViewState("no_results");
-      }
-    } else {
-      // Not authenticated
-      if (generatedResults || preservedResults) {
-        console.log('Setting view state to show_signin');
-        setViewState("show_signin");
-      } else if (loadingPhase === "complete") {
-        // Only show no_results after extended loading phase
-        console.log('Setting view state to no_results');
-        setViewState("no_results");
+      } catch (error) {
+        console.error("Error restoring quiz results:", error)
       }
     }
 
-    // Mark as hydrated to prevent flickering
-    if (loadingPhase === "extended") {
-      setIsHydrated(true);
+    setIsInitialized(true)
+  }, [isSessionLoading, isAuthenticated, normalizedSlug, quizType, dispatch, isInitialized])
+
+  // Determine view state based on current conditions - separate effect to prevent loops
+  useEffect(() => {
+    // Skip if not initialized or session is loading
+    if (!isInitialized || isSessionLoading) {
+      setViewState("loading")
+      return
     }
+
+    // If we have results, show them
+    if (currentResult) {
+      setViewState(isAuthenticated ? "show_results" : "show_signin")
+      return
+    }
+
+    // If we're still processing results, stay in loading
+    if (isProcessingResults) {
+      setViewState("loading")
+      return
+    }
+
+    // If we have quiz data but no results, try to generate them
+    if (isCompleted && questions.length > 0 && Object.keys(answers).length > 0 && !hasTriedGeneration) {
+      const generated = generateResultsFromState()
+      if (generated) {
+        setViewState(isAuthenticated ? "show_results" : "show_signin")
+        return
+      }
+    }
+
+    // If we still don't have results, show no results
+    setViewState("no_results")
   }, [
-    isAuthenticated,
+    isInitialized,
     isSessionLoading,
-    quizResults,
-    generatedResults,
-    preservedResults,
-    restoreAuthRedirectState,
-    hasAttemptedRecovery,
-    normalizedSlug,
-    loadingPhase
-  ]);
+    currentResult,
+    isAuthenticated,
+    isProcessingResults,
+    isCompleted,
+    questions.length,
+    answers,
+    generateResultsFromState,
+    hasTriedGeneration,
+  ])
 
-  // Show appropriate loading state based on phase
-  if (!isHydrated || isSessionLoading || quizStatus === "loading" || loadingPhase === "initial") {
-    return (
-      <QuizLoader
-        message="Loading quiz results..."
-        subMessage="Please wait"
-        showTiming={true}
-      />
-    );
+  // Show loading state
+  if (viewState === "loading") {
+    return <QuizLoader message="Loading quiz results..." subMessage="Please wait" showTiming={true} />
   }
 
-  // Show skeleton for extended loading phase - gives a visual preview of results coming
-  if (loadingPhase === "extended" && viewState === "loading") {
-    return <QuizResultSkeleton />;
-  }
-
-  // AnimatePresence for smooth transitions between states
+  // Render based on view state
   return (
     <AnimatePresence mode="wait">
       {viewState === "show_signin" && (
@@ -344,26 +317,21 @@ export default function GenericQuizResultHandler({
             onRetake={handleRetake}
             quizType={quizType}
             previewData={
-              (generatedResults || preservedResults)
+              currentResult
                 ? {
-                  percentage: (generatedResults || preservedResults).percentage,
-                  score: (generatedResults || preservedResults).score || (generatedResults || preservedResults).userScore,
-                  maxScore: (generatedResults || preservedResults).maxScore,
-                }
+                    percentage: currentResult.percentage || 0,
+                    score: currentResult.score || currentResult.userScore || 0,
+                    maxScore: currentResult.maxScore || 0,
+                  }
                 : undefined
             }
           />
         </motion.div>
       )}
 
-      {viewState === "show_results" && (quizResults || generatedResults || preservedResults) && (
-        <motion.div
-          key="results"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
-        >
-          {children({ result: quizResults || generatedResults || preservedResults })}
+      {viewState === "show_results" && currentResult && (
+        <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+          {children({ result: currentResult })}
         </motion.div>
       )}
 
@@ -376,67 +344,73 @@ export default function GenericQuizResultHandler({
           className="text-center p-6"
         >
           <h2 className="text-2xl font-bold">No Results Found</h2>
-          <p className="text-gray-600 mt-2 mb-6">
-            Try retaking the quiz to view results.
-          </p>
+          <p className="text-gray-600 mt-2 mb-6">Try retaking the quiz to view results.</p>
           <Button onClick={handleRetake} size="lg">
             Retake Quiz
           </Button>
         </motion.div>
       )}
     </AnimatePresence>
-  );
+  )
 }
 
-// New component for handling quiz results persistently
-export function QuizResultHandler({ slug, quizType, onComplete }: {
-  slug: string;
-  quizType: string;
-  onComplete?: (results: any) => void;
+// Simplified QuizResultHandler for handling quiz completion and saving
+export function QuizResultHandler({
+  slug,
+  quizType,
+  onComplete,
+}: {
+  slug: string
+  quizType: string
+  onComplete?: (results: any) => void
 }) {
-  const { data: session, status: authStatus } = useSession();
-  const isAuthenticated = authStatus === 'authenticated';
-  const { isInitialized } = useQuizStateManager();
-  const router = useRouter();
-  const dispatch = useDispatch();
-  const results = useSelector(selectQuizResults);
-  const isCompleted = useSelector(selectIsQuizComplete);
-  const quizState = useSelector(selectQuizState);
+  const { data: session, status: authStatus } = useSession()
+  const isAuthenticated = authStatus === "authenticated"
+  const router = useRouter()
+  const dispatch = useDispatch()
+  const results = useSelector(selectQuizResults)
+  const isCompleted = useSelector(selectIsQuizComplete)
 
-  // Handle quiz completion and result saving
+  // Track if we've already redirected to prevent loops
+  const [hasRedirected, setHasRedirected] = useState(false)
+  const [hasSaved, setHasSaved] = useState(false)
+
+  // Handle quiz completion and result saving - with flags to prevent loops
   useEffect(() => {
-    if (isInitialized && isCompleted && results && isAuthenticated) {
-      // Save results to database when completed while authenticated
+    if (isCompleted && results && isAuthenticated && !hasSaved) {
+      setHasSaved(true)
+
       dispatch(saveQuizResultsToDatabase({ slug, quizType }) as any)
         .unwrap()
         .then(() => {
-          // Only show toast if we're on a quiz page, not results page
-          const pathname = usePathname();
-          if (!pathname.includes('/results')) {
-            toast.success('Quiz results saved successfully!', {
+          const pathname = window.location.pathname
+          if (!pathname.includes("/results")) {
+            toast.success("Quiz results saved successfully!", {
               duration: 3000,
-            });
+            })
           }
 
           if (onComplete) {
-            onComplete(results);
+            onComplete(results)
           }
         })
         .catch((error: any) => {
-          console.error('Failed to save quiz results:', error);
-          toast.error('Failed to save quiz results. Please try again.');
-        });
+          console.error("Failed to save quiz results:", error)
+          toast.error("Failed to save quiz results. Please try again.")
+        })
     }
-  }, [isInitialized, isCompleted, results, isAuthenticated, slug, quizType, dispatch, router, onComplete]);
+  }, [isCompleted, results, isAuthenticated, slug, quizType, dispatch, onComplete, hasSaved])
 
-  // Redirect to results page if quiz is completed
+  // Redirect to results page if quiz is completed - with flag to prevent loops
   useEffect(() => {
-    const pathname = usePathname();
-    if (isInitialized && isCompleted && results && !pathname.includes('/results')) {
-      // Don't redirect if we're already on the results page
-      router.push(`/dashboard/${quizType}/${slug}/results`);
+    if (isCompleted && results && !hasRedirected) {
+      const pathname = window.location.pathname
+      if (!pathname.includes("/results")) {
+        setHasRedirected(true)
+        router.push(`/dashboard/${quizType}/${slug}/results`)
+      }
     }
-  }, [isInitialized, isCompleted, results, router, slug, quizType]);
+  }, [isCompleted, results, router, quizType, slug, hasRedirected])
 
-  return null; // This is a logical component with no UI
+  return null
 }
