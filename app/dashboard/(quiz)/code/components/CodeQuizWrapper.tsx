@@ -16,7 +16,6 @@ import {
   setCurrentQuestionIndex,
   saveAnswer,
   fetchQuiz,
-  setQuizResults,
   setQuizCompleted,
 } from "@/store/slices/quiz-slice"
 
@@ -73,7 +72,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
   // Handle quiz completion - only when explicitly triggered
   useEffect(() => {
     if (!isQuizComplete) return
-    
+
     // When complete, navigate to results
     const safeSlug = typeof slug === "string" ? slug : String(slug)
     router.push(`/dashboard/code/${safeSlug}/results`)
@@ -280,7 +279,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
                   ) : (
                     <Button
                       onClick={handleFinish}
-                      disabled={answeredQuestions < questions.length || quizStatus === "submitting"}
+                      disabled={quizStatus === "submitting"}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       {quizStatus === "submitting" ? "Submitting..." : "Finish Quiz"}

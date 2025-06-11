@@ -164,10 +164,9 @@ const subscriptionSlice = createSlice({
         state.isLoading = false
         state.isFetching = false
 
-        const incoming = JSON.stringify(action.payload)
-        const existing = JSON.stringify(state.data)
-
-        if (incoming === existing) return; // Prevent re-render
+        // Consider using a more robust shallow comparison:
+        // Import shallowEqual from 'react-redux'
+        if (shallowEqual(action.payload, state.data)) return;
 
         state.data = action.payload
         state.lastFetched = Date.now()

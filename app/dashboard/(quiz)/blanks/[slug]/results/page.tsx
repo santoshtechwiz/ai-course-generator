@@ -8,16 +8,16 @@ import { Button } from "@/components/ui/button"
 import QuizResult from "../../../components/QuizResult"
 
 interface ResultsPageProps {
-  params: Promise<{ slug: string }> | { slug: string }  
+  params: Promise<{ slug: string }> | { slug: string }
 }
 
 export default function BlanksResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-  const slug = params instanceof Promise ? use(params).slug : params.slug;
-  
+  const slug = params instanceof Promise ? use(params).slug : params.slug
+
   const handleRetakeQuiz = () => {
     // Use replace instead of push to avoid navigation loops
-    router.replace(`/dashboard/blanks/${slug}?reset=true&t=${Date.now()}`)
+    router.replace(`/dashboard/blanks/${slug}`)
   }
 
   // If slug is missing, show error
@@ -37,18 +37,8 @@ export default function BlanksResultsPage({ params }: ResultsPageProps) {
 
   return (
     <div className="container max-w-4xl py-10">
-      <QuizResultHandler 
-        slug={slug} 
-        quizType="blanks"
-      >
-        {({ result }) => (
-          <QuizResult 
-            result={result} 
-            slug={slug} 
-            quizType="blanks" 
-            onRetake={handleRetakeQuiz}
-          />
-        )}
+      <QuizResultHandler slug={slug} quizType="blanks">
+        {({ result }) => <QuizResult result={result} slug={slug} quizType="blanks" onRetake={handleRetakeQuiz} />}
       </QuizResultHandler>
     </div>
   )

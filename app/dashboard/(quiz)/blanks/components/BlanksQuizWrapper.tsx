@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
@@ -17,12 +17,12 @@ import {
   saveAnswer,
   fetchQuiz,
   setQuizCompleted,
+  setQuizResults,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import type { BlankQuestion } from "./types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RefreshCw } from "lucide-react"
 import BlanksQuiz from "./BlanksQuiz"
 import type { QuizType } from "@/types/quiz"
 
@@ -37,6 +37,9 @@ interface BlanksQuizWrapperProps {
 export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
+
+  // Track if we've already submitted to prevent double submissions
+  const [hasSubmitted, setHasSubmitted] = useState(false)
 
   // Redux selectors
   const questions = useSelector(selectQuestions)
@@ -70,31 +73,36 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
   // Handle quiz completion - only when explicitly triggered
   useEffect(() => {
-    if (!isCompleted) return
-    
-    // When complete, navigate to results
-    const safeSlug = typeof slug === "string" ? slug : String(slug)
-    router.push(`/dashboard/blanks/${safeSlug}/results`)
-  }, [isCompleted, router, slug])
+    if (!isCompleted || hasSubmitted) return
 
-  // Answer handler
+    // When complete, navigate to results page
+    const safeSlug = typeof slug === "string" ? slug : String(slug)
+
+    // Add a small delay for better UX
+    const timer = setTimeout(() => {
+      router.push(`/dashboard/blanks/${safeSlug}/results`)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [isCompleted, router, slug, hasSubmitted])
+
+  // Answer handler - fixed to properly store answers
   const handleAnswer = (answer: string) => {
     if (!currentQuestion) return
 
-    // Store the answer in Redux
+    // Store the answer in Redux with proper structure
     dispatch(
       saveAnswer({
         questionId: currentQuestion.id,
         answer: {
           questionId: currentQuestion.id,
           userAnswer: answer,
+          text: answer, // Add text field for consistency
           type: "blanks",
-          filledBlanks: {
-            [currentQuestion.id]: answer,
-          },
+          isCorrect: answer.trim().toLowerCase() === (currentQuestion.answer || "").trim().toLowerCase(),
           timestamp: Date.now(),
         },
-      })
+      }),
     )
   }
 
@@ -111,8 +119,54 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     }
   }
 
-  // Complete the quiz
+  // Complete the quiz - fixed logic
   const handleFinish = () => {
+    if (hasSubmitted) return
+
+    const answeredCount = Object.keys(answers).length
+    const totalQuestions = questions.length
+
+    // Allow submission regardless of how many questions are answered
+    console.log(`Submitting quiz with ${answeredCount} out of ${totalQuestions} questions answered`)
+
+    setHasSubmitted(true)
+
+    // Generate results for all questions (including unanswered ones)
+    const questionResults = questions.map((question) => {
+      const qid = String(question.id)
+      const answer = answers[qid]
+      const userAnswer = answer?.userAnswer || answer?.text || ""
+      const correctAnswer = question.answer || ""
+      const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+
+      return {
+        questionId: qid,
+        question: question.question || question.text,
+        correctAnswer,
+        userAnswer,
+        isCorrect,
+        type: "blanks",
+      }
+    })
+
+    const correctCount = questionResults.filter((q) => q.isCorrect).length
+    const percentage = Math.round((correctCount / questions.length) * 100)
+
+    const results = {
+      quizId: slug,
+      slug: slug,
+      title: quizTitle || "Blanks Quiz",
+      quizType: "blanks",
+      score: correctCount,
+      maxScore: questions.length,
+      percentage,
+      completedAt: new Date().toISOString(),
+      questionResults,
+      questions: questionResults,
+    }
+
+    // Set results first, then mark as completed
+    dispatch(setQuizResults(results))
     dispatch(setQuizCompleted())
   }
 
@@ -171,9 +225,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
   // Current answer from Redux
   const currentAnswer = answers[currentQuestion.id]
-  const existingAnswer = currentAnswer?.userAnswer || 
-                         currentAnswer?.filledBlanks?.[currentQuestion.id] || 
-                         ""
+  const existingAnswer = currentAnswer?.userAnswer || currentAnswer?.text || ""
 
   // Navigation state
   const canGoNext = currentQuestionIndex < questions.length - 1
@@ -196,7 +248,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
       onNext={handleNext}
       onPrevious={handlePrevious}
       onSubmit={handleFinish}
-      isSubmitting={quizStatus === "submitting"}
+      isSubmitting={quizStatus === "submitting" || hasSubmitted}
       canGoNext={canGoNext}
       canGoPrevious={canGoPrevious}
       isLastQuestion={isLastQuestion}
