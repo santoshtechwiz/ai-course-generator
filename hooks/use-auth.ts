@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { useDispatch } from "react-redux"
-import { useSessionService } from "@/hooks/useSessionService"
-import type { AppDispatch } from "@/store"
-import { invalidateSessionCache } from "@/lib/auth"
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { useSession, signOut } from 'next-auth/react'
+import { useDispatch } from 'react-redux'
+import { useSessionService } from '@/hooks/useSessionService'
+import type { AppDispatch } from '@/store'
+import { invalidateSessionCache } from '@/lib/auth'
 
 export interface AuthHookResult {
   isAuthenticated: boolean
@@ -15,7 +15,7 @@ export interface AuthHookResult {
   user: any
   guestId: string | null
   logout: () => Promise<void>
-  status: "authenticated" | "loading" | "unauthenticated"
+  status: 'authenticated' | 'loading' | 'unauthenticated'
   session: any
 }
 
@@ -24,28 +24,45 @@ export interface AuthHookResult {
  */
 export function useAuth(): AuthHookResult {
   const { data: session, status } = useSession()
-  const [isLoading, setIsLoading] = useState(status === "loading")
-  const [isAuthenticated, setIsAuthenticated] = useState(status === "authenticated")
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const dispatch = useDispatch<AppDispatch>()
-  const { cleanupSessionData } = useSessionService()
+  const { clearAuthState } = useSessionService()
+  
+  // Add ref to track if we've checked admin status to break infinite loops
+  const authCheckRef = useRef(false)
+  
+  // Derive these values directly without useState to reduce render cycles
+  const isAuthenticated = status === 'authenticated' && !!session
+  const isLoading = status === 'loading'
+  const user = session?.user || null
 
+  // Use useEffect with proper dependencies
   useEffect(() => {
-    setIsLoading(status === "loading")
-    setIsAuthenticated(status === "authenticated")
+    // Only check admin status when authentication state changes
+    // and we haven't already checked for this session
+    if (isAuthenticated && !authCheckRef.current) {
+      // Mark that we've checked this session
+      authCheckRef.current = true
+      // Check for admin role
+      const userIsAdmin = session?.user?.isAdmin || false
 
-    // Check admin status
-    if (session?.user) {
-      setIsAdmin(!!session.user.isAdmin || (session as any).user.role === "admin")
-    } else {
-      setIsAdmin(false)
+      // Only update state if value actually changes
+      if (userIsAdmin !== isAdmin) {
+        setIsAdmin(userIsAdmin)
+      }
     }
-  }, [session, status])
+    
+    // Reset our check flag if user logs out
+    if (!isAuthenticated) {
+      authCheckRef.current = false
+      if (isAdmin) setIsAdmin(false)
+    }
+  }, [isAuthenticated, session, isAdmin])
 
   // Enhanced logout that clears all session data
   const logout = useCallback(async () => {
     // First clean up all session data
-    cleanupSessionData()
+    clearAuthState()
 
     // Clear local/session storage
     if (typeof window !== 'undefined') {
@@ -80,14 +97,14 @@ export function useAuth(): AuthHookResult {
 
     // Then sign out with NextAuth
     await signOut({ redirect: false })
-  }, [cleanupSessionData])
+  }, [clearAuthState])
 
   return {
     isAuthenticated,
     userId: session?.user?.id,
     isLoading,
     isAdmin,
-    user: session?.user || null,
+    user,
     guestId: null,
     logout,
     status,
