@@ -30,6 +30,7 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle, Trophy } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -43,7 +44,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
   const { isAuthenticated } = useAuth()
-  
+
   // Track submission state locally to prevent multiple submissions
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
@@ -78,10 +79,10 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
 
       dispatch(fetchQuiz(quizPayload))
     }
-    
+
     // Clear any previous submission state on component mount
     dispatch(resetSubmissionState())
-    
+
     // Cleanup
     return () => {
       if (submissionTimeoutRef.current) {
@@ -99,7 +100,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
         const safeSlug = typeof slug === "string" ? slug : String(slug)
         router.push(`/dashboard/code/${safeSlug}/results`)
       }, 10000) // 10 seconds timeout
-      
+
       return () => clearTimeout(safetyTimeout)
     }
   }, [isSubmitting, router, slug])
@@ -121,7 +122,6 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/code/${safeSlug}/results`)
     }, 1500)
-
   }, [isQuizComplete, router, slug, hasSubmitted, isAuthenticated])
 
   // Answer handler - store the selected answer
@@ -156,24 +156,27 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
   // Complete the quiz - now with better safeguards and retry mechanism
   const handleFinish = () => {
     if (hasSubmitted || isSubmitting) return
-    
+
     setIsSubmitting(true)
-    
+
     try {
       // First mark as completed
       dispatch(setQuizCompleted())
-      
+
       // Store answers in localStorage as backup
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
-          localStorage.setItem('quiz_answers_backup', JSON.stringify({
-            slug,
-            answers,
-            timestamp: Date.now(),
-            quizType: 'code'
-          }))
+          localStorage.setItem(
+            "quiz_answers_backup",
+            JSON.stringify({
+              slug,
+              answers,
+              timestamp: Date.now(),
+              quizType: "code",
+            }),
+          )
         } catch (e) {
-          console.error('Failed to backup answers:', e)
+          console.error("Failed to backup answers:", e)
         }
       }
 
@@ -183,16 +186,16 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
         .then(() => {
           setHasSubmitted(true)
           const safeSlug = typeof slug === "string" ? slug : String(slug)
-          
+
           // Navigate to results page after a short delay
           submissionTimeoutRef.current = setTimeout(() => {
             router.push(`/dashboard/code/${safeSlug}/results`)
           }, 1000)
         })
-        .catch(err => {
+        .catch((err) => {
           console.error("Quiz submission error:", err)
           maxSubmitAttemptsRef.current += 1
-          
+
           // If we've tried 3 times or more, just navigate to results
           if (maxSubmitAttemptsRef.current >= 3) {
             toast.error("Having trouble submitting quiz. Redirecting to results page.")
@@ -202,7 +205,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
             }, 1000)
             return
           }
-          
+
           // Otherwise show error and reset submission state
           setIsSubmitting(false)
           toast.error("Failed to submit quiz. Please try again.")
@@ -275,68 +278,97 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
 
   // Submitting state
   if (actualSubmittingState) {
-    return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.5 }}
+      >
+        <QuizLoader full message="🎉 Quiz Completed!" subMessage="Calculating your results..." />
+      </motion.div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Quiz Header */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="shadow-lg rounded-2xl border-0 bg-gradient-to-r from-background to-muted/20">
+            <CardHeader className="p-6">
               <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-2xl font-bold">{quizTitle || "Code Quiz"}</CardTitle>
-                  <p className="text-muted-foreground mt-1">
+                <div className="space-y-2">
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                    {quizTitle || "Code Quiz"}
+                  </CardTitle>
+                  <p className="text-muted-foreground">
                     {answeredQuestions} of {questions.length} questions answered
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
+                <motion.div
+                  className="flex items-center gap-4"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-2xl border border-green-500/20">
                     <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
                       {answeredQuestions}/{questions.length}
                     </span>
                   </div>
-                </div>
+                </motion.div>
               </div>
-              <div className="mt-4">
-                <Progress value={progressPercentage} className="h-2" />
+              <div className="mt-6">
+                <Progress value={progressPercentage} className="h-3 rounded-2xl" />
               </div>
             </CardHeader>
           </Card>
-        </div>
+        </motion.div>
 
         {/* Question Navigation */}
-        <div className="mb-6">
-          <Card>
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <Card className="shadow-lg rounded-2xl border-0">
             <CardContent className="p-4">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-4">
                 <Button
                   variant="outline"
                   onClick={() => dispatch(setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1)))}
                   disabled={currentQuestionIndex === 0 || actualSubmittingState}
+                  className="rounded-2xl px-6"
                 >
                   Previous
                 </Button>
 
                 <div className="flex gap-2 overflow-x-auto py-2 px-1">
                   {questions.map((_, index) => (
-                    <button
+                    <motion.button
                       key={index}
                       onClick={() => dispatch(setCurrentQuestionIndex(index))}
                       disabled={actualSubmittingState}
-                      className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                      className={`w-10 h-10 rounded-2xl text-sm font-medium transition-all duration-300 ${
                         index === currentQuestionIndex
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-primary text-primary-foreground shadow-lg scale-110"
                           : answers[questions[index].id]
-                            ? "bg-green-500 text-white"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            ? "bg-green-500 text-white shadow-md"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80 hover:scale-105"
                       }`}
+                      whileHover={{ scale: actualSubmittingState ? 1 : 1.1 }}
+                      whileTap={{ scale: actualSubmittingState ? 1 : 0.95 }}
+                      transition={{ type: "spring", stiffness: 300 }}
                     >
                       {index + 1}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
 
@@ -346,13 +378,14 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
                     dispatch(setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1)))
                   }
                   disabled={currentQuestionIndex === questions.length - 1 || actualSubmittingState}
+                  className="rounded-2xl px-6"
                 >
                   Next
                 </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
 
         {/* Current Question */}
         <CodeQuiz
@@ -368,37 +401,59 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
         />
 
         {/* Bottom Navigation */}
-        <div className="mt-8">
-          <Card>
-            <CardContent className="p-4">
+        <motion.div
+          className="mt-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <Card className="shadow-lg rounded-2xl border-0">
+            <CardContent className="p-6">
               <div className="flex justify-between items-center">
                 <div className="text-sm text-muted-foreground">
                   Question {currentQuestionIndex + 1} of {questions.length}
                 </div>
 
-                <div className="flex gap-3">
-                  {currentQuestionIndex < questions.length - 1 ? (
-                    <Button 
-                      onClick={handleNext} 
-                      disabled={!existingAnswer || actualSubmittingState}
-                    >
-                      Next Question
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleFinish}
-                      disabled={!allQuestionsAnswered || actualSubmittingState || hasSubmitted}
-                      className="bg-green-600 hover:bg-green-700 gap-2"
-                    >
-                      <Trophy className="w-4 h-4" />
-                      {actualSubmittingState ? "Submitting..." : "Finish Quiz"}
-                    </Button>
-                  )}
+                <div className="flex gap-4">
+                  <AnimatePresence>
+                    {currentQuestionIndex < questions.length - 1 ? (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Button
+                          onClick={handleNext}
+                          disabled={!existingAnswer || actualSubmittingState}
+                          className="rounded-2xl px-6"
+                        >
+                          Next Question
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Button
+                          onClick={handleFinish}
+                          disabled={!allQuestionsAnswered || actualSubmittingState || hasSubmitted}
+                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-2xl px-6 gap-2 shadow-lg"
+                        >
+                          <Trophy className="w-4 h-4" />
+                          {actualSubmittingState ? "Submitting..." : "Finish Quiz"}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

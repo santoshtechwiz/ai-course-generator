@@ -29,6 +29,7 @@ import BlanksQuiz from "./BlanksQuiz"
 import type { QuizType } from "@/types/quiz"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
+import { motion } from "framer-motion"
 
 interface BlanksQuizWrapperProps {
   slug: string
@@ -77,10 +78,10 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
       dispatch(fetchQuiz(quizPayload))
     }
-    
+
     // Clear any previous submission state on component mount
     dispatch(resetSubmissionState())
-    
+
     // Cleanup
     return () => {
       if (submissionTimeoutRef.current) {
@@ -98,7 +99,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
         const safeSlug = typeof slug === "string" ? slug : String(slug)
         router.push(`/dashboard/blanks/${safeSlug}/results`)
       }, 10000) // 10 seconds timeout
-      
+
       return () => clearTimeout(safetyTimeout)
     }
   }, [isSubmitting, router, slug])
@@ -120,7 +121,6 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/blanks/${safeSlug}/results`)
     }, 1500)
-
   }, [isCompleted, router, slug, hasSubmitted, isAuthenticated])
 
   // Answer handler - fixed to properly store answers
@@ -159,24 +159,27 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
   // Complete the quiz - improved with better error handling and safety checks
   const handleFinish = () => {
     if (hasSubmitted || isSubmitting) return
-    
+
     setIsSubmitting(true)
-    
+
     try {
       // First mark as completed
       dispatch(setQuizCompleted())
-      
+
       // Store answers in localStorage as backup
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
-          localStorage.setItem('quiz_answers_backup', JSON.stringify({
-            slug,
-            answers,
-            timestamp: Date.now(),
-            quizType: 'blanks'
-          }))
+          localStorage.setItem(
+            "quiz_answers_backup",
+            JSON.stringify({
+              slug,
+              answers,
+              timestamp: Date.now(),
+              quizType: "blanks",
+            }),
+          )
         } catch (e) {
-          console.error('Failed to backup answers:', e)
+          console.error("Failed to backup answers:", e)
         }
       }
 
@@ -216,23 +219,23 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
       // Set results first
       dispatch(setQuizResults(results))
-      
+
       // Then submit the quiz
       dispatch(submitQuiz())
         .unwrap()
         .then(() => {
           setHasSubmitted(true)
           const safeSlug = typeof slug === "string" ? slug : String(slug)
-          
+
           // Navigate to results page after a short delay
           submissionTimeoutRef.current = setTimeout(() => {
             router.push(`/dashboard/blanks/${safeSlug}/results`)
           }, 1000)
         })
-        .catch(err => {
+        .catch((err) => {
           console.error("Quiz submission error:", err)
           maxSubmitAttemptsRef.current += 1
-          
+
           // If we've tried 3 times or more, just navigate to results
           if (maxSubmitAttemptsRef.current >= 3) {
             toast.error("Having trouble submitting quiz. Redirecting to results page.")
@@ -242,7 +245,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
             }, 1000)
             return
           }
-          
+
           // Otherwise show error and reset submission state
           setIsSubmitting(false)
           toast.error("Failed to submit quiz. Please try again.")
@@ -319,24 +322,40 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
   // Submitting state
   if (actualSubmittingState) {
-    return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.5 }}
+      >
+        <QuizLoader full message="🎉 Quiz Completed!" subMessage="Calculating your results..." />
+      </motion.div>
+    )
   }
 
   // Show current question
   return (
-    <BlanksQuiz
-      question={currentQuestion}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-      existingAnswer={existingAnswer}
-      onAnswer={handleAnswer}
-      onNext={handleNext}
-      onPrevious={handlePrevious}
-      onSubmit={handleFinish}
-      isSubmitting={actualSubmittingState}
-      canGoNext={canGoNext}
-      canGoPrevious={canGoPrevious}
-      isLastQuestion={isLastQuestion}
-    />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-br from-background to-muted/20"
+    >
+      <BlanksQuiz
+        question={currentQuestion}
+        questionNumber={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        existingAnswer={existingAnswer}
+        onAnswer={handleAnswer}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        onSubmit={handleFinish}
+        isSubmitting={actualSubmittingState}
+        canGoNext={canGoNext}
+        canGoPrevious={canGoPrevious}
+        isLastQuestion={isLastQuestion}
+      />
+    </motion.div>
   )
 }

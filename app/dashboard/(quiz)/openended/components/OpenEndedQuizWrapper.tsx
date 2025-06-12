@@ -31,6 +31,7 @@ import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import type { OpenEndedQuestion } from "@/types/quiz"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -354,11 +355,25 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
 
   // Submitting state
   if (actualSubmittingState) {
-    return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.5 }}
+      >
+        <QuizLoader full message="🎉 Quiz Completed!" subMessage="Calculating your results..." />
+      </motion.div>
+    )
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <OpenEndedQuiz
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}
@@ -373,28 +388,48 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         isLastQuestion={isLastQuestion}
       />
 
-      {answeredQuestions >= 0 && (
-        <Card className="border-2 border-success/30 bg-success/5">
-          <CardContent className="p-4 text-center">
-            <p className="mb-4 font-medium">
-              {allQuestionsAnswered
-                ? "All questions answered. Ready to submit?"
-                : answeredQuestions > 0
-                ? `${answeredQuestions} questions answered. Submit quiz?`
-                : "Submit quiz? (No questions answered yet)"}
-            </p>
-            <Button
-              onClick={handleSubmitQuiz}
-              size="lg"
-              className="bg-success hover:bg-success/90 text-white"
-              disabled={actualSubmittingState || hasSubmitted}
-            >
-              <Flag className="w-4 h-4 mr-2" />
-              {actualSubmittingState ? "Submitting..." : "Submit Quiz and View Results"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+      <AnimatePresence>
+        {answeredQuestions >= 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className="border-2 border-green-500/30 bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg rounded-2xl">
+              <CardContent className="p-6 text-center">
+                <motion.p
+                  className="mb-4 font-medium text-green-800 dark:text-green-200"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  {allQuestionsAnswered
+                    ? "All questions answered. Ready to submit?"
+                    : answeredQuestions > 0
+                      ? `${answeredQuestions} questions answered. Submit quiz?`
+                      : "Submit quiz? (No questions answered yet)"}
+                </motion.p>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Button
+                    onClick={handleSubmitQuiz}
+                    size="lg"
+                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-2xl px-8 gap-2 shadow-lg"
+                    disabled={actualSubmittingState || hasSubmitted}
+                  >
+                    <Flag className="w-4 h-4" />
+                    {actualSubmittingState ? "Submitting..." : "Submit Quiz and View Results"}
+                  </Button>
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
