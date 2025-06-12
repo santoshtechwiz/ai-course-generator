@@ -4,6 +4,7 @@ import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/tool
 import { shallowEqual } from 'react-redux';
 import type { RootState } from "@/store"
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import { logger } from "@/lib/logger" // Import logger to help debug state updates
 
 // Define types
 export interface SubscriptionData {
@@ -37,20 +38,10 @@ const initialState: SubscriptionState = {
 // Create the async thunk for fetching subscription data
 export const fetchSubscription = createAsyncThunk(
   "subscription/fetchStatus",
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { getState, dispatch, rejectWithValue }) => {
     const state = getState() as RootState
-
-    // Check if we're already fetching or if the data is fresh (less than 30 seconds old)
-    if (
-      state.subscription.isFetching ||
-      (state.subscription.lastFetched && Date.now() - state.subscription.lastFetched < 30000)
-    ) {
-      // Return existing data if it's fresh enough
-      return state.subscription.data
-    }
-
     try {
-      // Add cache control headers to prevent browser caching
+      logger.info("Fetching subscription data from API")
       const response = await fetch("/api/subscriptions/status", {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -60,22 +51,27 @@ export const fetchSubscription = createAsyncThunk(
       })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        logger.error(`API error: ${response.status} - ${errorText}`)
         throw new Error(`Error ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
+      logger.info(`Subscription data fetched successfully: ${JSON.stringify(data)}`)
+
+      // Handle edge cases for expired or inactive subscriptions
+      if (data.status === "INACTIVE" || new Date(data.expirationDate) < new Date()) {
+        data.status = "EXPIRED"
+        data.isSubscribed = false
+        logger.warn("Subscription marked as expired or inactive")
+      }
+
       return data
     } catch (error: any) {
+      logger.error(`Failed to fetch subscription data: ${error.message}`)
       return rejectWithValue(error.message || "Failed to fetch subscription data")
     }
-  },
-  {
-    // Only allow one pending fetchSubscription operation at a time
-    condition: (_, { getState }) => {
-      const state = getState() as RootState
-      return !state.subscription.isFetching
-    },
-  },
+  }
 )
 
 // Async thunk for canceling subscription
@@ -139,6 +135,17 @@ export const activateFreeTrial = createAsyncThunk("subscription/activateTrial", 
   }
 })
 
+// Thunk to force refresh the subscription data
+export const forceRefreshSubscription = createAsyncThunk(
+  "subscription/forceRefresh",
+  async (_, { dispatch }) => {
+    // Clear existing data first
+    dispatch(clearSubscriptionData());
+    // Then fetch fresh data
+    return dispatch(fetchSubscription());
+  }
+);
+
 // Create the subscription slice
 const subscriptionSlice = createSlice({
   name: "subscription",
@@ -152,6 +159,15 @@ const subscriptionSlice = createSlice({
     resetState: () => {
       return initialState
     },
+    // Add a direct way to set subscription data for testing/debugging
+    setSubscriptionData: (state, action: PayloadAction<any>) => {
+      state.data = action.payload;
+      state.lastFetched = Date.now();
+      state.isLoading = false;
+      state.isFetching = false;
+      state.error = null;
+      logger.info(`Subscription data manually set: ${JSON.stringify(action.payload)}`);
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -159,22 +175,35 @@ const subscriptionSlice = createSlice({
         state.isLoading = true
         state.isFetching = true
         state.error = null
+        logger.debug("Subscription fetch pending")
       })
       .addCase(fetchSubscription.fulfilled, (state, action: PayloadAction<any>) => {
         state.isLoading = false
         state.isFetching = false
 
-        // Consider using a more robust shallow comparison:
-        // Import shallowEqual from 'react-redux'
-        if (shallowEqual(action.payload, state.data)) return;
+        // Only update if the data has actually changed
+        if (!action.payload) {
+          logger.warn("Received null/undefined subscription data from API");
+          return;
+        }
 
-        state.data = action.payload
-        state.lastFetched = Date.now()
+        // Log complete data for debugging
+        logger.info(`Received subscription data: ${JSON.stringify(action.payload)}`)
+        
+        // Check for data changes to avoid unnecessary updates
+        if (!state.data || !shallowEqual(action.payload, state.data)) {
+          state.data = action.payload
+          state.lastFetched = Date.now()
+          logger.info("Updated subscription state with new data")
+        } else {
+          logger.debug("Subscription data unchanged, skipping update")
+        }
       })
       .addCase(fetchSubscription.rejected, (state, action) => {
         state.isLoading = false
         state.isFetching = false
         state.error = action.payload as string
+        logger.error(`Subscription fetch failed: ${action.payload}`)
       })
 
       // Cancel subscription
@@ -238,8 +267,8 @@ const subscriptionSlice = createSlice({
   },
 })
 
-// Export actions and reducer
-export const { clearSubscriptionData, resetState } = subscriptionSlice.actions
+// Export the new action
+export const { clearSubscriptionData, resetState, setSubscriptionData } = subscriptionSlice.actions
 
 // Memoized selectors using createSelector for better performance
 import { createSelector } from "@reduxjs/toolkit"
@@ -253,10 +282,10 @@ export const selectSubscriptionError = (state: RootState) => state.subscription.
 // Fix the identity selector - transform the data instead of returning it directly
 export const selectSubscription = createSelector([selectSubscriptionData], (data) => {
   if (!data) return null
-    return {
+  return {
     ...data,
-    // Add derived fields to transform the data
     isActive: data.status === "ACTIVE" && !data.cancelAtPeriodEnd,
+    isExpired: data.status === "EXPIRED" || new Date(data.expirationDate) < new Date(),
     formattedCredits: typeof data.credits === "number" ? `${data.credits} credits` : "No credits",
     hasCreditsRemaining: (data.credits || 0) > (data.tokensUsed || 0),
   }

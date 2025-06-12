@@ -12,11 +12,12 @@ import { UserMenu } from "@/components/layout/navigation/UserMenu"
 import SearchModal from "@/components/layout/navigation/SearchModal"
 import { Button } from "@/components/ui/button"
 import Logo from "./Logo"
-import NotificationsMenu from "./NotificationsMenu"
+
 import useSubscription from "@/hooks/use-subscription"
 import { useAuth } from "@/hooks/use-auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar"
+import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 
 export default function MainNavbar() {
   const pathname = usePathname()
