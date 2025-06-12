@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { useSession } from "next-auth/react"
-import { useAuth } from "@/hooks/useAuth"
+
 import {
   setVideoProgress,
   setCourseCompletionStatus,
   setResumePoint,
   setLastPlayedAt,
 } from "@/store/slices/course-slice"
+import useAuth from "./use-auth"
 
 interface VideoProgressOptions {
   videoId: string
