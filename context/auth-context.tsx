@@ -10,14 +10,30 @@ import {
   useMemo,
   ReactNode
 } from 'react'
-import { useSession, signOut, SessionProvider, SessionProviderProps } from 'next-auth/react'
-import { useSessionService } from '@/hooks/useSessionService'
+import { useSession, signOut, signIn, SessionProvider, SessionProviderProps } from 'next-auth/react'
 import { invalidateSessionCache } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
-import { useDispatch, useSelector } from 'react-redux'
-import { selectAuth, selectUser, selectAuthStatus, loginSuccess, logout as reduxLogout } from '@/store/slices/auth-slice'
 
-// We'll handle Redux dependency differently to avoid context errors
+// Instead of importing directly, check if Redux is available at runtime
+let useDispatch: () => any;
+let reduxLogout: () => any;
+let loginSuccess: (payload: any) => any;
+
+// Try to import Redux - we'll handle the case where it's not available
+try {
+  const redux = require('@/store/slices/auth-slice');
+  reduxLogout = redux.logout;
+  loginSuccess = redux.loginSuccess;
+  
+  const reactRedux = require('react-redux');
+  useDispatch = reactRedux.useDispatch;
+} catch (error) {
+  // Create stub functions if Redux is not available
+  useDispatch = () => (action: any) => console.log('Redux not available, action:', action);
+  reduxLogout = () => ({ type: 'auth/logout' });
+  loginSuccess = (payload: any) => ({ type: 'auth/loginSuccess', payload });
+}
+
 export interface AuthContextValue {
   user: any
   token: string | null
@@ -28,6 +44,7 @@ export interface AuthContextValue {
   guestId: string | null
   session: any
   logout: (options?: { redirect?: boolean, callbackUrl?: string }) => Promise<void>
+  login: (provider: string, options?: { callbackUrl?: string }) => Promise<void>
   initialize: () => void
   
   // Computed properties for convenience/backward compatibility
@@ -52,7 +69,7 @@ export function AuthProvider({
   // Just pass the session to NextAuth's SessionProvider
   return (
     <SessionProvider session={session} refetchInterval={refetchInterval}>
-      {children}
+      <AuthConsumer>{children}</AuthConsumer>
     </SessionProvider>
   )
 }
@@ -63,8 +80,25 @@ interface AuthConsumerProps {
 
 export function AuthConsumer({ children }: AuthConsumerProps) {
   const { data: session, status: nextAuthStatus } = useSession()
-  const dispatch = useDispatch()
-  const reduxAuthState = useSelector(selectAuth)
+  
+  // Use a ref to store the dispatch function that we can safely call
+  const dispatchRef = useRef<((action: any) => void) | null>(null)
+  
+  // Try to get the dispatch function, but don't crash if Redux is not available
+  useEffect(() => {
+    try {
+      const dispatch = useDispatch();
+      if (typeof dispatch === 'function') {
+        dispatchRef.current = dispatch;
+      }
+    } catch (error) {
+      console.warn("Redux dispatch not available:", error);
+      // Create a dummy dispatch function
+      dispatchRef.current = (action) => {
+        console.log("Redux action dispatched without Redux provider:", action);
+      };
+    }
+  }, []);
   
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const [isInitialized, setIsInitialized] = useState(false)
@@ -75,20 +109,50 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
   const authCheckRef = useRef(false)
   const syncedWithReduxRef = useRef(false)
   
-  // Get the session service but handle the case where Redux might not be available yet
-  let clearAuthState = () => {
-    console.log("Auth state cleared (default implementation)")
-  }
-  
-  try {
-    // Try to use the session service, but don't crash if not available
-    const sessionService = useSessionService()
-    if (sessionService && sessionService.clearAuthState) {
-      clearAuthState = sessionService.clearAuthState
+  // Clean method to clear all auth-related state and storage
+  const clearAuthState = useCallback(() => {
+    // Clear local/session storage
+    if (typeof window !== 'undefined') {
+      // Clear auth-related items from localStorage
+      const lsKeys = Object.keys(localStorage)
+      lsKeys.forEach(key => {
+        if (key.includes('token') || 
+            key.includes('user') || 
+            key.includes('auth') ||
+            key.includes('session')) {
+          localStorage.removeItem(key)
+        }
+      })
+      
+      try {
+        // Clear auth-related items from sessionStorage
+        const ssKeys = Object.keys(sessionStorage);
+        ssKeys.forEach(key => {
+          // Clear auth and quiz-related data
+          if (key.includes('auth_') || key.includes('quiz_') || 
+              key.includes('pendingQuiz') || key === 'callbackUrl') {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.error("Error clearing session data:", e);
+      }
     }
-  } catch (err) {
-    console.warn("Session service not available", err)
-  }
+
+    // Dispatch Redux logout action if Redux is available
+    try {
+      if (dispatchRef.current) {
+        dispatchRef.current(reduxLogout());
+      }
+    } catch (err) {
+      console.warn("Redux dispatch failed:", err)
+    }
+    
+    // Reset context state
+    syncedWithReduxRef.current = false;
+    authCheckRef.current = false;
+    setIsAdmin(false);
+  }, [])
   
   // Sync NextAuth session to Redux store
   useEffect(() => {
@@ -97,10 +161,12 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
       syncedWithReduxRef.current = true;
       
       try {
-        dispatch(loginSuccess({ 
-          user: session.user, 
-          token: session.user.accessToken || null 
-        }));
+        if (dispatchRef.current) {
+          dispatchRef.current(loginSuccess({ 
+            user: session.user, 
+            token: session.user.accessToken || null 
+          }));
+        }
         
         // Initialize our context state too
         setIsInitialized(true);
@@ -110,33 +176,26 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
         console.error("Error syncing auth state:", err);
       }
     } 
-    // Reset when session is gone but we have Redux auth
-    else if (!session && nextAuthStatus === 'unauthenticated' && 
-             reduxAuthState.status === 'authenticated' && syncedWithReduxRef.current) {
-      syncedWithReduxRef.current = false;
-      
-      try {
-        dispatch(reduxLogout());
-      } catch (err) {
-        console.error("Error during logout:", err);
-      }
+    // Reset when session is gone but we still have Redux auth
+    else if (!session && nextAuthStatus === 'unauthenticated' && syncedWithReduxRef.current) {
+      clearAuthState();
     }
-  }, [session, nextAuthStatus, dispatch, reduxAuthState.status]);
+  }, [session, nextAuthStatus, clearAuthState]);
   
   // Map NextAuth status to our unified status
   const status = useMemo(() => {
-    // First check Redux for initialization status
-    if (!reduxAuthState.isInitialized && !isInitialized) return 'idle';
+    // First check for initialization status
+    if (!isInitialized && nextAuthStatus === 'loading') return 'idle';
     if (nextAuthStatus === 'loading') return 'loading';
     if (nextAuthStatus === 'authenticated' && session) return 'authenticated';
     return 'unauthenticated';
-  }, [nextAuthStatus, session, isInitialized, reduxAuthState.isInitialized]);
+  }, [nextAuthStatus, session, isInitialized]);
   
   // Compute these values directly
   const isAuthenticated = status === 'authenticated';
   const isLoading = status === 'loading';
-  const user = session?.user || reduxAuthState.user || null;
-  const token = session?.token || reduxAuthState.token || null;
+  const user = session?.user || null;
+  const token = session?.user?.accessToken || null;
 
   const initialize = useCallback(() => {
     setIsInitialized(true)
@@ -166,43 +225,10 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
   }, [isAuthenticated, session, isAdmin])
 
   // Enhanced logout that clears all session data
-  const logout = useCallback(async (options = { redirect: false, callbackUrl: '/' }) => {
+  const logout = useCallback(async (options = { redirect: true, callbackUrl: '/' }) => {
     // First clean up all session data
-    clearAuthState()
+    clearAuthState();
     
-    // Dispatch Redux logout action
-    dispatch(reduxLogout())
-    
-    syncedWithReduxRef.current = false;
-
-    // Clear local/session storage
-    if (typeof window !== 'undefined') {
-      // Clear auth-related items from localStorage
-      const lsKeys = Object.keys(localStorage)
-      lsKeys.forEach(key => {
-        if (key.includes('token') || 
-            key.includes('user') || 
-            key.includes('auth') ||
-            key.includes('session')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      try {
-        // Clear auth-related items from sessionStorage
-        const ssKeys = Object.keys(sessionStorage);
-        ssKeys.forEach(key => {
-          // Clear auth and quiz-related data
-          if (key.includes('auth_') || key.includes('quiz_') || 
-              key.includes('pendingQuiz') || key === 'callbackUrl') {
-            sessionStorage.removeItem(key);
-          }
-        });
-      } catch (e) {
-        console.error("Error clearing session data:", e);
-      }
-    }
-
     try {
       // Clear server-side session cache
       invalidateSessionCache();
@@ -216,19 +242,35 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     } else {
       await signOut({ redirect: false });
     }
-  }, [clearAuthState, dispatch])
+  }, [clearAuthState])
+
+  // Centralized login function
+  const login = useCallback(async (provider: string, options = { callbackUrl: '/dashboard' }) => {
+    if (!provider) {
+      setError("No authentication provider specified");
+      return;
+    }
+
+    try {
+      await signIn(provider, { callbackUrl: options.callbackUrl });
+    } catch (error) {
+      console.error(`Login error with provider ${provider}:`, error);
+      setError(`Failed to login with ${provider}`);
+    }
+  }, []);
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     user,
     token,
     status,
-    error: error || reduxAuthState.error,
-    isInitialized: isInitialized || reduxAuthState.isInitialized,
+    error,
+    isInitialized,
     isAdmin,
     guestId: null,
     session,
     logout,
+    login,
     initialize,
     
     // Computed properties
@@ -240,12 +282,11 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     token,
     status,
     error,
-    reduxAuthState.error,
     isInitialized,
-    reduxAuthState.isInitialized,
     isAdmin,
     session,
     logout,
+    login,
     initialize,
     isAuthenticated,
     isLoading
@@ -258,10 +299,15 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
   )
 }
 
-export function useAuthContext(): AuthContextValue {
+export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthConsumer')
+    throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
+}
+
+// Legacy alias for backward compatibility
+export function useAuthContext(): AuthContextValue {
+  return useAuth()
 }
