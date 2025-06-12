@@ -14,7 +14,7 @@ export const viewport = {
   maximumScale: 1,
 }
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
