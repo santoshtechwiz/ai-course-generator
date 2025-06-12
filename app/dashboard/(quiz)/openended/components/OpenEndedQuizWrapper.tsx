@@ -32,6 +32,7 @@ import type { OpenEndedQuestion } from "@/types/quiz"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
 import { motion, AnimatePresence } from "framer-motion"
+import { NoResults } from "@/components/ui/no-results"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -324,24 +325,34 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
 
   if (error || quizStatus === "failed") {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <h2 className="text-xl font-bold mb-4">Error</h2>
-          <p className="text-muted-foreground mb-6">{error || "Unable to load quiz."}</p>
-          <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
-        </CardContent>
-      </Card>
+      <NoResults
+        variant="error" 
+        title="Error Loading Quiz"
+        description={error || "Unable to load quiz."}
+        action={{
+          label: "Back to Quizzes",
+          onClick: () => router.push("/dashboard/quizzes")
+        }}
+      />
     )
   }
 
   if (!currentQuestion) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading current question...</p>
-        </CardContent>
-      </Card>
+      <NoResults
+        variant="error"
+        title="Quiz Error"
+        description="Could not load quiz questions."
+        action={{
+          label: "Try Again",
+          onClick: () => window.location.reload()
+        }}
+        secondaryAction={{
+          label: "Back to Quizzes", 
+          onClick: () => router.push("/dashboard/quizzes"),
+          variant: "outline"
+        }}
+      />
     )
   }
 

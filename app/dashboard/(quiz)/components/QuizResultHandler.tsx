@@ -27,6 +27,8 @@ import { useSessionService } from "@/hooks/useSessionService"
 import type { QuizType } from "@/types/quiz"
 import { AnimatePresence, motion } from "framer-motion"
 import { useSession } from "next-auth/react"
+import { NoResults } from "@/components/ui/no-results"
+import { RefreshCw } from "lucide-react"
 
 interface SignInPromptProps {
   onSignIn: () => void
@@ -340,13 +342,17 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="text-center p-6"
         >
-          <h2 className="text-2xl font-bold">No Results Found</h2>
-          <p className="text-gray-600 mt-2 mb-6">Try retaking the quiz to view results.</p>
-          <Button onClick={handleRetake} size="lg">
-            Retake Quiz
-          </Button>
+          <NoResults
+            variant="quiz"
+            title="No Results Found"
+            description="Try retaking the quiz to view results."
+            action={{
+              label: "Retake Quiz",
+              onClick: handleRetake,
+              icon: <RefreshCw className="h-4 w-4" />,
+            }}
+          />
         </motion.div>
       )}
     </AnimatePresence>

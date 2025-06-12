@@ -7,13 +7,11 @@ import { AppDispatch } from "@/store";
 import BlankQuizResults from "../blanks/components/BlankQuizResults";
 import McqQuizResult from "../mcq/components/McqQuizResult";
 import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { NoResults } from "@/components/ui/no-results";
+import FlashCardResults from "../flashcard/components/FlashCardQuizResults";
 
 // Import the quiz type definition
 import type { QuizType } from "@/types/quiz";
-import FlashCardResults from "../flashcard/components/FlashCardQuizResults";
 
 // QuizResult props with appropriate typing
 interface QuizResultProps {
@@ -49,18 +47,15 @@ export default function QuizResult({
   // Show error UI if no result is provided
   if (!result) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <div className="flex justify-center mb-4">
-            <AlertCircle className="h-12 w-12 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold mb-4">Results Not Found</h2>
-          <p className="text-muted-foreground mb-6">
-            We couldn't load your quiz results. The quiz may not have been completed.
-          </p>
-          <Button onClick={handleRetake}>Take the Quiz</Button>
-        </CardContent>
-      </Card>
+      <NoResults 
+        variant="quiz"
+        title="Results Not Found"
+        description="We couldn't load your quiz results. The quiz may not have been completed."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake
+        }}
+      />
     );
   }
   
@@ -74,19 +69,15 @@ export default function QuizResult({
   
   if (!isValidResult) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <div className="flex justify-center mb-4">
-            <AlertCircle className="h-12 w-12 text-yellow-500" />
-          </div>
-          <h2 className="text-xl font-bold mb-4">Invalid Results</h2>
-          <p className="text-muted-foreground mb-6">
-            Your quiz results appear to be incomplete or invalid. 
-            It's recommended to retake the quiz.
-          </p>
-          <Button onClick={handleRetake}>Retake Quiz</Button>
-        </CardContent>
-      </Card>
+      <NoResults
+        variant="quiz"
+        title="Invalid Quiz Results"
+        description="Your quiz results appear to be incomplete or invalid. It's recommended to retake the quiz."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake
+        }}
+      />
     );
   }
   
