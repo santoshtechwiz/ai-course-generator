@@ -25,3 +25,6 @@ export * from "./useCourseActions"; // Ensure the file exists at this path
 export * from "./useProgress"; // Ensure the file exists at this path
 export * from "./useVideoProgress"; // Ensure the file exists at this path
 export * from "./useRandomQuizzes"; // Ensure the file exists at this path
+
+// Export useAuth for centralized authentication access
+export { useAuth } from "@/context/auth-context";

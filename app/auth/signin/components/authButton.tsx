@@ -6,8 +6,8 @@ import { useState, useRef } from "react"
 import Image, { type StaticImageData } from "next/image"
 import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
-import { signIn } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks"
 
 export interface AuthButtonProps {
   provider: string
@@ -20,6 +20,7 @@ export interface AuthButtonProps {
 export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthButtonProps) {
   const [isButtonLoading, setIsButtonLoading] = useState(false)
   const { toast } = useToast()
+  const { login } = useAuth()
   const isClickInProgress = useRef(false)
 
   const handleClick = async (e: React.MouseEvent) => {
@@ -47,8 +48,8 @@ export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthB
       const safeCallbackUrl =
         callbackUrl && typeof callbackUrl === "string" ? callbackUrl : "/dashboard"
 
-      // Use signIn directly to ensure the redirect happens
-      await signIn(provider.toLowerCase(), { callbackUrl: safeCallbackUrl })
+      // Use centralized login function
+      await login(provider.toLowerCase(), { callbackUrl: safeCallbackUrl })
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error)
       toast({

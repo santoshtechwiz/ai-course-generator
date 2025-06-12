@@ -2,22 +2,34 @@
 
 import { Loader2, UserCheck, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { signIn, signOut } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/app/providers/auth-provider"
+import { useAuth } from "@/hooks"
 
 export function AuthStatusIndicator() {
-  const { isAuthenticated, isLoading, user } = useAuth()
+  const { isAuthenticated, isLoading, user, logout, login } = useAuth()
   const { toast } = useToast()
 
   const handleSignOut = async () => {
     try {
-      await signOut({ redirect: true, callbackUrl: "/" })
+      await logout({ redirect: true, callbackUrl: "/" })
     } catch (error) {
       console.error("Sign out error:", error)
       toast({
         title: "Error",
         description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSignIn = async () => {
+    try {
+      await login("google", { callbackUrl: "/dashboard" })
+    } catch (error) {
+      console.error("Sign in error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to sign in. Please try again.",
         variant: "destructive",
       })
     }
@@ -48,7 +60,11 @@ export function AuthStatusIndicator() {
     <div className="flex items-center gap-2">
       <UserX className="h-4 w-4 text-red-500" />
       <span>Not signed in</span>
-      <Button variant="outline" size="sm" onClick={() => signIn()}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleSignIn}
+      >
         Sign In
       </Button>
     </div>
