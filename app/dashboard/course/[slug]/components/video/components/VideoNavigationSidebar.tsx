@@ -18,13 +18,20 @@ interface VideoNavigationSidebarProps {
   course: FullCourseType
   currentChapter?: FullChapterType
   courseId: string
-  onVideoSelect: (videoId: string) => void
+  onChapterSelect: (videoId: string) => void
   currentVideoId: string
   isAuthenticated: boolean
   progress: CourseProgress | null
-  completedChapters: number[]
+  completedChapters: number[] // Ensure this has a default value
   nextVideoId?: string
   prevVideoId?: string
+  videoDurations?: Record<string, number>
+  formatDuration?: (seconds: number) => string
+  courseStats?: {
+    completedCount: number
+    totalChapters: number
+    progressPercentage: number
+  }
 }
 
 function formatDuration(seconds: number): string {
@@ -230,12 +237,20 @@ export default function VideoNavigationSidebar({
   course,
   currentChapter,
   courseId,
-  onVideoSelect,
+  onChapterSelect,
   currentVideoId,
   isAuthenticated,
   progress,
-  completedChapters,
+  completedChapters = [], // Add default value here to prevent undefined errors
   nextVideoId,
+  videoDurations = {},
+  formatDuration = (seconds: number): string => {
+    if (!seconds || isNaN(seconds)) return "--:--"
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = Math.floor(seconds % 60)
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+  },
+  courseStats,
 }: VideoNavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -270,6 +285,7 @@ export default function VideoNavigationSidebar({
     return course.courseUnits.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0)
   }, [course])
 
+  // Ensure completedCount uses the completedChapters with safe access
   const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
 
   // Memoize filtered units with better performance
@@ -291,10 +307,10 @@ export default function VideoNavigationSidebar({
   const handleChapterClick = useCallback(
     (chapter: FullChapterType) => {
       if (chapter.videoId) {
-        onVideoSelect(chapter.videoId)
+        onChapterSelect(chapter.videoId) // Updated: call onChapterSelect instead of onVideoSelect
       }
     },
-    [onVideoSelect],
+    [onChapterSelect], // Updated dependency array
   )
 
   // Memoize course progress calculation
@@ -395,14 +411,29 @@ export default function VideoNavigationSidebar({
     </>
   )
 
+  // Get values from either passed courseStats or calculate them
+  const computedStats = useMemo(() => {
+    if (courseStats) return courseStats
+
+    const totalChaps = course?.courseUnits?.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0) || 0
+    const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
+    const progressPercentage = totalChaps > 0 ? Math.round((completedCount / totalChaps) * 100) : 0
+
+    return {
+      totalChapters: totalChaps,
+      completedCount,
+      progressPercentage,
+    }
+  }, [course, completedChapters, courseStats])
+
   return (
     <>
       {/* Mobile Sidebar */}
       <MobileSidebar
         course={course}
-        courseProgress={courseProgress}
-        completedCount={completedCount}
-        totalChapters={totalChapters}
+        courseProgress={computedStats.progressPercentage}
+        completedCount={computedStats.completedCount}
+        totalChapters={computedStats.totalChapters}
       >
         <SidebarContent />
       </MobileSidebar>
@@ -410,9 +441,9 @@ export default function VideoNavigationSidebar({
       {/* Desktop Sidebar */}
       <DesktopSidebar
         course={course}
-        courseProgress={courseProgress}
-        completedCount={completedCount}
-        totalChapters={totalChapters}
+        courseProgress={computedStats.progressPercentage}
+        completedCount={computedStats.completedCount}
+        totalChapters={computedStats.totalChapters}
       >
         <SidebarContent />
       </DesktopSidebar>

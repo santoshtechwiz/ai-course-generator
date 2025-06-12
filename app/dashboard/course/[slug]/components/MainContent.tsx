@@ -35,7 +35,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const { data: session } = useSession()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const { user } = useAuth()
+
+  // Fix: Use try/catch when accessing useAuth to prevent errors if the hook isn't available
+  let user = null
+  try {
+    const { user: authUser } = useAuth()
+    user = authUser
+  } catch (error) {
+    console.error("Error accessing useAuth:", error)
+  }
 
   // Local state
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -54,6 +62,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
+
+  // Fix: Initialize completedChapters safely so it's always defined
+  // Use courseProgress.completedChapters if available, otherwise empty array
+  const completedChapters = useMemo(() => {
+    return courseProgress?.completedChapters || []
+  }, [courseProgress])
 
   // Check free video status on mount
   useEffect(() => {
@@ -385,9 +399,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               <VideoNavigationSidebar
                 course={course}
                 currentChapter={currentChapter}
+                courseId={course.id.toString()}
                 onChapterSelect={handleChapterSelect}
-                progress={progress}
+                currentVideoId={currentVideoId || ''}
                 isAuthenticated={!!session}
+                progress={progress}
+                completedChapters={completedChapters}
+                nextVideoId={nextChapter?.videoId}
+                prevVideoId={prevChapter?.videoId}
                 videoDurations={videoDurations}
                 formatDuration={formatDuration}
                 courseStats={courseStats}
@@ -528,11 +547,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           <VideoNavigationSidebar
             course={course}
             currentChapter={currentChapter}
+            courseId={course.id.toString()}
             onChapterSelect={handleChapterSelect}
             progress={progress}
             isAuthenticated={!!session}
+            completedChapters={completedChapters}
             videoDurations={videoDurations}
             formatDuration={formatDuration}
+            nextVideoId={nextChapter?.videoId}
+            currentVideoId={currentVideoId}
             courseStats={courseStats}
           />
         </aside>

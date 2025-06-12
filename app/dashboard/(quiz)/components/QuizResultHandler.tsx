@@ -26,7 +26,6 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { QuizType } from "@/types/quiz"
 import { AnimatePresence, motion } from "framer-motion"
-import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 
 interface SignInPromptProps {
@@ -385,9 +384,6 @@ export function QuizResultHandler({
         .then(() => {
           const pathname = window.location.pathname
           if (!pathname.includes("/results")) {
-            toast.success("Quiz results saved successfully!", {
-              duration: 3000,
-            })
           }
 
           if (onComplete) {
@@ -396,7 +392,6 @@ export function QuizResultHandler({
         })
         .catch((error: any) => {
           console.error("Failed to save quiz results:", error)
-          toast.error("Failed to save quiz results. Please try again.")
         })
     }
   }, [isCompleted, results, isAuthenticated, slug, quizType, dispatch, onComplete, hasSaved])

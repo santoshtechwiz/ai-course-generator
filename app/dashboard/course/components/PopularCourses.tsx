@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, ChevronRight, TrendingUp, Eye, Clock, Users, Star, BarChart2 } from "lucide-react"
@@ -15,6 +15,14 @@ interface PopularCoursesProps {
 export default function PopularCourses({ courseDetails = [] }: PopularCoursesProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [selectedCourse, setSelectedCourse] = useState<number | null>(null)
+
+  // Memoize sortedCourses to prevent unnecessary re-computation on re-renders
+  const sortedCourses = useMemo(() => {
+    if (!courseDetails || courseDetails.length === 0) return []
+    return [...courseDetails]
+      .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+      .slice(0, 5)
+  }, [courseDetails])
 
   // If no courses, show a message
   if (!courseDetails || courseDetails.length === 0) {
@@ -45,9 +53,6 @@ export default function PopularCourses({ courseDetails = [] }: PopularCoursesPro
       </motion.div>
     )
   }
-
-  // Sort courses by viewCount (descending)
-  const sortedCourses = [...courseDetails].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 5)
 
   return (
     <div className="space-y-4">
