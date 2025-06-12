@@ -2,9 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-
 import { Loader2 } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuthContext } from "@/context/auth-context"
 
 interface AuthGuardProps {
   children: ReactNode
@@ -21,7 +20,7 @@ export function AuthGuard({
   redirectTo = "/auth/signin",
   loadingComponent = null,
 }: AuthGuardProps) {
-  const { isAuthenticated, isLoading, isAdmin } = useAuth()
+  const { isAuthenticated, isLoading, isAdmin } = useAuthContext()
   const router = useRouter()
   const [isRedirecting, setIsRedirecting] = useState(false)
 

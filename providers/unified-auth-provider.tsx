@@ -1,11 +1,9 @@
 "use client"
 import { useEffect } from "react"
-import { useAuth } from "@/hooks/useAuth"
-import { useSession } from "next-auth/react"
+import { useAuthContext } from "@/context/auth-context"
 
 export default function UnifiedAuthProvider({ children }: { children: React.ReactNode }) {
-  const { initialize, isInitialized } = useAuth()
-  const { status } = useSession()
+  const { initialize, isInitialized, status } = useAuthContext()
 
   useEffect(() => {
     // Only initialize when session status is determined (loaded or unauthenticated)
