@@ -14,7 +14,6 @@ import { useSession, signOut, SessionProvider, SessionProviderProps } from 'next
 import { useSessionService } from '@/hooks/useSessionService'
 import { invalidateSessionCache } from '@/lib/auth'
 
-// We'll handle Redux dependency differently to avoid context errors
 export interface AuthContextValue {
   isAuthenticated: boolean
   userId: string | undefined
@@ -42,8 +41,7 @@ export function AuthProvider({
   session, 
   refetchInterval = 0 
 }: AuthProviderProps) {
-  // Only provide the SessionProvider, not our custom provider here
-  // This allows for more flexible nesting with Redux
+  // Just pass the session to NextAuth's SessionProvider
   return (
     <SessionProvider session={session} refetchInterval={refetchInterval}>
       {children}
@@ -51,7 +49,6 @@ export function AuthProvider({
   )
 }
 
-// We'll create a separate consumer component that can be used after Redux Provider
 interface AuthConsumerProps {
   children: ReactNode
 }
@@ -60,11 +57,24 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
   const { data: session, status } = useSession()
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const [isInitialized, setIsInitialized] = useState(false)
-  // We'll use the session service but not dispatch directly
-  const { clearAuthState } = useSessionService()
   
   // Add ref to track if we've checked admin status to break infinite loops
   const authCheckRef = useRef(false)
+  
+  // Get the session service but handle the case where Redux might not be available yet
+  let clearAuthState = () => {
+    console.log("Auth state cleared (default implementation)")
+  }
+  
+  try {
+    // Try to use the session service, but don't crash if not available
+    const sessionService = useSessionService()
+    if (sessionService && sessionService.clearAuthState) {
+      clearAuthState = sessionService.clearAuthState
+    }
+  } catch (err) {
+    console.warn("Session service not available", err)
+  }
   
   // Derive these values directly without useState to reduce render cycles
   const isAuthenticated = status === 'authenticated' && !!session
@@ -131,8 +141,12 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
       }
     }
 
-    // Clear server-side session cache
-    invalidateSessionCache();
+    try {
+      // Clear server-side session cache
+      invalidateSessionCache();
+    } catch (e) {
+      console.error("Error invalidating session cache:", e);
+    }
 
     // Then sign out with NextAuth
     await signOut({ redirect: false })
@@ -173,7 +187,7 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
 export function useAuthContext(): AuthContextValue {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthConsumer/AuthContext.Provider')
+    throw new Error('useAuthContext must be used within an AuthConsumer')
   }
   return context
 }
