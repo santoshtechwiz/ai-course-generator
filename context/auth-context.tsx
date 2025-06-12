@@ -14,20 +14,26 @@ import { useSession, signOut, SessionProvider, SessionProviderProps } from 'next
 import { useSessionService } from '@/hooks/useSessionService'
 import { invalidateSessionCache } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import { useDispatch, useSelector } from 'react-redux'
+import { selectAuth, selectUser, selectAuthStatus, loginSuccess, logout as reduxLogout } from '@/store/slices/auth-slice'
 
 // We'll handle Redux dependency differently to avoid context errors
 export interface AuthContextValue {
-  isAuthenticated: boolean
-  userId: string | undefined
-  isLoading: boolean
-  isAdmin: boolean
   user: any
-  guestId: string | null
-  logout: (options?: { redirect?: boolean, callbackUrl?: string }) => Promise<void>
-  status: 'authenticated' | 'loading' | 'unauthenticated'
-  session: any
+  token: string | null
+  status: 'authenticated' | 'loading' | 'unauthenticated' | 'idle'
+  error: string | null
   isInitialized: boolean
+  isAdmin: boolean
+  guestId: string | null
+  session: any
+  logout: (options?: { redirect?: boolean, callbackUrl?: string }) => Promise<void>
   initialize: () => void
+  
+  // Computed properties for convenience/backward compatibility
+  userId: string | undefined
+  isAuthenticated: boolean
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -56,13 +62,18 @@ interface AuthConsumerProps {
 }
 
 export function AuthConsumer({ children }: AuthConsumerProps) {
-  const { data: session, status } = useSession()
+  const { data: session, status: nextAuthStatus } = useSession()
+  const dispatch = useDispatch()
+  const reduxAuthState = useSelector(selectAuth)
+  
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   
   // Add ref to track if we've checked admin status to break infinite loops
   const authCheckRef = useRef(false)
+  const syncedWithReduxRef = useRef(false)
   
   // Get the session service but handle the case where Redux might not be available yet
   let clearAuthState = () => {
@@ -79,10 +90,53 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     console.warn("Session service not available", err)
   }
   
-  // Derive these values directly without useState to reduce render cycles
-  const isAuthenticated = status === 'authenticated' && !!session
-  const isLoading = status === 'loading'
-  const user = session?.user || null
+  // Sync NextAuth session to Redux store
+  useEffect(() => {
+    // Only update Redux if session changes and we have a valid session
+    if (session && nextAuthStatus === 'authenticated' && !syncedWithReduxRef.current) {
+      syncedWithReduxRef.current = true;
+      
+      try {
+        dispatch(loginSuccess({ 
+          user: session.user, 
+          token: session.user.accessToken || null 
+        }));
+        
+        // Initialize our context state too
+        setIsInitialized(true);
+        setIsAdmin(!!session.user?.isAdmin);
+        setError(null);
+      } catch (err) {
+        console.error("Error syncing auth state:", err);
+      }
+    } 
+    // Reset when session is gone but we have Redux auth
+    else if (!session && nextAuthStatus === 'unauthenticated' && 
+             reduxAuthState.status === 'authenticated' && syncedWithReduxRef.current) {
+      syncedWithReduxRef.current = false;
+      
+      try {
+        dispatch(reduxLogout());
+      } catch (err) {
+        console.error("Error during logout:", err);
+      }
+    }
+  }, [session, nextAuthStatus, dispatch, reduxAuthState.status]);
+  
+  // Map NextAuth status to our unified status
+  const status = useMemo(() => {
+    // First check Redux for initialization status
+    if (!reduxAuthState.isInitialized && !isInitialized) return 'idle';
+    if (nextAuthStatus === 'loading') return 'loading';
+    if (nextAuthStatus === 'authenticated' && session) return 'authenticated';
+    return 'unauthenticated';
+  }, [nextAuthStatus, session, isInitialized, reduxAuthState.isInitialized]);
+  
+  // Compute these values directly
+  const isAuthenticated = status === 'authenticated';
+  const isLoading = status === 'loading';
+  const user = session?.user || reduxAuthState.user || null;
+  const token = session?.token || reduxAuthState.token || null;
 
   const initialize = useCallback(() => {
     setIsInitialized(true)
@@ -115,6 +169,11 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
   const logout = useCallback(async (options = { redirect: false, callbackUrl: '/' }) => {
     // First clean up all session data
     clearAuthState()
+    
+    // Dispatch Redux logout action
+    dispatch(reduxLogout())
+    
+    syncedWithReduxRef.current = false;
 
     // Clear local/session storage
     if (typeof window !== 'undefined') {
@@ -157,31 +216,39 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     } else {
       await signOut({ redirect: false });
     }
-  }, [clearAuthState])
+  }, [clearAuthState, dispatch])
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
-    isAuthenticated,
-    userId: session?.user?.id,
-    isLoading,
-    isAdmin,
     user,
-    guestId: null,
-    logout,
+    token,
     status,
+    error: error || reduxAuthState.error,
+    isInitialized: isInitialized || reduxAuthState.isInitialized,
+    isAdmin,
+    guestId: null,
     session,
-    isInitialized,
-    initialize
+    logout,
+    initialize,
+    
+    // Computed properties
+    userId: user?.id,
+    isAuthenticated,
+    isLoading
   }), [
-    isAuthenticated, 
-    session, 
-    isLoading, 
-    isAdmin, 
     user, 
-    logout, 
-    status, 
-    isInitialized, 
-    initialize
+    token,
+    status,
+    error,
+    reduxAuthState.error,
+    isInitialized,
+    reduxAuthState.isInitialized,
+    isAdmin,
+    session,
+    logout,
+    initialize,
+    isAuthenticated,
+    isLoading
   ])
 
   return (

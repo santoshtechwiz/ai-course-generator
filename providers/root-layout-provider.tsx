@@ -4,7 +4,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
-import { Suspense, useState, useEffect, useMemo } from "react"
+import { Suspense, useState, useEffect, useMemo, useCallback } from "react"
 import { AnimationProvider } from "./animation-provider"
 
 import { SessionProvider } from "next-auth/react"
@@ -19,6 +19,9 @@ import React from "react"
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
 import { store, persistor } from "@/store"
+import { useDispatch } from "react-redux"
+import { initializeAuth } from "@/store/slices/auth-slice"
+import { AuthProvider, AuthConsumer } from "@/context/auth-context"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -36,6 +39,18 @@ const createQueryClient = () =>
 interface RootLayoutProviderProps {
   children: React.ReactNode
   session: any
+}
+
+// Auth initializer component that will dispatch the initializeAuth action
+function AuthInitializer() {
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    // Initialize auth state when the app loads
+    dispatch(initializeAuth())
+  }, [dispatch])
+
+  return null
 }
 
 export function RootLayoutProvider({ children, session }: RootLayoutProviderProps) {
@@ -57,38 +72,40 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
 
   return (
     <React.StrictMode>
-      <SessionProvider session={session}>
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem={true}
-              disableTransitionOnChange
-              // Add these props to fix hydration issues
-              storageKey="course-ai-theme"
-              enableColorScheme={true}
-            >
-              <QueryClientProvider client={queryClient}>
-                <TooltipProvider>
-                  <SubscriptionProvider>
-                    <LoadingProvider>
-                      <AnimationProvider>
-                        {navbar}
-                        <Suspense fallback={<div>Loading...</div>}>
-                          {jsonLd}
-                          <Toaster position="top-right" closeButton richColors />
-                          {mounted && children}
-                        </Suspense>
-                      </AnimationProvider>
-                    </LoadingProvider>
-                  </SubscriptionProvider>
-                </TooltipProvider>
-              </QueryClientProvider>
-            </ThemeProvider>
-          </PersistGate>
-        </Provider>
-      </SessionProvider>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <AuthProvider session={session}>
+            <AuthInitializer />
+            <AuthConsumer>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem={true}
+                disableTransitionOnChange
+                // Add these props to fix hydration issues
+                storageKey="course-ai-theme"
+                enableColorScheme={true}
+              >
+                <QueryClientProvider client={queryClient}>
+                  <TooltipProvider>
+                    <SubscriptionProvider>
+                      <LoadingProvider>
+                        <AnimationProvider>
+                          <Suspense fallback={<div>Loading...</div>}>
+                            {jsonLd}
+                            <Toaster position="top-right" closeButton richColors />
+                            {mounted && children}
+                          </Suspense>
+                        </AnimationProvider>
+                      </LoadingProvider>
+                    </SubscriptionProvider>
+                  </TooltipProvider>
+                </QueryClientProvider>
+              </ThemeProvider>
+            </AuthConsumer>
+          </AuthProvider>
+        </PersistGate>
+      </Provider>
     </React.StrictMode>
   )
 }

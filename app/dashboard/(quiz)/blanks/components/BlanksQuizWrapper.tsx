@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
@@ -18,6 +18,8 @@ import {
   fetchQuiz,
   setQuizCompleted,
   setQuizResults,
+  resetSubmissionState,
+  submitQuiz,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import type { BlankQuestion } from "./types"
@@ -25,6 +27,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import BlanksQuiz from "./BlanksQuiz"
 import type { QuizType } from "@/types/quiz"
+import { toast } from "sonner"
+import { useAuth } from "@/hooks/use-auth"
 
 interface BlanksQuizWrapperProps {
   slug: string
@@ -37,9 +41,13 @@ interface BlanksQuizWrapperProps {
 export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
 
-  // Track if we've already submitted to prevent double submissions
+  // Track submission state locally to prevent multiple submissions
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const maxSubmitAttemptsRef = useRef<number>(0)
 
   // Redux selectors
   const questions = useSelector(selectQuestions)
@@ -69,22 +77,51 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
 
       dispatch(fetchQuiz(quizPayload))
     }
+    
+    // Clear any previous submission state on component mount
+    dispatch(resetSubmissionState())
+    
+    // Cleanup
+    return () => {
+      if (submissionTimeoutRef.current) {
+        clearTimeout(submissionTimeoutRef.current)
+      }
+    }
   }, [quizStatus, dispatch, slug, quizData])
+
+  // Add safety timeout to prevent UI freeze
+  useEffect(() => {
+    // If we've been submitting for more than 10 seconds, something is wrong
+    if (isSubmitting) {
+      const safetyTimeout = setTimeout(() => {
+        // Force navigation to results
+        const safeSlug = typeof slug === "string" ? slug : String(slug)
+        router.push(`/dashboard/blanks/${safeSlug}/results`)
+      }, 10000) // 10 seconds timeout
+      
+      return () => clearTimeout(safetyTimeout)
+    }
+  }, [isSubmitting, router, slug])
 
   // Handle quiz completion - only when explicitly triggered
   useEffect(() => {
-    if (!isCompleted || hasSubmitted) return
+    if (!isCompleted || hasSubmitted || !isAuthenticated) return
 
-    // When complete, navigate to results page
+    // Show completion toast with celebration
+    toast.success("🎉 Quiz completed! Calculating your results...", {
+      duration: 2000,
+    })
+
+    // Navigate to results page with safety timeout
     const safeSlug = typeof slug === "string" ? slug : String(slug)
+    setHasSubmitted(true)
 
     // Add a small delay for better UX
-    const timer = setTimeout(() => {
+    submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/blanks/${safeSlug}/results`)
-    }, 1000)
+    }, 1500)
 
-    return () => clearTimeout(timer)
-  }, [isCompleted, router, slug, hasSubmitted])
+  }, [isCompleted, router, slug, hasSubmitted, isAuthenticated])
 
   // Answer handler - fixed to properly store answers
   const handleAnswer = (answer: string) => {
@@ -119,60 +156,108 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     }
   }
 
-  // Complete the quiz - fixed logic
+  // Complete the quiz - improved with better error handling and safety checks
   const handleFinish = () => {
-    if (hasSubmitted) return
-
-    const answeredCount = Object.keys(answers).length
-    const totalQuestions = questions.length
-
-    // Allow submission regardless of how many questions are answered
-    console.log(`Submitting quiz with ${answeredCount} out of ${totalQuestions} questions answered`)
-
-    setHasSubmitted(true)
-
-    // Generate results for all questions (including unanswered ones)
-    const questionResults = questions.map((question) => {
-      const qid = String(question.id)
-      const answer = answers[qid]
-      const userAnswer = answer?.userAnswer || answer?.text || ""
-      const correctAnswer = question.answer || ""
-      const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
-
-      return {
-        questionId: qid,
-        question: question.question || question.text,
-        correctAnswer,
-        userAnswer,
-        isCorrect,
-        type: "blanks",
+    if (hasSubmitted || isSubmitting) return
+    
+    setIsSubmitting(true)
+    
+    try {
+      // First mark as completed
+      dispatch(setQuizCompleted())
+      
+      // Store answers in localStorage as backup
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('quiz_answers_backup', JSON.stringify({
+            slug,
+            answers,
+            timestamp: Date.now(),
+            quizType: 'blanks'
+          }))
+        } catch (e) {
+          console.error('Failed to backup answers:', e)
+        }
       }
-    })
 
-    const correctCount = questionResults.filter((q) => q.isCorrect).length
-    const percentage = Math.round((correctCount / questions.length) * 100)
+      // Generate results for all questions (including unanswered ones)
+      const questionResults = questions.map((question) => {
+        const qid = String(question.id)
+        const answer = answers[qid]
+        const userAnswer = answer?.userAnswer || answer?.text || ""
+        const correctAnswer = question.answer || ""
+        const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
 
-    const results = {
-      quizId: slug,
-      slug: slug,
-      title: quizTitle || "Blanks Quiz",
-      quizType: "blanks",
-      score: correctCount,
-      maxScore: questions.length,
-      percentage,
-      completedAt: new Date().toISOString(),
-      questionResults,
-      questions: questionResults,
+        return {
+          questionId: qid,
+          question: question.question || question.text,
+          correctAnswer,
+          userAnswer,
+          isCorrect,
+          type: "blanks",
+        }
+      })
+
+      const correctCount = questionResults.filter((q) => q.isCorrect).length
+      const percentage = Math.round((correctCount / questions.length) * 100)
+
+      const results = {
+        quizId: slug,
+        slug: slug,
+        title: quizTitle || "Blanks Quiz",
+        quizType: "blanks",
+        score: correctCount,
+        maxScore: questions.length,
+        percentage,
+        completedAt: new Date().toISOString(),
+        questionResults,
+        questions: questionResults,
+      }
+
+      // Set results first
+      dispatch(setQuizResults(results))
+      
+      // Then submit the quiz
+      dispatch(submitQuiz())
+        .unwrap()
+        .then(() => {
+          setHasSubmitted(true)
+          const safeSlug = typeof slug === "string" ? slug : String(slug)
+          
+          // Navigate to results page after a short delay
+          submissionTimeoutRef.current = setTimeout(() => {
+            router.push(`/dashboard/blanks/${safeSlug}/results`)
+          }, 1000)
+        })
+        .catch(err => {
+          console.error("Quiz submission error:", err)
+          maxSubmitAttemptsRef.current += 1
+          
+          // If we've tried 3 times or more, just navigate to results
+          if (maxSubmitAttemptsRef.current >= 3) {
+            toast.error("Having trouble submitting quiz. Redirecting to results page.")
+            const safeSlug = typeof slug === "string" ? slug : String(slug)
+            setTimeout(() => {
+              router.push(`/dashboard/blanks/${safeSlug}/results`)
+            }, 1000)
+            return
+          }
+          
+          // Otherwise show error and reset submission state
+          setIsSubmitting(false)
+          toast.error("Failed to submit quiz. Please try again.")
+        })
+    } catch (err) {
+      console.error("Error in quiz submission flow:", err)
+      setIsSubmitting(false)
+      toast.error("Failed to submit quiz. Please try again.")
     }
-
-    // Set results first, then mark as completed
-    dispatch(setQuizResults(results))
-    dispatch(setQuizCompleted())
   }
 
   // UI calculations
   const answeredQuestions = Object.keys(answers).length
   const progressPercentage = (answeredQuestions / questions.length) * 100
+  const actualSubmittingState = isSubmitting || quizStatus === "submitting"
 
   // Loading state
   if (quizStatus === "loading") {
@@ -233,7 +318,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   // Submitting state
-  if (quizStatus === "submitting") {
+  if (actualSubmittingState) {
     return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
   }
 
@@ -248,7 +333,7 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
       onNext={handleNext}
       onPrevious={handlePrevious}
       onSubmit={handleFinish}
-      isSubmitting={quizStatus === "submitting" || hasSubmitted}
+      isSubmitting={actualSubmittingState}
       canGoNext={canGoNext}
       canGoPrevious={canGoPrevious}
       isLastQuestion={isLastQuestion}

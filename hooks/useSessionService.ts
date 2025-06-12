@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store";
@@ -12,30 +12,78 @@ import {
 } from "@/store/slices/quiz-slice";
 import { signIn as nextSignIn } from "next-auth/react";
 import { safeStorage } from "@/lib/client-utils";
+import { loginSuccess } from "@/store/slices/auth-slice";
 
 export function useSessionService() {
   const dispatch = useDispatch<AppDispatch>();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
   const quizState = useSelector(selectQuizState);
+  const [hasRestoredQuiz, setHasRestoredQuiz] = useState(false);
+  const [hasAttemptedRestore, setHasAttemptedRestore] = useState(false);
 
   // Add useEffect to automatically restore pending quiz results when authentication changes
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
+    if (isAuthenticated && !isLoading && !hasRestoredQuiz) {
       console.log(
         "Authentication state changed, attempting to restore quiz results"
       );
-      restoreQuizResults();
+
+      // Also update Redux auth state from session
+      if (session?.user) {
+        dispatch(
+          loginSuccess({
+            user: session.user,
+            token: session.token || null,
+          })
+        );
+      }
+
+      // Try to restore quiz state
+      try {
+        const restored = restoreQuizResults();
+        if (restored) {
+          setHasRestoredQuiz(true);
+        }
+        setHasAttemptedRestore(true);
+      } catch (err) {
+        console.error("Failed to restore quiz results:", err);
+        setHasAttemptedRestore(true);
+      }
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, session, dispatch, hasRestoredQuiz]);
+
+  // Reset state when session is cleared
+  useEffect(() => {
+    if (status === "unauthenticated" && (hasRestoredQuiz || hasAttemptedRestore)) {
+      setHasRestoredQuiz(false);
+      setHasAttemptedRestore(false);
+    }
+  }, [status, hasRestoredQuiz, hasAttemptedRestore]);
 
   const restoreQuizResults = useCallback(() => {
     try {
+      // Check if we're on the client to avoid errors
+      if (typeof window === 'undefined') {
+        return false;
+      }
+      
       // Try both localStorage and sessionStorage
-      let pendingResultsJson = localStorage.getItem("pendingQuizResults");
+      let pendingResultsJson = null;
+      
+      try {
+        pendingResultsJson = localStorage.getItem("pendingQuizResults");
+      } catch (err) {
+        console.warn("Error accessing localStorage:", err);
+      }
+      
       if (!pendingResultsJson) {
-        pendingResultsJson = sessionStorage.getItem("pendingQuizResults");
+        try {
+          pendingResultsJson = sessionStorage.getItem("pendingQuizResults");
+        } catch (err) {
+          console.warn("Error accessing sessionStorage:", err);
+        }
       }
 
       if (pendingResultsJson) {
@@ -71,8 +119,17 @@ export function useSessionService() {
           }
 
           // Remove from storage to prevent duplicate processing
-          localStorage.removeItem("pendingQuizResults");
-          sessionStorage.removeItem("pendingQuizResults");
+          try {
+            localStorage.removeItem("pendingQuizResults");
+          } catch (err) {
+            console.warn("Error removing from localStorage:", err);
+          }
+          
+          try {
+            sessionStorage.removeItem("pendingQuizResults");
+          } catch (err) {
+            console.warn("Error removing from sessionStorage:", err);
+          }
 
           console.log("Quiz state after restoration:", quizState);
           return true;
@@ -88,32 +145,115 @@ export function useSessionService() {
   }, [dispatch, quizState]);
 
   const signIn = useCallback(async (redirectState: any) => {
-    // Create a timestamp to verify when sign-in was initiated
-    if (typeof window !== "undefined") {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    try {
+      // Create a timestamp to verify when sign-in was initiated
       localStorage.setItem("quizAuthTimestamp", Date.now().toString());
+
+      // If we have quiz state, preserve it for after auth
+      const quizStateJson = safeStorage.getItem("quiz_state");
+      if (quizStateJson) {
+        // Also store in sessionStorage as a backup
+        sessionStorage.setItem("pendingQuizState", quizStateJson);
+      }
+      
+      // Check if we have quiz answers backup and store them too
+      const answersBackup = localStorage.getItem("quiz_answers_backup");
+      if (answersBackup) {
+        sessionStorage.setItem("quiz_answers_backup", answersBackup);
+      }
+    } catch (err) {
+      console.warn("Error storing auth state:", err);
     }
 
     // Proceed with sign-in
-    await nextSignIn();
+    try {
+      await nextSignIn();
+    } catch (err) {
+      console.error("Error during sign-in:", err);
+    }
   }, []);
 
   const restoreAuthRedirectState = useCallback(() => {
-    // Use the Redux action to restore state (which reads from storage)
-    dispatch(hydrateStateFromStorage());
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    try {
+      // Check if we have a timestamp to verify this is a recent auth flow
+      const timestamp = localStorage.getItem("quizAuthTimestamp");
+      const now = Date.now();
 
-    // Try to restore quiz results first
-    const restoredFromLocal = restoreQuizResults();
+      if (timestamp && now - parseInt(timestamp) < 5 * 60 * 1000) {
+        // 5 minutes
+        // Use the Redux action to restore state (which reads from storage)
+        dispatch(hydrateStateFromStorage());
 
-    // If we didn't restore from localStorage, try the Redux flow
-    if (!restoredFromLocal) {
-      // Also try to restore through the Redux flow
-      dispatch(restoreQuizAfterAuth());
+        // Try to restore quiz results first
+        const restoredFromLocal = restoreQuizResults();
+
+        // If we didn't restore from localStorage, try the Redux flow
+        if (!restoredFromLocal) {
+          try {
+            // Also check sessionStorage backup
+            const backupState = sessionStorage.getItem("pendingQuizState");
+            if (backupState) {
+              safeStorage.setItem("quiz_state", backupState);
+              sessionStorage.removeItem("pendingQuizState");
+              dispatch(hydrateStateFromStorage());
+            }
+
+            // Also try to restore answers backup
+            const answersBackup = sessionStorage.getItem("quiz_answers_backup");
+            if (answersBackup) {
+              localStorage.setItem("quiz_answers_backup", answersBackup);
+              sessionStorage.removeItem("quiz_answers_backup");
+            }
+          } catch (err) {
+            console.error("Error restoring backup state:", err);
+          }
+
+          // Also try to restore through the Redux flow
+          dispatch(restoreQuizAfterAuth());
+        }
+
+        // Clean up auth flow markers
+        localStorage.removeItem("quizAuthTimestamp");
+      }
+    } catch (err) {
+      console.error("Error in restoreAuthRedirectState:", err);
     }
   }, [dispatch, restoreQuizResults]);
 
   const clearAuthState = useCallback(() => {
-    dispatch(resetQuiz());
-    safeStorage.removeItem("quiz_state");
+    try {
+      dispatch(resetQuiz());
+      
+      if (typeof window === 'undefined') {
+        return;
+      }
+      
+      safeStorage.removeItem("quiz_state");
+      
+      try {
+        sessionStorage.removeItem("pendingQuizState");
+        sessionStorage.removeItem("pendingQuizResults");
+        sessionStorage.removeItem("quiz_answers_backup");
+        localStorage.removeItem("pendingQuizResults");
+        localStorage.removeItem("quizAuthTimestamp");
+        localStorage.removeItem("quiz_answers_backup");
+      } catch (err) {
+        console.warn("Error clearing storage:", err);
+      }
+      
+      setHasRestoredQuiz(false);
+      setHasAttemptedRestore(false);
+    } catch (err) {
+      console.error("Error in clearAuthState:", err);
+    }
   }, [dispatch]);
 
   return {
