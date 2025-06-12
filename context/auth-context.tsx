@@ -13,7 +13,9 @@ import {
 import { useSession, signOut, SessionProvider, SessionProviderProps } from 'next-auth/react'
 import { useSessionService } from '@/hooks/useSessionService'
 import { invalidateSessionCache } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
+// We'll handle Redux dependency differently to avoid context errors
 export interface AuthContextValue {
   isAuthenticated: boolean
   userId: string | undefined
@@ -21,7 +23,7 @@ export interface AuthContextValue {
   isAdmin: boolean
   user: any
   guestId: string | null
-  logout: () => Promise<void>
+  logout: (options?: { redirect?: boolean, callbackUrl?: string }) => Promise<void>
   status: 'authenticated' | 'loading' | 'unauthenticated'
   session: any
   isInitialized: boolean
@@ -57,6 +59,7 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
   const { data: session, status } = useSession()
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const router = useRouter()
   
   // Add ref to track if we've checked admin status to break infinite loops
   const authCheckRef = useRef(false)
@@ -109,7 +112,7 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
   }, [isAuthenticated, session, isAdmin])
 
   // Enhanced logout that clears all session data
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (options = { redirect: false, callbackUrl: '/' }) => {
     // First clean up all session data
     clearAuthState()
 
@@ -149,7 +152,11 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     }
 
     // Then sign out with NextAuth
-    await signOut({ redirect: false })
+    if (options.redirect) {
+      await signOut({ callbackUrl: options.callbackUrl, redirect: true });
+    } else {
+      await signOut({ redirect: false });
+    }
   }, [clearAuthState])
 
   // Memoize the context value to prevent unnecessary re-renders
