@@ -44,7 +44,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
   const [questionCountRange, setQuestionCountRange] = useState<[number, number]>([0, 50])
-  const [showPublicOnly, setShowPublicOnly] = useState(false)
+  const [showPrivateOnly, setShowPrivateOnly] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
   const debouncedSearch = useDebounce(search, 500)
   const { ref, inView } = useInView({
@@ -60,10 +60,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
       selectedTypes.join(","),
       userId,
       questionCountRange.join("-"),
-      showPublicOnly,
+      showPrivateOnly,
       activeTab,
     ],
-    [debouncedSearch, selectedTypes, userId, questionCountRange, showPublicOnly, activeTab],
+    [debouncedSearch, selectedTypes, userId, questionCountRange, showPrivateOnly, activeTab],
   )
 
   const {
@@ -86,7 +86,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
         minQuestions: questionCountRange[0],
         maxQuestions: questionCountRange[1],
-        publicOnly: showPublicOnly,
+        privateOnly: showPrivateOnly,
         tab: activeTab,
       })
 
@@ -131,7 +131,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     setSearch("")
     setSelectedTypes([])
     setQuestionCountRange([0, 50])
-    setShowPublicOnly(false)
+    setShowPrivateOnly(false)
     setActiveTab("all")
   }, [])
 
@@ -157,7 +157,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     selectedTypes.length > 0 ||
     questionCountRange[0] > 0 ||
     questionCountRange[1] < 50 ||
-    showPublicOnly ||
+    showPrivateOnly ||
     activeTab !== "all"
 
   // Calculate quiz counts by type (memoized for performance)
@@ -217,8 +217,8 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         toggleQuizType={toggleQuizType}
         questionCountRange={questionCountRange}
         onQuestionCountChange={setQuestionCountRange}
-        showPublicOnly={showPublicOnly}
-        onPublicOnlyChange={setShowPublicOnly}
+        showPrivateOnly={showPrivateOnly}
+        onPrivateOnlyChange={setShowPrivateOnly}
       />
 
       <motion.div
