@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/store";
-import { useAuth } from "@/hooks";
+import { useAuth } from "@/hooks/use-auth"; // Updated import path
 
 
 // Types
