@@ -31,6 +31,7 @@ import { toast } from "sonner"
 import type { QuizType } from "@/types/quiz"
 import { useAuth } from "@/hooks/use-auth"
 import { motion, AnimatePresence } from "framer-motion"
+import { NoResults } from "@/components/ui/no-results"
 
 interface McqQuizWrapperProps {
   slug: string
@@ -226,20 +227,20 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   if (quizStatus === "failed") {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Quiz Not Found</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-6">{error || "Unable to load quiz data."}</p>
-            <div className="space-x-4">
-              <Button onClick={() => window.location.reload()}>Try Again</Button>
-              <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")}>
-                Back to Quizzes
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <NoResults
+          variant="error"
+          title="Quiz Not Found"
+          description={error || "Unable to load quiz data."}
+          action={{
+            label: "Try Again",
+            onClick: () => window.location.reload(),
+          }}
+          secondaryAction={{
+            label: "Back to Quizzes",
+            onClick: () => router.push("/dashboard/quizzes"),
+            variant: "outline",
+          }}
+        />
       </div>
     )
   }
@@ -248,15 +249,15 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   if (!Array.isArray(questions) || questions.length === 0) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">No Questions Available</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-6">This quiz has no questions.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
-          </CardContent>
-        </Card>
+        <NoResults
+          variant="empty"
+          title="No Questions Available"
+          description="This quiz has no questions."
+          action={{
+            label: "Back to Quizzes",
+            onClick: () => router.push("/dashboard/quizzes"),
+          }}
+        />
       </div>
     )
   }

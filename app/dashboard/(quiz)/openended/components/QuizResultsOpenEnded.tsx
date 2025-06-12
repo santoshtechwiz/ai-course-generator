@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card"
 import { CheckCircleIcon, AlertTriangle } from "lucide-react"
 import { motion } from "framer-motion"
+import { NoResults } from "@/components/ui/no-results"
 
 interface QuestionResult {
   questionId: string | number
@@ -130,13 +131,20 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
   // Early return with memoized check
   if (!result || !Array.isArray(result.questionResults)) {
     return (
-      <Card className="max-w-4xl mx-auto rounded-2xl shadow-lg">
-        <CardContent className="pt-6 text-center">
-          <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-4" />
-          <CardTitle className="text-xl font-bold mb-2">No Results Found</CardTitle>
-          <p className="text-muted-foreground">Try retaking the quiz to generate results.</p>
-        </CardContent>
-      </Card>
+      <NoResults
+        variant="quiz"
+        title="No Results Found"
+        description="Try retaking the quiz to generate results."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake
+        }}
+        secondaryAction={{
+          label: "All Quizzes",
+          onClick: handleAllQuizzes,
+          variant: "outline"
+        }}
+      />
     )
   }
 

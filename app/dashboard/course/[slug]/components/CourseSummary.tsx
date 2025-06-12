@@ -19,6 +19,7 @@ import rehypeHighlight from "rehype-highlight"
 
 import { useAuth } from "@/hooks"
 import { AdminSummaryPanel } from "./AdminSummaryPanel"
+import { NoResults } from "@/components/ui/no-results"
 
 interface CourseSummaryProps {
   chapterId: number | string
@@ -106,39 +107,18 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
   // Render error state
   if (isError && !summary) {
     return (
-      <Card className="w-full border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-            <AlertCircle className="h-5 w-5" />
-            <span>Summary Error</span>
-          </CardTitle>
-          <CardDescription>Unable to load chapter summary</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            There was a problem loading the summary for this chapter.
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-4" 
-            onClick={handleGenerateSummary}
-            disabled={isRefetching}
-          >
-            {isRefetching ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Retrying...
-              </>
-            ) : (
-              <>
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                Try Again
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+      <NoResults
+        variant="error"
+        title="Summary Error"
+        description="Unable to load chapter summary"
+        action={{
+          label: "Try Again",
+          onClick: handleGenerateSummary,
+          icon: <RefreshCcw className="mr-2 h-4 w-4" />,
+        }}
+        minimal={false}
+        className="w-full"
+      />
     )
   }
 
@@ -172,46 +152,38 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
       </CardHeader>
       
       <CardContent className="pt-4">
-        {/* Conditionally render content based on availability */}
-        {summary ? (
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <Markdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeHighlight]}
-              className="markdown-body"
-            >
-              {summary}
-            </Markdown>
-          </div>
-        ) : (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">
-              {isPremium 
-                ? "Upgrade to premium to view this chapter summary"
-                : "No summary available for this chapter yet"}
-            </p>
-            {isAuthenticated && !isPremium && (
-              <Button 
-                onClick={handleGenerateSummary} 
-                className="mt-4"
-                disabled={isRefetching}
+          {summary ? (
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                className="markdown-body"
               >
-                {isRefetching ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
+                {summary}
+              </Markdown>
+            </div>
+          ) : (
+            <NoResults
+              variant="empty"
+              title={isPremium ? "Premium Content" : "No Summary Available"}
+              description={
+                isPremium 
+                  ? "Upgrade to premium to view this chapter summary"
+                  : "No summary available for this chapter yet"
+              }
+              action={
+                isAuthenticated && !isPremium ? {
+                  label: isRefetching ? "Generating..." : "Generate Summary",
+                  onClick: handleGenerateSummary,
+                  icon: isRefetching ? 
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
                     <RefreshCcw className="mr-2 h-4 w-4" />
-                    Generate Summary
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        )}
-      </CardContent>
+                } : undefined
+              }
+              minimal={true}
+            />
+          )}
+        </CardContent>
       
       {/* Show refresh button for regular users only if summary exists */}
       {(summary && isAuthenticated && !isPremium) && (

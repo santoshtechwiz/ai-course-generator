@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import type { BlanksQuizResult } from "@/types/blanks-quiz"
 import { motion } from "framer-motion"
+import { NoResults } from "@/components/ui/no-results"
 
 function getSimilarity(userAnswer: string, correctAnswer: string) {
   return getBestSimilarityScore(userAnswer || "", correctAnswer || "") / 100
@@ -165,42 +166,38 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
 
   if (!result) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6">
-        <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center">
-          <AlertTriangle className="h-10 w-10 text-destructive" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">Unable to Load Results</h2>
-          <p className="text-muted-foreground max-w-md">
-            We couldn't load your quiz results. The session may have expired or some data might be missing.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button onClick={handleRetake} className="gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Take Quiz Again
-          </Button>
-          <Button variant="outline" onClick={handleViewAllQuizzes} className="gap-2">
-            <Home className="w-4 h-4" />
-            Browse Quizzes
-          </Button>
-        </div>
-      </div>
-    )
+      <NoResults
+        variant="quiz"
+        title="Unable to Load Results"
+        description="We couldn't load your quiz results. The session may have expired or some data might be missing."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake,
+          icon: <RefreshCw className="h-4 w-4" />
+        }}
+        secondaryAction={{
+          label: "Browse Quizzes",
+          onClick: handleViewAllQuizzes,
+          variant: "outline",
+          icon: <Home className="h-4 w-4" />
+        }}
+      />
+    );
   }
 
   if (!Array.isArray(result.questionResults)) {
     return (
-      <Card className="max-w-4xl mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-            <CardTitle className="text-xl font-bold mb-2">Invalid Results</CardTitle>
-            <p className="text-muted-foreground">No valid question results found.</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
+      <NoResults
+        variant="quiz"
+        title="Invalid Results"
+        description="No valid question results found."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake,
+          icon: <RefreshCw className="h-4 w-4" />
+        }}
+      />
+    );
   }
 
   return (
