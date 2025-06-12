@@ -45,7 +45,7 @@ const QuizPage = async () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <JsonLd type="default" />
+      <JsonLd type="default" data={undefined} />
 
       <h1 className="text-4xl font-bold mb-2 text-center text-primary">Explore Quizzes</h1>
       <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
