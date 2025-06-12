@@ -75,10 +75,11 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
                     <LoadingProvider>
                       <AnimationProvider>
                         {navbar}
-                        <Suspense fallback={<div>Loading...</div>}></Suspense>
-                        {jsonLd}
-                        <Toaster position="top-right" closeButton richColors />
-                        {mounted && children}
+                        <Suspense fallback={<div>Loading...</div>}>
+                          {jsonLd}
+                          <Toaster position="top-right" closeButton richColors />
+                          {mounted && children}
+                        </Suspense>
                       </AnimationProvider>
                     </LoadingProvider>
                   </SubscriptionProvider>

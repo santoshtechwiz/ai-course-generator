@@ -1,23 +1,13 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "../globals.css"
-import { JsonLd } from "@/app/schema/components/json-ld"
 
-import { Inter } from "next/font/google"
-import { RootLayoutProvider } from "@/providers/root-layout-provider"
-import SessionProvider from "@/providers/session-provider"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-
+import { RootLayoutProvider } from "@/providers/root-layout-provider"
 import Footer from "@/components/shared/Footer"
-import { getAuthSession } from "@/lib/auth"
+import { JsonLd } from "@/app/schema/components/json-ld"
 
-
-// const inter = Inter({
-//   subsets: ["latin"],
-//   display: "swap",
-//   variable: "--font-sans",
-// })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
@@ -50,19 +40,19 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Fetch session once at root level to pass to providers
   const session = await getServerSession(authOptions)
 
   return (
-    <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
+    <html lang="en" suppressHydrationWarning className={`scroll-smooth`}>
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col scrollbar-hide">
-        <SessionProvider session={session}>
-          <RootLayoutProvider session={undefined}>
-            <main className="flex-1 flex flex-col pt-16">{children}</main>
-          </RootLayoutProvider>
-        </SessionProvider>
+        <RootLayoutProvider session={session}>
+          <main className="flex-1 flex flex-col pt-16">{children}</main>
+          <Footer />
+        </RootLayoutProvider>
 
         <JsonLd
           data={{
@@ -79,8 +69,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               },
               "query-input": "required name=search_term_string",
             },
-          }} type={"course"}        />
-             <Footer />
+          }} type={"course"}        
+        />
       </body>
     </html>
   )
