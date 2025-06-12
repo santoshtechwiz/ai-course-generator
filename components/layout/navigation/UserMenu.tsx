@@ -17,14 +17,13 @@ import { Badge } from "@/components/ui/badge"
 import type { ReactNode } from "react"
 import { useEffect, useState, useRef } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useSession } from "next-auth/react"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
-import { logout, useAppDispatch, useAppSelector } from "@/store"
+import { logout as reduxLogout, useAppDispatch, useAppSelector } from "@/store"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth" // Use our centralized auth hook
+import { useAuth } from "@/hooks"  // Use our centralized auth hook
 
 export function UserMenu({ children }: { children?: ReactNode }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading, logout: handleAuthLogout } = useAuth()
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth()
   const dispatch = useAppDispatch()
   const subscriptionData = useAppSelector(selectSubscription)
   const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
@@ -50,23 +49,37 @@ export function UserMenu({ children }: { children?: ReactNode }) {
   const handleSignOut = async () => {
     setIsLoading(true)
     try {
-      // Dispatch Redux logout action
-      dispatch(logout())
+      // Store current path before logout
+      const currentPath = typeof window !== 'undefined' 
+        ? window.location.pathname + window.location.search
+        : '/';
       
-      // Use our centralized auth logout
+      // Dispatch Redux logout action
+      try {
+        dispatch(logout())
+      } catch (err) {
+        console.warn("Redux dispatch failed during logout:", err);
+      }
+      
+      // Use our centralized auth logout with current path
       await handleAuthLogout({ 
         redirect: true,
-        callbackUrl: window.location.pathname
-      })
+        callbackUrl: currentPath
+      });
     } catch (error) {
       console.error("Logout failed", error)
       setIsLoading(false)
+      // Show error toast
+      toast({
+        title: "Logout failed",
+        description: "There was a problem signing you out. Please try again.",
+        variant: "destructive"
+      });
     }
   }
 
   const handleSignIn = () => {
-    const callbackUrl = window.location.pathname
-    router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+    router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
   }
 
   const getSubscriptionBadge = () => {

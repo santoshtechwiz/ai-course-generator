@@ -9,8 +9,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { CheckCircleIcon, AlertTriangle, Trophy, Target, Share2, RefreshCw, Home } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { toast } from "sonner"
-import { BlanksQuizResult, BlanksQuizQuestionResult } from "@/types/blanks-quiz"
+import type { BlanksQuizResult } from "@/types/blanks-quiz"
+import { motion } from "framer-motion"
+
 function getSimilarity(userAnswer: string, correctAnswer: string) {
   return getBestSimilarityScore(userAnswer || "", correctAnswer || "") / 100
 }
@@ -93,22 +94,31 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
     if (!result?.questionResults) return []
 
     return result.questionResults.map((q) => {
-      const userAnswer = q.userAnswer || ""
-      const correctAnswer = q.correctAnswer || ""
+      // Find the actual user answer from the answers array
+      const actualAnswer = result.answers?.find((a) => a.questionId.toString() === q.questionId.toString())
+      // Find the question text from the questions array
+      const questionData = result.questions?.find((quest) => quest.id.toString() === q.questionId.toString())
+
+      const userAnswer = actualAnswer?.userAnswer || q.userAnswer || ""
+      const correctAnswer = q.correctAnswer || questionData?.answer || ""
       const similarity = q.similarity ?? getSimilarity(userAnswer, correctAnswer)
       const similarityLabel = q.similarityLabel || getSimilarityLabel(similarity)
 
       return {
         ...q,
+        question: q.question || questionData?.question || `Question ${q.questionId}`,
+        userAnswer,
+        correctAnswer,
         similarity,
         similarityLabel,
-        isCorrect: q.isCorrect ?? similarity >= 0.7,
+        isCorrect: actualAnswer?.isCorrect ?? similarity >= 0.7,
       }
     })
   }, [result])
 
   const correctCount = enhancedResults.filter((q) => q.isCorrect).length
-  const percentage = result?.percentage ?? Math.round((correctCount / enhancedResults.length) * 100)
+  const totalQuestions = enhancedResults.length || 1 // Prevent division by zero
+  const percentage = result?.percentage ?? Math.round((correctCount / totalQuestions) * 100)
   const performance = useMemo(() => getPerformanceLevel(percentage), [percentage])
 
   useEffect(() => {
@@ -144,12 +154,12 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
         await navigator.share(shareData)
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
-        toast.success("Results copied to clipboard!")
+        // toast.success("Results copied to clipboard!")
       } else {
-        toast.error("Sharing not supported on this device")
+        // toast.error("Sharing not supported on this device")
       }
     } catch (error) {
-      toast.error("Failed to share results")
+      // toast.error("Failed to share results")
     }
   }
 
@@ -195,7 +205,12 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
 
   return (
     <>
-      <div className="space-y-8 max-w-4xl mx-auto">
+      <motion.div
+        className="space-y-8 max-w-4xl mx-auto"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+      >
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
@@ -219,13 +234,18 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
         </div>
 
         {/* Score Overview */}
-        <Card className="overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+        <motion.div
+          className="overflow-hidden rounded-2xl shadow-lg"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b p-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <Trophy className="w-8 h-8 text-primary" />
                 <div>
-                  <CardTitle className="text-2xl">Your Score</CardTitle>
+                  <CardTitle className="text-2xl font-semibold">Your Score</CardTitle>
                   <p className="text-muted-foreground">Fill-in-the-blanks performance summary</p>
                 </div>
               </div>
@@ -270,7 +290,7 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
               </div>
             </div>
           </CardContent>
-          <CardFooter className="bg-muted/30 border-t flex flex-wrap gap-3 justify-between p-4">
+          <CardFooter className="bg-muted/30 border-t flex flex-wrap gap-3 justify-between p-6">
             <div className="flex gap-2">
               <Button onClick={handleRetake} className="gap-2">
                 <RefreshCw className="w-4 h-4" />
@@ -286,18 +306,23 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
               Share Results
             </Button>
           </CardFooter>
-        </Card>
+        </motion.div>
 
         {/* Question Results */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <motion.div
+          className="rounded-2xl shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2, ease: "easeInOut" }}
+        >
+          <CardHeader className="p-6">
+            <CardTitle className="flex items-center gap-2 text-xl font-semibold">
               <Target className="w-5 h-5" />
               Answer Review ({enhancedResults.length} Questions)
             </CardTitle>
             <p className="text-muted-foreground">Review your answers and learn from mistakes</p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-6">
             {enhancedResults.map((q, index) => (
               <div key={q.questionId} className="p-4 rounded-lg border">
                 <div className="font-semibold mb-3">
@@ -357,8 +382,8 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
               </div>
             ))}
           </CardContent>
-        </Card>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {showConfetti && <Confetti isActive />}
     </>

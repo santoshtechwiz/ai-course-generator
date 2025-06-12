@@ -28,7 +28,25 @@ export function LogoutButton({
   const handleLogout = async () => {
     try {
       setIsLoading(true)
-      await logout({ redirect: true, callbackUrl: redirectTo })
+      
+      // Get current page URL for redirect if not specified
+      const currentPath = typeof window !== 'undefined' 
+        ? window.location.pathname + window.location.search 
+        : '/';
+      
+      const targetPath = redirectTo || currentPath;
+      
+      // Use centralized logout function with proper redirect
+      await logout({ 
+        redirect: true,
+        callbackUrl: targetPath
+      });
+      
+      // Note: The above should handle redirection, 
+      // this is just a fallback that won't normally execute
+      if (typeof window !== 'undefined') {
+        window.location.href = targetPath;
+      }
     } catch (error) {
       console.error("Logout failed:", error)
       toast({
@@ -52,8 +70,8 @@ export function LogoutButton({
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <>
-          {!iconOnly && "Sign out"}
-          <LogOut className={`h-4 w-4 ${iconOnly ? '' : 'ml-2'}`} />
+          {!iconOnly && <span className="mr-2">Sign out</span>}
+          <LogOut className="h-4 w-4" />
         </>
       )}
     </Button>

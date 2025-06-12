@@ -5,8 +5,15 @@ import { useRouter } from "next/navigation"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { Confetti } from "@/components/ui/confetti"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { 
+  Card,
+  CardContent, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card"
 import { CheckCircleIcon, AlertTriangle } from "lucide-react"
+import { motion } from "framer-motion"
 
 interface QuestionResult {
   questionId: string | number
@@ -52,22 +59,34 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
   const hasShownConfettiRef = useRef(false)
 
   const enhancedResults = useMemo(() => {
-    return result?.questionResults?.map((q) => {
-      const sim = typeof q.similarity === "number"
-        ? q.similarity
-        : getSimilarity(q.userAnswer || "", q.correctAnswer || "")
+    if (!result?.questionResults) return []
+
+    return result.questionResults.map((q) => {
+      // Find the actual user answer from the answers array
+      const actualAnswer = result.answers?.find((a) => a.questionId.toString() === q.questionId.toString())
+      // Find the question text from the questions array
+      const questionData = result.questions?.find((quest) => quest.id.toString() === q.questionId.toString())
+
+      const userAnswer = actualAnswer?.userAnswer || q.userAnswer || ""
+      const correctAnswer = q.correctAnswer || questionData?.answer || ""
+      const sim = typeof q.similarity === "number" ? q.similarity : getSimilarity(userAnswer, correctAnswer)
       const similarityLabel = getSimilarityLabel(sim)
+
       return {
         ...q,
+        question: q.question || questionData?.question || `Question ${q.questionId}`,
+        userAnswer,
+        correctAnswer,
         similarity: sim,
         similarityLabel,
-        isCorrect: q.isCorrect ?? (sim >= 0.7),
+        isCorrect: actualAnswer?.isCorrect ?? sim >= 0.7,
       }
-    }) ?? []
+    })
   }, [result])
 
-  const correctCount = enhancedResults.filter(q => q.isCorrect).length
-  const percentage = result?.percentage ?? Math.round((correctCount / enhancedResults.length) * 100)
+  const correctCount = enhancedResults.filter((q) => q.isCorrect).length
+  const totalQuestions = enhancedResults.length || 1
+  const percentage = result?.percentage ?? Math.round((correctCount / totalQuestions) * 100)
 
   useEffect(() => {
     const resultId = result?.completedAt
@@ -95,7 +114,7 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
 
   if (!result || !Array.isArray(result.questionResults)) {
     return (
-      <Card className="max-w-4xl mx-auto">
+      <Card className="max-w-4xl mx-auto rounded-2xl shadow-lg">
         <CardContent className="pt-6 text-center">
           <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-4" />
           <CardTitle className="text-xl font-bold mb-2">No Results Found</CardTitle>
@@ -105,76 +124,112 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
     )
   }
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeInOut" } },
+  }
+
   return (
     <>
       <div className="max-w-4xl mx-auto">
-        <Card className="mb-6">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl font-bold">{result.title || "Quiz Results"}</CardTitle>
-            <p className="text-muted-foreground mt-1">
-              Completed {new Date(result.completedAt || new Date()).toLocaleDateString()}
-            </p>
-          </CardHeader>
+        <motion.div 
+          className="mb-8 rounded-2xl shadow-lg overflow-hidden"
+          variants={cardVariants} 
+          initial="hidden" 
+          animate="visible"
+        >
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-3xl font-bold mb-2">{result.title || "Quiz Results"}</CardTitle>
+              <p className="text-muted-foreground mt-1">
+                Completed {new Date(result.completedAt || new Date()).toLocaleDateString()}
+              </p>
+            </CardHeader>
 
-          <CardContent className="pt-4">
-            <div className="flex flex-col items-center justify-center py-6">
-              <div className={`text-5xl font-bold mb-2 ${getScoreClass()}`}>{percentage}%</div>
-              <p className="text-lg mb-3">{correctCount} correct out of {enhancedResults.length} questions</p>
+            <CardContent className="pt-4">
+              <div className="flex flex-col items-center justify-center py-6">
+                <div className={`text-6xl font-extrabold mb-3 ${getScoreClass()}`}>{percentage}%</div>
+                <p className="text-lg text-gray-600 mb-4">
+                  {correctCount} correct out of {enhancedResults.length} questions
+                </p>
 
-              {percentage >= 70 ? (
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircleIcon className="h-5 w-5" />
-                  <span>Excellent work!</span>
-                </div>
-              ) : percentage >= 50 ? (
-                <div className="text-amber-600">You're close! Keep practicing.</div>
-              ) : (
-                <div className="text-red-600">Keep going! You'll get there with more effort.</div>
-              )}
-            </div>
-          </CardContent>
-
-          <CardFooter className="flex justify-center gap-4 pt-2 pb-6">
-            <Button onClick={handleRetake} variant="outline">Retake Quiz</Button>
-            <Button onClick={handleAllQuizzes}>All Quizzes</Button>
-          </CardFooter>
-        </Card>
-
-        <div className="space-y-6 mb-8">
-          <h2 className="text-xl font-semibold">Question Breakdown</h2>
-          {enhancedResults.map((q) => (
-            <div key={q.questionId} className="p-4 mb-4 border rounded-lg">
-              <div className="font-semibold mb-2">{q.question}</div>
-
-              <div>
-                <span className="font-medium">Your answer:</span>{" "}
-                <span className={
-                  q.similarityLabel === "Correct"
-                    ? "text-green-700"
-                    : q.similarityLabel === "Close"
-                    ? "text-yellow-700"
-                    : "text-red-700"
-                }>
-                  {q.userAnswer || "(no answer)"}
-                </span>
-                {q.similarityLabel === "Close" && (
-                  <span className="ml-2 text-xs font-semibold text-yellow-700">(Close enough!)</span>
+                {percentage >= 70 ? (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircleIcon className="h-6 w-6" />
+                    <span className="text-lg font-semibold">Excellent work!</span>
+                  </div>
+                ) : percentage >= 50 ? (
+                  <div className="text-amber-600 font-semibold">You're close! Keep practicing.</div>
+                ) : (
+                  <div className="text-red-600 font-semibold">Keep going! You'll get there with more effort.</div>
                 )}
               </div>
+            </CardContent>
 
-              <div>
-                <span className="font-medium">Correct answer:</span> {q.correctAnswer}
-              </div>
+            <CardFooter className="flex justify-center gap-4 pt-2 pb-6">
+              <Button onClick={handleRetake} variant="outline">
+                Retake Quiz
+              </Button>
+              <Button onClick={handleAllQuizzes}>All Quizzes</Button>
+            </CardFooter>
+          </Card>
+        </motion.div>
 
-              <div className="text-xs text-muted-foreground mt-1">
-                Similarity: {Math.round((q.similarity || 0) * 100)}% ({q.similarityLabel})
+        <div className="space-y-6 mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Question Breakdown</h2>
+          {enhancedResults.map((q) => (
+            <motion.div
+              key={q.questionId}
+              className="rounded-xl shadow-md overflow-hidden"
+              style={{ backgroundColor: "#f9f9f9" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 * enhancedResults.indexOf(q) }}
+            >
+              <div className="px-6 py-4">
+                <div className="font-semibold text-lg mb-3">{q.question}</div>
+
+                <div className="mb-2">
+                  <span className="font-medium">Your answer:</span>{" "}
+                  <span
+                    className={
+                      q.similarityLabel === "Correct"
+                        ? "text-green-700"
+                        : q.similarityLabel === "Close"
+                          ? "text-yellow-700"
+                          : "text-red-700"
+                    }
+                  >
+                    {q.userAnswer || "(no answer)"}
+                  </span>
+                  {q.similarityLabel === "Close" && (
+                    <span className="ml-2 text-sm font-semibold text-yellow-700">(Close enough!)</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-medium">Correct answer:</span> {q.correctAnswer}
+                </div>
+
+                <div className="text-sm text-gray-500 mt-2">
+                  Similarity: {Math.round((q.similarity || 0) * 100)}% ({q.similarityLabel})
+                </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
 
-      {showConfetti && <Confetti isActive />}
+      {showConfetti && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Confetti isActive />
+        </motion.div>
+      )}
     </>
   )
 }
