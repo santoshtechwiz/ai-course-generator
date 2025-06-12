@@ -280,28 +280,107 @@ export function generateMetaDescription(content: string, maxLength = 160): strin
   return textContent.substring(0, lastWordBreak) + "..."
 }
 
-/**
- * Extract keywords from a given text.
- * @param text - The text to extract keywords from.
- * @param limit - The maximum number of keywords to extract.
- * @returns An array of keywords.
- */
-export function extractKeywords(text: string, limit: number): string[] {
-  if (!text) return []
+// Helper function to extract keywords from content
+export function extractKeywords(content: string, maxKeywords = 10): string[] {
+  if (!content) return []
 
-  const words = text
-    .toLowerCase()
-    .replace(/[^a-z\s]/g, "")
-    .split(/\s+/)
-    .filter((word) => word.length > 3)
+  // Remove HTML tags if present
+  const textContent = content.replace(/<[^>]*>/g, "")
 
-  const frequencyMap: Record<string, number> = {}
-  words.forEach((word) => {
-    frequencyMap[word] = (frequencyMap[word] || 0) + 1
-  })
+  // Remove common stop words
+  const stopWords = new Set([
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "but",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "with",
+    "by",
+    "about",
+    "against",
+    "between",
+    "into",
+    "through",
+    "during",
+    "before",
+    "after",
+    "above",
+    "below",
+    "from",
+    "up",
+    "down",
+    "of",
+    "off",
+    "over",
+    "under",
+    "again",
+    "further",
+    "then",
+    "once",
+    "here",
+    "there",
+    "when",
+    "where",
+    "why",
+    "how",
+    "all",
+    "any",
+    "both",
+    "each",
+    "few",
+    "more",
+    "most",
+    "other",
+    "some",
+    "such",
+    "no",
+    "nor",
+    "not",
+    "only",
+    "own",
+    "same",
+    "so",
+    "than",
+    "too",
+    "very",
+    "s",
+    "t",
+    "can",
+    "will",
+    "just",
+    "don",
+    "should",
+    "now",
+  ])
 
-  return Object.entries(frequencyMap)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, limit)
+  // Split into words, filter stop words, and count occurrences
+  const words = textContent.toLowerCase().split(/\W+/)
+  const wordCounts = words
+    .filter((word) => word.length > 3 && !stopWords.has(word))
+    .reduce(
+      (acc, word) => {
+        acc[word] = (acc[word] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+
+  // Sort by frequency and return top keywords
+  return Object.entries(wordCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxKeywords)
     .map(([word]) => word)
 }

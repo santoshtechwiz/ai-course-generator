@@ -1,5 +1,3 @@
-"use client";
-
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
@@ -136,6 +134,11 @@ export {
 export {
   resetState as resetSubscriptionState,
 } from "./slices/subscription-slice";
+
+
+
+
+
 
 // Flashcard slice exports
 export * from "./slices/flashcard-slice";
