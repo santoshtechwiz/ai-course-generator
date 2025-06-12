@@ -10,41 +10,27 @@ import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 import MobileMenu from "@/components/layout/navigation/MobileMenu"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
 import SearchModal from "@/components/layout/navigation/SearchModal"
-import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import Logo from "./Logo"
 import NotificationsMenu from "./NotificationsMenu"
 import useSubscription from "@/hooks/use-subscription"
-import { useAuth } from "@/hooks/use-auth" // Updated path
+import { useAuth } from "@/hooks/use-auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar"
 
 export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session, status: sessionStatus } = useSession()
-  const { user, isAuthenticated, status: authStatus } = useAuth()
+  
+  // Use our centralized auth hook only
+  const { user, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth()
+  
   const { totalTokens, tokenUsage, subscriptionPlan, isLoading: isSubscriptionLoading } = useSubscription()
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  
-  // Improved authentication status handling
-  const [authLoading, setAuthLoading] = useState(true)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [menuTransition, setMenuTransition] = useState(false)
-
-  // Sync authentication states
-  useEffect(() => {
-    if (sessionStatus !== "loading" && authStatus !== "loading") {
-      setAuthLoading(false)
-      setIsLoggedIn(sessionStatus === "authenticated" || isAuthenticated)
-      
-      // Add slight delay before showing menus for smooth transition
-      setTimeout(() => setMenuTransition(true), 150)
-    }
-  }, [sessionStatus, authStatus, isAuthenticated])
 
   // Handle scroll effect
   useEffect(() => {
@@ -53,13 +39,17 @@ export default function MainNavbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Handle initial loading state
+  // Handle initial loading state and transitions
   useEffect(() => {
-    if (!authLoading && !isSubscriptionLoading) {
+    if (authStatus !== "loading") {
+      // Add slight delay before showing menus for smooth transition
+      setTimeout(() => setMenuTransition(true), 150)
+      
+      // Set loading to false with a delay for smoother UI
       const timer = setTimeout(() => setIsLoading(false), 500)
       return () => clearTimeout(timer)
     }
-  }, [authLoading, isSubscriptionLoading])
+  }, [authStatus])
 
   // Calculate credits with proper fallbacks
   const credits = totalTokens ?? user?.credits ?? 0
@@ -67,8 +57,8 @@ export default function MainNavbar() {
   const showLoading = isLoading && (authLoading || isSubscriptionLoading)
   
   // Get user display information with fallbacks
-  const userImage = session?.user?.image || user?.image || ""
-  const userName = session?.user?.name || user?.name || ""
+  const userImage = user?.image || ""
+  const userName = user?.name || ""
   const userInitial = userName ? userName.charAt(0) : "U"
 
   return (
@@ -99,7 +89,7 @@ export default function MainNavbar() {
 
         <div className="flex items-center ml-auto space-x-4">
           {/* Credit display for authenticated users */}
-          {isLoggedIn && !showLoading && (
+          {isAuthenticated && !showLoading && (
             <div className="hidden md:flex items-center space-x-1" data-testid="credits-display">
               <div className="text-sm font-medium">Credits: {availableCredits.toLocaleString()}</div>
               {subscriptionPlan && subscriptionPlan !== "FREE" && (
@@ -140,7 +130,7 @@ export default function MainNavbar() {
           <ThemeToggle />
           
           {/* Notification Menu - Only show when authenticated */}
-          {isLoggedIn && (
+          {isAuthenticated && (
             <div className={`transition-opacity duration-200 ${menuTransition ? 'opacity-100' : 'opacity-0'}`}>
               <NotificationsMenu />
             </div>
@@ -149,7 +139,7 @@ export default function MainNavbar() {
           {/* User Menu */}
           <div className={`transition-all duration-300 ${!authLoading && menuTransition ? 'scale-100 opacity-100' : 'scale-95 opacity-90'}`}>
             <UserMenu>
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 // User is logged in - show avatar/profile
                 <Button 
                   variant="ghost" 
