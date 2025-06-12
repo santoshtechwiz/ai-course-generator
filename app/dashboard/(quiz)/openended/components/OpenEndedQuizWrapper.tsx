@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import { useSession } from "next-auth/react"
 import type { AppDispatch } from "@/store"
 import {
   selectQuestions,
@@ -20,6 +19,8 @@ import {
   setQuizResults,
   setQuizCompleted,
   fetchQuiz,
+  resetSubmissionState,
+  submitQuiz,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,8 @@ import { Flag, RefreshCw } from "lucide-react"
 import OpenEndedQuiz from "./OpenEndedQuiz"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import type { OpenEndedQuestion } from "@/types/quiz"
+import { toast } from "sonner"
+import { useAuth } from "@/hooks/use-auth"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -44,10 +47,13 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const searchParams = useSearchParams()
   const reset = searchParams.get("reset") === "true"
   const dispatch = useDispatch<AppDispatch>()
-  const { data: session } = useSession()
+  const { isAuthenticated } = useAuth()
 
-  // Track if we've already submitted to prevent double submissions
+  // Track submission state locally to prevent multiple submissions
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const maxSubmitAttemptsRef = useRef<number>(0)
 
   // Redux state
   const questions = useSelector(selectQuestions)
@@ -95,22 +101,50 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
     }
 
     init()
+
+    // Clear any previous submission state on component mount
+    dispatch(resetSubmissionState())
+
+    // Cleanup
+    return () => {
+      if (submissionTimeoutRef.current) {
+        clearTimeout(submissionTimeoutRef.current)
+      }
+    }
   }, [slug, quizData, reset, dispatch])
+
+  // Add safety timeout to prevent UI freeze
+  useEffect(() => {
+    // If we've been submitting for more than 10 seconds, something is wrong
+    if (isSubmitting) {
+      const safetyTimeout = setTimeout(() => {
+        // Force navigation to results
+        const safeSlug = typeof slug === "string" ? slug : String(slug)
+        router.push(`/dashboard/openended/${safeSlug}/results`)
+      }, 10000) // 10 seconds timeout
+
+      return () => clearTimeout(safetyTimeout)
+    }
+  }, [isSubmitting, router, slug])
 
   // Handle quiz completion
   useEffect(() => {
-    if (!isCompleted || hasSubmitted) return
+    if (!isCompleted || hasSubmitted || !isAuthenticated) return
 
-    // When complete, navigate to results page
+    // Show completion toast with celebration
+    toast.success("🎉 Quiz completed! Calculating your results...", {
+      duration: 2000,
+    })
+
+    // Navigate to results page with safety timeout
     const safeSlug = typeof slug === "string" ? slug : String(slug)
+    setHasSubmitted(true)
 
     // Add a small delay for better UX
-    const timer = setTimeout(() => {
+    submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/openended/${safeSlug}/results`)
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [isCompleted, router, slug, hasSubmitted])
+    }, 1500)
+  }, [isCompleted, router, slug, hasSubmitted, isAuthenticated])
 
   const currentQuestion = useMemo(() => {
     if (!questions.length || currentQuestionIndex >= questions.length) return null
@@ -156,56 +190,110 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
     }
   }
 
+  // Complete the quiz - improved with better error handling and safety checks
   const handleSubmitQuiz = () => {
-    if (hasSubmitted) return
+    if (hasSubmitted || isSubmitting) return
 
-    setHasSubmitted(true)
+    setIsSubmitting(true)
 
-    const answeredCount = Object.keys(answers).length
-    const totalQuestions = questions.length
-
-    console.log(`Submitting quiz with ${answeredCount} out of ${totalQuestions} questions answered`)
-
-    const questionResults = questions.map((question, index) => {
-      const id = question.id?.toString() || index.toString()
-      const userAnswer = answers[id]?.text || answers[id]?.userAnswer || ""
-      const similarity = calculateSimilarity(userAnswer, question.answer || "", question.keywords)
-      const isCorrect = similarity >= 0.7
-
-      return {
-        questionId: id,
-        question: question.question || question.text,
-        correctAnswer: question.answer || "",
-        userAnswer,
-        similarity,
-        isCorrect,
-        keywords: question.keywords,
-        type: "openended",
+    try {
+      // Store answers in localStorage as backup
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "quiz_answers_backup",
+            JSON.stringify({
+              slug,
+              answers,
+              timestamp: Date.now(),
+              quizType: "openended",
+            }),
+          )
+        } catch (e) {
+          console.error("Failed to backup answers:", e)
+        }
       }
-    })
 
-    const correctCount = questionResults.filter((q) => q.isCorrect).length
-    const percentage = Math.round((correctCount / questions.length) * 100)
+      const answeredCount = Object.keys(answers).length
+      const totalQuestions = questions.length
 
-    const results = {
-      quizId: slug,
-      slug: slug,
-      title: quizTitle || "Open Ended Quiz",
-      quizType: "openended",
-      maxScore: questions.length,
-      userScore: correctCount,
-      score: correctCount,
-      percentage,
-      completedAt: new Date().toISOString(),
-      questionResults,
-      questions: questionResults,
+      console.log(`Submitting quiz with ${answeredCount} out of ${totalQuestions} questions answered`)
+
+      const questionResults = questions.map((question, index) => {
+        const id = question.id?.toString() || index.toString()
+        const userAnswer = answers[id]?.text || answers[id]?.userAnswer || ""
+        const similarity = calculateSimilarity(userAnswer, question.answer || "", question.keywords)
+        const isCorrect = similarity >= 0.7
+
+        return {
+          questionId: id,
+          question: question.question || question.text,
+          correctAnswer: question.answer || "",
+          userAnswer,
+          similarity,
+          isCorrect,
+          keywords: question.keywords,
+          type: "openended",
+        }
+      })
+
+      const correctCount = questionResults.filter((q) => q.isCorrect).length
+      const percentage = Math.round((correctCount / questions.length) * 100)
+
+      const results = {
+        quizId: slug,
+        slug: slug,
+        title: quizTitle || "Open Ended Quiz",
+        quizType: "openended",
+        maxScore: questions.length,
+        userScore: correctCount,
+        score: correctCount,
+        percentage,
+        completedAt: new Date().toISOString(),
+        questionResults,
+        questions: questionResults,
+      }
+
+      // Set results first
+      dispatch(setQuizResults(results))
+      // Mark quiz as completed
+      dispatch(setQuizCompleted())
+
+      // Then submit the quiz
+      dispatch(submitQuiz())
+        .unwrap()
+        .then(() => {
+          setHasSubmitted(true)
+          const safeSlug = typeof slug === "string" ? slug : String(slug)
+
+          // Navigate to results page after a short delay
+          submissionTimeoutRef.current = setTimeout(() => {
+            router.push(`/dashboard/openended/${safeSlug}/results`)
+          }, 1000)
+        })
+        .catch((err) => {
+          console.error("Quiz submission error:", err)
+          maxSubmitAttemptsRef.current += 1
+
+          // If we've tried 3 times or more, just navigate to results
+          if (maxSubmitAttemptsRef.current >= 3) {
+            toast.error("Having trouble submitting quiz. Redirecting to results page.")
+            const safeSlug = typeof slug === "string" ? slug : String(slug)
+            setTimeout(() => {
+              router.push(`/dashboard/openended/${safeSlug}/results`)
+            }, 1000)
+            return
+          }
+
+          // Otherwise show error and reset submission state
+          setIsSubmitting(false)
+          toast.error("Failed to submit quiz. Please try again.")
+        })
+    } catch (err) {
+      console.error("Error in quiz submission flow:", err)
+      setIsSubmitting(false)
+      toast.error("Failed to submit quiz. Please try again.")
     }
-
-    dispatch(setQuizResults(results))
-    dispatch(setQuizCompleted())
-
-    // Ensure navigation to results page
-    router.push(`/dashboard/openended/${slug}/results`)
   }
 
   const handleRetake = () => {
@@ -227,6 +315,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const canGoNext = currentQuestionIndex < questions.length - 1
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
+  const actualSubmittingState = isSubmitting || quizStatus === "submitting"
 
   if (loading || quizStatus === "loading") {
     return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
@@ -264,7 +353,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   const allQuestionsAnswered = answeredQuestions === questions.length
 
   // Submitting state
-  if (quizStatus === "submitting") {
+  if (actualSubmittingState) {
     return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
   }
 
@@ -298,10 +387,10 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
               onClick={handleSubmitQuiz}
               size="lg"
               className="bg-success hover:bg-success/90 text-white"
-              disabled={hasSubmitted || quizStatus === "submitting"}
+              disabled={actualSubmittingState || hasSubmitted}
             >
               <Flag className="w-4 h-4 mr-2" />
-              {hasSubmitted ? "Submitting..." : "Submit Quiz and View Results"}
+              {actualSubmittingState ? "Submitting..." : "Submit Quiz and View Results"}
             </Button>
           </CardContent>
         </Card>

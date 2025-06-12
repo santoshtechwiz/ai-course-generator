@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
@@ -17,6 +17,8 @@ import {
   saveAnswer,
   fetchQuiz,
   setQuizCompleted,
+  resetSubmissionState,
+  submitQuiz,
 } from "@/store/slices/quiz-slice"
 
 import CodeQuiz from "./CodeQuiz"
@@ -25,7 +27,9 @@ import type { QuizType } from "@/app/types/auth-types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle, Trophy } from "lucide-react"
+import { toast } from "sonner"
+import { useAuth } from "@/hooks/use-auth"
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -38,6 +42,13 @@ interface CodeQuizWrapperProps {
 export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
+  
+  // Track submission state locally to prevent multiple submissions
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const maxSubmitAttemptsRef = useRef<number>(0)
 
   // Redux selectors - pure quiz state
   const questions = useSelector(selectQuestions)
@@ -67,16 +78,51 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
 
       dispatch(fetchQuiz(quizPayload))
     }
+    
+    // Clear any previous submission state on component mount
+    dispatch(resetSubmissionState())
+    
+    // Cleanup
+    return () => {
+      if (submissionTimeoutRef.current) {
+        clearTimeout(submissionTimeoutRef.current)
+      }
+    }
   }, [quizStatus, dispatch, slug, quizData])
+
+  // Add safety timeout to prevent UI freeze
+  useEffect(() => {
+    // If we've been submitting for more than 10 seconds, something is wrong
+    if (isSubmitting) {
+      const safetyTimeout = setTimeout(() => {
+        // Force navigation to results
+        const safeSlug = typeof slug === "string" ? slug : String(slug)
+        router.push(`/dashboard/code/${safeSlug}/results`)
+      }, 10000) // 10 seconds timeout
+      
+      return () => clearTimeout(safetyTimeout)
+    }
+  }, [isSubmitting, router, slug])
 
   // Handle quiz completion - only when explicitly triggered
   useEffect(() => {
-    if (!isQuizComplete) return
+    if (!isQuizComplete || hasSubmitted || !isAuthenticated) return
 
-    // When complete, navigate to results
+    // Show completion toast with celebration
+    toast.success("🎉 Quiz completed! Calculating your results...", {
+      duration: 2000,
+    })
+
+    // Navigate to results page with safety timeout
     const safeSlug = typeof slug === "string" ? slug : String(slug)
-    router.push(`/dashboard/code/${safeSlug}/results`)
-  }, [isQuizComplete, router, slug])
+    setHasSubmitted(true)
+
+    // Add a small delay for better UX
+    submissionTimeoutRef.current = setTimeout(() => {
+      router.push(`/dashboard/code/${safeSlug}/results`)
+    }, 1500)
+
+  }, [isQuizComplete, router, slug, hasSubmitted, isAuthenticated])
 
   // Answer handler - store the selected answer
   const handleAnswerQuestion = (selectedOption: string | undefined) => {
@@ -107,14 +153,72 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
     }
   }
 
-  // Complete the quiz
+  // Complete the quiz - now with better safeguards and retry mechanism
   const handleFinish = () => {
-    dispatch(setQuizCompleted())
+    if (hasSubmitted || isSubmitting) return
+    
+    setIsSubmitting(true)
+    
+    try {
+      // First mark as completed
+      dispatch(setQuizCompleted())
+      
+      // Store answers in localStorage as backup
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('quiz_answers_backup', JSON.stringify({
+            slug,
+            answers,
+            timestamp: Date.now(),
+            quizType: 'code'
+          }))
+        } catch (e) {
+          console.error('Failed to backup answers:', e)
+        }
+      }
+
+      // Then submit the quiz to generate results
+      dispatch(submitQuiz())
+        .unwrap()
+        .then(() => {
+          setHasSubmitted(true)
+          const safeSlug = typeof slug === "string" ? slug : String(slug)
+          
+          // Navigate to results page after a short delay
+          submissionTimeoutRef.current = setTimeout(() => {
+            router.push(`/dashboard/code/${safeSlug}/results`)
+          }, 1000)
+        })
+        .catch(err => {
+          console.error("Quiz submission error:", err)
+          maxSubmitAttemptsRef.current += 1
+          
+          // If we've tried 3 times or more, just navigate to results
+          if (maxSubmitAttemptsRef.current >= 3) {
+            toast.error("Having trouble submitting quiz. Redirecting to results page.")
+            const safeSlug = typeof slug === "string" ? slug : String(slug)
+            setTimeout(() => {
+              router.push(`/dashboard/code/${safeSlug}/results`)
+            }, 1000)
+            return
+          }
+          
+          // Otherwise show error and reset submission state
+          setIsSubmitting(false)
+          toast.error("Failed to submit quiz. Please try again.")
+        })
+    } catch (err) {
+      console.error("Error in quiz submission flow:", err)
+      setIsSubmitting(false)
+      toast.error("Failed to submit quiz. Please try again.")
+    }
   }
 
   // UI calculations
   const answeredQuestions = Object.keys(answers).length
   const progressPercentage = (answeredQuestions / questions.length) * 100
+  const allQuestionsAnswered = answeredQuestions === questions.length
+  const actualSubmittingState = isSubmitting || quizStatus === "submitting"
 
   // Loading state
   if (quizStatus === "loading") {
@@ -170,7 +274,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
   const existingAnswer = currentAnswer?.selectedOptionId
 
   // Submitting state
-  if (quizStatus === "submitting") {
+  if (actualSubmittingState) {
     return <QuizLoader full message="Quiz Completed! 🎉" subMessage="Calculating your results..." />
   }
 
@@ -212,16 +316,17 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
                 <Button
                   variant="outline"
                   onClick={() => dispatch(setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1)))}
-                  disabled={currentQuestionIndex === 0}
+                  disabled={currentQuestionIndex === 0 || actualSubmittingState}
                 >
                   Previous
                 </Button>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto py-2 px-1">
                   {questions.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => dispatch(setCurrentQuestionIndex(index))}
+                      disabled={actualSubmittingState}
                       className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
                         index === currentQuestionIndex
                           ? "bg-primary text-primary-foreground"
@@ -240,7 +345,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
                   onClick={() =>
                     dispatch(setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1)))
                   }
-                  disabled={currentQuestionIndex === questions.length - 1}
+                  disabled={currentQuestionIndex === questions.length - 1 || actualSubmittingState}
                 >
                   Next
                 </Button>
@@ -255,7 +360,7 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
           onAnswer={handleAnswerQuestion}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={questions.length}
-          isSubmitting={quizStatus === "submitting"}
+          isSubmitting={actualSubmittingState}
           existingAnswer={existingAnswer}
           onNext={handleNext}
           onFinish={handleFinish}
@@ -273,16 +378,20 @@ export default function CodeQuizWrapper({ slug, quizData }: CodeQuizWrapperProps
 
                 <div className="flex gap-3">
                   {currentQuestionIndex < questions.length - 1 ? (
-                    <Button onClick={handleNext} disabled={!existingAnswer || quizStatus === "submitting"}>
+                    <Button 
+                      onClick={handleNext} 
+                      disabled={!existingAnswer || actualSubmittingState}
+                    >
                       Next Question
                     </Button>
                   ) : (
                     <Button
                       onClick={handleFinish}
-                      disabled={quizStatus === "submitting"}
-                      className="bg-green-600 hover:bg-green-700"
+                      disabled={!allQuestionsAnswered || actualSubmittingState || hasSubmitted}
+                      className="bg-green-600 hover:bg-green-700 gap-2"
                     >
-                      {quizStatus === "submitting" ? "Submitting..." : "Finish Quiz"}
+                      <Trophy className="w-4 h-4" />
+                      {actualSubmittingState ? "Submitting..." : "Finish Quiz"}
                     </Button>
                   )}
                 </div>
