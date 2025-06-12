@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { Confetti } from "@/components/ui/confetti"
@@ -43,10 +43,12 @@ interface Props {
   slug: string
 }
 
+// Move function outside component to prevent recreation
 function getSimilarity(userAnswer: string, correctAnswer: string) {
   return getBestSimilarityScore(userAnswer || "", correctAnswer || "") / 100
 }
 
+// Move function outside component to prevent recreation
 function getSimilarityLabel(similarity: number) {
   if (similarity >= 0.7) return "Correct"
   if (similarity >= 0.5) return "Close"
@@ -58,6 +60,7 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
   const [showConfetti, setShowConfetti] = useState(false)
   const hasShownConfettiRef = useRef(false)
 
+  // Memoize enhanced results to prevent recalculation on every render
   const enhancedResults = useMemo(() => {
     if (!result?.questionResults) return []
 
@@ -69,6 +72,8 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
 
       const userAnswer = actualAnswer?.userAnswer || q.userAnswer || ""
       const correctAnswer = q.correctAnswer || questionData?.answer || ""
+      
+      // Only calculate similarity if not already provided
       const sim = typeof q.similarity === "number" ? q.similarity : getSimilarity(userAnswer, correctAnswer)
       const similarityLabel = getSimilarityLabel(sim)
 
@@ -84,9 +89,18 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
     })
   }, [result])
 
-  const correctCount = enhancedResults.filter((q) => q.isCorrect).length
-  const totalQuestions = enhancedResults.length || 1
-  const percentage = result?.percentage ?? Math.round((correctCount / totalQuestions) * 100)
+  // Memoize derived values to avoid recalculation
+  const { correctCount, totalQuestions, percentage } = useMemo(() => {
+    const correct = enhancedResults.filter((q) => q.isCorrect).length
+    const total = enhancedResults.length || 1
+    const pct = result?.percentage ?? Math.round((correct / total) * 100)
+    
+    return {
+      correctCount: correct,
+      totalQuestions: total,
+      percentage: pct
+    }
+  }, [enhancedResults, result?.percentage])
 
   useEffect(() => {
     const resultId = result?.completedAt
@@ -98,20 +112,22 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
     }
   }, [result, percentage])
 
-  const getScoreClass = () => {
+  // Memoize this function to prevent recreation on every render
+  const getScoreClass = useCallback(() => {
     if (percentage >= 80) return "text-green-600"
     if (percentage >= 60) return "text-amber-600"
     return "text-red-600"
-  }
+  }, [percentage])
 
-  const handleRetake = () => {
+  const handleRetake = useCallback(() => {
     onRetake?.() || router.push(`/dashboard/openended/${slug}`)
-  }
+  }, [onRetake, router, slug])
 
-  const handleAllQuizzes = () => {
+  const handleAllQuizzes = useCallback(() => {
     router.push("/dashboard/quizzes")
-  }
+  }, [router])
 
+  // Early return with memoized check
   if (!result || !Array.isArray(result.questionResults)) {
     return (
       <Card className="max-w-4xl mx-auto rounded-2xl shadow-lg">
@@ -124,6 +140,7 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
     )
   }
 
+  // Memoize card variants to avoid recreation
   const cardVariants = {
     hidden: { opacity: 0, y: 50 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeInOut" } },
@@ -177,14 +194,14 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
 
         <div className="space-y-6 mb-8">
           <h2 className="text-2xl font-semibold mb-4">Question Breakdown</h2>
-          {enhancedResults.map((q) => (
+          {enhancedResults.map((q, idx) => (
             <motion.div
               key={q.questionId}
               className="rounded-xl shadow-md overflow-hidden"
               style={{ backgroundColor: "#f9f9f9" }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 * enhancedResults.indexOf(q) }}
+              transition={{ duration: 0.5, delay: 0.1 * idx }} // Use idx instead of array method to improve performance
             >
               <div className="px-6 py-4">
                 <div className="font-semibold text-lg mb-3">{q.question}</div>

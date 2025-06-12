@@ -207,6 +207,7 @@
     "jest-stare": "^2.5.2",
     "jest-summary-reporter": "0.0.2",
     "recoil": "^0.7.7",
+    "rehype-highlight": "7.0.2",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2"
   },

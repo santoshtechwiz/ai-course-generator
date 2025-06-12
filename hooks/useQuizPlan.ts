@@ -1,11 +1,12 @@
 import { useSession } from "next-auth/react"
 import { useAppSelector } from "@/store"
 import { selectSubscription } from "@/store/slices/subscription-slice"
-import { useAuth } from "@/hooks/useAuth"
+
 import { useMemo, useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation" // Fixed: next/router to next/navigation
 import { useToast } from "@/hooks/use-toast" // Fixed: import toast properly
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import useAuth from "./use-auth"
 
 export type PlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE"
 

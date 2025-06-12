@@ -46,7 +46,7 @@ export default function CourseDetailsTabs({
       completedChapters,
       progressPercentage,
     }
-  }, [course, courseProgress])
+  }, [course.courseUnits, courseProgress?.completedChapters?.length])
 
   const formatTime = useCallback((seconds: number): string => {
     if (isNaN(seconds)) return "0:00"
@@ -85,7 +85,6 @@ export default function CourseDetailsTabs({
 
   const handleSeekToBookmark = useCallback(
     (time: number) => {
-      console.log("Seek to bookmark:", time)
       if (onSeekToBookmark) {
         onSeekToBookmark(time)
       }
