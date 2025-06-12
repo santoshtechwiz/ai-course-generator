@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
 import { RootState } from "@/store"
-import { getAuthSession } from "@/lib/auth"
 
 // Define types
 export interface AuthUser {
@@ -37,14 +36,29 @@ export const initializeAuth = createAsyncThunk(
   "auth/initialize",
   async (_, { rejectWithValue }) => {
     try {
-      const session = await getAuthSession()
+      // Check if we're on client side to avoid calling headers outside request scope
+      if (typeof window !== "undefined") {
+        // On client side, we can't use getAuthSession() directly
+        // Instead, check if we have session data in localStorage or return empty
+        const localSession =
+          localStorage.getItem("next-auth.session-token") ||
+          sessionStorage.getItem("next-auth.session-token")
 
-      if (session?.user) {
+        // If there's no session token, we assume not logged in
+        if (!localSession) {
+          return { user: null, token: null }
+        }
+
+        // If there's a token but we can't access the session data yet,
+        // return a loading state which will be resolved by the AuthContext
         return {
-          user: session.user,
-          token: session.token || null,
+          pending: true,
+          message: "Waiting for session data",
         }
       }
+
+      // Server-side initialization would use getAuthSession()
+      // but we'll never call this branch on the client
       return { user: null, token: null }
     } catch (error) {
       console.error("Failed to initialize auth:", error)
@@ -93,6 +107,12 @@ export const authSlice = createSlice({
         state.status = "loading"
       })
       .addCase(initializeAuth.fulfilled, (state, action) => {
+        // Handle the "pending" case where we're waiting for session data
+        if (action.payload.pending) {
+          state.status = "loading"
+          return
+        }
+
         if (action.payload.user) {
           state.status = "authenticated"
           state.user = action.payload.user

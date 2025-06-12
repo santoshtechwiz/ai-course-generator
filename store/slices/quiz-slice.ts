@@ -751,6 +751,13 @@ const quizSlice = createSlice({
     resetState: () => {
       return initialState
     },
+
+    // Add this action in your quiz-slice.ts file
+    resetSubmissionState: (state) => {
+      state.status = state.status === "submitting" ? "success" : state.status
+      state.isSubmitting = false
+      state.isQuizComplete = false
+    },
   },
 
   extraReducers: (builder) => {
@@ -941,6 +948,7 @@ export const {
   setQuiz, // Export the new action
   resetState, // Export the new resetState action
   hydrateStateFromStorage, // Export the new action
+  resetSubmissionState,
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility

@@ -12,6 +12,9 @@ import {
   selectIsCancelled,
 } from "@/store/slices/subscription-slice"
 import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
+import { useAuth } from "./use-auth"
+import { useSelector } from "react-redux"
+import { selectUser } from "@/store/slices/auth-slice"
 
 const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
@@ -151,6 +154,69 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
   }
+}
+
+/**
+ * Hook for accessing subscription data
+ *
+ * This hook provides subscription status and details:
+ * - isActive: whether the subscription is active
+ * - plan: the current subscription plan
+ * - expiresAt: when the subscription expires
+ * - features: features available to the user
+ * - isLoading: whether subscription data is being fetched
+ * - error: any error that occurred while fetching subscription data
+ */
+export function useSubscriptionDetails() {
+  const { userId, isAuthenticated } = useAuth()
+  const reduxUser = useSelector(selectUser)
+  const [subscription, setSubscription] = useState<SubscriptionDetails>({
+    isActive: false,
+    plan: null,
+    expiresAt: null,
+    features: [],
+    isLoading: false,
+    error: null,
+  })
+
+  useEffect(() => {
+    if (!isAuthenticated || !userId) return
+
+    const fetchSubscription = async () => {
+      setSubscription((prev) => ({ ...prev, isLoading: true }))
+
+      try {
+        // Get subscription info from API
+        const response = await fetch(`/api/subscription?userId=${userId}`)
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch subscription data")
+        }
+
+        const data = await response.json()
+
+        setSubscription({
+          isActive: data.isActive || false,
+          plan: data.plan || null,
+          expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+          features: data.features || [],
+          isLoading: false,
+          error: null,
+        })
+      } catch (error) {
+        console.error("Error fetching subscription:", error)
+        setSubscription((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: "Failed to load subscription details",
+        }))
+      }
+    }
+
+    fetchSubscription()
+  }, [userId, isAuthenticated, reduxUser?.id])
+
+  return subscription
 }
 
 export default useSubscription

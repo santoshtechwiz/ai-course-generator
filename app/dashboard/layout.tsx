@@ -8,6 +8,7 @@ import CourseAIState from "@/components/development/CourseAIState"
 import { NavigationEvents } from "./NavigationEvents"
 import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth" // Import to get session for the provider
+import { AuthConsumer } from "@/context/auth-context"
 
 export const viewport = {
   width: "device-width",
@@ -25,22 +26,24 @@ export default async function DashboardLayout({
 
   return (
     <RootLayoutProvider session={session}>
-      <div className="min-h-screen flex flex-col">
-        {/* Wrap in DashboardShell */}
-        <DashboardShell>
-          {/* Top-level routing and state sync */}
-          <NavigationEvents />
+      <AuthConsumer>
+        <div className="min-h-screen flex flex-col">
+          {/* Wrap in DashboardShell */}
+          <DashboardShell>
+            {/* Top-level routing and state sync */}
+            <NavigationEvents />
 
-          {/* Main Content (grows to fill space between header & footer) */}
-          <main className="flex-1 section-spacing">
-            <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
-          </main>
+            {/* Main Content (grows to fill space between header & footer) */}
+            <main className="flex-1 section-spacing">
+              <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
+            </main>
 
-          {/* Note: Toaster from @/components/ui/toaster is different from sonner Toaster in RootLayoutProvider */}
-          <Toaster />
-          {process.env.NODE_ENV === "development" && <CourseAIState />}
-        </DashboardShell>
-      </div>
+            {/* Note: Toaster from @/components/ui/toaster is different from sonner Toaster in RootLayoutProvider */}
+            <Toaster />
+            {process.env.NODE_ENV === "development" && <CourseAIState />}
+          </DashboardShell>
+        </div>
+      </AuthConsumer>
     </RootLayoutProvider>
   )
 }
