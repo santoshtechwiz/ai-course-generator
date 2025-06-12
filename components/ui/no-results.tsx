@@ -54,32 +54,40 @@ export function NoResults({
   iconClassName,
   illustrationPlacement = "top",
   customIcon,
-  minimal = false,
+  minimal = false
 }: NoResultsProps) {
   const [isHovered, setIsHovered] = useState(false);
   const isLeftPlacement = illustrationPlacement === "left";
-  const content = getContentByVariant(variant, { title, description, action });
+
+  // Get predefined content based on variant
+  const content = getContentByVariant(variant, {
+    title,
+    description,
+    action
+  });
+  
   const IconComponent = customIcon || content.icon;
 
   return (
-    <motion.div
-      role="status"
+    <motion.div 
       className={cn(
-        "w-full max-w-4xl mx-auto",
-        isLeftPlacement ? "md:flex items-center gap-6 text-left" : "text-center",
-        !minimal && "border bg-background shadow-sm rounded-lg p-6 sm:p-8",
+        "rounded-lg overflow-hidden",
+        isLeftPlacement ? 
+          "sm:flex items-center sm:gap-6 gap-4 flex-col sm:flex-row" : 
+          "text-center",
+        !minimal && "border bg-card/50 shadow-sm p-4 sm:p-8",
         className
       )}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
     >
-      {/* Icon Section */}
-      <div
+      {/* Icon/Illustration Section */}
+      <div 
         className={cn(
-          isLeftPlacement ? "mb-4 md:mb-0 md:mr-6 flex-shrink-0" : "mx-auto mb-6",
+          isLeftPlacement ? "sm:flex-shrink-0" : "mx-auto mb-4 sm:mb-6", 
           iconClassName
         )}
       >
@@ -87,46 +95,44 @@ export function NoResults({
           className={cn(
             "rounded-full flex items-center justify-center",
             minimal ? "text-muted-foreground" : "bg-muted/50 text-foreground",
-            isLeftPlacement ? "h-16 w-16" : "h-20 w-20 mx-auto"
+            isLeftPlacement ? 
+              "sm:h-16 sm:w-16 h-14 w-14" : 
+              "h-16 w-16 sm:h-20 sm:w-20 mx-auto"
           )}
-          animate={{
+          animate={{ 
             rotate: isHovered ? [0, -10, 10, -10, 0] : 0,
-            scale: isHovered ? 1.05 : 1,
+            scale: isHovered ? 1.05 : 1 
           }}
           transition={{ duration: 0.5 }}
         >
-          <IconComponent
-            className={cn(isLeftPlacement ? "h-8 w-8" : "h-10 w-10")}
-          />
+          <IconComponent className={cn(
+            isLeftPlacement ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-10 sm:w-10"
+          )} />
         </motion.div>
       </div>
 
       {/* Content Section */}
-      <div className={cn(isLeftPlacement ? "flex-1" : "")}>
-        <h3
-          className={cn(
-            "font-semibold text-foreground",
-            isLeftPlacement ? "text-xl md:text-2xl mb-2" : "text-2xl md:text-3xl mb-3"
-          )}
-        >
+      <div className={isLeftPlacement ? "flex-1 text-center sm:text-left" : ""}>
+        <h3 className={cn(
+          "font-semibold",
+          isLeftPlacement ? "text-lg sm:text-xl mb-2" : "text-xl sm:text-2xl mb-2 sm:mb-3"
+        )}>
           {content.title}
         </h3>
-
-        <p className="text-muted-foreground mb-6 text-sm md:text-base">
+        
+        <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">
           {content.description}
         </p>
-
-        {/* Action Buttons */}
+        
+        {/* Actions */}
         {(action || secondaryAction || content.action) && (
-          <div
-            className={cn(
-              "flex flex-col sm:flex-row gap-3",
-              isLeftPlacement ? "justify-start" : "justify-center"
-            )}
-          >
+          <div className={cn(
+            "flex flex-wrap gap-3",
+            isLeftPlacement ? "justify-center sm:justify-start" : "justify-center"
+          )}>
             {action && (
-              <Button
-                onClick={action.onClick}
+              <Button 
+                onClick={action.onClick} 
                 variant={action.variant || "default"}
                 className="gap-2"
               >
@@ -134,10 +140,10 @@ export function NoResults({
                 {action.label}
               </Button>
             )}
-
+            
             {!action && content.action && (
-              <Button
-                onClick={content.action.onClick}
+              <Button 
+                onClick={content.action.onClick} 
                 variant={content.action.variant || "default"}
                 className="gap-2"
               >
@@ -145,10 +151,10 @@ export function NoResults({
                 {content.action.label}
               </Button>
             )}
-
+            
             {secondaryAction && (
-              <Button
-                onClick={secondaryAction.onClick}
+              <Button 
+                onClick={secondaryAction.onClick} 
                 variant={secondaryAction.variant || "outline"}
                 className="gap-2"
               >

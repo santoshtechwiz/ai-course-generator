@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
 import { RootState } from "@/store"
+import { logger } from "@/lib/logger"
 
 // Define types
 export interface AuthUser {
@@ -10,6 +11,8 @@ export interface AuthUser {
   isAdmin?: boolean
   credits?: number
   userType?: string
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
 }
 
 export interface AuthState {
@@ -34,35 +37,70 @@ const initialState: AuthState = {
 // Async thunk to initialize auth from server session
 export const initializeAuth = createAsyncThunk(
   "auth/initialize",
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
       // Check if we're on client side to avoid calling headers outside request scope
       if (typeof window !== "undefined") {
+        // Try to get auth status from API
+        try {
+          const response = await fetch('/api/auth/session', {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            // If we have session data, return it
+            if (data && data.user) {
+              logger.info("Auth initialized with user data:", data.user);
+              
+              // Also fetch subscription data for the user
+              try {
+                const subResponse = await fetch('/api/subscriptions/status');
+                if (subResponse.ok) {
+                  const subData = await subResponse.json();
+                  
+                  // Enhance user object with subscription information
+                  data.user.subscriptionPlan = subData.subscriptionPlan;
+                  data.user.subscriptionStatus = subData.status;
+                  data.user.credits = subData.credits;
+                  
+                  logger.info("Enhanced user with subscription data:", subData);
+                }
+              } catch (subError) {
+                logger.error("Failed to fetch subscription data:", subError);
+              }
+              
+              return { user: data.user, token: data.token || null };
+            }
+          }
+        } catch (apiError) {
+          logger.warn("Error fetching auth session:", apiError);
+          // Continue to check local storage if API fails
+        }
+        
         // On client side, we can't use getAuthSession() directly
         // Instead, check if we have session data in localStorage or return empty
         const localSession =
           localStorage.getItem("next-auth.session-token") ||
-          sessionStorage.getItem("next-auth.session-token")
-
-        // If there's no session token, we assume not logged in
-        if (!localSession) {
-          return { user: null, token: null }
-        }
+          sessionStorage.getItem("next-auth.session-token");
 
         // If there's a token but we can't access the session data yet,
         // return a loading state which will be resolved by the AuthContext
-        return {
-          pending: true,
-          message: "Waiting for session data",
+        if (localSession) {
+          return { pending: true, message: "Waiting for session data" };
         }
       }
 
-      // Server-side initialization would use getAuthSession()
-      // but we'll never call this branch on the client
-      return { user: null, token: null }
+      // No session found
+      return { user: null, token: null };
     } catch (error) {
-      console.error("Failed to initialize auth:", error)
-      return rejectWithValue("Failed to initialize authentication")
+      logger.error("Failed to initialize auth:", error);
+      return rejectWithValue("Failed to initialize authentication");
     }
   }
 )
@@ -100,6 +138,18 @@ export const authSlice = createSlice({
       state.isAdmin = !!action.payload?.isAdmin
       state.status = action.payload ? "authenticated" : "unauthenticated"
     },
+    // Add a synchronize subscription action to update auth user with subscription data
+    syncSubscriptionData: (state, action: PayloadAction<any>) => {
+      if (state.user && action.payload) {
+        state.user = {
+          ...state.user,
+          credits: action.payload.credits,
+          subscriptionPlan: action.payload.subscriptionPlan,
+          subscriptionStatus: action.payload.status,
+        };
+        logger.info("Synchronized auth user with subscription data:", action.payload);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -132,7 +182,7 @@ export const authSlice = createSlice({
 })
 
 // Export actions
-export const { loginStart, loginSuccess, loginFailure, logout, setUser } =
+export const { loginStart, loginSuccess, loginFailure, logout, setUser, syncSubscriptionData } =
   authSlice.actions
 
 // Export selectors

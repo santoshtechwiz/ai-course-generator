@@ -15,13 +15,7 @@ import { VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subsc
 import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
 import { prisma } from "@/lib/db"
 import { getPaymentGateway } from "./payment-gateway-factory"
-import { createLogger } from "@/lib/logger"
-
-// Create a dedicated logger for subscription service
-const logger = createLogger("subscription-service")
-/**
- * Service for managing user subscriptions and token transactions
- */
+import { logger } from "@/lib/logger" // Fix: use named import instead of default import
 
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes cache TTL

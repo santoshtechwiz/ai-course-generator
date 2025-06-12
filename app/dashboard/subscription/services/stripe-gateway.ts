@@ -10,10 +10,7 @@ import Stripe from "stripe"
 import { prisma } from "@/lib/db"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 import type { PaymentGateway, PaymentOptions, CheckoutResult, PaymentStatusResult } from "./payment-gateway-interface"
-import { createLogger } from "@/lib/logger"
-
-// Initialize logger
-const logger = createLogger("stripe-gateway")
+import { logger } from "@/lib/logger"
 
 // Initialize Stripe with the API key and proper configuration
 const stripe = new Stripe("sk_test_51OiXtSCZXk4IQirdWlR6xQFyIV5eNYeUqMclwdjAxQ3UbMX0Tgi7LRBOvSCEXaPdWZySWyXbYCxm3LVmR8B4dmCY00F74ryT64", {

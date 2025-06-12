@@ -1,3 +1,5 @@
+"use client";
+
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
@@ -8,7 +10,7 @@ import { createPersistMiddleware } from "./middleware/persistMiddleware";
 import authReducer from "./slices/auth-slice";
 import quizReducer from "./slices/quiz-slice";
 import subscriptionReducer from "./slices/subscription-slice";
-import userReducer from "./slices/user-slice";
+
 import flashcardReducer from "./slices/flashcard-slice";
 import courseReducer from "./slices/course-slice";
 import certificateReducer from "./slices/certificate-slice";
@@ -43,7 +45,7 @@ const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   quiz: quizReducer,
   subscription: subscriptionReducer,
-  user: userReducer,
+
   flashcard: flashcardReducer,
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer, // Fixed name to avoid collision with the import
@@ -134,16 +136,6 @@ export {
 export {
   resetState as resetSubscriptionState,
 } from "./slices/subscription-slice";
-
-
-// User slice exports
-// Explicitly re-export conflicting members with unique names
-export {
-  resetState as resetUserState,
-  setUserPreferences as setUserPreferencesFromUserSlice,
-} from "./slices/user-slice";
-
-
 
 // Flashcard slice exports
 export * from "./slices/flashcard-slice";

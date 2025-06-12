@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,43 @@ export function QuizLoader({
   showSpinner = true,
   steps,
 }: QuizLoaderProps) {
+  const [progress, setProgress] = useState(displayProgress ?? 0);
+  const [time, setTime] = useState(0);
+
+  useEffect(() => {
+    // Only run progress animation if displayProgress isn't explicitly provided
+    if (displayProgress === undefined) {
+      // Simulate loading progress
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          // Slow down as we get closer to 100%
+          const increment = (100 - prev) * 0.08;
+          const newProgress = prev + increment;
+          return newProgress > 98 ? 98 : newProgress;
+        });
+      }, 300);
+
+      return () => clearInterval(interval);
+    } else {
+      // If displayProgress is provided, use that value
+      setProgress(displayProgress);
+    }
+  }, [displayProgress]);
+
+  // Track elapsed time separately
+  useEffect(() => {
+    // Track elapsed time
+    if (showTiming) {
+      const timer = setInterval(() => {
+        setTime((prev) => prev + 0.1);
+      }, 100);
+
+      return () => {
+        clearInterval(timer);
+      };
+    }
+  }, [showTiming]);
+
   const loaderSize = {
     sm: "w-8 h-8",
     md: "w-12 h-12",
@@ -83,29 +120,23 @@ export function QuizLoader({
       )}
 
       {/* Progress Bar */}
-      {displayProgress !== undefined && (
+      {(displayProgress !== undefined || progress > 0) && (
         <motion.div
-          className="w-full max-w-md px-4 mb-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          className="mt-6 w-full max-w-xs"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
         >
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-2 w-full bg-muted overflow-hidden rounded-full">
             <motion.div
               className="h-full bg-primary"
               initial={{ width: "0%" }}
-              animate={{ width: `${displayProgress}%` }}
+              animate={{ width: `${progress}%` }}
               transition={{ duration: 0.5 }}
             />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>{displayProgress}%</span>
-            {steps && (
-              <span>
-                {steps.filter((s) => s.status === "completed").length} of{" "}
-                {steps.length}
-              </span>
-            )}
+            <span>{Math.round(progress)}% complete</span>
           </div>
         </motion.div>
       )}
@@ -162,18 +193,18 @@ export function QuizLoader({
       {/* Subtle Timing Dots */}
       {showTiming && (
         <motion.div
-          className="flex gap-1 mt-6"
+          className="flex mt-4 space-x-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
         >
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="w-2 h-2 rounded-full bg-primary"
+              className="h-2 w-2 rounded-full bg-primary/40"
               animate={{
                 scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5],
+                opacity: [0.3, 1, 0.3],
               }}
               transition={{
                 duration: 1.5,
@@ -182,6 +213,16 @@ export function QuizLoader({
               }}
             />
           ))}
+          {time > 0 && (
+            <motion.span
+              className="ml-2 text-xs text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              {time.toFixed(1)}s
+            </motion.span>
+          )}
         </motion.div>
       )}
     </motion.div>
