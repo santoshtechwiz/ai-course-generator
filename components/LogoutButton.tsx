@@ -4,7 +4,7 @@ import { useState } from "react"
 import { LogOut, Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 
 interface LogoutButtonProps {
   redirectTo?: string

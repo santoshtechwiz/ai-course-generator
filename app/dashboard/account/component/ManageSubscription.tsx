@@ -7,7 +7,7 @@ import { CreditCard, Loader2, CheckCircle2, Calendar, CreditCardIcon, AlertTrian
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import {
   Dialog,
   DialogContent,

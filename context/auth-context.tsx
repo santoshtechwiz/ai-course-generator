@@ -14,10 +14,7 @@ import { useSession, signOut, signIn, SessionProvider, SessionProviderProps } fr
 import { invalidateSessionCache } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 
-// Instead of importing directly, check if Redux is available at runtime
-let useDispatch: () => any;
-let reduxLogout: () => any;
-let loginSuccess: (payload: any) => any;
+
 
 // Use a safe way to check for Redux without causing hydration mismatches
 const initReduxHandlers = () => {
@@ -49,7 +46,8 @@ export interface AuthContextValue {
   error: string | null
   isInitialized: boolean
   isAdmin: boolean
-  guestId: string | null
+  guestId: string | null  // This is a property, not a function
+  getGuestId: () => string | null  // Add this function to the interface
   session: any
   logout: (options?: { redirect?: boolean, callbackUrl?: string }) => Promise<void>
   login: (provider: string, options?: { callbackUrl?: string }) => Promise<void>
@@ -319,6 +317,23 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     }
   }, []);
 
+  const getGuestId = useCallback((): string | null => {
+    // Check if guest ID is stored in session storage
+    if (typeof window !== 'undefined') {
+      // Try to load from sessionStorage first
+      let guestId = sessionStorage.getItem('guestId');
+      
+      // If not found, generate a new one
+      if (!guestId) {
+        guestId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        sessionStorage.setItem('guestId', guestId);
+      }
+      
+      return guestId;
+    }
+    return null;
+  }, []);
+
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     user,
@@ -327,12 +342,12 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     error,
     isInitialized,
     isAdmin,
-    guestId: null,
+    guestId: getGuestId(), // Keep for backward compatibility
+    getGuestId,           // Add the function to the context
     session,
     logout,
     login,
     initialize,
-    
     // Computed properties
     userId: user?.id,
     isAuthenticated,
@@ -349,7 +364,8 @@ export function AuthConsumer({ children }: AuthConsumerProps) {
     login,
     initialize,
     isAuthenticated,
-    isLoading
+    isLoading,
+    getGuestId
   ])
 
   return (

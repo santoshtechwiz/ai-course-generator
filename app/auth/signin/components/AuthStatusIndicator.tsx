@@ -2,7 +2,7 @@
 
 import { Loader2, UserCheck, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import { useAuth } from "@/hooks"
 import { useState } from "react"
 

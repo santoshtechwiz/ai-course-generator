@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "./ui/button"
 
 import { buildQuizUrl } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import type { QuizType } from "@/app/types/quiz-types"
 
 export function ShareButton({ slug, title, type }: { slug: string; title: string; type: QuizType }) {
