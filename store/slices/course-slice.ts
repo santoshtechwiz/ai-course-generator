@@ -106,18 +106,17 @@ const courseSlice = createSlice({
     setVideoProgress(
       state,
       action: PayloadAction<{
-        videoId: string
-        time: number
-        playedSeconds?: number
-        duration?: number
-        userId?: string
-      }>,
+        videoId: string;
+        time: number;
+        playedSeconds?: number;
+        duration?: number;
+        userId?: string;
+      }>
     ) {
       const { videoId, time, playedSeconds, duration } = action.payload;
-      
-      if (!videoId) return; // Validate required fields
-      
-      // Update with new values or keep existing ones
+
+      if (!videoId) return;
+
       state.videoProgress[videoId] = {
         time,
         playedSeconds: playedSeconds ?? state.videoProgress[videoId]?.playedSeconds ?? 0,
@@ -353,21 +352,20 @@ const courseSlice = createSlice({
     updateUserProgress(
       state,
       action: PayloadAction<{
-        userId: string,
-        courseId: number | string,
-        progress: CourseProgress
+        userId: string;
+        courseId: number | string;
+        progress: CourseProgress;
       }>
     ) {
       const { userId, courseId, progress } = action.payload;
-      
+
       if (!state.userProgress[userId]) {
         state.userProgress[userId] = {};
       }
-      
+
       state.userProgress[userId][courseId] = progress;
-      
-      // Also update the legacy field for backward compatibility
-      if (typeof courseId === 'number') {
+
+      if (typeof courseId === "number") {
         state.courseProgress[courseId] = progress;
       }
     },

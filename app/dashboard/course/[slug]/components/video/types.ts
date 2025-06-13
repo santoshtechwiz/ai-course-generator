@@ -73,7 +73,8 @@ export interface VideoPlayerProps {
   onChapterComplete?: (chapterId: string) => void
   onNextVideo?: () => void
   nextVideoTitle?: string
-  courseName?: string
+  chapterTitle?: string;
+  courseName?: string;
   courseId?: string | number
   chapterId?: string
   onPrevVideo?: () => void
@@ -265,4 +266,25 @@ export interface UseVideoPlayerReturn {
     handleShowControls: VideoEventHandler
     toggleAutoPlayNext: VideoEventHandler
   }
+}
+
+// Add types for our new overlay components
+export interface ChapterStartOverlayProps {
+  visible: boolean;
+  chapterTitle?: string;
+  courseTitle?: string;
+  onComplete?: () => void;
+  duration?: number;
+}
+
+export interface ChapterEndOverlayProps {
+  visible: boolean;
+  chapterTitle?: string;
+  nextChapterTitle?: string;
+  hasNextChapter: boolean;
+  onNextChapter: () => void;
+  onReplay: () => void;
+  onClose?: () => void;
+  autoAdvanceDelay?: number;
+  autoAdvance?: boolean;
 }
