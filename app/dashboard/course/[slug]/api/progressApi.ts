@@ -1,133 +1,180 @@
-import { throttle } from "../components/video/hooks/progressUtils";
+"use client";
 
-interface ProgressData {
+interface ProgressUpdate {
   courseId: string | number;
   chapterId: string | number;
   videoId: string;
   progress: number;
   playedSeconds: number;
   duration: number;
-  completed?: boolean;
-  userId?: string;
+  completed: boolean;
+  userId: string | undefined;
 }
 
-class ProgressAPI {
-  private static instance: ProgressAPI;
-  private pendingUpdates: Record<string, ProgressData> = {};
-  private syncInProgress = false;
-  private offlineMode = false;
+/**
+ * Helper service for managing video progress API calls
+ * with offline support and queuing
+ */
+class ProgressApiClient {
+  private queue: ProgressUpdate[] = [];
+  private isProcessing = false;
+  private readonly QUEUE_KEY = 'progress-updates-queue';
+  private readonly OFFLINE_FLAG = 'progress-offline-updates';
+  private lastUpdatedTimestamps: Record<string, number> = {}; // Track timestamps for rate limiting
+  private readonly MIN_UPDATE_INTERVAL = 60000; // 1 minute in milliseconds
   
-  private constructor() {
-    this.setupNetworkListeners();
-    this.throttledSync = throttle(this.syncPendingUpdates.bind(this), 10000);
-  }
-  
-  public static getInstance(): ProgressAPI {
-    if (!ProgressAPI.instance) {
-      ProgressAPI.instance = new ProgressAPI();
-    }
-    return ProgressAPI.instance;
-  }
-  
-  private setupNetworkListeners() {
+  constructor() {
+    // Load any queued updates from localStorage on init
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => {
-        this.offlineMode = false;
-        this.syncPendingUpdates();
-      });
+      this.loadFromLocalStorage();
       
+      // Set up event listeners for online/offline status
+      window.addEventListener('online', this.processQueue.bind(this));
       window.addEventListener('offline', () => {
-        this.offlineMode = true;
+        localStorage.setItem(this.OFFLINE_FLAG, 'true');
       });
+    }
+  }
+  
+  /**
+   * Queue a progress update to be sent when online
+   */
+  queueUpdate(update: ProgressUpdate): void {
+    // Check if we should rate limit this update
+    const key = `${update.courseId}-${update.chapterId}-${update.videoId}`;
+    const now = Date.now();
+    const lastUpdate = this.lastUpdatedTimestamps[key] || 0;
+    
+    // Only queue update if it's been at least MIN_UPDATE_INTERVAL since last update
+    // Exception: always queue updates for completed videos
+    if (update.completed || now - lastUpdate >= this.MIN_UPDATE_INTERVAL) {
+      // Update timestamp tracker to prevent too frequent updates
+      this.lastUpdatedTimestamps[key] = now;
       
-      // Initial state
-      this.offlineMode = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+      // Check if there's already a similar update in the queue
+      const existingIndex = this.queue.findIndex(item => 
+        item.courseId === update.courseId && 
+        item.chapterId === update.chapterId &&
+        item.videoId === update.videoId
+      );
+      
+      // Replace existing update or add new one
+      if (existingIndex >= 0) {
+        this.queue[existingIndex] = update;
+      } else {
+        this.queue.push(update);
+      }
+      
+      this.saveToLocalStorage();
+      
+      // Log queue length in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug(`[ProgressAPI] Queued update for ${update.videoId}, queue length: ${this.queue.length}`);
+      }
+      
+      // Try to process immediately if we're online
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        this.processQueue();
+      }
     }
   }
   
-  // Queue an update to be sent to the server
-  public queueUpdate(data: ProgressData): void {
-    const key = `${data.courseId}-${data.chapterId}-${data.videoId}`;
-    this.pendingUpdates[key] = {
-      ...this.pendingUpdates[key],
-      ...data,
-      timestamp: Date.now(),
-    };
+  /**
+   * Process the queued updates
+   */
+  async processQueue(): Promise<void> {
+    if (this.isProcessing || this.queue.length === 0) return;
     
-    // Save to local storage as backup
-    this.saveToLocalStorage();
-    
-    // Try to sync if online
-    if (!this.offlineMode) {
-      this.throttledSync();
-    }
-  }
-  
-  // Throttled sync to avoid too many API calls
-  private throttledSync: () => void;
-  
-  // Sync all pending updates to the server
-  private async syncPendingUpdates(): Promise<void> {
-    if (this.syncInProgress || this.offlineMode || Object.keys(this.pendingUpdates).length === 0) {
+    // Check if we're online
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
       return;
     }
     
-    this.syncInProgress = true;
-    
     try {
-      const updatesToSync = { ...this.pendingUpdates };
-      const updatePromises = Object.values(updatesToSync).map(async (data) => {
-        try {
-          await fetch('/api/progress/update', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-          });
-          
-          // Delete from pending updates on success
-          const key = `${data.courseId}-${data.chapterId}-${data.videoId}`;
-          delete this.pendingUpdates[key];
-        } catch (error) {
-          console.error('Failed to sync progress:', error);
-          // Keep in pending updates to try again later
+      this.isProcessing = true;
+      
+      // Process each update in the queue
+      const processPromises = this.queue.map(update => this.sendProgressUpdate(update));
+      await Promise.all(processPromises);
+      
+      // Clear the queue after successful processing
+      this.queue = [];
+      this.saveToLocalStorage();
+      
+      // Clear the offline flag
+      localStorage.removeItem(this.OFFLINE_FLAG);
+    } catch (err) {
+      console.error('Failed to process progress updates:', err);
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+  
+  /**
+   * Save the current queue to localStorage
+   */
+  saveToLocalStorage(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(this.QUEUE_KEY, JSON.stringify(this.queue));
+      } catch (err) {
+        console.error('Failed to save progress queue to localStorage:', err);
+      }
+    }
+  }
+  
+  /**
+   * Load any queued updates from localStorage
+   */
+  loadFromLocalStorage(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedQueue = localStorage.getItem(this.QUEUE_KEY);
+        if (savedQueue) {
+          this.queue = JSON.parse(savedQueue);
         }
+      } catch (err) {
+        console.error('Failed to load progress queue from localStorage:', err);
+      }
+    }
+  }
+  
+  /**
+   * Send a progress update to the API
+   */
+  private async sendProgressUpdate(update: ProgressUpdate): Promise<void> {
+    try {
+      // Format the API endpoint correctly
+      const response = await fetch(`/api/progress/${update.courseId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentChapterId: update.chapterId,
+          videoId: update.videoId, 
+          progress: update.progress,
+          // Include required fields from the API
+          completedChapters: update.completed ? [Number(update.chapterId)] : [],
+          isCompleted: update.completed
+        }),
       });
       
-      await Promise.all(updatePromises);
-      this.saveToLocalStorage();
-    } finally {
-      this.syncInProgress = false;
-    }
-  }
-  
-  // Save pending updates to localStorage
-  private saveToLocalStorage(): void {
-    try {
-      localStorage.setItem('pendingProgressUpdates', JSON.stringify(this.pendingUpdates));
-    } catch (error) {
-      console.error('Failed to save pending updates to localStorage:', error);
-    }
-  }
-  
-  // Load pending updates from localStorage
-  public loadFromLocalStorage(): void {
-    try {
-      const saved = localStorage.getItem('pendingProgressUpdates');
-      if (saved) {
-        this.pendingUpdates = JSON.parse(saved);
+      if (!response.ok) {
+        throw new Error(`Progress update failed: ${response.status} ${response.statusText}`);
       }
-    } catch (error) {
-      console.error('Failed to load pending updates from localStorage:', error);
+      
+      // Success! Update timestamp for rate limiting
+      const key = `${update.courseId}-${update.chapterId}-${update.videoId}`;
+      this.lastUpdatedTimestamps[key] = Date.now();
+      
+      return await response.json();
+    } catch (err) {
+      console.error(`Failed to update progress for course ${update.courseId}, video ${update.videoId}:`, err);
+      throw err;
     }
-  }
-  
-  // Force a sync (can be called when user manually triggers a sync)
-  public async forceSyncNow(): Promise<void> {
-    await this.syncPendingUpdates();
   }
 }
 
-// Export singleton instance
-export const progressApi = ProgressAPI.getInstance();
+// Export a singleton instance
+export const progressApi = new ProgressApiClient();
