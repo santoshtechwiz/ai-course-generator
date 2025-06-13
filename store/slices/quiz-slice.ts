@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
 }
 
 export interface QuizState {
+  navigationHistory: never[]
   quizId: string | null // Keep for database compatibility
   quizType: QuizType | null // Keep for database compatibility
   title: string

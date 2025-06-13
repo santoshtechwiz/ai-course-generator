@@ -1,27 +1,28 @@
 "use client"
 
-import { use } from "react"
 import { useRouter } from "next/navigation"
-import QuizResultHandler from "../../../components/QuizResultHandler"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import QuizResult from "../../../components/QuizResult"
-
+import QuizResultHandler from "../../../components/QuizResultHandler"
+import { use } from "react"
 
 interface ResultsPageProps {
-  params: Promise<{ slug: string }> | { slug: string }  
+  params: Promise<{
+    slug: string
+  }>
 }
 
 export default function McqResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-  const slug = params instanceof Promise ? use(params) : params.slug;
+  const { slug } = use(params)
   
   const handleRetakeQuiz = () => {
-    // Use replace instead of push to avoid navigation loops
-    router.replace(`/dashboard/mcq/${slug}`)
+    if (slug) {
+      router.push(`/dashboard/mcq/${slug}`)
+    }
   }
 
-  // If slug is missing, show error
   if (!slug) {
     return (
       <div className="container max-w-4xl py-6">
@@ -41,7 +42,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
       <QuizResultHandler 
         slug={slug} 
         quizType="mcq"
-        maxWaitTime={3000} // Shorten wait time to avoid long loading spinner
+       
       >
         {({ result }) => (
           result ? (
