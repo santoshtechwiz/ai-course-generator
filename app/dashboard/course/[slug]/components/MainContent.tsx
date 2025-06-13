@@ -380,6 +380,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     </div>
   )
 
+  // Simplify subscription status checking - determine it once
+  const userSubscription = useMemo(() => {
+    if (!user) return null
+    return user.subscription || null
+  }, [user])
+
+  // Determine access levels based on subscription
+  const accessLevels = useMemo(() => {
+    return {
+      isPremium: userSubscription?.planId === "premium",
+      isProUser: userSubscription?.planId === "premium" || userSubscription?.planId === "pro",
+      isBasicUser: !!userSubscription && ["basic", "pro", "premium"].includes(userSubscription.planId || ""),
+      isAuthenticated: !!session,
+    }
+  }, [userSubscription, session])
+
   // Regular content
   const regularContent = (
     <div className="min-h-screen bg-background">
@@ -533,8 +549,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               <CourseDetailsTabs
                 course={course}
                 currentChapter={currentChapter}
-                isAuthenticated={!!session}
-                isPremium={user?.subscription?.planId === "premium"}
+                accessLevels={accessLevels}
                 isAdmin={user?.isAdmin}
                 onSeekToBookmark={handleSeekToBookmark}
               />

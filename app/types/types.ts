@@ -339,6 +339,7 @@ export function generateBreadcrumbItemsFromPath(path: string): { name: string; i
 // Add or modify these types to ensure proper type checking
 
 export interface FullCourseType {
+  isPublic: boolean
   id: number;
   title: string;
   slug: string;

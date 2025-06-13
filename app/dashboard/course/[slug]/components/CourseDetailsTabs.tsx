@@ -12,21 +12,30 @@ import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsQuiz from "./CourseQuiz"
 import CourseAISummary from "./CourseSummary"
 
+interface AccessLevels {
+  isPremium: boolean
+  isProUser: boolean
+  isBasicUser: boolean
+  isAuthenticated: boolean
+}
+
 interface CourseDetailsTabsProps {
   course: FullCourseType
   currentChapter?: FullChapterType
-  isAuthenticated?: boolean
-  isPremium?: boolean
+  isAuthenticated?: boolean // Keep for backward compatibility
+  isPremium?: boolean // Keep for backward compatibility
   isAdmin?: boolean
-  onSeekToBookmark?: (time: number) => void
+  accessLevels?: AccessLevels // New prop for standardized access control
+  onSeekToBookmark?: (time: number, title?: string) => void
 }
 
 export default function CourseDetailsTabs({
   course,
   currentChapter,
-  isAuthenticated = true,
-  isPremium = false,
+  isAuthenticated = true, // Default value for backward compatibility
+  isPremium = false, // Default value for backward compatibility
   isAdmin = false,
+  accessLevels,
   onSeekToBookmark,
 }: CourseDetailsTabsProps) {
   const dispatch = useAppDispatch()
@@ -92,6 +101,14 @@ export default function CourseDetailsTabs({
     [onSeekToBookmark],
   )
 
+  // Use new accessLevels or fall back to the legacy props
+  const finalAccessLevels = accessLevels || {
+    isPremium,
+    isProUser: isPremium, // Assuming premium users have pro access
+    isBasicUser: isAuthenticated, // Assuming authenticated users have basic access
+    isAuthenticated
+  };
+
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden">
@@ -122,8 +139,8 @@ export default function CourseDetailsTabs({
               chapterId={currentChapter.id}
               name={currentChapter.title || currentChapter.name || "Chapter Summary"}
               existingSummary={currentChapter.summary || null}
-              isPremium={isPremium || false}
-              isAdmin={isAdmin || false}
+              hasAccess={finalAccessLevels.isPremium}
+              isAdmin={isAdmin}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -141,7 +158,8 @@ export default function CourseDetailsTabs({
             <CourseDetailsQuiz
               course={course}
               chapter={currentChapter}
-              isPremium={isPremium}
+              hasAccess={finalAccessLevels.isPremium}
+              isAuthenticated={finalAccessLevels.isAuthenticated}
               isPublicCourse={course.isPublic || false}
               chapterId={currentChapter.id.toString()}
             />
@@ -233,7 +251,7 @@ export default function CourseDetailsTabs({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isAuthenticated && bookmarks.length > 0 ? (
+              {accessLevels.isAuthenticated && bookmarks.length > 0 ? (
                 <div className="space-y-3">
                   {bookmarks.map((bookmark) => (
                     <div
@@ -260,7 +278,7 @@ export default function CourseDetailsTabs({
                     </div>
                   ))}
                 </div>
-              ) : isAuthenticated ? (
+              ) : accessLevels?.isAuthenticated ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-30" />
                   <p>No bookmarks yet</p>
