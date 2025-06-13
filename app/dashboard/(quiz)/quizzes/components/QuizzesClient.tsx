@@ -1,11 +1,13 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useCallback, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
+import { ErrorBoundary } from "react-error-boundary"
+import { motion } from "framer-motion"
+import { AlertCircle, RefreshCw } from "lucide-react"
 
 import type { QuizListItem } from "@/app/types/types"
 import type { QuizType } from "@/app/types/quiz-types"
@@ -14,11 +16,7 @@ import type { GetQuizzesResult } from "@/app/actions/getQuizes"
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { QuizSidebar } from "./QuizSidebar"
 import { QuizList } from "./QuizList"
-import { ErrorBoundary } from "react-error-boundary"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
-import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface QuizzesClientProps {
@@ -31,40 +29,31 @@ interface QuizzesClientProps {
 
 function extractQuizzes(data: { pages?: { quizzes: QuizListItem[] }[] } | undefined): QuizListItem[] {
   if (!data?.pages) return []
-  return data.pages.reduce((acc: QuizListItem[], page) => {
-    if (page?.quizzes) {
-      return [...acc, ...page.quizzes]
-    }
-    return acc
-  }, [])
+  return data.pages.flatMap((page) => page?.quizzes || [])
 }
 
 export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps) {
   const router = useRouter()
+
+  // ----- Filters -----
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
   const [questionCountRange, setQuestionCountRange] = useState<[number, number]>([0, 50])
   const [showPrivateOnly, setShowPrivateOnly] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
-  const debouncedSearch = useDebounce(search, 500)
-  const { ref, inView } = useInView({
-    threshold: 0.1,
-    triggerOnce: false,
-  })
 
-  // Memoize query key to prevent unnecessary refetches
-  const queryKey = useMemo(
-    () => [
-      "quizzes",
-      debouncedSearch,
-      selectedTypes.join(","),
-      userId,
-      questionCountRange.join("-"),
-      showPrivateOnly,
-      activeTab,
-    ],
-    [debouncedSearch, selectedTypes, userId, questionCountRange, showPrivateOnly, activeTab],
-  )
+  const debouncedSearch = useDebounce(search, 500)
+  const { ref, inView } = useInView({ threshold: 0.1 })
+
+  const queryKey = useMemo(() => [
+    "quizzes",
+    debouncedSearch,
+    selectedTypes.join(","),
+    userId,
+    questionCountRange.join("-"),
+    showPrivateOnly,
+    activeTab,
+  ], [debouncedSearch, selectedTypes, userId, questionCountRange, showPrivateOnly, activeTab])
 
   const {
     data,
@@ -90,9 +79,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         tab: activeTab,
       })
 
-      if (result.error) {
-        throw new Error(result.error)
-      }
+      if (result.error) throw new Error(result.error)
 
       return {
         quizzes: result?.quizzes || [],
@@ -102,27 +89,30 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: 1,
     initialData: () => {
-      if (search === "" && selectedTypes.length === 0 && activeTab === "all") {
-        return {
-          pages: [initialQuizzesData],
-          pageParams: [1],
-        }
+      if (
+        search === "" &&
+        selectedTypes.length === 0 &&
+        questionCountRange[0] === 0 &&
+        questionCountRange[1] === 50 &&
+        activeTab === "all"
+      ) {
+        return { pages: [initialQuizzesData], pageParams: [1] }
       }
       return undefined
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes stale time
-    retry: 2, // Retry failed requests twice
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    staleTime: 1000 * 60 * 5,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 
-  // Load more quizzes when scrolling to the bottom
+  // Load more when in view
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage && !isError) {
       fetchNextPage()
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, isError])
 
-  // Handlers for search and filters
+  // ----- Event Handlers -----
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }, [])
@@ -136,7 +126,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   }, [])
 
   const toggleQuizType = useCallback((type: QuizType) => {
-    setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
+    setSelectedTypes((prev) => prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type])
   }, [])
 
   const handleTabChange = useCallback((value: string) => {
@@ -152,6 +142,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   }, [refetch])
 
   const quizzes = extractQuizzes(data)
+
   const isSearching =
     debouncedSearch.trim() !== "" ||
     selectedTypes.length > 0 ||
@@ -160,7 +151,6 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     showPrivateOnly ||
     activeTab !== "all"
 
-  // Calculate quiz counts by type (memoized for performance)
   const quizCounts = useMemo(() => {
     const counts = {
       all: quizzes.length,
@@ -177,29 +167,24 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     return counts
   }, [quizzes])
 
-  // Error state content
   const renderErrorState = () => (
-    <div className="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800 flex flex-col items-center">
-      <AlertCircle className="w-10 h-10 mb-3 text-red-500 dark:text-red-400" />
-      <h3 className="font-semibold text-xl mb-2">Error loading quizzes</h3>
-      <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-        We couldn't load your quizzes. Please try again later.
-      </p>
+    <div className="text-center p-6 bg-destructive/10 border border-destructive rounded-lg text-destructive flex flex-col items-center">
+      <AlertCircle className="w-8 h-8 mb-2" />
+      <h3 className="font-semibold text-lg">Error loading quizzes</h3>
+      <p className="text-sm mb-4">Something went wrong. Please try again.</p>
       <Button
         onClick={handleRetry}
         variant="outline"
-        className="mt-2 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+        className="flex items-center gap-2"
         disabled={isRefetching}
       >
         {isRefetching ? (
           <>
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-            Retrying...
+            <RefreshCw className="h-4 w-4 animate-spin" /> Retrying...
           </>
         ) : (
           <>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Try Again
+            <RefreshCw className="h-4 w-4" /> Try Again
           </>
         )}
       </Button>
@@ -222,10 +207,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
       />
 
       <motion.div
-        className="lg:w-3/4 space-y-6"
+        className="lg:w-3/4 w-full space-y-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
         <ErrorBoundary fallback={renderErrorState()} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
           {isLoading ? (
@@ -249,7 +234,9 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
               />
               <div ref={ref} className="h-20 flex items-center justify-center">
                 {isFetchingNextPage && (
-                  <div className="animate-pulse text-muted-foreground text-sm">Loading more quizzes...</div>
+                  <div className="animate-pulse text-muted-foreground text-sm">
+                    Loading more quizzes...
+                  </div>
                 )}
               </div>
             </>
@@ -259,5 +246,3 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     </div>
   )
 }
-
-// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.
