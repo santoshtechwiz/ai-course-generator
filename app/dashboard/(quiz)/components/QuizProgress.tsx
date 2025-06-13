@@ -26,18 +26,21 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
   const total = Math.max(1, totalQuestions)
   const percentage = Math.min(Math.max((current / total) * 100, 0), 100)
 
-  // Calculate total time spent
-  const totalTimeSpent = timeSpent.reduce((acc, time) => acc + (time || 0), 0)
+  // Calculate total time spent - with error handling
+  const totalTimeSpent = Array.isArray(timeSpent)
+    ? timeSpent.reduce((acc, time) => acc + (typeof time === 'number' ? time : 0), 0)
+    : 0
 
-  // Format time display
+  // Format time display with better handling
   const formatTime = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`
+    if (!seconds || typeof seconds !== 'number' || seconds < 0) return '0s'
+    if (seconds < 60) return `${Math.floor(seconds)}s`
     const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
+    const remainingSeconds = Math.floor(seconds % 60)
     return `${minutes}m ${remainingSeconds}s`
   }
 
-  // Calculate average time per question
+  // Calculate average time per question with validation
   const avgTimePerQuestion = timeSpent.length > 0 ? Math.round(totalTimeSpent / timeSpent.length) : 0
 
   // Determine progress color based on completion

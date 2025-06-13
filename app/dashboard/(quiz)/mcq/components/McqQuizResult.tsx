@@ -10,24 +10,20 @@ import {
   Download,
   Share2,
   AlertCircle,
-  BookOpen,
-  Trophy,
-  Target,
+  Clock,
   ChevronDown,
   ChevronUp,
-  Sparkles,
-  TrendingUp,
-  Award,
-  Clock,
+  Trophy,
+  Target,
+  BookOpen,
 } from "lucide-react"
 import { toast } from "sonner"
-import { useState, useMemo, useCallback, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useMemo, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Confetti } from "@/components/ui/confetti"
+import { cn } from "@/lib/tailwindUtils"
 
 interface QuizAnswer {
   questionId: string | number
@@ -63,125 +59,169 @@ interface QuizResult {
 
 interface McqQuizResultProps {
   result: QuizResult
+  slug?: string
+  quizType?: string
+  onRetake?: () => void
 }
 
-function getPerformanceLevel(percentage: number) {
-  if (percentage >= 90)
-    return {
-      level: "Excellent",
-      message: "Outstanding knowledge! You've mastered this topic.",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50 dark:bg-emerald-950/30",
-      borderColor: "border-emerald-200 dark:border-emerald-800",
-      emoji: "🏆",
-      gradient: "from-emerald-500 to-emerald-600",
-    }
-  if (percentage >= 80)
-    return {
-      level: "Very Good",
-      message: "Great job! You have strong understanding.",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50 dark:bg-blue-950/30",
-      borderColor: "border-blue-200 dark:border-blue-800",
-      emoji: "🎯",
-      gradient: "from-blue-500 to-blue-600",
-    }
-  if (percentage >= 70)
-    return {
-      level: "Good",
-      message: "Well done! Your knowledge is solid.",
-      color: "text-green-600",
-      bgColor: "bg-green-50 dark:bg-green-950/30",
-      borderColor: "border-green-200 dark:border-green-800",
-      emoji: "✅",
-      gradient: "from-green-500 to-green-600",
-    }
-  if (percentage >= 60)
-    return {
-      level: "Fair",
-      message: "Good effort! Keep studying to improve.",
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50 dark:bg-yellow-950/30",
-      borderColor: "border-yellow-200 dark:border-yellow-800",
-      emoji: "📚",
-      gradient: "from-yellow-500 to-yellow-600",
-    }
-  if (percentage >= 50)
-    return {
-      level: "Needs Work",
-      message: "You're making progress. More study needed.",
-      color: "text-orange-600",
-      bgColor: "bg-orange-50 dark:bg-orange-950/30",
-      borderColor: "border-orange-200 dark:border-orange-800",
-      emoji: "💪",
-      gradient: "from-orange-500 to-orange-600",
-    }
-  return {
-    level: "Poor",
-    message: "Keep learning! Review the material thoroughly.",
-    color: "text-red-600",
-    bgColor: "bg-red-50 dark:bg-red-950/30",
-    borderColor: "border-red-200 dark:border-red-800",
-    emoji: "📖",
-    gradient: "from-red-500 to-red-600",
-  }
+// Simplified performance level function with reduced object creation
+const getPerformanceData = (percentage: number) => {
+  if (percentage >= 90) return { level: "Excellent", emoji: "🏆", color: "emerald", message: "Outstanding knowledge! You've mastered this topic." }
+  if (percentage >= 80) return { level: "Very Good", emoji: "🎯", color: "blue", message: "Great job! You have strong understanding." }
+  if (percentage >= 70) return { level: "Good", emoji: "✅", color: "green", message: "Well done! Your knowledge is solid." }
+  if (percentage >= 60) return { level: "Fair", emoji: "📚", color: "yellow", message: "Good effort! Keep studying to improve." }
+  if (percentage >= 50) return { level: "Needs Work", emoji: "💪", color: "orange", message: "You're making progress. More study needed." }
+  return { level: "Poor", emoji: "📖", color: "red", message: "Keep learning! Review the material thoroughly." }
 }
 
-export default function McqQuizResult({ result }: McqQuizResultProps) {
+// Memoized question item component to prevent unnecessary re-renders
+const QuestionItem = ({ 
+  question, 
+  answer, 
+  index, 
+  isExpanded, 
+  onToggle 
+}: {
+  question: QuizQuestion | any
+  answer: QuizAnswer | any
+  index: number
+  isExpanded: boolean
+  onToggle: () => void
+}) => {
+  const questionText = question.question || question.text || `Question ${index + 1}`
+  const userAnswerText = answer?.userAnswer || answer?.selectedOption || answer?.selectedOptionId || answer?.answer || "Not answered"
+  const correctAnswerText = question.correctAnswer || question.answer || question.correctOptionId || "Answer unavailable"
+  const isCorrect = answer?.isCorrect ?? false
+
+  return (
+    <Card className="transition-all duration-200 hover:shadow-md">
+      <Collapsible open={isExpanded} onOpenChange={onToggle}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                  isCorrect 
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                )}>
+                  {isCorrect ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                </div>
+                <CardTitle className="text-base font-medium">
+                  Question {index + 1}
+                </CardTitle>
+              </div>
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium mb-2">Question:</h4>
+                <p className="text-muted-foreground">{questionText}</p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <h4 className="font-medium mb-1">Your Answer:</h4>
+                  <p className={cn(
+                    "text-sm p-2 rounded border",
+                    isCorrect 
+                      ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400"
+                      : "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"
+                  )}>
+                    {userAnswerText}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-1">Correct Answer:</h4>
+                  <p className="text-sm p-2 rounded border bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
+                    {correctAnswerText}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  )
+}
+
+export default function McqQuizResult({ result, slug, quizType = "mcq", onRetake }: McqQuizResultProps) {
   const router = useRouter()
-  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({})
-  const [showConfetti, setShowConfetti] = useState(false)
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set())
+
+  // Memoized calculations
+  const performance = useMemo(() => getPerformanceData(result.percentage), [result.percentage])
+  
+  const metrics = useMemo(() => ({
+    correct: result.score || 0,
+    incorrect: (result.maxScore || 0) - (result.score || 0),
+    total: result.maxScore || 0,
+    percentage: Math.round(result.percentage || 0),
+  }), [result.score, result.maxScore, result.percentage])
+
+  const formattedDate = useMemo(() => {
+    try {
+      const date = result?.completedAt ? new Date(result.completedAt) : null
+      if (!date || isNaN(date.getTime())) {
+        return "Just now"
+      }
+      return date.toLocaleDateString()
+    } catch {
+      return "Recently"
+    }
+  }, [result?.completedAt])
 
   const questions = result.questions || []
   const answers = result.answers || []
   const questionResults = result.questionResults || []
   const hasQuestionDetails = questions.length > 0 || questionResults.length > 0
-  const quizSlug = result.slug || result.quizId || ""
+  const quizSlug = slug || result.slug || result.quizId || ""
 
-  const performance = useMemo(() => getPerformanceLevel(result.percentage), [result.percentage])
-
-  useEffect(() => {
-    if (result.percentage >= 70) {
-      setShowConfetti(true)
-      const timer = setTimeout(() => setShowConfetti(false), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [result.percentage])
-
+  // Optimized event handlers
   const toggleQuestion = useCallback((id: string) => {
-    setExpandedQuestions((prev) => ({ ...prev, [id]: !prev[id] }))
+    setExpandedQuestions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
   }, [])
 
   const expandAll = useCallback(() => {
     if (!hasQuestionDetails) return
-    const expanded: Record<string, boolean> = {}
+    const allIds = new Set<string>()
     if (questions.length > 0) {
-      questions.forEach((q) => {
-        if (q?.id) expanded[q.id.toString()] = true
-      })
+      questions.forEach(q => q?.id && allIds.add(q.id.toString()))
     } else if (questionResults.length > 0) {
-      questionResults.forEach((qr, index) => {
-        expanded[qr.questionId?.toString() || index.toString()] = true
-      })
+      questionResults.forEach((qr, index) => allIds.add(qr.questionId?.toString() || index.toString()))
     }
-    setExpandedQuestions(expanded)
+    setExpandedQuestions(allIds)
   }, [hasQuestionDetails, questions, questionResults])
 
   const collapseAll = useCallback(() => {
-    setExpandedQuestions({})
+    setExpandedQuestions(new Set())
   }, [])
 
   const handleShare = useCallback(async () => {
     try {
-      const shareData = {
-        title: `${result.title} - Quiz Results`,
-        text: `I scored ${result.percentage}% (${performance.level}) on the ${result.title} quiz! ${performance.emoji}`,
-        url: window.location.href,
-      }
+      const shareText = `I scored ${result.percentage}% (${performance.level}) on the ${result.title} quiz! ${performance.emoji}`
+      
       if (navigator.share) {
-        await navigator.share(shareData)
+        await navigator.share({
+          title: `${result.title} - Quiz Results`,
+          text: shareText,
+          url: window.location.href,
+        })
       } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
+        await navigator.clipboard.writeText(`${shareText} ${window.location.href}`)
         toast.success("Results copied to clipboard!")
       } else {
         toast.error("Sharing not supported")
@@ -194,46 +234,33 @@ export default function McqQuizResult({ result }: McqQuizResultProps) {
   const handleDownload = useCallback(() => {
     const resultText = `
 Quiz Results: ${result.title}
-Date: ${new Date(result.completedAt).toLocaleString()}
+Date: ${formattedDate}
 Score: ${result.score}/${result.maxScore} (${result.percentage}%)
 Performance: ${performance.level} ${performance.emoji}
 
-${
-  hasQuestionDetails
-    ? `Detailed Results:
-${(questions.length > 0 ? questions : questionResults)
-  .map((item, i) => {
-    let questionText, userAnswerText, correctAnswerText, isCorrect
-    if (questions.length > 0) {
-      const q = item
-      const userAnswer = answers.find((a) => a?.questionId?.toString() === q?.id?.toString())
-      isCorrect = userAnswer?.isCorrect ?? false
-      questionText = q.question || q.text || `Question ${i + 1}`
-      userAnswerText =
-        userAnswer?.userAnswer ||
-        userAnswer?.selectedOption ||
-        userAnswer?.selectedOptionId ||
-        userAnswer?.answer ||
-        "Not answered"
-      correctAnswerText = q.correctAnswer || q.answer || q.correctOptionId || "Answer unavailable"
-    } else {
-      const qr = item
-      isCorrect = qr.isCorrect ?? false
-      questionText = qr.question || qr.text || `Question ${i + 1}`
-      userAnswerText = qr.userAnswer || qr.selectedOption || "Not answered"
-      correctAnswerText = qr.correctAnswer || "Answer unavailable"
-    }
-    return `
-Q${i + 1}: ${questionText}
-Your answer: ${userAnswerText}
-Correct answer: ${correctAnswerText}
-Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
-`
-  })
-  .join("\n")}`
-    : "No detailed results available."
-}
-    `.trim()
+${hasQuestionDetails ? 
+  `Detailed Results:\n${(questions.length > 0 ? questions : questionResults)
+    .map((item, i) => {
+      let questionText, userAnswerText, correctAnswerText, isCorrect
+      if (questions.length > 0) {
+        const q = item
+        const userAnswer = answers.find(a => a?.questionId?.toString() === q?.id?.toString())
+        isCorrect = userAnswer?.isCorrect ?? false
+        questionText = q.question || q.text || `Question ${i + 1}`
+        userAnswerText = userAnswer?.userAnswer || userAnswer?.selectedOption || userAnswer?.selectedOptionId || userAnswer?.answer || "Not answered"
+        correctAnswerText = q.correctAnswer || q.answer || q.correctOptionId || "Answer unavailable"
+      } else {
+        const qr = item
+        isCorrect = qr.isCorrect ?? false
+        questionText = qr.question || qr.text || `Question ${i + 1}`
+        userAnswerText = qr.userAnswer || qr.selectedOption || "Not answered"
+        correctAnswerText = qr.correctAnswer || "Answer unavailable"
+      }
+      return `Q${i + 1}: ${questionText}\nYour answer: ${userAnswerText}\nCorrect answer: ${correctAnswerText}\nResult: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}\n`
+    }).join("\n")}` : 
+  "No detailed results available."
+}`.trim()
+
     const blob = new Blob([resultText], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -244,16 +271,24 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     toast.success("Results downloaded!")
-  }, [result, performance, hasQuestionDetails, questions, questionResults, answers])
+  }, [result, performance, hasQuestionDetails, questions, questionResults, answers, formattedDate])
+
+  const handleRetakeQuiz = useCallback(() => {
+    if (typeof onRetake === "function") {
+      onRetake()
+    } else {
+      router.push(`/dashboard/${quizType}/${quizSlug}`)
+    }
+  }, [onRetake, router, quizType, quizSlug])
+
+  const handleBrowseQuizzes = useCallback(() => {
+    router.push("/dashboard/quizzes")
+  }, [router])
 
   // Error state
   if (!result) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6"
-      >
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6 animate-in fade-in duration-300">
         <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center">
           <AlertCircle className="h-10 w-10 text-destructive" />
         </div>
@@ -263,464 +298,201 @@ Result: ${isCorrect ? "Correct ✓" : "Incorrect ✗"}
             We couldn't load your quiz results. The session may have expired or some data might be missing.
           </p>
         </div>
-        <Button onClick={() => router.push("/dashboard/quizzes")} className="gap-2">
+        <Button onClick={handleBrowseQuizzes} className="gap-2">
           <Home className="w-4 h-4" />
           Browse Quizzes
         </Button>
-      </motion.div>
+      </div>
     )
   }
 
   return (
-    <>
-      <div className="space-y-8 max-w-4xl mx-auto relative">
-        {/* Enhanced Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center space-y-6"
-        >
-          <div className="flex items-center justify-center gap-4">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center"
-            >
-              <BookOpen className="w-8 h-8 text-primary" />
-            </motion.div>
-            <div>
-              <motion.h1
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
-              >
-                {result.title}
-              </motion.h1>
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                <Badge
-                  variant="secondary"
-                  className={`mt-3 text-lg px-4 py-2 ${performance.color} ${performance.bgColor} ${performance.borderColor} border-2`}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {performance.emoji} {performance.level}
-                </Badge>
-              </motion.div>
+    <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header Section */}
+      <Card className="overflow-hidden">
+        <div className={cn(
+          "bg-gradient-to-br p-6 md:p-8 text-white",
+          `from-${performance.color}-500 to-${performance.color}-600`
+        )}>
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            {/* Left side - Quiz info */}
+            <div className="flex-1">
+              <Badge variant="secondary" className="mb-3 bg-white/20 text-white border-white/40">
+                {result.title.length > 30 ? `${result.title.substring(0, 30)}...` : result.title}
+              </Badge>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">Quiz Results</h1>
+              <div className="flex items-center gap-2 text-white/80">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">Completed on {formattedDate}</span>
+              </div>
+            </div>
+
+            {/* Right side - Score circle */}
+            <div className="flex justify-center">
+              <div className="relative w-32 h-32 md:w-40 md:h-40">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={`${metrics.percentage * 2.83} ${283 - metrics.percentage * 2.83}`}
+                    className="transition-all duration-1000 ease-out"
+                    style={{ animationDelay: '300ms' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-3xl md:text-4xl font-bold">{metrics.percentage}%</div>
+                  <div className="text-xs opacity-80">{metrics.correct} of {metrics.total}</div>
+                </div>
+              </div>
             </div>
           </div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-muted-foreground flex items-center justify-center gap-2"
-          >
-            <Clock className="w-4 h-4" />
-            Completed on {new Date(result.completedAt).toLocaleDateString()} at{" "}
-            {new Date(result.completedAt).toLocaleTimeString()}
-          </motion.p>
-        </motion.div>
 
-        {/* Enhanced Score Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <Card className="overflow-hidden shadow-2xl border-2 border-primary/20">
-            <CardHeader className={`bg-gradient-to-r ${performance.gradient} text-white relative overflow-hidden`}>
-              <div className="absolute inset-0 bg-black/10" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      initial={{ rotate: -180, scale: 0 }}
-                      animate={{ rotate: 0, scale: 1 }}
-                      transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-                    >
-                      <Trophy className="w-10 h-10 text-white" />
-                    </motion.div>
-                    <div>
-                      <CardTitle className="text-3xl font-bold text-white">Quiz Results</CardTitle>
-                      <CardDescription className="text-white/90 text-lg">Your performance summary</CardDescription>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
-                      className="text-6xl font-bold text-white"
-                    >
-                      {result.percentage}%
-                    </motion.div>
-                    <div className="text-white/90 text-lg">
-                      {result.score} of {result.maxScore}
-                    </div>
-                  </div>
-                </div>
+          {/* Performance badge */}
+          <div className="mt-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
+              <span className="text-lg">{performance.emoji}</span>
+              <span className="font-semibold">{performance.level}</span>
+            </div>
+            <p className="mt-2 text-white/90">{performance.message}</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
-            </CardHeader>
-            <CardContent className="p-8">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <div className="flex justify-between text-lg">
-                    <span className="font-medium">Progress</span>
-                    <span className="font-bold">
-                      {result.score}/{result.maxScore} correct
-                    </span>
-                  </div>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: "100%" }}
-                    transition={{ delay: 0.8, duration: 1 }}
-                  >
-                    <Progress value={result.percentage} className="h-4 bg-muted/50">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${result.percentage}%` }}
-                        transition={{ delay: 1, duration: 1.5, ease: "easeOut" }}
-                        className={`h-full bg-gradient-to-r ${performance.gradient} rounded-full`}
-                      />
-                    </Progress>
-                  </motion.div>
-                </div>
+              <CardTitle className="text-lg">Correct</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{metrics.correct}</div>
+          </CardContent>
+        </Card>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.2 }}
-                  className={`p-6 rounded-xl border-2 ${performance.bgColor} ${performance.borderColor}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl">{performance.emoji}</span>
-                    <div>
-                      <p className={`font-bold text-lg ${performance.color}`}>{performance.level} Performance!</p>
-                      <p className={`${performance.color} opacity-90`}>{performance.message}</p>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { label: "Correct", value: result.score, color: "emerald", icon: Check },
-                    { label: "Incorrect", value: result.maxScore - result.score, color: "red", icon: X },
-                    { label: "Total", value: result.maxScore, color: "blue", icon: Target },
-                    {
-                      label: "Accuracy",
-                      value: `${Math.round((result.score / result.maxScore) * 100)}%`,
-                      color: "purple",
-                      icon: TrendingUp,
-                    },
-                  ].map((stat, index) => (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.4 + index * 0.1 }}
-                      className={`bg-${stat.color}-50 dark:bg-${stat.color}-950/30 border border-${stat.color}-200 dark:border-${stat.color}-800 rounded-xl p-4 text-center`}
-                    >
-                      <stat.icon className={`w-6 h-6 text-${stat.color}-600 mx-auto mb-2`} />
-                      <div className={`text-2xl font-bold text-${stat.color}-600`}>{stat.value}</div>
-                      <div className="text-sm text-muted-foreground">{stat.label}</div>
-                    </motion.div>
-                  ))}
-                </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <X className="w-4 h-4 text-red-600 dark:text-red-400" />
               </div>
-            </CardContent>
-            <CardFooter className="bg-muted/30 border-t flex flex-wrap gap-3 justify-between p-6">
-              <div className="flex gap-3">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button onClick={() => router.push(`/dashboard/mcq/${quizSlug}`)} className="gap-2">
-                    <RefreshCw className="w-4 h-4" />
-                    Retake Quiz
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="outline" onClick={() => router.push("/dashboard/quizzes")} className="gap-2">
-                    <Home className="w-4 h-4" />
-                    All Quizzes
-                  </Button>
-                </motion.div>
+              <CardTitle className="text-lg">Incorrect</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{metrics.incorrect}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="flex gap-3">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-                    <Download className="w-4 h-4" />
-                    Download
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
-                    <Share2 className="w-4 h-4" />
-                    Share
-                  </Button>
-                </motion.div>
-              </div>
-            </CardFooter>
-          </Card>
-        </motion.div>
-
-        {/* Enhanced Question Review */}
-        {hasQuestionDetails && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <Card className="shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <Award className="w-6 h-6 text-primary" />
-                    <div>
-                      <CardTitle className="text-xl">Answer Review</CardTitle>
-                      <CardDescription>
-                        {questions.length > 0 ? questions.length : questionResults.length} Questions • Review your
-                        answers and learn from mistakes
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={expandAll} className="gap-1">
-                      <ChevronDown className="w-4 h-4" />
-                      Expand All
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={collapseAll} className="gap-1">
-                      <ChevronUp className="w-4 h-4" />
-                      Collapse All
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 p-6">
-                {(questions.length > 0 ? questions : questionResults).map((item, index) => {
-                  let questionData, answer, isCorrect, questionText, questionId
-                  if (questions.length > 0) {
-                    questionData = item
-                    questionId = questionData?.id?.toString() || index.toString()
-                    answer = answers.find(
-                      (a) => a && questionData && a.questionId?.toString() === questionData.id?.toString(),
-                    )
-                    isCorrect = answer?.isCorrect || false
-                    questionText = questionData.question || questionData.text || `Question ${index + 1}`
-                  } else {
-                    const qr = item
-                    questionId = qr.questionId?.toString() || index.toString()
-                    questionData = qr
-                    answer = qr
-                    isCorrect = qr.isCorrect || false
-                    questionText = qr.question || qr.text || `Question ${index + 1}`
-                  }
-                  if (!questionData) return null
-                  const isExpanded = expandedQuestions[questionId]
-
-                  return (
-                    <motion.div
-                      key={questionId}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <Collapsible
-                        open={isExpanded}
-                        onOpenChange={() => toggleQuestion(questionId)}
-                        className={`border-2 rounded-xl overflow-hidden transition-all duration-300 ${
-                          isCorrect
-                            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                            : "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20 hover:bg-red-50 dark:hover:bg-red-950/30"
-                        }`}
-                      >
-                        <div className="p-5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4 flex-1">
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
-                                  isCorrect ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
-                                }`}
-                              >
-                                {isCorrect ? <Check className="w-6 h-6" /> : <X className="w-6 h-6" />}
-                              </motion.div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-lg">Question {index + 1}</h3>
-                                <p className="text-muted-foreground text-sm truncate">{questionText}</p>
-                              </div>
-                              <Badge variant={isCorrect ? "default" : "destructive"} className="text-sm px-3 py-1">
-                                {isCorrect ? "Correct" : "Incorrect"}
-                              </Badge>
-                            </div>
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="sm" className="gap-2 ml-4">
-                                {isExpanded ? (
-                                  <>
-                                    <ChevronUp className="w-4 h-4" />
-                                    Hide
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="w-4 h-4" />
-                                    Review
-                                  </>
-                                )}
-                              </Button>
-                            </CollapsibleTrigger>
-                          </div>
-                        </div>
-                        <CollapsibleContent>
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                            className="px-5 pb-6 space-y-6 border-t bg-card/50"
-                          >
-                            <div className="pt-4">
-                              <h4 className="font-semibold text-lg mb-4">{questionText}</h4>
-                              {questionData.options &&
-                                Array.isArray(questionData.options) &&
-                                questionData.options.length > 0 && (
-                                  <div className="mb-6">
-                                    <h5 className="font-medium text-sm mb-3 text-muted-foreground">Options:</h5>
-                                    <div className="space-y-3">
-                                      {questionData.options.map((option, optIndex) => {
-                                        const optionText = typeof option === "string" ? option : option.text
-                                        const optionId = typeof option === "string" ? option : option.id
-                                        const isUserSelected =
-                                          answer?.selectedOptionId === optionId || answer?.selectedOption === optionText
-                                        const isCorrectOption =
-                                          questionData.correctOptionId === optionId ||
-                                          questionData.correctAnswer === optionText ||
-                                          questionData.answer === optionText
-                                        return (
-                                          <motion.div
-                                            key={optIndex}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: optIndex * 0.1 }}
-                                            className={`p-4 rounded-lg border-2 text-sm transition-all ${
-                                              isCorrectOption
-                                                ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-100"
-                                                : isUserSelected
-                                                  ? "bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-700 text-red-900 dark:text-red-100"
-                                                  : "bg-muted/50 border-muted"
-                                            }`}
-                                          >
-                                            <div className="flex items-center gap-3">
-                                              {isCorrectOption && <Check className="w-5 h-5 text-emerald-600" />}
-                                              {isUserSelected && !isCorrectOption && (
-                                                <X className="w-5 h-5 text-red-600" />
-                                              )}
-                                              <span className="flex-1">{optionText}</span>
-                                              <div className="flex gap-2">
-                                                {isUserSelected && (
-                                                  <Badge variant="outline" size="sm" className="text-xs">
-                                                    Your choice
-                                                  </Badge>
-                                                )}
-                                                {isCorrectOption && (
-                                                  <Badge
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="bg-emerald-100 dark:bg-emerald-900 text-xs"
-                                                  >
-                                                    Correct
-                                                  </Badge>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </motion.div>
-                                        )
-                                      })}
-                                    </div>
-                                  </div>
-                                )}
-                              <div className="space-y-4">
-                                <div
-                                  className={`p-4 rounded-lg border-2 ${
-                                    isCorrect
-                                      ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700"
-                                      : "bg-muted border-muted-foreground/20"
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-3 mb-3">
-                                    <div
-                                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                        isCorrect ? "bg-emerald-500 text-white" : "bg-muted-foreground/20"
-                                      }`}
-                                    >
-                                      Y
-                                    </div>
-                                    <span className="font-semibold">Your answer:</span>
-                                  </div>
-                                  <p className="text-sm pl-9">
-                                    {answer?.userAnswer ||
-                                      answer?.selectedOption ||
-                                      answer?.selectedOptionId ||
-                                      answer?.answer ||
-                                      "Not answered"}
-                                  </p>
-                                </div>
-                                {!isCorrect && (
-                                  <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.2 }}
-                                    className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700"
-                                  >
-                                    <div className="flex items-center gap-3 mb-3">
-                                      <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                                        <Check className="w-4 h-4" />
-                                      </div>
-                                      <span className="font-semibold text-emerald-800 dark:text-emerald-200">
-                                        Correct answer:
-                                      </span>
-                                    </div>
-                                    <p className="text-sm pl-9 text-emerald-700 dark:text-emerald-300">
-                                      {questionData.correctAnswer ||
-                                        questionData.answer ||
-                                        questionData.correctOptionId ||
-                                        "Answer unavailable"}
-                                    </p>
-                                  </motion.div>
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </motion.div>
-                  )
-                })}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {!hasQuestionDetails && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <Card className="shadow-lg">
-              <CardContent className="p-12 text-center space-y-6">
-                <div className="w-20 h-20 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-10 h-10 text-muted-foreground" />
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-xl font-semibold">Question Details Not Available</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Your score has been recorded, but detailed question review is not available for this quiz session.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+              <CardTitle className="text-lg">Accuracy</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{metrics.percentage}%</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <AnimatePresence>{showConfetti && <Confetti isActive />}</AnimatePresence>
-    </>
+      {/* Progress Bar */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Progress</span>
+              <span>{metrics.correct}/{metrics.total}</span>
+            </div>
+            <Progress 
+              value={metrics.percentage} 
+              className="h-3"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={handleRetakeQuiz} className="gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Retake Quiz
+        </Button>
+        <Button variant="outline" onClick={handleShare} className="gap-2">
+          <Share2 className="w-4 h-4" />
+          Share Results
+        </Button>
+        <Button variant="outline" onClick={handleDownload} className="gap-2">
+          <Download className="w-4 h-4" />
+          Download
+        </Button>
+        <Button variant="outline" onClick={handleBrowseQuizzes} className="gap-2">
+          <BookOpen className="w-4 h-4" />
+          Browse Quizzes
+        </Button>
+      </div>
+
+      {/* Question Details */}
+      {hasQuestionDetails && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5" />
+                Question Details
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={expandAll}>
+                  Expand All
+                </Button>
+                <Button variant="outline" size="sm" onClick={collapseAll}>
+                  Collapse All
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(questions.length > 0 ? questions : questionResults).map((item, index) => {
+              const questionId = item?.id?.toString() || item?.questionId?.toString() || index.toString()
+              const answer = questions.length > 0 
+                ? answers.find(a => a?.questionId?.toString() === item?.id?.toString())
+                : item
+              
+              return (
+                <QuestionItem
+                  key={questionId}
+                  question={item}
+                  answer={answer}
+                  index={index}
+                  isExpanded={expandedQuestions.has(questionId)}
+                  onToggle={() => toggleQuestion(questionId)}
+                />
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
+
