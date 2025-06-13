@@ -1,39 +1,62 @@
 "use client"
 
-import type React from "react"
-import { useState, useRef, useCallback } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   Play,
   Pause,
   Volume2,
   VolumeX,
   Settings,
-  Maximize2,
-  Minimize2,
+  Maximize,
+  BookmarkIcon,
   SkipForward,
-  RotateCcw,
-  PictureInPicture,
-  Bookmark,
+  Rewind as RewindIcon,
+  FastForward as FastForwardIcon,
+  ArrowRight,
   Keyboard,
   Monitor,
-  Volume1,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { motion, AnimatePresence } from "framer-motion"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import ProgressBar from "./ProgressBar"
-import type { PlayerControlsProps } from "../types"
+import { Switch } from "@/components/ui/switch"
 
-const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+interface PlayerControlsProps {
+  playing: boolean
+  muted: boolean
+  volume: number
+  playbackRate: number
+  played: number
+  loaded: number
+  duration: number
+  isFullscreen: boolean
+  isBuffering: boolean
+  bufferHealth: number
+  onPlayPause: () => void
+  onMute: () => void
+  onVolumeChange: (volume: number) => void
+  onSeekChange: (time: number) => void
+  onPlaybackRateChange: (rate: number) => void
+  onToggleFullscreen: () => void
+  onAddBookmark: (time: number) => void
+  formatTime: (seconds: number) => string
+  bookmarks: number[]
+  onSeekToBookmark: (time: number) => void
+  isAuthenticated: boolean
+  show?: boolean
+  onCertificateClick?: () => void
+  playerConfig?: Record<string, any>
+  onShowKeyboardShortcuts?: () => void
+  onTheaterMode?: () => void
+  onNextVideo?: () => void
+  onToggleBookmarkPanel?: () => void
+  autoPlayNext?: boolean
+  onToggleAutoPlayNext?: () => void
+  hasNextVideo?: boolean
+  nextVideoTitle?: string
+  canAccessNextVideo?: boolean
+  onIsDragging?: (isDragging: boolean) => void
+}
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
   playing,
@@ -57,47 +80,116 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   bookmarks = [],
   onSeekToBookmark,
   isAuthenticated,
+  show = true,
   onCertificateClick,
   playerConfig,
-  show = true,
   onShowKeyboardShortcuts,
   onTheaterMode,
   onNextVideo,
   onToggleBookmarkPanel,
-  autoPlayNext,
+  autoPlayNext = true,
   onToggleAutoPlayNext,
+  hasNextVideo = false,
+  nextVideoTitle = "",
+  canAccessNextVideo = true,
+  onIsDragging,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const settingsRef = useRef<HTMLDivElement>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [hoveredTime, setHoveredTime] = useState<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const progressBarRef = useRef<HTMLDivElement>(null)
 
   // Prevent event bubbling that could interfere with controls
   const handleControlsClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
   }, [])
 
+  // Enhanced seeking functionality with proper state notification
+  const handleSeek = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!progressBarRef.current || !duration) return;
+      
+      // Get the bounds and dimensions of the progress bar
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const width = rect.width;
+      
+      // Calculate the seek position (0 to 1)
+      const seekPosition = Math.max(0, Math.min(1, x / width));
+      
+      // Convert to seconds and call the seek handler
+      const seekTime = duration * seekPosition;
+      onSeekChange(seekTime);
+    },
+    [duration, onSeekChange]
+  );
+
+  // Mouse down handler for drag seeking
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const newIsDragging = true;
+    setIsDragging(newIsDragging);
+    
+    // Notify parent about drag state if callback is provided
+    if (onIsDragging) {
+      onIsDragging(newIsDragging);
+    }
+    
+    // Perform the seek operation
+    handleSeek(e);
+    
+    // Add document-level listeners for dragging
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [handleSeek, onIsDragging]);
+
+  // Mouse move handler (for dragging)
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !progressBarRef.current || !duration) return;
+    
+    // Calculate position relative to progress bar
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const x = Math.max(rect.left, Math.min(e.clientX, rect.right)) - rect.left;
+    const width = rect.width;
+    
+    // Calculate the seek position (0 to 1)
+    const seekPosition = Math.max(0, Math.min(1, x / width));
+    
+    // Convert to seconds and call the seek handler
+    const seekTime = duration * seekPosition;
+    onSeekChange(seekTime);
+  }, [isDragging, duration, onSeekChange]);
+
+  // Mouse up handler (end dragging)
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    
+    // Notify parent about drag state if callback is provided
+    if (onIsDragging) {
+      onIsDragging(false);
+    }
+    
+    // Remove document-level listeners
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove, onIsDragging]);
+
+  // Clean up event listeners on unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp])
+
   // Handle volume slider visibility
   const handleVolumeMouseEnter = useCallback(() => {
-    if (volumeTimeoutRef.current) {
-      clearTimeout(volumeTimeoutRef.current)
-    }
     setShowVolumeSlider(true)
   }, [])
 
   const handleVolumeMouseLeave = useCallback(() => {
-    volumeTimeoutRef.current = setTimeout(() => {
-      setShowVolumeSlider(false)
-    }, 300)
+    setShowVolumeSlider(false)
   }, [])
-
-  // Handle seeking
-  const handleSeek = useCallback(
-    (time: number) => {
-      onSeekChange(time)
-    },
-    [onSeekChange],
-  )
 
   // Handle bookmark addition
   const handleAddBookmark = useCallback(() => {
@@ -126,7 +218,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   // Get volume icon
   const getVolumeIcon = () => {
     if (muted || volume === 0) return VolumeX
-    if (volume < 0.5) return Volume1
+    if (volume < 0.5) return Volume2
     return Volume2
   }
 
@@ -144,329 +236,232 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     onSeekChange(newTime)
   }, [duration, played, onSeekChange])
 
-  // Add click handler to stop propagation for dropdown
-  const handleSettingsClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-  }, [])
+  // Next video button with tooltip
+  const nextVideoButton = useMemo(() => {
+    if (!hasNextVideo) return null
+
+    const buttonContent = (
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "h-8 w-8",
+          !canAccessNextVideo && "text-muted-foreground opacity-60",
+        )}
+        onClick={onNextVideo}
+        disabled={!canAccessNextVideo}
+        title={canAccessNextVideo ? `Next: ${nextVideoTitle}` : "Sign in to access more videos"}
+      >
+        <SkipForward className="h-5 w-5" />
+      </Button>
+    )
+
+    // If user can't access next video, wrap in tooltip
+    if (!canAccessNextVideo) {
+      return (
+        <div className="relative group">
+          {buttonContent}
+          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/90 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Sign in to access more videos
+          </div>
+        </div>
+      )
+    }
+
+    return buttonContent
+  }, [hasNextVideo, canAccessNextVideo, nextVideoTitle, onNextVideo])
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <AnimatePresence>
-        {show && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent backdrop-blur-sm z-30 p-4"
-            onClick={handleControlsClick}
-            style={{ pointerEvents: "auto" }}
+    <div
+      className={cn(
+        "absolute bottom-0 left-0 right-0 z-30 px-4 pt-10 pb-2 bg-gradient-to-t from-black/90 via-black/60 to-transparent",
+        "transition-opacity duration-200",
+        !show && "opacity-0 pointer-events-none"
+      )}
+      onClick={handleControlsClick}
+    >
+      {/* Progress bar with bookmarks */}
+      <div 
+        className="relative flex items-center mb-1 group h-10 cursor-pointer"
+        ref={progressBarRef}
+        onClick={handleSeek}
+        onMouseDown={handleMouseDown}
+      >
+        {/* Taller click area for easier interaction */}
+        <div className="absolute inset-0"></div>
+        
+        {/* Actual progress bar that shows loaded/played */}
+        <div className="absolute left-0 right-0 top-4 h-1 bg-white/20 rounded group-hover:h-1.5 transition-all">
+          <div
+            className="absolute left-0 top-0 bottom-0 bg-white/40 rounded"
+            style={{ width: `${loaded * 100}%` }}
+          ></div>
+          <div
+            className="absolute left-0 top-0 bottom-0 bg-primary rounded"
+            style={{ width: `${played * 100}%` }}
+          ></div>
+        </div>
+
+        {/* Time tooltip when hovering */}
+        {hoveredTime !== null && (
+          <div 
+            className="absolute top-[-25px] px-2 py-1 bg-black/80 text-white text-xs rounded pointer-events-none"
+            style={{ left: `${(hoveredTime / duration) * 100}%`, transform: 'translateX(-50%)' }}
           >
-            {/* Progress bar */}
-            <div className="mb-4">
-              <ProgressBar
-                played={played}
-                loaded={loaded}
-                duration={duration}
-                onSeek={handleSeek}
-                formatTime={formatTime}
-                bookmarks={bookmarks}
-                onSeekToBookmark={onSeekToBookmark}
-                bufferHealth={bufferHealth}
+            {formatTime(hoveredTime)}
+          </div>
+        )}
+
+        {/* Bookmarks on timeline (if any) */}
+        {bookmarks?.length > 0 && bookmarks.map((time, index) => (
+          <div
+            key={`bookmark-${index}`}
+            className="absolute w-1 h-3 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
+            style={{ left: `${(time / duration) * 100}%`, top: "50%" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSeekToBookmark?.(time);
+            }}
+            title={`Bookmark at ${formatTime(time)}`}
+          />
+        ))}
+      </div>
+
+      {/* Controls row */}
+      <div className="flex items-center justify-between">
+        {/* Left controls */}
+        <div className="flex items-center space-x-2">
+          {/* Play/Pause button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white"
+            onClick={onPlayPause}
+            title={playing ? "Pause" : "Play"}
+          >
+            {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          </Button>
+
+          {/* Skip backward */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white"
+            onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
+          >
+            <RewindIcon className="h-5 w-5" />
+          </Button>
+
+          {/* Skip forward */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white"
+            onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
+          >
+            <FastForwardIcon className="h-5 w-5" />
+          </Button>
+
+          {/* Next video button */}
+          {hasNextVideo && onNextVideo && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 text-white",
+                !canAccessNextVideo && "opacity-60"
+              )}
+              onClick={onNextVideo}
+              disabled={!canAccessNextVideo}
+              title={canAccessNextVideo ? `Next: ${nextVideoTitle}` : "Sign in to access more videos"}
+            >
+              <SkipForward className="h-5 w-5" />
+            </Button>
+          )}
+
+          {/* Volume control */}
+          <div
+            className="relative flex items-center"
+            onMouseEnter={() => setShowVolumeSlider(true)}
+            onMouseLeave={() => setShowVolumeSlider(false)}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white"
+              onClick={onMute}
+            >
+              {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </Button>
+            
+            {showVolumeSlider && (
+              <div className="absolute left-full ml-2 bg-black/90 p-2 rounded-lg z-10 w-24">
+                <Slider
+                  value={[muted ? 0 : volume * 100]}
+                  max={100}
+                  step={1}
+                  onValueChange={([value]) => onVolumeChange(value / 100)}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Time display - Updated for better handling of invalid values */}
+          <div className="text-sm text-white hidden md:block">
+            {formatTime(isNaN(duration) ? 0 : duration * played)} / {formatTime(isNaN(duration) ? 0 : duration)}
+          </div>
+        </div>
+
+        {/* Right controls */}
+        <div className="flex items-center space-x-2">
+          {/* Autoplay next toggle */}
+          {hasNextVideo && onToggleAutoPlayNext && (
+            <div className="hidden md:flex items-center mr-2">
+              <span className="text-xs text-white mr-2">Autoplay</span>
+              <Switch
+                checked={autoPlayNext}
+                onCheckedChange={onToggleAutoPlayNext}
+                size="sm"
               />
             </div>
+          )}
 
-            {/* Controls */}
-            <div className="flex items-center justify-between">
-              {/* Left controls */}
-              <div className="flex items-center space-x-2">
-                {/* Play/Pause */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onPlayPause}
-                      className="h-10 w-10 text-white hover:bg-white/20 rounded-full transition-all duration-200 hover:scale-105"
-                    >
-                      {playing ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{playing ? "Pause (Space)" : "Play (Space)"}</p>
-                  </TooltipContent>
-                </Tooltip>
+          {/* Bookmark button */}
+          {isAuthenticated && onAddBookmark && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white"
+              onClick={() => onAddBookmark(duration * played)}
+            >
+              <BookmarkIcon className="h-5 w-5" />
+            </Button>
+          )}
 
-                {/* Skip backward */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleSkipBackward}
-                      className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                    >
-                      <RotateCcw className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Rewind 10s (←)</p>
-                  </TooltipContent>
-                </Tooltip>
+          {/* Theater mode */}
+          {onTheaterMode && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white"
+              onClick={onTheaterMode}
+            >
+              <Monitor className="h-5 w-5" />
+            </Button>
+          )}
 
-                {/* Skip forward */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleSkipForward}
-                      className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                    >
-                      <RotateCcw className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Forward 10s (→)</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Next video */}
-                {onNextVideo && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onNextVideo}
-                        className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                      >
-                        <SkipForward className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Next video</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {/* Volume control */}
-                <div
-                  className="relative flex items-center"
-                  onMouseEnter={handleVolumeMouseEnter}
-                  onMouseLeave={handleVolumeMouseLeave}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onMute}
-                        className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                      >
-                        <VolumeIcon className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{muted ? "Unmute (M)" : "Mute (M)"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {/* Volume slider */}
-                  <AnimatePresence>
-                    {showVolumeSlider && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute left-full ml-2 bg-black/90 backdrop-blur-sm rounded-lg p-3 border border-white/20"
-                      >
-                        <div className="w-20">
-                          <Slider
-                            value={[muted ? 0 : volume * 100]}
-                            onValueChange={([value]) => onVolumeChange(value / 100)}
-                            max={100}
-                            step={1}
-                            className="w-full"
-                          />
-                        </div>
-                        <div className="text-white text-xs text-center mt-1 font-medium">
-                          {Math.round((muted ? 0 : volume) * 100)}%
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Buffer indicator */}
-                {isBuffering && (
-                  <div className="flex items-center space-x-1 text-white/60 ml-2">
-                    <div className="w-1 h-1 bg-red-400 rounded-full animate-pulse" />
-                    <span className="text-xs">Buffering</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Right controls */}
-              <div className="flex items-center space-x-2">
-                {/* Playback speed indicator */}
-                <div className="bg-black/60 text-white text-xs px-2 py-1 rounded border border-white/20">
-                  {playbackRate === 1 ? "1x" : `${playbackRate}x`}
-                </div>
-
-                {/* Add bookmark */}
-                {isAuthenticated && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleAddBookmark}
-                        className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                      >
-                        <Bookmark className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Add bookmark (B)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {/* Picture-in-Picture */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handlePictureInPicture}
-                      className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                    >
-                      <PictureInPicture className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Picture-in-Picture (P)</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Theater mode */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onTheaterMode}
-                      className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                    >
-                      <Monitor className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Theater mode (T)</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Auto-play next toggle */}
-                {onNextVideo && onToggleAutoPlayNext && (
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={onToggleAutoPlayNext}
-                          className={cn(
-                            "text-white/80 hover:text-white h-8 w-8 rounded-full",
-                            autoPlayNext ? "bg-primary/20" : "bg-transparent",
-                          )}
-                        >
-                          <SkipForward className={cn("h-4 w-4", autoPlayNext ? "text-primary" : "text-white/80")} />
-                          <span className="sr-only">Auto Play Next</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p>{autoPlayNext ? "Disable auto-play next" : "Enable auto-play next"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-
-                {/* Settings */}
-                <div ref={settingsRef} onClick={handleSettingsClick}>
-                  <DropdownMenu open={showSettings} onOpenChange={setShowSettings}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                      >
-                        <Settings className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-48 bg-black/95 border-white/20 text-white"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="p-2">
-                        <div className="text-sm font-medium mb-2">Playback Speed</div>
-                        <div className="grid grid-cols-2 gap-1">
-                          {PLAYBACK_SPEEDS.map((speed) => (
-                            <DropdownMenuItem
-                              key={speed}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onPlaybackRateChange(speed)
-                              }}
-                              className={cn(
-                                "text-center cursor-pointer",
-                                playbackRate === speed && "bg-red-600 text-white",
-                              )}
-                            >
-                              {speed === 1 ? "Normal" : `${speed}x`}
-                            </DropdownMenuItem>
-                          ))}
-                        </div>
-                      </div>
-                      <DropdownMenuSeparator className="bg-white/20" />
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onShowKeyboardShortcuts()
-                        }}
-                        className="cursor-pointer"
-                      >
-                        <Keyboard className="h-4 w-4 mr-2" />
-                        Keyboard shortcuts
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                {/* Fullscreen */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onToggleFullscreen}
-                      className="h-9 w-9 text-white hover:bg-white/20 rounded-full transition-all duration-200"
-                    >
-                      {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isFullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </TooltipProvider>
+          {/* Fullscreen */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white"
+            onClick={onToggleFullscreen}
+          >
+            <Maximize className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }
 

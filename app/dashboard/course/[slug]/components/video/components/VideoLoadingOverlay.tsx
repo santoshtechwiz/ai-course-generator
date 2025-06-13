@@ -1,21 +1,67 @@
-import React from "react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface VideoLoadingOverlayProps {
-  isVisible: boolean;
+  videoId?: string;
+  onTimeout?: () => void;
+  timeoutDuration?: number;
 }
 
-const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ isVisible }) => {
-  if (!isVisible) return null;
-  
+export default function VideoLoadingOverlay({
+  videoId,
+  onTimeout,
+  timeoutDuration = 15000,
+}: VideoLoadingOverlayProps) {
+  const [showingFor, setShowingFor] = useState(0);
+  const [showHelp, setShowHelp] = useState(false);
+
+  // Reset timer when videoId changes
+  useEffect(() => {
+    setShowingFor(0);
+    setShowHelp(false);
+  }, [videoId]);
+
+  // Increment timer every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setShowingFor((prev) => {
+        const newValue = prev + 1000;
+
+        // Show help text after 5 seconds
+        if (newValue >= 5000 && !showHelp) {
+          setShowHelp(true);
+        }
+
+        // Trigger timeout callback
+        if (newValue >= timeoutDuration && onTimeout) {
+          onTimeout();
+        }
+
+        return newValue;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [onTimeout, timeoutDuration, showHelp]);
+
   return (
-    <div className="absolute inset-0 flex items-center justify-center w-full h-full bg-black/80 z-10">
-      <div className="flex flex-col items-center text-center">
-        <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-b-2 border-white mx-auto mb-2 md:mb-4" />
-        <div className="text-white text-sm md:text-lg font-medium">Loading video player...</div>
-        <div className="text-white/70 text-xs md:text-sm mt-1 md:mt-2">Please wait while we prepare your content</div>
-      </div>
+    <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-30">
+      <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
+      <p className="text-white/90 font-medium text-center">
+        Loading video player...
+      </p>
+
+      {showHelp && (
+        <div className="mt-6 max-w-xs text-white/70 text-sm text-center">
+          <p>This is taking longer than expected.</p>
+          <p className="mt-2">
+            If loading continues, try refreshing the page or check your internet
+            connection.
+          </p>
+        </div>
+      )}
     </div>
   );
-};
-
-export default VideoLoadingOverlay;
+}

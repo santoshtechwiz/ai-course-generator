@@ -145,59 +145,8 @@ export interface AddOnPackage {
   features: string[]
 }
 
-// Import quiz-related types to avoid duplication
-import type {
-  QuizListItem,
-  UserQuiz,
-  QueryParams,
-  BreadcrumbItem,
-  QuizDetailsPageProps,
-  FlashCard,
-  Question,
-  McqQuizProps,
-  QuizType,
-  MultipleChoiceQuestion,
-  CodeChallenge,
-  BaseQuestion,
-  MCQQuestion,
-  CodeQuizQuestion,
-  BlankQuestion,
-  OpenEndedQuestion,
-  QuizQuestion,
-  UserAnswer,
-  QuizData,
-  QuizResult,
-  QuizHistoryItem,
-  QuizState,
-  QuizAnswerResult
-} from "./quiz-types"
 
-// Re-export quiz-related types for backward compatibility
-export type {
-  QuizListItem,
-  UserQuiz,
-  QueryParams,
-  BreadcrumbItem,
-  QuizDetailsPageProps,
-  FlashCard,
-  Question,
-  McqQuizProps,
-  QuizType,
-  MultipleChoiceQuestion,
-  CodeChallenge,
-  BaseQuestion,
-  MCQQuestion,
-  CodeQuizQuestion,
-  BlankQuestion,
-  OpenEndedQuestion,
-  QuizQuestion,
-  UserAnswer,
-  QuizData,
-  QuizResult,
-  QuizHistoryItem,
-  QuizState,
-  QuizAnswerResult
-}
+
 
 // Import user-related types
 import type { DashboardUser, UserStats, Course, CourseProgress, 
@@ -215,153 +164,51 @@ export type {
   TopicPerformance
 }
 
+// Import course-related types from the new file
+import type {
+  VideoMetadata,
+  FullChapterType,
+  CourseUnitType,
+  FullCourseUnit,
+  FullChapter,
+  CourseQuestion,
+  FullCourseType,
+  FullCourse,
+  Category,
+  Rating,
+  CourseUnit,
+  Chapter,
+  Question
+} from "./course-types"
+
+// Re-export course-related types
+export type {
+  VideoMetadata,
+  FullChapterType,
+  CourseUnitType,
+  FullCourseUnit,
+  FullChapter,
+  CourseQuestion,
+  FullCourseType,
+  FullCourse,
+  Category,
+  Rating,
+  CourseUnit,
+  Chapter,
+  Question
+}
+
 // Core type definitions for the AI Learning platform
 
 import { Prisma } from "@prisma/client"
 
-// Video and chapter related types
-export interface VideoMetadata {
-  id: string;
-  title?: string;
-  duration?: number;
-  thumbnail?: string;
-}
-
-export interface FullChapterType {
-  id: number;
-  title: string;
-  description?: string;
-  videoId: string | null; // Allow null for videoId
-  order?: number;
-  summary?: string | null;
-  questions?: CourseQuestion[];
-  name?: string; // Legacy support
-  isFree?: boolean; // Added property - derived from context
-  duration?: number | string; // Added property - calculated or provided
-}
-
-export interface CourseUnitType {
-  id: number;
-  title: string;
-  order: number;
-  chapters: FullChapterType[];
-}
-
-// Course unit with expanded chapter data
-export interface FullCourseUnit {
-  id: number
-  courseId: number
-  title: string
-  isCompleted: boolean
-  duration: number | null
-  order: number
-  chapters: FullChapter[]
-}
-
-// Chapter with expanded quiz data
-export interface FullChapter {
-  id: number
-  title: string
-  videoId: string | null
-  order: number
-  isCompleted: boolean
-  summary: string | null
-  description: string | null
-  unitId: number
-  summaryStatus: string | null
-  videoStatus: string | null
-  questions: CourseQuestion[]
-  isFree?: boolean; // Added property
-  duration?: number | string; // Added property
-}
-
-// Course question with properly typed options
-export interface CourseQuestion {
-  id: number | string // Accept both number and string IDs
-  question: string
-  answer: string
-  options: string[] | string // Allow string (for JSON parsing) or string array
-  explanation?: string
-}
-
-// User progress tracking for courses
-export interface CourseProgress {
-  id: number | string
-  userId: string
-  courseId: number | string
-  progress: number
-  completedChapters: Array<number | string>
-  currentChapterId?: number | string
-  lastAccessedAt?: Date | string
-  isCompleted?: boolean
-  course?: FullCourseType
-  timeSpent?: number
-}
-
-// Define specific quiz progress type for better type safety
-export interface QuizProgressType {
-  completed?: boolean
-  currentIndex?: number
-  answers?: Record<string, string>
-  score?: number
-  started?: boolean
-  startedAt?: string
-  completedAt?: string
-  lastUpdated?: string
-}
-
-// Schema for structured JSON-LD data
-export interface Schema {
-  '@context': string
-  '@type': string
-  [key: string]: any
-}
-
-// Registry for JSON-LD schemas
-export const SchemaRegistry = {
-  // Define schema constants here
-}
-
-// Helper function to validate schema
-export function validateSchema(schema: Schema): boolean {
-  return !!schema['@context'] && !!schema['@type']
-}
-
-// Generate breadcrumb items from a URL path
-export function generateBreadcrumbItemsFromPath(path: string): { name: string; item: string }[] {
-  const parts = path.split('/').filter(Boolean)
-  return parts.map((part, index) => ({
-    name: part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, ' '),
-    item: `/${parts.slice(0, index + 1).join('/')}`,
-  }))
-}
-
-// Add or modify these types to ensure proper type checking
-
-export interface FullCourseType {
-  isPublic: boolean
-  id: number;
-  title: string;
-  slug: string;
-  description?: string;
-  image?: string;
-  courseUnits: CourseUnitType[]; // Ensure this is properly typed
-  category?: {
-    id: number;
-    name: string;
-  };
-}
-
-// Add a type guard function for checking course validity
-export function isValidCourse(course: any): course is FullCourseType {
-  return (
-    course &&
-    typeof course.id === 'number' &&
-    typeof course.title === 'string' &&
-    typeof course.slug === 'string' &&
-    Array.isArray(course.courseUnits) &&
-    course.courseUnits.length > 0
-  );
+// Simplified progress type for internal use
+export interface VideoProgressState {
+  time: number;
+  played: number;
+  playedSeconds: number;
+  duration: number;
+  lastUpdated?: number;
 }
 
 
