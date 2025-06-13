@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import type { ReactNode } from "react"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
 import { logout as reduxLogout, useAppDispatch, useAppSelector } from "@/store"
@@ -31,20 +31,41 @@ export function UserMenu({ children }: { children?: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const hasInitializedRef = useRef(false)
+  // Add fetch error tracking
+  const [fetchErrors, setFetchErrors] = useState(0)
 
   const handleMenuOpen = (open: boolean) => {
     setIsMenuOpen(open)
-    if (open && isAuthenticated && !isLoadingSubscription) {
-      dispatch(fetchSubscription())
+    // Only fetch subscription if authenticated and not too many errors
+    if (open && isAuthenticated && !isLoadingSubscription && fetchErrors < 3) {
+      fetchSubscriptionData()
     }
   }
 
-  useEffect(() => {
-    if (isAuthenticated && !hasInitializedRef.current) {
-      hasInitializedRef.current = true
+  // Create a wrapper function for fetching subscription data with error handling
+  const fetchSubscriptionData = useCallback(() => {
+    if (!isAuthenticated) return;
+    
+    // Use a try-catch to prevent unhandled promise rejections
+    try {
       dispatch(fetchSubscription())
+        .unwrap()
+        .catch(error => {
+          console.log("Subscription fetch error handled:", error?.message || "Unknown error");
+          setFetchErrors(prev => prev + 1);
+        });
+    } catch (err) {
+      console.warn("Error initiating subscription fetch:", err);
     }
-  }, [isAuthenticated, dispatch])
+  }, [dispatch, isAuthenticated]);
+
+  useEffect(() => {
+    // Only fetch subscription on initial load if user is authenticated and error count is low
+    if (isAuthenticated && !hasInitializedRef.current && fetchErrors < 3) {
+      hasInitializedRef.current = true;
+      fetchSubscriptionData();
+    }
+  }, [isAuthenticated, fetchSubscriptionData, fetchErrors])
 
   const handleSignOut = async () => {
     setIsLoading(true)
@@ -56,25 +77,20 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       
       // Dispatch Redux logout action
       try {
-        dispatch(logout())
+        dispatch(reduxLogout())
       } catch (err) {
         console.warn("Redux dispatch failed during logout:", err);
       }
       
-      // Use our centralized auth logout with current path
-      await handleAuthLogout({ 
+      // Use centralized auth logout
+      await logout({
         redirect: true,
         callbackUrl: currentPath
       });
     } catch (error) {
       console.error("Logout failed", error)
       setIsLoading(false)
-      // Show error toast
-      toast({
-        title: "Logout failed",
-        description: "There was a problem signing you out. Please try again.",
-        variant: "destructive"
-      });
+      // You might want to add toast notification here
     }
   }
 
@@ -91,7 +107,8 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       )
     }
 
-    const plan = subscriptionData?.subscriptionPlan || "FREE"
+    // Default to FREE if there are fetch errors or no subscription data
+    const plan = fetchErrors >= 3 ? "FREE" : (subscriptionData?.subscriptionPlan || "FREE")
 
     const variants = {
       PRO: "default",
@@ -115,7 +132,8 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       return <Skeleton className="h-4 w-12 ml-1" />
     }
 
-    const credits = subscriptionData?.credits ?? 0
+    // Default to 0 credits if there are fetch errors
+    const credits = fetchErrors >= 3 ? 0 : (subscriptionData?.credits ?? 0)
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
