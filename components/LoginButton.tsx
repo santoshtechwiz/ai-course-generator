@@ -4,7 +4,7 @@ import { LogIn, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 
 interface LoginButtonProps {
   provider?: string

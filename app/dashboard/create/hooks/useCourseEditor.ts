@@ -2,7 +2,7 @@
 
 import React from "react"
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import axios from "axios"
 import { useRouter } from "next/navigation"
 import type { Course, CourseUnit, Chapter } from "@prisma/client"

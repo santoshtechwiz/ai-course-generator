@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { Minimize, Monitor } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import type { TheaterModeManagerProps } from "./types"
 
 // Theater mode styles

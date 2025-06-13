@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Plus, Trash2 } from "lucide-react"
 
 import type { CreateCourseInput } from "@/schema/schema"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 
 interface ContentStepProps {
   control: Control<CreateCourseInput>

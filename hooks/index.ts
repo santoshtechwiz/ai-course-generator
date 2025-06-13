@@ -23,6 +23,6 @@ export * from "./use-user-dashboard"
 // Course & Quiz Hooks
 export * from "./use-chapter-summary" 
 export * from "./useCourseActions"
-export * from "./useProgress"
-export * from "./useVideoProgress"
+
+export * from "../app/dashboard/course/[slug]/components/video/hooks/useVideoProgress"
 export * from "./useRandomQuizzes"
