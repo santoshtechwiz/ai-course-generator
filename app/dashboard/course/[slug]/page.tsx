@@ -1,11 +1,10 @@
 import type { Metadata } from "next"
 import { generatePageMetadata } from "@/lib/seo-utils"
 import { getCourseData } from "@/app/actions/getCourseData"
-
+import { JsonLD } from "@/app/schema/components"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { JsonLd } from "@/app/schema/components/json-ld"
 import { extractKeywords, generateMetaDescription } from "@/lib/seo-utils"
 import type { FullCourseType } from "@/app/types/types"
 import MainContent from "./components/MainContent"
@@ -121,12 +120,27 @@ export default async function Page({ params }: CoursePageParams) {
   }
 
   return (
-    <Suspense fallback={<LoadingSkeleton />}>
-      <JsonLd type="course" data={course} />
+    <>
+      <JsonLD
+        type="Course"
+        data={{
+          name: course.title,
+          description: course.description,
+          // ...existing code...
+        }}
+      />
 
-      <main className="flex-1 h-full px-4 py-6 md:px-8 lg:px-16 pb-24">
-        <MainContent course={course} />
-      </main>
-    </Suspense>
+      {/* Public course header and basic info that everyone can see */}
+      <div className="course-header">
+        <h1>{course.title}</h1>
+        <p className="course-description">{course.description}</p>
+        {/* Other basic course information */}
+      </div>
+
+      {/* Directly render MainContent - subscription check happens inside components */}
+      <MainContent course={course} />
+    </>
   )
 }
+
+// Remove the PremiumContentLock component as it's no longer needed here

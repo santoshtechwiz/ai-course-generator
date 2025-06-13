@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useChapterSummary } from "@/hooks/useChapterSummary"
-import { Loader2, BookOpen, RefreshCcw, AlertCircle } from "lucide-react"
+import { Loader2, BookOpen, RefreshCcw } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -20,13 +20,15 @@ import rehypeHighlight from "rehype-highlight"
 import { useAuth } from "@/hooks"
 import { AdminSummaryPanel } from "./AdminSummaryPanel"
 import { NoResults } from "@/components/ui/no-results"
+import { AccessControl } from "@/components/ui/access-control"
 
 interface CourseSummaryProps {
   chapterId: number | string
   name: string
-  isPremium?: boolean
+  isPremium?: boolean // Keep original prop for backward compatibility
   isAdmin?: boolean
   existingSummary: string | null
+  hasAccess?: boolean // New prop for access control
 }
 
 const CourseAISummary: React.FC<CourseSummaryProps> = ({
@@ -35,7 +37,11 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
   isPremium = false,
   isAdmin = false,
   existingSummary = null,
+  hasAccess = false, // Default to false for safety
 }) => {
+  // Use isPremium for backwards compatibility
+  const hasSummaryAccess = hasAccess || isPremium;
+  
   // Convert chapterId to number if it's a string
   const normalizedChapterId = typeof chapterId === "string" ? parseInt(chapterId, 10) : chapterId
   
@@ -136,8 +142,8 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
     )
   }
 
-  // Main view with summary content
-  return (
+  // Main content that will be access controlled
+  const summaryContent = (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="space-y-1">
@@ -152,41 +158,37 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
       </CardHeader>
       
       <CardContent className="pt-4">
-          {summary ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <Markdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                className="markdown-body"
-              >
-                {summary}
-              </Markdown>
-            </div>
-          ) : (
-            <NoResults
-              variant="empty"
-              title={isPremium ? "Premium Content" : "No Summary Available"}
-              description={
-                isPremium 
-                  ? "Upgrade to premium to view this chapter summary"
-                  : "No summary available for this chapter yet"
-              }
-              action={
-                isAuthenticated && !isPremium ? {
-                  label: isRefetching ? "Generating..." : "Generate Summary",
-                  onClick: handleGenerateSummary,
-                  icon: isRefetching ? 
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                } : undefined
-              }
-              minimal={true}
-            />
-          )}
-        </CardContent>
+        {summary ? (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <Markdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
+              className="markdown-body"
+            >
+              {summary}
+            </Markdown>
+          </div>
+        ) : (
+          <NoResults
+            variant="empty"
+            title="No Summary Available"
+            description="No summary available for this chapter yet"
+            action={
+              isAuthenticated ? {
+                label: isRefetching ? "Generating..." : "Generate Summary",
+                onClick: handleGenerateSummary,
+                icon: isRefetching ? 
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+              } : undefined
+            }
+            minimal={true}
+          />
+        )}
+      </CardContent>
       
       {/* Show refresh button for regular users only if summary exists */}
-      {(summary && isAuthenticated && !isPremium) && (
+      {(summary && isAuthenticated) && (
         <CardFooter>
           <Button
             variant="outline"
@@ -210,7 +212,31 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
         </CardFooter>
       )}
     </Card>
-  )
-}
+  );
 
+  // Render the AccessControl component with proper brackets
+ return (
+  <AccessControl
+    hasAccess={hasSummaryAccess}
+    featureTitle="Premium Summary Feature"
+    showPreview={!!summary && summary.length > 0}
+    previewContent={
+      summary ? (
+        <div className="prose prose-sm max-w-none opacity-70">
+          <Markdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight]}
+            className="markdown-body"
+          >
+            {summary.substring(0, 150) + "..."}
+          </Markdown>
+        </div>
+      ) : null
+    }
+  >
+    {summaryContent}
+  </AccessControl>
+)
+
+}
 export default CourseAISummary
