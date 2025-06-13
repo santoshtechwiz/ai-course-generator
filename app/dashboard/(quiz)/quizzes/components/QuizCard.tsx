@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { FileQuestion, AlignJustify, Code, PenTool, Clock, CheckCircle2, Flashlight, Play, RotateCcw, Eye } from 'lucide-react'
+import { FileQuestion, AlignJustify, Code, PenTool, Clock, CheckCircle2, Flashlight, Play, Eye } from "lucide-react"
 import Link from "next/link"
 import { LoadingCard } from "./LoadingCard"
 import { motion, AnimatePresence } from "framer-motion"
@@ -60,7 +60,7 @@ function QuizCardComponent({
       textColor: "text-purple-700 dark:text-purple-300",
       borderColor: "border-purple-200 dark:border-purple-800",
     },
-    "blanks": {
+    blanks: {
       label: "Fill in the Blanks",
       icon: PenTool,
       gradient: "from-yellow-500 to-orange-500",
@@ -137,8 +137,8 @@ function QuizCardComponent({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      whileHover={{ y: -4 }}
+      transition={{ duration: 0.4, ease: "easeOut", type: "spring", stiffness: 100, damping: 15 }}
+      whileHover={{ y: -4, transition: { type: "spring", stiffness: 300, damping: 20 } }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       className="h-full"
@@ -147,27 +147,29 @@ function QuizCardComponent({
         {/* Enhanced Header */}
         <CardHeader className="p-5 pb-3 relative overflow-hidden">
           {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
             <div className={`w-full h-full bg-gradient-to-br ${gradient}`} />
           </div>
-          
+
           <div className="relative z-10 space-y-3">
             {/* Badges Row */}
             <div className="flex justify-between items-start">
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${bgColor} ${textColor} ${borderColor}`}
+                whileTap={{ scale: 0.95 }}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${bgColor} ${textColor} ${borderColor} shadow-sm`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span className="text-xs font-medium">{label}</span>
               </motion.div>
-              
+
               <AnimatePresence>
                 {isPublic && (
                   <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   >
                     <Badge variant="secondary" className="text-xs font-medium">
                       Public
@@ -176,18 +178,23 @@ function QuizCardComponent({
                 )}
               </AnimatePresence>
             </div>
-            
+
             {/* Completion Badge */}
             <AnimatePresence>
               {completionRate >= 100 && (
                 <motion.div
                   initial={{ scale: 0, opacity: 0, x: 20 }}
                   animate={{ scale: 1, opacity: 1, x: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   className="absolute top-3 right-3"
                 >
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <motion.div
+                    className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-md shadow-green-500/20"
+                    whileHover={{ scale: 1.1, rotate: 10 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
                     <CheckCircle2 className="w-4 h-4 text-white" />
-                  </div>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -198,20 +205,18 @@ function QuizCardComponent({
         <CardContent className="p-5 pt-2 flex-grow space-y-4">
           {/* Title and Description */}
           <div className="space-y-2">
-            <motion.h3 
+            <motion.h3
               className="font-bold text-lg leading-tight text-foreground line-clamp-2 hover:text-primary transition-colors duration-200"
               whileHover={{ scale: 1.02 }}
             >
               {title}
             </motion.h3>
-            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
-              {description}
-            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">{description}</p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-3">
-            <motion.div 
+            <motion.div
               className="bg-muted/40 backdrop-blur-sm p-3 rounded-xl border border-border/50 text-center"
               whileHover={{ scale: 1.02, backgroundColor: "rgba(var(--muted), 0.6)" }}
               transition={{ duration: 0.2 }}
@@ -219,8 +224,8 @@ function QuizCardComponent({
               <div className="text-2xl font-bold text-foreground">{questionCount}</div>
               <div className="text-xs text-muted-foreground font-medium">Questions</div>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className="bg-muted/40 backdrop-blur-sm p-3 rounded-xl border border-border/50 text-center"
               whileHover={{ scale: 1.02, backgroundColor: "rgba(var(--muted), 0.6)" }}
               transition={{ duration: 0.2 }}
@@ -240,20 +245,17 @@ function QuizCardComponent({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 25 }}
                 className="space-y-2"
               >
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-muted-foreground font-medium">Progress</span>
-                  <span className={`font-bold ${completionRate >= 100 ? 'text-green-600' : 'text-primary'}`}>
+                  <span className={`font-bold ${completionRate >= 100 ? "text-green-600" : "text-primary"}`}>
                     {Math.round(completionRate)}%
                   </span>
                 </div>
                 <div className="relative">
-                  <Progress 
-                    value={completionRate} 
-                    className="h-2 bg-muted/50" 
-                  />
+                  <Progress value={completionRate} className="h-2 bg-muted/50" />
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                     animate={{
@@ -261,7 +263,7 @@ function QuizCardComponent({
                     }}
                     transition={{
                       duration: 2,
-                      repeat: isHovered ? Infinity : 0,
+                      repeat: isHovered ? Number.POSITIVE_INFINITY : 0,
                       ease: "linear",
                     }}
                   />
@@ -274,26 +276,19 @@ function QuizCardComponent({
         {/* Enhanced Footer */}
         <CardFooter className="p-5 pt-3 mt-auto">
           <Link href={`/dashboard/${quizType}/${slug}`} className="w-full" onClick={handleClick}>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full"
-            >
-              <Button 
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
+              <Button
                 variant={buttonContent.variant}
                 className={`
                   w-full h-11 font-medium transition-all duration-300
-                  ${buttonContent.variant === 'default' 
-                    ? `bg-gradient-to-r ${gradient} hover:shadow-lg hover:shadow-primary/25 text-white border-0` 
-                    : 'hover:bg-muted/50'
+                  ${
+                    buttonContent.variant === "default"
+                      ? `bg-gradient-to-r ${gradient} hover:shadow-lg hover:shadow-primary/25 text-white border-0`
+                      : "hover:bg-muted/50"
                   }
                 `}
               >
-                <motion.div
-                  className="flex items-center gap-2"
-                  whileHover={{ x: 2 }}
-                  transition={{ duration: 0.2 }}
-                >
+                <motion.div className="flex items-center gap-2" whileHover={{ x: 2 }} transition={{ duration: 0.2 }}>
                   <ButtonIcon className="w-4 h-4" />
                   {buttonContent.text}
                 </motion.div>
@@ -309,6 +304,7 @@ function QuizCardComponent({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
               className="absolute inset-0 pointer-events-none"
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-5 rounded-lg`} />

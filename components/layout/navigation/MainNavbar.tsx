@@ -1,18 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search } from "lucide-react"
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
-
 import MobileMenu from "@/components/layout/navigation/MobileMenu"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
 import SearchModal from "@/components/layout/navigation/SearchModal"
 import { Button } from "@/components/ui/button"
 import Logo from "./Logo"
-
 import useSubscription from "@/hooks/use-subscription"
 import { useAuth } from "@/hooks/use-auth"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -22,75 +20,85 @@ import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-  
-  // Use our centralized auth hook only
+
   const { user, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth()
-  
   const { totalTokens, tokenUsage, subscriptionPlan, isLoading: isSubscriptionLoading } = useSubscription()
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [menuTransition, setMenuTransition] = useState(false)
+  const [ready, setReady] = useState(false)
 
-  // Handle scroll effect
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20)
+    let ticking = false
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 20)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Handle initial loading state and transitions
   useEffect(() => {
     if (authStatus !== "loading") {
-      // Add slight delay before showing menus for smooth transition
-      setTimeout(() => setMenuTransition(true), 150)
-      
-      // Set loading to false with a delay for smoother UI
-      const timer = setTimeout(() => setIsLoading(false), 500)
-      return () => clearTimeout(timer)
+      requestAnimationFrame(() => setReady(true))
     }
   }, [authStatus])
 
-  // Calculate credits with proper fallbacks
   const credits = totalTokens ?? user?.credits ?? 0
-  const availableCredits = credits - (tokenUsage ?? 0)
-  const showLoading = isLoading && (authLoading || isSubscriptionLoading)
-  
-  // Get user display information with fallbacks
+  const availableCredits = useMemo(() => {
+    if (typeof credits === "number" && typeof tokenUsage === "number") {
+      return credits - tokenUsage
+    }
+    return null
+  }, [credits, tokenUsage])
+
   const userImage = user?.image || ""
   const userName = user?.name || ""
   const userInitial = userName ? userName.charAt(0) : "U"
 
+  const navLinks = useMemo(() => (
+    navItems.map((item) => {
+      const isActive = pathname === item.href
+      return (
+        <Link href={item.href} key={item.name} data-testid={`nav-item-${item.name.toLowerCase()}`}>
+          <div className={`relative py-2 text-sm font-medium transition-colors ${
+            isActive ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
+          }`}>
+            {item.name}
+            {isActive && <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary" />}
+          </div>
+        </Link>
+      )
+    })
+  ), [pathname])
+
+  const userAvatar = useMemo(() => (
+    <Avatar className="h-8 w-8 border border-border/50 hover:border-primary/30 transition-all">
+      <AvatarImage src={userImage} />
+      <AvatarFallback className="bg-primary/5 text-primary">{userInitial}</AvatarFallback>
+    </Avatar>
+  ), [userImage, userInitial])
+
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 ${
-        scrolled ? "bg-background/95 shadow-sm" : "bg-background/80"
-      } backdrop-blur-sm border-b transition-all duration-300`}
+      className={`fixed top-0 left-0 right-0 z-50 ${scrolled ? "bg-background/95 shadow-sm" : "bg-background/80"} backdrop-blur-sm border-b transition-all duration-300`}
       data-testid="main-navbar"
     >
       <div className="container flex h-16 items-center px-4 sm:px-6">
         <Logo />
 
-        {/* Navigation links */}
         <nav className="mx-6 hidden items-center space-x-8 md:flex" data-testid="nav-items">
-          {navItems.map((item) => (
-            <Link href={item.href} key={item.name} data-testid={`nav-item-${item.name.toLowerCase()}`}>
-              <div
-                className={`relative py-2 text-sm font-medium transition-colors ${
-                  pathname === item.href ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
-                }`}
-              >
-                {item.name}
-                {pathname === item.href && <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary" />}
-              </div>
-            </Link>
-          ))}
+          {navLinks}
         </nav>
 
         <div className="flex items-center ml-auto space-x-4">
-          {/* Credit display for authenticated users */}
-          {isAuthenticated && !showLoading && (
+          {/* Credits */}
+          {isAuthenticated && availableCredits !== null && (
             <div className="hidden md:flex items-center space-x-1" data-testid="credits-display">
               <div className="text-sm font-medium">Credits: {availableCredits.toLocaleString()}</div>
               {subscriptionPlan && subscriptionPlan !== "FREE" && (
@@ -99,14 +107,14 @@ export default function MainNavbar() {
             </div>
           )}
 
-          {/* Loading indicator */}
-          {showLoading && (
-            <div className="hidden md:flex items-center" data-testid="loading-indicator">
-              <div className="h-4 w-24 bg-muted rounded animate-pulse"></div>
+          {/* Credits loading */}
+          {isAuthenticated && availableCredits === null && (
+            <div className="hidden md:flex items-center">
+              <Skeleton className="h-4 w-24 rounded" />
             </div>
           )}
 
-          {/* Search button */}
+          {/* Search */}
           <Button
             variant="ghost"
             size="icon"
@@ -118,7 +126,6 @@ export default function MainNavbar() {
             <Search className="h-5 w-5" />
           </Button>
 
-          {/* Search Modal */}
           <SearchModal
             isOpen={isSearchModalOpen}
             setIsOpen={setIsSearchModalOpen}
@@ -129,40 +136,34 @@ export default function MainNavbar() {
           />
 
           <ThemeToggle />
-          
-          {/* Notification Menu - Only show when authenticated */}
+
+          {/* Notifications */}
           {isAuthenticated && (
-            <div className={`transition-opacity duration-200 ${menuTransition ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`transition-opacity duration-200 ${ready ? 'opacity-100' : 'opacity-0'}`}>
               <NotificationsMenu />
             </div>
           )}
 
-          {/* User Menu */}
-          <div className={`transition-all duration-300 ${!authLoading && menuTransition ? 'scale-100 opacity-100' : 'scale-95 opacity-90'}`}>
+          {/* UserMenu */}
+          <div className={`transition-all duration-300 ${!authLoading && ready ? 'scale-100 opacity-100' : 'scale-95 opacity-90'}`}>
             <UserMenu>
               {isAuthenticated ? (
-                // User is logged in - show avatar/profile
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="relative h-8 w-8 rounded-full hover:bg-primary/10 transition-colors"
                   aria-label="User menu"
                 >
-                  <Avatar className="h-8 w-8 border border-border/50 hover:border-primary/30 transition-all">
-                    <AvatarImage src={userImage} />
-                    <AvatarFallback className="bg-primary/5 text-primary">{userInitial}</AvatarFallback>
-                  </Avatar>
+                  {userAvatar}
                 </Button>
               ) : authLoading ? (
-                // Auth is loading - show skeleton
                 <div className="animate-pulse">
                   <Skeleton className="h-8 w-8 rounded-full" />
                 </div>
               ) : (
-                // User is not logged in - show sign in button
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => router.push("/api/auth/signin")}
                   className="hover:bg-primary/5 transition-colors"
                 >
@@ -172,7 +173,6 @@ export default function MainNavbar() {
             </UserMenu>
           </div>
 
-          {/* Mobile Menu */}
           <MobileMenu />
         </div>
       </div>

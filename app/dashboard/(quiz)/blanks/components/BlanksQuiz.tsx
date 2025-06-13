@@ -1,33 +1,16 @@
 "use client"
 
 import type React from "react"
-import {
-  useState,
-  useEffect,
-  useCallback,
-  memo,
-  useRef,
-  useMemo
-} from "react"
+import { useState, useEffect, useCallback, memo, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import {
-  CheckCircle,
-  ArrowRight,
-  ArrowLeft,
-  Flag,
-  Lightbulb
-} from "lucide-react"
+import { CheckCircle, ArrowRight, ArrowLeft, Flag, Lightbulb } from "lucide-react"
 import type { BlankQuestion } from "./types"
-import {
-  getBestSimilarityScore,
-  isAnswerCloseEnough,
-  getHint
-} from "@/lib/utils/text-similarity"
+import { getBestSimilarityScore, isAnswerCloseEnough, getHint } from "@/lib/utils/text-similarity"
 
 // Define props interface for better type safety
 interface BlanksQuizProps {
@@ -57,12 +40,12 @@ const BlanksQuiz = memo(function BlanksQuiz({
   canGoNext = false,
   canGoPrevious = false,
   isLastQuestion = false,
-  isSubmitting = false
+  isSubmitting = false,
 }: BlanksQuizProps) {
   // Better typing for refs
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
-  
+
   // State with proper typing
   const [answer, setAnswer] = useState<string>(existingAnswer || "")
   const [isFocused, setIsFocused] = useState<boolean>(false)
@@ -72,7 +55,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
   const [showHint, setShowHint] = useState<boolean>(false)
   const [hintState, setHintState] = useState<{ level: number; views: number }>({ level: 0, views: 0 })
   const [similarityScore, setSimilarityScore] = useState<number>(0)
-  
+
   // Constants in SCREAMING_SNAKE_CASE for clarity
   const SIMILARITY_THRESHOLD = 60
   const SPAM_THRESHOLD = 80
@@ -82,13 +65,13 @@ const BlanksQuiz = memo(function BlanksQuiz({
     const [before, after] = (question.question || "").split("________")
     return {
       beforeBlank: before || "",
-      afterBlank: after || ""
+      afterBlank: after || "",
     }
   }, [question.question])
 
   const progressPercentage = useMemo(
     () => ((questionNumber ?? 0) / (totalQuestions ?? 1)) * 100,
-    [questionNumber, totalQuestions]
+    [questionNumber, totalQuestions],
   )
 
   useEffect(() => {
@@ -130,7 +113,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
             setIsAnswered(true)
           }
         } catch (err) {
-          console.error("Error processing answer:", err);
+          console.error("Error processing answer:", err)
           // Handle potential errors in similarity calculation
         }
       }, DEBOUNCE_MS)
@@ -138,7 +121,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
       // Notify immediately for form tracking
       onAnswer(value)
     },
-    [onAnswer, question.question, question.answer, isAnswered]
+    [onAnswer, question.question, question.answer, isAnswered],
   )
 
   // Focus input field on mount for better UX
@@ -171,7 +154,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
         isLastQuestion ? handleSubmit() : handleNext()
       }
     },
-    [handleNext, handleSubmit, isLastQuestion]
+    [handleNext, handleSubmit, isLastQuestion],
   )
 
   // Improve hint logic for better user experience
@@ -182,30 +165,24 @@ const BlanksQuiz = memo(function BlanksQuiz({
       // Progressive hint system - advance level based on views
       setHintState((prev) => {
         const newViews = prev.views + 1
-        
+
         // Only advance level after first view or every second view
-        const newLevel = newViews === 1 ? 0 : 
-                         newViews === 3 ? 1 :
-                         newViews >= 5 ? 2 : prev.level;
-                         
+        const newLevel = newViews === 1 ? 0 : newViews === 3 ? 1 : newViews >= 5 ? 2 : prev.level
+
         return { views: newViews, level: newLevel }
       })
     }
   }, [showHint])
 
   const isNextButtonEnabled = useMemo(
-    () =>
-      answer.trim() &&
-      !isSpamming &&
-      isAnswerCloseEnough(answer, question.answer || "", SIMILARITY_THRESHOLD),
-    [answer, isSpamming, question.answer]
+    () => answer.trim() && !isSpamming && isAnswerCloseEnough(answer, question.answer || "", SIMILARITY_THRESHOLD),
+    [answer, isSpamming, question.answer],
   )
 
-const getHintContent = useCallback(() => {
-  if (!question.answer) return null;
-  return getHint(question.answer, hintState.level);
-}, [question.answer, hintState.level]);
-
+  const getHintContent = useCallback(() => {
+    if (!question.answer) return null
+    return getHint(question.answer, hintState.level)
+  }, [question.answer, hintState.level])
 
   return (
     <motion.div
@@ -226,9 +203,7 @@ const getHintContent = useCallback(() => {
                 <Label className="text-lg font-semibold text-foreground">
                   Question {questionNumber} of {totalQuestions}
                 </Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Fill in the blank with the appropriate term
-                </p>
+                <p className="text-sm text-muted-foreground mt-1">Fill in the blank with the appropriate term</p>
               </div>
             </div>
             {isAnswered && (
@@ -256,14 +231,14 @@ const getHintContent = useCallback(() => {
                   ref={inputRef}
                   className={`px-4 py-3 text-lg border-2 transition-all duration-200 ${
                     isFocused
-                      ? "border-primary shadow-md"
+                      ? "border-primary shadow-md ring-2 ring-primary/20"
                       : isAnswered
-                      ? "border-success/50 bg-success/5"
-                      : showValidation
-                      ? "border-destructive/50 bg-destructive/5"
-                      : isSpamming
-                      ? "border-yellow-500 bg-yellow-50"
-                      : "border-muted-foreground/50"
+                        ? "border-success/50 bg-success/5 shadow-sm shadow-success/10"
+                        : showValidation
+                          ? "border-destructive/50 bg-destructive/5 shadow-sm shadow-destructive/10"
+                          : isSpamming
+                            ? "border-yellow-500 bg-yellow-50 shadow-sm shadow-yellow-500/10"
+                            : "border-muted-foreground/50"
                   }`}
                   placeholder="Type your answer..."
                   value={answer}
@@ -279,7 +254,8 @@ const getHintContent = useCallback(() => {
                   <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-sm text-destructive mt-1 absolute"
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    className="text-sm text-destructive mt-1 absolute font-medium"
                   >
                     Please enter an answer before continuing
                   </motion.p>
@@ -288,7 +264,8 @@ const getHintContent = useCallback(() => {
                   <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-sm text-yellow-600 mt-1 absolute"
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    className="text-sm text-yellow-600 mt-1 absolute font-medium"
                   >
                     Your answer is too similar to the question. Please rephrase it.
                   </motion.p>
@@ -325,11 +302,11 @@ const getHintContent = useCallback(() => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="mt-3 text-sm p-4 rounded-md border border-blue-200 bg-blue-50 text-blue-800"
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    className="mt-3 text-sm p-4 rounded-md border border-blue-200 bg-blue-50 text-blue-800 shadow-sm"
                   >
                     <div className="flex items-start gap-2">
-                      <Lightbulb className="w-4 h-4 mt-0.5" />
+                      <Lightbulb className="w-4 h-4 mt-0.5 text-amber-500" />
                       <p>{getHintContent()}</p>
                     </div>
                   </motion.div>
@@ -341,23 +318,51 @@ const getHintContent = useCallback(() => {
           <div className="flex items-center justify-between pt-6 border-t border-border/40">
             <div className="flex gap-3">
               {canGoPrevious && (
-                <Button variant="outline" onClick={onPrevious} className="flex items-center gap-2">
-                  <ArrowLeft className="w-4 h-4" />
-                  Previous
-                </Button>
+                <motion.div whileHover={{ x: -2 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    onClick={onPrevious}
+                    className="flex items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Previous
+                  </Button>
+                </motion.div>
               )}
             </div>
             <div className="flex gap-3">
               {!isLastQuestion ? (
-                <Button onClick={handleNext} disabled={!isNextButtonEnabled} className="flex items-center gap-2 min-w-[120px]" size="lg">
-                  Next
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                <motion.div whileHover={{ x: 2 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={handleNext}
+                    disabled={!isNextButtonEnabled}
+                    className={`flex items-center gap-2 min-w-[120px] transition-all duration-300 ${
+                      isNextButtonEnabled
+                        ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20"
+                        : "opacity-70"
+                    }`}
+                    size="lg"
+                  >
+                    Next
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </motion.div>
               ) : (
-                <Button onClick={handleSubmit} disabled={!isNextButtonEnabled} className="flex items-center gap-2 min-w-[140px]" size="lg">
-                  <Flag className="w-4 h-4" />
-                  Finish Quiz
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!isNextButtonEnabled}
+                    className={`flex items-center gap-2 min-w-[140px] transition-all duration-300 ${
+                      isNextButtonEnabled
+                        ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20"
+                        : "opacity-70"
+                    }`}
+                    size="lg"
+                  >
+                    <Flag className="w-4 h-4" />
+                    Finish Quiz
+                  </Button>
+                </motion.div>
               )}
             </div>
           </div>

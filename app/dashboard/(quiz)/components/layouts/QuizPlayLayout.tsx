@@ -40,20 +40,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
 
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">
-      {/* Breadcrumb navigation */}
-      <Breadcrumb separator={<ChevronRight className="h-4 w-4" />} className="mb-4">
-        <BreadcrumbItem>
-          <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbItem>
-          <BreadcrumbLink href={`/dashboard/${quizType}`}>{quizType.toUpperCase()}</BreadcrumbLink>
-        </BreadcrumbItem>
-        {quizSlug && (
-          <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink>{quizSlug.replace(/-/g, ' ')}</BreadcrumbLink>
-          </BreadcrumbItem>
-        )}
-      </Breadcrumb>
+     
       
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main quiz content area */}

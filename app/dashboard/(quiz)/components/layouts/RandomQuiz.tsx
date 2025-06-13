@@ -18,13 +18,11 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
 import { apiClient } from "@/lib/api-client"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import React from "react"
+import type React from "react"
 
 // SVG Background Pattern Component
 const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => {
@@ -129,7 +127,9 @@ const quizTypeIcons = {
   mcq: HelpCircle,
 }
 
-// Enhanced animated quiz card with preloading support
+// Enhance the RandomQuiz component with better animations and visual feedback
+
+// Improve the quiz card with better animations and visual hierarchy
 const QuizCard: React.FC<{
   quiz: any
   index: number
@@ -171,8 +171,23 @@ const QuizCard: React.FC<{
       initial={isVisible ? { opacity: 0, scale: 0.95, y: 30 } : false}
       animate={
         isVisible
-          ? { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 180, damping: 24 } }
-          : { opacity: 0, scale: 0.95, y: 30, transition: { duration: 0.2 } }
+          ? {
+              opacity: 1,
+              scale: 1,
+              y: 0,
+              transition: {
+                type: "spring",
+                stiffness: 180,
+                damping: 24,
+                mass: 0.8,
+              },
+            }
+          : {
+              opacity: 0,
+              scale: 0.95,
+              y: 30,
+              transition: { duration: 0.2 },
+            }
       }
       exit={{ opacity: 0, scale: 0.95, y: 30, transition: { duration: 0.2 } }}
       className="relative group mb-4 transition-all duration-300"
@@ -188,12 +203,12 @@ const QuizCard: React.FC<{
       onMouseEnter={handlePrefetch}
     >
       <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-lg opacity-0 group-hover:opacity-100 blur transition-all duration-300 group-hover:duration-200 animate-tilt"></div>
-      <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden h-full">
+      <Card className="relative bg-card border border-border group-hover:border-primary/20 transition-all duration-300 overflow-hidden h-full shadow-md group-hover:shadow-lg group-hover:shadow-primary/10">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <QuizBackgroundPattern quizType={quiz.quizType || ""} />
         <CardHeader className="space-y-2 p-4 pb-2 relative z-10">
           <CardTitle className="flex justify-between items-center text-base sm:text-lg">
-            <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2">
+            <span className="group-hover:text-primary/90 transition-colors duration-300 line-clamp-1 mr-2 font-semibold">
               {quiz.title}
             </span>
             <motion.div
@@ -208,10 +223,12 @@ const QuizCard: React.FC<{
             </motion.div>
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className={cn(bgColor)}>
+            <Badge variant="secondary" className={cn(bgColor, "transition-all duration-300 group-hover:scale-105")}>
               {quiz.difficulty || "Medium"}
             </Badge>
-            <span className="text-sm text-muted-foreground">{quiz.quizType}</span>
+            <span className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300">
+              {quiz.quizType}
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="relative z-10 p-4 pt-2">
@@ -228,17 +245,28 @@ const QuizCard: React.FC<{
             )}
           </div>
           {quiz.description && (
-            <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
+            <p className="mt-3 text-sm text-muted-foreground line-clamp-2 group-hover:text-foreground/90 transition-colors duration-300">
               {quiz.description}
             </p>
           )}
           {quiz.completionRate !== undefined && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">Completion</span>
-                <span className="text-xs font-medium">{quiz.completionRate}%</span>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground/70 transition-colors duration-300">
+                  Completion
+                </span>
+                <span className="text-xs font-medium group-hover:text-primary transition-colors duration-300">
+                  {quiz.completionRate}%
+                </span>
               </div>
-              <Progress value={quiz.completionRate} className="h-1.5" />
+              <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="absolute top-0 left-0 h-full bg-primary rounded-full"
+                  initial={{ width: `${quiz.completionRate}%` }}
+                  whileHover={{ width: `${quiz.completionRate}%`, opacity: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
             </div>
           )}
         </CardContent>
@@ -253,7 +281,7 @@ const QuizCard: React.FC<{
                 "w-full group relative overflow-hidden transition-all duration-300 bg-primary hover:bg-primary/90",
                 "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent",
                 "after:translate-x-[-100%] after:group-hover:translate-x-[100%] after:transition-transform after:duration-500",
-                "shadow-md hover:shadow-lg",
+                "shadow-md hover:shadow-lg hover:shadow-primary/20 font-medium",
               )}
               size="sm"
             >
@@ -283,35 +311,47 @@ const QuizCard: React.FC<{
 
 export const RandomQuiz: React.FC = () => {
   // Fetch random quizzes
-  const { quizzes, isLoading, error, refresh } = useRandomQuizzes(10)
+  const { quizzes, isLoading, error, refresh } = useRandomQuizzes(5) // Reduced to 5 for better performance
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [selectedType, setSelectedType] = useState<string | null>(null)
 
-  // Process quizzes to add any missing data
-  const processedQuizzes = useMemo(() => {
-    if (!quizzes.length) return []
+  // Debug quizzes data when it changes
+  useEffect(() => {
+    console.log("Current quizzes data:", quizzes)
+  }, [quizzes])
 
-    return quizzes.map((quiz) => ({
+  // Process quizzes to add any missing data with DETERMINISTIC values (not random)
+  const processedQuizzes = useMemo(() => {
+    if (!quizzes?.length) return []
+
+    return quizzes.map((quiz, index) => ({
       ...quiz,
-      // Add estimated duration if not provided
-      duration: quiz.duration || Math.floor(Math.random() * 5) + 5,
-      // Add description if not provided
-      description: quiz.description || `Test your knowledge with this interactive ${quiz.quizType} quiz.`,
-      // Add popularity for display
-      popularity: quiz.popularity || Math.random() > 0.5 ? "High" : "Medium",
+      // Ensure all required fields have values
+      id: quiz.id || `processed-${index}`,
+      slug: quiz.slug || quiz.id || `processed-${index}`,
+      title: quiz.title || "Untitled Quiz",
+      quizType: quiz.quizType || "mcq",
+      // Use deterministic values instead of random
+      duration: quiz.duration || 5 + (index % 5),
+      description: quiz.description || `Test your knowledge with this interactive ${quiz.quizType || "mcq"} quiz.`,
+      popularity: quiz.popularity || (index % 2 === 0 ? "High" : "Medium"),
+      completionRate: quiz.completionRate ?? 50 + (index * 5) % 50,
     }))
   }, [quizzes])
 
   // Get filtered quizzes
   const displayQuizzes = useMemo(() => {
-    let filtered = processedQuizzes
+    if (!processedQuizzes?.length) return []
+
+    let filtered = [...processedQuizzes]
 
     // Apply type filter if selected
     if (selectedType) {
       filtered = filtered.filter((quiz) => quiz.quizType === selectedType)
     }
 
+    console.log("Display quizzes after filtering:", filtered)
     return filtered
   }, [processedQuizzes, selectedType])
 
@@ -374,6 +414,7 @@ export const RandomQuiz: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-background">
+      {/* Filter UI */}
       <div className="sticky top-0 z-20 p-4 bg-background/95 backdrop-blur-lg border-b">
         <div className="flex justify-between items-center gap-3 mb-3">
           <h2 className="text-lg font-medium">Random Quizzes</h2>
@@ -384,26 +425,15 @@ export const RandomQuiz: React.FC = () => {
             className="h-8 w-8 rounded-full"
             disabled={isLoading || isTransitioning}
           >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RotateCcw className="h-4 w-4" />
-            )}
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
           </Button>
         </div>
 
-        <motion.div
-          className="flex flex-wrap gap-2"
-          variants={buttonGroupVariants}
-          initial="hidden"
-          animate="visible"
-        >
+        <motion.div className="flex flex-wrap gap-2" variants={buttonGroupVariants} initial="hidden" animate="visible">
           <motion.div variants={buttonVariants}>
             <Badge
               variant="outline"
-              className={`cursor-pointer hover:bg-primary/10 ${
-                !selectedType ? "bg-primary/20 border-primary/50" : ""
-              }`}
+              className={`cursor-pointer hover:bg-primary/10 ${!selectedType ? "bg-primary/20 border-primary/50" : ""}`}
               onClick={() => setSelectedType(null)}
             >
               All Types
@@ -437,6 +467,7 @@ export const RandomQuiz: React.FC = () => {
           ) : error ? (
             <div className="rounded-lg border p-8 text-center max-w-md mx-auto">
               <div className="text-destructive mb-4">Failed to load quizzes</div>
+              <pre className="text-xs text-muted-foreground overflow-auto max-h-20 mb-4">{error.message}</pre>
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Try Again
@@ -444,17 +475,21 @@ export const RandomQuiz: React.FC = () => {
             </div>
           ) : displayQuizzes.length > 0 ? (
             <div className="relative w-full max-w-md mx-auto h-[320px] perspective-1000 overflow-visible">
+              {/* Simpler rendering for debugging */}
               {displayQuizzes.slice(0, 5).map((quiz, index) => (
                 <QuizCard
                   key={`${quiz.id}-${index}`}
                   quiz={quiz}
                   index={index}
                   isVisible={index === activeCardIndex}
-                  isPrefetching={
-                    index === activeCardIndex || index === (activeCardIndex + 1) % displayQuizzes.length
-                  }
+                  isPrefetching={index === activeCardIndex}
                 />
               ))}
+
+              {/* Debug information */}
+              <div className="absolute top-[-30px] left-0 right-0 text-xs text-muted-foreground">
+                Showing quiz {activeCardIndex + 1} of {displayQuizzes.length}
+              </div>
 
               {/* Card navigation controls */}
               {displayQuizzes.length > 1 && (
@@ -495,7 +530,12 @@ export const RandomQuiz: React.FC = () => {
               <div className="flex justify-center mb-4">
                 <Sparkles className="h-12 w-12 text-muted-foreground/50" />
               </div>
-              <p className="text-muted-foreground">No quizzes found for this filter.</p>
+              <p className="text-muted-foreground mb-2">No quizzes found for this filter.</p>
+              {selectedType && (
+                <p className="text-xs text-muted-foreground mb-4">
+                  Current filter: {selectedType} (Found {processedQuizzes.length} total quizzes before filtering)
+                </p>
+              )}
               <Button
                 variant="outline"
                 className="mt-4"

@@ -12,7 +12,6 @@ import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-
 // Import the flashcard slice actions
 import {
   initFlashCardQuiz,
@@ -21,11 +20,7 @@ import {
   resetFlashCards,
   setCurrentFlashCard,
   nextFlashCard,
-  setRequiresFlashCardAuth,
-  setPendingFlashCardAuth
 } from "@/store/slices/flashcard-slice"
-
-import FlashCardResults from "./FlashCardQuizResults"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { Confetti } from "@/components/ui/confetti"
 
@@ -56,7 +51,7 @@ function FlashCardComponentInner({
     pendingAuthRequired,
     quizId: storeQuizId,
   } = useAppSelector((state) => state.flashcard)
-  
+
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -81,7 +76,6 @@ function FlashCardComponentInner({
   const cardRef = useRef<HTMLDivElement>(null)
   const { animationsEnabled } = useAnimationContext()
 
-
   // Initialize quiz in Redux using the flashcard slice
   useEffect(() => {
     if (cards && cards.length > 0 && (!storeQuizId || storeQuizId !== quizId.toString())) {
@@ -91,7 +85,7 @@ function FlashCardComponentInner({
           slug,
           title,
           questions: cards,
-        })
+        }),
       )
     }
   }, [cards, quizId, slug, title, dispatch, storeQuizId])
@@ -121,52 +115,54 @@ function FlashCardComponentInner({
 
   // Calculate score based on "correct" self-ratings
   const calculateScore = useCallback(() => {
-    return Object.values(selfRating).filter(rating => rating === "correct").length
+    return Object.values(selfRating).filter((rating) => rating === "correct").length
   }, [selfRating])
 
   // Enhanced review card handling
   const cardsToReview = useMemo(() => {
-    if (!cards || !cards.length) return [];
-    
+    if (!cards || !cards.length) return []
+
     // Find the cards that were marked as incorrect
     return Object.entries(selfRating)
       .filter(([_, rating]) => rating === "incorrect")
       .map(([cardId]) => {
         // Find the index of the card with matching ID
-        const index = cards.findIndex(card => {
-          const cardIdStr = card.id?.toString();
-          return cardIdStr === cardId;
-        });
-        return index;
+        const index = cards.findIndex((card) => {
+          const cardIdStr = card.id?.toString()
+          return cardIdStr === cardId
+        })
+        return index
       })
-      .filter(index => index !== -1);
+      .filter((index) => index !== -1)
   }, [selfRating, cards])
 
   // Fixed enter review mode function with better error handling
   const handleEnterReviewMode = useCallback(() => {
     if (!cardsToReview.length) {
-      console.log("No cards to review");
-      return;
+      console.log("No cards to review")
+      return
     }
-    
+
     // Set review cards and reset UI state
-    setReviewCards(cardsToReview);
-    setReviewMode(true);
+    setReviewCards(cardsToReview)
+    setReviewMode(true)
     setFlipped(false)
-    
+
     // Reset to first review card via Redux
-    dispatch(setCurrentFlashCard(0));
-    
+    dispatch(setCurrentFlashCard(0))
+
     // Reset completed state to ensure questions can be answered in review mode
-    dispatch(completeFlashCardQuiz({
-      score: 0,
-      answers: [],
-      completedAt: "",
-      isReviewMode: true
-    }));
-    
-    setStartTime(Date.now());
-    
+    dispatch(
+      completeFlashCardQuiz({
+        score: 0,
+        answers: [],
+        completedAt: "",
+        isReviewMode: true,
+      }),
+    )
+
+    setStartTime(Date.now())
+
     // Log for debugging
     console.log("Entering review mode with cards:", cardsToReview)
   }, [cardsToReview, dispatch])
@@ -181,37 +177,35 @@ function FlashCardComponentInner({
 
   // Memoize getCurrentCard function to prevent recreating on every render
   const getCurrentCard = useCallback(() => {
-    if (!cards || !cards.length) return null;
-    
+    if (!cards || !cards.length) return null
+
     if (reviewMode && reviewCards && reviewCards.length > 0) {
       // Get the current review index, bounded by array length
-      const reviewIndex = Math.min(currentQuestionIndex, reviewCards.length - 1);
-      
+      const reviewIndex = Math.min(currentQuestionIndex, reviewCards.length - 1)
+
       // Get the actual card index from our array of review indices
-      const cardIndex = reviewCards[reviewIndex];
-      
+      const cardIndex = reviewCards[reviewIndex]
+
       // Add debug logging
-      console.log(
-        "Review mode active:", 
-        { reviewIndex, cardIndex, currentIndex: currentQuestionIndex, reviewCards }
-      );
-      
+      console.log("Review mode active:", { reviewIndex, cardIndex, currentIndex: currentQuestionIndex, reviewCards })
+
       if (cardIndex !== undefined && cardIndex >= 0 && cardIndex < cards.length) {
-        return cards[cardIndex];
+        return cards[cardIndex]
       }
     }
-    
+
     // In normal mode or if review index was invalid
-    return cards[Math.min(currentQuestionIndex, cards.length - 1)];
+    return cards[Math.min(currentQuestionIndex, cards.length - 1)]
   }, [reviewMode, reviewCards, currentQuestionIndex, cards])
 
   // Memoize current card to prevent unnecessary re-renders
-  const currentCard = useMemo(() => getCurrentCard(), [getCurrentCard]);
+  const currentCard = useMemo(() => getCurrentCard(), [getCurrentCard])
 
   // Check if current card is saved - memoized to prevent recalculation
-  const isSaved = useMemo(() => 
-    currentCard?.id ? savedCardIds.includes(currentCard.id.toString()) : false
-  , [currentCard?.id, savedCardIds]);
+  const isSaved = useMemo(
+    () => (currentCard?.id ? savedCardIds.includes(currentCard.id.toString()) : false),
+    [currentCard?.id, savedCardIds],
+  )
 
   // Calculate progress percentage - memoized for performance
   const progress = useMemo(() => {
@@ -220,7 +214,7 @@ function FlashCardComponentInner({
     }
     return cards?.length ? ((currentQuestionIndex + 1) / cards.length) * 100 : 0
   }, [reviewMode, currentQuestionIndex, reviewCards.length, cards?.length])
-  
+
   // Handle card flip
   const toggleFlip = useCallback(() => {
     if (!flipped) {
@@ -239,10 +233,8 @@ function FlashCardComponentInner({
   // Handle moving to the next flashcard - fix review mode navigation
   const moveToNextCard = useCallback(() => {
     if (!cards?.length) return
-    
-    const maxIndex = reviewMode ? 
-      (reviewCards.length - 1) : 
-      (cards.length - 1)
+
+    const maxIndex = reviewMode ? reviewCards.length - 1 : cards.length - 1
 
     if (currentQuestionIndex < maxIndex) {
       setDirection(1)
@@ -268,133 +260,128 @@ function FlashCardComponentInner({
         setFlipped(false)
         return
       }
-      
+
       // Otherwise, complete the quiz
       const correctCount = calculateScore()
       const totalQuestions = cards.length
       const score = totalQuestions ? (correctCount / totalQuestions) * 100 : 0
 
       // Calculate total time from answers
-      const totalTime = Array.isArray(answers) ? 
-        answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0) : 0
+      const totalTime = Array.isArray(answers) ? answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0) : 0
 
       // Complete the quiz but don't redirect - let the QuizResultHandler manage auth and redirects
-      dispatch(completeFlashCardQuiz({
-        score,
-        answers: answers || [],
-        completedAt: new Date().toISOString(),
-        percentage: score,
-        correctAnswers: correctCount,
-        totalQuestions: totalQuestions,
-        totalTime: totalTime,
-      }))
-      
+      dispatch(
+        completeFlashCardQuiz({
+          score,
+          answers: answers || [],
+          completedAt: new Date().toISOString(),
+          percentage: score,
+          correctAnswers: correctCount,
+          totalQuestions: totalQuestions,
+          totalTime: totalTime,
+        }),
+      )
+
       // Show confetti for completion
       setShowConfetti(true)
     }
-  }, [
-    currentQuestionIndex,
-    reviewMode,
-    reviewCards.length,
-    cards,
-    dispatch,
-    calculateScore,
-    answers,
-    cardControls
-  ])
+  }, [currentQuestionIndex, reviewMode, reviewCards.length, cards, dispatch, calculateScore, answers, cardControls])
 
   // Rating feedback optimization with smoother spring physics
   const ratingFeedbackVariants = {
-    hidden: { 
-      opacity: 0, 
-      scale: 0.8, 
-      willChange: 'transform, opacity' 
+    hidden: {
+      opacity: 0,
+      scale: 0.8,
+      willChange: "transform, opacity",
     },
     visible: {
       opacity: 1,
       scale: [0.9, 1.05, 1],
-      willChange: 'transform, opacity',
+      willChange: "transform, opacity",
       transition: {
         duration: 0.4,
         times: [0, 0.6, 1],
         type: "spring",
         stiffness: 300,
-        damping: 15
+        damping: 15,
       },
     },
     exit: {
       opacity: 0,
       scale: 1.1,
-      willChange: 'transform, opacity',
-      transition: { 
-        duration: 0.25, 
-        ease: "easeOut" 
+      willChange: "transform, opacity",
+      transition: {
+        duration: 0.25,
+        ease: "easeOut",
       },
     },
   }
 
   // Handle self-rating functionality with improved animation coordination
-  const handleSelfRating = useCallback((cardId: string, rating: "correct" | "incorrect") => {
-    if (!cardId) return
-    
-    // Calculate time spent
-    const endTime = Date.now()
-    const timeSpent = Math.floor((endTime - startTime) / 1000)
+  const handleSelfRating = useCallback(
+    (cardId: string, rating: "correct" | "incorrect") => {
+      if (!cardId) return
 
-    // Update card times
-    setCardTimes(prev => ({
-      ...prev,
-      [cardId]: (prev[cardId] || 0) + timeSpent,
-    }))
+      // Calculate time spent
+      const endTime = Date.now()
+      const timeSpent = Math.floor((endTime - startTime) / 1000)
 
-    // Disable swipe during animation
-    setSwipeDisabled(true)
+      // Update card times
+      setCardTimes((prev) => ({
+        ...prev,
+        [cardId]: (prev[cardId] || 0) + timeSpent,
+      }))
 
-    // Submit answer
-    const answerData = {
-      answer: rating,
-      userAnswer: rating,
-      timeSpent: timeSpent,
-      isCorrect: rating === "correct",
-      questionId: cardId,
-    }
+      // Disable swipe during animation
+      setSwipeDisabled(true)
 
-    dispatch(submitFlashCardAnswer(answerData))
-    
-    // Show rating animation with coordinated timing
-    setRatingAnimation(rating)
+      // Submit answer
+      const answerData = {
+        answer: rating,
+        userAnswer: rating,
+        timeSpent: timeSpent,
+        isCorrect: rating === "correct",
+        questionId: cardId,
+      }
 
-    // Add haptic feedback for mobile if available
-    if (window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(rating === "correct" ? [50] : [20, 30, 40])
-    }
+      dispatch(submitFlashCardAnswer(answerData))
 
-    // Handle auto-advance with coordinated timing
-    if (autoAdvance) {
-      // Use a slight delay to show feedback before advancing
-      const timer = setTimeout(() => {
-        setRatingAnimation(null)
-        // Short delay before advancing to next card for better UX
-        setTimeout(() => {
-          moveToNextCard()
+      // Show rating animation with coordinated timing
+      setRatingAnimation(rating)
+
+      // Add haptic feedback for mobile if available
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(rating === "correct" ? [50] : [20, 30, 40])
+      }
+
+      // Handle auto-advance with coordinated timing
+      if (autoAdvance) {
+        // Use a slight delay to show feedback before advancing
+        const timer = setTimeout(() => {
+          setRatingAnimation(null)
+          // Short delay before advancing to next card for better UX
+          setTimeout(() => {
+            moveToNextCard()
+            setSwipeDisabled(false)
+            setStartTime(Date.now())
+          }, 50)
+        }, 700)
+        return () => clearTimeout(timer)
+      } else {
+        const timer = setTimeout(() => {
+          setRatingAnimation(null)
           setSwipeDisabled(false)
-          setStartTime(Date.now())
-        }, 50)
-      }, 700)
-      return () => clearTimeout(timer)
-    } else {
-      const timer = setTimeout(() => {
-        setRatingAnimation(null)
-        setSwipeDisabled(false)
-      }, 700)
-      return () => clearTimeout(timer)
-    }
-  }, [dispatch, autoAdvance, moveToNextCard, startTime])
+        }, 700)
+        return () => clearTimeout(timer)
+      }
+    },
+    [dispatch, autoAdvance, moveToNextCard, startTime],
+  )
 
   // Handle restart quiz
   const handleRestartQuiz = useCallback(() => {
     dispatch(resetFlashCards())
-    
+
     setFlipped(false)
     setReviewMode(false)
     setReviewCards([])
@@ -407,43 +394,44 @@ function FlashCardComponentInner({
     router.push(url.toString())
   }, [dispatch, router])
 
-
-
   // Handle swipe gestures
-  const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (swipeDisabled) return
+  const handleDragEnd = useCallback(
+    (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      if (swipeDisabled) return
 
-    const swipeDirection = info.offset.x > 0 ? "right" : "left"
-    const swipeDistance = Math.abs(info.offset.x)
-    const swipeVelocity = Math.abs(info.velocity.x)
-    
-    // Consider both distance and velocity for more natural swipe detection
-    const isEffectiveSwipe = swipeDistance > swipeThreshold || swipeVelocity > 0.5
-    
-    if (isEffectiveSwipe) {
-      // Add haptic feedback for mobile if available
-      if (window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(50)
-      }
-      
-      if (swipeDirection === "left") {
-        moveToNextCard()
-      } else {
-        toggleFlip()
-      }
-    } else {
-      // Animate back to original position with spring physics
-      cardControls.start({ 
-        x: 0, 
-        opacity: 1,
-        transition: { 
-          type: "spring", 
-          stiffness: 500, 
-          damping: 30 
+      const swipeDirection = info.offset.x > 0 ? "right" : "left"
+      const swipeDistance = Math.abs(info.offset.x)
+      const swipeVelocity = Math.abs(info.velocity.x)
+
+      // Consider both distance and velocity for more natural swipe detection
+      const isEffectiveSwipe = swipeDistance > swipeThreshold || swipeVelocity > 0.5
+
+      if (isEffectiveSwipe) {
+        // Add haptic feedback for mobile if available
+        if (window.navigator && window.navigator.vibrate) {
+          window.navigator.vibrate(50)
         }
-      })
-    }
-  }, [swipeDisabled, swipeThreshold, moveToNextCard, toggleFlip, cardControls])
+
+        if (swipeDirection === "left") {
+          moveToNextCard()
+        } else {
+          toggleFlip()
+        }
+      } else {
+        // Animate back to original position with spring physics
+        cardControls.start({
+          x: 0,
+          opacity: 1,
+          transition: {
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+          },
+        })
+      }
+    },
+    [swipeDisabled, swipeThreshold, moveToNextCard, toggleFlip, cardControls],
+  )
 
   // Keyboard navigation
   useEffect(() => {
@@ -532,7 +520,8 @@ function FlashCardComponentInner({
     createConfetti()
 
     return () => {
-      document.querySelectorAll('div[style*="position: fixed"][style*="pointer-events: none"]')
+      document
+        .querySelectorAll('div[style*="position: fixed"][style*="pointer-events: none"]')
         .forEach((container) => container.remove())
     }
   }, [showConfetti])
@@ -540,24 +529,24 @@ function FlashCardComponentInner({
   // Add useEffect for CSS animation variables to control all animations centrally
   useEffect(() => {
     // Set CSS variables for consistent animation timing across component
-    document.documentElement.style.setProperty('--card-flip-duration', animationsEnabled ? '0.4s' : '0.1s');
-    document.documentElement.style.setProperty('--card-transition-easing', 'cubic-bezier(0.23, 1, 0.32, 1)');
-    document.documentElement.style.setProperty('--rating-animation-duration', '0.4s');
-    
+    document.documentElement.style.setProperty("--card-flip-duration", animationsEnabled ? "0.4s" : "0.1s")
+    document.documentElement.style.setProperty("--card-transition-easing", "cubic-bezier(0.23, 1, 0.32, 1)")
+    document.documentElement.style.setProperty("--rating-animation-duration", "0.4s")
+
     return () => {
       // Clean up CSS variables
-      document.documentElement.style.removeProperty('--card-flip-duration');
-      document.documentElement.style.removeProperty('--card-transition-easing');
-      document.documentElement.style.removeProperty('--rating-animation-duration');
-    };
-  }, [animationsEnabled]);
+      document.documentElement.style.removeProperty("--card-flip-duration")
+      document.documentElement.style.removeProperty("--card-transition-easing")
+      document.documentElement.style.removeProperty("--rating-animation-duration")
+    }
+  }, [animationsEnabled])
 
   // Optimize confetti rendering to use requestAnimationFrame for better performance
   useEffect(() => {
     if (!showConfetti) return
-    
-    let confettiContainer: HTMLElement | null = null;
-    
+
+    let confettiContainer: HTMLElement | null = null
+
     // Create confetti with RAF for smoother animation
     const createConfetti = () => {
       const confettiCount = 150
@@ -572,12 +561,12 @@ function FlashCardComponentInner({
       document.body.appendChild(confettiContainer)
 
       // Use DocumentFragment for better performance when adding multiple elements
-      const fragment = document.createDocumentFragment();
-      
+      const fragment = document.createDocumentFragment()
+
       for (let i = 0; i < confettiCount; i++) {
         const confetti = document.createElement("div")
         const size = Math.random() * 10 + 5
-        
+
         // Set all styles at once for better performance
         Object.assign(confetti.style, {
           position: "absolute",
@@ -589,43 +578,43 @@ function FlashCardComponentInner({
           left: `${Math.random() * 100}%`,
           willChange: "transform, opacity",
           transform: "translateZ(0)", // Hardware acceleration hint
-        });
+        })
 
         // Use modern Web Animation API for better performance
         const keyframes = [
           { transform: "translateY(0) rotate(0)", opacity: 1 },
-          { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 720 - 360}deg)`, opacity: 0 }
-        ];
-        
+          { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 720 - 360}deg)`, opacity: 0 },
+        ]
+
         const timing = {
           duration: Math.random() * 3000 + 1500,
           easing: "cubic-bezier(0.1, 0.8, 0.3, 1)",
-          fill: "forwards" as FillMode
-        };
+          fill: "forwards" as FillMode,
+        }
 
-        const animation = confetti.animate(keyframes, timing);
-        
+        const animation = confetti.animate(keyframes, timing)
+
         animation.onfinish = () => {
-          confetti.remove();
+          confetti.remove()
           if (confettiContainer && confettiContainer.childElementCount === 0) {
-            confettiContainer.remove();
+            confettiContainer.remove()
           }
-        };
-        
-        fragment.appendChild(confetti);
+        }
+
+        fragment.appendChild(confetti)
       }
-      
+
       // Add all confetti at once to minimize reflows
-      confettiContainer.appendChild(fragment);
+      confettiContainer.appendChild(fragment)
     }
 
     // Use requestAnimationFrame for better timing
-    requestAnimationFrame(createConfetti);
+    requestAnimationFrame(createConfetti)
 
     return () => {
       // Clean up the confetti container on unmount
       if (confettiContainer) {
-        confettiContainer.remove();
+        confettiContainer.remove()
       }
     }
   }, [showConfetti])
@@ -640,13 +629,13 @@ function FlashCardComponentInner({
       x: direction > 0 ? 300 : -300,
       opacity: 0,
       scale: 0.9,
-      willChange: 'transform, opacity',
+      willChange: "transform, opacity",
     }),
     animate: {
       x: 0,
       opacity: 1,
       scale: 1,
-      willChange: 'transform, opacity',
+      willChange: "transform, opacity",
       transition: {
         x: { type: "spring", stiffness: 300, damping: 25 },
         opacity: { duration: 0.4 },
@@ -657,7 +646,7 @@ function FlashCardComponentInner({
       x: direction < 0 ? 300 : -300,
       opacity: 0,
       scale: 0.9,
-      willChange: 'transform, opacity',
+      willChange: "transform, opacity",
       transition: {
         x: { type: "spring", stiffness: 300, damping: 25 },
         opacity: { duration: 0.4 },
@@ -667,7 +656,7 @@ function FlashCardComponentInner({
     drag: {
       x: 0,
       opacity: 1,
-      willChange: 'transform',
+      willChange: "transform",
       transition: {
         x: { type: "spring", stiffness: 300, damping: 25 },
       },
@@ -676,65 +665,63 @@ function FlashCardComponentInner({
 
   // Enhance animation variants with 3D transforms and hardware acceleration
   const frontCardVariants = {
-    initial: { 
-      opacity: 0, 
-      rotateY: 0, 
-      willChange: 'transform, opacity',
-      transformStyle: 'preserve-3d',
-      backfaceVisibility: 'hidden'
+    initial: {
+      opacity: 0,
+      rotateY: 0,
+      willChange: "transform, opacity",
+      transformStyle: "preserve-3d",
+      backfaceVisibility: "hidden",
     },
     animate: {
       opacity: 1,
       rotateY: 0,
-      willChange: 'transform, opacity',
-      transformStyle: 'preserve-3d',
-      backfaceVisibility: 'hidden',
+      willChange: "transform, opacity",
+      transformStyle: "preserve-3d",
+      backfaceVisibility: "hidden",
       transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
     exit: {
       opacity: 0,
       rotateY: 90,
-      willChange: 'transform, opacity',
-      transformStyle: 'preserve-3d',
-      backfaceVisibility: 'hidden',
+      willChange: "transform, opacity",
+      transformStyle: "preserve-3d",
+      backfaceVisibility: "hidden",
       transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
   }
 
   const backCardVariants = {
-    initial: { 
-      opacity: 0, 
-      rotateY: -90, 
-      willChange: 'transform, opacity',
-      transformStyle: 'preserve-3d',
-      backfaceVisibility: 'hidden'
+    initial: {
+      opacity: 0,
+      rotateY: -90,
+      willChange: "transform, opacity",
+      transformStyle: "preserve-3d",
+      backfaceVisibility: "hidden",
     },
     animate: {
       opacity: 1,
       rotateY: 0,
-      willChange: 'transform, opacity',
-      transformStyle: 'preserve-3d',
-      backfaceVisibility: 'hidden',
+      willChange: "transform, opacity",
+      transformStyle: "preserve-3d",
+      backfaceVisibility: "hidden",
       transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
     exit: {
       opacity: 0,
       rotateY: -90,
-      willChange: 'transform, opacity',
-      transformStyle: 'preserve-3d',
-      backfaceVisibility: 'hidden',
+      willChange: "transform, opacity",
+      transformStyle: "preserve-3d",
+      backfaceVisibility: "hidden",
       transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
   }
-
-
 
   // Render different content based on quiz state
   const renderQuizContent = () => {
     // Only show flashcard UI if not completed or in review mode
     if (isCompleted && !reviewMode) {
       // Don't render results directly - QuizResultHandler will handle this
-      return null;
+      return null
     }
 
     // Not completed or in review mode - show flashcard UI
@@ -1059,7 +1046,7 @@ function FlashCardComponentInner({
                     className={`h-full rounded-full ${reviewMode ? "bg-destructive" : "bg-primary"}`}
                     style={{ width: `${progress}%` }}
                     initial={{
-                      width: `${(currentQuestionIndex / (reviewMode ? reviewCards.length : (cards?.length || 1))) * 100}%`,
+                      width: `${(currentQuestionIndex / (reviewMode ? reviewCards.length : cards?.length || 1)) * 100}%`,
                     }}
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
@@ -1090,10 +1077,10 @@ function FlashCardComponentInner({
   return (
     <>
       {renderQuizContent()}
-      
+
       {/* Add confetti component */}
       <Confetti isActive={showConfetti} count={150} duration={3000} />
-      
+
       {/* Existing scrollbar styles */}
       <style jsx global>{`
         .scrollbar-thin::-webkit-scrollbar {
@@ -1151,29 +1138,30 @@ function FlashCardComponentInner({
 // More precise custom comparison function for memoization
 function arePropsEqual(prevProps: FlashCardComponentProps, nextProps: FlashCardComponentProps) {
   // Check if arrays have changed by reference
-  if (prevProps.quizId !== nextProps.quizId ||
-      prevProps.slug !== nextProps.slug ||
-      prevProps.title !== nextProps.title) {
-    return false;
+  if (
+    prevProps.quizId !== nextProps.quizId ||
+    prevProps.slug !== nextProps.slug ||
+    prevProps.title !== nextProps.title
+  ) {
+    return false
   }
-  
+
   // Check card length
   if (prevProps.cards?.length !== nextProps.cards?.length) {
-    return false;
+    return false
   }
-  
+
   // Check if savedCardIds has changed
-  const prevSavedLength = prevProps.savedCardIds?.length || 0;
-  const nextSavedLength = nextProps.savedCardIds?.length || 0;
-  
+  const prevSavedLength = prevProps.savedCardIds?.length || 0
+  const nextSavedLength = nextProps.savedCardIds?.length || 0
+
   if (prevSavedLength !== nextSavedLength) {
-    return false;
+    return false
   }
-  
+
   // If all checks passed, components are equal
-  return true;
+  return true
 }
 
 // Export memoized component with custom comparison
 export const FlashCardComponent = memo(FlashCardComponentInner, arePropsEqual)
-

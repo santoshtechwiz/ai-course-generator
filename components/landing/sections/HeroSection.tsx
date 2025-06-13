@@ -7,15 +7,17 @@ import { ChevronDown, ArrowRight, Play } from "lucide-react"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useMobile } from "@/hooks/use-mobile"
 
+// Add the isHydrated prop to your component props
 interface HeroSectionProps {
   scrollToFeatures: () => void
   scrollToHowItWorks: () => void
+  isHydrated?: boolean
 }
 
 // Apple-style easing function
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
-const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps) => {
+const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false }: HeroSectionProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLDivElement>(null)
   const isMobile = useMobile()
