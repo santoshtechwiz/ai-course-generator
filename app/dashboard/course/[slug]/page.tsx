@@ -3,11 +3,13 @@ import { generatePageMetadata } from "@/lib/seo-utils"
 import { getCourseData } from "@/app/actions/getCourseData"
 import { JsonLD } from "@/app/schema/components"
 import { notFound } from "next/navigation"
-import { Suspense } from "react"
+
 import { Skeleton } from "@/components/ui/skeleton"
 import { extractKeywords, generateMetaDescription } from "@/lib/seo-utils"
 import type { FullCourseType } from "@/app/types/types"
 import MainContent from "./components/MainContent"
+import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
+
 function LoadingSkeleton() {
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] gap-4 p-4 animate-pulse">
@@ -130,15 +132,13 @@ export default async function Page({ params }: CoursePageParams) {
         }}
       />
 
-      {/* Public course header and basic info that everyone can see */}
-      <div className="course-header">
-        <h1>{course.title}</h1>
-        <p className="course-description">{course.description}</p>
-        {/* Other basic course information */}
-      </div>
-
-      {/* Directly render MainContent - subscription check happens inside components */}
-      <MainContent course={course} />
+      {/* Use EnhancedCourseLayout for a more Udemy-like experience */}
+      <EnhancedCourseLayout 
+        course={course} 
+        breadcrumbs={[
+          { label: course.category?.name || "Category", href: `/dashboard/category/${course.category?.slug || ""}` }
+        ]}
+      />
     </>
   )
 }

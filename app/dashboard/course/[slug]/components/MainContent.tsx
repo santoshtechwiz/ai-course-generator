@@ -1,39 +1,50 @@
 "use client"
 
 import type React from "react"
-import { useState, useCallback, useEffect, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useSession } from "next-auth/react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
+import { useAuth, useToast } from "@/hooks" // Fix: Changed from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Play, Menu, X, ChevronLeft, ChevronRight, Clock, Award, Lock, User } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { Card, CardContent } from "@/components/ui/card"
+import { Play, Lock, User, Award, Wifi, WifiOff, Badge, ChevronLeft, ChevronRight, Clock, Menu, Sheet, X } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
+import type { FullCourseType, FullChapterType } from "@/app/types/types"
+import CourseDetailsTabs from "./CourseDetailsTabs"
+import { formatDuration } from "../utils/formatUtils"
 import VideoPlayer from "./video/components/VideoPlayer"
 import VideoNavigationSidebar from "./video/components/VideoNavigationSidebar"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
-
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
-import { useAuth } from "@/hooks"
-import useProgress from "@/hooks/useProgress"
-import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsTabs from "./CourseDetailsTabs"
-import { formatDuration } from "../utils/formatUtils"
+import useProgress from "./video/hooks/useProgress"
+import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
+import { VideoDebug } from "./video/components/VideoDebug"
+import { VideoStateReset } from "./video/components/VideoStateReset"
+import { isValidChapter, createSafeChapter } from "@/app/dashboard/course/[slug]/utils/chapterUtils"
+import { Card, CardContent } from "@/components/ui/card"
+import { SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { AnimatePresence, motion } from "framer-motion"
 
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
 }
 
+function validateChapter(chapter: any): boolean {
+  return Boolean(
+    chapter &&
+      typeof chapter === "object" &&
+      chapter.id &&
+      typeof chapter.id === "string",
+  )
+}
+
 const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId }) => {
   // Always define all hooks at the top level - no early returns or conditions before hooks
   const router = useRouter()
   const { data: session } = useSession()
-  const { toast } = useToast()
+  const { toast } = useToast() // Fix: Properly destructure toast from useToast hook
   const dispatch = useAppDispatch()
 
   // Fix: Use try/catch when accessing useAuth to prevent errors if the hook isn't available
@@ -63,6 +74,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
 
+  // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
+  const bookmarks = useMemo(() => {
+    return getVideoBookmarks(currentVideoId)
+  }, [currentVideoId])
+
   // Fix: Initialize completedChapters safely so it's always defined
   // Use courseProgress.completedChapters if available, otherwise empty array
   const completedChapters = useMemo(() => {
@@ -78,15 +94,43 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Memoized video playlist
   const videoPlaylist = useMemo(() => {
     const playlist: { videoId: string; chapter: FullChapterType }[] = []
-    course.courseUnits?.forEach((unit) => {
+
+    if (!course?.courseUnits) {
+      return playlist
+    }
+
+    course.courseUnits.forEach((unit) => {
+      if (!unit.chapters) return
+
       unit.chapters
-        .filter((chapter): chapter is FullChapterType => Boolean(chapter.videoId))
-        .forEach((chapter) => {
-          if (chapter.videoId) {
-            playlist.push({ videoId: chapter.videoId, chapter })
+        .filter((chapter): chapter is FullChapterType => {
+          // Enhanced validation to make sure we have valid chapters
+          const isValid = Boolean(
+            chapter &&
+              typeof chapter === "object" &&
+              chapter.id &&
+              chapter.videoId &&
+              typeof chapter.videoId === "string",
+          )
+
+          if (!isValid && chapter) {
+            // Log invalid chapter in development for debugging
+            if (process.env.NODE_ENV !== "production") {
+              console.debug(`Skipping invalid chapter:`, {
+                id: chapter.id,
+                title: chapter.title,
+                hasVideoId: !!chapter.videoId,
+              })
+            }
           }
+
+          return isValid
+        })
+        .forEach((chapter) => {
+          playlist.push({ videoId: chapter.videoId!, chapter })
         })
     })
+
     return playlist
   }, [course.courseUnits])
 
@@ -113,7 +157,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   }, [currentIndex, videoPlaylist])
 
   // Progress tracking
-  const { progress, updateProgress } = useProgress({
+  const { progress, updateProgress, isLoading: progressLoading } = useProgress({
     courseId: Number(course.id),
     currentChapterId: currentChapter?.id?.toString(),
   })
@@ -123,16 +167,50 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     return !!session || !hasPlayedFreeVideo
   }, [session, hasPlayedFreeVideo])
 
-  // Initialize video on mount
-  useEffect(() => {
-    const initialVideo = initialChapterId
-      ? videoPlaylist.find((entry) => entry.chapter.id.toString() === initialChapterId)
-      : videoPlaylist[0]
+  // Get direct access to the Zustand video state store
+  const videoStateStore = useVideoState
 
-    if (initialVideo && !currentVideoId) {
-      dispatch(setCurrentVideoApi(initialVideo.videoId))
+  // Enhanced initialization logic for video selection
+  useEffect(() => {
+    if (videoPlaylist.length === 0) {
+      console.warn("No videos available in the playlist")
+      return
     }
-  }, [dispatch, initialChapterId, videoPlaylist, currentVideoId])
+
+    // First try to get the video from URL param (initialChapterId)
+    let targetVideo = initialChapterId
+      ? videoPlaylist.find((entry) => entry.chapter.id.toString() === initialChapterId)
+      : null
+
+    // If not found, try to use the current video from Redux
+    if (!targetVideo && currentVideoId) {
+      targetVideo = videoPlaylist.find((entry) => entry.videoId === currentVideoId)
+    }
+
+    // If still not found, try to use the last watched video from progress
+    if (!targetVideo && progress?.currentChapterId) {
+      targetVideo = videoPlaylist.find(
+        (entry) => entry.chapter.id.toString() === progress.currentChapterId?.toString(),
+      )
+    }
+
+    // If all else fails, use the first video in the playlist
+    if (!targetVideo && videoPlaylist.length > 0) {
+      targetVideo = videoPlaylist[0]
+    }
+
+    if (targetVideo?.videoId) {
+      // Update Redux state
+      dispatch(setCurrentVideoApi(targetVideo.videoId))
+
+      // Update Zustand store
+      videoStateStore.getState().setCurrentVideo(targetVideo.videoId, course.id)
+
+      console.log(`[MainContent] Initialized with video: ${targetVideo.videoId}, course: ${course.id}`)
+    } else {
+      console.error("Failed to select a video")
+    }
+  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress])
 
   // Resume prompt
   useEffect(() => {
@@ -266,23 +344,68 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     hasPlayedFreeVideo,
   ])
 
+  // Add handleChapterComplete function
+  const handleChapterComplete = useCallback((chapterId: string) => {
+    if (!chapterId) return
+
+    // Mark chapter as completed in Redux store
+    dispatch(markChapterAsCompleted({ courseId: Number(course.id), chapterId: Number(chapterId) }))
+
+    // Update progress
+    updateProgress({
+      currentChapterId: Number(chapterId),
+      completedChapters: [...(progress?.completedChapters || []), Number(chapterId)],
+      lastAccessedAt: new Date(),
+    })
+
+    console.log(`Chapter completed: ${chapterId}`)
+  }, [course.id, dispatch, updateProgress, progress])
+
+  // Ensure CourseID is set when changing videos
   const handleChapterSelect = useCallback(
     (chapter: FullChapterType) => {
+      // First, check if the chapter actually exists and is valid
+      if (!chapter || !validateChapter(chapter)) {
+        console.error("Invalid chapter selected: missing chapter ID or invalid format")
+        toast({
+          title: "Error",
+          description: "Invalid chapter selected",
+          variant: "destructive",
+        })
+        return
+      }
+
       // Check if user can play this video
       if (!canPlayVideo) {
         setShowAuthPrompt(true)
         return
       }
 
-      if (chapter.videoId) {
-        dispatch(setCurrentVideoApi(chapter.videoId))
-        setSidebarOpen(false)
-        setVideoEnding(false)
-        setShowLogoOverlay(false)
-        setIsVideoLoading(true)
+      // Make sure the chapter has a videoId before proceeding
+      if (!chapter.videoId) {
+        console.error(`Chapter has no videoId: ${chapter.id} - ${chapter.title}`)
+        toast({
+          title: "Video Unavailable",
+          description: "This chapter doesn't have a video available.",
+          variant: "destructive",
+        })
+        return
       }
+
+      // Update Redux state
+      dispatch(setCurrentVideoApi(chapter.videoId))
+
+      // Update Zustand store with both videoId and courseId
+      videoStateStore.getState().setCurrentVideo(chapter.videoId, course.id)
+
+      console.log(`[MainContent] Selected chapter: ${chapter.title}, videoId: ${chapter.videoId}, id: ${chapter.id}`)
+
+      setSidebarOpen(false)
+      setVideoEnding(false)
+      setShowLogoOverlay(false)
+      setIsVideoLoading(true)
     },
-    [dispatch, canPlayVideo],
+    [dispatch, canPlayVideo, course.id, videoStateStore, toast],
   )
 
   const handleNextVideo = useCallback(() => {
@@ -400,52 +523,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const regularContent = (
     <div className="min-h-screen bg-background">
       {/* Mobile header */}
-      <div className="lg:hidden border-b bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex items-center justify-between p-4">
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-0">
-              <SheetHeader className="p-4 border-b">
-                <SheetTitle className="text-left line-clamp-2">{course.title}</SheetTitle>
-              </SheetHeader>
-              <VideoNavigationSidebar
-                course={course}
-                currentChapter={currentChapter}
-                courseId={course.id.toString()}
-                onChapterSelect={handleChapterSelect}
-                currentVideoId={currentVideoId || ''}
-                isAuthenticated={!!session}
-                progress={progress}
-                completedChapters={completedChapters}
-                nextVideoId={nextChapter?.videoId}
-                prevVideoId={prevChapter?.videoId}
-                videoDurations={videoDurations}
-                formatDuration={formatDuration}
-                courseStats={courseStats}
-              />
-            </SheetContent>
-          </Sheet>
-
-          <div className="flex-1 mx-4">
-            <h1 className="font-semibold text-lg line-clamp-1">{course.title}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="secondary">{courseStats.progressPercentage}% Complete</Badge>
-              <span className="text-sm text-muted-foreground">
-                {courseStats.completedChapters}/{courseStats.totalChapters} chapters
-              </span>
-            </div>
-          </div>
-
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
-
+    
       <div className="flex">
         {/* Main content */}
         <main className="flex-1 min-w-0">
@@ -458,22 +536,27 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                   <>
                     <VideoPlayer
                       videoId={currentVideoId}
+                      courseId={course.id}
+                      chapterId={currentChapter?.id}
+                      courseName={course.title}
                       onEnded={handleVideoEnd}
                       onProgress={handleVideoProgress}
                       onVideoLoad={handleVideoLoad}
                       onPlayerReady={handlePlayerReady}
-                      autoPlay={false}
+                      onBookmark={handleSeekToBookmark}
+                      bookmarks={bookmarks || []}
                       isAuthenticated={!!session}
-                      onChapterComplete={() => {}}
-                      onNextVideo={canPlayVideo ? handleNextVideo : undefined}
-                      nextVideoTitle={nextChapter?.chapter.title}
-                      courseName={course.title}
+                      autoPlay={false}
                       showControls={true}
-                      rememberPlaybackPosition={true}
-                      rememberPlaybackSettings={true}
-                      height="100%"
-                      width="100%"
-                      className="w-full h-full"
+                      onCertificateClick={handleCertificateClick}
+                      onChapterComplete={handleChapterComplete}
+                      onNextVideo={nextChapter ? handleNextVideo : undefined}
+                      nextVideoTitle={nextChapter?.chapter?.title || ''}
+                      onPrevVideo={prevChapter ? handlePrevVideo : undefined}
+                      prevVideoTitle={prevChapter?.chapter?.title || ''}
+                      hasNextVideo={!!nextChapter}
+                      hasPrevVideo={!!prevChapter}
+                      className="h-full w-full"
                     />
 
                     {/* CourseAI Logo Overlay */}
@@ -494,11 +577,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                     )}
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-white">
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="text-center text-white p-4">
                       <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
                       <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
-                      <p className="text-white/70">Choose a chapter from the playlist to start learning</p>
+                      <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
+                      {process.env.NODE_ENV !== 'production' && (
+                        <Button
+                          variant="secondary"
+                          onClick={resetPlayerState}
+                          className="mt-4"
+                        >
+                          Reset Player State
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -611,11 +703,69 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Add debug component in development */}
+      {process.env.NODE_ENV !== "production" && (
+        <>
+          <VideoDebug
+            videoId={currentVideoId}
+            courseId={course.id}
+            chapterId={currentChapter?.id?.toString()}
+          />
+          <VideoStateReset
+            videoPlaylist={videoPlaylist}
+            courseId={course.id}
+          />
+        </>
+      )}
     </div>
   )
 
+  // Define resetPlayerState function to fix the DialogTrigger error
+  const resetPlayerState = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      // Clear local storage
+      localStorage.removeItem('video-progress-state')
+      
+      // Reset Zustand state
+      const videoStore = useVideoState.getState()
+      if (videoStore && videoStore.resetState) {
+        videoStore.resetState()
+      }
+      
+      toast({
+        title: "Player State Reset",
+        description: "Video player state has been reset. The page will reload.",
+      })
+      
+      // Reload the page after a short delay
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    }
+  }, [toast]) // Add toast to the dependency array
+
   // Return the correct content based on auth state but without early return
-  return showAuthPrompt ? authPromptContent : regularContent
+  return (
+    <>
+      {showAuthPrompt ? authPromptContent : regularContent}
+
+      {/* Development tools - only show in non-production */}
+      {process.env.NODE_ENV !== "production" && (
+        <div className="fixed bottom-4 left-4 z-50 flex space-x-2">
+          <VideoStateReset
+            videoPlaylist={videoPlaylist}
+            courseId={course.id}
+          />
+          <VideoDebug
+            videoId={currentVideoId}
+            courseId={course.id}
+            chapterId={currentChapter?.id?.toString()}
+          />
+        </div>
+      )}
+    </>
+  )
 }
 
 export default MainContent

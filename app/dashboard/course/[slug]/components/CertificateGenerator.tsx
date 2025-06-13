@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { useState, useCallback, useMemo } from "react"
 import { Download, Share2, CheckCircle, Loader2, Award } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 
 // Define styles for the PDF
