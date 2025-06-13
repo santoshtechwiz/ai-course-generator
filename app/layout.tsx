@@ -1,6 +1,12 @@
+import type React from "react"
 import type { Metadata } from "next"
 import "../globals.css"
+
+import { AuthProvider } from '@/context/auth-context'
+import { AuthConsumer } from '@/context/auth-context'
+import { getServerAuthSession } from '@/lib/server-auth'
 import { Providers } from "@/store/provider"
+
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
@@ -24,17 +30,20 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Get the session server-side for initial hydration
+  const session = await getServerAuthSession()
+
   return (
     <html lang="en">
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <AuthProvider session={session}>
+          <Providers>
+            <AuthConsumer>
+              {children}
+            </AuthConsumer>
+          </Providers>
+        </AuthProvider>
       </body>
     </html>
   )

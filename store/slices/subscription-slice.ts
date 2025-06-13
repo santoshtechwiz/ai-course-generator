@@ -37,11 +37,9 @@ const initialState: SubscriptionState = {
 
 // Create the async thunk for fetching subscription data
 export const fetchSubscription = createAsyncThunk(
-  "subscription/fetchStatus",
-  async (_, { getState, dispatch, rejectWithValue }) => {
-    const state = getState() as RootState
+  "subscription/fetch",
+  async (_, { rejectWithValue }) => {
     try {
-      logger.info("Fetching subscription data from API")
       const response = await fetch("/api/subscriptions/status", {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -200,9 +198,19 @@ const subscriptionSlice = createSlice({
         }
       })
       .addCase(fetchSubscription.rejected, (state, action) => {
-        state.isLoading = false
-        state.isFetching = false
-        state.error = action.payload as string
+        state.isLoading = false;
+        state.error = action.payload?.error || "Subscription fetch failed";
+        
+        // Even on rejection, set sensible defaults instead of breaking the app
+        state.data = {
+          credits: 0,
+          tokensUsed: 0,
+          isSubscribed: false,
+          subscriptionPlan: "FREE",
+          expirationDate: null,
+          status: "INACTIVE",
+          cancelAtPeriodEnd: false,
+        }
         logger.error(`Subscription fetch failed: ${action.payload}`)
       })
 
