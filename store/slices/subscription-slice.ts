@@ -5,6 +5,7 @@ import { shallowEqual } from 'react-redux';
 import type { RootState } from "@/store"
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { logger } from "@/lib/logger" // Import logger to help debug state updates
+import { debounce } from 'lodash';
 
 // Define types
 export interface SubscriptionData {
@@ -207,7 +208,7 @@ const subscriptionSlice = createSlice({
           tokensUsed: 0,
           isSubscribed: false,
           subscriptionPlan: "FREE",
-          expirationDate: null,
+          expirationDate: undefined,
           status: "INACTIVE",
           cancelAtPeriodEnd: false,
         }
