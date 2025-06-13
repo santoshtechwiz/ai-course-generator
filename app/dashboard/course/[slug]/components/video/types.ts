@@ -60,20 +60,26 @@ export interface VideoPlayerProps {
   rememberPlaybackSettings?: boolean
   onBookmark?: (time: number, title?: string) => void
   autoPlay?: boolean
-  onVideoLoad?: (VideoMetadata: any) => void
-  onPlayerReady?: (playerRef: React.RefObject<any>) => void
+  onVideoLoad?: (metadata: any) => void
   onCertificateClick?: () => void
+  onPlayerReady?: (ref: React.RefObject<any>) => void
   height?: string | number
   width?: string | number
   className?: string
   showControls?: boolean
   bookmarks?: BookmarkData[]
   isAuthenticated?: boolean
-  playerConfig?: PlayerConfig
-  onChapterComplete?: () => void
+  playerConfig?: Record<string, any>
+  onChapterComplete?: (chapterId: string) => void
   onNextVideo?: () => void
   nextVideoTitle?: string
   courseName?: string
+  courseId?: string | number
+  chapterId?: string
+  onPrevVideo?: () => void
+  prevVideoTitle?: string
+  hasNextVideo?: boolean
+  hasPrevVideo?: boolean
 }
 
 export interface PlayerControlsProps {
@@ -107,6 +113,12 @@ export interface PlayerControlsProps {
   onToggleBookmarkPanel?: () => void
   autoPlayNext?: boolean
   onToggleAutoPlayNext?: () => void
+  hasNextVideo?: boolean
+  nextVideoTitle?: string
+  canAccessNextVideo?: boolean
+  onPrevVideo?: () => void
+  prevVideoTitle?: string
+  onIsDragging?: (isDragging: boolean) => void // Add this property
 }
 
 export interface ProgressBarProps {

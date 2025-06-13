@@ -7,7 +7,7 @@ import { PDFDownloadLink } from "@react-pdf/renderer"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import confetti from "canvas-confetti"
 
 import Link from "next/link"

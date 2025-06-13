@@ -11,18 +11,20 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { FullCourseType, FullChapterType } from "@/app/types/user-types"
-import { CourseProgress } from "@prisma/client"
+// Fix type import path
+import { FullCourseType, FullChapterType } from "@/app/types/course-types"
+// Use our CourseProgress type instead of Prisma's
+import type { CourseProgress } from "@/app/types/course-types"
 
 interface VideoNavigationSidebarProps {
   course: FullCourseType
-  currentChapter?: FullChapterType
-  courseId: string
-  onChapterSelect: (videoId: string) => void
+  currentChapter?: FullChapterType | null
+  courseId: string | number
+  onChapterSelect: (chapter: FullChapterType) => void // Updated type to match implementation
   currentVideoId: string
   isAuthenticated: boolean
   progress: CourseProgress | null
-  completedChapters: number[] // Ensure this has a default value
+  completedChapters: (number | string)[] // Updated to allow both number and string IDs
   nextVideoId?: string
   prevVideoId?: string
   videoDurations?: Record<string, number>
@@ -34,6 +36,7 @@ interface VideoNavigationSidebarProps {
   }
 }
 
+// Add proper return type
 function formatDuration(seconds: number): string {
   if (!seconds || isNaN(seconds)) return "--:--"
 
@@ -241,18 +244,22 @@ export default function VideoNavigationSidebar({
   currentVideoId,
   isAuthenticated,
   progress,
-  completedChapters = [], // Add default value here to prevent undefined errors
+  completedChapters = [], // Default to empty array for safety
   nextVideoId,
   videoDurations = {},
-  formatDuration = (seconds: number): string => {
-    if (!seconds || isNaN(seconds)) return "--:--"
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  },
+  formatDuration: formatDurationProp,
   courseStats,
 }: VideoNavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Use the provided formatDuration function or fallback to the local implementation
+  const formatDurationFn = useCallback(
+    (seconds: number): string => {
+      if (formatDurationProp) return formatDurationProp(seconds)
+      return formatDuration(seconds)
+    },
+    [formatDurationProp],
+  )
 
   // Memoize effective progress to prevent recalculation
   const effectiveProgress = useMemo(() => {
@@ -263,7 +270,7 @@ export default function VideoNavigationSidebar({
         courseId: 0,
         progress: 0,
         completedChapters: [],
-        currentChapterId: currentChapter?.id || null,
+        currentChapterId: currentChapter?.id || undefined,
       }
     }
 
@@ -274,7 +281,7 @@ export default function VideoNavigationSidebar({
         courseId: typeof course.id === "string" ? Number.parseInt(course.id) : course.id || 0,
         progress: 0,
         completedChapters: [],
-        currentChapterId: currentChapter?.id || null,
+        currentChapterId: currentChapter?.id || undefined,
       }
     )
   }, [progress, course, currentChapter?.id])
@@ -283,10 +290,10 @@ export default function VideoNavigationSidebar({
   const totalChapters = useMemo(() => {
     if (!course?.courseUnits) return 0
     return course.courseUnits.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0)
-  }, [course])
+  }, [course?.courseUnits])
 
   // Ensure completedCount uses the completedChapters with safe access
-  const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
+  const completedCount = useMemo(() => (Array.isArray(completedChapters) ? completedChapters.length : 0), [completedChapters])
 
   // Memoize filtered units with better performance
   const filteredUnits = useMemo(() => {
@@ -306,29 +313,38 @@ export default function VideoNavigationSidebar({
   // Optimized chapter click handler
   const handleChapterClick = useCallback(
     (chapter: FullChapterType) => {
-      if (chapter.videoId) {
-        onChapterSelect(chapter.videoId) // Updated: call onChapterSelect instead of onVideoSelect
-      }
+      onChapterSelect(chapter)
     },
-    [onChapterSelect], // Updated dependency array
+    [onChapterSelect],
   )
 
   // Memoize course progress calculation
   const courseProgress = useMemo(() => {
     if (!completedChapters?.length) return 0
 
-    const totalChapters = course?.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
+    if (totalChapters === 0) return 0
 
-    return totalChapters ? Math.round((completedChapters.length / totalChapters) * 100) : 0
-  }, [completedChapters?.length, course?.courseUnits])
+    return Math.round((completedChapters.length / totalChapters) * 100)
+  }, [completedChapters, totalChapters])
 
-  // Optimized search handler with debouncing
+  // Use debounced search for better performance
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
   }, [])
 
-  // Sidebar content component
-  const SidebarContent = () => (
+  // Get values from either passed courseStats or calculate them
+  const computedStats = useMemo(() => {
+    if (courseStats) return courseStats
+
+    return {
+      totalChapters,
+      completedCount,
+      progressPercentage: courseProgress,
+    }
+  }, [courseStats, totalChapters, completedCount, courseProgress])
+
+  // Sidebar content component - extract to improve render performance
+  const SidebarContent = React.memo(() => (
     <>
       {/* Authentication prompt for non-authenticated users */}
       {!isAuthenticated && (
@@ -409,22 +425,9 @@ export default function VideoNavigationSidebar({
         </TooltipProvider>
       </div>
     </>
-  )
+  ))
 
-  // Get values from either passed courseStats or calculate them
-  const computedStats = useMemo(() => {
-    if (courseStats) return courseStats
-
-    const totalChaps = course?.courseUnits?.reduce((acc, unit) => acc + (unit?.chapters?.length || 0), 0) || 0
-    const completedCount = Array.isArray(completedChapters) ? completedChapters.length : 0
-    const progressPercentage = totalChaps > 0 ? Math.round((completedCount / totalChaps) * 100) : 0
-
-    return {
-      totalChapters: totalChaps,
-      completedCount,
-      progressPercentage,
-    }
-  }, [course, completedChapters, courseStats])
+  SidebarContent.displayName = "SidebarContent"
 
   return (
     <>

@@ -7,7 +7,7 @@ import { notFound } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { extractKeywords, generateMetaDescription } from "@/lib/seo-utils"
 import type { FullCourseType } from "@/app/types/types"
-import MainContent from "./components/MainContent"
+
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
 
 function LoadingSkeleton() {

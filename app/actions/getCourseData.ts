@@ -52,17 +52,17 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
   const fullCourse: FullCourseType = {
     id: course.id,
     title: course.title, // Map name to title
-    description: course.description,
+    description: course.description ?? undefined,
     image: course.image,
     viewCount: course.viewCount,
     userId: course.userId,
     categoryId: course.categoryId,
     isCompleted: course.isCompleted,
     isPublic: course.isPublic,
-    slug: course.slug,
+    slug: course.slug ?? "", // Provide a fallback empty string if slug is null
     difficulty: course.difficulty,
     estimatedHours: course.estimatedHours,
-    category: course.category,
+    category: course.category ? { id: course.category.id, name: course.category.name } : undefined,
     ratings: course.ratings,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,

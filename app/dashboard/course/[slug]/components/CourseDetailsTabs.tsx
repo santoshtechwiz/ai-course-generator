@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, MessageSquare, BarChart3, Award, TrendingUp, Bookmark } from "lucide-react"
+import { FileText, MessageSquare, BarChart3, Award, TrendingUp, Bookmark as BookmarkIcon, Trash, File } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
@@ -109,6 +109,15 @@ export default function CourseDetailsTabs({
     isAuthenticated
   };
 
+  // Add a tab for bookmarks, if they don't exist already
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: <FileText className="h-4 w-4 mr-2" /> },
+    { id: 'notes', label: 'Notes', icon: <MessageSquare className="h-4 w-4 mr-2" /> },
+    { id: 'transcripts', label: 'Transcript', icon: <FileText className="h-4 w-4 mr-2" /> },
+    { id: 'bookmarks', label: 'Bookmarks', icon: <BookmarkIcon className="h-4 w-4 mr-2" /> },
+    { id: 'resources', label: 'Resources', icon: <File className="h-4 w-4 mr-2" /> },
+  ];
+
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden">
@@ -127,7 +136,7 @@ export default function CourseDetailsTabs({
             Progress
           </TabsTrigger>
           <TabsTrigger value="bookmarks" className="flex items-center gap-2 text-sm">
-            <Bookmark className="h-4 w-4" />
+            <BookmarkIcon className="h-4 w-4" />
             Bookmarks
           </TabsTrigger>
         </TabsList>
@@ -241,7 +250,7 @@ export default function CourseDetailsTabs({
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Bookmark className="h-5 w-5" />
+                <BookmarkIcon className="h-5 w-5" />
                 Bookmarks
               </CardTitle>
               <CardDescription>
@@ -280,7 +289,7 @@ export default function CourseDetailsTabs({
                 </div>
               ) : accessLevels?.isAuthenticated ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <BookmarkIcon className="h-12 w-12 mx-auto mb-4 opacity-30" />
                   <p>No bookmarks yet</p>
                   <p className="text-sm">Press 'B' while watching to add a bookmark</p>
                 </div>
