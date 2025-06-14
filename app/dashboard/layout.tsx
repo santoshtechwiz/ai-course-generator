@@ -5,6 +5,7 @@ import { FullPageLoader } from "@/components/ui/loader"
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 import CourseAIState from "@/components/development/CourseAIState"
 import { NavigationEvents } from "./NavigationEvents"
+import NavigationCleanup from "./(quiz)/components/NavigationCleanup"
 import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth"
 
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
       <div className="min-h-screen flex flex-col font-body">
         <DashboardShell>
           <NavigationEvents />
+          <NavigationCleanup />
           <main className="flex-1 pt-16 ">
             <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
           </main>
