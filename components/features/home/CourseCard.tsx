@@ -96,6 +96,7 @@ export const CourseCard = React.memo(
     difficulty,
   }: CourseCardProps) => {
     const [isNavigating, setIsNavigating] = useState(false)
+    const [imageError, setImageError] = useState(false)
     const router = useRouter()
     const courseLevel = difficulty || determineCourseLevel(unitCount, lessonCount, quizCount)
     const config = LEVEL_CONFIG[courseLevel as keyof typeof LEVEL_CONFIG] || LEVEL_CONFIG.Intermediate
@@ -162,22 +163,24 @@ export const CourseCard = React.memo(
                 whileHover={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
               >
-                {image ? (
+                {image && !imageError ? (
                   <Image
-                    src={image || "/placeholder.svg"}
+                    src={image}
                     alt={title}
                     fill
                     className="object-cover opacity-90 hover:opacity-100 transition-opacity"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    loading="lazy"
+                    priority
+                    quality={75}
+                    onError={() => setImageError(true)}
                   />
                 ) : (
                   <motion.div
-                    className="absolute inset-0 flex items-center justify-center"
+                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10"
                     whileHover={{ scale: 1.05 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    <div className="w-16 h-16 text-primary-600">{getCategoryIcon(category)}</div>
+                    <div className="w-16 h-16 text-primary/80">{getCategoryIcon(category)}</div>
                   </motion.div>
                 )}
 

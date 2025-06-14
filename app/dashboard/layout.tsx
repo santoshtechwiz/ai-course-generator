@@ -25,12 +25,10 @@ export default async function DashboardLayout({
   return (
     <RootLayoutProvider session={session}>
       <AuthConsumer>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col font-body">
           <DashboardShell>
             <NavigationEvents />
-
-            {/* 🛠️ Fix overlap by padding top equal to fixed MainNavbar height */}
-            <main className="flex-1 pt-16 section-spacing">
+            <main className="flex-1 pt-16 section-spacing prose-headings:font-heading prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl">
               <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
             </main>
 

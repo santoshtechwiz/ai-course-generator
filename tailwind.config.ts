@@ -75,9 +75,19 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // AI-themed colors
+        ai: {
+          primary: "#2563EB", // Bright blue for AI elements
+          secondary: "#6366F1", // Indigo for accents
+          accent: "#8B5CF6", // Purple for highlights
+          dark: "#1E293B", // Dark blue-gray
+          light: "#F8FAFC", // Light background
+        },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        heading: ['var(--font-outfit)', ...fontFamily.sans],
+        body: ['var(--font-space-grotesk)', ...fontFamily.sans],
+        mono: ['JetBrains Mono', ...fontFamily.mono],
       },
       borderRadius: {
         lg: "var(--radius)",

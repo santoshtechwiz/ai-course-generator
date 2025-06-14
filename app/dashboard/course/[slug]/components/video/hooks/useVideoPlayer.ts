@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import type ReactPlayer from "react-player"
-import { useToast } from "@/hooks/use-toast"
+
 import screenfull from "screenfull"
 import { useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
-import { loadPlayerPreferences, savePlayerPreferences, calculateBufferHealth, formatTime } 
-
-from "./progressUtils"
-import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, 
-  YouTubePlayerConfig } from "../types"
+import { loadPlayerPreferences, savePlayerPreferences, calculateBufferHealth, formatTime } from "./progressUtils"
+import { useVideoProgress } from "./useVideoProgress"
+import { useVideoPreloading } from "./useVideoPreloading"
+import type { VideoPlayerState, UseVideoPlayerReturn, ProgressState, BookmarkData, YouTubePlayerConfig } from "../types"
+import { useToast } from "@/hooks"
 
 interface VideoPlayerHookOptions {
   videoId: string
@@ -23,6 +23,9 @@ interface VideoPlayerHookOptions {
   autoPlay?: boolean
   onVideoLoad?: (metadata: any) => void
   onCertificateClick?: () => void
+  nextVideoId?: string | null
+  courseId?: string | number
+  chapterId?: string | number
 }
 
 export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerReturn {
@@ -30,7 +33,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const containerRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-
+  
   // Load saved preferences
   const savedPreferences = useMemo(() => loadPlayerPreferences(), [])
 
@@ -53,10 +56,60 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     theaterMode: false,
     userInteracted: !!options.autoPlay,
     autoPlayNext: savedPreferences.autoPlayNext ?? true,
+    isNearingCompletion: false, // Add state for preloading detection
   })
 
   const [bufferHealth, setBufferHealth] = useState(100)
   const [isPlayerFocused, setIsPlayerFocused] = useState(false)
+
+  // Detect when video is nearing completion for preloading
+  useEffect(() => {
+    // Consider a video nearing completion when it's at 85% or more
+    setState(prev => ({
+      ...prev,
+      isNearingCompletion: prev.played >= 0.85
+    }));
+  }, [state.played]);
+  
+  // Enable preloading when nearing completion
+  useVideoPreloading({
+    currentVideoId: options.videoId,
+    nextVideoId: options.nextVideoId || null,
+    isNearingCompletion: state.isNearingCompletion
+  });
+  
+  // Progress tracking - always call the hook, but conditionally pass parameters
+  const progressTracking = useVideoProgress({
+    videoId: options.courseId && options.videoId ? options.videoId : undefined,
+    courseId: options.courseId || '',
+    chapterId: options.chapterId || '',
+    duration: state.duration,
+  });
+
+  // Enhanced progress handler
+  const handleProgress = useCallback(
+    (progressState: ProgressState) => {
+      setState((prev) => ({
+        ...prev,
+        played: progressState.played,
+        loaded: progressState.loaded,
+        lastPlayedTime: progressState.playedSeconds,
+      }));
+
+      // Update buffer health efficiently
+      const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played);
+      setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev));
+
+      // Track progress for course completion if enabled
+      if (progressTracking?.trackProgress) {
+        progressTracking.trackProgress(progressState);
+      }
+
+      // Pass to parent if provided
+      options.onProgress?.(progressState);
+    },
+    [options.onProgress, progressTracking]
+  );
 
   // Memoized YouTube URL
   const youtubeUrl = useMemo(() => `https://www.youtube.com/watch?v=${options.videoId}`, [options.videoId])
@@ -158,17 +211,38 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }
   }, [toast])
 
+  // Update the onReady handler to properly set duration
   const onReady = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      isLoading: false,
       isPlayerReady: true,
+      isLoading: false,
     }))
-
-    // Get video duration
+    
     if (playerRef.current) {
-      const duration = playerRef.current.getDuration()
-      setState((prev) => ({ ...prev, duration }))
+      try {
+        const duration = playerRef.current.getDuration();
+        
+        // Only update if we got a valid duration
+        if (!isNaN(duration) && duration > 0) {
+          setState((prev) => ({
+            ...prev,
+            duration,
+          }));
+        }
+      } catch (err) {
+        console.warn('Could not get video duration:', err);
+      }
+    }
+  }, [])
+
+  // Also update the onDuration handler if it exists
+  const onDuration = useCallback((duration: number) => {
+    if (!isNaN(duration) && duration > 0) {
+      setState((prev) => ({
+        ...prev,
+        duration,
+      }));
     }
   }, [])
 
@@ -250,25 +324,6 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       })
     },
     [options.videoId, dispatch, toast],
-  )
-
-  // Progress handler with optimized buffer health calculation
-  const handleProgress = useCallback(
-    (progressState: ProgressState) => {
-      setState((prev) => ({
-        ...prev,
-        played: progressState.played,
-        loaded: progressState.loaded,
-        lastPlayedTime: progressState.playedSeconds,
-      }))
-
-      // Update buffer health efficiently
-      const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played)
-      setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev))
-
-      options.onProgress?.(progressState)
-    },
-    [options.onProgress],
   )
 
   // Fullscreen state tracking
@@ -435,5 +490,11 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       handleShowControls,
       toggleAutoPlayNext,
     },
+    // Add next video info
+    nextVideo: options.nextVideoId ? { 
+      id: options.nextVideoId,
+      isPreloading: state.isNearingCompletion 
+    } : null,
+    progressTracking // Add progress tracking info
   }
 }
