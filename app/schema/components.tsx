@@ -6,21 +6,25 @@ interface JsonLDProps {
 }
 
 /**
- * JsonLD component for adding structured data to pages
- * Helps with SEO by providing search engines with structured data
+ * JsonLD Component for adding structured data to pages
+ *
+ * This is the canonical implementation to use across the application
  */
-export const JsonLD: React.FC<JsonLDProps> = ({ type, data }) => {
-  // Create the full schema object with @context and @type
-  const schemaData = {
+export function JsonLD({ type, data }: JsonLDProps) {
+  // Create the schema based on the type and data
+  const schema = {
     '@context': 'https://schema.org',
-    '@type': type,
+    '@type': type.charAt(0).toUpperCase() + type.slice(1),
     ...data,
   };
 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   );
-};
+}
+
+// Export named alias for backward compatibility
+export { JsonLD as JsonLd };
