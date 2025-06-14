@@ -1,55 +1,92 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import { useSession } from "next-auth/react"
-import { useSearchParams } from "next/navigation"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { RefreshCcw } from "lucide-react"
-import { QuizLoader } from "@/components/ui/quiz-loader"
-import { FlashCardComponent } from "./FlashCardComponent"
-
+import type { AppDispatch } from "@/store"
 import {
-  fetchFlashCards,
-  resetFlashCards,
-  toggleSaveCard,
   selectFlashCards,
   selectSavedCardIds,
   selectFlashCardsLoading,
   selectFlashCardsError,
-  selectOwnerId,
   selectQuizId,
+  selectQuizTitle,
+  selectIsQuizComplete,
+  fetchFlashCards,
+  resetFlashCards,
+  toggleSaveCard,
+  setQuizCompleted,
+  setQuizResults,
+  submitQuiz,
+  clearQuizState,
 } from "@/store/slices/flashcard-slice"
-
-import type { FlashCard } from "@/app/types/types"
-import type { AppDispatch } from "@/store"
+import { QuizLoader } from "@/components/ui/quiz-loader"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { RefreshCcw, Flag } from "lucide-react"
+import { FlashCardComponent } from "./FlashCardComponent" // Corrected import to named export
+import { toast } from "sonner"
+import { motion, AnimatePresence } from "framer-motion"
+import { NoResults } from "@/components/ui/no-results"
 
 interface FlashCardsWrapperProps {
   slug: string
-  userId?: string
+  title: string
 }
 
-export default function FlashCardsWrapper({ slug, userId }: FlashCardsWrapperProps) {
+export default function FlashCardsWrapper({ slug, title }: FlashCardsWrapperProps) {
+  const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const { data: session } = useSession()
-  const searchParams = useSearchParams()
 
   const cards = useSelector(selectFlashCards)
   const savedCardIds = useSelector(selectSavedCardIds)
   const isLoading = useSelector(selectFlashCardsLoading)
   const error = useSelector(selectFlashCardsError)
   const quizId = useSelector(selectQuizId)
+  const quizTitle = useSelector(selectQuizTitle)
+  const isCompleted = useSelector(selectIsQuizComplete)
 
-  const [localLoading, setLocalLoading] = useState(true)
-  const [localError, setLocalError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [fetchAttempted, setFetchAttempted] = useState(false)
-  const [key, setKey] = useState<number>(() => Date.now())
+  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const handleSaveCard = useCallback(async (card: FlashCard) => {
-    if (!session) return
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true)
+      dispatch(resetFlashCards())
+
+      try {
+        const result = await dispatch(fetchFlashCards({ slug })).unwrap()
+        if (!result) throw new Error("No data received")
+        setFetchAttempted(true)
+      } catch (err) {
+        console.error("Failed to load flashcards:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    init()
+
+    return () => {
+      if (submissionTimeoutRef.current) {
+        clearTimeout(submissionTimeoutRef.current)
+      }
+    }
+  }, [slug, dispatch])
+
+  useEffect(() => {
+    if (!isCompleted) return
+
+    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
+
+    submissionTimeoutRef.current = setTimeout(() => {
+      router.push(`/dashboard/flashcard/${slug}/results`)
+    }, 1500)
+  }, [isCompleted, router, slug])
+
+  const handleSaveCard = async (card: any) => {
     const cardId = card.id.toString()
     const isSaved = savedCardIds.includes(cardId)
 
@@ -58,60 +95,67 @@ export default function FlashCardsWrapper({ slug, userId }: FlashCardsWrapperPro
     } catch (error) {
       console.error("Failed to toggle card save status", error)
     }
-  }, [session, savedCardIds, dispatch])
+  }
 
-  const fetchCards = useCallback(async () => {
-    setLocalLoading(true)
-    setFetchAttempted(true)
+  const handleSubmitQuiz = async () => {
+    const questionResults = cards.map((card) => {
+      const cardId = card.id.toString()
+      const answer = savedCardIds.includes(cardId)
+      const isCorrect = answer
 
-    const controller = new AbortController()
-    try {
-      await dispatch(fetchFlashCards({ slug, signal: controller.signal })).unwrap()
-      setLocalError(null)
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
-        setLocalError(err.message || "Failed to load flashcards")
+      return {
+        questionId: cardId,
+        question: card.question,
+        correctAnswer: card.answer,
+        userAnswer: answer ? "Saved" : "Not Saved",
+        isCorrect,
       }
-    } finally {
-      setLocalLoading(false)
+    })
+
+    const correctCount = questionResults.filter((q) => q.isCorrect).length
+    const percentage = Math.round((correctCount / cards.length) * 100)
+
+    const results = {
+      quizId,
+      slug,
+      title: quizTitle || title,
+      quizType: "flashcard",
+      maxScore: cards.length,
+      userScore: correctCount,
+      score: correctCount,
+      percentage,
+      completedAt: new Date().toISOString(),
+      questionResults,
+      questions: questionResults,
     }
 
-    return () => controller.abort()
-  }, [dispatch, slug])
+    dispatch(setQuizResults(results))
+    dispatch(setQuizCompleted())
 
-  useEffect(() => {
-    if ((cards.length > 0 && !error) || fetchAttempted) return
-
-    if ("requestIdleCallback" in window) {
-      // @ts-ignore
-      window.requestIdleCallback(() => fetchCards(), { timeout: 1000 })
-    } else {
-      const timer = setTimeout(fetchCards, 10)
-      return () => clearTimeout(timer)
-    }
-  }, [cards.length, error, fetchCards, fetchAttempted])
-
-
+    await dispatch(submitQuiz()).unwrap()
+    router.push(`/dashboard/flashcard/${slug}/results`)
+  }
 
   const handleRetry = () => {
     setFetchAttempted(false)
-    fetchCards()
+    dispatch(fetchFlashCards({ slug }))
   }
 
-  const isPageLoading = useMemo(() => localLoading || isLoading, [localLoading, isLoading])
+  const handleRetakeQuiz = () => {
+    dispatch(clearQuizState())
+    router.replace(`/dashboard/flashcard/${slug}`)
+  }
 
-  if (isPageLoading) {
+  if (loading || isLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
 
-  if (localError || error) {
+  if (error) {
     return (
       <div className="container max-w-4xl py-6">
         <Alert variant="destructive" className="mb-6">
           <AlertTitle>Error loading flashcards</AlertTitle>
-          <AlertDescription>
-            {localError || error}. Please try again.
-          </AlertDescription>
+          <AlertDescription>{error}. Please try again.</AlertDescription>
         </Alert>
         <Button onClick={handleRetry} className="mx-auto flex gap-2">
           <RefreshCcw className="h-4 w-4" />
@@ -125,28 +169,83 @@ export default function FlashCardsWrapper({ slug, userId }: FlashCardsWrapperPro
     return (
       <div className="container max-w-4xl py-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">No Flashcards Available</CardTitle>
-          </CardHeader>
-          <CardContent className="text-muted-foreground">
-            This quiz has no flashcards, or they could not be loaded.
+          <CardContent className="text-center">
+            <h2 className="text-xl font-bold mb-4">No Flashcards Available</h2>
+            <p className="text-muted-foreground mb-6">This quiz has no flashcards, or they could not be loaded.</p>
+            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
+  const answeredQuestions = savedCardIds.length
+  const allQuestionsAnswered = answeredQuestions === cards.length
+
   return (
-    <div className="flex-1 flex flex-col">
+    <motion.div
+      className="space-y-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <FlashCardComponent
-        key={key}
         cards={cards}
         quizId={quizId || slug}
         slug={slug}
-        title={cards[0]?.title || "Flashcard Quiz"}
+        title={quizTitle || title}
         onSaveCard={handleSaveCard}
         savedCardIds={savedCardIds}
       />
-    </div>
+
+      <AnimatePresence>
+        {answeredQuestions > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className="border-2 border-green-500/30 bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg rounded-2xl">
+              <CardContent className="p-6 text-center">
+                <motion.p
+                  className="mb-4 font-medium text-green-800 dark:text-green-200"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  {allQuestionsAnswered
+                    ? "All flashcards reviewed. Ready to submit?"
+                    : `${answeredQuestions} flashcards reviewed. Submit quiz?`}
+                </motion.p>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Button
+                    onClick={handleSubmitQuiz}
+                    size="lg"
+                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-2xl px-8 gap-2 shadow-lg"
+                  >
+                    <Flag className="w-4 h-4" />
+                    Submit Quiz and View Results
+                  </Button>
+                  <Button
+                    onClick={handleRetakeQuiz}
+                    size="lg"
+                    variant="outline"
+                    className="mt-4 text-green-700 border-green-500 hover:bg-green-100 rounded-2xl px-8 gap-2 shadow-lg"
+                  >
+                    <RefreshCcw className="w-4 h-4" />
+                    Retake Quiz
+                  </Button>
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }

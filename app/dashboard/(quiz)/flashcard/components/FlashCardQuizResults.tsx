@@ -3,7 +3,7 @@
 import React, { useMemo, useCallback } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { Award, Clock, Activity, BarChart3 } from "lucide-react"
+import { Award, Clock, Activity, BarChart3, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -12,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { NoResults } from "@/components/ui/no-results"
 
 interface FlashCardResultsProps {
   quizId?: string
@@ -97,6 +98,21 @@ export default function FlashCardResults({
       }
     }
   };
+
+  if (!totalQuestions) {
+    return (
+      <NoResults
+        variant="quiz"
+        title="No Results Found"
+        description="Try retaking the quiz to view results."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake,
+          icon: <RefreshCw className="w-4 h-4" />,
+        }}
+      />
+    );
+  }
 
   return (
     <motion.div 
@@ -205,6 +221,19 @@ export default function FlashCardResults({
           View All Quizzes
         </Button>
       </motion.div>
+
+      <Card className="border shadow-md rounded-lg p-6 mt-8">
+        <CardContent className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Quiz Results</h2>
+          <p className="text-lg mb-2">Score: {score} / {totalQuestions}</p>
+          <p className="text-lg mb-2">Percentage: {accuracyPercentage}%</p>
+          <p className="text-sm text-muted mb-4">Completed At: {new Date().toLocaleString()}</p>
+          <Button onClick={handleRetake} className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Retake Quiz
+          </Button>
+        </CardContent>
+      </Card>
     </motion.div>
   )
 }

@@ -118,7 +118,21 @@ function renderQuizResultComponent(
       return <McqQuizResult result={result} />; // Fallback to MCQ for now
     case "flashcard":
       return <FlashCardResults result={result} />;
-    default:
+    case "openended":
+      return <OpenEndedQuizResults result={result} slug={slug} onRetake={onRetake} />;
+      case "blanks":
+      return (
+        <BlankQuizResults
+          result={result}
+          isAuthenticated={true} // Always true when rendered via QuizResultHandler
+          slug={slug}
+          onRetake={onRetake}
+        />
+      );
+    case "flashcard":
+      return <FlashCardResults result={result} slug={slug} onRetake={onRetake} />;
+      default:
       return <McqQuizResult result={result} />;
+
   }
 }
