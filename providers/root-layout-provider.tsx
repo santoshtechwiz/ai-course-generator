@@ -4,12 +4,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
-import { Suspense, useState, useEffect, useMemo, useCallback } from "react"
+import { Suspense, useState, useEffect, useMemo } from "react"
 import { AnimationProvider } from "./animation-provider"
+import { SEOTrackingProvider } from "@/providers/seo-tracking-provider"
 
-import { SessionProvider } from "next-auth/react"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
-import { JsonLd } from "@/app/schema/components/json-ld"
 import SubscriptionProvider from "./SubscriptionProvider"
 
 import { LoadingProvider } from "@/components/ui/loading/loading-provider"
@@ -66,8 +65,6 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
   // Memoize the navbar to prevent unnecessary re-renders
   const navbar = useMemo(() => <MainNavbar />, [])
 
-  // Memoize more components that don't need to re-render frequently
-  const jsonLd = useMemo(() => <JsonLd type="default" data={undefined} />, [])
 
 
   return (
@@ -86,21 +83,23 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
                 storageKey="course-ai-theme"
                 enableColorScheme={true}
               >
-                <QueryClientProvider client={queryClient}>
-                  <TooltipProvider>
-                    <SubscriptionProvider>
-                      <LoadingProvider>
-                        <AnimationProvider>
-                          <Suspense fallback={<div>Loading...</div>}>
-                            {jsonLd}
-                            <Toaster position="top-right" closeButton richColors />
-                            {mounted && children}
-                          </Suspense>
-                        </AnimationProvider>
-                      </LoadingProvider>
-                    </SubscriptionProvider>
-                  </TooltipProvider>
-                </QueryClientProvider>
+                <SEOTrackingProvider>
+                  <QueryClientProvider client={queryClient}>
+                    <TooltipProvider>
+                      <SubscriptionProvider>
+                        <LoadingProvider>
+                          <AnimationProvider>
+                            <Suspense fallback={<div>Loading...</div>}>
+                           
+                              <Toaster position="top-right" closeButton richColors />
+                              {mounted && children}
+                            </Suspense>
+                          </AnimationProvider>
+                        </LoadingProvider>
+                      </SubscriptionProvider>
+                    </TooltipProvider>
+                  </QueryClientProvider>
+                </SEOTrackingProvider>
               </ThemeProvider>
             </AuthConsumer>
           </AuthProvider>

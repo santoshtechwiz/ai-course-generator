@@ -1,9 +1,9 @@
-import { generatePageMetadata } from "@/lib/seo-utils"
+import { generateMetadata } from "@/lib/seo"
 import type { Metadata } from "next"
 import Link from "next/link"
-import { JsonLd } from "@/app/schema/components/json-ld"
+import { JsonLD } from "@/app/schema/components"
 
-export const metadata: Metadata = generatePageMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "Privacy Policy | CourseAI Coding Education",
   description:
     "Learn how CourseAI protects your data while providing programming education services. Our commitment to your privacy and security.",
@@ -25,7 +25,6 @@ export const metadata: Metadata = generatePageMetadata({
 export default function PrivacyPolicy() {
   // Privacy policy schema
   const privacySchema = {
-    "@context": "https://schema.org",
     "@type": "WebPage",
     name: "CourseAI Privacy Policy",
     description: "Learn how CourseAI protects your data while providing programming education services.",
@@ -45,8 +44,7 @@ export default function PrivacyPolicy() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(privacySchema) }} />
-      <JsonLd type="default" />
+      <JsonLD type="webPage" data={privacySchema} />
 
       <h1 className="text-3xl font-bold mb-6 text-foreground">Privacy Policy</h1>
 

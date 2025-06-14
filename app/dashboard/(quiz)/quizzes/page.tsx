@@ -3,15 +3,15 @@ import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 
 import { getQuizzes } from "@/app/actions/getQuizes"
-import { JsonLd } from "@/app/schema/components/json-ld"
-import { generatePageMetadata } from "@/lib/seo-utils"
+import { JsonLD } from "@/app/schema/components"
+import { generateMetadata } from "@/lib/seo"
 import { QuizzesClient } from "./components/QuizzesClient"
 import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
 import { Loader } from "@/components/ui/loader"
 import ClientOnly from "@/components/ClientOnly"
 import type { QuizListItem } from "@/app/types/types"
 
-export const metadata: Metadata = generatePageMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "Free Quizzes – MCQs, Open-ended and Code Challenges",
   description: "Discover a variety of interactive quizzes to test and enhance your programming knowledge and skills.",
   path: "/dashboard/quizzes",
@@ -45,7 +45,16 @@ const QuizPage = async () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <JsonLd type="default" data={undefined} />
+      <JsonLD
+        type="default"
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "Explore Quizzes",
+          description: "Discover interactive quizzes to test and enhance your programming knowledge and skills.",
+          url: "https://courseai.io/dashboard/quizzes",
+        }}
+      />
 
       <h1 className="text-4xl font-bold mb-2 text-center text-primary">Explore Quizzes</h1>
       <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import QuizSEO from "../../components/QuizSEO"
 
 export default function CodeQuizPage({
   params,
@@ -40,7 +41,12 @@ export default function CodeQuizPage({
   }
 
   return (
-    <QuizPlayLayout>
+    <QuizPlayLayout quizSlug={slug} quizType="code">
+      <QuizSEO 
+        slug={slug}
+        quizType="code"
+        description={`Test your programming skills with this ${slug.replace(/-/g, ' ')} coding challenge. Write code and improve your development abilities!`}
+      />
       <CodeQuizWrapper slug={slug} />
     </QuizPlayLayout>
   )

@@ -231,3 +231,8 @@ export interface OpenEndedQuizData extends QuizData {
   evaluationMethod?: 'similarity' | 'exact' | 'keywords' | 'ai';
   similarityThreshold?: number; // Default threshold
 }
+
+export interface ProcessedQuestion extends OpenEndedQuestion {
+  isProcessed: boolean;
+  processingTime: number;
+}

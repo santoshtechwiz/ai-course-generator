@@ -1,7 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "../globals.css"
-import { JsonLd } from "@/app/schema/components/json-ld"
+import { JsonLD } from "@/app/schema/components"
+import { defaultMetadata } from "@/lib/seo"
 
 import { Inter } from "next/font/google"
 
@@ -20,6 +21,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  ...defaultMetadata,
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
   title: {
     default: "CourseAI - Interactive Programming Quizzes and Learning",
@@ -67,10 +69,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Footer />
         </AuthProvider>
 
-        <JsonLd
+        <JsonLD
+          type="website"
           data={{
-            "@context": "https://schema.org",
-            "@type": "WebSite",
             name: "Course AI",
             description: "AI-powered course and quiz generator for personalized learning",
             url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.app",
@@ -82,7 +83,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               },
               "query-input": "required name=search_term_string",
             },
-          }} type={"default"}        />
+          }}
+        />
       </body>
     </html>
   )

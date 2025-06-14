@@ -3,9 +3,9 @@
 import { useMediaQuery } from "@/hooks"
 import type React from "react"
 import { RandomQuiz } from "./RandomQuiz"
-import { Suspense, useMemo } from "react"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from "@/components/ui/breadcrumb"
-import { ChevronRight } from "lucide-react"
+import { Suspense, useMemo, useEffect, useState } from "react"
+import { JsonLD } from "@/app/schema/components"
+import { usePathname } from "next/navigation"
 
 interface QuizPlayLayoutProps {
   children: React.ReactNode
@@ -23,6 +23,41 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
   quizType = "quiz"
 }) => {
   const isMobile = useMediaQuery("(max-width: 1024px)")
+  const pathname = usePathname()
+  const [quizMeta, setQuizMeta] = useState({
+    title: document.title || "Interactive Programming Quiz",
+    description: "",
+    type: quizType
+  })
+  
+  // Extract quiz information from document head for structured data
+  useEffect(() => {
+    // Get document title - defaults to a fallback if not set
+    const pageTitle = document.title || "Interactive Programming Quiz"
+    
+    // Get description from meta tag
+    const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute('content') 
+      || document.querySelector('meta[property="og:description"]')?.getAttribute('content')
+      || "Test your programming knowledge with this interactive quiz"
+    
+    // Extract quiz type from URL if not provided in props
+    const urlSegments = pathname.split('/')
+    const typeFromUrl = urlSegments[2] || quizType
+    const slugFromUrl = urlSegments[3] || quizSlug
+    
+    // Update quiz metadata state
+    setQuizMeta({
+      title: pageTitle,
+      description: metaDescription,
+      type: typeFromUrl as any
+    })
+
+    // Add an additional handler to properly set document title when not set correctly
+    if (!document.title.includes("Quiz") && !document.title.includes("quiz") && slugFromUrl) {
+      const formattedTitle = `${slugFromUrl.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Quiz | CourseAI`
+      document.title = formattedTitle
+    }
+  }, [pathname, quizType, quizSlug])
   
   // Memoize sidebar content to prevent unnecessary re-renders
   const sidebarContent = useMemo(() => {
@@ -38,9 +73,28 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
     );
   }, [isMobile]);
 
+  // Quiz structured data for SEO
+  const quizTypeLabel = getQuizTypeLabel(quizMeta.type)
+
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">
-     
+      <JsonLD
+        type="Quiz"
+        data={{
+          name: quizMeta.title,
+          description: quizMeta.description,
+          educationalAlignment: {
+            "@type": "AlignmentObject",
+            alignmentType: "educationalSubject", 
+            targetName: "Computer Programming"
+          },
+          learningResourceType: quizTypeLabel,
+          about: {
+            "@type": "Thing",
+            name: quizMeta.title.split('|')[0].trim()
+          }
+        }}
+      />
       
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main quiz content area */}
@@ -51,6 +105,18 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
       </div>
     </div>
   )
+}
+
+// Helper function to get user-friendly quiz type labels
+function getQuizTypeLabel(quizType: string): string {
+  switch (quizType) {
+    case "mcq": return "Multiple Choice";
+    case "code": return "Coding Challenge";
+    case "blanks": return "Fill in the Blanks";
+    case "openended": return "Open-Ended";
+    case "flashcard": return "Flashcard";
+    default: return "Quiz";
+  }
 }
 
 export default QuizPlayLayout

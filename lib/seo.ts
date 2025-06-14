@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import type { FullCourseType } from "@/app/types/types"
 
 // Default metadata values to be used across the application
 export const defaultMetadata: Metadata = {
@@ -251,4 +252,151 @@ export function generateJsonLd(type: string, data: Record<string, any>) {
   };
   
   return baseStructure;
+}
+
+/**
+ * Social image helper - creates OG image URL from title/description or uses provided image
+ */
+export function getSocialImageUrl(
+  title: string, 
+  description?: string, 
+  imagePath?: string
+): string {
+  if (imagePath?.startsWith('http')) {
+    return imagePath;
+  } else if (imagePath) {
+    return `${process.env.NEXT_PUBLIC_BASE_URL || 'https://example.com'}${imagePath}`;
+  }
+  
+  return `${process.env.NEXT_PUBLIC_BASE_URL || 'https://example.com'}/api/og?title=${encodeURIComponent(title)}${
+    description ? `&description=${encodeURIComponent(description.substring(0, 100))}` : ''
+  }`;
+}
+
+/**
+ * Specialized function for generating metadata for quiz pages
+ */
+export function generateQuizMetadata(quiz: any, slug: string): Metadata {
+  if (!quiz) {
+    return generateMetadata({
+      title: "Quiz Not Found",
+      description: "The requested quiz could not be found.",
+      noIndex: true,
+    });
+  }
+
+  const quizTypeLabel = getQuizTypeLabel(quiz.quizType);
+  const questionCount = quiz.questions?.length || 0;
+
+  const title = `${quiz.title} ${quizTypeLabel} Quiz`;
+  const description = `Test your knowledge with this ${quiz.title} ${quizTypeLabel} quiz${
+    quiz.user?.name ? ` created by ${quiz.user.name}` : ""
+  }. Challenge yourself with ${questionCount} questions and learn something new!`;
+
+  // Keywords for better SEO
+  const keywords = [
+    quiz.title, 
+    quizTypeLabel, 
+    "quiz", 
+    "learning", 
+    "education", 
+    "test", 
+    "assessment",
+    `${quiz.title.toLowerCase()} test`,
+    `${quiz.title.toLowerCase()} assessment`,
+    `${quiz.title.toLowerCase()} ${quizTypeLabel.toLowerCase()}`,
+    `practice ${quiz.title.toLowerCase()}`
+  ];
+
+  return generateMetadata({
+    title,
+    description,
+    path: `/quiz/${slug}`,
+    keywords,
+    ogImage: `/api/og?title=${encodeURIComponent(quiz.title)}&type=${quiz.quizType}`,
+    ogType: "website",
+    structuredData: {
+      "@type": "Quiz",
+      name: title,
+      description: description,
+      educationalAlignment: {
+        "@type": "AlignmentObject",
+        alignmentType: "educationalSubject",
+        targetName: "Learning Assessment",
+      },
+      learningResourceType: quizTypeLabel,
+      numberOfQuestions: questionCount,
+      creator: quiz.user?.name ? {
+        "@type": "Person",
+        name: quiz.user.name,
+      } : undefined,
+    }
+  });
+}
+
+/**
+ * Helper function to get a user-friendly quiz type label
+ */
+function getQuizTypeLabel(quizType?: string): string {
+  switch (quizType) {
+    case "mcq":
+      return "Multiple Choice";
+    case "openended":
+      return "Open-Ended";
+    case "fill-blanks":
+      return "Fill-in-the-Blanks";
+    case "code":
+      return "Coding";
+    case "flashcard":
+      return "Flashcard";
+    default:
+      return "";
+  }
+}
+
+/**
+ * Specialized metadata generator for course pages
+ */
+export function generateCourseMetadata(course: any, slug: string): Metadata {
+  if (!course) {
+    return generateMetadata({
+      title: "Course Not Found | CourseAI",
+      description: "The requested programming course could not be found. Explore our other coding education resources.",
+      path: `/dashboard/course/${slug}`,
+      noIndex: true,
+    });
+  }
+
+  // Extract keywords from course content
+  const contentKeywords = course.description ? extractKeywords(course.description, 5) : [];
+
+  // Extract keywords from course title and category
+  const courseKeywords = course.title?.toLowerCase().split(" ") || [];
+  const categoryKeyword = course.category?.name?.toLowerCase() || "";
+
+  // Create a more detailed description
+  const enhancedDescription = course.description
+    ? generateMetaDescription(course.description, 160)
+    : `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`;
+
+  return generateMetadata({
+    title: `${course.title} Programming Course | Learn with AI`,
+    description: enhancedDescription,
+    path: `/dashboard/course/${slug}`,
+    keywords: [
+      `${course.title?.toLowerCase()} tutorial`,
+      `${course.title?.toLowerCase()} programming`,
+      `learn ${course.title?.toLowerCase()}`,
+      `${course.title?.toLowerCase()} course`,
+      `${categoryKeyword} programming`,
+      "coding education",
+      "interactive programming",
+      "AI learning",
+      "developer skills",
+      ...contentKeywords,
+      ...courseKeywords.filter((k) => k.length > 3).map((k) => `${k} programming`),
+    ],
+    ogImage: course.image || `/api/og?title=${encodeURIComponent(course.title)}&description=${encodeURIComponent("Interactive Programming Course")}`,
+    ogType: "article",
+  });
 }
