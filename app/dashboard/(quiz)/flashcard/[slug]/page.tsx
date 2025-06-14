@@ -9,6 +9,7 @@ import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import FlashCardsPageClient from "../components/FlashCardsPageClient"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { getQuizSlug } from "../../components/utils"
+import FlashCardsWrapper from "../components/FlashCardsWrapper"
 
 export default function FlashCardPage({
   params,
@@ -36,7 +37,7 @@ export default function FlashCardPage({
 
   return (
     <QuizPlayLayout>
-      <FlashCardsPageClient slug={slug} userId={""} />
+      <FlashCardsWrapper slug={slug} userId={""} />
     </QuizPlayLayout>
   )
 }
