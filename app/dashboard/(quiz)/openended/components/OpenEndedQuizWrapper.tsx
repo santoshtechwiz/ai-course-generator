@@ -44,10 +44,14 @@ interface OpenEndedQuizWrapperProps {
 export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
+
   const { isAuthenticated } = useAuth()
 
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
+  const [attemptedQuestions, setAttemptedQuestions] = useState<Set<string>>(new Set())
+  const [questionElapsedTime, setQuestionElapsedTime] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeStartRef = useRef<number>(Date.now())
 
   // Redux state
   const questions = useSelector(selectQuestions)
@@ -113,46 +117,62 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }, [isCompleted, isSubmitting, isAuthenticated, router, slug])
 
   const currentQuestion = useMemo(() => {
-    if (!questions.length || currentQuestionIndex >= questions.length) return null
-    return questions[currentQuestionIndex]
-  }, [questions, currentQuestionIndex])
+    if (!questions || questions.length === 0 || currentQuestionIdx >= questions.length) return null
+    return questions[currentQuestionIdx] as unknown as OpenEndedQuestion
+  }, [questions, currentQuestionIdx])
 
-  const calculateSimilarity = (userAnswer: string, correctAnswer: string, keywords?: string[]) =>
-    getBestSimilarityScore(userAnswer, correctAnswer) / 100
+  const handleNext = () => {
+    if (currentQuestionIdx < questions.length - 1) {
+      setCurrentQuestionIdx((prevIdx) => prevIdx + 1)
+      timeStartRef.current = Date.now()
+    }
+  }
 
-  const handleAnswer = (answer: string) => {
-    if (!currentQuestion) return false
+  const handlePrevious = () => {
+    if (currentQuestionIdx > 0) {
+      setCurrentQuestionIdx((prevIdx) => prevIdx - 1)
+      timeStartRef.current = Date.now()
+    }
+  }
 
-    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
-    const similarity = calculateSimilarity(answer, currentQuestion.answer || "", currentQuestion.keywords)
-    const isCorrect = similarity >= 0.7
+  const handleAnswer = (answer: string, elapsed: number = 0, hintsUsed: boolean = false) => {
+    if (!currentQuestion) return
 
+    const questionId = currentQuestion.id.toString()
+    const elapsedTime = elapsed || (Date.now() - timeStartRef.current) / 1000
+
+    // Update elapsed time array
+    const newElapsedTime = [...questionElapsedTime]
+    newElapsedTime[currentQuestionIdx] = elapsedTime
+    setQuestionElapsedTime(newElapsedTime)
+
+    // Add to attempted questions
+    setAttemptedQuestions((prev) => {
+      const updated = new Set(prev)
+      updated.add(questionId)
+      return updated
+    })
+
+    // Reset timer
+    timeStartRef.current = Date.now()
+
+    // Save answer to Redux
     dispatch(
       saveAnswer({
         questionId,
         answer: {
           questionId,
           text: answer,
-          userAnswer: answer,
-          type: "openended",
-          similarity,
-          isCorrect,
           timestamp: Date.now(),
+          elapsedTime,
+          hintsUsed,
         },
       }),
     )
-    return true
-  }
 
-  const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
-    }
-  }
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
+    // If this is the last question, don't automatically advance
+    if (currentQuestionIdx < questions.length - 1) {
+      handleNext()
     }
   }
 
@@ -162,62 +182,40 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     setIsSubmitting(true)
 
     try {
-      const questionResults = questions.map((question, index) => {
-        const id = question.id?.toString() || index.toString()
-        const userAnswer = answers[id]?.text || answers[id]?.userAnswer || ""
-        const similarity = calculateSimilarity(userAnswer, question.answer || "", question.keywords)
-        const isCorrect = similarity >= 0.7
-
-        return {
-          questionId: id,
-          question: question.question || question.text,
-          correctAnswer: question.answer || "",
-          userAnswer,
-          similarity,
-          isCorrect,
-          keywords: question.keywords,
-          type: "openended",
-        }
-      })
-
-      const correctCount = questionResults.filter((q) => q.isCorrect).length
-      const percentage = Math.round((correctCount / questions.length) * 100)
-
+      // Process results similar to other quiz types
       const results = {
-        quizId,
+        quizId: slug,
         slug,
-        title: quizTitle || title,
+        title: quizTitle || title || "Open-ended Quiz",
         quizType: "openended",
-        maxScore: questions.length,
-        userScore: correctCount,
-        score: correctCount,
-        percentage,
         completedAt: new Date().toISOString(),
-        questionResults,
-        questions: questionResults,
+        questions,
+        answers: Object.values(answers),
       }
 
       dispatch(setQuizResults(results))
       dispatch(setQuizCompleted())
 
       await dispatch(submitQuiz()).unwrap()
-      router.push(`/dashboard/openended/${slug}/results`)
-    } catch (err) {
-      console.error("Error submitting quiz:", err)
-      toast.error("Failed to submit quiz. Please try again.")
+    } catch (error) {
+      console.error("Failed to submit quiz:", error)
+      toast.error("Failed to submit quiz results. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleRetakeQuiz = () => {
-    dispatch(clearQuizState()) // Use clearQuizState to reset the state completely
-    router.replace(`/dashboard/openended/${slug}`) // Redirect to the quiz start page
+    dispatch(clearQuizState())
+    setCurrentQuestionIdx(0)
+    setAttemptedQuestions(new Set())
+    setQuestionElapsedTime([])
+    timeStartRef.current = Date.now()
   }
 
-  const canGoNext = currentQuestionIndex < questions.length - 1
-  const canGoPrevious = currentQuestionIndex > 0
-  const isLastQuestion = currentQuestionIndex === questions.length - 1
+  const canGoNext = currentQuestionIdx < questions.length - 1
+  const canGoPrevious = currentQuestionIdx > 0
+  const isLastQuestion = currentQuestionIdx === questions.length - 1
 
   if (loading || quizStatus === "loading") {
     return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
@@ -256,28 +254,30 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     )
   }
 
-  const currentAnswer =
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text ||
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
-    ""
+  const currentAnswer = currentQuestion ? (answers[currentQuestion.id.toString()]?.text || "") : ""
 
-  const answeredQuestions = Object.keys(answers).length
-  const allQuestionsAnswered = answeredQuestions === questions.length
+  const hasCurrentAnswer = !!currentAnswer.trim()
+  const allQuestionsAttempted = attemptedQuestions.size === questions.length
 
   return (
-    <motion.div
-      className="space-y-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <OpenEndedQuiz
-        question={currentQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={currentAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNext}
+    <div className="space-y-6">
+      {currentQuestion && (
+        <OpenEndedQuiz
+          key={currentQuestion.id}
+          question={currentQuestion}
+          questionNumber={currentQuestionIdx + 1}
+          totalQuestions={questions.length}
+          isLastQuestion={isLastQuestion}
+          onAnswer={handleAnswer}
+          onNext={hasCurrentAnswer ? handleNext : undefined}
+          onPrevious={currentQuestionIdx > 0 ? handlePrevious : undefined}
+          onSubmit={hasCurrentAnswer && isLastQuestion ? handleSubmitQuiz : undefined}
+          onRetake={handleRetakeQuiz}
+        />
+      )}
+    </div>
+  )
+}
         onPrevious={handlePrevious}
         onSubmit={handleSubmitQuiz}
         canGoNext={canGoNext}

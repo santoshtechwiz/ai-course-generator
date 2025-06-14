@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useRef } from "react"
+import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
@@ -136,19 +136,19 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     return true
   }
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
-  }
+  }, [currentQuestionIndex, questions.length, dispatch])
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
-  }
+  }, [currentQuestionIndex, dispatch])
 
-  const handleSubmitQuiz = async () => {
+  const handleSubmitQuiz = useCallback(async () => {
     if (isSubmitting) return
 
     setIsSubmitting(true)
@@ -190,19 +190,18 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       dispatch(setQuizCompleted())
 
       await dispatch(submitQuiz()).unwrap()
-      router.push(`/dashboard/blanks/${slug}/results`)
     } catch (err) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [isSubmitting, questions, answers, quizId, slug, quizTitle, title, dispatch])
 
-  const handleRetakeQuiz = () => {
+  const handleRetakeQuiz = useCallback(() => {
     dispatch(clearQuizState()) // Use clearQuizState to reset the state completely
     router.replace(`/dashboard/blanks/${slug}`) // Redirect to the quiz start page
-  }
+  }, [dispatch, router, slug])
 
   const canGoNext = currentQuestionIndex < questions.length - 1
   const canGoPrevious = currentQuestionIndex > 0
@@ -246,8 +245,8 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }
 
   const currentAnswer =
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text ||
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
+    answers[currentQuestion?.id?.toString() || currentQuestionIndex.toString()]?.text ||
+    answers[currentQuestion?.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
     ""
 
   const answeredQuestions = Object.keys(answers).length
@@ -269,9 +268,11 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         onNext={handleNext}
         onPrevious={handlePrevious}
         onSubmit={handleSubmitQuiz}
+        onRetake={handleRetakeQuiz}
         canGoNext={canGoNext}
         canGoPrevious={canGoPrevious}
         isLastQuestion={isLastQuestion}
+        isSubmitting={isSubmitting || quizStatus === "submitting"}
       />
 
       <AnimatePresence>

@@ -25,23 +25,25 @@ import {
   clearQuizState,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import McqQuiz from "./McqQuiz"
+import FlashcardQuiz from "./FlashcardQuiz"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 
-interface McqQuizWrapperProps {
+interface FlashcardQuizWrapperProps {
   slug: string
   title?: string
 }
 
-export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
+export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [savedCards, setSavedCards] = useState<Record<string, boolean>>({})
 
+  // Redux state
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
@@ -60,12 +62,24 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       dispatch(resetQuiz())
 
       try {
-        const result = await dispatch(fetchQuiz({ slug, quizType: "mcq" })).unwrap()
+        const result = await dispatch(fetchQuiz({ slug, quizType: "flashcard" })).unwrap()
         if (!result) throw new Error("No data received")
+        
+        // Initialize saved cards state from loaded questions
+        const savedCardsMap: Record<string, boolean> = {}
+        if (result.questions) {
+          result.questions.forEach((q: any) => {
+            if (q.id && q.saved) {
+              savedCardsMap[q.id] = true
+            }
+          })
+        }
+        setSavedCards(savedCardsMap)
+        
         dispatch(
           hydrateQuiz({
             slug,
-            quizType: "mcq",
+            quizType: "flashcard",
             quizData: result,
             currentState: {
               currentQuestionIndex: 0,
@@ -77,7 +91,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         )
         setError(null)
       } catch (err) {
-        setError("Failed to load quiz. Please try again.")
+        setError("Failed to load flashcards. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -96,35 +110,17 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   useEffect(() => {
     if (!isCompleted || isSubmitting) return
 
-    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
+    toast.success("🎉 Flashcard study session completed!", { duration: 2000 })
 
     submissionTimeoutRef.current = setTimeout(() => {
-      router.push(`/dashboard/mcq/${slug}/results`)
-    }, 1500)
+      router.push(`/dashboard/flashcard/${slug}/results`)
+    }, 1000) // Reduced timeout for faster transition
   }, [isCompleted, isSubmitting, router, slug])
 
   const currentQuestion = useMemo(() => {
     if (!questions.length || currentQuestionIndex >= questions.length) return null
     return questions[currentQuestionIndex]
   }, [questions, currentQuestionIndex])
-
-  const handleAnswer = (selectedOption: string) => {
-    if (!currentQuestion) return false
-
-    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
-    dispatch(
-      saveAnswer({
-        questionId,
-        answer: {
-          questionId,
-          selectedOptionId: selectedOption,
-          isCorrect: selectedOption === currentQuestion.answer,
-          timestamp: Date.now(),
-        },
-      }),
-    )
-    return true
-  }
 
   const handleNext = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -144,55 +140,82 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     setIsSubmitting(true)
 
     try {
+      // Process answers and calculate stats
+      const processedAnswers = Object.values(answers)
+      
+      // Create results with summary data
       const results = {
         quizId,
         slug,
         title: quizTitle || title,
-        quizType: "mcq",
+        quizType: "flashcard",
         questions,
-        answers: Object.values(answers),
+        answers: processedAnswers,
         completedAt: new Date().toISOString(),
+        userScore: processedAnswers.filter(a => a.isCorrect).length,
+        maxScore: questions.length,
+        percentage: Math.round((processedAnswers.filter(a => a.isCorrect).length / questions.length) * 100),
+        savedCards: Object.keys(savedCards).filter(id => savedCards[id])
       }
 
       dispatch(setQuizResults(results))
       dispatch(setQuizCompleted())
 
       await dispatch(submitQuiz()).unwrap()
+      toast.success("Study session recorded!")
     } catch (err) {
-      console.error("Error submitting quiz:", err)
-      toast.error("Failed to submit quiz. Please try again.")
+      console.error("Error completing flashcard session:", err)
+      toast.error("Failed to save your progress. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
-  }, [isSubmitting, quizId, slug, quizTitle, title, questions, answers, dispatch])
+  }, [isSubmitting, quizId, slug, quizTitle, title, questions, answers, dispatch, savedCards])
 
   const handleRetakeQuiz = useCallback(() => {
     dispatch(clearQuizState())
-    router.replace(`/dashboard/mcq/${slug}`)
+    router.replace(`/dashboard/flashcard/${slug}`)
   }, [dispatch, router, slug])
+  
+  const handleToggleSave = useCallback((id: string | number, saved: boolean) => {
+    setSavedCards(prev => ({
+      ...prev,
+      [id]: saved
+    }))
+    
+    // Save this information to an answer to track with the quiz
+    dispatch(
+      saveAnswer({
+        questionId: String(id),
+        answer: {
+          questionId: String(id),
+          saved,
+          timestamp: Date.now(),
+        },
+      })
+    )
+    
+    toast.success(saved ? "Card saved for later review" : "Card removed from saved list", {
+      duration: 1500,
+    })
+  }, [dispatch])
 
   const canGoNext = currentQuestionIndex < questions.length - 1
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
-  const currentAnswerId =
-    currentQuestion?.id?.toString()
-      ? answers[currentQuestion.id.toString()]?.selectedOptionId
-      : undefined
-
   if (loading || quizStatus === "loading") {
-    return <QuizLoader message="Loading quiz..." subMessage="Preparing your questions" />
+    return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study session" />
   }
 
   if (error || quizStatus === "failed") {
     return (
       <NoResults
         variant="error"
-        title="Error Loading Quiz"
-        description={error || "Unable to load quiz."}
+        title="Error Loading Flashcards"
+        description={error || "Unable to load flashcards."}
         action={{
-          label: "Back to Quizzes",
-          onClick: () => router.push("/dashboard/quizzes"),
+          label: "Back to Dashboard",
+          onClick: () => router.push("/dashboard"),
         }}
       />
     )
@@ -202,14 +225,14 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     return (
       <NoResults
         variant="error"
-        title="Quiz Error"
-        description="Could not load quiz questions."
+        title="No Flashcards Found"
+        description="We couldn't find any flashcards for this topic."
         action={{
           label: "Try Again",
           onClick: () => window.location.reload(),
         }}
         secondaryAction={{
-          label: "Back to Quizzes",
+          label: "Browse Topics",
           onClick: () => router.push("/dashboard/quizzes"),
           variant: "outline",
         }}
@@ -224,18 +247,20 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <McqQuiz
+      <FlashcardQuiz
         key={currentQuestion.id}
-        question={currentQuestion}
+        question={{
+          ...currentQuestion,
+          saved: savedCards[currentQuestion.id]
+        }}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
-        existingAnswer={currentAnswerId}
-        onAnswer={handleAnswer}
         onNext={handleNext}
         onPrevious={handlePrevious}
         onSubmit={handleSubmitQuiz}
         onRetake={handleRetakeQuiz}
-        canGoNext={!!currentAnswerId && canGoNext}
+        onToggleSave={handleToggleSave}
+        canGoNext={canGoNext}
         canGoPrevious={canGoPrevious}
         isLastQuestion={isLastQuestion}
         isSubmitting={isSubmitting || quizStatus === "submitting"}

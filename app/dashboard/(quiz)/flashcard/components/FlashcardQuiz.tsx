@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useMemo, useCallback, memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown, Settings, X } from "lucide-react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
-import type { FlashCard } from "@/app/types/types"
+
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
 import { QuizProgress } from "../../components/QuizProgress"
 import { QuizLoader } from "@/components/ui/quiz-loader"
@@ -23,7 +23,15 @@ import {
 } from "@/store/slices/flashcard-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { Confetti } from "@/components/ui/confetti"
-
+interface FlashCard {
+  id: string
+  question: string
+  answer: string
+  options?: string[]
+  keywords?: string[]
+  imageUrl?: string
+  audioUrl?: string
+}
 interface FlashCardComponentProps {
   cards: FlashCard[]
   quizId: string | number
@@ -33,7 +41,7 @@ interface FlashCardComponentProps {
   savedCardIds?: string[]
 }
 
-function FlashCardComponentInner({
+function FlashCardQuiz({
   cards,
   quizId,
   slug,
@@ -1163,5 +1171,4 @@ function arePropsEqual(prevProps: FlashCardComponentProps, nextProps: FlashCardC
   return true
 }
 
-// Export memoized component with custom comparison
-export const FlashCardComponent = memo(FlashCardComponentInner, arePropsEqual)
+export default FlashCardQuiz;
