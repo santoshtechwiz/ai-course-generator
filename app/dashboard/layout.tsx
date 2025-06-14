@@ -28,7 +28,7 @@ export default async function DashboardLayout({
         <div className="min-h-screen flex flex-col font-body">
           <DashboardShell>
             <NavigationEvents />
-            <main className="flex-1 pt-16 section-spacing prose-headings:font-heading prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl">
+            <main className="flex-1 pt-16 ">
               <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
             </main>
 

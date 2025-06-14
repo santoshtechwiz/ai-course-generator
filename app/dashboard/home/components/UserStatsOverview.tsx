@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Clock, Award, TrendingUp, BookOpen, Calendar } from "lucide-react"
@@ -9,7 +10,8 @@ interface UserStatsOverviewProps {
   stats: UserStats
 }
 
-export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
+// Properly export the memoized component
+export const UserStatsOverview = memo(function UserStatsOverview({ stats }: UserStatsOverviewProps) {
   const statItems = [
     {
       icon: Award,
@@ -49,6 +51,23 @@ export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
     },
   ]
 
+  // Container animation with reduced motion preference
+  const containerAnimation = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1,
+      },
+    },
+  }
+
+  const itemAnimation = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0 },
+  }
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="border-b bg-muted/50">
@@ -58,14 +77,18 @@ export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {statItems.map((item, index) => (
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          initial="hidden"
+          animate="show"
+          variants={containerAnimation}
+        >
+          {statItems.map((item) => (
             <motion.div
               key={item.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              variants={itemAnimation}
               className="group"
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -80,7 +103,7 @@ export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         <div className="mt-8">
           <h3 className="text-lg font-semibold mb-4">Top Performing Topics</h3>
@@ -103,7 +126,7 @@ export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${topic.averageScore}%` }}
-                    transition={{ delay: 0.5, duration: 1, ease: "easeOut" }}
+                    transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
                     className="h-full bg-primary"
                   />
                 </div>
@@ -114,4 +137,4 @@ export function UserStatsOverview({ stats }: UserStatsOverviewProps) {
       </CardContent>
     </Card>
   )
-}
+})

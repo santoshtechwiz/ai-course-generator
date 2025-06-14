@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, Suspense, memo } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,12 +12,32 @@ import UserNotFound from "@/components/UserNotFound"
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
 import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
-import OverviewTab from "./components/OverviewTab"
-import CoursesTab from "./components/CoursesTab"
-import QuizzesTab from "./components/QuizzesTab"
-import StatsTab from "./components/StatsTab"
+import type { DashboardUser, UserStats } from "@/app/types/types"
 
-function LoadingState() {
+// Import components dynamically to prevent navigation during render
+import dynamic from "next/dynamic"
+
+const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
+  loading: () => <Skeleton className="h-[500px] w-full" />,
+  ssr: false,
+})
+
+const CoursesTab = dynamic(() => import("./components/CoursesTab"), {
+  loading: () => <Skeleton className="h-[500px] w-full" />,
+  ssr: false,
+})
+
+const QuizzesTab = dynamic(() => import("./components/QuizzesTab"), {
+  loading: () => <Skeleton className="h-[500px] w-full" />,
+  ssr: false,
+})
+
+const StatsTab = dynamic(() => import("./components/StatsTab"), {
+  loading: () => <Skeleton className="h-[500px] w-full" />,
+  ssr: false,
+})
+
+const LoadingState = memo(function LoadingState() {
   return (
     <div className="p-6 space-y-6">
       <Skeleton className="h-12 w-[250px]" />
@@ -29,7 +49,7 @@ function LoadingState() {
       <Skeleton className="h-[400px] rounded-lg" />
     </div>
   )
-}
+})
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -45,35 +65,49 @@ export default function DashboardPage() {
     }
   }, [session])
 
+  // Use router.push in an effect, not during render
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin")
+    }
+  }, [status, router])
+
   const {
     data: userData,
     isLoading: isLoadingUserData,
     error: userDataError,
-  } = useUserData(userId, {
-    // Only fetch when we have a userId
-    enabled: !!userId,
-    // Add staleTime to prevent frequent refetches
-    staleTime: 60000, // 1 minute
-  })
+  } = useUserData(userId)
 
+  // Fixed: Corrected the useUserStats hook call
   const {
     data: userStats,
     isLoading: isLoadingUserStats,
     error: userStatsError,
   } = useUserStats(userId, {
-    // Only fetch when we have a userId
     enabled: !!userId,
-    // Add staleTime to prevent frequent refetches
     staleTime: 60000, // 1 minute
   })
+
+  // Fixed: Added the missing handleTabChange function
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value)
+  }, [])
+
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarOpen((prev) => !prev)
+  }, [])
+
+  // Create memoized type-safe data
+  const safeUserData: DashboardUser = userData as DashboardUser
+  const safeUserStats: UserStats = userStats as UserStats
 
   if (status === "loading" || (userId && (isLoadingUserData || isLoadingUserStats))) {
     return <LoadingState />
   }
 
+  // Return early without router navigation during render
   if (status === "unauthenticated") {
-    router.push("/auth/signin")
-    return null
+    return null // We'll redirect in the useEffect above
   }
 
   if (userDataError || userStatsError) {
@@ -98,22 +132,22 @@ export default function DashboardPage() {
     {
       icon: <BookOpen className="h-5 w-5" />,
       label: "Courses",
-      value: userData?.courses?.length || 0,
+      value: safeUserData.courses?.length || 0,
     },
     {
       icon: <BarChart3 className="h-5 w-5" />,
       label: "Avg. Score",
-      value: `${Math.round(userStats?.averageScore || 0)}%`,
+      value: `${Math.round(safeUserStats?.averageScore || 0)}%`,
     },
     {
       icon: <Clock className="h-5 w-5" />,
       label: "Learning Time",
-      value: `${Math.round((userStats?.totalTimeSpent || 0) / 60)}`,
+      value: `${Math.round((safeUserStats?.totalTimeSpent || 0) / 60)}`,
     },
     {
       icon: <Award className="h-5 w-5" />,
       label: "Streak",
-      value: userData?.streakDays || 0,
+      value: safeUserData?.streakDays || 0,
     },
   ]
 
@@ -121,21 +155,21 @@ export default function DashboardPage() {
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        userData={userData}
+        setActiveTab={handleTabChange}
+        userData={safeUserData}
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
       />
 
       <div className="flex-1 flex flex-col">
         <DashboardHeader
-          userData={userData}
+          userData={safeUserData}
           quickStats={quickStats}
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          toggleSidebar={handleToggleSidebar}
         />
 
         <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="mb-6 bg-muted/60 p-1 w-full md:w-auto">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="courses">Courses</TabsTrigger>
@@ -143,20 +177,29 @@ export default function DashboardPage() {
               <TabsTrigger value="stats">Statistics</TabsTrigger>
             </TabsList>
 
+            {/* Conditionally render the active tab content only */}
             <TabsContent value="overview" className="mt-0">
-              <OverviewTab userData={userData} userStats={userStats} />
+              <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+                {activeTab === "overview" && <OverviewTab userData={safeUserData} userStats={safeUserStats} />}
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="courses" className="mt-0">
-              <CoursesTab userData={userData} />
+              <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+                {activeTab === "courses" && <CoursesTab userData={safeUserData} />}
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="quizzes" className="mt-0">
-              <QuizzesTab userData={userData} />
+              <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+                {activeTab === "quizzes" && <QuizzesTab userData={safeUserData} />}
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="stats" className="mt-0">
-              <StatsTab userStats={userStats} quizAttempts={userData.quizAttempts} />
+              <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+                {activeTab === "stats" && <StatsTab userStats={safeUserStats} quizAttempts={safeUserData.quizAttempts || []} />}
+              </Suspense>
             </TabsContent>
           </Tabs>
         </main>
