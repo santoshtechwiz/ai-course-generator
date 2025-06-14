@@ -137,6 +137,45 @@ export const toggleSaveCard = createAsyncThunk(
   }
 );
 
+export const submitQuiz = createAsyncThunk(
+  "flashcard/submitQuiz",
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    const { questions, answers, title, slug } = state.flashcard;
+
+    try {
+      let score = 0;
+      const questionResults = questions.map((question, index) => {
+        const answer = answers[index];
+        const isCorrect = answer?.isCorrect === true;
+        if (isCorrect) score++;
+
+        return {
+          questionId: question.id,
+          userAnswer: answer?.userAnswer || null,
+          correctAnswer: question.answer,
+          isCorrect,
+        };
+      });
+
+      const results = {
+        quizId: slug,
+        slug,
+        title,
+        score,
+        maxScore: questions.length,
+        percentage: Math.round((score / questions.length) * 100),
+        completedAt: new Date().toISOString(),
+        questionResults,
+      };
+
+      return results;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to submit quiz");
+    }
+  }
+);
+
 const flashcardSlice = createSlice({
   name: "flashcard",
   initialState,
@@ -211,6 +250,25 @@ const flashcardSlice = createSlice({
     setPendingFlashCardAuth: (state, action: PayloadAction<boolean>) => {
       state.pendingAuthRequired = action.payload;
     },
+    
+    clearQuizState: (state) => {
+      state.quizId = null;
+      state.slug = null;
+      state.title = "";
+      state.questions = [];
+      state.currentQuestion = 0;
+      state.answers = [];
+      state.isCompleted = false;
+      state.results = null;
+      state.error = null;
+      state.status = "idle";
+      state.requiresAuth = false;
+      state.pendingAuthRequired = false;
+      state.cards = [];
+      state.savedCardIds = [];
+      state.ownerId = null;
+      state.loading = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -275,6 +333,7 @@ export const {
   nextFlashCard,
   setRequiresFlashCardAuth,
   setPendingFlashCardAuth,
+  clearQuizState,
 } = flashcardSlice.actions;
 
 export const selectFlashcardQuiz = (state: RootState) => state.flashcard;
@@ -291,4 +350,10 @@ export const selectFlashCardsLoading = (state: RootState) => state.flashcard.loa
 export const selectFlashCardsError = (state: RootState) => state.flashcard.error;
 export const selectOwnerId = (state: RootState) => state.flashcard.ownerId;
 export const selectQuizId = (state: RootState) => state.flashcard.quizId;
+export const selectIsQuizComplete = (state: RootState) => state.flashcard.isCompleted;
+export const selectQuizTitle = (state: RootState) => state.flashcard.title;
+export const setQuizCompleted = (state: RootState) => state.flashcard.isCompleted;
+export const selectQuizType = (state: RootState) => "flashcard"; // Assuming flashcard is the only type
+export const setQuizResults = (state: RootState) => state.flashcard.results;
+
 export default flashcardSlice.reducer;
