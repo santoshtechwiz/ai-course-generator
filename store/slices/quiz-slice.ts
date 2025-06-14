@@ -50,9 +50,10 @@ const loadPersistedState = (): Partial<QuizState> => {
 }
 
 const initialState: QuizState = {
+  navigationHistory: [], // Explicitly initialize as an empty array
   slug: null, // Primary identifier for UI operations
   quizId: null, // Keep for database compatibility
-  quizType: "mcq",
+  quizType:null,
   title: "",
   questions: [],
   currentQuestionIndex: 0,
@@ -93,14 +94,14 @@ export const fetchQuiz = createAsyncThunk(
       }
 
       const slug = safeString(payload.slug);
-      const type = safeString(payload.type || 'mcq');
+      const type: QuizType = safeString(payload.quizType) as QuizType;
 
       // If we already have the data, use it directly
       if (payload.data && Array.isArray(payload.data.questions)) {
         return {
           ...payload.data,
           slug: slug,
-          type: type
+          quizType: type // Ensure quizType is set correctly
         };
       }
 
@@ -111,8 +112,8 @@ export const fetchQuiz = createAsyncThunk(
         });
       }
 
-      const response = await fetch(`/api/quizzes/${type}/${slug}`);
-      
+      const response = await fetch(API_ENDPOINTS[type as keyof typeof API_ENDPOINTS] + `/${slug}`);
+
       if (!response.ok) {
         const errorText = await response.text();
         return rejectWithValue({
@@ -122,7 +123,11 @@ export const fetchQuiz = createAsyncThunk(
       }
 
       const data = await response.json();
-      return data;
+      return {
+        ...data,
+        slug: slug,
+        quizType: type // Ensure quizType is set correctly from the payload
+      };
     } catch (error: any) {
       console.error("Quiz fetch error:", error);
       return rejectWithValue({
@@ -194,7 +199,7 @@ export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getSta
     })
 
     const results = {
-      quizId: quizId || slug,
+      quizId:  slug,
       slug: slug,
       title: title || "Quiz Results",
       quizType,
@@ -464,6 +469,7 @@ export const rehydrateQuizState = createAsyncThunk(
         dispatch(
           setQuiz({
             quizId: slug,
+            quizType: quizData.type || "mcq",
             title: quizData.title || "Quiz",
             questions: quizData.questions,
             type: quizData.type || "code",
@@ -578,10 +584,16 @@ const quizSlice = createSlice({
         state.currentQuestionIndex = 0
         state.isCompleted = false
         state.error = null
-        state.slug = null
-        state.quizId = null
+        state.slug = null // Reset slug
+        state.quizId = null // Reset quizId
+        state.quizType = null
         state.title = ""
         state.wasReset = true
+
+        // Clear any pending flags
+        state.isSaving = false
+        state.isSaved = false
+        state.saveError = null
       }
     },
 
@@ -601,11 +613,37 @@ const quizSlice = createSlice({
       state.wasReset = true
     },
 
+    // Add a dedicated method for users to force reset regardless of processing state
+    forceResetQuiz: (state) => {
+      state.questions = []
+      state.answers = {}
+      state.results = null
+      state.status = "idle"
+      state.currentQuestionIndex = 0
+      state.isCompleted = false
+      state.error = null
+      state.slug = null
+      state.quizId = null
+      state.quizType = null
+      state.title = ""
+      state.wasReset = true
+      state.isProcessingResults = false
+      state.isSaving = false
+      state.isSaved = false
+      state.saveError = null
+      state.pendingQuiz = null
+      state.shouldRedirectToAuth = false
+      state.shouldRedirectToResults = false
+      state.authRedirectState = null
+    },
+
     hydrateQuiz: (state, action: PayloadAction<any>) => {
       const { slug, quizData, currentState } = action.payload
       state.slug = slug
-      state.questions = quizData.questions || []
-      state.answers = currentState?.answers || {}
+      state.quizType = quizData.quizType || state.quizType; // Ensure quizType is set correctly
+      state.quizId = quizData.id;
+      state.questions = quizData.questions || [];
+      state.answers = currentState?.answers || {};
     },
 
     // Update setQuizResults to handle potential slug object structures
@@ -763,13 +801,13 @@ const quizSlice = createSlice({
     },
 
     // Add missing setQuiz action
-    setQuiz: (state, action: PayloadAction<{ quizId: string; title: string; questions: any[]; type: string }>) => {
-      const { quizId, title, questions, type } = action.payload
+    setQuiz: (state, action: PayloadAction<{ quizId: string; slug: string; quizType: QuizType; title: string; questions: any[]; type: string }>) => {
+      const { quizId, title, questions, type, quizType } = action.payload
       state.quizId = quizId
       state.slug = quizId // Always set slug!
       state.title = title
       state.questions = questions
-      state.quizType = type as QuizType
+      state.quizType = quizType as QuizType
       state.status = "succeeded"
     },
 
@@ -801,20 +839,20 @@ const quizSlice = createSlice({
           return
         }
 
-        const { slug, id, type, title, questions } = action.payload
+        const { slug, id, quizType, title, questions } = action.payload
 
         state.status = "succeeded"
-        state.slug = slug || "unknown" // Fallback to "unknown" if slug is missing
-        state.quizId = id || slug || "unknown" // Keep id for compatibility
-        state.quizType = type || "mcq" // Default to "mcq" if type is missing
-        state.title = title || "Untitled Quiz" // Fallback to "Untitled Quiz"
-        state.questions = questions || [] // Default to empty array if questions are missing
+        state.slug = slug || id || state.slug || ""; // Use existing slug or empty string instead of "unknown"
+        state.quizId = id || slug || state.quizId || ""; // Keep id for compatibility
+        state.quizType = quizType || state.quizType; // Ensure quizType is set correctly
+        state.title = title || "Untitled Quiz"; // Fallback to "Untitled Quiz"
+        state.questions = questions || []; // Default to empty array if questions are missing
         state.currentQuestionIndex = 0
         state.answers = {}
         state.isCompleted = false
         state.results = null
 
-        console.info("Quiz loaded successfully:", { slug, id, type, title, questions })
+        console.info("Quiz loaded successfully:", { slug, id, quizType, title, questions })
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         state.status = "failed"
@@ -874,7 +912,10 @@ const quizSlice = createSlice({
         } else if (action.payload.quizData) {
           state.status = "succeeded"
           state.authStatus = "authenticated"
-          state.quizId = action.payload.quizData.id
+          // Ensure both ID fields are strings
+          const id = String(action.payload.quizData.id || "");
+          state.slug = id;
+          state.quizId = id;
           state.quizType = action.payload.quizData.type
           state.title = action.payload.quizData.title
           state.questions = action.payload.quizData.questions
@@ -888,9 +929,11 @@ const quizSlice = createSlice({
       // Restore after auth
       .addCase(restoreQuizAfterAuth.fulfilled, (state, action) => {
         const { slug, quizData, currentState } = action.payload
-        state.quizId = slug
-        state.slug = slug // Set slug
-        state.quizType = "mcq"
+        // Ensure both ID fields are strings
+        const normalizedSlug = String(slug || "");
+        state.quizId = normalizedSlug;
+        state.slug = normalizedSlug; // Set slug
+        state.quizType = quizData?.type || "mcq" // Default to "mcq" if type is missing
         state.title = quizData?.title || ""
         state.questions = quizData?.questions || []
 
@@ -962,7 +1005,8 @@ export const {
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
-  safeResetQuiz, // Export new safe reset action
+  forceResetQuiz,
+  safeResetQuiz,
   clearResetFlag,
   setQuizResults,
   setPendingQuiz,
@@ -973,16 +1017,16 @@ export const {
   clearAuthRedirect,
   setResultsRedirect,
   clearResultsRedirect,
-  setQuizCompleted, // Export the new action
+  setQuizCompleted,
   // Backward compatible exports
   setQuizId,
   setQuizType,
   setSessionId,
   resetSaveStatus,
-  setQuiz, // Export the new action
-  resetState, // Export the new resetState action
-  hydrateStateFromStorage, // Export the new action
-  resetSubmissionState,
+  setQuiz,
+  resetState,
+  hydrateStateFromStorage,
+  resetSubmissionState, // Add the missing export here
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility
@@ -997,7 +1041,7 @@ export const selectQuizResults = createSelector([selectQuizState], (quiz) => qui
 export const selectQuizTitle = createSelector([selectQuizState], (quiz) => quiz?.title ?? "")
 export const selectQuizId = createSelector([selectQuizState], (quiz) => quiz?.slug)
 export const selectIsProcessingResults = createSelector([selectQuizState], (quiz) => quiz?.isProcessingResults ?? false)
-
+export const selectQuizType = createSelector([selectQuizState], (quiz) => quiz?.quizType ?? "mcq")
 export const selectCurrentQuestion = createSelector(
   [selectQuestions, selectCurrentQuestionIndex],
   (questions, currentIndex) => {
@@ -1063,7 +1107,7 @@ export const selectOrGenerateQuizResults = createSelector(
     // Return a complete result object
     return {
       quizId,
-      slug: quizId,
+      slug: quizId, // Fixed: Use quizId as slug since it's what we have available
       title: title || `Quiz ${quizId}`,
       completedAt: new Date().toISOString(),
       maxScore: totalCount,
@@ -1141,5 +1185,5 @@ export const saveQuizResultsToDatabase = createAsyncThunk(
       console.error("Error in saveQuizResultsToDatabase:", error)
       return rejectWithValue(error.message || "Failed to save results")
     }
-  },
+  }
 )
