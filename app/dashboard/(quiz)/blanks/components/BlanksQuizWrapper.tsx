@@ -1,150 +1,141 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
 import {
   selectQuestions,
   selectAnswers,
-  selectQuizStatus,
-  selectQuizError,
   selectCurrentQuestionIndex,
-  selectCurrentQuestion,
+  selectQuizStatus,
+  selectQuizResults,
   selectQuizTitle,
   selectIsQuizComplete,
+  hydrateQuiz,
   setCurrentQuestionIndex,
   saveAnswer,
-  fetchQuiz,
-  setQuizCompleted,
+  resetQuiz,
   setQuizResults,
+  setQuizCompleted,
+  fetchQuiz,
   resetSubmissionState,
   submitQuiz,
+  selectQuizId,
+  selectQuizType,
+  clearQuizState,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import type { BlankQuestion } from "./types"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { Flag, RefreshCw } from "lucide-react"
 import BlanksQuiz from "./BlanksQuiz"
-import type { QuizType } from "@/types/quiz"
 import { toast } from "sonner"
-import { useAuth } from "@/hooks/use-auth"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 
 interface BlanksQuizWrapperProps {
   slug: string
-  quizData?: {
-    title?: string
-    questions?: BlankQuestion[]
-  }
+  title: string
 }
 
-export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperProps) {
-  const dispatch = useDispatch<AppDispatch>()
+export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProps) {
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const dispatch = useDispatch<AppDispatch>()
 
-  // Track submission state locally to prevent multiple submissions
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [hasSubmitted, setHasSubmitted] = useState(false)
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const maxSubmitAttemptsRef = useRef<number>(0)
 
-  // Redux selectors
+  // Redux state
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
-  const quizStatus = useSelector(selectQuizStatus)
-  const error = useSelector(selectQuizError)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
-  const currentQuestion = useSelector(selectCurrentQuestion)
+  const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
+  const quizId = useSelector(selectQuizId)
+  const quizType = useSelector(selectQuizType)
 
-  // Load quiz data on mount
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
-    if (quizStatus === "idle") {
-      const quizPayload = quizData?.questions?.length
-        ? {
-            slug,
-            data: {
-              slug,
-              title: quizData.title || "Blanks Quiz",
-              questions: quizData.questions,
-              type: "blanks" as QuizType,
-            },
-            type: "blanks" as QuizType,
-          }
-        : { slug, type: "blanks" as QuizType }
+    const init = async () => {
+      setLoading(true)
+      dispatch(resetQuiz())
 
-      dispatch(fetchQuiz(quizPayload))
+      try {
+        const result = await dispatch(fetchQuiz({ slug, quizType: "blanks" })).unwrap()
+        if (!result) throw new Error("No data received")
+        dispatch(
+          hydrateQuiz({
+            slug,
+            quizType: "blanks",
+            quizData: result,
+            currentState: {
+              currentQuestionIndex: 0,
+              answers: {},
+              isCompleted: false,
+              showResults: false,
+            },
+          }),
+        )
+        setError(null)
+      } catch (err) {
+        setError("Failed to load quiz. Please try again.")
+      } finally {
+        setLoading(false)
+      }
     }
 
-    // Clear any previous submission state on component mount
+    init()
+
     dispatch(resetSubmissionState())
 
-    // Cleanup
     return () => {
       if (submissionTimeoutRef.current) {
         clearTimeout(submissionTimeoutRef.current)
       }
     }
-  }, [quizStatus, dispatch, slug, quizData])
+  }, [slug, dispatch])
 
-  // Add safety timeout to prevent UI freeze
   useEffect(() => {
-    // If we've been submitting for more than 10 seconds, something is wrong
-    if (isSubmitting) {
-      const safetyTimeout = setTimeout(() => {
-        // Force navigation to results
-        const safeSlug = typeof slug === "string" ? slug : String(slug)
-        router.push(`/dashboard/blanks/${safeSlug}/results`)
-      }, 10000) // 10 seconds timeout
+    if (!isCompleted || isSubmitting) return
 
-      return () => clearTimeout(safetyTimeout)
-    }
-  }, [isSubmitting, router, slug])
+    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
 
-  // Handle quiz completion - only when explicitly triggered
-  useEffect(() => {
-    if (!isCompleted || hasSubmitted || !isAuthenticated) return
-
-    // Show completion toast with celebration
-    toast.success("🎉 Quiz completed! Calculating your results...", {
-      duration: 2000,
-    })
-
-    // Navigate to results page with safety timeout
-    const safeSlug = typeof slug === "string" ? slug : String(slug)
-    setHasSubmitted(true)
-
-    // Add a small delay for better UX
     submissionTimeoutRef.current = setTimeout(() => {
-      router.push(`/dashboard/blanks/${safeSlug}/results`)
+      router.push(`/dashboard/blanks/${slug}/results`)
     }, 1500)
-  }, [isCompleted, router, slug, hasSubmitted, isAuthenticated])
+  }, [isCompleted, isSubmitting, router, slug])
 
-  // Answer handler - fixed to properly store answers
+  const currentQuestion = useMemo(() => {
+    if (!questions.length || currentQuestionIndex >= questions.length) return null
+    return questions[currentQuestionIndex]
+  }, [questions, currentQuestionIndex])
+
   const handleAnswer = (answer: string) => {
-    if (!currentQuestion) return
+    if (!currentQuestion) return false
 
-    // Store the answer in Redux with proper structure
+    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
+    const isCorrect = answer.trim().toLowerCase() === (currentQuestion.answer || "").trim().toLowerCase()
+
     dispatch(
       saveAnswer({
-        questionId: currentQuestion.id,
+        questionId,
         answer: {
-          questionId: currentQuestion.id,
+          questionId,
           userAnswer: answer,
-          text: answer, // Add text field for consistency
+          text: answer,
           type: "blanks",
-          isCorrect: answer.trim().toLowerCase() === (currentQuestion.answer || "").trim().toLowerCase(),
+          isCorrect,
           timestamp: Date.now(),
         },
       }),
     )
+    return true
   }
 
-  // Navigation handlers
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
@@ -157,45 +148,21 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
     }
   }
 
-  // Complete the quiz - improved with better error handling and safety checks
-  const handleFinish = () => {
-    if (hasSubmitted || isSubmitting) return
+  const handleSubmitQuiz = async () => {
+    if (isSubmitting) return
 
     setIsSubmitting(true)
 
     try {
-      // First mark as completed
-      dispatch(setQuizCompleted())
-
-      // Store answers in localStorage as backup
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(
-            "quiz_answers_backup",
-            JSON.stringify({
-              slug,
-              answers,
-              timestamp: Date.now(),
-              quizType: "blanks",
-            }),
-          )
-        } catch (e) {
-          console.error("Failed to backup answers:", e)
-        }
-      }
-
-      // Generate results for all questions (including unanswered ones)
-      const questionResults = questions.map((question) => {
-        const qid = String(question.id)
-        const answer = answers[qid]
-        const userAnswer = answer?.userAnswer || answer?.text || ""
-        const correctAnswer = question.answer || ""
-        const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+      const questionResults = questions.map((question, index) => {
+        const id = question.id?.toString() || index.toString()
+        const userAnswer = answers[id]?.text || answers[id]?.userAnswer || ""
+        const isCorrect = userAnswer.trim().toLowerCase() === (question.answer || "").trim().toLowerCase()
 
         return {
-          questionId: qid,
+          questionId: id,
           question: question.question || question.text,
-          correctAnswer,
+          correctAnswer: question.answer || "",
           userAnswer,
           isCorrect,
           type: "blanks",
@@ -206,157 +173,156 @@ export default function BlanksQuizWrapper({ slug, quizData }: BlanksQuizWrapperP
       const percentage = Math.round((correctCount / questions.length) * 100)
 
       const results = {
-        quizId: slug,
-        slug: slug,
-        title: quizTitle || "Blanks Quiz",
+        quizId,
+        slug,
+        title: quizTitle || title,
         quizType: "blanks",
-        score: correctCount,
         maxScore: questions.length,
+        userScore: correctCount,
+        score: correctCount,
         percentage,
         completedAt: new Date().toISOString(),
         questionResults,
         questions: questionResults,
       }
 
-      // Set results first
       dispatch(setQuizResults(results))
+      dispatch(setQuizCompleted())
 
-      // Then submit the quiz
-      dispatch(submitQuiz())
-        .unwrap()
-        .then(() => {
-          setHasSubmitted(true)
-          const safeSlug = typeof slug === "string" ? slug : String(slug)
-
-          // Navigate to results page after a short delay
-          submissionTimeoutRef.current = setTimeout(() => {
-            router.push(`/dashboard/blanks/${safeSlug}/results`)
-          }, 1000)
-        })
-        .catch((err) => {
-          console.error("Quiz submission error:", err)
-          maxSubmitAttemptsRef.current += 1
-
-          // If we've tried 3 times or more, just navigate to results
-          if (maxSubmitAttemptsRef.current >= 3) {
-            toast.error("Having trouble submitting quiz. Redirecting to results page.")
-            const safeSlug = typeof slug === "string" ? slug : String(slug)
-            setTimeout(() => {
-              router.push(`/dashboard/blanks/${safeSlug}/results`)
-            }, 1000)
-            return
-          }
-
-          // Otherwise show error and reset submission state
-          setIsSubmitting(false)
-          toast.error("Failed to submit quiz. Please try again.")
-        })
+      await dispatch(submitQuiz()).unwrap()
+      router.push(`/dashboard/blanks/${slug}/results`)
     } catch (err) {
-      console.error("Error in quiz submission flow:", err)
-      setIsSubmitting(false)
+      console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  // UI calculations
-  const answeredQuestions = Object.keys(answers).length
-  const progressPercentage = (answeredQuestions / questions.length) * 100
-  const actualSubmittingState = isSubmitting || quizStatus === "submitting"
-
-  // Loading state
-  if (quizStatus === "loading") {
-    return <QuizLoader message="Loading quiz data" subMessage="Preparing your blank questions" />
+  const handleRetakeQuiz = () => {
+    dispatch(clearQuizState()) // Use clearQuizState to reset the state completely
+    router.replace(`/dashboard/blanks/${slug}`) // Redirect to the quiz start page
   }
 
-  // Error state
-  if (quizStatus === "failed") {
-    return (
-      <div className="max-w-4xl mx-auto text-center py-12">
-        <NoResults
-          variant="error"
-          title="Quiz Not Found"
-          description={error || "Unable to load quiz data."}
-          action={{
-            label: "Try Again",
-            onClick: () => window.location.reload(),
-          }}
-          secondaryAction={{
-            label: "Back to Quizzes",
-            onClick: () => router.push("/dashboard/quizzes"),
-            variant: "outline",
-          }}
-        />
-      </div>
-    )
-  }
-
-  // Empty questions state
-  if (!Array.isArray(questions) || questions.length === 0) {
-    return (
-      <div className="max-w-4xl mx-auto text-center py-12">
-        <NoResults
-          variant="empty"
-          title="No Questions Available"
-          description="This quiz has no questions."
-          action={{
-            label: "Back to Quizzes",
-            onClick: () => router.push("/dashboard/quizzes"),
-          }}
-        />
-      </div>
-    )
-  }
-
-  // No current question state
-  if (!currentQuestion) {
-    return <QuizLoader steps={[{ label: "Initializing quiz", status: "loading" }]} />
-  }
-
-  // Current answer from Redux
-  const currentAnswer = answers[currentQuestion.id]
-  const existingAnswer = currentAnswer?.userAnswer || currentAnswer?.text || ""
-
-  // Navigation state
   const canGoNext = currentQuestionIndex < questions.length - 1
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
-  // Submitting state
-  if (actualSubmittingState) {
+  if (loading || quizStatus === "loading") {
+    return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
+  }
+
+  if (error || quizStatus === "failed") {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.5 }}
-      >
-        <QuizLoader full message="🎉 Quiz Completed!" subMessage="Calculating your results..." />
-      </motion.div>
+      <NoResults
+        variant="error"
+        title="Error Loading Quiz"
+        description={error || "Unable to load quiz."}
+        action={{
+          label: "Back to Quizzes",
+          onClick: () => router.push("/dashboard/quizzes"),
+        }}
+      />
     )
   }
 
-  // Show current question
+  if (!currentQuestion) {
+    return (
+      <NoResults
+        variant="error"
+        title="Quiz Error"
+        description="Could not load quiz questions."
+        action={{
+          label: "Try Again",
+          onClick: () => window.location.reload(),
+        }}
+        secondaryAction={{
+          label: "Back to Quizzes",
+          onClick: () => router.push("/dashboard/quizzes"),
+          variant: "outline",
+        }}
+      />
+    )
+  }
+
+  const currentAnswer =
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text ||
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
+    ""
+
+  const answeredQuestions = Object.keys(answers).length
+  const allQuestionsAnswered = answeredQuestions === questions.length
+
   return (
     <motion.div
+      className="space-y-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gradient-to-br from-background to-muted/20"
     >
       <BlanksQuiz
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
-        existingAnswer={existingAnswer}
+        existingAnswer={currentAnswer}
         onAnswer={handleAnswer}
         onNext={handleNext}
         onPrevious={handlePrevious}
-        onSubmit={handleFinish}
-        isSubmitting={actualSubmittingState}
+        onSubmit={handleSubmitQuiz}
         canGoNext={canGoNext}
         canGoPrevious={canGoPrevious}
         isLastQuestion={isLastQuestion}
       />
+
+      <AnimatePresence>
+        {answeredQuestions > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className="border-2 border-green-500/30 bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg rounded-2xl">
+              <CardContent className="p-6 text-center">
+                <motion.p
+                  className="mb-4 font-medium text-green-800 dark:text-green-200"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  {allQuestionsAnswered
+                    ? "All questions answered. Ready to submit?"
+                    : `${answeredQuestions} questions answered. Submit quiz?`}
+                </motion.p>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Button
+                    onClick={handleSubmitQuiz}
+                    size="lg"
+                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-2xl px-8 gap-2 shadow-lg"
+                    disabled={isSubmitting}
+                  >
+                    <Flag className="w-4 h-4" />
+                    {isSubmitting ? "Submitting..." : "Submit Quiz and View Results"}
+                  </Button>
+                  <Button
+                    onClick={handleRetakeQuiz}
+                    size="lg"
+                    variant="outline"
+                    className="mt-4 text-green-700 border-green-500 hover:bg-green-100 rounded-2xl px-8 gap-2 shadow-lg"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Retake Quiz
+                  </Button>
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
