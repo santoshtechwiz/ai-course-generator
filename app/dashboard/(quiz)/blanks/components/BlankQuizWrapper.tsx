@@ -29,19 +29,22 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
-import CodeQuiz from "./CodeQuiz"
+import BlankQuiz from "./BlankQuiz"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { toast } from "sonner"
+import { useAuth } from "@/hooks/use-auth"
 import { motion, AnimatePresence } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 
-interface CodeQuizWrapperProps {
+interface BlankQuizWrapperProps {
   slug: string
-  title?: string
+  title: string
 }
 
-export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
+export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
+  const { isAuthenticated } = useAuth()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -65,12 +68,12 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       dispatch(resetQuiz())
 
       try {
-        const result = await dispatch(fetchQuiz({ slug, quizType: "code" })).unwrap()
+        const result = await dispatch(fetchQuiz({ slug, quizType: "blanks" })).unwrap()
         if (!result) throw new Error("No data received")
         dispatch(
           hydrateQuiz({
             slug,
-            quizType: "code",
+            quizType: "blanks",
             quizData: result,
             currentState: {
               currentQuestionIndex: 0,
@@ -100,31 +103,40 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }, [slug, dispatch])
 
   useEffect(() => {
-    if (!isCompleted || isSubmitting) return
+    if (!isCompleted || isSubmitting || !isAuthenticated) return
 
     toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
 
     submissionTimeoutRef.current = setTimeout(() => {
-      router.push(`/dashboard/code/${slug}/results`)
+      router.push(`/dashboard/blanks/${slug}/results`)
     }, 1500)
-  }, [isCompleted, isSubmitting, router, slug])
+  }, [isCompleted, isSubmitting, isAuthenticated, router, slug])
 
   const currentQuestion = useMemo(() => {
     if (!questions.length || currentQuestionIndex >= questions.length) return null
     return questions[currentQuestionIndex]
   }, [questions, currentQuestionIndex])
 
-  const handleAnswer = (selectedOption: string) => {
+  const calculateSimilarity = (userAnswer: string, correctAnswer: string) =>
+    getBestSimilarityScore(userAnswer, correctAnswer) / 100
+
+  const handleAnswer = (answer: string) => {
     if (!currentQuestion) return false
 
     const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
+    const similarity = calculateSimilarity(answer, currentQuestion.answer || "")
+    const isCorrect = similarity >= 0.7
+
     dispatch(
       saveAnswer({
         questionId,
         answer: {
           questionId,
-          selectedOptionId: selectedOption,
-          type: "code",
+          text: answer,
+          userAnswer: answer,
+          type: "blanks",
+          similarity,
+          isCorrect,
           timestamp: Date.now(),
         },
       }),
@@ -145,23 +157,25 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
 
   const handleSubmitQuiz = async () => {
-    if (isSubmitting) return
+    if (isSubmitting || !allQuestionsAnswered) return // Ensure all questions are answered before submitting
 
     setIsSubmitting(true)
 
     try {
       const questionResults = questions.map((question, index) => {
         const id = question.id?.toString() || index.toString()
-        const userAnswer = answers[id]?.selectedOptionId || ""
-        const isCorrect = userAnswer === question.correctOptionId
+        const userAnswer = answers[id]?.text || answers[id]?.userAnswer || ""
+        const similarity = calculateSimilarity(userAnswer, question.answer || "")
+        const isCorrect = similarity >= 0.7
 
         return {
           questionId: id,
           question: question.question || question.text,
-          correctAnswer: question.correctOptionId || "",
+          correctAnswer: question.answer || "",
           userAnswer,
+          similarity,
           isCorrect,
-          type: "code",
+          type: "blanks",
         }
       })
 
@@ -172,7 +186,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
         quizId,
         slug,
         title: quizTitle || title,
-        quizType: "code",
+        quizType: "blanks",
         maxScore: questions.length,
         userScore: correctCount,
         score: correctCount,
@@ -186,7 +200,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       dispatch(setQuizCompleted())
 
       await dispatch(submitQuiz()).unwrap()
-      router.push(`/dashboard/code/${slug}/results`) // Ensure navigation to results page
+      router.push(`/dashboard/blanks/${slug}/results`)
     } catch (err) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
@@ -197,7 +211,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
   const handleRetakeQuiz = () => {
     dispatch(clearQuizState()) // Use clearQuizState to reset the state completely
-    router.replace(`/dashboard/code/${slug}`) // Redirect to the quiz start page
+    router.replace(`/dashboard/blanks/${slug}`) // Redirect to the quiz start page
   }
 
   const canGoNext = currentQuestionIndex < questions.length - 1
@@ -242,7 +256,9 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
 
   const currentAnswer =
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.selectedOptionId || ""
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text ||
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
+    ""
 
   const answeredQuestions = Object.keys(answers).length
   const allQuestionsAnswered = answeredQuestions === questions.length
@@ -254,7 +270,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <CodeQuiz
+      <BlankQuiz
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
