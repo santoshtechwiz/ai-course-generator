@@ -7,7 +7,6 @@ import CourseAIState from "@/components/development/CourseAIState"
 import { NavigationEvents } from "./NavigationEvents"
 import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth"
-import { AuthConsumer } from "@/context/auth-context"
 
 export const viewport = {
   width: "device-width",
@@ -24,19 +23,17 @@ export default async function DashboardLayout({
 
   return (
     <RootLayoutProvider session={session}>
-      <AuthConsumer>
-        <div className="min-h-screen flex flex-col font-body">
-          <DashboardShell>
-            <NavigationEvents />
-            <main className="flex-1 pt-16 ">
-              <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
-            </main>
+      <div className="min-h-screen flex flex-col font-body">
+        <DashboardShell>
+          <NavigationEvents />
+          <main className="flex-1 pt-16 ">
+            <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
+          </main>
 
-            <Toaster />
-            {process.env.NODE_ENV === "development" && <CourseAIState />}
-          </DashboardShell>
-        </div>
-      </AuthConsumer>
+          <Toaster />
+          {process.env.NODE_ENV === "development" && <CourseAIState />}
+        </DashboardShell>
+      </div>
     </RootLayoutProvider>
   )
 }

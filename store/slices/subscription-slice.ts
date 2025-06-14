@@ -36,6 +36,16 @@ const initialState: SubscriptionState = {
   isFetching: false,
 }
 
+// Default free subscription data to use when unauthenticated
+const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
+  credits: 0,
+  tokensUsed: 0,
+  isSubscribed: false,
+  subscriptionPlan: "FREE",
+  status: "INACTIVE",
+  cancelAtPeriodEnd: false
+};
+
 // Create the async thunk for fetching subscription data
 export const fetchSubscription = createAsyncThunk(
   "subscription/fetch",
@@ -48,6 +58,12 @@ export const fetchSubscription = createAsyncThunk(
           Expires: "0",
         },
       })
+
+      // Handle 401 unauthorized specifically - user is not logged in
+      if (response.status === 401) {
+        logger.info("User is not authenticated, returning default free subscription data")
+        return DEFAULT_FREE_SUBSCRIPTION;
+      }
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -202,16 +218,9 @@ const subscriptionSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload?.error || "Subscription fetch failed";
         
-        // Even on rejection, set sensible defaults instead of breaking the app
-        state.data = {
-          credits: 0,
-          tokensUsed: 0,
-          isSubscribed: false,
-          subscriptionPlan: "FREE",
-          expirationDate: undefined,
-          status: "INACTIVE",
-          cancelAtPeriodEnd: false,
-        }
+        // Set default free subscription data even when fetching fails
+        state.data = DEFAULT_FREE_SUBSCRIPTION;
+        
         logger.error(`Subscription fetch failed: ${action.payload}`)
       })
 

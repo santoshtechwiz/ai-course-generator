@@ -41,7 +41,7 @@ interface McqQuizWrapperProps {
   }
 }
 
-export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) {
+export default function McqQuizWrapper({ slug }: McqQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
   const { isAuthenticated } = useAuth()
@@ -65,18 +65,10 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
   // Load quiz data on mount
   useEffect(() => {
     if (quizStatus === "idle") {
-      const quizPayload = quizData?.questions?.length
-        ? {
-            slug,
-            data: {
-              slug,
-              title: quizData.title || "MCQ Quiz",
-              questions: quizData.questions,
-              type: "mcq" as QuizType,
-            },
-            type: "mcq" as QuizType,
-          }
-        : { slug, type: "mcq" as QuizType }
+      const quizPayload = {
+        slug,
+        type: "mcq" as QuizType,
+      }
 
       dispatch(fetchQuiz(quizPayload))
     }
@@ -90,7 +82,7 @@ export default function McqQuizWrapper({ slug, quizData }: McqQuizWrapperProps) 
         clearTimeout(submissionTimeoutRef.current)
       }
     }
-  }, [quizStatus, dispatch, slug, quizData])
+  }, [quizStatus, dispatch, slug])
 
   // Add safety timeout to prevent UI freeze
   useEffect(() => {

@@ -8,21 +8,17 @@ import { Button } from "@/components/ui/button"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import FlashCardsPageClient from "../components/FlashCardsPageClient"
 import { QuizLoader } from "@/components/ui/quiz-loader"
+import { getQuizSlug } from "../../components/utils"
 
 export default function FlashCardPage({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: Promise<{ slug: string }> 
 }) {
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const slug = resolvedParams.slug
-  const { status: authStatus } = useSession()
+  const slug = getQuizSlug(params);
   const router = useRouter()
 
-  // Check for loading state
-  if (authStatus === "loading") {
-    return <QuizLoader message="Initializing quiz" subMessage="Setting up flashcards" showTiming />
-  }
+
 
   if (!slug) {
     return (

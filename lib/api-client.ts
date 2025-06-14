@@ -20,7 +20,7 @@ export const apiClient = {
     
     if (!session?.user) {
       console.log(`User not authenticated, skipping API call to: ${url}`);
-      return null;
+     
     }
     
     // Add query parameters if provided

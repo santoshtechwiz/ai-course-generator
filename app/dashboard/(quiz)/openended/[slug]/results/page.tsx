@@ -6,14 +6,15 @@ import QuizResultHandler from "../../../components/QuizResultHandler"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizResult from "../../../components/QuizResult"
+import { getQuizSlug } from "../../../components/utils"
 
 interface ResultsPageProps {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: Promise<{ slug: string }> 
 }
 
 export default function OpenEndedResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-  const slug = params instanceof Promise ? use(params).slug : params.slug
+  const slug = getQuizSlug(params)
 
   const handleRetakeQuiz = () => {
     // Use replace instead of push to avoid navigation loops

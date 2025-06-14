@@ -86,7 +86,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   // Normalize the slug value once
   const normalizedSlug = useMemo(() => {
-    return typeof slug === "object" && slug.slug ? slug.slug : typeof slug === "string" ? slug : currentSlug || ""
+    return slug;
   }, [slug, currentSlug])
 
   // Single view state to prevent flickering
