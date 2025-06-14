@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
 import { Save, Plus, Trash } from "lucide-react"
+import { QuizLoader } from "@/components/ui/quiz-loader"
+
 
 interface Question {
   id: string
@@ -19,9 +21,15 @@ interface DocumentQuizDisplayProps {
   questions: Question[]
   onSave: (questions: Question[]) => void
   onUpdate: (questions: Question[]) => void
+  isLoading?: boolean
 }
 
-export function DocumentQuizDisplay({ questions: initialQuestions, onSave, onUpdate }: DocumentQuizDisplayProps) {
+export function DocumentQuizDisplay({
+  questions: initialQuestions,
+  onSave,
+  onUpdate,
+  isLoading = false,
+}: DocumentQuizDisplayProps) {
   const [questions, setQuestions] = useState<Question[]>(initialQuestions)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -117,6 +125,15 @@ export function DocumentQuizDisplay({ questions: initialQuestions, onSave, onUpd
     } finally {
       setIsSaving(false)
     }
+  }
+
+  // Add loading state handling
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <QuizLoader message="Loading quiz content..." />
+      </div>
+    )
   }
 
   return (

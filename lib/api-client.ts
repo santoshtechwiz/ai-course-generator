@@ -9,13 +9,20 @@ interface ApiOptions extends RequestInit {
 }
 
 /**
- * Secure API client for making HTTP requests with CSRF protection
+ * API client that handles authentication checks before making requests
  */
 export const apiClient = {
   /**
-   * Make a GET request to the specified URL
+   * Make a GET request if authenticated, otherwise return null without error
    */
-  async get<T = any>(url: string, options: ApiOptions = {}): Promise<T> {
+  async get<T = any>(url: string, options: ApiOptions = {}): Promise<T | null> {
+    const session = await getSession();
+    
+    if (!session?.user) {
+      console.log(`User not authenticated, skipping API call to: ${url}`);
+      return null;
+    }
+    
     // Add query parameters if provided
     if (options.params) {
       const urlObj = new URL(url, window.location.origin);
@@ -46,9 +53,16 @@ export const apiClient = {
   },
   
   /**
-   * Make a POST request to the specified URL with CSRF protection
+   * Make a POST request if authenticated, otherwise return null without error
    */
-  async post<T = any>(url: string, data?: any, options: ApiOptions = {}): Promise<T> {
+  async post<T = any>(url: string, data?: any, options: ApiOptions = {}): Promise<T | null> {
+    const session = await getSession();
+    
+    if (!session?.user) {
+      console.log(`User not authenticated, skipping API call to: ${url}`);
+      return null;
+    }
+    
     const headers: Record<string, string> = {
       ...options.headers,
     };
@@ -65,7 +79,6 @@ export const apiClient = {
     
     // Add CSRF protection for authenticated requests
     if (!options.skipCsrfProtection) {
-      const session = await getSession();
       if (session?.user) {
         headers['x-csrf-token'] = `${session.user.id?.substring(0, 8)}-${Math.floor(Date.now() / 1000)}`;
       }
