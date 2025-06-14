@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
@@ -14,15 +15,13 @@ interface OverviewTabProps {
   userStats: UserStats
 }
 
-// Update the OverviewTab component to handle potential undefined values
-export default function OverviewTab({ userData, userStats }: OverviewTabProps) {
-  // Get the most recent courses (up to 3) with null checks
+// Memoize the component to prevent unnecessary re-renders
+const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewTabProps) {
   const recentCourses =
     userData?.courseProgress
       ?.sort((a, b) => new Date(b.lastAccessedAt || 0).getTime() - new Date(a.lastAccessedAt || 0).getTime())
       .slice(0, 3) || []
 
-  // Get the most recent quizzes (up to 3) with null checks
   const recentQuizzes =
     userData?.userQuizzes
       ?.sort((a, b) => {
@@ -32,7 +31,6 @@ export default function OverviewTab({ userData, userStats }: OverviewTabProps) {
       })
       .slice(0, 3) || []
 
-  // Get the most recent quiz attempts (up to 3) with null checks
   const recentAttempts =
     userData?.quizAttempts
       ?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -117,14 +115,16 @@ export default function OverviewTab({ userData, userStats }: OverviewTabProps) {
                 {recentCourses.map((course) => (
                   <Link key={course.id} href={`/dashboard/course/${course.course?.slug}`} className="block">
                     <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
-                      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
-                        <Image
+                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
+                          <Image
                           src={course.course?.image || "/placeholder.svg"}
                           alt={course.course?.title || "Course"}
                           fill
                           className="object-cover"
-                        />
-                      </div>
+                          sizes="48px"
+                          priority={false}
+                          />
+                        </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium truncate">{course.course?.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
@@ -240,4 +240,6 @@ export default function OverviewTab({ userData, userStats }: OverviewTabProps) {
       </Card>
     </div>
   )
-}
+})
+
+export default OverviewTab

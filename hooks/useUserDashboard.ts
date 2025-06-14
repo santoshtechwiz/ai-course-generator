@@ -42,7 +42,7 @@ export function useUserData(userId: string) {
   }
 }
 
-export function useUserStats(userId: string) {
+export function useUserStats(userId: string, p0: unknown) {
   const { data, error, isLoading, mutate } = useSWR<UserStats>(
     userId ? `/api/dashboard/stats/${userId}` : null,
     fetcher,
