@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
 import {
-  safeResetQuiz,
+  resetQuiz,
   setQuizResults,
   selectQuizResults,
   selectQuizStatus,
@@ -20,6 +20,7 @@ import {
   selectIsProcessingResults,
   selectAnswers,
   selectQuizTitle,
+  clearQuizState,
 } from "@/store/slices/quiz-slice"
 import { Button } from "@/components/ui/button"
 import { QuizLoader } from "@/components/ui/quiz-loader"
@@ -29,7 +30,6 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useSession } from "next-auth/react"
 import { NoResults } from "@/components/ui/no-results"
 import { RefreshCw } from "lucide-react"
-import { JsonLD } from "@/app/schema/components"
 
 interface SignInPromptProps {
   onSignIn: () => void
@@ -85,26 +85,20 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   const isProcessingResults = useSelector(selectIsProcessingResults)
 
   // Normalize the slug value once
-  const normalizedSlug = useMemo(() => {
-    return slug;
-  }, [slug, currentSlug])
+  const normalizedSlug = useMemo(() => slug, [slug, currentSlug])
 
   // Single view state to prevent flickering
   const [viewState, setViewState] = useState<ViewState>("loading")
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Track if we've already tried to generate results
-  const [hasTriedGeneration, setHasTriedGeneration] = useState(false)
-
   // Memoize the current result to prevent unnecessary re-renders
-  const currentResult = useMemo(() => {
-    return quizResults || generatedResults
-  }, [quizResults, generatedResults])
+  const currentResult = useMemo(() => quizResults || generatedResults, [quizResults, generatedResults])
 
   // Handle retake action
   const handleRetake = useCallback(() => {
-    dispatch(safeResetQuiz())
-    router.replace(`/dashboard/${quizType}/${normalizedSlug}`)
+    dispatch(clearQuizState()); // Use clearQuizState to reset the state completely
+    setViewState("loading"); // Reset view state to prevent flickering
+    router.push(`/dashboard/${quizType}/${normalizedSlug}`); // Redirect to the quiz page
   }, [dispatch, router, quizType, normalizedSlug])
 
   // Handle sign in action
@@ -135,11 +129,9 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   // Generate results from state if needed
   const generateResultsFromState = useCallback(() => {
-    if (!questions.length || !Object.keys(answers).length || hasTriedGeneration) {
+    if (!questions.length || !Object.keys(answers).length) {
       return null
     }
-
-    setHasTriedGeneration(true)
 
     let score = 0
     const questionResults = questions.map((question) => {
@@ -209,73 +201,35 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // Store the generated results
     dispatch(setQuizResults(results))
     return results
-  }, [questions, answers, quizType, normalizedSlug, quizTitle, dispatch, hasTriedGeneration])
+  }, [questions, answers, quizType, normalizedSlug, quizTitle, dispatch])
 
-  // Initialize and restore state - single useEffect to prevent loops
+  // Initialize and restore state
   useEffect(() => {
-    // Skip if already initialized
-    if (isInitialized) return
+    if (isInitialized || isSessionLoading) return
 
-    // Don't proceed if session is still loading
-    if (isSessionLoading) return
-
-    // Hydrate state from storage first
     dispatch(hydrateStateFromStorage())
 
-    // Check for pending results in storage
-    if (isAuthenticated) {
-      try {
-        const pendingJson = localStorage.getItem("pendingQuizResults") || sessionStorage.getItem("pendingQuizResults")
-
-        if (pendingJson) {
-          const pendingData = JSON.parse(pendingJson)
-
-          if (pendingData.slug === normalizedSlug && pendingData.results) {
-            dispatch(setQuizResults(pendingData.results))
-            dispatch(
-              setQuiz({
-                quizId: normalizedSlug,
-                title: pendingData.title || "Quiz Results",
-                questions: pendingData.questions || [],
-                type: pendingData.quizType || quizType,
-              }),
-            )
-
-            // Clear storage after restoration
-            localStorage.removeItem("pendingQuizResults")
-            sessionStorage.removeItem("pendingQuizResults")
-          }
-        }
-      } catch (error) {
-        console.error("Error restoring quiz results:", error)
-      }
-    }
-
     setIsInitialized(true)
-  }, [isSessionLoading, isAuthenticated, normalizedSlug, quizType, dispatch, isInitialized])
+  }, [isSessionLoading, dispatch, isInitialized])
 
-  // Determine view state based on current conditions - separate effect to prevent loops
+  // Determine view state based on current conditions
   useEffect(() => {
-    // Skip if not initialized or session is loading
     if (!isInitialized || isSessionLoading) {
       setViewState("loading")
       return
     }
 
-    // If we have results, show them
     if (currentResult) {
       setViewState(isAuthenticated ? "show_results" : "show_signin")
       return
     }
 
-    // If we're still processing results, stay in loading
     if (isProcessingResults) {
       setViewState("loading")
       return
     }
 
-    // If we have quiz data but no results, try to generate them
-    if (isCompleted && questions.length > 0 && Object.keys(answers).length > 0 && !hasTriedGeneration) {
+    if (isCompleted && questions.length > 0 && Object.keys(answers).length > 0) {
       const generated = generateResultsFromState()
       if (generated) {
         setViewState(isAuthenticated ? "show_results" : "show_signin")
@@ -283,20 +237,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       }
     }
 
-    // If we still don't have results, show no results
     setViewState("no_results")
-  }, [
-    isInitialized,
-    isSessionLoading,
-    currentResult,
-    isAuthenticated,
-    isProcessingResults,
-    isCompleted,
-    questions.length,
-    answers,
-    generateResultsFromState,
-    hasTriedGeneration,
-  ])
+  }, [isInitialized, isSessionLoading, currentResult, isAuthenticated, isProcessingResults, isCompleted, questions.length, answers, generateResultsFromState])
 
   // Show loading state
   if (viewState === "loading") {
