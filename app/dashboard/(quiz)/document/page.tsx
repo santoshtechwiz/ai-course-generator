@@ -9,18 +9,25 @@ import { Plus, Save } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useSession } from "next-auth/react"
-import { SUBSCRIPTION_PLANS } from "../../subscription/components/subscription-plans"
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
 import PlanAwareButton from "../components/PlanAwareButton"
-import { quizStore, type Question, type Quiz } from "@/lib/quiz-store"
-import useSubscription from "@/hooks/use-subscription"
+import { quizStore, type Question as QuizStoreQuestion, type Quiz } from "@/lib/quiz-store"
 import { DocumentQuizDisplay } from "./components/DocumentQuizDisplay"
+import { useQuizPlan } from "../../../../hooks/useQuizPlan"
 
 interface QuizOptionsType {
   numberOfQuestions: number
   difficulty: number
+}
+
+// Define a consistent interface for questions
+interface LocalQuestion {
+  id: string
+  question: string
+  options: string[]
+  correctAnswer: number
 }
 
 export default function DocumentQuizPage() {
@@ -29,7 +36,14 @@ export default function DocumentQuizPage() {
     numberOfQuestions: 5,
     difficulty: 50,
   })
-  const [quiz, setQuiz] = useState<Question[]>([])
+  const [quiz, setQuiz] = useState<LocalQuestion[]>([
+    {
+      id: `q-${Date.now()}`,
+      question: "",
+      options: ["", ""],
+      correctAnswer: 0,
+    },
+  ])
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("create")
@@ -39,11 +53,11 @@ export default function DocumentQuizPage() {
   const [savedQuizId, setSavedQuizId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null)
-  const { subscription, fetchStatus } = useSubscription()
-  const { data: session, status } = useSession()
 
-  const subscriptionPlan = subscription?.plan || "FREE"
-  const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)
+  const { data: session } = useSession()
+  
+  // Use our standardized hook for all quiz pages
+  const quizPlan = useQuizPlan()
 
   // Load saved quizzes on component mount
   const loadSavedQuizzes = () => {
@@ -63,10 +77,6 @@ export default function DocumentQuizPage() {
   useEffect(() => {
     loadSavedQuizzes()
   }, [])
-
-  useEffect(() => {
-    fetchStatus() // Fetch subscription status on mount
-  }, [fetchStatus])
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile)
