@@ -37,7 +37,9 @@ export function getNextMilestone(currentProgress: number): number | null {
  * @returns A formatted time string
  */
 export const formatTime = (seconds: number): string => {
-  if (isNaN(seconds)) return "0:00"
+  if (seconds === undefined || seconds === null || isNaN(seconds) || seconds < 0) {
+    return "0:00"
+  }
 
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -86,19 +88,35 @@ export function debounce<T extends (...args: any[]) => any>(func: T, delay: numb
 }
 
 /**
- * Create a throttled function
+ * Create an improved throttled function with better timing control
  */
 export function throttle<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
-  let lastCall = 0
+  let lastCall = 0;
+  let timeoutId: NodeJS.Timeout | null = null;
+  let lastArgs: Parameters<T> | null = null;
 
   return (...args: Parameters<T>) => {
-    const now = Date.now()
+    const now = Date.now();
+    lastArgs = args;
 
+    // If it's been longer than the delay since the last call, execute immediately
     if (now - lastCall >= delay) {
-      lastCall = now
-      func(...args)
+      lastCall = now;
+      func(...args);
+    } else if (!timeoutId) {
+      // Otherwise schedule to run at the end of the delay period
+      // Only schedule if there isn't already a pending execution
+      const remaining = delay - (now - lastCall);
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now();
+        timeoutId = null;
+        if (lastArgs) {
+          func(...lastArgs);
+        }
+      }, remaining);
     }
-  }
+    // If there's already a timeout scheduled, we'll just use that one with the latest args
+  };
 }
 
 /**

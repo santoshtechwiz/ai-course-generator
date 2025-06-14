@@ -1,5 +1,7 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
@@ -9,15 +11,13 @@ import {
   Pause,
   Volume2,
   VolumeX,
-  Settings,
   Maximize,
   BookmarkIcon,
   SkipForward,
-  Rewind as RewindIcon,
-  FastForward as FastForwardIcon,
-  ArrowRight,
-  Keyboard,
+  RewindIcon,
+  FastForwardIcon,
   Monitor,
+  PictureInPicture2,
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
@@ -56,6 +56,9 @@ interface PlayerControlsProps {
   nextVideoTitle?: string
   canAccessNextVideo?: boolean
   onIsDragging?: (isDragging: boolean) => void
+  onPictureInPicture?: () => void
+  isPiPSupported?: boolean
+  isPiPActive?: boolean
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -93,12 +96,16 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   nextVideoTitle = "",
   canAccessNextVideo = true,
   onIsDragging,
+  onPictureInPicture,
+  isPiPSupported = false,
+  isPiPActive = false,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [hoveredTime, setHoveredTime] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const progressBarRef = useRef<HTMLDivElement>(null)
+  const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Prevent event bubbling that could interfere with controls
   const handleControlsClick = useCallback((e: React.MouseEvent) => {
@@ -108,90 +115,82 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   // Enhanced seeking functionality with proper state notification
   const handleSeek = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!progressBarRef.current || !duration) return;
-      
-      // Get the bounds and dimensions of the progress bar
-      const rect = progressBarRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const width = rect.width;
-      
-      // Calculate the seek position (0 to 1)
-      const seekPosition = Math.max(0, Math.min(1, x / width));
-      
-      // Convert to seconds and call the seek handler
-      const seekTime = duration * seekPosition;
-      onSeekChange(seekTime);
+      if (!progressBarRef.current || !duration) return
+
+      const rect = progressBarRef.current.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const width = rect.width
+
+      const seekPosition = Math.max(0, Math.min(1, x / width))
+      const seekTime = duration * seekPosition
+      onSeekChange(seekTime)
     },
-    [duration, onSeekChange]
-  );
+    [duration, onSeekChange],
+  )
 
-  // Mouse down handler for drag seeking
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const newIsDragging = true;
-    setIsDragging(newIsDragging);
-    
-    // Notify parent about drag state if callback is provided
-    if (onIsDragging) {
-      onIsDragging(newIsDragging);
-    }
-    
-    // Perform the seek operation
-    handleSeek(e);
-    
-    // Add document-level listeners for dragging
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [handleSeek, onIsDragging]);
+  // Enhanced mouse down handler for drag seeking
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const newIsDragging = true
+      setIsDragging(newIsDragging)
 
-  // Mouse move handler (for dragging)
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !progressBarRef.current || !duration) return;
-    
-    // Calculate position relative to progress bar
-    const rect = progressBarRef.current.getBoundingClientRect();
-    const x = Math.max(rect.left, Math.min(e.clientX, rect.right)) - rect.left;
-    const width = rect.width;
-    
-    // Calculate the seek position (0 to 1)
-    const seekPosition = Math.max(0, Math.min(1, x / width));
-    
-    // Convert to seconds and call the seek handler
-    const seekTime = duration * seekPosition;
-    onSeekChange(seekTime);
-  }, [isDragging, duration, onSeekChange]);
+      if (onIsDragging) {
+        onIsDragging(newIsDragging)
+      }
 
-  // Mouse up handler (end dragging)
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-    
-    // Notify parent about drag state if callback is provided
-    if (onIsDragging) {
-      onIsDragging(false);
-    }
-    
-    // Remove document-level listeners
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  }, [handleMouseMove, onIsDragging]);
+      handleSeek(e)
 
-  // Clean up event listeners on unmount
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [handleMouseMove, handleMouseUp])
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!progressBarRef.current || !duration) return
 
-  // Handle volume slider visibility
+        const rect = progressBarRef.current.getBoundingClientRect()
+        const x = Math.max(rect.left, Math.min(e.clientX, rect.right)) - rect.left
+        const width = rect.width
+
+        const seekPosition = Math.max(0, Math.min(1, x / width))
+        const seekTime = duration * seekPosition
+        onSeekChange(seekTime)
+      }
+
+      const handleMouseUp = () => {
+        setIsDragging(false)
+        if (onIsDragging) {
+          onIsDragging(false)
+        }
+        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mouseup", handleMouseUp)
+      }
+
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+    },
+    [handleSeek, onIsDragging, duration, onSeekChange],
+  )
+
+  // Enhanced volume slider visibility with auto-hide
   const handleVolumeMouseEnter = useCallback(() => {
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current)
+    }
     setShowVolumeSlider(true)
   }, [])
 
   const handleVolumeMouseLeave = useCallback(() => {
-    setShowVolumeSlider(false)
+    volumeTimeoutRef.current = setTimeout(() => {
+      setShowVolumeSlider(false)
+    }, 1000)
   }, [])
 
-  // Handle bookmark addition
+  // Cleanup volume timeout
+  useEffect(() => {
+    return () => {
+      if (volumeTimeoutRef.current) {
+        clearTimeout(volumeTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Enhanced bookmark addition
   const handleAddBookmark = useCallback(() => {
     if (onAddBookmark) {
       const currentTime = duration * played
@@ -199,99 +198,81 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     }
   }, [onAddBookmark, duration, played])
 
-  // Handle Picture-in-Picture
-  const handlePictureInPicture = useCallback(async () => {
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture()
-      } else {
-        const videoElement = document.querySelector("video")
-        if (videoElement && "requestPictureInPicture" in videoElement) {
-          await videoElement.requestPictureInPicture()
-        }
-      }
-    } catch (error) {
-      console.error("Picture-in-Picture error:", error)
-    }
-  }, [])
-
-  // Get volume icon
-  const getVolumeIcon = () => {
-    if (muted || volume === 0) return VolumeX
-    if (volume < 0.5) return Volume2
-    return Volume2
-  }
-
-  const VolumeIcon = getVolumeIcon()
-
-  // Handle skip backward
+  // Enhanced skip handlers
   const handleSkipBackward = useCallback(() => {
     const newTime = Math.max(0, duration * played - 10)
     onSeekChange(newTime)
   }, [duration, played, onSeekChange])
 
-  // Handle skip forward
   const handleSkipForward = useCallback(() => {
     const newTime = Math.min(duration, duration * played + 10)
     onSeekChange(newTime)
   }, [duration, played, onSeekChange])
 
-  // Next video button with tooltip
+  // Memoized volume icon
+  const VolumeIcon = useMemo(() => {
+    if (muted || volume === 0) return VolumeX
+    return Volume2
+  }, [muted, volume])
+
+  // Memoized next video button
   const nextVideoButton = useMemo(() => {
     if (!hasNextVideo) return null
 
-    const buttonContent = (
+    return (
       <Button
         variant="ghost"
         size="icon"
-        className={cn(
-          "h-8 w-8",
-          !canAccessNextVideo && "text-muted-foreground opacity-60",
-        )}
+        className={cn("h-8 w-8 touch-manipulation", !canAccessNextVideo && "text-muted-foreground opacity-60")}
         onClick={onNextVideo}
         disabled={!canAccessNextVideo}
         title={canAccessNextVideo ? `Next: ${nextVideoTitle}` : "Sign in to access more videos"}
+        aria-label={canAccessNextVideo ? `Next video: ${nextVideoTitle}` : "Sign in to access more videos"}
       >
-        <SkipForward className="h-5 w-5" />
+        <SkipForward className="h-4 w-4 sm:h-5 sm:w-5" />
       </Button>
     )
-
-    // If user can't access next video, wrap in tooltip
-    if (!canAccessNextVideo) {
-      return (
-        <div className="relative group">
-          {buttonContent}
-          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/90 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Sign in to access more videos
-          </div>
-        </div>
-      )
-    }
-
-    return buttonContent
   }, [hasNextVideo, canAccessNextVideo, nextVideoTitle, onNextVideo])
+
+  // Memoized playback speed options
+  const playbackSpeeds = useMemo(() => [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2], [])
 
   return (
     <div
       className={cn(
-        "absolute bottom-0 left-0 right-0 z-30 px-4 pt-10 pb-2 bg-gradient-to-t from-black/90 via-black/60 to-transparent",
+        "absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pt-8 sm:pt-10 pb-2 bg-gradient-to-t from-black/90 via-black/60 to-transparent",
         "transition-opacity duration-200",
-        !show && "opacity-0 pointer-events-none"
+        !show && "opacity-0 pointer-events-none",
       )}
       onClick={handleControlsClick}
+      role="toolbar"
+      aria-label="Video player controls"
     >
-      {/* Progress bar with bookmarks */}
-      <div 
-        className="relative flex items-center mb-1 group h-10 cursor-pointer"
+      {/* Enhanced Progress bar with bookmarks */}
+      <div
+        className="relative flex items-center mb-1 group h-8 sm:h-10 cursor-pointer touch-manipulation"
         ref={progressBarRef}
         onClick={handleSeek}
         onMouseDown={handleMouseDown}
+        role="slider"
+        aria-label="Video progress"
+        aria-valuemin={0}
+        aria-valuemax={duration}
+        aria-valuenow={duration * played}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") {
+            e.preventDefault()
+            handleSkipBackward()
+          } else if (e.key === "ArrowRight") {
+            e.preventDefault()
+            handleSkipForward()
+          }
+        }}
       >
-        {/* Taller click area for easier interaction */}
         <div className="absolute inset-0"></div>
-        
-        {/* Actual progress bar that shows loaded/played */}
-        <div className="absolute left-0 right-0 top-4 h-1 bg-white/20 rounded group-hover:h-1.5 transition-all">
+
+        <div className="absolute left-0 right-0 top-3 sm:top-4 h-1 bg-white/20 rounded group-hover:h-1.5 transition-all">
           <div
             className="absolute left-0 top-0 bottom-0 bg-white/40 rounded"
             style={{ width: `${loaded * 100}%` }}
@@ -302,162 +283,170 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           ></div>
         </div>
 
-        {/* Time tooltip when hovering */}
-        {hoveredTime !== null && (
-          <div 
-            className="absolute top-[-25px] px-2 py-1 bg-black/80 text-white text-xs rounded pointer-events-none"
-            style={{ left: `${(hoveredTime / duration) * 100}%`, transform: 'translateX(-50%)' }}
-          >
-            {formatTime(hoveredTime)}
-          </div>
-        )}
-
-        {/* Bookmarks on timeline (if any) */}
-        {bookmarks?.length > 0 && bookmarks.map((time, index) => (
-          <div
-            key={`bookmark-${index}`}
-            className="absolute w-1 h-3 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
-            style={{ left: `${(time / duration) * 100}%`, top: "50%" }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSeekToBookmark?.(time);
-            }}
-            title={`Bookmark at ${formatTime(time)}`}
-          />
-        ))}
+        {/* Enhanced bookmarks on timeline */}
+        {bookmarks?.length > 0 &&
+          bookmarks.map((time, index) => (
+            <button
+              key={`bookmark-${index}`}
+              className="absolute w-2 h-4 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 hover:bg-yellow-300 transition-colors touch-manipulation"
+              style={{ left: `${(time / duration) * 100}%`, top: "50%" }}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSeekToBookmark?.(time)
+              }}
+              title={`Bookmark at ${formatTime(time)}`}
+              aria-label={`Seek to bookmark at ${formatTime(time)}`}
+            />
+          ))}
       </div>
 
-      {/* Controls row */}
+      {/* Enhanced Controls row */}
       <div className="flex items-center justify-between">
         {/* Left controls */}
-        <div className="flex items-center space-x-2">
-          {/* Play/Pause button */}
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          {/* Enhanced Play/Pause button */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white"
+            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
             onClick={onPlayPause}
             title={playing ? "Pause" : "Play"}
+            aria-label={playing ? "Pause video" : "Play video"}
           >
-            {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            {playing ? <Pause className="h-4 w-4 sm:h-5 sm:w-5" /> : <Play className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
 
-          {/* Skip backward */}
+          {/* Enhanced Skip backward */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white"
-            onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
+            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+            onClick={handleSkipBackward}
+            title="Skip backward 10 seconds"
+            aria-label="Skip backward 10 seconds"
           >
-            <RewindIcon className="h-5 w-5" />
+            <RewindIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
-          {/* Skip forward */}
+          {/* Enhanced Skip forward */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white"
-            onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
+            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+            onClick={handleSkipForward}
+            title="Skip forward 10 seconds"
+            aria-label="Skip forward 10 seconds"
           >
-            <FastForwardIcon className="h-5 w-5" />
+            <FastForwardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
           {/* Next video button */}
-          {hasNextVideo && onNextVideo && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-8 w-8 text-white",
-                !canAccessNextVideo && "opacity-60"
-              )}
-              onClick={onNextVideo}
-              disabled={!canAccessNextVideo}
-              title={canAccessNextVideo ? `Next: ${nextVideoTitle}` : "Sign in to access more videos"}
-            >
-              <SkipForward className="h-5 w-5" />
-            </Button>
-          )}
+          {nextVideoButton}
 
-          {/* Volume control */}
+          {/* Enhanced Volume control */}
           <div
             className="relative flex items-center"
-            onMouseEnter={() => setShowVolumeSlider(true)}
-            onMouseLeave={() => setShowVolumeSlider(false)}
+            onMouseEnter={handleVolumeMouseEnter}
+            onMouseLeave={handleVolumeMouseLeave}
           >
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-white"
+              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
               onClick={onMute}
+              title={muted ? "Unmute" : "Mute"}
+              aria-label={muted ? "Unmute audio" : "Mute audio"}
             >
-              {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+              <VolumeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-            
+
             {showVolumeSlider && (
-              <div className="absolute left-full ml-2 bg-black/90 p-2 rounded-lg z-10 w-24">
+              <div className="absolute left-full ml-2 bg-black/90 p-2 rounded-lg z-10 w-20 sm:w-24">
                 <Slider
                   value={[muted ? 0 : volume * 100]}
                   max={100}
                   step={1}
                   onValueChange={([value]) => onVolumeChange(value / 100)}
+                  className="touch-manipulation"
+                  aria-label="Volume control"
                 />
               </div>
             )}
           </div>
 
-          {/* Time display - Updated for better handling of invalid values */}
-          <div className="text-sm text-white hidden md:block">
+          {/* Enhanced Time display */}
+          <div className="text-xs sm:text-sm text-white hidden md:block font-mono">
             {formatTime(isNaN(duration) ? 0 : duration * played)} / {formatTime(isNaN(duration) ? 0 : duration)}
           </div>
         </div>
 
         {/* Right controls */}
-        <div className="flex items-center space-x-2">
-          {/* Autoplay next toggle */}
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          {/* Enhanced Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="hidden md:flex items-center mr-2">
+            <div className="hidden lg:flex items-center mr-2">
               <span className="text-xs text-white mr-2">Autoplay</span>
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
                 size="sm"
+                aria-label="Toggle autoplay next video"
               />
             </div>
           )}
 
-          {/* Bookmark button */}
+          {/* Enhanced Bookmark button */}
           {isAuthenticated && onAddBookmark && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-white"
-              onClick={() => onAddBookmark(duration * played)}
+              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+              onClick={handleAddBookmark}
+              title="Add bookmark"
+              aria-label="Add bookmark at current time"
             >
-              <BookmarkIcon className="h-5 w-5" />
+              <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           )}
 
-          {/* Theater mode */}
+          {/* Enhanced Picture-in-Picture */}
+          {isPiPSupported && onPictureInPicture && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isPiPActive && "bg-white/20")}
+              onClick={onPictureInPicture}
+              title={isPiPActive ? "Exit Picture-in-Picture" : "Enter Picture-in-Picture"}
+              aria-label={isPiPActive ? "Exit Picture-in-Picture mode" : "Enter Picture-in-Picture mode"}
+            >
+              <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+          )}
+
+          {/* Enhanced Theater mode */}
           {onTheaterMode && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-white"
+              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
               onClick={onTheaterMode}
+              title="Toggle theater mode"
+              aria-label="Toggle theater mode"
             >
-              <Monitor className="h-5 w-5" />
+              <Monitor className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           )}
 
-          {/* Fullscreen */}
+          {/* Enhanced Fullscreen */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white"
+            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
             onClick={onToggleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
           >
-            <Maximize className="h-5 w-5" />
+            <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
       </div>
@@ -465,4 +454,4 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   )
 }
 
-export default PlayerControls
+export default React.memo(PlayerControls)

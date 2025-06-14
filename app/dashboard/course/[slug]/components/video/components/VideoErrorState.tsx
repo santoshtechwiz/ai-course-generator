@@ -1,34 +1,55 @@
-import React from "react";
-import { AlertCircle, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+"use client"
+
+import React from "react"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { AlertTriangle, RefreshCw, RotateCcw } from "lucide-react"
 
 interface VideoErrorStateProps {
-  onReload: () => void;
-  onRetry: () => void;
+  onReload: () => void
+  onRetry: () => void
+  error?: Error
 }
 
-const VideoErrorState: React.FC<VideoErrorStateProps> = ({ onReload, onRetry }) => {
+const VideoErrorState: React.FC<VideoErrorStateProps> = ({ onReload, onRetry, error }) => {
   return (
-    <div className="absolute inset-0 flex items-center justify-center w-full h-full bg-black/80 z-10">
-      <div className="bg-background/95 backdrop-blur-sm rounded-lg p-4 md:p-8 shadow-xl max-w-sm md:max-w-md mx-auto text-center border">
-        <AlertCircle className="h-12 w-12 md:h-16 md:w-16 text-destructive mx-auto mb-3 md:mb-4" />
-        <h3 className="text-lg md:text-xl font-semibold mb-2">Video Unavailable</h3>
-        <div className="text-muted-foreground mb-4 md:mb-6 text-xs md:text-sm leading-relaxed">
-          This video is currently unavailable. This may be due to network issues or the video being temporarily unavailable.
+    <motion.div
+      className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div
+        className="flex flex-col items-center space-y-6 max-w-md text-center"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+      >
+        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-600">
+          <AlertTriangle className="h-8 w-8" />
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 justify-center">
-          <Button variant="outline" onClick={onReload} className="flex items-center gap-2 text-xs md:text-sm">
-            <RotateCcw className="h-3 w-3 md:h-4 md:w-4" />
+
+        <div className="space-y-2">
+          <h3 className="text-xl font-semibold text-white">Video Error</h3>
+          <p className="text-gray-300 text-sm sm:text-base">
+            {error?.message || "There was a problem loading the video. Please try again."}
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <Button onClick={onRetry} className="flex-1 flex items-center justify-center gap-2" variant="default">
+            <RotateCcw className="h-4 w-4" />
+            Retry
+          </Button>
+
+          <Button onClick={onReload} className="flex-1 flex items-center justify-center gap-2" variant="outline">
+            <RefreshCw className="h-4 w-4" />
             Reload Page
           </Button>
-          <Button onClick={onRetry} className="flex items-center gap-2 text-xs md:text-sm">
-            <RotateCcw className="h-3 w-3 md:h-4 md:w-4" />
-            Try Again
-          </Button>
         </div>
-      </div>
-    </div>
-  );
-};
+      </motion.div>
+    </motion.div>
+  )
+}
 
-export default VideoErrorState;
+export default React.memo(VideoErrorState)

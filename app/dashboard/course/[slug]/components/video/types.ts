@@ -51,6 +51,8 @@ export interface ProgressState {
   playedSeconds: number
 }
 
+export type CertificateState = "idle" | "downloading" | "success" | "error"
+
 export interface VideoPlayerProps {
   videoId: string
   onEnded?: () => void
@@ -73,8 +75,9 @@ export interface VideoPlayerProps {
   onChapterComplete?: (chapterId: string) => void
   onNextVideo?: () => void
   nextVideoTitle?: string
-  chapterTitle?: string;
-  courseName?: string;
+  nextVideoId?: string
+  chapterTitle?: string
+  courseName?: string
   courseId?: string | number
   chapterId?: string
   onPrevVideo?: () => void
@@ -119,7 +122,10 @@ export interface PlayerControlsProps {
   canAccessNextVideo?: boolean
   onPrevVideo?: () => void
   prevVideoTitle?: string
-  onIsDragging?: (isDragging: boolean) => void // Add this property
+  onIsDragging?: (isDragging: boolean) => void
+  onPictureInPicture?: () => void
+  isPiPSupported?: boolean
+  isPiPActive?: boolean
 }
 
 export interface ProgressBarProps {
@@ -270,21 +276,26 @@ export interface UseVideoPlayerReturn {
 
 // Add types for our new overlay components
 export interface ChapterStartOverlayProps {
-  visible: boolean;
-  chapterTitle?: string;
-  courseTitle?: string;
-  onComplete?: () => void;
-  duration?: number;
+  visible: boolean
+  chapterTitle?: string
+  courseTitle?: string
+  onComplete?: () => void
+  duration?: number
+  videoId?: string
 }
 
 export interface ChapterEndOverlayProps {
-  visible: boolean;
-  chapterTitle?: string;
-  nextChapterTitle?: string;
-  hasNextChapter: boolean;
-  onNextChapter: () => void;
-  onReplay: () => void;
-  onClose?: () => void;
-  autoAdvanceDelay?: number;
-  autoAdvance?: boolean;
+  visible: boolean
+  chapterTitle?: string
+  nextChapterTitle?: string
+  hasNextChapter: boolean
+  onNextChapter: () => void
+  onReplay: () => void
+  onClose?: () => void
+  autoAdvanceDelay?: number
+  autoAdvance?: boolean
+  onCertificateDownload?: () => void
+  certificateState?: CertificateState
+  isFinalChapter?: boolean
+  courseTitle?: string
 }
