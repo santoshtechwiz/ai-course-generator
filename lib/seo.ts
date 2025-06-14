@@ -87,7 +87,19 @@ export function generateMetadata(options: MetadataOptions): Metadata {
   
   // Override OpenGraph and Twitter card data if provided
   if (ogImage) {
-    const ogImageUrl = new URL(ogImage.url.startsWith('http') ? ogImage.url : ogImage.url, baseUrl).toString();
+    // Handle both string and object formats for ogImage
+    let ogImageUrl: string;
+    
+    if (typeof ogImage === 'string') {
+      // If ogImage is a string, use it directly
+      ogImageUrl = ogImage.startsWith('http') ? ogImage : new URL(ogImage, baseUrl).toString();
+    } else if (ogImage.url) {
+      // If ogImage is an object with url property
+      ogImageUrl = ogImage.url.startsWith('http') ? ogImage.url : new URL(ogImage.url, baseUrl).toString();
+    } else {
+      // Fallback to a default image
+      ogImageUrl = new URL('/images/og-image.jpg', baseUrl).toString();
+    }
     
     metadata.openGraph = {
       ...defaultMetadata.openGraph,
@@ -96,9 +108,9 @@ export function generateMetadata(options: MetadataOptions): Metadata {
       ...(ogType && { type: ogType }),
       images: [{
         url: ogImageUrl,
-        alt: ogImage.alt || (title || 'Page image'),
-        width: ogImage.width || 1200,
-        height: ogImage.height || 630,
+        alt: typeof ogImage === 'object' ? ogImage.alt || (title || 'Page image') : (title || 'Page image'),
+        width: typeof ogImage === 'object' ? ogImage.width || 1200 : 1200,
+        height: typeof ogImage === 'object' ? ogImage.height || 630 : 630,
       }],
     };
     
@@ -379,6 +391,9 @@ export function generateCourseMetadata(course: any, slug: string): Metadata {
     ? generateMetaDescription(course.description, 160)
     : `Master ${course.title} with our interactive coding course. Learn through AI-generated practice questions, hands-on exercises, and expert guidance. Perfect for ${course.difficulty || "all"} level developers.`;
 
+  // Safely handle course image URL
+  let ogImage = course.image || `/api/og?title=${encodeURIComponent(course.title || '')}&description=${encodeURIComponent("Interactive Programming Course")}`;
+  
   return generateMetadata({
     title: `${course.title} Programming Course | Learn with AI`,
     description: enhancedDescription,
@@ -396,7 +411,7 @@ export function generateCourseMetadata(course: any, slug: string): Metadata {
       ...contentKeywords,
       ...courseKeywords.filter((k) => k.length > 3).map((k) => `${k} programming`),
     ],
-    ogImage: course.image || `/api/og?title=${encodeURIComponent(course.title)}&description=${encodeURIComponent("Interactive Programming Course")}`,
+    ogImage,
     ogType: "article",
   });
 }
