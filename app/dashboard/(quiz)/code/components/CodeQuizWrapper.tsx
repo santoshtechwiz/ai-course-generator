@@ -150,43 +150,21 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     setIsSubmitting(true)
 
     try {
-      const questionResults = questions.map((question, index) => {
-        const id = question.id?.toString() || index.toString()
-        const userAnswer = answers[id]?.selectedOptionId || ""
-        const isCorrect = userAnswer === question.correctOptionId
-
-        return {
-          questionId: id,
-          question: question.question || question.text,
-          correctAnswer: question.correctOptionId || "",
-          userAnswer,
-          isCorrect,
-          type: "code",
-        }
-      })
-
-      const correctCount = questionResults.filter((q) => q.isCorrect).length
-      const percentage = Math.round((correctCount / questions.length) * 100)
-
       const results = {
         quizId,
         slug,
-        title: quizTitle || title,
+        title: quizTitle,
         quizType: "code",
-        maxScore: questions.length,
-        userScore: correctCount,
-        score: correctCount,
-        percentage,
+        questions,
+        answers: Object.values(answers),
         completedAt: new Date().toISOString(),
-        questionResults,
-        questions: questionResults,
       }
 
       dispatch(setQuizResults(results))
       dispatch(setQuizCompleted())
 
       await dispatch(submitQuiz()).unwrap()
-      router.push(`/dashboard/code/${slug}/results`) // Ensure navigation to results page
+      router.push(`/dashboard/code/${slug}/results`)
     } catch (err) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
@@ -196,8 +174,8 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
 
   const handleRetakeQuiz = () => {
-    dispatch(clearQuizState()) // Use clearQuizState to reset the state completely
-    router.replace(`/dashboard/code/${slug}`) // Redirect to the quiz start page
+    dispatch(clearQuizState())
+    router.replace(`/dashboard/code/${slug}`)
   }
 
   const canGoNext = currentQuestionIndex < questions.length - 1
@@ -276,44 +254,22 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.4 }}
           >
-            <Card className="border-2 border-green-500/30 bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg rounded-2xl">
-              <CardContent className="p-6 text-center">
-                <motion.p
-                  className="mb-4 font-medium text-green-800 dark:text-green-200"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  {allQuestionsAnswered
-                    ? "All questions answered. Ready to submit?"
-                    : `${answeredQuestions} questions answered. Submit quiz?`}
-                </motion.p>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <Button
-                    onClick={handleSubmitQuiz}
-                    size="lg"
-                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-2xl px-8 gap-2 shadow-lg"
-                    disabled={isSubmitting}
-                  >
-                    <Flag className="w-4 h-4" />
-                    {isSubmitting ? "Submitting..." : "Submit Quiz and View Results"}
-                  </Button>
-                  <Button
-                    onClick={handleRetakeQuiz}
-                    size="lg"
-                    variant="outline"
-                    className="mt-4 text-green-700 border-green-500 hover:bg-green-100 rounded-2xl px-8 gap-2 shadow-lg"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Retake Quiz
-                  </Button>
-                </motion.div>
-              </CardContent>
-            </Card>
+            <Button
+              onClick={handleSubmitQuiz}
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl px-8 gap-2 shadow-lg"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Quiz and View Results"}
+            </Button>
+            <Button
+              onClick={handleRetakeQuiz}
+              size="lg"
+              variant="outline"
+              className="mt-4 text-blue-700 border-blue-500 hover:bg-blue-100 rounded-2xl px-8 gap-2 shadow-lg"
+            >
+              Retake Quiz
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>
