@@ -822,6 +822,10 @@ const quizSlice = createSlice({
       state.isSubmitting = false
       state.isQuizComplete = false
     },
+
+    clearQuizState: (state) => {
+      Object.assign(state, initialState); // Reset state to initial values
+    },
   },
 
   extraReducers: (builder) => {
@@ -1027,6 +1031,7 @@ export const {
   resetState,
   hydrateStateFromStorage,
   resetSubmissionState, // Add the missing export here
+  clearQuizState,
 } = quizSlice.actions
 
 // Selectors - keeping all existing ones for backward compatibility

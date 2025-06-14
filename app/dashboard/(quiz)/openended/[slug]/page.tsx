@@ -44,5 +44,5 @@ export default function OpenEndedQuizPage({
     <QuizPlayLayout>
       <OpenEndedQuizWrapper slug={slug} />
     </QuizPlayLayout>
-  )
+  );
 }

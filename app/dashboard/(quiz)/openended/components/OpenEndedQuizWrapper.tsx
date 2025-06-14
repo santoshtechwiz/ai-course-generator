@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
 import {
@@ -21,6 +21,9 @@ import {
   fetchQuiz,
   resetSubmissionState,
   submitQuiz,
+  selectQuizId,
+  selectQuizType,
+  clearQuizState,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { Button } from "@/components/ui/button"
@@ -28,7 +31,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
 import OpenEndedQuiz from "./OpenEndedQuiz"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
-import type { OpenEndedQuestion } from "@/types/quiz"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
 import { motion, AnimatePresence } from "framer-motion"
@@ -36,50 +38,43 @@ import { NoResults } from "@/components/ui/no-results"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
-  quizData?: {
-    id: string | number
-    title: string
-    questions: OpenEndedQuestion[]
-    userId?: string
-  }
+  title: string
 }
 
-export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWrapperProps) {
+export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const reset = searchParams.get("reset") === "true"
   const dispatch = useDispatch<AppDispatch>()
   const { isAuthenticated } = useAuth()
 
-  // Track submission state locally to prevent multiple submissions
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [hasSubmitted, setHasSubmitted] = useState(false)
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const maxSubmitAttemptsRef = useRef<number>(0)
 
   // Redux state
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
-  const results = useSelector(selectQuizResults)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
+  const quizId = useSelector(selectQuizId)
+  const quizType = useSelector(selectQuizType)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (reset) dispatch(resetQuiz())
-
     const init = async () => {
       setLoading(true)
+      dispatch(resetQuiz())
 
-      if (quizData) {
+      try {
+        const result = await dispatch(fetchQuiz({ slug, quizType: "openended" })).unwrap()
+        if (!result) throw new Error("No data received")
         dispatch(
           hydrateQuiz({
             slug,
-            quizData,
+            quizType: "openended",
+            quizData: result,
             currentState: {
               currentQuestionIndex: 0,
               answers: {},
@@ -88,65 +83,34 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
             },
           }),
         )
+        setError(null)
+      } catch (err) {
+        setError("Failed to load quiz. Please try again.")
+      } finally {
         setLoading(false)
-      } else {
-        try {
-          const result = await dispatch(fetchQuiz({ slug, type: "openended" })).unwrap()
-          if (!result) throw new Error("No data received")
-          setError(null)
-        } catch (err) {
-          setError("Failed to load quiz. Please try again.")
-        } finally {
-          setLoading(false)
-        }
       }
     }
 
     init()
 
-    // Clear any previous submission state on component mount
     dispatch(resetSubmissionState())
 
-    // Cleanup
     return () => {
       if (submissionTimeoutRef.current) {
         clearTimeout(submissionTimeoutRef.current)
       }
     }
-  }, [slug, quizData, reset, dispatch])
+  }, [slug, dispatch])
 
-  // Add safety timeout to prevent UI freeze
   useEffect(() => {
-    // If we've been submitting for more than 10 seconds, something is wrong
-    if (isSubmitting) {
-      const safetyTimeout = setTimeout(() => {
-        // Force navigation to results
-        const safeSlug = typeof slug === "string" ? slug : String(slug)
-        router.push(`/dashboard/openended/${safeSlug}/results`)
-      }, 10000) // 10 seconds timeout
+    if (!isCompleted || isSubmitting || !isAuthenticated) return
 
-      return () => clearTimeout(safetyTimeout)
-    }
-  }, [isSubmitting, router, slug])
+    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
 
-  // Handle quiz completion
-  useEffect(() => {
-    if (!isCompleted || hasSubmitted || !isAuthenticated) return
-
-    // Show completion toast with celebration
-    toast.success("🎉 Quiz completed! Calculating your results...", {
-      duration: 2000,
-    })
-
-    // Navigate to results page with safety timeout
-    const safeSlug = typeof slug === "string" ? slug : String(slug)
-    setHasSubmitted(true)
-
-    // Add a small delay for better UX
     submissionTimeoutRef.current = setTimeout(() => {
-      router.push(`/dashboard/openended/${safeSlug}/results`)
+      router.push(`/dashboard/openended/${slug}/results`)
     }, 1500)
-  }, [isCompleted, router, slug, hasSubmitted, isAuthenticated])
+  }, [isCompleted, isSubmitting, isAuthenticated, router, slug])
 
   const currentQuestion = useMemo(() => {
     if (!questions.length || currentQuestionIndex >= questions.length) return null
@@ -169,7 +133,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         answer: {
           questionId,
           text: answer,
-          userAnswer: answer, // Add for consistency
+          userAnswer: answer,
           type: "openended",
           similarity,
           isCorrect,
@@ -192,35 +156,12 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
     }
   }
 
-  // Complete the quiz - improved with better error handling and safety checks
-  const handleSubmitQuiz = () => {
-    if (hasSubmitted || isSubmitting) return
+  const handleSubmitQuiz = async () => {
+    if (isSubmitting) return
 
     setIsSubmitting(true)
 
     try {
-      // Store answers in localStorage as backup
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(
-            "quiz_answers_backup",
-            JSON.stringify({
-              slug,
-              answers,
-              timestamp: Date.now(),
-              quizType: "openended",
-            }),
-          )
-        } catch (e) {
-          console.error("Failed to backup answers:", e)
-        }
-      }
-
-      const answeredCount = Object.keys(answers).length
-      const totalQuestions = questions.length
-
-      console.log(`Submitting quiz with ${answeredCount} out of ${totalQuestions} questions answered`)
-
       const questionResults = questions.map((question, index) => {
         const id = question.id?.toString() || index.toString()
         const userAnswer = answers[id]?.text || answers[id]?.userAnswer || ""
@@ -243,9 +184,9 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
       const percentage = Math.round((correctCount / questions.length) * 100)
 
       const results = {
-        quizId: slug,
-        slug: slug,
-        title: quizTitle || "Open Ended Quiz",
+        quizId,
+        slug,
+        title: quizTitle || title,
         quizType: "openended",
         maxScore: questions.length,
         userScore: correctCount,
@@ -256,68 +197,27 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         questions: questionResults,
       }
 
-      // Set results first
       dispatch(setQuizResults(results))
-      // Mark quiz as completed
       dispatch(setQuizCompleted())
 
-      // Then submit the quiz
-      dispatch(submitQuiz())
-        .unwrap()
-        .then(() => {
-          setHasSubmitted(true)
-          const safeSlug = typeof slug === "string" ? slug : String(slug)
-
-          // Navigate to results page after a short delay
-          submissionTimeoutRef.current = setTimeout(() => {
-            router.push(`/dashboard/openended/${safeSlug}/results`)
-          }, 1000)
-        })
-        .catch((err) => {
-          console.error("Quiz submission error:", err)
-          maxSubmitAttemptsRef.current += 1
-
-          // If we've tried 3 times or more, just navigate to results
-          if (maxSubmitAttemptsRef.current >= 3) {
-            toast.error("Having trouble submitting quiz. Redirecting to results page.")
-            const safeSlug = typeof slug === "string" ? slug : String(slug)
-            setTimeout(() => {
-              router.push(`/dashboard/openended/${safeSlug}/results`)
-            }, 1000)
-            return
-          }
-
-          // Otherwise show error and reset submission state
-          setIsSubmitting(false)
-          toast.error("Failed to submit quiz. Please try again.")
-        })
+      await dispatch(submitQuiz()).unwrap()
+      router.push(`/dashboard/openended/${slug}/results`)
     } catch (err) {
-      console.error("Error in quiz submission flow:", err)
-      setIsSubmitting(false)
+      console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const handleRetake = () => {
-    dispatch(resetQuiz())
-    dispatch(
-      hydrateQuiz({
-        slug,
-        quizData: quizData || { questions, title: quizTitle },
-        currentState: {
-          currentQuestionIndex: 0,
-          answers: {},
-          isCompleted: false,
-          showResults: false,
-        },
-      }),
-    )
+  const handleRetakeQuiz = () => {
+    dispatch(clearQuizState()) // Use clearQuizState to reset the state completely
+    router.replace(`/dashboard/openended/${slug}`) // Redirect to the quiz start page
   }
 
   const canGoNext = currentQuestionIndex < questions.length - 1
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
-  const actualSubmittingState = isSubmitting || quizStatus === "submitting"
 
   if (loading || quizStatus === "loading") {
     return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
@@ -326,12 +226,12 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
   if (error || quizStatus === "failed") {
     return (
       <NoResults
-        variant="error" 
+        variant="error"
         title="Error Loading Quiz"
         description={error || "Unable to load quiz."}
         action={{
           label: "Back to Quizzes",
-          onClick: () => router.push("/dashboard/quizzes")
+          onClick: () => router.push("/dashboard/quizzes"),
         }}
       />
     )
@@ -345,12 +245,12 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
         description="Could not load quiz questions."
         action={{
           label: "Try Again",
-          onClick: () => window.location.reload()
+          onClick: () => window.location.reload(),
         }}
         secondaryAction={{
-          label: "Back to Quizzes", 
+          label: "Back to Quizzes",
           onClick: () => router.push("/dashboard/quizzes"),
-          variant: "outline"
+          variant: "outline",
         }}
       />
     )
@@ -363,20 +263,6 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
 
   const answeredQuestions = Object.keys(answers).length
   const allQuestionsAnswered = answeredQuestions === questions.length
-
-  // Submitting state
-  if (actualSubmittingState) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.5 }}
-      >
-        <QuizLoader full message="🎉 Quiz Completed!" subMessage="Calculating your results..." />
-      </motion.div>
-    )
-  }
 
   return (
     <motion.div
@@ -400,7 +286,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
       />
 
       <AnimatePresence>
-        {answeredQuestions >= 0 && (
+        {answeredQuestions > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -417,9 +303,7 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
                 >
                   {allQuestionsAnswered
                     ? "All questions answered. Ready to submit?"
-                    : answeredQuestions > 0
-                      ? `${answeredQuestions} questions answered. Submit quiz?`
-                      : "Submit quiz? (No questions answered yet)"}
+                    : `${answeredQuestions} questions answered. Submit quiz?`}
                 </motion.p>
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -430,10 +314,19 @@ export default function OpenEndedQuizWrapper({ slug, quizData }: OpenEndedQuizWr
                     onClick={handleSubmitQuiz}
                     size="lg"
                     className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-2xl px-8 gap-2 shadow-lg"
-                    disabled={actualSubmittingState || hasSubmitted}
+                    disabled={isSubmitting}
                   >
                     <Flag className="w-4 h-4" />
-                    {actualSubmittingState ? "Submitting..." : "Submit Quiz and View Results"}
+                    {isSubmitting ? "Submitting..." : "Submit Quiz and View Results"}
+                  </Button>
+                  <Button
+                    onClick={handleRetakeQuiz}
+                    size="lg"
+                    variant="outline"
+                    className="mt-4 text-green-700 border-green-500 hover:bg-green-100 rounded-2xl px-8 gap-2 shadow-lg"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Retake Quiz
                   </Button>
                 </motion.div>
               </CardContent>

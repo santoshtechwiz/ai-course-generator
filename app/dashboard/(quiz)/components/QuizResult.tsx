@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
-import { resetQuiz } from "@/store/slices/quiz-slice";
+import { clearQuizState } from "@/store/slices/quiz-slice";
 import { AppDispatch } from "@/store";
 import BlankQuizResults from "../blanks/components/BlankQuizResults";
 import McqQuizResult from "../mcq/components/McqQuizResult";
@@ -36,12 +36,8 @@ export default function QuizResult({
 
   // Handle retake action
   const handleRetake = () => {
-    if (onRetake) {
-      onRetake();
-    } else {
-      dispatch(resetQuiz());
-      router.push(`/dashboard/${quizType}/${slug}`);
-    }
+    dispatch(clearQuizState()); // Use clearQuizState to reset the state completely
+    router.push(`/dashboard/${quizType}/${slug}`); // Redirect to the quiz start page
   };
   
   // Show error UI if no result is provided
