@@ -12,6 +12,7 @@ import FlashCardResults from "../flashcard/components/FlashCardQuizResults";
 
 // Import the quiz type definition
 import type { QuizType } from "@/types/quiz";
+import CodeQuizResult from "../code/components/CodeQuizResult";
 
 // QuizResult props with appropriate typing
 interface QuizResultProps {
@@ -115,11 +116,11 @@ function renderQuizResultComponent(
       );
     
     case "code":
-      return <McqQuizResult result={result} />; // Fallback to MCQ for now
+      return <CodeQuizResult  result={result} slug={slug} onRetake={onRetake} />;
     case "flashcard":
-      return <FlashCardResults result={result} />;
+      return <FlashCardResults result={result} slug={slug} onRetake={onRetake} />;
     case "openended":
-      return <OpenEndedQuizResults result={result} slug={slug} onRetake={onRetake} />;
+      return <OpenEndedQuizResults result={result} slug={slug} onRetake={onRetake} isAuthenticated={false} />;
       case "blanks":
       return (
         <BlankQuizResults
