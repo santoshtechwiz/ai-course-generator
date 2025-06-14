@@ -52,20 +52,23 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
- 
+  const session = await getServerAuthSession()
+
   return (
     <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
       <body className={`${inter.className} font-sans antialiased min-h-screen flex flex-col`}>
-           <Providers>
-          
+        <AuthProvider session={session}>
+          <Providers>
+            <AuthConsumer>
               {children}
-          
+            </AuthConsumer>
           </Providers>
           <Footer />
-      
+        </AuthProvider>
+
         <JsonLD
           type="website"
           data={{
