@@ -3,14 +3,13 @@
 import type React from "react"
 import { useState, useEffect, useCallback, memo, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { CheckCircle, ArrowRight, ArrowLeft, Flag, Lightbulb } from "lucide-react"
+import { Lightbulb } from "lucide-react"
 import type { BlankQuestion } from "./types"
 import { getBestSimilarityScore, isAnswerCloseEnough, getHint } from "@/lib/utils/text-similarity"
+import { QuizContainer } from "@/components/quiz/QuizContainer"
+import { QuizFooter } from "@/components/quiz/QuizFooter"
 
 // Define props interface for better type safety
 interface BlanksQuizProps {
@@ -22,10 +21,12 @@ interface BlanksQuizProps {
   onNext?: () => void
   onPrevious?: () => void
   onSubmit?: () => void
+  onRetake?: () => void
   isSubmitting?: boolean
   canGoNext?: boolean
   canGoPrevious?: boolean
   isLastQuestion?: boolean
+  showRetake?: boolean
 }
 
 const BlanksQuiz = memo(function BlanksQuiz({
@@ -37,10 +38,12 @@ const BlanksQuiz = memo(function BlanksQuiz({
   onNext,
   onPrevious,
   onSubmit,
+  onRetake,
   canGoNext = false,
   canGoPrevious = false,
   isLastQuestion = false,
   isSubmitting = false,
+  showRetake = false,
 }: BlanksQuizProps) {
   // Better typing for refs
   const inputRef = useRef<HTMLInputElement>(null)
@@ -131,31 +134,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
     }
   }, [existingAnswer])
 
-  const handleNext = useCallback(() => {
-    if (!answer.trim()) {
-      setShowValidation(true)
-      return
-    }
-    onNext?.()
-  }, [answer, onNext])
 
-  const handleSubmit = useCallback(() => {
-    if (!answer.trim()) {
-      setShowValidation(true)
-      return
-    }
-    onSubmit?.()
-  }, [answer, onSubmit])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault()
-        isLastQuestion ? handleSubmit() : handleNext()
-      }
-    },
-    [handleNext, handleSubmit, isLastQuestion],
-  )
 
   // Improve hint logic for better user experience
   const toggleHint = useCallback(() => {
@@ -183,192 +162,133 @@ const BlanksQuiz = memo(function BlanksQuiz({
     if (!question.answer) return null
     return getHint(question.answer, hintState.level)
   }, [question.answer, hintState.level])
-
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        if (isLastQuestion && onSubmit) {
+          onSubmit()
+        } else if (onNext && isNextButtonEnabled) {
+          onNext()
+        }
+      }
+    },
+    [isLastQuestion, onSubmit, onNext, isNextButtonEnabled],
+  )
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3 }}
-      className="w-full max-w-4xl mx-auto"
+    <QuizContainer
+      questionNumber={questionNumber}
+      totalQuestions={totalQuestions}
+      progressPercentage={progressPercentage}
+      quizType="blanks"
+      animationKey={question.id}
     >
-      <Card className="overflow-hidden border-2 border-border/50 shadow-lg">
-        <CardHeader className="bg-primary/5 border-b border-border/40 pb-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <span className="bg-primary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg">
-                {questionNumber}
-              </span>
-              <div>
-                <Label className="text-lg font-semibold text-foreground">
-                  Question {questionNumber} of {totalQuestions}
-                </Label>
-                <p className="text-sm text-muted-foreground mt-1">Fill in the blank with the appropriate term</p>
-              </div>
-            </div>
-            {isAnswered && (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300 }}>
-                <CheckCircle className="h-6 w-6 text-success" />
-              </motion.div>
+      <div className="mb-8">
+        <div className="flex flex-wrap items-center gap-2 text-xl leading-relaxed">
+          <span>{beforeBlank}</span>
+          <div className="relative min-w-[200px] max-w-full">
+            <Input
+              ref={inputRef}
+              className={`px-4 py-3 text-lg border-2 transition-all duration-200 ${
+                isFocused
+                  ? "border-primary shadow-md ring-2 ring-primary/20"
+                  : isAnswered
+                    ? "border-success/50 bg-success/5 shadow-sm shadow-success/10"
+                    : showValidation
+                      ? "border-destructive/50 bg-destructive/5 shadow-sm shadow-destructive/10"
+                      : isSpamming
+                        ? "border-yellow-500 bg-yellow-50 shadow-sm shadow-yellow-500/10"
+                        : "border-muted-foreground/50"
+              }`}
+              placeholder="Type your answer..."
+              value={answer}
+              onChange={handleInputChange}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onKeyDown={handleKeyDown}
+              aria-label="Fill in the blank answer"
+              aria-invalid={showValidation || isSpamming}
+              aria-required="true"
+              disabled={isSubmitting}
+            />
+            {showValidation && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="text-sm text-destructive mt-1 absolute font-medium"
+              >
+                Please enter an answer before continuing
+              </motion.p>
+            )}
+            {isSpamming && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="text-sm text-yellow-600 mt-1 absolute font-medium"
+              >
+                Your answer is too similar to the question. Please rephrase it.
+              </motion.p>
             )}
           </div>
+          <span>{afterBlank}</span>
+        </div>
+      </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Progress</span>
-              <span>{Math.round(progressPercentage)}% Complete</span>
-            </div>
-            <Progress value={progressPercentage} className="h-2" />
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-8">
-          <div className="mb-8">
-            <div className="flex flex-wrap items-center gap-2 text-xl leading-relaxed">
-              <span>{beforeBlank}</span>
-              <div className="relative min-w-[200px] max-w-full">
-                <Input
-                  ref={inputRef}
-                  className={`px-4 py-3 text-lg border-2 transition-all duration-200 ${
-                    isFocused
-                      ? "border-primary shadow-md ring-2 ring-primary/20"
-                      : isAnswered
-                        ? "border-success/50 bg-success/5 shadow-sm shadow-success/10"
-                        : showValidation
-                          ? "border-destructive/50 bg-destructive/5 shadow-sm shadow-destructive/10"
-                          : isSpamming
-                            ? "border-yellow-500 bg-yellow-50 shadow-sm shadow-yellow-500/10"
-                            : "border-muted-foreground/50"
-                  }`}
-                  placeholder="Type your answer..."
-                  value={answer}
-                  onChange={handleInputChange}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  onKeyDown={handleKeyDown}
-                  aria-label="Fill in the blank answer"
-                  aria-invalid={showValidation || isSpamming}
-                  aria-required="true"
-                />
-                {showValidation && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    className="text-sm text-destructive mt-1 absolute font-medium"
-                  >
-                    Please enter an answer before continuing
-                  </motion.p>
-                )}
-                {isSpamming && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    className="text-sm text-yellow-600 mt-1 absolute font-medium"
-                  >
-                    Your answer is too similar to the question. Please rephrase it.
-                  </motion.p>
-                )}
-              </div>
-              <span>{afterBlank}</span>
-            </div>
+      {question.answer && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={toggleHint}
+              className={`text-sm flex items-center gap-2 ${
+                showHint ? "border-primary text-primary" : "text-muted-foreground"
+              }`}
+              size="sm"
+              aria-expanded={showHint}
+              aria-controls="hint-panel"
+              disabled={isSubmitting}
+            >
+              <Lightbulb className={`w-4 h-4 ${showHint ? "text-amber-500" : ""}`} />
+              {showHint ? "Hide Hint" : hintState.views > 0 ? `Hint (${hintState.level + 1}/3)` : "Need a Hint?"}
+            </Button>
           </div>
 
-          {question.answer && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={toggleHint}
-                  className={`text-sm flex items-center gap-2 ${
-                    showHint ? "border-primary text-primary" : "text-muted-foreground"
-                  }`}
-                  size="sm"
-                  aria-expanded={showHint}
-                  aria-controls="hint-panel"
-                >
-                  <Lightbulb className={`w-4 h-4 ${showHint ? "text-amber-500" : ""}`} />
-                  {showHint ? "Hide Hint" : hintState.views > 0 ? `Hint (${hintState.level + 1}/3)` : "Need a Hint?"}
-                </Button>
-              </div>
+          <AnimatePresence mode="wait">
+            {showHint && (
+              <motion.div
+                id="hint-panel"
+                key={`hint-level-${hintState.level}`}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="mt-3 text-sm p-4 rounded-md border border-blue-200 bg-blue-50 text-blue-800 shadow-sm"
+              >
+                <div className="flex items-start gap-2">
+                  <Lightbulb className="w-4 h-4 mt-0.5 text-amber-500" />
+                  <p>{getHintContent()}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
-              <AnimatePresence mode="wait">
-                {showHint && (
-                  <motion.div
-                    id="hint-panel"
-                    key={`hint-level-${hintState.level}`}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    className="mt-3 text-sm p-4 rounded-md border border-blue-200 bg-blue-50 text-blue-800 shadow-sm"
-                  >
-                    <div className="flex items-start gap-2">
-                      <Lightbulb className="w-4 h-4 mt-0.5 text-amber-500" />
-                      <p>{getHintContent()}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-6 border-t border-border/40">
-            <div className="flex gap-3">
-              {canGoPrevious && (
-                <motion.div whileHover={{ x: -2 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    variant="outline"
-                    onClick={onPrevious}
-                    className="flex items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Previous
-                  </Button>
-                </motion.div>
-              )}
-            </div>
-            <div className="flex gap-3">
-              {!isLastQuestion ? (
-                <motion.div whileHover={{ x: 2 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    onClick={handleNext}
-                    disabled={!isNextButtonEnabled}
-                    className={`flex items-center gap-2 min-w-[120px] transition-all duration-300 ${
-                      isNextButtonEnabled
-                        ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20"
-                        : "opacity-70"
-                    }`}
-                    size="lg"
-                  >
-                    Next
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!isNextButtonEnabled}
-                    className={`flex items-center gap-2 min-w-[140px] transition-all duration-300 ${
-                      isNextButtonEnabled
-                        ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20"
-                        : "opacity-70"
-                    }`}
-                    size="lg"
-                  >
-                    <Flag className="w-4 h-4" />
-                    Finish Quiz
-                  </Button>
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+      <QuizFooter
+        onNext={onNext}
+        onPrevious={onPrevious}
+        onSubmit={onSubmit}
+        onRetake={onRetake}
+        canGoNext={isNextButtonEnabled}
+        canGoPrevious={canGoPrevious}
+        isLastQuestion={isLastQuestion}
+        isSubmitting={isSubmitting}
+        showRetake={showRetake}
+      />
+    </QuizContainer>
   )
 })
 

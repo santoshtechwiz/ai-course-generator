@@ -1,15 +1,13 @@
 "use client"
 
-import { use } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import FlashCardsPageClient from "../components/FlashCardsPageClient"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+
 import { getQuizSlug } from "../../components/utils"
-import FlashCardsWrapper from "../components/FlashCardsWrapper"
+import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
+
 
 export default function FlashCardPage({
   params,
@@ -37,7 +35,7 @@ export default function FlashCardPage({
 
   return (
     <QuizPlayLayout>
-      <FlashCardsWrapper slug={slug} userId={""} />
+      <FlashcardQuizWrapper slug={slug}  />
     </QuizPlayLayout>
   )
 }
