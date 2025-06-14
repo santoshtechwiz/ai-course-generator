@@ -75,36 +75,61 @@ const initialState: QuizState = {
   ...loadPersistedState(),
 }
 
+// Add this safe type checking utility at the top of the file
+const safeString = (value: any): string => {
+  return typeof value === 'string' ? value : '';
+};
+
 // Modified fetchQuiz thunk to use apiClient
 export const fetchQuiz = createAsyncThunk(
-  "quiz/fetchQuiz",
-  async ({ slug, data, type }: { slug: string; data?: any; type: QuizType }, { rejectWithValue }) => {
+  "quiz/fetch",
+  async (payload: any, { rejectWithValue }) => {
     try {
-      const questions = data?.questions?.map((q: any) => ({ ...q, type })) || []
-      if (data) {
+      // Handle case where payload or slug is null/undefined
+      if (!payload) {
+        return rejectWithValue({
+          error: "Invalid quiz request: No payload provided"
+        });
+      }
+
+      const slug = safeString(payload.slug);
+      const type = safeString(payload.type || 'mcq');
+
+      // If we already have the data, use it directly
+      if (payload.data && Array.isArray(payload.data.questions)) {
         return {
-          slug,
-          id: slug,
-          type: data.type || type,
-          title: data.title || "Untitled Quiz",
-          questions,
-        }
+          ...payload.data,
+          slug: slug,
+          type: type
+        };
       }
 
-      // Using apiClient instead of direct fetch
-      const quizData = await apiClient.get(`/api/quizzes/${type}/${slug}`)
-
-      return {
-        slug: quizData.slug || slug,
-        id: quizData.id || slug,
-        type: quizData.type || type,
-        title: quizData.title || "Untitled Quiz",
-        questions: quizData.questions || [],
+      // Otherwise fetch from API
+      if (!slug) {
+        return rejectWithValue({
+          error: "Invalid quiz request: Missing slug"
+        });
       }
+
+      const response = await fetch(`/api/quizzes/${type}/${slug}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        return rejectWithValue({
+          error: `Error loading quiz: ${response.status} ${response.statusText}`,
+          details: errorText
+        });
+      }
+
+      const data = await response.json();
+      return data;
     } catch (error: any) {
-      return rejectWithValue(error.message)
+      console.error("Quiz fetch error:", error);
+      return rejectWithValue({
+        error: error.message || "Failed to load quiz"
+      });
     }
-  },
+  }
 )
 
 // Enhanced submitQuiz thunk that preserves state
@@ -793,7 +818,15 @@ const quizSlice = createSlice({
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         state.status = "failed"
-        state.error = action.payload as string
+        state.error = action.payload?.error || "Failed to load quiz"
+        
+        // Provide default values to prevent null reference errors in the UI
+        state.slug = "";
+        state.title = "Quiz Not Available";
+        state.questions = [];
+        state.currentQuestionIndex = 0;
+        state.isCompleted = false;
+        state.answers = {};
       })
 
       // Enhanced submitQuiz handling - preserve state
@@ -967,7 +1000,19 @@ export const selectIsProcessingResults = createSelector([selectQuizState], (quiz
 
 export const selectCurrentQuestion = createSelector(
   [selectQuestions, selectCurrentQuestionIndex],
-  (questions, index) => questions[index] || null,
+  (questions, currentIndex) => {
+    // Safety checks to prevent errors
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return null;
+    }
+    
+    // Ensure index is within bounds
+    if (currentIndex < 0 || currentIndex >= questions.length) {
+      return questions[0]; // Default to first question if index is out of bounds
+    }
+    
+    return questions[currentIndex];
+  }
 )
 
 export const clearAuthState = (state: RootState) => {

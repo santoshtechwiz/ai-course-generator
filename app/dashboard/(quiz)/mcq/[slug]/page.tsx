@@ -2,30 +2,26 @@
 
 import { use } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import McqQuizWrapper from "../components/McqQuizWrapper"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
+import { getQuizSlug } from "../../components/utils"
 
 
 export default function McqQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: Promise<{ slug: string }> 
 }) {
   // Unwrap params for future compatibility
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const slug = resolvedParams.slug
-  const { status: authStatus } = useSession()
+  const slug = getQuizSlug(params);
+
   const router = useRouter()
 
-  // Check for loading state
-  if (authStatus === "loading") {
-    return <QuizLoader full message="Initializing quiz..." subMessage="Loading user session" />
-  }
 
   if (!slug) {
     return (

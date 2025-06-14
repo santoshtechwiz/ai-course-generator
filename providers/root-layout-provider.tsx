@@ -4,15 +4,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
-import { Suspense, useState, useEffect, useMemo } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { AnimationProvider } from "./animation-provider"
 import { SEOTrackingProvider } from "@/providers/seo-tracking-provider"
-
-import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import SubscriptionProvider from "./SubscriptionProvider"
-
 import { LoadingProvider } from "@/components/ui/loading/loading-provider"
-
 import { TooltipProvider } from "@/components/ui/tooltip"
 import React from "react"
 import { Provider } from "react-redux"
@@ -20,7 +16,7 @@ import { PersistGate } from "redux-persist/integration/react"
 import { store, persistor } from "@/store"
 import { useDispatch } from "react-redux"
 import { initializeAuth } from "@/store/slices/auth-slice"
-import { AuthProvider, AuthConsumer } from "@/context/auth-context"
+import { AuthProvider } from "@/context/auth-context"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -62,46 +58,38 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
     setMounted(true)
   }, [])
 
-  // Memoize the navbar to prevent unnecessary re-renders
-  const navbar = useMemo(() => <MainNavbar />, [])
-
-
-
   return (
     <React.StrictMode>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <AuthProvider session={session}>
             <AuthInitializer />
-            <AuthConsumer>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem={true}
-                disableTransitionOnChange
-                // Add these props to fix hydration issues
-                storageKey="course-ai-theme"
-                enableColorScheme={true}
-              >
-                <SEOTrackingProvider>
-                  <QueryClientProvider client={queryClient}>
-                    <TooltipProvider>
-                      <SubscriptionProvider>
-                        <LoadingProvider>
-                          <AnimationProvider>
-                            <Suspense fallback={<div>Loading...</div>}>
-                           
-                              <Toaster position="top-right" closeButton richColors />
-                              {mounted && children}
-                            </Suspense>
-                          </AnimationProvider>
-                        </LoadingProvider>
-                      </SubscriptionProvider>
-                    </TooltipProvider>
-                  </QueryClientProvider>
-                </SEOTrackingProvider>
-              </ThemeProvider>
-            </AuthConsumer>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem={true}
+              disableTransitionOnChange
+              // Add these props to fix hydration issues
+              storageKey="course-ai-theme"
+              enableColorScheme={true}
+            >
+              <SEOTrackingProvider>
+                <QueryClientProvider client={queryClient}>
+                  <TooltipProvider>
+                    <SubscriptionProvider>
+                      <LoadingProvider>
+                        <AnimationProvider>
+                          <Suspense fallback={<div>Loading...</div>}>
+                            <Toaster position="top-right" closeButton richColors />
+                            {mounted && children}
+                          </Suspense>
+                        </AnimationProvider>
+                      </LoadingProvider>
+                    </SubscriptionProvider>
+                  </TooltipProvider>
+                </QueryClientProvider>
+              </SEOTrackingProvider>
+            </ThemeProvider>
           </AuthProvider>
         </PersistGate>
       </Provider>
