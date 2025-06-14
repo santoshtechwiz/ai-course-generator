@@ -29,6 +29,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useSession } from "next-auth/react"
 import { NoResults } from "@/components/ui/no-results"
 import { RefreshCw } from "lucide-react"
+import { JsonLD } from "@/app/schema/components"
 
 interface SignInPromptProps {
   onSignIn: () => void

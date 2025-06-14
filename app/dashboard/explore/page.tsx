@@ -1,13 +1,14 @@
-import { JsonLd } from "@/app/schema/components/json-ld"
+import { JsonLD } from "@/app/schema/components"
+import { generateMetadata } from "@/lib/seo"
 import { CreateComponent } from "@/components/features/explore/CreateComponent"
-
 import type { Metadata } from "next"
 
 // Enhanced metadata for better SEO
-export const metadata: Metadata = {
-  title: "Explore AI-Powered Quizzes | Create and Learn", // Updated title for better context
+export const metadata: Metadata = generateMetadata({
+  title: "Explore AI-Powered Quizzes | Create and Learn",
   description:
-    "Create professional-quality educational content in minutes with our AI tools. Generate MCQs, open-ended questions, fill-in-the-blank exercises, and complete courses for any subject. Perfect for educators, trainers, and content creators.",
+    "Create professional-quality educational content in minutes with our AI tools. Generate MCQs, open-ended questions, fill-in-the-blank exercises, and complete courses for any subject.",
+  path: "/dashboard/explore",
   keywords: [
     "AI course creation",
     "MCQ generator",
@@ -19,78 +20,47 @@ export const metadata: Metadata = {
     "quiz maker",
     "course authoring tool",
     "automated question generation",
-    "programming quiz creator",
-    "coding assessment generator",
-    "educational technology",
-    "AI for educators",
-    "learning material generator",
   ],
-  openGraph: {
-    title: "AI-Powered Course Creation Tools | Generate MCQs, Quizzes & Learning Materials",
-    description:
-      "Create professional-quality educational content in minutes with our AI tools. Generate MCQs, open-ended questions, and complete courses for any subject.",
-    images: [
-      {
-        url: "/og-image-explore.jpg",
-        width: 1200,
-        height: 630,
-        alt: "CourseAI Content Creation Tools",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-    siteName: "CourseAI",
+  ogImage: {
+    url: "/og-image-explore.jpg",
+    width: 1200,
+    height: 630,
+    alt: "CourseAI Content Creation Tools",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Create Educational Content with AI | CourseAI Tools",
-    description:
-      "Revolutionize your teaching with our AI-powered course creation tools. Generate quizzes, questions, and courses in minutes.",
-    images: ["/twitter-image-explore.jpg"],
-    creator: "@courseai",
-  },
-  alternates: {
-    canonical: process.env.NEXT_PUBLIC_WEBSITE_URL
-      ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/explore`
-      : "https://courseai.io/dashboard/explore",
-  },
-}
-
-// Schema.org structured data for FAQs
-const faqSchema = {
-  mainEntity: [
-    {
-      question: "How does CourseAI generate educational content?",
-      answer:
-        "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses. The AI understands educational best practices and creates content that is accurate, engaging, and pedagogically sound.",
-    },
-    {
-      question: "Can I create programming quizzes with CourseAI?",
-
-      answer:
-        "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others.",
-    },
-    {
-      question: "How accurate is the AI-generated content?",
-
-      answer:
-        "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements.",
-    },
-    {
-      name: "Can I customize the difficulty level of generated questions?",
-
-      answer:
-        "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives.",
-    },
-  ],
-}
+})
 
 export default function ExplorePage() {
+  // Schema.org structured data for FAQs
+  const faqSchema = {
+    mainEntity: [
+      {
+        question: "How does CourseAI generate educational content?",
+        answer:
+          "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses.",
+      },
+      {
+        question: "Can I create programming quizzes with CourseAI?",
+        answer:
+          "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others.",
+      },
+      {
+        question: "How accurate is the AI-generated content?",
+
+        answer:
+          "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements.",
+      },
+      {
+        name: "Can I customize the difficulty level of generated questions?",
+
+        answer:
+          "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives.",
+      },
+    ],
+  }
+
   return (
     <>
-      {/* Add structured data */}
-
-      <JsonLd data={faqSchema} type="faq" />
+      <JsonLD type="faq" data={faqSchema} />
 
       {/* Main component */}
       <CreateComponent />

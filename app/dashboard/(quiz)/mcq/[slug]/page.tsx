@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import McqQuizWrapper from "../components/McqQuizWrapper"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import QuizSEO from "../../components/QuizSEO"
 
 
 export default function McqQuizPage({
@@ -41,7 +42,12 @@ export default function McqQuizPage({
   }
 
   return (
-    <QuizPlayLayout>
+    <QuizPlayLayout quizSlug={slug} quizType="mcq">
+      <QuizSEO 
+        slug={slug}
+        quizType="mcq"
+        description={`Test your knowledge with this ${slug.replace(/-/g, ' ')} multiple choice quiz. Challenge yourself and learn something new!`}
+      />
       <McqQuizWrapper slug={slug} />
     </QuizPlayLayout>
   )

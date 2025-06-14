@@ -2,7 +2,7 @@ import React from 'react';
 
 interface JsonLDProps {
   type: string;
-  data: Record<string, any>;
+  data?: Record<string, any>; // Make data optional
 }
 
 /**
@@ -10,7 +10,7 @@ interface JsonLDProps {
  *
  * This is the canonical implementation to use across the application
  */
-export function JsonLD({ type, data }: JsonLDProps) {
+export function JsonLD({ type, data = {} }: JsonLDProps) {
   // Create the schema based on the type and data
   const schema = {
     '@context': 'https://schema.org',
@@ -28,3 +28,6 @@ export function JsonLD({ type, data }: JsonLDProps) {
 
 // Export named alias for backward compatibility
 export { JsonLD as JsonLd };
+
+// Default export for simpler imports
+export default JsonLD;
