@@ -125,7 +125,18 @@ function renderQuizResultComponent(
     case "code":
       return <CodeQuizResult result={result}  onRetake={onRetake} />
     case "flashcard":
-      return <FlashCardResults result={result} slug={slug} onRetake={onRetake} />
+      // Pass all result fields as props for consistency
+      return (
+        <FlashCardResults
+          slug={slug}
+          title={result?.title}
+          score={result?.percentage ?? result?.score ?? 0}
+          totalQuestions={result?.totalQuestions ?? result?.maxScore ?? result?.questions?.length ?? 0}
+          correctAnswers={result?.correctAnswers ?? result?.userScore ?? 0}
+          totalTime={result?.totalTime ?? 0}
+          onRestart={onRetake}
+        />
+      )
     default:
       return <McqQuizResult result={result} />
   }

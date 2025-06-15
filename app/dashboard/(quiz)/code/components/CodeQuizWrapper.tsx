@@ -24,9 +24,8 @@ import {
   clearQuizState,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
-import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
@@ -73,7 +72,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
               isCompleted: false,
               showResults: false,
             },
-          })
+          }),
         )
         setError(null)
       } catch (err) {
@@ -121,7 +120,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
           type: "code",
           timestamp: Date.now(),
         },
-      })
+      }),
     )
     return true
   }
@@ -172,11 +171,16 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     router.replace(`/dashboard/code/${slug}`)
   }, [dispatch, router, slug])
 
-  const currentAnswer =
-    currentQuestion &&
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.selectedOptionId
+  const currentAnswer = useMemo(
+    () =>
+      currentQuestion && answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.selectedOptionId,
+    [currentQuestion, answers, currentQuestionIndex],
+  )
 
-  const canGoNext = currentQuestionIndex < questions.length - 1
+  const canGoNext = useMemo(
+    () => currentQuestionIndex < questions.length - 1 && !!currentAnswer,
+    [currentQuestionIndex, questions.length, currentAnswer],
+  )
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
@@ -234,13 +238,11 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
         onPrevious={handlePrevious}
         onSubmit={handleSubmitQuiz}
         onRetake={handleRetakeQuiz}
-        canGoNext={canGoNext && !!currentAnswer}
+        canGoNext={canGoNext}
         canGoPrevious={canGoPrevious}
         isLastQuestion={isLastQuestion}
         isSubmitting={isSubmitting}
       />
-
-     
     </motion.div>
   )
 }

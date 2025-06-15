@@ -1,14 +1,11 @@
 "use client"
 
 import { use } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { QuizLoader } from "@/components/ui/quiz-loader"
-import GenericQuizResultHandler from "../../../components/QuizResultHandler"
-import QuizResult from "../../../components/QuizResult"
+import FlashcardResultHandler from "../../components/FlashcardResultHandler"
+import FlashCardResults from "../../components/FlashCardQuizResults"
 
 export default function FlashCardResultsPage({
   params,
@@ -17,16 +14,7 @@ export default function FlashCardResultsPage({
 }) {
   const resolvedParams = params instanceof Promise ? use(params) : params
   const slug = resolvedParams.slug
-  const { status } = useSession()
   const router = useRouter()
-
-  const handleRetakeQuiz = () => {
-    router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)
-  }
-
-  if (status === "loading") {
-    return <QuizLoader message="Loading flashcard results" showTiming />
-  }
 
   if (!slug) {
     return (
@@ -48,19 +36,21 @@ export default function FlashCardResultsPage({
 
   return (
     <div className="container max-w-4xl py-10">
-      <GenericQuizResultHandler
-        slug={slug}
-        quizType="flashcard"
-      >
+      <FlashcardResultHandler slug={slug}>
         {({ result }) => (
-          <QuizResult
-            result={result}
+          <FlashCardResults
             slug={slug}
-            quizType="flashcard"
-            onRetake={handleRetakeQuiz}
+            title={result?.title}
+            score={result?.percentage ?? result?.score ?? 0}
+            totalQuestions={result?.totalQuestions ?? 0}
+            correctAnswers={result?.correctAnswers ?? 0}
+            totalTime={result?.totalTime ?? 0}
+            onReview={result?.reviewCards ? () => 
+              router.push(`/dashboard/flashcard/${slug}`) : undefined}
           />
         )}
-      </GenericQuizResultHandler>
+      </FlashcardResultHandler>
     </div>
   )
 }
+

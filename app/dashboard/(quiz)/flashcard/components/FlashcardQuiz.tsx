@@ -84,6 +84,18 @@ function FlashCardQuiz({
   const cardRef = useRef<HTMLDivElement>(null)
   const { animationsEnabled } = useAnimationContext()
 
+  // Add isMounted ref to prevent animations after unmount
+  const isMountedRef = useRef(true)
+
+  // Set up mount tracking
+  useEffect(() => {
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   // Initialize quiz in Redux using the flashcard slice
   useEffect(() => {
     if (cards && cards.length > 0 && (!storeQuizId || storeQuizId !== quizId.toString())) {
@@ -248,18 +260,26 @@ function FlashCardQuiz({
       setDirection(1)
       setFlipped(false)
 
-      // Animate card exit
-      cardControls
-        .start({
-          x: -300,
-          opacity: 0,
-          transition: { duration: 0.3 },
-        })
-        .then(() => {
-          dispatch(nextFlashCard())
-          cardControls.set({ x: 0, opacity: 1 })
-          setStartTime(Date.now())
-        })
+      // Only animate if component is still mounted
+      if (isMountedRef.current) {
+        cardControls
+          .start({
+            x: -300,
+            opacity: 0,
+            transition: { duration: 0.3 },
+          })
+          .then(() => {
+            // Additional check before updating state after animation
+            if (isMountedRef.current) {
+              dispatch(nextFlashCard())
+              cardControls.set({ x: 0, opacity: 1 })
+              setStartTime(Date.now())
+            }
+          })
+      } else {
+        // If not mounted, just update state without animation
+        dispatch(nextFlashCard())
+      }
     } else {
       // If we're in review mode and finished reviewing, go back to normal mode
       if (reviewMode) {
@@ -362,25 +382,37 @@ function FlashCardQuiz({
         window.navigator.vibrate(rating === "correct" ? [50] : [20, 30, 40])
       }
 
+      let timerRef: NodeJS.Timeout | null = null
+      
       // Handle auto-advance with coordinated timing
       if (autoAdvance) {
         // Use a slight delay to show feedback before advancing
-        const timer = setTimeout(() => {
-          setRatingAnimation(null)
-          // Short delay before advancing to next card for better UX
-          setTimeout(() => {
-            moveToNextCard()
-            setSwipeDisabled(false)
-            setStartTime(Date.now())
-          }, 50)
+        timerRef = setTimeout(() => {
+          if (isMountedRef.current) {
+            setRatingAnimation(null)
+            // Short delay before advancing to next card for better UX
+            const advanceTimer = setTimeout(() => {
+              if (isMountedRef.current) {
+                moveToNextCard()
+                setSwipeDisabled(false)
+                setStartTime(Date.now())
+              }
+            }, 50)
+            
+            return () => clearTimeout(advanceTimer)
+          }
         }, 700)
-        return () => clearTimeout(timer)
       } else {
-        const timer = setTimeout(() => {
-          setRatingAnimation(null)
-          setSwipeDisabled(false)
+        timerRef = setTimeout(() => {
+          if (isMountedRef.current) {
+            setRatingAnimation(null)
+            setSwipeDisabled(false)
+          }
         }, 700)
-        return () => clearTimeout(timer)
+      }
+      
+      return () => {
+        if (timerRef) clearTimeout(timerRef)
       }
     },
     [dispatch, autoAdvance, moveToNextCard, startTime],
