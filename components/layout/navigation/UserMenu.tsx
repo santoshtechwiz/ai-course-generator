@@ -139,15 +139,6 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
-  // Show loading state
-  if (isAuthLoading) {
-    return (
-      <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-        <Loader2 className="h-5 w-5 animate-spin text-primary/70" />
-      </Button>
-    )
-  }
-
   // Custom trigger for dropdown menu
   const menuTrigger = children || (
     <Button 
@@ -163,6 +154,15 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       </Avatar>
     </Button>
   )
+
+  // Show nothing until auth state is resolved to prevent flicker
+  if (isAuthLoading) {
+    return (
+      <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+        <Loader2 className="h-5 w-5 animate-spin text-primary/70" />
+      </Button>
+    )
+  }
 
   // For non-authenticated users, show sign-in button
   if (!isAuthenticated) {

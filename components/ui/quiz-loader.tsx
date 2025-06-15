@@ -19,6 +19,7 @@ interface QuizLoaderProps {
     label: string;
     status: "loading" | "completed" | "pending";
   }>;
+  isLoading?: boolean;
 }
 
 export function QuizLoader({
@@ -31,6 +32,7 @@ export function QuizLoader({
   displayProgress,
   showSpinner = true,
   steps,
+  isLoading = false,
 }: QuizLoaderProps) {
   const [progress, setProgress] = useState(displayProgress ?? 0);
   const [time, setTime] = useState(0);
@@ -78,6 +80,20 @@ export function QuizLoader({
   const layoutClass = full
     ? "fixed inset-0 flex flex-col items-center justify-center bg-background z-50"
     : "w-full flex flex-col items-center justify-center py-6";
+
+  // Minimal skeleton if loading
+  if (isLoading) {
+    return (
+      <div className={cn(layoutClass, className)}>
+        <div className="flex flex-col items-center gap-4 w-full max-w-xs mx-auto">
+          <div className="w-12 h-12 rounded-full bg-muted animate-pulse mb-4" />
+          <div className="h-6 w-2/3 rounded bg-muted animate-pulse mb-2" />
+          <div className="h-4 w-1/2 rounded bg-muted animate-pulse mb-2" />
+          <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

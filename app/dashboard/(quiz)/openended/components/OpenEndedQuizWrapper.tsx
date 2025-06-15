@@ -19,6 +19,7 @@ import {
   submitQuiz,
   selectQuizType,
   clearQuizState,
+  saveAnswer,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { Button } from "@/components/ui/button"
@@ -26,9 +27,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
 import OpenEndedQuiz from "./OpenEndedQuiz"
 import { toast } from "sonner"
-import { useAuth } from "@/hooks/use-auth"
+
 import { motion, AnimatePresence } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
+import { OpenEndedQuestion } from "@/types/quiz"
+import { useAuth } from "@/hooks"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -125,8 +128,9 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     }
   }
 
-  const handleAnswer = (answer: string, elapsed = 0, hintsUsed = false) => {
-    if (!currentQuestion) return
+  // Fix handleAnswer to return boolean for OpenEndedQuiz
+  const handleAnswer = (answer: string, elapsed = 0, hintsUsed = false): boolean => {
+    if (!currentQuestion) return false
 
     const questionId = currentQuestion.id.toString()
     const elapsedTime = elapsed || (Date.now() - timeStartRef.current) / 1000
@@ -153,6 +157,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     )
 
     if (currentQuestionIdx < questions.length - 1) handleNext()
+    return true
   }
 
   const handleSubmitQuiz = async () => {
@@ -236,58 +241,9 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         onNext={hasCurrentAnswer ? handleNext : undefined}
         onPrevious={currentQuestionIdx > 0 ? handlePrevious : undefined}
         onSubmit={hasCurrentAnswer && currentQuestionIdx === questions.length - 1 ? handleSubmitQuiz : undefined}
-        onRetake={handleRetakeQuiz}
       />
 
-      <AnimatePresence>
-        {attemptedQuestions.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.4 }}
-          >
-            <Card className="border-2 border-green-500/30 bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg rounded-2xl">
-              <CardContent className="p-6 text-center">
-                <motion.p
-                  className="mb-4 font-medium text-green-800 dark:text-green-200"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  {allQuestionsAttempted
-                    ? "All questions answered. Ready to submit?"
-                    : `${attemptedQuestions.size} questions answered. Submit quiz?`}
-                </motion.p>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <Button
-                    onClick={handleSubmitQuiz}
-                    size="lg"
-                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-2xl px-8 gap-2 shadow-lg"
-                    disabled={isSubmitting}
-                  >
-                    <Flag className="w-4 h-4" />
-                    {isSubmitting ? "Submitting..." : "Submit Quiz and View Results"}
-                  </Button>
-                  <Button
-                    onClick={handleRetakeQuiz}
-                    size="lg"
-                    variant="outline"
-                    className="mt-4 text-green-700 border-green-500 hover:bg-green-100 rounded-2xl px-8 gap-2 shadow-lg"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Retake Quiz
-                  </Button>
-                </motion.div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+     
     </div>
   )
 }
