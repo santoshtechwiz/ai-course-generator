@@ -1,27 +1,22 @@
 "use client"
 
-import { useEffect, useMemo, useState, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
 import {
   selectQuestions,
   selectAnswers,
-  selectCurrentQuestionIndex,
   selectQuizStatus,
-  selectQuizResults,
   selectQuizTitle,
   selectIsQuizComplete,
   hydrateQuiz,
-  setCurrentQuestionIndex,
-  saveAnswer,
   resetQuiz,
   setQuizResults,
   setQuizCompleted,
   fetchQuiz,
   resetSubmissionState,
   submitQuiz,
-  selectQuizId,
   selectQuizType,
   clearQuizState,
 } from "@/store/slices/quiz-slice"
@@ -30,7 +25,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
 import OpenEndedQuiz from "./OpenEndedQuiz"
-import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
 import { motion, AnimatePresence } from "framer-motion"
@@ -44,27 +38,24 @@ interface OpenEndedQuizWrapperProps {
 export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-
   const { isAuthenticated } = useAuth()
 
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
   const [attemptedQuestions, setAttemptedQuestions] = useState<Set<string>>(new Set())
   const [questionElapsedTime, setQuestionElapsedTime] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const timeStartRef = useRef<number>(Date.now())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Redux state
+  const timeStartRef = useRef<number>(Date.now())
+  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const questions = useSelector(selectQuestions)
   const answers = useSelector(selectAnswers)
-  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
-  const quizId = useSelector(selectQuizId)
   const quizType = useSelector(selectQuizType)
-
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -88,7 +79,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
           }),
         )
         setError(null)
-      } catch (err) {
+      } catch {
         setError("Failed to load quiz. Please try again.")
       } finally {
         setLoading(false)
@@ -96,7 +87,6 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     }
 
     init()
-
     dispatch(resetSubmissionState())
 
     return () => {
@@ -118,45 +108,37 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
   const currentQuestion = useMemo(() => {
     if (!questions || questions.length === 0 || currentQuestionIdx >= questions.length) return null
-    return questions[currentQuestionIdx] as unknown as OpenEndedQuestion
+    return questions[currentQuestionIdx] as OpenEndedQuestion
   }, [questions, currentQuestionIdx])
 
   const handleNext = () => {
     if (currentQuestionIdx < questions.length - 1) {
-      setCurrentQuestionIdx((prevIdx) => prevIdx + 1)
+      setCurrentQuestionIdx((prev) => prev + 1)
       timeStartRef.current = Date.now()
     }
   }
 
   const handlePrevious = () => {
     if (currentQuestionIdx > 0) {
-      setCurrentQuestionIdx((prevIdx) => prevIdx - 1)
+      setCurrentQuestionIdx((prev) => prev - 1)
       timeStartRef.current = Date.now()
     }
   }
 
-  const handleAnswer = (answer: string, elapsed: number = 0, hintsUsed: boolean = false) => {
+  const handleAnswer = (answer: string, elapsed = 0, hintsUsed = false) => {
     if (!currentQuestion) return
 
     const questionId = currentQuestion.id.toString()
     const elapsedTime = elapsed || (Date.now() - timeStartRef.current) / 1000
 
-    // Update elapsed time array
-    const newElapsedTime = [...questionElapsedTime]
-    newElapsedTime[currentQuestionIdx] = elapsedTime
-    setQuestionElapsedTime(newElapsedTime)
+    const updatedTime = [...questionElapsedTime]
+    updatedTime[currentQuestionIdx] = elapsedTime
+    setQuestionElapsedTime(updatedTime)
 
-    // Add to attempted questions
-    setAttemptedQuestions((prev) => {
-      const updated = new Set(prev)
-      updated.add(questionId)
-      return updated
-    })
+    setAttemptedQuestions((prev) => new Set(prev).add(questionId))
 
-    // Reset timer
     timeStartRef.current = Date.now()
 
-    // Save answer to Redux
     dispatch(
       saveAnswer({
         questionId,
@@ -170,19 +152,14 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
       }),
     )
 
-    // If this is the last question, don't automatically advance
-    if (currentQuestionIdx < questions.length - 1) {
-      handleNext()
-    }
+    if (currentQuestionIdx < questions.length - 1) handleNext()
   }
 
   const handleSubmitQuiz = async () => {
     if (isSubmitting) return
-
     setIsSubmitting(true)
 
     try {
-      // Process results similar to other quiz types
       const results = {
         quizId: slug,
         slug,
@@ -195,7 +172,6 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
       dispatch(setQuizResults(results))
       dispatch(setQuizCompleted())
-
       await dispatch(submitQuiz()).unwrap()
     } catch (error) {
       console.error("Failed to submit quiz:", error)
@@ -213,10 +189,6 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     timeStartRef.current = Date.now()
   }
 
-  const canGoNext = currentQuestionIdx < questions.length - 1
-  const canGoPrevious = currentQuestionIdx > 0
-  const isLastQuestion = currentQuestionIdx === questions.length - 1
-
   if (loading || quizStatus === "loading") {
     return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
   }
@@ -227,10 +199,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         variant="error"
         title="Error Loading Quiz"
         description={error || "Unable to load quiz."}
-        action={{
-          label: "Back to Quizzes",
-          onClick: () => router.push("/dashboard/quizzes"),
-        }}
+        action={{ label: "Back to Quizzes", onClick: () => router.push("/dashboard/quizzes") }}
       />
     )
   }
@@ -241,10 +210,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
         variant="error"
         title="Quiz Error"
         description="Could not load quiz questions."
-        action={{
-          label: "Try Again",
-          onClick: () => window.location.reload(),
-        }}
+        action={{ label: "Try Again", onClick: () => window.location.reload() }}
         secondaryAction={{
           label: "Back to Quizzes",
           onClick: () => router.push("/dashboard/quizzes"),
@@ -254,39 +220,27 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     )
   }
 
-  const currentAnswer = currentQuestion ? (answers[currentQuestion.id.toString()]?.text || "") : ""
-
+  const currentAnswer = answers[currentQuestion.id.toString()]?.text || ""
   const hasCurrentAnswer = !!currentAnswer.trim()
   const allQuestionsAttempted = attemptedQuestions.size === questions.length
 
   return (
     <div className="space-y-6">
-      {currentQuestion && (
-        <OpenEndedQuiz
-          key={currentQuestion.id}
-          question={currentQuestion}
-          questionNumber={currentQuestionIdx + 1}
-          totalQuestions={questions.length}
-          isLastQuestion={isLastQuestion}
-          onAnswer={handleAnswer}
-          onNext={hasCurrentAnswer ? handleNext : undefined}
-          onPrevious={currentQuestionIdx > 0 ? handlePrevious : undefined}
-          onSubmit={hasCurrentAnswer && isLastQuestion ? handleSubmitQuiz : undefined}
-          onRetake={handleRetakeQuiz}
-        />
-      )}
-    </div>
-  )
-}
-        onPrevious={handlePrevious}
-        onSubmit={handleSubmitQuiz}
-        canGoNext={canGoNext}
-        canGoPrevious={canGoPrevious}
-        isLastQuestion={isLastQuestion}
+      <OpenEndedQuiz
+        key={currentQuestion.id}
+        question={currentQuestion}
+        questionNumber={currentQuestionIdx + 1}
+        totalQuestions={questions.length}
+        isLastQuestion={currentQuestionIdx === questions.length - 1}
+        onAnswer={handleAnswer}
+        onNext={hasCurrentAnswer ? handleNext : undefined}
+        onPrevious={currentQuestionIdx > 0 ? handlePrevious : undefined}
+        onSubmit={hasCurrentAnswer && currentQuestionIdx === questions.length - 1 ? handleSubmitQuiz : undefined}
+        onRetake={handleRetakeQuiz}
       />
 
       <AnimatePresence>
-        {answeredQuestions > 0 && (
+        {attemptedQuestions.size > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -301,9 +255,9 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  {allQuestionsAnswered
+                  {allQuestionsAttempted
                     ? "All questions answered. Ready to submit?"
-                    : `${answeredQuestions} questions answered. Submit quiz?`}
+                    : `${attemptedQuestions.size} questions answered. Submit quiz?`}
                 </motion.p>
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -334,6 +288,6 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }

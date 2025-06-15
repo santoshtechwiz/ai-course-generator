@@ -11,7 +11,7 @@ export const API_ENDPOINTS = {
   code: "/api/quizzes/code",
   blanks: "/api/quizzes/blanks",
   openended: "/api/quizzes/openended",
-  flashcard: "/api/quizzes/flashcard",
+
   // Add a common endpoint for consistent API access
   common: "/api/quizzes/common",
 }
@@ -293,7 +293,7 @@ export const restoreQuizAfterAuth = createAsyncThunk("quiz/restoreQuizAfterAuth"
       const resultJson = localStorage.getItem("pendingQuizResults")
       if (resultJson) {
         pendingResults = JSON.parse(resultJson)
-        console.log("Restored pending quiz results:", pendingResults)
+        
       }
 
       // Then check for general pending quiz state
