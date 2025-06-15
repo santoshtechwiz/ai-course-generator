@@ -28,12 +28,12 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 
   // Calculate total time spent - with error handling
   const totalTimeSpent = Array.isArray(timeSpent)
-    ? timeSpent.reduce((acc, time) => acc + (typeof time === 'number' ? time : 0), 0)
+    ? timeSpent.reduce((acc, time) => acc + (typeof time === "number" ? time : 0), 0)
     : 0
 
   // Format time display with better handling
   const formatTime = (seconds: number) => {
-    if (!seconds || typeof seconds !== 'number' || seconds < 0) return '0s'
+    if (!seconds || typeof seconds !== "number" || seconds < 0) return "0s"
     if (seconds < 60) return `${Math.floor(seconds)}s`
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = Math.floor(seconds % 60)
@@ -45,9 +45,9 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 
   // Determine progress color based on completion
   const getProgressColor = () => {
-    if (percentage === 100) return "bg-gradient-to-r from-green-500 to-emerald-500"
-    if (percentage >= 75) return "bg-gradient-to-r from-blue-500 to-cyan-500"
-    if (percentage >= 50) return "bg-gradient-to-r from-yellow-500 to-orange-500"
+    if (percentage === 100) return "bg-gradient-to-r from-emerald-500 to-emerald-600"
+    if (percentage >= 75) return "bg-gradient-to-r from-blue-500 to-blue-600"
+    if (percentage >= 50) return "bg-gradient-to-r from-amber-500 to-amber-600"
     return "bg-gradient-to-r from-primary to-primary/80"
   }
 
@@ -58,6 +58,34 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
     if (percentage >= 50) return { icon: Target, text: "Halfway!", color: "text-yellow-600" }
     return null
   }
+
+  const getPerformanceBadge = () => {
+    if (percentage === 100)
+      return {
+        icon: CheckCircle2,
+        text: "Perfect!",
+        className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      }
+    if (percentage >= 75)
+      return {
+        icon: TrendingUp,
+        text: "Excellent!",
+        className: "bg-blue-100 text-blue-700 border-blue-200",
+      }
+    if (percentage >= 50)
+      return {
+        icon: Target,
+        text: "Good Progress!",
+        className: "bg-amber-100 text-amber-700 border-amber-200",
+      }
+    return {
+      icon: Target,
+      text: "Keep Going!",
+      className: "bg-gray-100 text-gray-700 border-gray-200",
+    }
+  }
+
+  const performanceBadge = getPerformanceBadge()
 
   const milestone = getMilestone()
 
@@ -73,7 +101,10 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
         <div className="space-y-1">
           <h3 className="text-lg font-semibold text-foreground">{title}</h3>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="px-2 py-1 bg-primary/10 text-primary rounded-md font-medium">{quizType}</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${performanceBadge.className}`}>
+              <performanceBadge.icon className="w-3 h-3 inline mr-1" />
+              {performanceBadge.text}
+            </span>
             {totalTimeSpent > 0 && (
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />

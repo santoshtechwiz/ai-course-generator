@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useRef } from "react"
+import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
@@ -9,7 +9,6 @@ import {
   selectAnswers,
   selectCurrentQuestionIndex,
   selectQuizStatus,
-  selectQuizResults,
   selectQuizTitle,
   selectIsQuizComplete,
   hydrateQuiz,
@@ -29,12 +28,13 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
-import BlankQuiz from "./BlankQuiz"
+
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
 import { motion, AnimatePresence } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
+import BlanksQuiz from "./BlanksQuiz"
 
 interface BlankQuizWrapperProps {
   slug: string
@@ -61,6 +61,9 @@ export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const calculateSimilarity = (userAnswer: string, correctAnswer: string) =>
+    getBestSimilarityScore(userAnswer, correctAnswer) / 100
 
   useEffect(() => {
     const init = async () => {
@@ -117,32 +120,32 @@ export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps)
     return questions[currentQuestionIndex]
   }, [questions, currentQuestionIndex])
 
-  const calculateSimilarity = (userAnswer: string, correctAnswer: string) =>
-    getBestSimilarityScore(userAnswer, correctAnswer) / 100
+  const handleAnswer = useCallback(
+    (answer: string) => {
+      if (!currentQuestion) return false
 
-  const handleAnswer = (answer: string) => {
-    if (!currentQuestion) return false
+      const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
+      const similarity = calculateSimilarity(answer, currentQuestion.answer || "")
+      const isCorrect = similarity >= 0.7
 
-    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
-    const similarity = calculateSimilarity(answer, currentQuestion.answer || "")
-    const isCorrect = similarity >= 0.7
-
-    dispatch(
-      saveAnswer({
-        questionId,
-        answer: {
+      dispatch(
+        saveAnswer({
           questionId,
-          text: answer,
-          userAnswer: answer,
-          type: "blanks",
-          similarity,
-          isCorrect,
-          timestamp: Date.now(),
-        },
-      }),
-    )
-    return true
-  }
+          answer: {
+            questionId,
+            text: answer,
+            userAnswer: answer,
+            type: "blanks",
+            similarity,
+            isCorrect,
+            timestamp: Date.now(),
+          },
+        }),
+      )
+      return true
+    },
+    [currentQuestion, currentQuestionIndex, dispatch],
+  )
 
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -218,8 +221,16 @@ export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps)
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
+  const currentAnswer =
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text ||
+    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
+    ""
+
+  const answeredQuestions = Object.keys(answers).length
+  const allQuestionsAnswered = answeredQuestions === questions.length
+
   if (loading || quizStatus === "loading") {
-    return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
+    return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" className="min-h-[400px]" />
   }
 
   if (error || quizStatus === "failed") {
@@ -255,14 +266,6 @@ export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps)
     )
   }
 
-  const currentAnswer =
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.text ||
-    answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.userAnswer ||
-    ""
-
-  const answeredQuestions = Object.keys(answers).length
-  const allQuestionsAnswered = answeredQuestions === questions.length
-
   return (
     <motion.div
       className="space-y-6"
@@ -270,7 +273,7 @@ export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps)
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <BlankQuiz
+      <BlanksQuiz
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}

@@ -58,7 +58,7 @@ export default function FlashCardResults({
     if (onRestart) {
       onRestart();
     } else {
-      router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`);
+      router.push(`/dashboard/flashcard/${slug}`);
     }
   }, [onRestart, router, slug]);
 
@@ -99,7 +99,8 @@ export default function FlashCardResults({
     }
   };
 
-  if (!totalQuestions) {
+  // Only show "No Results" if there are truly no questions and no answers
+  if (totalQuestions === 0 && !score && !correctAnswers) {
     return (
       <NoResults
         variant="quiz"
@@ -225,7 +226,7 @@ export default function FlashCardResults({
       <Card className="border shadow-md rounded-lg p-6 mt-8">
         <CardContent className="text-center">
           <h2 className="text-2xl font-bold mb-4">Quiz Results</h2>
-          <p className="text-lg mb-2">Score: {score} / {totalQuestions}</p>
+          <p className="text-lg mb-2">Score: {correctAnswers} / {totalQuestions}</p>
           <p className="text-lg mb-2">Percentage: {accuracyPercentage}%</p>
           <p className="text-sm text-muted mb-4">Completed At: {new Date().toLocaleString()}</p>
           <Button onClick={handleRetake} className="gap-2">

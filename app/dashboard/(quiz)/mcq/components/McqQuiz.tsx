@@ -84,23 +84,20 @@ const McqQuiz = ({
           <h3 className="text-xl font-semibold text-foreground">{questionText}</h3>
         </div>
 
-        <RadioGroup
-          value={existingAnswer}
-          onValueChange={onAnswer}
-          className="space-y-4 pt-4"
-        >
-          <motion.div
-            variants={optionsVariants}
-            initial="hidden"
-            animate="show"
-            className="space-y-3"
-          >
+        <RadioGroup value={existingAnswer} onValueChange={onAnswer} className="space-y-4 pt-4">
+          <motion.div variants={optionsVariants} initial="hidden" animate="show" className="space-y-3">
             {options.map((option) => (
-              <motion.div key={option.id} variants={optionVariants}>
+              <motion.div
+                key={option.id}
+                variants={optionVariants}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
                 <div
                   className={cn(
-                    "flex items-start space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer",
-                    existingAnswer === option.id && "border-primary bg-primary/5"
+                    "flex items-start space-x-3 rounded-lg border p-4 transition-all duration-200 cursor-pointer group",
+                    "hover:bg-muted/50 hover:border-primary/30 hover:shadow-sm",
+                    existingAnswer === option.id && "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20",
                   )}
                   onClick={() => onAnswer(option.id)}
                 >
@@ -108,13 +105,17 @@ const McqQuiz = ({
                     value={option.id}
                     id={`option-${option.id}`}
                     disabled={isSubmitting}
-                    className={existingAnswer === option.id ? "text-primary" : ""}
+                    className={cn(
+                      "transition-colors duration-200",
+                      existingAnswer === option.id ? "text-primary border-primary" : "group-hover:border-primary/50",
+                    )}
                   />
                   <Label
                     htmlFor={`option-${option.id}`}
                     className={cn(
-                      "flex-1 cursor-pointer text-base font-medium leading-relaxed",
-                      existingAnswer === option.id && "text-primary"
+                      "flex-1 cursor-pointer text-base font-medium leading-relaxed transition-colors duration-200",
+                      existingAnswer === option.id && "text-primary",
+                      "group-hover:text-foreground",
                     )}
                   >
                     {option.text}
@@ -143,4 +144,3 @@ const McqQuiz = ({
 }
 
 export default McqQuiz
-
