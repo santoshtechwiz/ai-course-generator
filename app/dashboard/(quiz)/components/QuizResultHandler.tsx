@@ -20,7 +20,7 @@ import {
   selectQuizTitle,
   clearQuizState,
 } from "@/store/slices/quiz-slice"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { QuizType } from "@/types/quiz"
 import { AnimatePresence, motion } from "framer-motion"
@@ -105,7 +105,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     }
 
     let score = 0
-    const questionResults = questions.map((question) => {
+    const questionResults = questions.map((question: any) => {
       const qid = String(question.id)
       const answer = answers[qid]
 
@@ -213,13 +213,20 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   // Show loading state
   if (viewState === "loading") {
-    return <QuizLoader message="Loading quiz results..." subMessage="Please wait" showTiming={true} />
+    return (
+      <div className="space-y-4 max-w-md mx-auto mt-12">
+        <Skeleton className="h-8 w-2/3 mb-2" />
+        <Skeleton className="h-5 w-full mb-2" />
+        <Skeleton className="h-5 w-5/6 mb-2" />
+        <Skeleton className="h-10 w-full rounded-lg" />
+      </div>
+    )
   }
 
   // Render based on view state
   return (
     <AnimatePresence mode="wait">
-      {viewState === "show_signin" && (
+      {viewState === "show_signin" && !isSessionLoading && !isAuthenticated && (
         <motion.div
           key="signin"
           initial={{ opacity: 0, y: 10 }}
@@ -259,13 +266,22 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         >
           <NoResults
             variant="quiz"
-            title="No Results Found"
-            description="Try retaking the quiz to view results."
+            title="Session Expired or No Results Found"
+            description="Your quiz results could not be loaded. This may happen if you refreshed the page, cleared your browser data, or your session expired. Please retake the quiz to view your results."
             action={{
               label: "Retake Quiz",
               onClick: handleRetake,
               icon: <RefreshCw className="h-4 w-4" />,
+              variant: "default"
             }}
+            secondaryAction={{
+              label: "Go to Dashboard",
+              onClick: () => router.push("/dashboard"),
+              icon: <RefreshCw className="h-4 w-4" />,
+              variant: "outline"
+            }}
+            minimal={false}
+            className="max-w-lg mx-auto"
           />
         </motion.div>
       )}

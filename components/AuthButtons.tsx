@@ -2,12 +2,12 @@
 
 import { LoginButton } from "./LoginButton"
 import { LogoutButton } from "./LogoutButton"
-import { useAuth } from "@/hooks"
+import { useOptimizedAuth } from "@/hooks/use-optimized-auth"
 import { Loader2 } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 export function AuthButtons() {
-  const { isAuthenticated, isLoading, user } = useAuth()
+  const { isAuthenticated, isLoading, user } = useOptimizedAuth()
   
   if (isLoading) {
     return (

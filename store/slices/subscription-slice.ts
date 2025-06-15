@@ -174,6 +174,8 @@ const subscriptionSlice = createSlice({
     resetState: () => {
       return initialState
     },
+    // Add a resetSubscriptionState action for logout
+    resetSubscriptionState: () => initialState,
     // Add a direct way to set subscription data for testing/debugging
     setSubscriptionData: (state, action: PayloadAction<any>) => {
       state.data = action.payload;
@@ -216,11 +218,9 @@ const subscriptionSlice = createSlice({
       })
       .addCase(fetchSubscription.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload?.error || "Subscription fetch failed";
-        
+        state.error = (typeof action.payload === 'string' ? action.payload : (action.payload && (action.payload as any).error)) || "Subscription fetch failed";
         // Set default free subscription data even when fetching fails
         state.data = DEFAULT_FREE_SUBSCRIPTION;
-        
         logger.error(`Subscription fetch failed: ${action.payload}`)
       })
 
@@ -286,7 +286,8 @@ const subscriptionSlice = createSlice({
 })
 
 // Export the new action
-export const { clearSubscriptionData, resetState, setSubscriptionData } = subscriptionSlice.actions
+// (Only export once, after all actions are defined)
+export const { clearSubscriptionData, resetState, setSubscriptionData, resetSubscriptionState } = subscriptionSlice.actions
 
 // Memoized selectors using createSelector for better performance
 import { createSelector } from "@reduxjs/toolkit"
@@ -303,7 +304,7 @@ export const selectSubscription = createSelector([selectSubscriptionData], (data
   return {
     ...data,
     isActive: data.status === "ACTIVE" && !data.cancelAtPeriodEnd,
-    isExpired: data.status === "EXPIRED" || new Date(data.expirationDate) < new Date(),
+    isExpired: data.status === "EXPIRED" || (data.expirationDate ? new Date(data.expirationDate) < new Date() : false),
     formattedCredits: typeof data.credits === "number" ? `${data.credits} credits` : "No credits",
     hasCreditsRemaining: (data.credits || 0) > (data.tokensUsed || 0),
   }
