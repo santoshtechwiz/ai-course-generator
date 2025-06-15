@@ -20,15 +20,17 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
 import { logout as reduxLogout, useAppDispatch, useAppSelector } from "@/store"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks"  // Use our centralized auth hook
+import { useOptimizedAuth } from "@/hooks/use-optimized-auth"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 export function UserMenu({ children }: { children?: ReactNode }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth()
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useOptimizedAuth()
   const dispatch = useAppDispatch()
   const subscriptionData = useAppSelector(selectSubscription)
   const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const router = useRouter()
   const hasInitializedRef = useRef(false)
   // Add fetch error tracking
@@ -44,7 +46,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
 
   // Create a wrapper function for fetching subscription data with error handling
   const fetchSubscriptionData = useCallback(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || isLoggingOut) return;
     
     // Use a try-catch to prevent unhandled promise rejections
     try {
@@ -57,40 +59,40 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     } catch (err) {
       console.warn("Error initiating subscription fetch:", err);
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, isLoggingOut]);
 
   useEffect(() => {
-    // Only fetch subscription on initial load if user is authenticated and error count is low
-    if (isAuthenticated && !hasInitializedRef.current && fetchErrors < 3) {
+    // Only fetch subscription on initial load if user is authenticated, not logging out, and error count is low
+    if (isAuthenticated && !isLoggingOut && !hasInitializedRef.current && fetchErrors < 3) {
       hasInitializedRef.current = true;
       fetchSubscriptionData();
     }
-  }, [isAuthenticated, fetchSubscriptionData, fetchErrors])
+  }, [isAuthenticated, isLoggingOut, fetchSubscriptionData, fetchErrors])
 
   const handleSignOut = async () => {
     setIsLoading(true)
+    setIsLoggingOut(true)
     try {
-      // Store current path before logout
-      const currentPath = typeof window !== 'undefined' 
-        ? window.location.pathname + window.location.search
-        : '/';
-      
-      // Dispatch Redux logout action
+      // Always redirect to /explore after logout
+      const targetPath = "/dashboard/explore";
       try {
         dispatch(reduxLogout())
       } catch (err) {
         console.warn("Redux dispatch failed during logout:", err);
       }
-      
-      // Use centralized auth logout
       await logout({
         redirect: true,
-        callbackUrl: currentPath
+        callbackUrl: targetPath
       });
+      if (typeof window !== 'undefined') {
+        window.location.href = targetPath;
+      }
+      setIsLoggingOut(false)
     } catch (error) {
-      console.error("Logout failed", error)
+      setIsLoggingOut(false)
       setIsLoading(false)
-      // You might want to add toast notification here
+      console.error("Logout failed", error)
+      // Optionally add toast notification here
     }
   }
 
@@ -179,75 +181,84 @@ export function UserMenu({ children }: { children?: ReactNode }) {
 
   // For authenticated users, show dropdown menu
   return (
-    <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
-      <DropdownMenuTrigger asChild>
-        {menuTrigger}
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent 
-        className="w-56 animate-in fade-in-50 duration-100" 
-        align="end" 
-        forceMount
-      >
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            {user?.name ? 
-              <p className="font-medium text-sm text-primary/90">{user.name}</p> : 
-              <Skeleton className="h-4 w-24" />
-            }
-            {user?.email ? (
-              <p className="w-full truncate text-xs text-muted-foreground">{user.email}</p>
-            ) : (
-              <Skeleton className="h-3 w-32" />
-            )}
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/profile" className="cursor-pointer hover:text-primary transition-colors">
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/account" className="cursor-pointer hover:text-primary transition-colors flex items-center">
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Account</span>
-              {getSubscriptionBadge()}
-              {getCreditsDisplay()}
-            </Link>
-          </DropdownMenuItem>
-
-          {user?.isAdmin && (
+    <>
+      <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          {menuTrigger}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent 
+          className="w-56 animate-in fade-in-50 duration-100" 
+          align="end" 
+          forceMount
+        >
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              {user?.name ? 
+                <p className="font-medium text-sm text-primary/90">{user.name}</p> : 
+                <Skeleton className="h-4 w-24" />
+              }
+              {user?.email ? (
+                <p className="w-full truncate text-xs text-muted-foreground">{user.email}</p>
+              ) : (
+                <Skeleton className="h-3 w-32" />
+              )}
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/admin" className="cursor-pointer hover:text-primary transition-colors">
-                <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                <span>Admin</span>
+              <Link href="/dashboard/profile" className="cursor-pointer hover:text-primary transition-colors">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
               </Link>
             </DropdownMenuItem>
-          )}
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          onClick={handleSignOut} 
-          disabled={isLoading}
-          className="cursor-pointer hover:text-red-500 transition-colors"
-        >
-          {isLoading ? (
-            <div className="flex items-center">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Logging out...
-            </div>
-          ) : (
-            <>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </>
-          )}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/account" className="cursor-pointer hover:text-primary transition-colors flex items-center">
+                <CreditCard className="mr-2 h-4 w-4" />
+                <span>Account</span>
+                {getSubscriptionBadge()}
+                {getCreditsDisplay()}
+              </Link>
+            </DropdownMenuItem>
+
+            {user?.isAdmin && (
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/admin" className="cursor-pointer hover:text-primary transition-colors">
+                  <Crown className="mr-2 h-4 w-4 text-amber-500" />
+                  <span>Admin</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem 
+            onClick={handleSignOut} 
+            disabled={isLoading}
+            className="cursor-pointer hover:text-red-500 transition-colors"
+          >
+            {isLoading ? (
+              <div className="flex items-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging out...
+              </div>
+            ) : (
+              <>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </>
+            )}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {/* Modal dialog for logout spinner */}
+      <Dialog open={isLoading}>
+        <DialogContent className="flex flex-col items-center gap-4 py-8">
+          <DialogTitle className="sr-only">Logging out</DialogTitle>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="text-lg font-semibold">Logging out...</div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

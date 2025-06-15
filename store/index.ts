@@ -40,7 +40,7 @@ const authPersistConfig = {
 };
 
 const rootReducer = combineReducers({
-  auth: persistReducer(authPersistConfig, authReducer),
+  auth: authReducer, // No persistence for auth
   quiz: quizReducer,
   subscription: subscriptionReducer,
 
@@ -134,7 +134,6 @@ export {
 export {
   resetState as resetSubscriptionState,
 } from "./slices/subscription-slice";
-
 
 
 

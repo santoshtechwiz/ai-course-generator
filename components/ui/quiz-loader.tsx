@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Check } from "lucide-react";
+import Logo from "@/components/layout/navigation/Logo";
+import { Sparkles, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface QuizLoaderProps {
@@ -86,14 +87,49 @@ export function QuizLoader({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Spinner */}
+      {/* Spinner/Icon Animation */}
       {showSpinner && (
         <motion.div
-          className={cn("mb-6 text-primary", loaderSize)}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className={cn(
+            "mb-6 flex flex-col items-center justify-center",
+            loaderSize
+          )}
+          initial={{ scale: 0.8, opacity: 0.7 }}
+          animate={{
+            scale: [0.8, 1.1, 1],
+            opacity: [0.7, 1, 0.9, 1],
+          }}
+          transition={{
+            duration: 1.2,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "easeInOut",
+          }}
         >
-          <Loader2 className={cn("w-full h-full")} />
+          <Logo
+            size={
+              size === "sm"
+                ? "small"
+                : size === "lg"
+                ? "large"
+                : "medium"
+            }
+            variant="minimal"
+          />
+          <motion.div
+            className="absolute"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0.7, 1] }}
+            transition={{
+              duration: 1.2,
+              repeat: Infinity,
+              repeatType: "reverse",
+              ease: "easeInOut",
+              delay: 0.2,
+            }}
+          >
+            <Sparkles className="w-7 h-7 text-primary/70 animate-pulse" />
+          </motion.div>
         </motion.div>
       )}
 
