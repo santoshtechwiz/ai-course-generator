@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { LogOut, Loader2 } from "lucide-react"
-import { useOptimizedAuth } from "@/hooks/use-optimized-auth"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -23,7 +23,7 @@ export function LogoutButton({
   size = "sm"
 }: LogoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const { logout } = useOptimizedAuth()
+  const { logout } = useAuth()
   const { toast } = useToast()
 
   // If logging out, show modal dialog

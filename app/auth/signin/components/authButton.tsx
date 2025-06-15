@@ -7,7 +7,7 @@ import Image, { type StaticImageData } from "next/image"
 import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useToast } from "@/hooks"
-import { useOptimizedAuth } from "@/hooks/use-optimized-auth"
+import { useAuth } from "@/hooks/use-auth"
 
 export interface AuthButtonProps {
   provider: string
@@ -20,7 +20,7 @@ export interface AuthButtonProps {
 export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthButtonProps) {
   const [isButtonLoading, setIsButtonLoading] = useState(false)
   const { toast } = useToast()
-  const { login } = useOptimizedAuth()
+  const { login } = useAuth()
   const isClickInProgress = useRef(false)
 
   const handleClick = async (e: React.MouseEvent) => {

@@ -3,7 +3,7 @@
 import { LogIn, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useOptimizedAuth } from "@/hooks/use-optimized-auth"
+import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks"
 
 interface LoginButtonProps {
@@ -26,7 +26,7 @@ export function LoginButton({
   size = "sm"
 }: LoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useOptimizedAuth()
+  const { login } = useAuth()
   const { toast } = useToast()
 
   const handleLogin = async () => {

@@ -13,6 +13,7 @@ import type { Session } from "next-auth"
 import { useEffect } from "react"
 import { useAppDispatch } from "@/store/hooks"
 import { loginSuccess, logout as reduxLogout, loginStart, loginFailure } from "@/store/slices/auth-slice"
+import { useToast } from "@/hooks"
 
 export interface AuthContextValue {
   user: any
@@ -49,6 +50,7 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const dispatch = useAppDispatch()
+  const { toast } = useToast();
 
   // Hydrate Redux auth state from next-auth session
   useEffect(() => {
@@ -95,24 +97,13 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
     async (options: { redirect?: boolean; callbackUrl?: string } = {}) => {
       try {
         const redirectUrl = options.callbackUrl || "/"
-        
-        // Debounce signOut to prevent multiple API calls
-        const signOutPromise = signOut({ 
-          redirect: false, // Always prevent automatic redirect so we can control it
-          callbackUrl: redirectUrl 
-        });
-        
-        // Clear all stateful data in parallel with signOut request
+        // Clear Redux and storage immediately
         if (typeof window !== "undefined") {
-          // Batch clear storage operations
           const itemsToClear = [
-            // Local storage
             ["localStorage", "redux_state"],
             ["localStorage", "persist:auth"],
             ["localStorage", "persist:course"],
             ["localStorage", "pendingQuizResults"],
-            
-            // Session storage
             ["sessionStorage", "redux_state"],
             ["sessionStorage", "pendingQuizResults"], 
             ["sessionStorage", "guestId"],
@@ -120,32 +111,23 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
             ["sessionStorage", "next-auth.callback-url"],
             ["sessionStorage", "next-auth.csrf-token"]
           ];
-          
-          // Batch remove operations
           itemsToClear.forEach(([storageType, key]) => {
             try {
               window[storageType as "localStorage" | "sessionStorage"]?.removeItem(key);
-            } catch (e) {
-              // Ignore errors in storage operations
-            }
+            } catch (e) {}
           });
         }
-        
-        // Wait for signOut to complete
-        await signOutPromise;
-        
-        // Only redirect if explicitly requested
-        if (options.redirect !== false && typeof window !== "undefined") {
-          window.location.href = redirectUrl;
-        }
+        toast({ title: "Signed out", description: "You have been logged out.", variant: "success" });
+        // Use NextAuth's fast signOut with redirect
+        await signOut({ redirect: true, callbackUrl: redirectUrl });
       } catch (error) {
-        console.error("Logout failed:", error)
+        toast({ title: "Logout failed", description: "Failed to sign out. Please try again.", variant: "destructive" });
         if (options.redirect !== false && typeof window !== "undefined") {
           router.push("/");
         }
       }
     },
-    [router]
+    [router, toast]
   )
 
   const value: AuthContextValue = useMemo(
