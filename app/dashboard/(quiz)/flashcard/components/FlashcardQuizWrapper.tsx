@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useMemo, useState, useRef, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import type { AppDispatch } from "@/store"
+import type { AppDispatch, RootState } from "@/store"
 import {
   selectFlashcardQuestions,
   selectFlashcardAnswers,
@@ -13,9 +13,6 @@ import {
   selectIsQuizComplete,
   clearQuizState,
   fetchFlashCardQuiz,
-  submitFlashCardAnswer,
-  setCurrentFlashCard,
-  completeFlashCardQuiz,
 } from "@/store/slices/flashcard-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import FlashcardQuiz from "./FlashcardQuiz"
@@ -29,190 +26,161 @@ interface FlashcardQuizWrapperProps {
 }
 
 export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapperProps) {
+  // References to prevent re-fetching
+  const initRef = useRef(false)
+  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hasFetchedRef = useRef(false)
+
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useDispatch<AppDispatch>()
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Get UI state from URL
+  const isReviewMode = searchParams?.get("review") === "true"
+  const isResetMode = searchParams?.get("reset") === "true"
 
-  const questions = useSelector(selectFlashcardQuestions)
-  const answers = useSelector(selectFlashcardAnswers)
-  const currentQuestionIndex = useSelector(selectFlashcardCurrentIndex)
-  const quizStatus = useSelector(selectFlashcardStatus)
-  const quizTitle = useSelector(selectQuizTitle)
-  const isCompleted = useSelector(selectIsQuizComplete)
+  // Get data from Redux (memoized selectors already)
+  const questions = useSelector((state: RootState) => selectFlashcardQuestions(state))
+  const answers = useSelector((state: RootState) => selectFlashcardAnswers(state))
+  const currentQuestionIndex = useSelector((state: RootState) => selectFlashcardCurrentIndex(state))
+  const quizStatus = useSelector((state: RootState) => selectFlashcardStatus(state))
+  const quizTitle = useSelector((state: RootState) => selectQuizTitle(state))
+  const isCompleted = useSelector((state: RootState) => selectIsQuizComplete(state))
 
-  // Initialize quiz
+  // Initialize the quiz - only run once
   useEffect(() => {
+    if (initRef.current) return
+
     const init = async () => {
-      setLoading(true)
-      setError(null)
-      dispatch(clearQuizState())
-      try {
-        const result = await dispatch(fetchFlashCardQuiz(slug)).unwrap()
-        if (!result || !result.questions || result.questions.length === 0) {
-          setError("No flashcards found for this topic.")
+      // Reset if requested or for review mode
+      if (isResetMode || isReviewMode) {
+        dispatch(clearQuizState())
+      }
+
+      // Only fetch if we don't have questions yet
+      if (!hasFetchedRef.current && questions.length === 0) {
+        try {
+          hasFetchedRef.current = true
+          await dispatch(fetchFlashCardQuiz(slug)).unwrap()
+        } catch (err) {
+          console.error("Failed to load flashcards:", err)
+          toast.error("Failed to load flashcards. Please try again.")
         }
-      } catch (err) {
-        setError("Failed to load flashcards. Please try again.")
-      } finally {
-        setLoading(false)
       }
     }
+
     init()
+    initRef.current = true
+
+    // Clean up any timeouts on unmount
     return () => {
       if (submissionTimeoutRef.current) {
         clearTimeout(submissionTimeoutRef.current)
       }
     }
-  }, [slug, dispatch])
+  }, [slug, dispatch, isResetMode, isReviewMode, questions.length])
 
-  // Handle quiz completion and navigation (align with MCQ flow)
+  // Handle quiz completion and navigation
   useEffect(() => {
-    if (!isCompleted || isSubmitting) return
-    toast.success("🎉 Flashcard study session completed! Calculating your results...", { duration: 2000 })
+    if (!isCompleted) return
+
+    // Already completed, show results
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/flashcard/${slug}/results`)
-    }, 1500)
-  }, [isCompleted, isSubmitting, router, slug])
+    }, 1000)
 
-  const currentQuestion = useMemo(() => {
-    if (!questions || !questions.length || currentQuestionIndex >= questions.length) return null
-    return questions[currentQuestionIndex]
-  }, [questions, currentQuestionIndex])
-
-  const handleAnswer = useCallback(
-    (cardId: string | number, answer: "correct" | "incorrect") => {
-      if (!currentQuestion) return
-      dispatch(
-        submitFlashCardAnswer({
-          questionId: String(cardId),
-          answer: answer,
-          userAnswer: answer,
-          isCorrect: answer === "correct",
-          timeSpent: 0,
-        }),
-      )
-    },
-    [currentQuestion, dispatch],
-  )
-
-  const handleNext = useCallback(() => {
-    if (currentQuestionIndex < questions.length - 1) {
-      dispatch(setCurrentFlashCard(currentQuestionIndex + 1))
-    }
-  }, [currentQuestionIndex, questions.length, dispatch])
-
-  const handlePrevious = useCallback(() => {
-    if (currentQuestionIndex > 0) {
-      dispatch(setCurrentFlashCard(currentQuestionIndex - 1))
-    }
-  }, [currentQuestionIndex, dispatch])
-
-  const handleSubmitQuiz = useCallback(async () => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    try {
-      const correctAnswers = answers.filter((answer) => answer.isCorrect).length
-      const results = {
-        quizId: slug,
-        slug,
-        title: quizTitle || title || "Flashcard Session",
-        questions,
-        answers,
-        completedAt: new Date().toISOString(),
-        userScore: correctAnswers,
-        maxScore: questions.length,
-        percentage: Math.round((correctAnswers / questions.length) * 100),
-        correctAnswers: correctAnswers,
-        totalQuestions: questions.length,
-        isCompleted: true,
+    return () => {
+      if (submissionTimeoutRef.current) {
+        clearTimeout(submissionTimeoutRef.current)
       }
-      await dispatch(completeFlashCardQuiz(results))
-      // After completion, isCompleted will be true and useEffect will handle redirect
-    } catch (err) {
-      toast.error("Failed to save your progress. Please try again.")
-      setIsSubmitting(false)
     }
-  }, [isSubmitting, slug, quizTitle, title, questions, answers, dispatch])
+  }, [isCompleted, router, slug])
 
-  const handleRetakeQuiz = useCallback(() => {
-    dispatch(clearQuizState())
-    router.replace(`/dashboard/flashcard/${slug}`)
-  }, [dispatch, router, slug])
+  // Get cards to review (based on incorrect and still_learning answers)
+  const reviewQuestions = useMemo(() => {
+    if (!isReviewMode || !questions.length || !answers.length) return questions
 
-  // Save/unsave logic (optional, can be expanded as needed)
-  const [savedCards, setSavedCards] = useState<Record<string | number, boolean>>({})
-  const handleToggleSave = useCallback(
-    (id: string | number, saved: boolean) => {
-      setSavedCards((prev) => ({ ...prev, [id]: saved }))
-      // Optionally, dispatch a save action here if needed
-    },
-    [],
-  )
-  const handleSaveCard = useCallback(
-    (card: any) => {
-      if (!card || !card.id) return
-      const isSaved = savedCards[card.id]
-      setSavedCards((prev) => ({ ...prev, [card.id]: !isSaved }))
-    },
-    [savedCards],
-  )
-  const savedCardIds = useMemo(
-    () =>
-      Object.entries(savedCards)
-        .filter(([_, isSaved]) => isSaved)
-        .map(([cardId]) => cardId),
-    [savedCards],
-  )
+    // Find questions that were answered incorrectly or marked as still learning
+    const reviewIds = answers
+      .filter(
+        (answer) => answer.answer === "incorrect" || answer.answer === "still_learning" || answer.isCorrect === false,
+      )
+      .map((answer) => answer.questionId)
 
-  const canGoNext = currentQuestionIndex < questions.length - 1
-  const canGoPrevious = currentQuestionIndex > 0
-  const isLastQuestion = currentQuestionIndex === questions.length - 1
+    // Filter the questions to only include those with incorrect/still learning answers
+    return questions.filter((question) => reviewIds.includes(question.id?.toString() || ""))
+  }, [isReviewMode, questions, answers])
 
-  if (loading || quizStatus === "loading") {
-    return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study session" />
+  // Use the correct set of questions based on mode
+  const currentQuestions = isReviewMode ? reviewQuestions : questions
+
+  // Loading state
+  if (quizStatus === "loading") {
+    return <QuizLoader message={isReviewMode ? "Loading review cards..." : "Loading flashcards..."} />
   }
-  if (error || quizStatus === "failed") {
-    return (
-      <NoResults
-        variant="error"
-        title="No Flashcards Found"
-        description={error || "We couldn't find any flashcards for this topic."}
-        action={{ label: "Try Again", onClick: () => window.location.reload() }}
-        secondaryAction={{ label: "Browse Topics", onClick: () => router.push("/dashboard/quizzes"), variant: "outline" }}
-      />
-    )
-  }
-  if (!currentQuestion) {
+
+  // Error state
+  if (quizStatus === "failed") {
     return (
       <NoResults
         variant="error"
         title="No Flashcards Found"
         description="We couldn't find any flashcards for this topic."
-        action={{ label: "Try Again", onClick: () => window.location.reload() }}
-        secondaryAction={{ label: "Browse Topics", onClick: () => router.push("/dashboard/quizzes"), variant: "outline" }}
+        action={{ label: "Try Again", onClick: () => router.reload() }}
+        secondaryAction={{
+          label: "Browse Topics",
+          onClick: () => router.push("/dashboard/quizzes"),
+          variant: "outline",
+        }}
       />
     )
   }
-  // Remove custom result UI, let result page handle it after redirect
+
+  // No questions to review
+  if (isReviewMode && reviewQuestions.length === 0) {
+    return (
+      <NoResults
+        variant="info"
+        title="No Cards to Review"
+        description="You marked all cards as known. Great job!"
+        action={{ label: "Retake Quiz", onClick: () => router.push(`/dashboard/flashcard/${slug}?reset=true`) }}
+        secondaryAction={{
+          label: "Back to Results",
+          onClick: () => router.push(`/dashboard/flashcard/${slug}/results`),
+        }}
+      />
+    )
+  }
+
+  // No questions state
+  if (!currentQuestions || currentQuestions.length === 0) {
+    return (
+      <NoResults
+        variant="error"
+        title="No Flashcards Found"
+        description="We couldn't find any flashcards for this topic."
+        action={{ label: "Try Again", onClick: () => router.reload() }}
+        secondaryAction={{ label: "Browse Topics", onClick: () => router.push("/dashboard/quizzes") }}
+      />
+    )
+  }
+
   return (
     <motion.div
       className="space-y-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.3 }}
     >
       <FlashcardQuiz
-        key={currentQuestion?.id || currentQuestionIndex}
-        cards={questions}
+        key={`${slug}-${isReviewMode ? "review" : "full"}`}
+        cards={currentQuestions}
         quizId={slug}
         slug={slug}
-        title={quizTitle || title || "Flashcard Quiz"}
-        onSaveCard={handleSaveCard}
-        savedCardIds={savedCardIds}
+        title={
+          isReviewMode ? `Review: ${quizTitle || title || "Flashcard Quiz"}` : quizTitle || title || "Flashcard Quiz"
+        }
+        isReviewMode={isReviewMode}
       />
     </motion.div>
   )

@@ -1,7 +1,7 @@
 "use client"
-import { useState, useRef, useEffect, useMemo, useCallback, memo } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown, Settings, X } from "lucide-react"
+import { Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown, Settings, X, BookOpen } from "lucide-react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
 
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
@@ -39,6 +39,7 @@ interface FlashCardComponentProps {
   title: string
   onSaveCard?: (card: FlashCard) => void
   savedCardIds?: string[]
+  isReviewMode?: boolean // Add this missing prop
 }
 
 function FlashCardQuiz({
@@ -48,6 +49,7 @@ function FlashCardQuiz({
   title,
   onSaveCard,
   savedCardIds = [],
+  isReviewMode = false,
 }: FlashCardComponentProps) {
   // Get state from flashcard slice only
   const dispatch = useAppDispatch()
@@ -68,7 +70,7 @@ function FlashCardQuiz({
   const [flipped, setFlipped] = useState(false)
   const [direction, setDirection] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
-  const [ratingAnimation, setRatingAnimation] = useState<"correct" | "incorrect" | null>(null)
+  const [ratingAnimation, setRatingAnimation] = useState<"correct" | "incorrect" | "still_learning" | null>(null)
   const [reviewMode, setReviewMode] = useState(false)
   const [reviewCards, setReviewCards] = useState<number[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -120,12 +122,12 @@ function FlashCardQuiz({
 
   // Get self-ratings from the answers in Redux with proper null checks
   const selfRating = useMemo(() => {
-    const ratings: Record<string, "correct" | "incorrect" | null> = {}
+    const ratings: Record<string, "correct" | "incorrect" | "still_learning" | null> = {}
 
     if (answers && Array.isArray(answers) && cards) {
       answers.forEach((answer) => {
         if (answer && answer.questionId) {
-          ratings[answer.questionId] = answer.answer as "correct" | "incorrect"
+          ratings[answer.questionId] = answer.answer as "correct" | "incorrect" | "still_learning"
         }
       })
     }
@@ -138,54 +140,114 @@ function FlashCardQuiz({
     return Object.values(selfRating).filter((rating) => rating === "correct").length
   }, [selfRating])
 
-  // Enhanced review card handling
-  const cardsToReview = useMemo(() => {
-    if (!cards || !cards.length) return []
+  // Process answers to get detailed counts including still_learning - FIXED CARD MAPPING
+  const processedResults = useMemo(() => {
+    if (!answers || !Array.isArray(answers) || !cards || !cards.length) {
+      return {
+        correctCount: 0,
+        stillLearningCount: 0,
+        incorrectCount: 0,
+        totalCount: 0,
+        reviewCards: [],
+        stillLearningCards: [],
+      }
+    }
 
-    // Find the cards that were marked as incorrect
-    return Object.entries(selfRating)
-      .filter(([_, rating]) => rating === "incorrect")
-      .map(([cardId]) => {
-        // Find the index of the card with matching ID
-        const index = cards.findIndex((card) => {
-          const cardIdStr = card.id?.toString()
-          return cardIdStr === cardId
-        })
-        return index
-      })
-      .filter((index) => index !== -1)
+    let correctCount = 0
+    let stillLearningCount = 0
+    let incorrectCount = 0
+    const reviewCards: number[] = []
+    const stillLearningCards: number[] = []
+
+    answers.forEach((answer) => {
+      if (answer && typeof answer.answer === "string" && answer.questionId) {
+        // Find the card index by matching the question ID
+        const cardIndex = cards.findIndex((card) => card.id?.toString() === answer.questionId.toString())
+
+        if (cardIndex !== -1) {
+          switch (answer.answer) {
+            case "correct":
+              correctCount++
+              break
+            case "still_learning":
+              stillLearningCount++
+              stillLearningCards.push(cardIndex)
+              break
+            case "incorrect":
+              incorrectCount++
+              reviewCards.push(cardIndex)
+              break
+          }
+        }
+      }
+    })
+
+    console.log("Processed results:", {
+      correctCount,
+      stillLearningCount,
+      incorrectCount,
+      reviewCards,
+      stillLearningCards,
+      totalAnswers: answers.length,
+    })
+
+    return {
+      correctCount,
+      stillLearningCount,
+      incorrectCount,
+      totalCount: correctCount + stillLearningCount + incorrectCount,
+      reviewCards,
+      stillLearningCards,
+    }
+  }, [answers, cards])
+
+  // Get cards that need review by category - IMPROVED MAPPING
+  const reviewCardsByCategory = useMemo(() => {
+    if (!cards || !cards.length) return { incorrect: [], stillLearning: [] }
+
+    const incorrect: number[] = []
+    const stillLearning: number[] = []
+
+    Object.entries(selfRating).forEach(([cardId, rating]) => {
+      const index = cards.findIndex((card) => card.id?.toString() === cardId)
+      if (index !== -1) {
+        if (rating === "incorrect") {
+          incorrect.push(index)
+        } else if (rating === "still_learning") {
+          stillLearning.push(index)
+        }
+      }
+    })
+
+    return { incorrect, stillLearning }
   }, [selfRating, cards])
 
   // Fixed enter review mode function with better error handling
-  const handleEnterReviewMode = useCallback(() => {
-    if (!cardsToReview.length) {
-      console.log("No cards to review")
-      return
-    }
+  const handleEnterReviewMode = useCallback(
+    (reviewType: "incorrect" | "still_learning" = "incorrect") => {
+      const cardsToReview =
+        reviewType === "incorrect" ? reviewCardsByCategory.incorrect : reviewCardsByCategory.stillLearning
 
-    // Set review cards and reset UI state
-    setReviewCards(cardsToReview)
-    setReviewMode(true)
-    setFlipped(false)
+      if (!cardsToReview.length) {
+        console.log(`No ${reviewType} cards to review`)
+        return
+      }
 
-    // Reset to first review card via Redux
-    dispatch(setCurrentFlashCard(0))
+      console.log(`Entering ${reviewType} review mode with cards:`, cardsToReview)
 
-    // Reset completed state to ensure questions can be answered in review mode
-    dispatch(
-      completeFlashCardQuiz({
-        score: 0,
-        answers: [],
-        completedAt: "",
-        isReviewMode: true,
-      }),
-    )
+      // Set review cards and reset UI state
+      setReviewCards(cardsToReview)
+      setReviewMode(true)
+      setFlipped(false)
 
-    setStartTime(Date.now())
+      // Reset to first review card via Redux
+      dispatch(setCurrentFlashCard(0))
 
-    // Log for debugging
-    console.log("Entering review mode with cards:", cardsToReview)
-  }, [cardsToReview, dispatch])
+      // Don't reset completed state - we want to maintain the results
+      setStartTime(Date.now())
+    },
+    [reviewCardsByCategory, dispatch],
+  )
 
   // Handle exiting review mode
   const handleExitReviewMode = useCallback(() => {
@@ -250,7 +312,7 @@ function FlashCardQuiz({
     }
   }, [onSaveCard, currentCard])
 
-  // Handle moving to the next flashcard - fix review mode navigation
+  // Handle moving to the next flashcard - FIXED REVIEW MODE NAVIGATION
   const moveToNextCard = useCallback(() => {
     if (!cards?.length) return
 
@@ -284,6 +346,7 @@ function FlashCardQuiz({
       // If we're in review mode and finished reviewing, go back to normal mode
       if (reviewMode) {
         setReviewMode(false)
+        setReviewCards([])
         dispatch(setCurrentFlashCard(0))
         setFlipped(false)
         return
@@ -297,23 +360,37 @@ function FlashCardQuiz({
       // Calculate total time from answers
       const totalTime = Array.isArray(answers) ? answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0) : 0
 
-      // Complete the quiz but don't redirect - let the QuizResultHandler manage auth and redirects
-      dispatch(
-        completeFlashCardQuiz({
-          score,
-          answers: answers || [],
-          completedAt: new Date().toISOString(),
-          percentage: score,
-          correctAnswers: correctCount,
-          totalQuestions: totalQuestions,
-          totalTime: totalTime,
-        }),
-      )
+      // Complete the quiz with proper result data
+      const quizResults = {
+        score,
+        answers: answers || [],
+        completedAt: new Date().toISOString(),
+        percentage: score,
+        correctAnswers: correctCount,
+        stillLearningAnswers: processedResults.stillLearningCount,
+        incorrectAnswers: processedResults.incorrectCount,
+        totalQuestions: totalQuestions,
+        totalTime: totalTime,
+        reviewCards: processedResults.reviewCards,
+        stillLearningCards: processedResults.stillLearningCards,
+      }
+
+      dispatch(completeFlashCardQuiz(quizResults))
 
       // Show confetti for completion
       setShowConfetti(true)
     }
-  }, [currentQuestionIndex, reviewMode, reviewCards.length, cards, dispatch, calculateScore, answers, cardControls])
+  }, [
+    currentQuestionIndex,
+    reviewMode,
+    reviewCards.length,
+    cards,
+    dispatch,
+    calculateScore,
+    answers,
+    cardControls,
+    processedResults,
+  ])
 
   // Rating feedback optimization with smoother spring physics
   const ratingFeedbackVariants = {
@@ -345,9 +422,9 @@ function FlashCardQuiz({
     },
   }
 
-  // Handle self-rating functionality with improved animation coordination
+  // Handle self-rating functionality with improved animation coordination - now supports three states
   const handleSelfRating = useCallback(
-    (cardId: string, rating: "correct" | "incorrect") => {
+    (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
       if (!cardId) return
 
       // Calculate time spent
@@ -363,7 +440,7 @@ function FlashCardQuiz({
       // Disable swipe during animation
       setSwipeDisabled(true)
 
-      // Submit answer
+      // Submit answer - still_learning is neither correct nor incorrect
       const answerData = {
         answer: rating,
         userAnswer: rating,
@@ -379,11 +456,17 @@ function FlashCardQuiz({
 
       // Add haptic feedback for mobile if available
       if (window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(rating === "correct" ? [50] : [20, 30, 40])
+        if (rating === "correct") {
+          window.navigator.vibrate([50])
+        } else if (rating === "still_learning") {
+          window.navigator.vibrate([30, 20, 30])
+        } else {
+          window.navigator.vibrate([20, 30, 40])
+        }
       }
 
       let timerRef: NodeJS.Timeout | null = null
-      
+
       // Handle auto-advance with coordinated timing
       if (autoAdvance) {
         // Use a slight delay to show feedback before advancing
@@ -398,7 +481,7 @@ function FlashCardQuiz({
                 setStartTime(Date.now())
               }
             }, 50)
-            
+
             return () => clearTimeout(advanceTimer)
           }
         }, 700)
@@ -410,7 +493,7 @@ function FlashCardQuiz({
           }
         }, 700)
       }
-      
+
       return () => {
         if (timerRef) clearTimeout(timerRef)
       }
@@ -473,7 +556,7 @@ function FlashCardQuiz({
     [swipeDisabled, swipeThreshold, moveToNextCard, toggleFlip, cardControls],
   )
 
-  // Keyboard navigation
+  // Keyboard navigation - updated to support three rating options
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCompleted) return
@@ -493,6 +576,12 @@ function FlashCardQuiz({
           }
           break
         case "2":
+        case "s":
+          if (currentCard?.id && flipped) {
+            handleSelfRating(currentCard.id.toString(), "still_learning")
+          }
+          break
+        case "3":
         case "n":
           if (currentCard?.id && flipped) {
             handleSelfRating(currentCard.id.toString(), "incorrect")
@@ -670,12 +759,14 @@ function FlashCardQuiz({
       opacity: 0,
       scale: 0.9,
       willChange: "transform, opacity",
+      transform: "translate3d(0,0,0)", // Force GPU acceleration
     }),
     animate: {
       x: 0,
       opacity: 1,
       scale: 1,
       willChange: "transform, opacity",
+      transform: "translate3d(0,0,0)",
       transition: {
         x: { type: "spring", stiffness: 300, damping: 25 },
         opacity: { duration: 0.4 },
@@ -687,20 +778,13 @@ function FlashCardQuiz({
       opacity: 0,
       scale: 0.9,
       willChange: "transform, opacity",
+      transform: "translate3d(0,0,0)",
       transition: {
         x: { type: "spring", stiffness: 300, damping: 25 },
         opacity: { duration: 0.4 },
         scale: { duration: 0.3 },
       },
     }),
-    drag: {
-      x: 0,
-      opacity: 1,
-      willChange: "transform",
-      transition: {
-        x: { type: "spring", stiffness: 300, damping: 25 },
-      },
-    },
   }
 
   // Enhance animation variants with 3D transforms and hardware acceleration
@@ -799,6 +883,23 @@ function FlashCardQuiz({
                   </div>
 
                   {reviewMode && (
+                    <Button variant="outline" size="sm" onClick={() => handleEnterReviewMode()} className="w-full">
+                      Review Incorrect
+                    </Button>
+                  )}
+
+                  {reviewMode && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEnterReviewMode("still_learning")}
+                      className="w-full"
+                    >
+                      Review Still Learning
+                    </Button>
+                  )}
+
+                  {reviewMode && (
                     <Button variant="outline" size="sm" onClick={handleExitReviewMode} className="w-full">
                       Exit Review Mode
                     </Button>
@@ -809,7 +910,8 @@ function FlashCardQuiz({
                     <p>Space/Left Arrow: Flip card</p>
                     <p>Right Arrow: Next card</p>
                     <p>1/Y: Mark as known</p>
-                    <p>2/N: Mark as still learning</p>
+                    <p>2/S: Still learning</p>
+                    <p>3/N: Mark as incorrect</p>
                   </div>
                 </div>
               </PopoverContent>
@@ -839,6 +941,15 @@ function FlashCardQuiz({
                     initial="initial"
                     animate="animate"
                     exit="exit"
+                    role="button"
+                    aria-label="Flip card to see answer"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        toggleFlip()
+                      }
+                    }}
                   >
                     {/* Decorative elements */}
                     <motion.div
@@ -869,7 +980,7 @@ function FlashCardQuiz({
 
                     {/* Question text */}
                     <div className="text-lg sm:text-xl md:text-2xl font-medium text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[200px] sm:max-h-[250px] md:max-h-[300px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
-                      {currentCard?.question}
+                      {currentCard?.question || "No question available"}
                     </div>
 
                     {/* Swipe instructions */}
@@ -930,6 +1041,15 @@ function FlashCardQuiz({
                     initial="initial"
                     animate="animate"
                     exit="exit"
+                    role="button"
+                    aria-label="Flip card back to see question"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        toggleFlip()
+                      }
+                    }}
                   >
                     {/* Decorative elements */}
                     <motion.div
@@ -963,12 +1083,12 @@ function FlashCardQuiz({
                       {currentCard?.answer}
                     </div>
 
-                    {/* Self-rating buttons */}
-                    <div className="mt-6 md:mt-8 flex flex-col gap-2 sm:gap-3 w-full max-w-xs z-10">
+                    {/* Self-rating buttons - now with three options */}
+                    <div className="mt-6 md:mt-8 flex flex-col gap-2 sm:gap-3 w-full max-w-sm z-10">
                       <p className="text-xs sm:text-sm text-center text-muted-foreground mb-1 sm:mb-2 font-medium">
                         How well did you know this?
                       </p>
-                      <div className="flex justify-center gap-4">
+                      <div className="flex justify-center gap-2">
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           <Button
                             variant={selfRating[currentCard?.id || ""] === "correct" ? "default" : "outline"}
@@ -979,10 +1099,27 @@ function FlashCardQuiz({
                                 handleSelfRating(currentCard.id.toString(), "correct")
                               }
                             }}
-                            className="flex items-center gap-2 relative overflow-hidden h-10 px-4"
+                            className="flex items-center gap-1 relative overflow-hidden h-9 px-3"
                           >
-                            <ThumbsUp className="h-4 w-4" />
-                            <span>Got it</span>
+                            <ThumbsUp className="h-3 w-3" />
+                            <span className="text-xs">Got it</span>
+                          </Button>
+                        </motion.div>
+
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant={selfRating[currentCard?.id || ""] === "still_learning" ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (currentCard?.id) {
+                                handleSelfRating(currentCard.id.toString(), "still_learning")
+                              }
+                            }}
+                            className="flex items-center gap-1 relative overflow-hidden h-9 px-3"
+                          >
+                            <BookOpen className="h-3 w-3" />
+                            <span className="text-xs">Learning</span>
                           </Button>
                         </motion.div>
 
@@ -996,10 +1133,10 @@ function FlashCardQuiz({
                                 handleSelfRating(currentCard.id.toString(), "incorrect")
                               }
                             }}
-                            className="flex items-center gap-2 relative overflow-hidden h-10 px-4"
+                            className="flex items-center gap-1 relative overflow-hidden h-9 px-3"
                           >
-                            <ThumbsDown className="h-4 w-4" />
-                            <span>Still learning</span>
+                            <ThumbsDown className="h-3 w-3" />
+                            <span className="text-xs">Missed</span>
                           </Button>
                         </motion.div>
                       </div>
@@ -1019,7 +1156,7 @@ function FlashCardQuiz({
                       </motion.span>
                     </div>
 
-                    {/* Rating feedback animation */}
+                    {/* Rating feedback animation - updated for three states */}
                     <AnimatePresence>
                       {ratingAnimation && (
                         <motion.div
@@ -1029,12 +1166,26 @@ function FlashCardQuiz({
                           animate="visible"
                           exit="exit"
                           className={`absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20 ${
-                            ratingAnimation === "correct" ? "bg-primary/10" : "bg-destructive/10"
+                            ratingAnimation === "correct"
+                              ? "bg-primary/10"
+                              : ratingAnimation === "still_learning"
+                                ? "bg-secondary/10"
+                                : "bg-destructive/10"
                           }`}
                         >
-                          <div className={ratingAnimation === "correct" ? "text-primary" : "text-destructive"}>
+                          <div
+                            className={
+                              ratingAnimation === "correct"
+                                ? "text-primary"
+                                : ratingAnimation === "still_learning"
+                                  ? "text-secondary-foreground"
+                                  : "text-destructive"
+                            }
+                          >
                             {ratingAnimation === "correct" ? (
                               <Check className="h-16 w-16" />
+                            ) : ratingAnimation === "still_learning" ? (
+                              <BookOpen className="h-16 w-16" />
                             ) : (
                               <ThumbsDown className="h-16 w-16" />
                             )}
@@ -1203,4 +1354,4 @@ function arePropsEqual(prevProps: FlashCardComponentProps, nextProps: FlashCardC
   return true
 }
 
-export default FlashCardQuiz;
+export default FlashCardQuiz

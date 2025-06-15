@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
 import {
-  resetQuiz,
   setQuizResults,
   selectQuizResults,
   selectQuizStatus,
   selectOrGenerateQuizResults,
   selectQuizId,
   hydrateStateFromStorage,
-  setQuiz,
   selectQuestions,
   selectIsQuizComplete,
   saveQuizResultsToDatabase,
@@ -22,7 +20,6 @@ import {
   selectQuizTitle,
   clearQuizState,
 } from "@/store/slices/quiz-slice"
-import { Button } from "@/components/ui/button"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useSessionService } from "@/hooks/useSessionService"
 import type { QuizType } from "@/types/quiz"
@@ -30,34 +27,8 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useSession } from "next-auth/react"
 import { NoResults } from "@/components/ui/no-results"
 import { RefreshCw } from "lucide-react"
+import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 
-interface SignInPromptProps {
-  onSignIn: () => void
-  onRetake: () => void
-  quizType: QuizType
-  previewData?: { percentage: number; score: number; maxScore: number }
-}
-
-const GenericSignInPrompt: React.FC<SignInPromptProps> = ({ onSignIn, onRetake, quizType, previewData }) => (
-  <div className="flex flex-col items-center justify-center gap-6 p-8 text-center max-w-md mx-auto">
-    <h2 className="text-2xl font-bold">Quiz Complete!</h2>
-    <p className="text-gray-600">Sign in to save your progress and view detailed results.</p>
-    {previewData && (
-      <div className="bg-gray-50 p-4 rounded text-center">
-        <div className="text-3xl font-bold text-blue-600">{previewData.percentage}%</div>
-        <p>
-          {previewData.score} out of {previewData.maxScore} correct
-        </p>
-      </div>
-    )}
-    <Button onClick={onSignIn} className="w-full">
-      Sign In
-    </Button>
-    <Button onClick={onRetake} variant="outline" className="w-full">
-      Retake Quiz
-    </Button>
-  </div>
-)
 
 interface Props {
   slug: string
@@ -256,7 +227,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <GenericSignInPrompt
+          <SignInPrompt
             onSignIn={handleSignIn}
             onRetake={handleRetake}
             quizType={quizType}
