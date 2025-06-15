@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { BookOpen, LogIn, RefreshCw, ListChecks, Code2, FileText } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Quiz type icon and message map
-const quizTypeMeta: Record<QuizType, { icon: any; title: string; feedback: string }> = {
+const quizTypeMeta: Record<QuizType, { icon: typeof ListChecks; title: string; feedback: string }> = {
   mcq: {
     icon: ListChecks,
     title: "Quiz Complete!",
@@ -41,6 +43,7 @@ const SignInPrompt = ({
   onRetake,
   quizType = "flashcard",
   previewData,
+  isLoading = false,
 }: {
   onSignIn: () => void
   onRetake: () => void
@@ -54,12 +57,27 @@ const SignInPrompt = ({
     stillLearningAnswers?: number
     incorrectAnswers?: number
   }
+  isLoading?: boolean
 }) => {
+  const { isLoading: authLoading } = useAuth();
+  const loading = isLoading || authLoading;
   const meta = getQuizMeta(quizType)
   const Icon = meta.icon
   const showScore = previewData && (previewData.score !== undefined || previewData.correctAnswers !== undefined)
   const correct = previewData?.correctAnswers ?? previewData?.score
   const total = previewData?.totalQuestions ?? previewData?.maxScore
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto">
+        <Skeleton className="h-40 w-full rounded-xl mb-4" />
+        <Skeleton className="h-10 w-2/3 mx-auto mb-2" />
+        <Skeleton className="h-6 w-1/2 mx-auto mb-2" />
+        <Skeleton className="h-8 w-1/2 mx-auto" />
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

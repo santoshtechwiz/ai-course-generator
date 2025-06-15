@@ -60,16 +60,10 @@ const OpenEndedQuiz = memo(function OpenEndedQuiz({
       const value = e.target.value
       setAnswer(value)
       setShowValidation(false)
-
-      // Auto-save answer as user types (debounced)
-      if (value.trim()) {
-        setIsAnswered(true)
-        onAnswer(value)
-      } else {
-        setIsAnswered(false)
-      }
+      setIsAnswered(!!value.trim())
+      // Autosave logic and UX removed
     },
-    [onAnswer],
+    [],
   )
 
   // Handle next button click
@@ -136,11 +130,6 @@ const OpenEndedQuiz = memo(function OpenEndedQuiz({
                 <p className="text-sm text-muted-foreground mt-1">Provide a detailed answer to the question</p>
               </div>
             </div>
-            {isAnswered && (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300 }}>
-                <CheckCircle className="h-6 w-6 text-success" />
-              </motion.div>
-            )}
           </div>
 
           {/* Progress bar */}
@@ -243,27 +232,7 @@ const OpenEndedQuiz = memo(function OpenEndedQuiz({
             </div>
           </div>
 
-          {/* Answer status */}
-          <AnimatePresence>
-            {isAnswered && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-4 p-3 bg-success/10 border border-success/30 rounded-lg"
-              >
-                <div className="flex items-center gap-2 text-success">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Answer saved</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Hint about keyboard shortcut */}
-          <p className="text-xs text-muted-foreground mt-4 text-center">
-            Tip: Press Ctrl+Enter to quickly move to the next question
-          </p>
+          {/* Removed: Answer saved status and autosave hints */}
         </CardContent>
       </Card>
     </motion.div>
