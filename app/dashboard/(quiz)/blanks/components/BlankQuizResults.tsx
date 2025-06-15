@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { Confetti } from "@/components/ui/confetti"
@@ -12,6 +12,8 @@ import { Progress } from "@/components/ui/progress"
 import type { BlanksQuizResult } from "@/types/blanks-quiz"
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
+import { clearQuizState } from "@/store"
+import { useDispatch } from "react-redux"
 
 function getSimilarity(userAnswer: string, correctAnswer: string) {
   return getBestSimilarityScore(userAnswer || "", correctAnswer || "") / 100
@@ -132,13 +134,12 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
     }
   }, [result, percentage])
 
-  const handleRetake = () => {
-    if (onRetake) {
-      onRetake()
-    } else {
-      router.push(`/dashboard/blanks/${slug}`)
-    }
-  }
+   const dispatch = useDispatch();
+ const handleRetake = useCallback(() => {
+    if (onRetake) return onRetake()
+    dispatch(clearQuizState())
+    router.push(`/dashboard/blanks/${result.slug}`)
+  }, [onRetake, dispatch, router, result.slug])
 
   const handleViewAllQuizzes = () => {
     router.push("/dashboard/quizzes")
