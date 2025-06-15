@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import FlashcardResultHandler from "../../components/FlashcardResultHandler"
 import FlashCardResults from "../../components/FlashCardQuizResults"
+import { BookOpen } from "lucide-react"
 
 export default function FlashCardResultsPage({
   params,
@@ -45,8 +46,9 @@ export default function FlashCardResultsPage({
             totalQuestions={result?.totalQuestions ?? 0}
             correctAnswers={result?.correctAnswers ?? 0}
             totalTime={result?.totalTime ?? 0}
-            onReview={result?.reviewCards ? () => 
-              router.push(`/dashboard/flashcard/${slug}`) : undefined}
+            onReview={result?.reviewCards ? 
+              () => router.push(`/dashboard/flashcard/${slug}?review=true&t=${Date.now()}`) 
+              : undefined}
           />
         )}
       </FlashcardResultHandler>

@@ -19,6 +19,11 @@ interface FlashcardQuizState {
   savedCardIds: string[]
   ownerId: string | null
   loading: boolean
+  // Additional properties for flashcard management
+  score?: number
+  totalQuestions?: number
+  correctAnswers?: number
+  totalTime?: number
 }
 
 const initialState: FlashcardQuizState = {
@@ -135,8 +140,8 @@ const flashcardSlice = createSlice({
         return
       }
 
-      // Handle rating answers
-      if (answer === "correct" || answer === "incorrect") {
+      // Handle rating answers - now supports three states: correct, incorrect, still_learning
+      if (answer === "correct" || answer === "incorrect" || answer === "still_learning") {
         const existingAnswerIndex = state.answers.findIndex((a) => a.questionId === questionId)
 
         const answerData = {
@@ -198,6 +203,12 @@ const flashcardSlice = createSlice({
     clearQuizState: (state) => {
       return { ...initialState }
     },
+
+    setQuizResults: (state, action: PayloadAction<any>) => {
+      state.results = action.payload
+      state.isCompleted = true
+      state.status = "succeeded"
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -241,6 +252,7 @@ export const {
   setRequiresFlashCardAuth,
   setPendingFlashCardAuth,
   clearQuizState,
+  setQuizResults,
 } = flashcardSlice.actions
 
 // Selectors
@@ -262,5 +274,48 @@ export const selectIsQuizComplete = (state: RootState) => state.flashcard.isComp
 export const selectQuizTitle = (state: RootState) => state.flashcard.title
 export const selectHasFlashcardQuestions = (state: RootState) =>
   state.flashcard.questions && state.flashcard.questions.length > 0
+
+// Score selectors
+export const selectFlashcardScore = (state: RootState) => {
+  const results = state.flashcard.results
+  if (!results) return 0
+  return results.percentage || results.score || 0
+}
+
+export const selectFlashcardTotalQuestions = (state: RootState) => {
+  const results = state.flashcard.results
+  if (!results) return state.flashcard.questions.length || 0
+  return results.totalQuestions || results.maxScore || results.questions?.length || 0
+}
+
+export const selectFlashcardCorrectAnswers = (state: RootState) => {
+  const results = state.flashcard.results
+  if (!results) return 0
+  return results.correctAnswers || results.userScore || 0
+}
+
+export const selectFlashcardTotalTime = (state: RootState) => {
+  const results = state.flashcard.results
+  if (!results) return 0
+  return results.totalTime || 0
+}
+
+// Additional selectors for the three-state system
+export const selectFlashcardStillLearningCount = (state: RootState) => {
+  return state.flashcard.answers.filter((answer) => answer.answer === "still_learning").length
+}
+
+export const selectFlashcardIncorrectCount = (state: RootState) => {
+  return state.flashcard.answers.filter((answer) => answer.answer === "incorrect").length
+}
+
+export const selectFlashcardAnswerBreakdown = (state: RootState) => {
+  const answers = state.flashcard.answers
+  return {
+    correct: answers.filter((answer) => answer.answer === "correct").length,
+    stillLearning: answers.filter((answer) => answer.answer === "still_learning").length,
+    incorrect: answers.filter((answer) => answer.answer === "incorrect").length,
+  }
+}
 
 export default flashcardSlice.reducer
