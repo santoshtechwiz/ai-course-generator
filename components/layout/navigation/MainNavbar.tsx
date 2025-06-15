@@ -15,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import Logo from "./Logo"
 import useSubscription from "@/hooks/use-subscription"
-import { useOptimizedAuth } from "@/hooks/use-optimized-auth"
+import { useAuth } from "@/hooks/use-auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
 
@@ -23,7 +23,7 @@ export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
 
-  const { user, isAuthenticated, isLoading: authLoading, status: authStatus } = useOptimizedAuth()
+  const { user, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth()
   const { totalTokens, tokenUsage, subscriptionPlan, isLoading: isSubscriptionLoading } = useSubscription()
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)

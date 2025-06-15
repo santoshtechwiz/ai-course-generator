@@ -20,11 +20,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
 import { logout as reduxLogout, useAppDispatch, useAppSelector } from "@/store"
 import { useRouter } from "next/navigation"
-import { useOptimizedAuth } from "@/hooks/use-optimized-auth"
+import { useAuth } from "@/hooks/use-auth"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 export function UserMenu({ children }: { children?: ReactNode }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useOptimizedAuth()
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth()
   const dispatch = useAppDispatch()
   const subscriptionData = useAppSelector(selectSubscription)
   const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
