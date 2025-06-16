@@ -21,7 +21,7 @@ import {
   clearQuizState,
   saveAnswer,
 } from "@/store/slices/quiz-slice"
-import { EnhancedLoader } from "@/components/ui/enhanced-loader"
+import { EnhancedLoader, useEnhancedLoader } from "@/components/ui/enhanced-loader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
@@ -63,7 +63,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizType = useSelector(selectQuizType)
-
+  const enhancedLoader = useEnhancedLoader();
   useEffect(() => {
     const init = async () => {
       setLoading(true)
@@ -106,11 +106,11 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   useEffect(() => {
     if (!isCompleted || isSubmitting || !isAuthenticated) return
 
-    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
+       enhancedLoader.showLoader({ message: "Calculating your results..." })
 
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/openended/${slug}/results`)
-    }, 1500)
+    }, 500)
   }, [isCompleted, isSubmitting, isAuthenticated, router, slug])
 
   const currentQuestion = useMemo(() => {
