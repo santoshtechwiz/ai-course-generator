@@ -196,6 +196,33 @@
     pointer-events: none;
   }
 
+  /* Enhanced loader animations */
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background-size: 400% 100%;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-delay-0 {
+    animation-delay: 0s;
+  }
+
+  .animate-delay-150 {
+    animation-delay: 0.15s;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 0.3s;
+  }
+
   /* Course card hover effects */
   .course-card-hover {
     @apply transition-all duration-300 ease-out;

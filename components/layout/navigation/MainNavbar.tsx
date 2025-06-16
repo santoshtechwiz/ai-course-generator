@@ -18,6 +18,7 @@ import useSubscription from "@/hooks/use-subscription"
 import { useAuth } from "@/hooks/use-auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
+import { AsyncNavLink } from "@/components/ui/enhanced-loader"
 
 export default function MainNavbar() {
   const pathname = usePathname()
@@ -97,7 +98,7 @@ export default function MainNavbar() {
       navItems.map((item) => {
         const isActive = pathname === item.href
         return (
-          <Link
+          <AsyncNavLink
             href={item.href}
             key={item.name}
             className={cn(
@@ -110,7 +111,7 @@ export default function MainNavbar() {
           >
             {item.name}
             {isActive && <div className="absolute inset-x-1 -bottom-px h-px bg-primary rounded-full" />}
-          </Link>
+          </AsyncNavLink>
         )
       }),
     [pathname],
@@ -118,11 +119,10 @@ export default function MainNavbar() {
 
   // Mobile navigation items
   const mobileNavigationItems = useMemo(
-    () =>
-      navItems.map((item) => {
+    () =>      navItems.map((item) => {
         const isActive = pathname === item.href
         return (
-          <Link
+          <AsyncNavLink
             href={item.href}
             key={item.name}
             onClick={() => setIsMobileMenuOpen(false)}
@@ -133,7 +133,7 @@ export default function MainNavbar() {
             )}
           >
             {item.name}
-          </Link>
+          </AsyncNavLink>
         )
       }),
     [pathname],

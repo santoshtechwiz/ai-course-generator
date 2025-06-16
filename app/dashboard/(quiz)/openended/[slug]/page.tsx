@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 
 
@@ -23,7 +23,7 @@ export default function OpenEndedQuizPage({
 
   // Check for loading state
   if (authStatus === "loading") {
-    return <QuizLoader full message="Initializing quiz..." subMessage="Loading user session" />
+    return <EnhancedLoader isLoading={true} message="Initializing quiz..." subMessage="Loading user session" />
   }
 
   if (!slug) {

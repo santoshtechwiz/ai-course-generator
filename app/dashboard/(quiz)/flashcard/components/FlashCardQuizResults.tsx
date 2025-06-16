@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoResults } from "@/components/ui/no-results"
-import { QuizLoader } from "@/components/ui/quiz-loader"
 
 interface FlashCardResultsProps {
   quizId?: string
@@ -232,7 +231,7 @@ export default function FlashCardResults({
   }
 
   if (isLoading) {
-    return <QuizLoader message="Calculating results..." />
+    return <div className="text-center py-8">Calculating results...</div>
   }
 
   return (

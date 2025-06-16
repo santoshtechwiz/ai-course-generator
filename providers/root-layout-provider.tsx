@@ -8,7 +8,7 @@ import { Suspense, useState, useEffect } from "react"
 import { AnimationProvider } from "./animation-provider"
 import { SEOTrackingProvider } from "@/providers/seo-tracking-provider"
 import SubscriptionProvider from "./SubscriptionProvider"
-import { LoadingProvider } from "@/components/ui/loading/loading-provider"
+// Removed duplicate loader imports
 import { TooltipProvider } from "@/components/ui/tooltip"
 import React from "react"
 import { Provider } from "react-redux"
@@ -74,17 +74,14 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
               enableColorScheme={true}
             >
               <SEOTrackingProvider>
-                <QueryClientProvider client={queryClient}>
-                  <TooltipProvider>
+                <QueryClientProvider client={queryClient}>                  <TooltipProvider>
                     <SubscriptionProvider>
-                      <LoadingProvider>
-                        <AnimationProvider>
-                          <Suspense fallback={<div>Loading...</div>}>
-                            <Toaster position="top-right" closeButton richColors />
-                            {mounted && children}
-                          </Suspense>
-                        </AnimationProvider>
-                      </LoadingProvider>
+                      <AnimationProvider>
+                        <Suspense fallback={<div>Loading...</div>}>
+                          <Toaster position="top-right" closeButton richColors />
+                          {mounted && children}
+                        </Suspense>
+                      </AnimationProvider>
                     </SubscriptionProvider>
                   </TooltipProvider>
                 </QueryClientProvider>

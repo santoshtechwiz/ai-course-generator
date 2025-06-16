@@ -6,7 +6,6 @@ import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-moti
 
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
 import { QuizProgress } from "../../components/QuizProgress"
-import { QuizLoader } from "@/components/ui/quiz-loader"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"

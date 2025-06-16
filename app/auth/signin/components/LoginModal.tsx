@@ -7,6 +7,7 @@ import { getProviders, signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 import { useToast } from "@/hooks"
 
 interface LoginModalProps {
@@ -31,7 +32,6 @@ export function LoginModal({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [providers, setProviders] = useState<any>(null)
-  const [isLoadingProviders, setIsLoadingProviders] = useState(false)
   const [isAuthenticating, setIsAuthenticating] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -55,7 +55,6 @@ export function LoginModal({
     if (isOpen && !providers && !isFetchingProviders.current) {
       const fetchProviders = async () => {
         isFetchingProviders.current = true
-        setIsLoadingProviders(true)
         try {
           const res = await getProviders()
           // Validate the response
@@ -77,7 +76,6 @@ export function LoginModal({
             variant: "destructive",
           })
         } finally {
-          setIsLoadingProviders(false)
           isFetchingProviders.current = false
         }
       }
@@ -274,11 +272,8 @@ export function LoginModal({
 
         <form onSubmit={handleLogin} className="space-y-5 p-6">
           {/* Auth Providers */}
-          {isLoadingProviders ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-              <p className="text-sm text-muted-foreground">Loading authentication options...</p>
-            </div>
+          {!providers ? (
+            <EnhancedLoader isLoading={true} message="Loading authentication options..." fullscreen />
           ) : (
             <ModalAuthButtonGroup />
           )}
