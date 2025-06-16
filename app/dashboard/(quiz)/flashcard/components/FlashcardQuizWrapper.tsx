@@ -14,7 +14,6 @@ import {
   clearQuizState,
   fetchFlashCardQuiz,
 } from "@/store/slices/flashcard-slice"
-import { QuizLoader } from "@/components/ui/quiz-loader"
 import FlashcardQuiz from "./FlashcardQuiz"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
@@ -116,7 +115,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
 
   // Loading state
   if (quizStatus === "loading") {
-    return <QuizLoader message={isReviewMode ? "Loading review cards..." : "Loading flashcards..."} />
+    return <div>Loading...</div>
   }
 
   // Error state
@@ -126,7 +125,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
         variant="error"
         title="No Flashcards Found"
         description="We couldn't find any flashcards for this topic."
-        action={{ label: "Try Again", onClick: () => router.reload() }}
+        action={{ label: "Try Again", onClick: () => window.location.reload() }}
         secondaryAction={{
           label: "Browse Topics",
           onClick: () => router.push("/dashboard/quizzes"),
@@ -140,7 +139,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   if (isReviewMode && reviewQuestions.length === 0) {
     return (
       <NoResults
-        variant="info"
+        variant="default"
         title="No Cards to Review"
         description="You marked all cards as known. Great job!"
         action={{ label: "Retake Quiz", onClick: () => router.push(`/dashboard/flashcard/${slug}?reset=true`) }}
@@ -159,7 +158,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
         variant="error"
         title="No Flashcards Found"
         description="We couldn't find any flashcards for this topic."
-        action={{ label: "Try Again", onClick: () => router.reload() }}
+        action={{ label: "Try Again", onClick: () => window.location.reload() }}
         secondaryAction={{ label: "Browse Topics", onClick: () => router.push("/dashboard/quizzes") }}
       />
     )

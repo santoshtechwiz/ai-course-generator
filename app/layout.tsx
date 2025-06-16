@@ -4,11 +4,10 @@ import "../globals.css"
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
 
-
-
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
+import ClientLayoutWrapper from "./client-layout-wrapper"
 
 import { fontRobotoSans } from "./font"
 
@@ -52,13 +51,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
-      </head>
+      </head>      
+      
       <body className={` ${fontRobotoSans.variable} antialiased min-h-screen flex flex-col`}>
 
         <Providers>
-
-          {children}
-
+          <ClientLayoutWrapper>
+            {children}
+          </ClientLayoutWrapper>
         </Providers>
         <Footer />
 

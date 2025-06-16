@@ -13,7 +13,8 @@ import type { Session } from "next-auth"
 import { useEffect } from "react"
 import { useAppDispatch } from "@/store/hooks"
 import { loginSuccess, logout as reduxLogout, loginStart, loginFailure } from "@/store/slices/auth-slice"
-import { useToast } from "@/hooks"
+import { EnhancedLoader } from "@/components/ui"
+
 
 export interface AuthContextValue {
   user: any
@@ -50,7 +51,6 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const { toast } = useToast();
 
   // Hydrate Redux auth state from next-auth session
   useEffect(() => {
@@ -84,11 +84,14 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (provider: string, options?: { callbackUrl?: string }) => {
       try {
+        <EnhancedLoader isLoading={true} message="Signing in..." subMessage="Please wait while we log you in" />
         await signIn(provider, {
           callbackUrl: options?.callbackUrl || "/dashboard",
         })
       } catch (error) {
         console.error("Login failed:", error)
+      } finally {
+        <EnhancedLoader isLoading={false} />
       }
     },
     []
@@ -105,7 +108,7 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
             ["localStorage", "persist:course"],
             ["localStorage", "pendingQuizResults"],
             ["sessionStorage", "redux_state"],
-            ["sessionStorage", "pendingQuizResults"], 
+            ["sessionStorage", "pendingQuizResults"],
             ["sessionStorage", "guestId"],
             ["sessionStorage", "next-auth.session-token"],
             ["sessionStorage", "next-auth.callback-url"],
@@ -114,20 +117,22 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
           itemsToClear.forEach(([storageType, key]) => {
             try {
               window[storageType as "localStorage" | "sessionStorage"]?.removeItem(key);
-            } catch (e) {}
+            } catch (e) { }
           });
         }
-        toast({ title: "Signed out", description: "You have been logged out.", variant: "success" });
+        EnhancedLoader.show("Signing out...")
         // Use NextAuth's fast signOut with redirect
         await signOut({ redirect: true, callbackUrl: redirectUrl });
       } catch (error) {
-        toast({ title: "Logout failed", description: "Failed to sign out. Please try again.", variant: "destructive" });
+        console.error("Logout failed:", error)
         if (options.redirect !== false && typeof window !== "undefined") {
           router.push("/");
         }
+      } finally {
+        EnhancedLoader.hide()
       }
     },
-    [router, toast]
+    [router]
   )
 
   const value: AuthContextValue = useMemo(

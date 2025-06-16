@@ -1,3 +1,6 @@
+// Deprecated file. This file is no longer in use and will be removed.
+// Please use EnhancedLoader for all loading states.
+
 "use client";
 
 import React, { useEffect, useState } from "react";

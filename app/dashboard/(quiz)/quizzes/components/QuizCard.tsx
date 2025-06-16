@@ -6,9 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { FileQuestion, AlignJustify, Code, PenTool, Clock, CheckCircle2, Flashlight, Play, Eye } from "lucide-react"
-import Link from "next/link"
-import { LoadingCard } from "./LoadingCard"
 import { motion, AnimatePresence } from "framer-motion"
+import { AsyncNavLink, EnhancedLoader, useEnhancedLoader } from "@/components/ui/enhanced-loader"
 
 interface QuizCardProps {
   title: string
@@ -30,9 +29,8 @@ function QuizCardComponent({
   quizType,
   estimatedTime,
   completionRate = 0,
-}: QuizCardProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
+}: QuizCardProps) {  const [isHovered, setIsHovered] = useState(false)
+  const { showLoader } = useEnhancedLoader()
 
   // Enhanced quiz type information with better styling
   const quizTypeInfo = {
@@ -93,11 +91,7 @@ function QuizCardComponent({
     textColor: "text-gray-700 dark:text-gray-300",
     borderColor: "border-gray-200 dark:border-gray-800",
   }
-
-  const handleClick = () => {
-    setIsLoading(true)
-    // The actual navigation will be handled by Next.js Link
-  }
+  // No longer needed as AsyncNavLink will handle loading automatically
 
   // Determine button text and icon based on completion
   const getButtonContent = () => {
@@ -124,14 +118,7 @@ function QuizCardComponent({
 
   const buttonContent = getButtonContent()
   const ButtonIcon = buttonContent.icon
-
-  if (isLoading) {
-    return (
-      <Card className="h-full overflow-hidden">
-        <LoadingCard message="Loading quiz..." />
-      </Card>
-    )
-  }
+  // Enhanced loader is now handled automatically by AsyncNavLink
 
   return (
     <motion.div
@@ -271,11 +258,17 @@ function QuizCardComponent({
               </motion.div>
             )}
           </AnimatePresence>
-        </CardContent>
-
-        {/* Enhanced Footer */}
+        </CardContent>        {/* Enhanced Footer */}
         <CardFooter className="p-5 pt-3 mt-auto">
-          <Link href={`/dashboard/${quizType}/${slug}`} className="w-full" onClick={handleClick}>
+          <AsyncNavLink 
+            href={`/dashboard/${quizType}/${slug}`} 
+            className="w-full"
+            loaderOptions={{
+              variant: "shimmer",
+              message: "Loading quiz...",
+              fullscreen: true
+            }}
+          >
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
               <Button
                 variant={buttonContent.variant}
@@ -294,7 +287,7 @@ function QuizCardComponent({
                 </motion.div>
               </Button>
             </motion.div>
-          </Link>
+          </AsyncNavLink>
         </CardFooter>
 
         {/* Hover Glow Effect */}

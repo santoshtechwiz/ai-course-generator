@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
 import { Save, Plus, Trash } from "lucide-react"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 
 
 interface Question {
@@ -131,7 +131,7 @@ export function DocumentQuizDisplay({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <QuizLoader message="Loading quiz content..." />
+        <EnhancedLoader message="Loading quiz content..." />
       </div>
     )
   }

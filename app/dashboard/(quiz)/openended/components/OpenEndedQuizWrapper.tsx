@@ -21,7 +21,7 @@ import {
   clearQuizState,
   saveAnswer,
 } from "@/store/slices/quiz-slice"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
@@ -199,7 +199,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }
 
   if (loading || quizStatus === "loading") {
-    return <QuizLoader message="Loading quiz..." subMessage="Preparing questions" />
+    return <EnhancedLoader message="Loading quiz..." subMessage="Preparing questions" />
   }
 
   if (error || quizStatus === "failed") {

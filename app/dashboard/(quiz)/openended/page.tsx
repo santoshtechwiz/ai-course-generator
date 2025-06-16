@@ -2,7 +2,7 @@
 
 import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
-import { QuizLoader } from "@/components/ui/quiz-loader";
+import { EnhancedLoader } from "@/components/ui/enhanced-loader";
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 import { useAuth } from "@/hooks/use-auth"; // Updated import
 
@@ -21,7 +21,7 @@ const OpenEndedPage = () => {
       isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
     >
       {quizPlan.isLoading ? (
-        <QuizLoader message="Loading subscription details..." subMessage="Getting your plan information" />
+        <EnhancedLoader message="Loading subscription details..." subMessage="Getting your plan information" />
       ) : (
         <OpenEndedQuizForm
           credits={quizPlan.credits}
