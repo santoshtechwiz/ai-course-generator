@@ -132,12 +132,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     }
   }, [currentQuestionIndex, questions.length, dispatch])
 
-  const handlePrevious = useCallback(() => {
-    if (currentQuestionIndex > 0) {
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
-    }
-  }, [currentQuestionIndex, dispatch])
-
   const handleSubmitQuiz = useCallback(async () => {
     if (isSubmitting) return
 
@@ -172,7 +166,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   }, [dispatch, router, slug])
 
   const canGoNext = currentQuestionIndex < questions.length - 1
-  const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   const currentAnswerId =
@@ -181,7 +174,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       : undefined
 
   if (loading || quizStatus === "loading") {
-    return <QuizLoader message="Loading quiz..." subMessage="Preparing your questions" />
+    return <QuizLoader message="Loading quiz..." />
   }
 
   if (error || quizStatus === "failed") {
@@ -232,11 +225,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         existingAnswer={currentAnswerId}
         onAnswer={handleAnswer}
         onNext={handleNext}
-        onPrevious={handlePrevious}
         onSubmit={handleSubmitQuiz}
         onRetake={handleRetakeQuiz}
-        canGoNext={!!currentAnswerId && canGoNext}
-        canGoPrevious={canGoPrevious}
+        canGoNext={isLastQuestion ? !!currentAnswerId : !!currentAnswerId && canGoNext}
         isLastQuestion={isLastQuestion}
         isSubmitting={isSubmitting || quizStatus === "submitting"}
       />

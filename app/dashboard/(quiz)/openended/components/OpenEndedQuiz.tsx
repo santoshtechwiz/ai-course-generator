@@ -2,13 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback, memo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, ArrowRight, ArrowLeft, Flag } from "lucide-react"
+import { ArrowRight, ArrowLeft, Flag } from "lucide-react"
 import type { OpenEndedQuestion } from "@/types/quiz"
 
 interface OpenEndedQuizProps {
@@ -55,16 +55,13 @@ const OpenEndedQuiz = memo(function OpenEndedQuiz({
   }, [existingAnswer, answer])
 
   // Handle answer changes
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const value = e.target.value
-      setAnswer(value)
-      setShowValidation(false)
-      setIsAnswered(!!value.trim())
-      // Autosave logic and UX removed
-    },
-    [],
-  )
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setAnswer(value)
+    setShowValidation(false)
+    setIsAnswered(!!value.trim())
+    // Autosave logic and UX removed
+  }, [])
 
   // Handle next button click
   const handleNext = useCallback(() => {
@@ -97,14 +94,14 @@ const OpenEndedQuiz = memo(function OpenEndedQuiz({
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && e.ctrlKey) {
         e.preventDefault()
-        if (isLastQuestion) {
+        if (isLastQuestion && onSubmit) {
           handleSubmit()
-        } else {
+        } else if (onNext) {
           handleNext()
         }
       }
     },
-    [handleNext, handleSubmit, isLastQuestion],
+    [handleNext, handleSubmit, isLastQuestion, onNext, onSubmit],
   )
 
   return (

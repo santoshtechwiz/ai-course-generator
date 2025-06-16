@@ -1,3 +1,5 @@
+// Add the font configuration directly in the Tailwind CSS theme
+
 import type { Config } from "tailwindcss"
 import { fontFamily } from "tailwindcss/defaultTheme"
 
@@ -75,9 +77,9 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-      },
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["Roboto", "var(--font-sans)", ...fontFamily.sans],
+      },
       },
       borderRadius: {
         lg: "var(--radius)",

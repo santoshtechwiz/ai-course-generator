@@ -8,6 +8,8 @@ import CourseAIState from "@/components/development/CourseAIState"
 import NavigationCleanup from "./(quiz)/components/NavigationCleanup"
 import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth"
+import Chatbot from "@/components/features/chat/Chatbot"
+
 
 export const viewport = {
   width: "device-width",
@@ -33,6 +35,7 @@ export default async function DashboardLayout({
           </main>
 
           <Toaster />
+          <Chatbot userId={session?.user?.id} />
           {process.env.NODE_ENV === "development" && <CourseAIState />}
         </DashboardShell>
       </div>

@@ -1,14 +1,13 @@
 "use client"
 
-import { ReactNode } from "react"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, ArrowRight, Flag, RefreshCw } from "lucide-react"
 import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, Send, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface QuizFooterProps {
-  onPrevious?: () => void
   onNext?: () => void
+  onPrevious?: () => void
   onSubmit?: () => void
   onRetake?: () => void
   canGoNext?: boolean
@@ -17,12 +16,11 @@ interface QuizFooterProps {
   isSubmitting?: boolean
   showRetake?: boolean
   className?: string
-  children?: ReactNode
 }
 
 export function QuizFooter({
-  onPrevious,
   onNext,
+  onPrevious,
   onSubmit,
   onRetake,
   canGoNext = false,
@@ -31,96 +29,151 @@ export function QuizFooter({
   isSubmitting = false,
   showRetake = false,
   className,
-  children,
 }: QuizFooterProps) {
-  if (children) {
-    return (
-      <div className={cn("p-6 border-t border-border/40 flex justify-between", className)}>
-        {children}
-      </div>
-    )
-  }
-
   return (
-    <div className={cn("p-6 border-t border-border/40 flex justify-between", className)}>
-      <div className="flex gap-3">
-        {canGoPrevious && onPrevious && (
-          <motion.div whileHover={{ x: -2 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              variant="outline"
-              onClick={onPrevious}
-              className="flex items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-              disabled={isSubmitting}
+    <motion.div
+      className={cn(
+        "bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 border-2 border-primary/20 border-t-0 rounded-b-3xl p-6 shadow-lg",
+        className,
+      )}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: 0.3,
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        {/* Previous Button */}
+        <motion.div whileHover={{ scale: canGoPrevious ? 1.05 : 1 }} whileTap={{ scale: canGoPrevious ? 0.95 : 1 }}>
+          <Button
+            variant="outline"
+            onClick={onPrevious}
+            disabled={!canGoPrevious}
+            className={cn(
+              "gap-2 px-6 py-3 rounded-xl border-2 font-semibold transition-all duration-300",
+              canGoPrevious
+                ? "hover:bg-muted/50 hover:border-primary/40 hover:text-primary hover:shadow-lg"
+                : "opacity-50 cursor-not-allowed",
+            )}
+          >
+            <motion.div
+              animate={canGoPrevious ? { x: [-2, 0, -2] } : {}}
+              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Previous
-            </Button>
-          </motion.div>
-        )}
-        
-        {showRetake && onRetake && (
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button 
-              variant="outline" 
-              onClick={onRetake}
-              className="flex items-center gap-2"
-              disabled={isSubmitting}
+              <ChevronLeft className="w-4 h-4" />
+            </motion.div>
+            Previous
+          </Button>
+        </motion.div>
+
+        {/* Center Content */}
+        <div className="flex-1 flex justify-center">
+          {showRetake && (
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
-              <RefreshCw className="w-4 h-4" />
-              Retake Quiz
-            </Button>
-          </motion.div>
-        )}
-      </div>
-      <div className="flex gap-3">
-        {!isLastQuestion && onNext ? (
-          <motion.div whileHover={{ x: 2 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              onClick={onNext}
-              disabled={!canGoNext || isSubmitting}
-              className={cn(
-                "flex items-center gap-2 min-w-[120px] transition-all duration-300",
-                canGoNext
-                  ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20"
-                  : "opacity-70"
-              )}
-              size="lg"
-            >
-              {isSubmitting ? (
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              ) : null}
-              Next
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </motion.div>
-        ) : onSubmit ? (
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="secondary"
+                onClick={onRetake}
+                className="gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/80 hover:to-secondary shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </motion.div>
+                Retake Quiz
+              </Button>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Next/Submit Button */}
+        <motion.div
+          whileHover={{ scale: canGoNext || isLastQuestion ? 1.05 : 1 }}
+          whileTap={{ scale: canGoNext || isLastQuestion ? 0.95 : 1 }}
+        >
+          {isLastQuestion ? (
             <Button
               onClick={onSubmit}
-              disabled={(!canGoNext && !isLastQuestion) || isSubmitting}
+              disabled={!canGoNext || isSubmitting}
               className={cn(
-                "flex items-center gap-2 min-w-[140px] transition-all duration-300",
-                canGoNext || isLastQuestion
-                  ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20"
-                  : "opacity-70"
+                "gap-2 px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition-all duration-300",
+                canGoNext && !isSubmitting
+                  ? "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 hover:shadow-xl ring-2 ring-primary/20 hover:ring-primary/40"
+                  : "opacity-50 cursor-not-allowed",
               )}
-              size="lg"
             >
               {isSubmitting ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                  Submitting...
-                </>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                />
               ) : (
-                <>
-                  <Flag className="w-4 h-4" />
-                  Submit Quiz
-                </>
+                <motion.div
+                  animate={canGoNext ? { x: [0, 2, 0] } : {}}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                >
+                  <Send className="w-5 h-5" />
+                </motion.div>
               )}
+              {isSubmitting ? "Submitting..." : "Submit Quiz"}
             </Button>
-          </motion.div>
-        ) : null}
+          ) : (
+            <Button
+              onClick={onNext}
+              disabled={!canGoNext}
+              className={cn(
+                "gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300",
+                canGoNext
+                  ? "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 hover:shadow-xl ring-2 ring-primary/20 hover:ring-primary/40"
+                  : "opacity-50 cursor-not-allowed",
+              )}
+            >
+              Next
+              <motion.div
+                animate={canGoNext ? { x: [0, 2, 0] } : {}}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </motion.div>
+            </Button>
+          )}
+        </motion.div>
       </div>
-    </div>
+
+      {/* Enhanced Help Text */}
+      {!canGoNext && !showRetake && (
+        <motion.div
+          className="mt-4 text-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
+          <motion.p
+            className="text-muted-foreground text-sm bg-muted/30 px-4 py-2 rounded-xl border border-muted/40 inline-block"
+            animate={{
+              opacity: [0.7, 1, 0.7],
+              scale: [1, 1.02, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "easeInOut",
+            }}
+          >
+            ✨ Select an answer to continue
+          </motion.p>
+        </motion.div>
+      )}
+    </motion.div>
   )
 }

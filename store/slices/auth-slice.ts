@@ -60,17 +60,16 @@ export const initializeAuth = createAsyncThunk(
               
               // Also fetch subscription data for the user
               try {
-                const subResponse = await fetch('/api/subscriptions/status');
-                if (subResponse.ok) {
-                  const subData = await subResponse.json();
-                  
-                  // Enhance user object with subscription information
-                  data.user.subscriptionPlan = subData.subscriptionPlan;
-                  data.user.subscriptionStatus = subData.status;
-                  data.user.credits = subData.credits;
-                  
-                  logger.info("Enhanced user with subscription data:", subData);
-                }
+                // Use Redux thunk to fetch subscription data (prevents duplicate calls)
+                const subData = await dispatch<any>(
+                  // @ts-ignore
+                  require("@/store/slices/subscription-slice").fetchSubscription()
+                ).unwrap();
+                // Enhance user object with subscription information
+                data.user.subscriptionPlan = subData.subscriptionPlan;
+                data.user.subscriptionStatus = subData.status;
+                data.user.credits = subData.credits;
+                logger.info("Enhanced user with subscription data:", subData);
               } catch (subError) {
                 logger.error("Failed to fetch subscription data:", subError);
               }

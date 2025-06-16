@@ -16,25 +16,16 @@ import { useAuth } from "./use-auth"
 import { useSelector } from "react-redux"
 import { selectUser } from "@/store/slices/auth-slice"
 
+// Add missing UseSubscriptionOptions type
+export type UseSubscriptionOptions = {
+  allowPlanChanges?: boolean;
+  allowDowngrades?: boolean;
+  onSubscriptionSuccess?: (result: any) => void;
+  onSubscriptionError?: (error: any) => void;
+  skipInitialFetch?: boolean;
+};
+
 const REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes - increased to reduce API calls
-
-// Track refresh state globally to prevent duplicate refreshes across components
-let lastGlobalRefreshTime = 0;
-const MIN_REFRESH_INTERVAL = 10000; // 10 seconds minimum between refreshes
-
-type SubscriptionResult = {
-  redirectUrl?: string
-  message?: string
-  success?: boolean
-}
-
-type UseSubscriptionOptions = {
-  allowPlanChanges?: boolean
-  allowDowngrades?: boolean
-  onSubscriptionSuccess?: (result: SubscriptionResult) => void
-  onSubscriptionError?: (error: any) => void
-  skipInitialFetch?: boolean // Option to skip initial fetch for components that don't need immediate data
-}
 
 export function useSubscription(options: UseSubscriptionOptions = {}) {
   const { 
@@ -57,15 +48,7 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
   const [isInitialized, setIsInitialized] = useState(false)
   const refreshSubscription = useCallback(() => {
-    // Check if enough time has passed since the last global refresh
-    const now = Date.now();
-    if (now - lastGlobalRefreshTime < MIN_REFRESH_INTERVAL) {
-      return; // Skip this refresh if it's too soon
-    }
-    
-    // Update the last refresh timestamp
-    lastGlobalRefreshTime = now;
-    
+    // Remove local debounce logic; rely on Redux slice for duplicate prevention
     dispatch(fetchSubscription())
       .unwrap()
       .then((result) => {
