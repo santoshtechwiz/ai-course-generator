@@ -11,7 +11,7 @@ import {
   selectSubscriptionPlan,
   selectIsCancelled,
 } from "@/store/slices/subscription-slice"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionStatusType, SubscriptionDetails } from "@/types/shared-types"
 import { useAuth } from "./use-auth"
 import { useSelector } from "react-redux"
 import { selectUser } from "@/store/slices/auth-slice"
@@ -54,7 +54,6 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
   const isSubscribed = useAppSelector(selectIsSubscribed)
   const subscriptionPlan = useAppSelector(selectSubscriptionPlan)
   const isCancelled = useAppSelector(selectIsCancelled)
-  const canDownloadPDF = useAppSelector((state) => state.subscription.data?.canDownloadPDF)
 
   const [isInitialized, setIsInitialized] = useState(false)
   const refreshSubscription = useCallback(() => {
@@ -142,26 +141,23 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
   // Memoize derived values
   const isSubscribedToAnyPaidPlan = useMemo(
-    () => !!isSubscribed && !!subscriptionData?.isPaidPlan,
-    [isSubscribed, subscriptionData?.isPaidPlan],
+    () => !!isSubscribed && subscriptionPlan !== "FREE",
+    [isSubscribed, subscriptionPlan],
   )
-
   const isSubscribedToAllPlans = useMemo(
-    () => subscriptionData?.isEnterprise ?? false,
-    [subscriptionData?.isEnterprise],
+    () => String(subscriptionPlan) === "ENTERPRISE",
+    [subscriptionPlan],
   )
 
   return {
     data: subscriptionData,
     isSubscribed,
     tokenUsage: tokensUsed,
-    canDownloadPDF,
     totalTokens,
     remainingTokens,
     usagePercentage,
     hasExceededLimit,
     isLoading,
-    canDownloadPDF,
     refreshSubscription,
     onSubscriptionSuccess,
     subscriptionPlan,
@@ -191,22 +187,16 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
  * - error: any error that occurred while fetching subscription data
  */
 export function useSubscriptionDetails() {
-  const { userId, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   const reduxUser = useSelector(selectUser)
-  const [subscription, setSubscription] = useState<SubscriptionDetails>({
-    isActive: false,
-    plan: null,
-    expiresAt: null,
-    features: [],
-    isLoading: false,
-    error: null,
-  })
+  const userId = reduxUser?.id
+  const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated || !userId) return
 
     const fetchSubscription = async () => {
-      setSubscription((prev) => ({ ...prev, isLoading: true }))
+      setSubscription((prev) => prev ? { ...prev, isLoading: true } : { isLoading: true } as any)
 
       try {
         // Get subscription info from API
@@ -219,20 +209,13 @@ export function useSubscriptionDetails() {
         const data = await response.json()
 
         setSubscription({
-          isActive: data.isActive || false,
-          plan: data.plan || null,
-          expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-          features: data.features || [],
+          ...data,
           isLoading: false,
           error: null,
         })
       } catch (error) {
         console.error("Error fetching subscription:", error)
-        setSubscription((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: "Failed to load subscription details",
-        }))
+        setSubscription((prev) => prev ? { ...prev, isLoading: false, error: "Failed to load subscription details" } : { isLoading: false, error: "Failed to load subscription details" } as any)
       }
     }
 
