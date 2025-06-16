@@ -79,20 +79,12 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
     }
   }, [slug, dispatch, isResetMode, isReviewMode, questions.length])
 
-  // Handle quiz completion and navigation
+  // Handle quiz completion and navigation - REMOVED DELAY
   useEffect(() => {
     if (!isCompleted) return
 
-    // Already completed, show results
-    submissionTimeoutRef.current = setTimeout(() => {
-      router.push(`/dashboard/flashcard/${slug}/results`)
-    }, 1000)
-
-    return () => {
-      if (submissionTimeoutRef.current) {
-        clearTimeout(submissionTimeoutRef.current)
-      }
-    }
+    // No automatic redirect - let the quiz component handle it
+    // The FlashcardQuiz component will handle the redirect immediately
   }, [isCompleted, router, slug])
 
   // Get cards to review (based on incorrect and still_learning answers)
@@ -136,7 +128,8 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   }
 
   // No questions to review
-  if (isReviewMode && reviewQuestions.length === 0) {    return (
+  if (isReviewMode && reviewQuestions.length === 0) {
+    return (
       <NoResults
         variant="empty"
         title="No Cards to Review"

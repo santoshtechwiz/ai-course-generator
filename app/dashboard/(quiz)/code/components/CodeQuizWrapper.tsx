@@ -98,7 +98,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   useEffect(() => {
     if (!isCompleted || isSubmitting) return
 
-      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..."})
+    enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
 
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/code/${slug}/results`)
