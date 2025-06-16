@@ -37,7 +37,7 @@ const quizTypeMeta: Record<QuizType, { icon: typeof ListChecks; title: string; f
 
 const getQuizMeta = (quizType: QuizType = "flashcard") => quizTypeMeta[quizType] || quizTypeMeta.flashcard
 
-// Generic Sign-In Prompt Component for Flashcards
+// Enhanced Sign-In Prompt Component for quiz results
 const SignInPrompt = ({
   onSignIn,
   onRetake,
@@ -64,16 +64,38 @@ const SignInPrompt = ({
   const meta = getQuizMeta(quizType)
   const Icon = meta.icon
   const showScore = previewData && (previewData.score !== undefined || previewData.correctAnswers !== undefined)
-  const correct = previewData?.correctAnswers ?? previewData?.score
-  const total = previewData?.totalQuestions ?? previewData?.maxScore
+  const correct = previewData?.correctAnswers ?? previewData?.score ?? 0
+  const total = previewData?.totalQuestions ?? previewData?.maxScore ?? 0
+  const percentage = previewData?.percentage ?? (total > 0 ? Math.round((correct / total) * 100) : 0)
 
+  // Improved loading state with layout-preserving skeleton
   if (loading) {
     return (
-      <div className="max-w-md mx-auto">
-        <Skeleton className="h-40 w-full rounded-xl mb-4" />
-        <Skeleton className="h-10 w-2/3 mx-auto mb-2" />
-        <Skeleton className="h-6 w-1/2 mx-auto mb-2" />
-        <Skeleton className="h-8 w-1/2 mx-auto" />
+      <div className="max-w-md mx-auto w-full">
+        <Card className="shadow-lg border-primary/20">
+          <CardHeader className="text-center pb-4">
+            <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
+            <Skeleton className="h-8 w-2/3 mx-auto mb-2" />
+            <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+              <Skeleton className="h-6 w-1/3 mx-auto mb-2" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Skeleton className="h-4 w-5/6 mx-auto mb-2" />
+            <Skeleton className="h-4 w-4/6 mx-auto mb-6" />
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -83,8 +105,8 @@ const SignInPrompt = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="max-w-md mx-auto"
+      transition={{ duration: 0.4 }}
+      className="max-w-md mx-auto w-full px-4 sm:px-0"
     >
       <Card className="shadow-lg border-primary/20 bg-gradient-to-b from-background to-primary/5">
         <CardHeader className="text-center pb-4">
@@ -102,15 +124,15 @@ const SignInPrompt = ({
                   <>
                     <div className="flex justify-between">
                       <span>Mastered:</span>
-                      <span className="text-green-600 font-medium">{previewData?.correctAnswers}</span>
+                      <span className="text-green-600 font-medium">{previewData?.correctAnswers || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Still Learning:</span>
-                      <span className="text-amber-600 font-medium">{previewData?.stillLearningAnswers}</span>
+                      <span className="text-amber-600 font-medium">{previewData?.stillLearningAnswers || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Missed:</span>
-                      <span className="text-red-600 font-medium">{previewData?.incorrectAnswers}</span>
+                      <span className="text-red-600 font-medium">{previewData?.incorrectAnswers || 0}</span>
                     </div>
                   </>
                 ) : (
@@ -118,15 +140,19 @@ const SignInPrompt = ({
                     <div className="flex justify-between">
                       <span>Score:</span>
                       <span className="font-medium">
-                        {previewData?.score} / {previewData?.maxScore}
+                        {previewData?.score || 0} / {previewData?.maxScore || 0}
                       </span>
                     </div>
-                    {previewData?.percentage !== undefined && (
-                      <div className="flex justify-between">
-                        <span>Percentage:</span>
-                        <span className="font-medium">{previewData.percentage}%</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between">
+                      <span>Percentage:</span>
+                      <span className="font-medium">{percentage}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <span className={`font-medium ${percentage >= 70 ? 'text-green-600' : percentage >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
+                        {percentage >= 70 ? 'Passed' : 'Not Passed'}
+                      </span>
+                    </div>
                   </>
                 )}
               </div>
@@ -139,9 +165,9 @@ const SignInPrompt = ({
             Sign in to save your progress, view detailed results, and track your learning over time.
           </p>
           <div className="space-y-3">
-            <Button onClick={onSignIn} size="lg" className="w-full gap-2">
+            <Button onClick={onSignIn} size="lg" className="w-full gap-2 transition-all hover:gap-3">
               <LogIn className="w-4 h-4" />
-              Sign in to view full feedback and continue learning
+              Sign in to view full feedback
             </Button>
             <Button onClick={onRetake} variant="outline" size="lg" className="w-full gap-2">
               <RefreshCw className="w-4 h-4" />

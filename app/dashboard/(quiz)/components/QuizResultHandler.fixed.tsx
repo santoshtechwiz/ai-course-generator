@@ -30,8 +30,6 @@ import { RefreshCw } from "lucide-react"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 import { useAuth } from "@/hooks/use-auth"
 
-
-
 interface Props {
   slug: string
   quizType: QuizType
@@ -68,6 +66,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   const [isInitialized, setIsInitialized] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [hasPendingResults, setHasPendingResults] = useState(false)
+
   // Enhanced result memoization with better validation and normalization
   const currentResult = useMemo(() => {
     // Track result source for debugging
@@ -190,7 +189,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         console.warn("Error retrieving or processing stored results:", e);
       }
     }
-      // Last resort: try to generate basic results from current state
+    
+    // Last resort: try to generate basic results from current state
     if (questions.length > 0 && Object.keys(answers).length > 0) {
       resultSource = 'dynamically_generated';
       
@@ -229,7 +229,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     
     // Nothing found
     return null;
-  }, [quizResults, generatedResults, normalizedSlug, questions, answers, quizType]);
+  }, [quizResults, generatedResults, normalizedSlug, questions, answers, quizType, quizTitle]);
 
   // Handle retake action - improved with better state cleanup
   const handleRetake = useCallback(() => {
@@ -297,20 +297,23 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       returnPath: `/dashboard/${quizType}/${normalizedSlug}/results`,
       quizState: { slug: normalizedSlug, results: currentResult },
     });
-  }, [currentResult, normalizedSlug, quizType, questions, answers, quizTitle, signIn]);  // Generate results from state if needed - with improved property mapping
+  }, [currentResult, normalizedSlug, quizType, questions, answers, quizTitle, signIn]);
+
+  // Generate results from state if needed - with improved property mapping
   const generateResultsFromState = useCallback(() => {
     if (!questions.length || !Object.keys(answers).length) {
-      return null
+      return null;
     }
 
-    let score = 0
+    let score = 0;
     // Enhanced normalization with thorough property extraction
     const normalizedQuestions = questions.map((question: any) => {
       // Normalize question ID to string for reliable matching
-      const qid = String(question.id || question.questionId || "");
+      const qid = String(question.id);
       
       // Robust text extraction for each question
-      const questionText = question.question || question.text || (typeof question.prompt === 'string' ? question.prompt : "") || "";
+      const questionText = question.question || question.text || 
+                          (typeof question.prompt === 'string' ? question.prompt : "") || "";
       
       // Enhanced correct answer extraction with better fallbacks
       const correctOptionId = question.correctOptionId || question.correctAnswerId || "";
@@ -325,22 +328,14 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         correctAnswer: correctAnswer,
         correctOptionId: correctOptionId, // Store separately for MCQ matching
         type: question.type || quizType,
-        options: question.options || [], // Store options for MCQ display
-        code: question.code || question.codeSnippet || "", // Ensure code is included for code questions
-        language: question.language || "", // Include language for syntax highlighting
-        explanation: question.explanation || "", // Include explanations if available
-        originalQuestion: question, // Store the full original object for reference if needed
+        options: question.options || [] // Store options for MCQ display
       };
     });
     
     // Map answers to questions with improved extraction logic
     const questionResults = normalizedQuestions.map((question: any) => {
       const qid = question.id;
-      // Try to find the answer with several ID matching strategies
-      const answer = answers[qid] || 
-                    Object.values(answers).find((a: any) => 
-                      String(a.questionId) === qid || 
-                      String(a.id) === qid);
+      const answer = answers[qid];
 
       // Default structure for unanswered questions
       if (!answer) {
@@ -351,20 +346,18 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
           userAnswer: "",
           isCorrect: false,
           type: question.type
-        }
+        };
       }
       
       // Extract answer data with enhanced fallback paths
       let isCorrect = answer.isCorrect === true; // Default to provided value
       let userAnswer = "";
-      let rawAnswer = ""; // Store the raw answer value for reference
-        // Handle each quiz type with improved extraction logic
+      
+      // Handle each quiz type with improved extraction logic
       switch (question.type) {
         case "mcq": {
           // Get the selected option ID with enhanced fallbacks
-          rawAnswer = answer.selectedOptionId || answer.selectedOption || answer.userAnswer || answer.answer || answer.text || "";
-          
-          // Store raw ID for reference
+          const rawAnswer = answer.selectedOptionId || answer.selectedOption || answer.userAnswer || answer.answer || "";
           const selectedOptionId = String(rawAnswer);
 
           // Try to extract full option text for better display
@@ -387,72 +380,42 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
             userAnswer = rawAnswer;
           }
           
-          // Calculate correctness - check if selected option matches correct option
-          const correct = question.correctOptionId || question.correctAnswer || question.answer;
-          // If isCorrect wasn't explicitly set, derive it from answer matching
+          // Calculate correctness if not explicitly provided
           if (typeof answer.isCorrect !== 'boolean') {
-            // If we have both values, do a case-insensitive string comparison for more flexibility
-            if (selectedOptionId && correct) {
-              isCorrect = String(selectedOptionId).toLowerCase().trim() === String(correct).toLowerCase().trim();
-            } else {
-              isCorrect = false;
-            }
+            const correct = question.correctOptionId || question.correctAnswer || question.answer;
+            isCorrect = selectedOptionId === String(correct);
           }
           break;
         }
         
         case "code": {
-          // For code quizzes and LINQ queries, extract answer with comprehensive fallbacks
-          rawAnswer = answer.selectedOptionId || answer.userAnswer || answer.answer || answer.code || answer.text || "";
-          userAnswer = rawAnswer;
-          
-          // If correctness isn't explicitly set, try to match with correct answer with more flexibility
-          if (typeof answer.isCorrect !== 'boolean') {
-            // For code, first normalize both strings by trimming whitespace and converting to lowercase for more lenient matching
-            const normalizedUserAnswer = String(rawAnswer).trim().toLowerCase().replace(/\s+/g, ' ');
-            const normalizedCorrectAnswer = String(question.correctAnswer).trim().toLowerCase().replace(/\s+/g, ' ');
-            
-            // Check if answers match with normalization
-            isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
-          }
+          userAnswer = answer.selectedOptionId || answer.userAnswer || answer.answer || answer.code || "";
           break;
         }
         
         case "blanks": {
-          // For fill-in-the-blanks quizzes, check all possible answer locations
-          rawAnswer = answer.userAnswer || answer.text || answer.value || "";
+          // For fill-in-the-blanks quizzes
+          userAnswer = answer.userAnswer || answer.text || answer.value || "";
           
           // Also check filledBlanks object which is common in this quiz type
-          if (!rawAnswer && answer.filledBlanks) {
-            rawAnswer = answer.filledBlanks[qid] || answer.filledBlanks[question.id] || "";
+          if (!userAnswer && answer.filledBlanks) {
+            userAnswer = answer.filledBlanks[qid] || answer.filledBlanks[question.id] || "";
           }
           
-          userAnswer = String(rawAnswer);
-          
-          // If correctness isn't explicit, compare with correct answer (case-insensitive)
+          // If correctness isn't explicit, compare with correct answer
           if (typeof answer.isCorrect !== 'boolean') {
-            const correctAnswerNormalized = String(question.correctAnswer).trim().toLowerCase();
-            isCorrect = userAnswer.trim().toLowerCase() === correctAnswerNormalized;
+            isCorrect = userAnswer.trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase();
           }
           break;
         }
         
         case "openended": {
-          // Open-ended questions have text answers and often use similarity comparison
-          rawAnswer = answer.text || answer.userAnswer || answer.answer || "";
-          userAnswer = String(rawAnswer);
-          
-          // For open-ended, trust the provided isCorrect or default to similarity calculation
-          if (typeof answer.isCorrect !== 'boolean' && typeof answer.similarity === 'number') {
-            isCorrect = answer.similarity >= 0.7; // Standard threshold for correctness
-          }
+          userAnswer = answer.text || answer.userAnswer || answer.answer || "";
           break;
         }
         
         case "flashcard": {
-          // Flashcards have various response types
-          rawAnswer = answer.userAnswer || answer.text || answer.response || answer.answer || "";
-          userAnswer = String(rawAnswer);
+          userAnswer = answer.userAnswer || answer.text || answer.response || answer.answer || "";
           
           // Flashcards often store the answer type directly
           if (answer.answer === "correct") {
@@ -464,71 +427,49 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         }
         
         default: {
-          // Generic fallback for any other question type
-          rawAnswer = answer.userAnswer || answer.text || answer.answer || answer.value || "";
-          userAnswer = String(rawAnswer);
+          // Generic fallback
+          userAnswer = answer.userAnswer || answer.text || answer.answer || answer.value || "";
         }
       }
 
       // Increment score if answer is correct
       if (isCorrect) score++;
 
-      // Return a comprehensive result object with all necessary data
+      // Return a comprehensive result object
       return {
         questionId: qid,
         question: question.question, // Use normalized question text
-        questionText: question.question, // Additional field for compatibility
         correctAnswer: question.correctAnswer,
         userAnswer: userAnswer,
-        rawAnswer: rawAnswer, // Store raw answer for debugging
         isCorrect: isCorrect,
         type: question.type,
-        // Include extra fields that might be useful for specific quiz types
         similarity: answer.similarity,
-        timeSpent: answer.timeSpent || answer.time || 0,
-      }
-    });    // Ensure we don't divide by zero and handle percentage calculation properly
-    const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;    // Calculate correct and incorrect counts for metrics display
-    const correctCount = questionResults.filter((qr: any) => qr.isCorrect).length;
-    const incorrectCount = questions.length - correctCount;
+        timeSpent: answer.timeSpent || answer.time || 0
+      };
+    });
 
-    // Create an enhanced results object with complete data and reliable metrics
+    const percentage = Math.round((score / questions.length) * 100);
+
+    // Create results object
     const results = {
       quizId: normalizedSlug,
       slug: normalizedSlug,
       title: quizTitle || `${quizType.toUpperCase()} Quiz`,
       quizType,
-      score: correctCount, // Use questionResults-derived score for consistency
+      score,
       maxScore: questions.length,
       percentage,
       completedAt: new Date().toISOString(),
       questionResults,
-      // Include metrics calculated from questionResults for better consistency
-      metrics: {
-        correct: correctCount,
-        incorrect: incorrectCount, 
-        total: questions.length,
-        percentage
-      },
-      // Include both raw and normalized answers for complete context
-      answers: Object.values(answers).map((answer: any) => {
-        // Ensure each answer has a consistent structure
-        return {
-          ...answer,
-          // Add fallbacks for common fields
-          questionId: answer.questionId || "",
-          userAnswer: answer.userAnswer || answer.text || answer.answer || answer.selectedOptionId || "",
-          isCorrect: typeof answer.isCorrect === 'boolean' ? answer.isCorrect : false
-        };
-      }),
-      questions: normalizedQuestions, // Include normalized questions
-      originalQuestions: questions // Include original questions array for reference
+      answers: Object.values(answers),
+      questions: normalizedQuestions
     };
 
     // Store the generated results
-    dispatch(setQuizResults(results))
-    return results
-  }, [questions, answers, quizType, normalizedSlug, quizTitle, dispatch])
+    dispatch(setQuizResults(results));
+    return results;
+  }, [questions, answers, quizType, normalizedSlug, quizTitle, dispatch]);
+  
   // Initialize and restore state - improved to check storage first
   useEffect(() => {
     if (isInitialized) return;
@@ -547,6 +488,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     
     setIsInitialized(true);
   }, [isLoadingAuth, dispatch, isInitialized, isHydrated, quizResults, generatedResults, restoreQuizResults]);
+  
   // Determine view state based on current conditions - enhanced with storage checks and prioritization
   useEffect(() => {
     // First priority: During active auth/loading and we have results - keep showing results
@@ -618,6 +560,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     generateResultsFromState,
     restoreQuizResults
   ]);
+
   // Improved loading state with better layout preserving skeleton
   if (viewState === "loading") {
     return (
@@ -730,7 +673,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }
 
 // Simplified QuizResultHandler for handling quiz completion and saving
@@ -828,5 +771,5 @@ export function QuizResultHandler({
     }
   }, [isCompleted, results, router, quizType, slug, hasRedirected, isProcessing]);
 
-  return null
+  return null;
 }

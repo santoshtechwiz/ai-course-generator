@@ -1,11 +1,15 @@
 "use client"
 
-import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+import { 
+  createSlice, 
+  createAsyncThunk, 
+  createSelector,
+  type PayloadAction 
+} from "@reduxjs/toolkit"
 import { shallowEqual } from 'react-redux';
 import type { RootState } from "@/store"
 import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
 import { logger } from "@/lib/logger" // Import logger to help debug state updates
-import { debounce } from 'lodash';
 
 // Define types
 export interface SubscriptionData {
@@ -46,45 +50,114 @@ const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
   cancelAtPeriodEnd: false
 };
 
+// Keep track of ongoing subscription fetch request
+let subscriptionFetchPromise: Promise<any> | null = null;
+// Minimum time between subscription fetches (in milliseconds)
+const MIN_FETCH_INTERVAL = 10000; // 10 seconds
+
 // Create the async thunk for fetching subscription data
 export const fetchSubscription = createAsyncThunk(
   "subscription/fetch",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch("/api/subscriptions/status", {
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+      const state = getState() as RootState;
+      const { lastFetched, isFetching } = state.subscription;
+      
+      // Check if we've fetched recently and should use cached data
+      if (lastFetched && Date.now() - lastFetched < MIN_FETCH_INTERVAL) {
+        logger.debug(`Skipping subscription fetch - last fetched ${Date.now() - lastFetched}ms ago`);
+        return state.subscription.data || DEFAULT_FREE_SUBSCRIPTION;
+      }
+      
+      // If a fetch is already in progress, reuse the existing promise
+      if (isFetching && subscriptionFetchPromise) {
+        logger.debug("Subscription fetch already in progress, reusing promise");
+        return subscriptionFetchPromise;
+      }      // Create new fetch promise with timeout protection
+      const FETCH_TIMEOUT = 15000; // 15 second timeout
+      
+      // Create a timeout promise that rejects after specified time
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Subscription data fetch timed out'));
+        }, FETCH_TIMEOUT);
+      });
+      
+      subscriptionFetchPromise = Promise.race([
+        fetch("/api/subscriptions/status", {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          // Add signal for timeout/abort handling
+          signal: AbortSignal.timeout(FETCH_TIMEOUT)
+        })
+        .then(async (response) => {
+          // Handle 401 unauthorized specifically - user is not logged in
+          if (response.status === 401) {
+            logger.info("User is not authenticated, returning default free subscription data");
+            return DEFAULT_FREE_SUBSCRIPTION;
+          }
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            logger.error(`API error: ${response.status} - ${errorText}`);
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          logger.info(`Subscription data fetched successfully`);
+          logger.debug(`Full subscription data: ${JSON.stringify(data)}`);
+
+          // Handle edge cases for expired or inactive subscriptions
+          if (data.status === "INACTIVE" || (data.expirationDate && new Date(data.expirationDate) < new Date())) {
+            data.status = "EXPIRED";
+            data.isSubscribed = false;
+            logger.warn("Subscription marked as expired or inactive");
+          }
+
+          return data;
+        }),
+        timeoutPromise
+      ])
+      .catch(error => {
+        // NetworkError or AbortError indicates a connectivity issue
+        if (error.name === 'AbortError' || error.name === 'NetworkError' || error.message.includes('NetworkError') || error.message.includes('timeout')) {
+          logger.error(`Network connectivity issue: ${error.message}`);
+          throw new Error('Network connectivity issue - please check your connection');
+        } else {
+          logger.error(`Failed to fetch subscription data: ${error.message}`);
+          throw error;
+        }
       })
-
-      // Handle 401 unauthorized specifically - user is not logged in
-      if (response.status === 401) {
-        logger.info("User is not authenticated, returning default free subscription data")
-        return DEFAULT_FREE_SUBSCRIPTION;
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        logger.error(`API error: ${response.status} - ${errorText}`)
-        throw new Error(`Error ${response.status}: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      logger.info(`Subscription data fetched successfully: ${JSON.stringify(data)}`)
-
-      // Handle edge cases for expired or inactive subscriptions
-      if (data.status === "INACTIVE" || new Date(data.expirationDate) < new Date()) {
-        data.status = "EXPIRED"
-        data.isSubscribed = false
-        logger.warn("Subscription marked as expired or inactive")
-      }
-
-      return data
+      .finally(() => {
+        // Clear promise reference after completion
+        subscriptionFetchPromise = null;
+      });      return await subscriptionFetchPromise;
     } catch (error: any) {
-      logger.error(`Failed to fetch subscription data: ${error.message}`)
-      return rejectWithValue(error.message || "Failed to fetch subscription data")
+      // Enhanced error handling with clearer messages
+      let errorMessage = "Failed to fetch subscription data";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Improve error messages for common issues
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = 'Network connectivity issue - please check your connection';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Request timed out - server might be under heavy load';
+        }
+        
+        logger.error(`Failed to fetch subscription data: ${error.message}`, {
+          name: error.name,
+          stack: error.stack?.slice(0, 200) // Log a portion of the stack trace
+        });
+      } else {
+        logger.error(`Failed to fetch subscription data: ${String(error)}`);
+      }
+      
+      return rejectWithValue(errorMessage);
     }
   }
 )
@@ -150,14 +223,38 @@ export const activateFreeTrial = createAsyncThunk("subscription/activateTrial", 
   }
 })
 
-// Thunk to force refresh the subscription data
+// Thunk to force refresh the subscription data with improved error handling
 export const forceRefreshSubscription = createAsyncThunk(
   "subscription/forceRefresh",
   async (_, { dispatch }) => {
-    // Clear existing data first
-    dispatch(clearSubscriptionData());
-    // Then fetch fresh data
-    return dispatch(fetchSubscription());
+    // Ensure we have network connectivity 
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      logger.warn("Cannot force refresh - network appears to be offline");
+      throw new Error("Network connectivity issue - please check your connection");
+    }
+    
+    logger.info("Force refreshing subscription data");
+    
+    try {
+      // Clear any cached/in-flight requests
+      subscriptionFetchPromise = null;
+      
+      // Clear existing data first but keep the last error if any
+      dispatch(clearSubscriptionData());
+      
+      // Then fetch fresh data with a timeout to prevent hanging
+      const result = await Promise.race([
+        dispatch(fetchSubscription()).unwrap(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Force refresh timed out after 10s")), 10000)
+        )
+      ]);
+      
+      return result;
+    } catch (error) {
+      logger.error(`Force refresh failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
   }
 );
 
@@ -215,13 +312,40 @@ const subscriptionSlice = createSlice({
         } else {
           logger.debug("Subscription data unchanged, skipping update")
         }
-      })
-      .addCase(fetchSubscription.rejected, (state, action) => {
+      })      .addCase(fetchSubscription.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (typeof action.payload === 'string' ? action.payload : (action.payload && (action.payload as any).error)) || "Subscription fetch failed";
-        // Set default free subscription data even when fetching fails
-        state.data = DEFAULT_FREE_SUBSCRIPTION;
-        logger.error(`Subscription fetch failed: ${action.payload}`)
+        state.isFetching = false;
+        
+        // Format error message for display
+        let errorMessage: string;
+        
+        if (typeof action.payload === 'string') {
+          errorMessage = action.payload;
+        } else if (action.payload && typeof (action.payload as any).error === 'string') {
+          errorMessage = (action.payload as any).error;
+        } else if (action.error && action.error.message) {
+          errorMessage = action.error.message;
+        } else {
+          errorMessage = "Subscription fetch failed";
+        }
+        
+        // Clean up common error messages for better user experience
+        if (errorMessage.includes('Failed to fetch') || 
+            errorMessage.includes('NetworkError') || 
+            errorMessage.includes('network connectivity') ||
+            errorMessage.includes('timeout')) {
+          errorMessage = "Network connectivity issue - please check your connection and try again";
+        }
+        
+        state.error = errorMessage;
+        
+        // Don't replace existing data when request fails unless we have no data
+        // This helps maintain user experience during temporary outages
+        if (!state.data) {
+          state.data = DEFAULT_FREE_SUBSCRIPTION;
+        }
+        
+        logger.error(`Subscription fetch failed: ${errorMessage}`);
       })
 
       // Cancel subscription
@@ -289,8 +413,7 @@ const subscriptionSlice = createSlice({
 // (Only export once, after all actions are defined)
 export const { clearSubscriptionData, resetState, setSubscriptionData, resetSubscriptionState } = subscriptionSlice.actions
 
-// Memoized selectors using createSelector for better performance
-import { createSelector } from "@reduxjs/toolkit"
+// Memoized selectors for better performance
 
 // Base selectors
 const getSubscriptionState = (state: RootState) => state.subscription

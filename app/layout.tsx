@@ -4,21 +4,15 @@ import "../globals.css"
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
 
-import { Inter } from "next/font/google"
 
 
 import Footer from "@/components/shared/Footer"
-import { getAuthSession } from "@/lib/auth"
-import { AuthProvider } from "@/context/auth-context"
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 
+import { fontRobotoSans } from "./font"
 
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-sans",
-})
+
 
 export const metadata: Metadata = {
   ...defaultMetadata,
@@ -59,7 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
-      <body className={`${inter.className} font-sans antialiased min-h-screen flex flex-col`}>
+      <body className={` ${fontRobotoSans.variable} antialiased min-h-screen flex flex-col`}>
 
         <Providers>
 

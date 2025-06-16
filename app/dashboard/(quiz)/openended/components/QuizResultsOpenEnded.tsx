@@ -60,32 +60,72 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
   const hasShownConfettiRef = useRef(false)
-
   // Memoize enhanced results to prevent recalculation on every render
   const enhancedResults = useMemo(() => {
+    // Early validation to prevent processing invalid data
     if (!result?.questionResults) return []
 
     return result.questionResults.map((q) => {
-      // Find the actual user answer from the answers array
-      const actualAnswer = result.answers?.find((a) => a.questionId.toString() === q.questionId.toString())
-      // Find the question text from the questions array
-      const questionData = result.questions?.find((quest) => quest.id.toString() === q.questionId.toString())
-
-      const userAnswer = actualAnswer?.userAnswer || q.userAnswer || ""
-      const correctAnswer = q.correctAnswer || questionData?.answer || ""
+      // Normalize question ID for consistent comparison
+      const questionId = String(q.questionId || q.id || "");
       
-      // Only calculate similarity if not already provided
-      const sim = typeof q.similarity === "number" ? q.similarity : getSimilarity(userAnswer, correctAnswer)
-      const similarityLabel = getSimilarityLabel(sim)
+      // Find the actual user answer from the answers array with enhanced matching
+      const actualAnswer = result.answers?.find((a) => 
+        String(a.questionId || a.id || "") === questionId
+      );
+      
+      // Find the question text from the questions array with more robust matching
+      const questionData = result.questions?.find((quest) => 
+        String(quest.id || quest.questionId || "") === questionId
+      );
+      
+      // Extract question text with improved priority and fallbacks
+      const questionText = q.question || q.text || 
+                          questionData?.question || questionData?.text || 
+                          `Question ${questionId}`;
+      
+      // Extract user answer with comprehensive fallbacks for open-ended format
+      const userAnswer = actualAnswer?.userAnswer || 
+                        actualAnswer?.text || 
+                        actualAnswer?.answer || 
+                        q.userAnswer || 
+                        q.answer || 
+                        "";
+      
+      // Extract correct answer with comprehensive fallbacks
+      const correctAnswer = q.correctAnswer || 
+                           questionData?.correctAnswer || 
+                           questionData?.answer || 
+                           "";
+      
+      // Calculate or use provided similarity with proper type checking
+      const sim = typeof q.similarity === "number" ? q.similarity : 
+                  getSimilarity(userAnswer, correctAnswer);
+                  
+      // Generate similarity label from calculated or existing value
+      const similarityLabel = q.similarityLabel || getSimilarityLabel(sim);
+      
+      // Determine correctness with explicit boolean checks and fallback to similarity
+      const isCorrect = typeof actualAnswer?.isCorrect === 'boolean' ? actualAnswer.isCorrect : 
+                        typeof q.isCorrect === 'boolean' ? q.isCorrect : 
+                        sim >= 0.7;
 
+      // Return a comprehensive and normalized result object
       return {
         ...q,
-        question: q.question || questionData?.question || `Question ${q.questionId}`,
+        questionId,
+        question: questionText,
         userAnswer,
         correctAnswer,
         similarity: sim,
         similarityLabel,
-        isCorrect: actualAnswer?.isCorrect ?? sim >= 0.7,
+        isCorrect,
+        // Include debug info
+        _originalData: {
+          questionResult: q,
+          answerData: actualAnswer,
+          questionData: questionData
+        }
       }
     })
   }, [result])

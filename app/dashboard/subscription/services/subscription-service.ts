@@ -17,9 +17,62 @@ import { prisma } from "@/lib/db"
 import { getPaymentGateway } from "./payment-gateway-factory"
 import { logger } from "@/lib/logger" // Fix: use named import instead of default import
 
-// Cache configuration
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes cache TTL
-const subscriptionCache = new Map<string, { data: any; timestamp: number }>()
+// Enhanced cache configuration with LRU (Least Recently Used) logic
+const CACHE_TTL = 10 * 60 * 1000 // 10 minutes cache TTL (increased to reduce database load)
+const MAX_CACHE_SIZE = 1000 // Limit cache size to prevent memory leaks
+
+// Simple LRU cache implementation
+class LRUCache<K, V> {  private cache: Map<K, V> = new Map();
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: K): V | undefined {
+    if (!this.cache.has(key)) return undefined;
+    
+    // Access the item, which will refresh its position in the LRU
+    const value = this.cache.get(key);
+    this.cache.delete(key);
+    this.cache.set(key, value!);
+    return value;
+  }
+
+  set(key: K, value: V): void {
+    // Delete key if it already exists
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
+    
+    // Evict oldest entry if cache is full
+    if (this.cache.size >= this.maxSize) {
+      // Type-safe approach to get the first key
+      const keys = Array.from(this.cache.keys());
+      if (keys.length > 0) {
+        const oldestKey = keys[0];
+        this.cache.delete(oldestKey);
+      }
+    }
+    
+    // Add new entry
+    this.cache.set(key, value);
+  }
+
+  has(key: K): boolean {
+    return this.cache.has(key);
+  }
+
+  delete(key: K): boolean {
+    return this.cache.delete(key);
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const subscriptionCache = new LRUCache<string, { data: any; timestamp: number }>(MAX_CACHE_SIZE);
 export class SubscriptionService {
 
   /**
@@ -173,42 +226,164 @@ export class SubscriptionService {
    *
    * @param userId - The ID of the user
    * @returns Object with subscription status information
-   */
-  static async getSubscriptionStatus(userId: string): Promise<any> {
+   */  static async getSubscriptionStatus(userId: string): Promise<any> {
     try {
       if (!userId) {
-        throw new Error("User ID is required")
+        logger.warn("getSubscriptionStatus called without userId")
+        return {
+          credits: 0,
+          tokensUsed: 0,
+          isSubscribed: false,
+          subscriptionPlan: "FREE",
+          status: "INACTIVE",
+        }
       }
 
-      // Check cache first
+      // Check cache first with extended TTL during errors
       const cacheKey = `subscription_${userId}`
       const cachedData = subscriptionCache.get(cacheKey)
+      const now = Date.now()
 
-      if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
-        //logger.debug(`Using cached subscription data for user ${userId}`)
-        return cachedData.data
+      // Use cached data if available and not expired
+      if (cachedData) {
+        const cacheAge = now - cachedData.timestamp;
+        
+        // Always use cache if within normal TTL
+        if (cacheAge < CACHE_TTL) {
+          logger.debug(`Using cached subscription data for user ${userId}, age: ${cacheAge}ms`)
+          return cachedData.data;
+        }
+        
+        // Use stale cache if we had errors recently (circuit breaker pattern)
+        const errorKey = `error_count_${userId}`;
+        const recentErrors = subscriptionCache.get(errorKey);
+        if (recentErrors && recentErrors.data > 3 && cacheAge < CACHE_TTL * 3) {
+          logger.warn(`Using stale cache due to recent errors for user ${userId}, age: ${cacheAge}ms`);
+          return cachedData.data;        }
       }
 
-      // Get user subscription data with improved error handling
-      const userSubscription = await prisma.userSubscription
-        .findUnique({
-          where: { userId },
-        })
-        .catch((error) => {
-          logger.error("Database error fetching user subscription:", error)
-          throw new Error("Failed to fetch subscription data from database")
-        })
+      // Get user subscription data and credits in parallel with timeout protection
+      const DB_TIMEOUT = 8000; // Increased timeout to 8 seconds
+      
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Database query timed out")), DB_TIMEOUT)
+      );
+      
+      try {
+        // Use promise.race to implement timeout
+        const [userSubscription, user] = await Promise.race([
+          Promise.all([
+            prisma.userSubscription.findUnique({ 
+              where: { userId }
+            }),
+            prisma.user.findUnique({
+              where: { id: userId },
+              select: { credits: true, creditsUsed: true }
+            })
+          ]),
+          timeout
+        ]) as [any, any];
+        
+        // Reset error counter on success
+        subscriptionCache.delete(`error_count_${userId}`);
+        
+        // Default values if no subscription exists
+        if (!userSubscription) {
+          const result = {
+            credits: user?.credits || 0,
+            tokensUsed: user?.creditsUsed || 0,
+            isSubscribed: false,
+            subscriptionPlan: "FREE",
+            status: "INACTIVE",
+          }
 
-      // Get user credits with improved error handling
-      const user = await prisma.user
-        .findUnique({
-          where: { id: userId },
-          select: { credits: true, creditsUsed: true },
-        })
-        .catch((error) => {
-          logger.error("Database error fetching user credits:", error)
-          throw new Error("Failed to fetch user credits from database")
-        })
+          // Cache the result
+          subscriptionCache.set(cacheKey, { data: result, timestamp: now })
+          return result
+        }
+
+        // Determine if the subscription is active
+        const isSubscribed = userSubscription.status === "ACTIVE"
+
+        // Format the expiration date if it exists
+        const expirationDate = userSubscription.currentPeriodEnd
+          ? userSubscription.currentPeriodEnd.toISOString()
+          : undefined
+
+        const result = {
+          credits: user?.credits || 0,
+          tokensUsed: user?.creditsUsed || 0,
+          isSubscribed,
+          subscriptionPlan: userSubscription.planId as SubscriptionPlanType,
+          expirationDate,
+          status: userSubscription.status,
+        }
+
+        // Cache the result with current timestamp
+        subscriptionCache.set(cacheKey, { data: result, timestamp: now })
+        return result      } catch (dbError) {
+        // Track errors to implement circuit breaker pattern
+        const errorKey = `error_count_${userId}`;
+        const currentErrors = subscriptionCache.get(errorKey);
+        const errorCount = currentErrors ? currentErrors.data + 1 : 1;
+        subscriptionCache.set(errorKey, { data: errorCount, timestamp: now });
+        
+        // Enhanced error logging with more details
+        if (dbError instanceof Error) {
+          logger.error(`Database error fetching subscription data: ${dbError.message}`, { 
+            userId, 
+            errorCount,
+            errorName: dbError.name,
+            stack: dbError.stack?.slice(0, 200) // Log limited stack trace
+          });
+        } else {
+          logger.error(`Database error fetching subscription data: ${dbError}`, { userId, errorCount });
+        }
+        
+        // Fall back to cached data even if expired, or default values
+        if (cachedData) {
+          logger.warn(`Using expired cached subscription data for user ${userId} due to DB error`);
+          return cachedData.data;
+        }
+
+        const defaultData = {
+          credits: 0,
+          tokensUsed: 0,
+          isSubscribed: false,
+          subscriptionPlan: "FREE",
+          status: "INACTIVE",
+        };
+        // Cache the default data with a short TTL
+        subscriptionCache.set(cacheKey, { data: defaultData, timestamp: now - CACHE_TTL + 60000 }); // 1 minute TTL
+        return defaultData;
+      }    } catch (error) {
+      // Enhanced error logging and handling
+      if (error instanceof Error) {
+        logger.error(`Error in getSubscriptionStatus for user ${userId}: ${error.message}`, {
+          errorName: error.name,
+          stack: error.stack?.slice(0, 200), // Log limited stack trace
+          userId
+        });
+      } else {
+        logger.error(`Error in getSubscriptionStatus for user ${userId}: ${error}`);
+      }
+      
+      // Return cached data if available, otherwise provide default with more detailed status
+      if (cachedData) {
+        logger.info(`Returning cached data for user ${userId} due to error`);
+        return cachedData.data;
+      }
+      
+      // If we get here, we have a network or service failure
+      return {
+        credits: 0,
+        tokensUsed: 0,
+        isSubscribed: false,
+        subscriptionPlan: "FREE" as SubscriptionPlanType,
+        status: "NETWORK_ERROR",
+        error: error instanceof Error ? error.message : "Service temporarily unavailable"
+      };
+    }
 
       // Default values if no subscription exists
       if (!userSubscription) {
