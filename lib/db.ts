@@ -1,5 +1,4 @@
 import type { OpenEndedQuestion } from "@/app/types/quiz-types"
-import type { MultipleChoiceQuestion, QuizType, CodeChallenge } from "@/app/types/types"
 import { type Prisma, PrismaClient } from "@prisma/client"
 
 // Create a global object to store the Prisma client instance (for Next.js Fast Refresh)

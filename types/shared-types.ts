@@ -135,3 +135,15 @@ export interface AddOnPackage {
   price: number;
   features: string[];
 }
+
+// Add UserSubscription type to shared-types for use across modules
+export interface UserSubscription {
+  userId: string;
+  planId: SubscriptionPlanType;
+  status: SubscriptionStatusType;
+  currentPeriodStart?: Date;
+  currentPeriodEnd?: Date;
+  cancelAtPeriodEnd?: boolean;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+}
