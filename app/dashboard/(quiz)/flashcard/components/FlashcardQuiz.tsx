@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 
 // Import the flashcard slice actions
 import {
@@ -784,59 +785,16 @@ function FlashCardQuiz({
         scale: { duration: 0.3 },
       },
     }),
-  }
-
-  // Enhance animation variants with 3D transforms and hardware acceleration
+  }  // Enhance animation variants with 3D transforms and hardware acceleration
   const frontCardVariants = {
-    initial: {
-      opacity: 0,
-      rotateY: 0,
-      willChange: "transform, opacity",
-      transformStyle: "preserve-3d",
-      backfaceVisibility: "hidden",
-    },
-    animate: {
-      opacity: 1,
-      rotateY: 0,
-      willChange: "transform, opacity",
-      transformStyle: "preserve-3d",
-      backfaceVisibility: "hidden",
-      transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] },
-    },
-    exit: {
-      opacity: 0,
-      rotateY: 90,
-      willChange: "transform, opacity",
-      transformStyle: "preserve-3d",
-      backfaceVisibility: "hidden",
-      transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] },
-    },
-  }
-
+    initial: { opacity: 0, rotateY: 0 },
+    animate: { opacity: 1, rotateY: 0, transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] } },
+    exit: { opacity: 0, rotateY: 90, transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] } }
+  };
   const backCardVariants = {
-    initial: {
-      opacity: 0,
-      rotateY: -90,
-      willChange: "transform, opacity",
-      transformStyle: "preserve-3d",
-      backfaceVisibility: "hidden",
-    },
-    animate: {
-      opacity: 1,
-      rotateY: 0,
-      willChange: "transform, opacity",
-      transformStyle: "preserve-3d",
-      backfaceVisibility: "hidden",
-      transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] },
-    },
-    exit: {
-      opacity: 0,
-      rotateY: -90,
-      willChange: "transform, opacity",
-      transformStyle: "preserve-3d",
-      backfaceVisibility: "hidden",
-      transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] },
-    },
+    initial: { opacity: 0, rotateY: -90 },
+    animate: { opacity: 1, rotateY: 0, transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] } },
+    exit: { opacity: 0, rotateY: -90, transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] } }
   }
 
   // Render different content based on quiz state
@@ -949,6 +907,7 @@ function FlashCardQuiz({
                         toggleFlip()
                       }
                     }}
+                    style={{ willChange: 'transform, opacity', transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
                   >
                     {/* Decorative elements */}
                     <motion.div
@@ -1049,6 +1008,7 @@ function FlashCardQuiz({
                         toggleFlip()
                       }
                     }}
+                    style={{ willChange: 'transform, opacity', transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
                   >
                     {/* Decorative elements */}
                     <motion.div

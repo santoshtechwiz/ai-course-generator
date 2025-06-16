@@ -39,21 +39,20 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
   const [questionCountRange, setQuestionCountRange] = useState<[number, number]>([0, 50])
-  const [showPrivateOnly, setShowPrivateOnly] = useState(false)
+  const [showPublicOnly, setShowPublicOnly] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
 
   const debouncedSearch = useDebounce(search, 500)
   const { ref, inView } = useInView({ threshold: 0.1 })
-
   const queryKey = useMemo(() => [
     "quizzes",
     debouncedSearch,
     selectedTypes.join(","),
     userId,
     questionCountRange.join("-"),
-    showPrivateOnly,
+    showPublicOnly,
     activeTab,
-  ], [debouncedSearch, selectedTypes, userId, questionCountRange, showPrivateOnly, activeTab])
+  ], [debouncedSearch, selectedTypes, userId, questionCountRange, showPublicOnly, activeTab])
 
   const {
     data,
@@ -71,11 +70,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         page: pageParam as number,
         limit: 10,
         searchTerm: debouncedSearch,
-        userId,
-        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+        userId,        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
         minQuestions: questionCountRange[0],
         maxQuestions: questionCountRange[1],
-        privateOnly: showPrivateOnly,
+        publicOnly: showPublicOnly,
         tab: activeTab,
       })
 
@@ -116,12 +114,11 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }, [])
-
   const handleClearSearch = useCallback(() => {
     setSearch("")
     setSelectedTypes([])
     setQuestionCountRange([0, 50])
-    setShowPrivateOnly(false)
+    setShowPublicOnly(false)
     setActiveTab("all")
   }, [])
 
@@ -142,29 +139,38 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   }, [refetch])
 
   const quizzes = extractQuizzes(data)
-
   const isSearching =
     debouncedSearch.trim() !== "" ||
     selectedTypes.length > 0 ||
     questionCountRange[0] > 0 ||
     questionCountRange[1] < 50 ||
-    showPrivateOnly ||
+    showPublicOnly ||
     activeTab !== "all"
-
   const quizCounts = useMemo(() => {
     const counts = {
       all: quizzes.length,
       mcq: 0,
       openended: 0,
       code: 0,
-      "fill-blanks": 0,
+      blanks: 0,
+      flashcard: 0
     }
-    for (const q of quizzes) {
-      if (counts[q.quizType as keyof typeof counts] !== undefined) {
-        counts[q.quizType as keyof typeof counts]++
+      for (const q of quizzes) {
+      // Handle the mapping between API types and UI types
+      if (q.quizType === "mcq") {
+        counts.mcq++;
+      } else if (q.quizType === "openended") {
+        counts.openended++;
+      } else if (q.quizType === "code") {
+        counts.code++;
+      } else if (q.quizType === "blanks") {
+        counts.blanks++;
+      } else if (q.quizType === "flashcard") {
+        counts.flashcard++;
       }
     }
-    return counts
+    
+    return counts;
   }, [quizzes])
 
   const renderErrorState = () => (
@@ -192,8 +198,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
   )
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 min-h-[50vh]">
-      <QuizSidebar
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[50vh]">      <QuizSidebar
         search={search}
         onSearchChange={handleSearchChange}
         onClearSearch={handleClearSearch}
@@ -202,8 +207,8 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         toggleQuizType={toggleQuizType}
         questionCountRange={questionCountRange}
         onQuestionCountChange={setQuestionCountRange}
-        showPrivateOnly={showPrivateOnly}
-        onPrivateOnlyChange={setShowPrivateOnly}
+        showPublicOnly={showPublicOnly}
+        onPublicOnlyChange={setShowPublicOnly}
       />
 
       <motion.div

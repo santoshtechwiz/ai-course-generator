@@ -55,8 +55,7 @@ export async function getQuizzes({
   tab = "all",
   categories = [],
 }: GetQuizzesParams): Promise<GetQuizzesResult> {
-  try {
-    const cacheKey = getCacheKey({
+  try {    const cacheKey = getCacheKey({
       page,
       limit,
       searchTerm,
@@ -72,15 +71,20 @@ export async function getQuizzes({
     const cachedResult = quizCache.get<GetQuizzesResult>(cacheKey)
     if (cachedResult) {
       return cachedResult
-    }
-
-    // Build the where clause
+    }    // Build the where clause
     const where: Record<string, unknown> = {}
 
     // Filter by user ID or public quizzes
     if (userId) {
-      where.OR = [{ userId }, { isPublic: true }]
+      if (publicOnly) {
+        // If both userId and publicOnly are provided, only show public quizzes
+        where.isPublic = true
+      } else {
+        // Otherwise show both user's quizzes and public quizzes
+        where.OR = [{ userId }, { isPublic: true }]
+      }
     } else if (publicOnly) {
+      // If only publicOnly is provided, only show public quizzes
       where.isPublic = true
     }
 

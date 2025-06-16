@@ -2,7 +2,7 @@
 
 import { useEffect, useState, memo, useCallback } from "react"
 import type React from "react"
-import { FileQuestion, AlignJustify, PenTool, Code, Filter, X, ChevronDown } from "lucide-react"
+import { FileQuestion, AlignJustify, PenTool, Code, Filter, X, ChevronDown, Flashlight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,14 +11,15 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { SearchBar } from "./SearchBar"
+import type { QuizType } from "@/app/types/quiz-types"
 
-export type QuizType = "mcq" | "openended" | "fill-blanks" | "code"
-
+// Local helper mapping for quiz types
 const quizTypes = [
   { id: "mcq" as const, label: "Multiple Choice", icon: FileQuestion },
   { id: "openended" as const, label: "Open Ended", icon: AlignJustify },
-  { id: "fill-blanks" as const, label: "Fill in the Blanks", icon: PenTool },
+  { id: "blanks" as const, label: "Fill in the Blanks", icon: PenTool },
   { id: "code" as const, label: "Code", icon: Code },
+  { id: "flashcard" as const, label: "Flash Cards", icon: Flashlight },
 ]
 
 interface QuizSidebarProps {
@@ -201,12 +202,12 @@ function QuizSidebarComponent({
                         isSelected
                           ? "text-white"
                           : type.id === "mcq"
-                            ? "text-blue-600 dark:text-blue-300"
-                            : type.id === "openended"
-                              ? "text-green-600 dark:text-green-300"
-                              : type.id === "fill-blanks"
-                                ? "text-yellow-600 dark:text-yellow-300"
-                                : "text-purple-600 dark:text-purple-300"
+                          ? "text-blue-600 dark:text-blue-300"
+                          : type.id === "openended"
+                          ? "text-green-600 dark:text-green-300"
+                          : type.id === "blanks"
+                          ? "text-yellow-600 dark:text-yellow-300"
+                          : "text-purple-600 dark:text-purple-300"
                       }`}
                     />
                     {type.label}
@@ -247,9 +248,7 @@ function QuizSidebarComponent({
                   </div>
                 </div>
               </motion.div>
-            )}
-
-            {/* Public Switch */}
+            )}            {/* Public Switch */}
             {onPublicOnlyChange && (
               <motion.div className="pt-4" variants={itemVariants}>
                 <Separator className="my-4" />
