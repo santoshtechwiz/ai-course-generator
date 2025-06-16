@@ -29,6 +29,7 @@ import McqQuiz from "./McqQuiz"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
+import { useEnhancedLoader } from "@/components/ui/enhanced-loader/enhanced-loader-provider"
 
 interface McqQuizWrapperProps {
   slug: string
@@ -50,7 +51,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizId = useSelector(selectQuizId)
   const quizType = useSelector(selectQuizType)
-
+  const enhancedLoader = useEnhancedLoader();
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -96,11 +97,11 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   useEffect(() => {
     if (!isCompleted || isSubmitting) return
 
-    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
+   enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
 
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/mcq/${slug}/results`)
-    }, 1500)
+    }, 500)
   }, [isCompleted, isSubmitting, router, slug])
 
   const currentQuestion = useMemo(() => {

@@ -23,8 +23,6 @@ interface FlashcardResultHandlerProps {
   }>
 }
 
-
-
 export default function FlashcardResultHandler({
   slug,
   title,
@@ -197,44 +195,39 @@ export default function FlashcardResultHandler({
 
   // Check for results and determine if we should redirect - only on initial load
   useEffect(() => {
-    if (hasInitializedRef.current || status === "loading") return
+    if (hasInitializedRef.current) return
 
     hasInitializedRef.current = true
 
-    // Give a short delay to allow Redux state to hydrate
-    const checkTimer = setTimeout(() => {
-      // Check if we have any valid results
-      const hasValidResults =
-        (isCompleted && answers?.length > 0) || // Fresh completion
-        storedResults || // Stored results in Redux
-        restoredResults // Restored from storage
+    // Immediate check without delay
+    const hasValidResults =
+      (isCompleted && answers?.length > 0) || // Fresh completion
+      storedResults || // Stored results in Redux
+      restoredResults // Restored from storage
 
-      // Check storage for pending results
-      let hasStoredResults = false
-      try {
-        const sessionData = sessionStorage.getItem("pendingQuizResults")
-        const localData = localStorage.getItem("pendingQuizResults")
+    // Check storage for pending results immediately
+    let hasStoredResults = false
+    try {
+      const sessionData = sessionStorage.getItem("pendingQuizResults")
+      const localData = localStorage.getItem("pendingQuizResults")
 
-        if (sessionData || localData) {
-          const storedData = JSON.parse(sessionData || localData || "{}")
-          if (storedData.slug === slug && storedData.quizType === "flashcard") {
-            hasStoredResults = true
-          }
+      if (sessionData || localData) {
+        const storedData = JSON.parse(sessionData || localData || "{}")
+        if (storedData.slug === slug && storedData.quizType === "flashcard") {
+          hasStoredResults = true
         }
-      } catch (error) {
-        console.warn("Failed to check stored results:", error)
       }
+    } catch (error) {
+      console.warn("Failed to check stored results:", error)
+    }
 
-      if (!hasValidResults && !hasStoredResults) {
-        console.log("No valid results found, redirecting to quiz page")
-        setShouldRedirect(true)
-        router.replace(`/dashboard/flashcard/${slug}`)
-      } else {
-        setIsLoading(false)
-      }
-    }, 100)
-
-    return () => clearTimeout(checkTimer)
+    if (!hasValidResults && !hasStoredResults) {
+      console.log("No valid results found, redirecting to quiz page")
+      setShouldRedirect(true)
+      router.replace(`/dashboard/flashcard/${slug}`)
+    } else {
+      setIsLoading(false)
+    }
   }, [status, isCompleted, answers, storedResults, restoredResults, slug, router])
 
   // Restore results after authentication
