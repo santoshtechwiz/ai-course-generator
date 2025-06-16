@@ -19,6 +19,7 @@ import type {
   SubscriptionData,
   TokenUsage,
   TokenUsageResponse,
+  UserSubscription,
 } from '../../../../types/shared-types'
 
 // Subscription status response
@@ -35,45 +36,4 @@ export interface SubscriptionStatusResponse {
   plan?: string
   expiresAt?: string
   features?: string[]
-}
-
-// Payment gateway interface
-export interface PaymentGateway {
-  createCheckoutSession(
-    userId: string,
-    planName: string,
-    duration: number,
-    options?: PaymentOptions,
-  ): Promise<{ sessionId: string; url: string }>
-
-  cancelSubscription(userId: string): Promise<boolean>
-
-  resumeSubscription(userId: string): Promise<boolean>
-
-  verifyPaymentStatus(sessionId: string): Promise<{
-    status: "succeeded" | "pending" | "failed" | "canceled"
-    subscription?: any
-  }>
-}
-
-// Promo code validation result
-export interface PromoValidationResult {
-  valid: boolean
-  discountPercentage: number
-  code?: string
-}
-
-// FAQ item structure
-export interface FAQItem {
-  question: string
-  answer: string
-}
-
-// Add-on package structure
-export interface AddOnPackage {
-  id: string
-  name: string
-  description: string
-  price: number
-  features: string[]
 }
