@@ -136,10 +136,9 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   }
 
   // No questions to review
-  if (isReviewMode && reviewQuestions.length === 0) {
-    return (
+  if (isReviewMode && reviewQuestions.length === 0) {    return (
       <NoResults
-        variant="default"
+        variant="empty"
         title="No Cards to Review"
         description="You marked all cards as known. Great job!"
         action={{ label: "Retake Quiz", onClick: () => router.push(`/dashboard/flashcard/${slug}?reset=true`) }}

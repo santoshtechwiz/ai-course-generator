@@ -31,14 +31,15 @@ interface QuizListProps {
   isSearching: boolean
   onRetry?: () => void
   onCreateQuiz?: () => void
-  activeFilter?: QuizType | "all"
-  onFilterChange?: (filter: QuizType | "all") => void
+  activeFilter?: string
+  onFilterChange?: (filter: string) => void
   quizCounts: {
     all: number
     mcq: number
     openended: number
     code: number
-    "fill-blanks": number
+    blanks: number
+    flashcard: number
   }
 }
 
@@ -188,8 +189,7 @@ function QuizListComponent({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8">      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         {onFilterChange && (
           <Tabs value={activeFilter} onValueChange={onFilterChange} className="w-full sm:w-auto">
             <TabsList className="grid grid-cols-2 sm:flex sm:flex-row">
@@ -215,6 +215,18 @@ function QuizListComponent({
                 Code
                 <Badge variant="secondary" className="ml-1 text-xs">
                   {quizCounts.code}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="blanks" className="flex items-center gap-1.5">
+                Blanks
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {quizCounts.blanks}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="flashcard" className="flex items-center gap-1.5">
+                Flashcard
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {quizCounts.flashcard}
                 </Badge>
               </TabsTrigger>
             </TabsList>

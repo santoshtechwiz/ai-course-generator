@@ -19,9 +19,8 @@ const OpenEndedPage = () => {
       quizType="openended"
       helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
       isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
-    >
-      {quizPlan.isLoading ? (
-        <EnhancedLoader message="Loading subscription details..." subMessage="Getting your plan information" />
+    >      {quizPlan.isLoading ? (
+        <EnhancedLoader isLoading={true} message="Loading subscription details..." subMessage="Getting your plan information" />
       ) : (
         <OpenEndedQuizForm
           credits={quizPlan.credits}

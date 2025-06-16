@@ -62,10 +62,8 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
           response = await fetch(`/api/course/${slug}`, {
             method: "DELETE",
           })
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to perform action: ${response.statusText}`)
+        }        if (!response || !response.ok) {
+          throw new Error(`Failed to perform action: ${response?.statusText || 'Unknown error'}`)
         }
 
         const result = await response.json()

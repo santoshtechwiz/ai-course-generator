@@ -131,7 +131,7 @@ export function DocumentQuizDisplay({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <EnhancedLoader message="Loading quiz content..." />
+        <EnhancedLoader isLoading={true} message="Loading quiz content..." />
       </div>
     )
   }

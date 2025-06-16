@@ -36,7 +36,7 @@ import { useSubscription } from "@/hooks/use-subscription" // Import useSubscrip
 
 interface OpenEndedQuizWrapperProps {
   slug: string
-  title: string
+  title?: string
 }
 
 export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapperProps) {
@@ -197,9 +197,8 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     setQuestionElapsedTime([])
     timeStartRef.current = Date.now()
   }
-
   if (loading || quizStatus === "loading") {
-    return <EnhancedLoader message="Loading quiz..." subMessage="Preparing questions" />
+    return <EnhancedLoader isLoading={true} message="Loading quiz..." subMessage="Preparing questions" />
   }
 
   if (error || quizStatus === "failed") {
