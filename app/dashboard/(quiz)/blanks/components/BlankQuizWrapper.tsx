@@ -35,6 +35,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { motion, AnimatePresence } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
+import { useEnhancedLoader } from "@/components/ui/enhanced-loader/enhanced-loader-provider"
 
 interface BlankQuizWrapperProps {
   slug: string
@@ -61,7 +62,7 @@ export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
+  const enhancedLoader = useEnhancedLoader();
   const calculateSimilarity = (userAnswer: string, correctAnswer: string) =>
     getBestSimilarityScore(userAnswer, correctAnswer) / 100
 
@@ -108,11 +109,11 @@ export default function BlankQuizWrapper({ slug, title }: BlankQuizWrapperProps)
   useEffect(() => {
     if (!isCompleted || isSubmitting || !isAuthenticated) return
 
-    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
+      enhancedLoader.showLoader({ message: "Calculating your results..." })
 
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/blanks/${slug}/results`)
-    }, 1500)
+    }, 500)
   }, [isCompleted, isSubmitting, isAuthenticated, router, slug])
 
   const currentQuestion = useMemo(() => {
