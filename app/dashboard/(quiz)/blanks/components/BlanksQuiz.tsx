@@ -134,8 +134,6 @@ const BlanksQuiz = memo(function BlanksQuiz({
     }
   }, [existingAnswer])
 
-
-
   // Improve hint logic for better user experience
   const toggleHint = useCallback(() => {
     setShowHint((prev) => !prev)
@@ -162,11 +160,12 @@ const BlanksQuiz = memo(function BlanksQuiz({
     if (!question.answer) return null
     return getHint(question.answer, hintState.level)
   }, [question.answer, hintState.level])
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault()
-        if (isLastQuestion && onSubmit) {
+        if (isLastQuestion && onSubmit && isNextButtonEnabled) {
           onSubmit()
         } else if (onNext && isNextButtonEnabled) {
           onNext()
@@ -175,6 +174,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
     },
     [isLastQuestion, onSubmit, onNext, isNextButtonEnabled],
   )
+
   return (
     <QuizContainer
       questionNumber={questionNumber}
@@ -280,7 +280,7 @@ const BlanksQuiz = memo(function BlanksQuiz({
       <QuizFooter
         onNext={onNext}
         onPrevious={onPrevious}
-        onSubmit={onSubmit}
+        onSubmit={isLastQuestion ? onSubmit : undefined}
         onRetake={onRetake}
         canGoNext={isNextButtonEnabled}
         canGoPrevious={canGoPrevious}

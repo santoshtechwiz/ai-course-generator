@@ -1,16 +1,18 @@
 "use client"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { cn } from "@/lib/utils"
+
 import { Button } from "@/components/ui/button"
-import { Bookmark, BookmarkCheck, Check, ThumbsUp, ThumbsDown, Settings, X, BookOpen } from "lucide-react"
+import { Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown, Settings, BookOpen } from "lucide-react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
 
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
-import { QuizProgress } from "../../components/QuizProgress"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { QuizLoader } from "@/components/ui/quiz-loader"
+import { QuizContainer } from "@/components/quiz/QuizContainer"
 
 // Import the flashcard slice actions
 import {
@@ -23,6 +25,7 @@ import {
 } from "@/store/slices/flashcard-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { Confetti } from "@/components/ui/confetti"
+
 interface FlashCard {
   id: string
   question: string
@@ -32,6 +35,7 @@ interface FlashCard {
   imageUrl?: string
   audioUrl?: string
 }
+
 interface FlashCardComponentProps {
   cards: FlashCard[]
   quizId: string | number
@@ -39,7 +43,7 @@ interface FlashCardComponentProps {
   title: string
   onSaveCard?: (card: FlashCard) => void
   savedCardIds?: string[]
-  isReviewMode?: boolean // Add this missing prop
+  isReviewMode?: boolean
 }
 
 function FlashCardQuiz({
@@ -182,15 +186,6 @@ function FlashCardQuiz({
       }
     })
 
-    console.log("Processed results:", {
-      correctCount,
-      stillLearningCount,
-      incorrectCount,
-      reviewCards,
-      stillLearningCards,
-      totalAnswers: answers.length,
-    })
-
     return {
       correctCount,
       stillLearningCount,
@@ -267,9 +262,6 @@ function FlashCardQuiz({
 
       // Get the actual card index from our array of review indices
       const cardIndex = reviewCards[reviewIndex]
-
-      // Add debug logging
-      console.log("Review mode active:", { reviewIndex, cardIndex, currentIndex: currentQuestionIndex, reviewCards })
 
       if (cardIndex !== undefined && cardIndex >= 0 && cardIndex < cards.length) {
         return cards[cardIndex]
@@ -594,207 +586,49 @@ function FlashCardQuiz({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating])
 
-  // Confetti animation effect
-  useEffect(() => {
-    if (!showConfetti) return
-
-    const createConfetti = () => {
-      const confettiCount = 150
-      const container = document.createElement("div")
-      container.style.position = "fixed"
-      container.style.top = "0"
-      container.style.left = "0"
-      container.style.width = "100%"
-      container.style.height = "100%"
-      container.style.pointerEvents = "none"
-      container.style.zIndex = "9999"
-      document.body.appendChild(container)
-
-      for (let i = 0; i < confettiCount; i++) {
-        const confetti = document.createElement("div")
-        const size = Math.random() * 10 + 5
-        confetti.style.position = "absolute"
-        confetti.style.width = `${size}px`
-        confetti.style.height = `${size}px`
-        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`
-        confetti.style.borderRadius = Math.random() > 0.5 ? "50%" : "0"
-        confetti.style.top = "0"
-        confetti.style.left = `${Math.random() * 100}%`
-
-        const animation = confetti.animate(
-          [
-            { transform: "translateY(0) rotate(0)", opacity: 1 },
-            {
-              transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 720 - 360}deg)`,
-              opacity: 0,
-            },
-          ],
-          {
-            duration: Math.random() * 3000 + 1500,
-            easing: "cubic-bezier(0.1, 0.8, 0.3, 1)",
-          },
-        )
-
-        container.appendChild(confetti)
-
-        animation.onfinish = () => {
-          confetti.remove()
-          if (container.childElementCount === 0) {
-            container.remove()
-          }
-        }
-      }
-    }
-
-    createConfetti()
-
-    return () => {
-      document
-        .querySelectorAll('div[style*="position: fixed"][style*="pointer-events: none"]')
-        .forEach((container) => container.remove())
-    }
-  }, [showConfetti])
-
-  // Add useEffect for CSS animation variables to control all animations centrally
-  useEffect(() => {
-    // Set CSS variables for consistent animation timing across component
-    document.documentElement.style.setProperty("--card-flip-duration", animationsEnabled ? "0.4s" : "0.1s")
-    document.documentElement.style.setProperty("--card-transition-easing", "cubic-bezier(0.23, 1, 0.32, 1)")
-    document.documentElement.style.setProperty("--rating-animation-duration", "0.4s")
-
-    return () => {
-      // Clean up CSS variables
-      document.documentElement.style.removeProperty("--card-flip-duration")
-      document.documentElement.style.removeProperty("--card-transition-easing")
-      document.documentElement.style.removeProperty("--rating-animation-duration")
-    }
-  }, [animationsEnabled])
-
-  // Optimize confetti rendering to use requestAnimationFrame for better performance
-  useEffect(() => {
-    if (!showConfetti) return
-
-    let confettiContainer: HTMLElement | null = null
-
-    // Create confetti with RAF for smoother animation
-    const createConfetti = () => {
-      const confettiCount = 150
-      confettiContainer = document.createElement("div")
-      confettiContainer.style.position = "fixed"
-      confettiContainer.style.top = "0"
-      confettiContainer.style.left = "0"
-      confettiContainer.style.width = "100%"
-      confettiContainer.style.height = "100%"
-      confettiContainer.style.pointerEvents = "none"
-      confettiContainer.style.zIndex = "9999"
-      document.body.appendChild(confettiContainer)
-
-      // Use DocumentFragment for better performance when adding multiple elements
-      const fragment = document.createDocumentFragment()
-
-      for (let i = 0; i < confettiCount; i++) {
-        const confetti = document.createElement("div")
-        const size = Math.random() * 10 + 5
-
-        // Set all styles at once for better performance
-        Object.assign(confetti.style, {
-          position: "absolute",
-          width: `${size}px`,
-          height: `${size}px`,
-          backgroundColor: `hsl(${Math.random() * 360}, 100%, 50%)`,
-          borderRadius: Math.random() > 0.5 ? "50%" : "0",
-          top: "0",
-          left: `${Math.random() * 100}%`,
-          willChange: "transform, opacity",
-          transform: "translateZ(0)", // Hardware acceleration hint
-        })
-
-        // Use modern Web Animation API for better performance
-        const keyframes = [
-          { transform: "translateY(0) rotate(0)", opacity: 1 },
-          { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 720 - 360}deg)`, opacity: 0 },
-        ]
-
-        const timing = {
-          duration: Math.random() * 3000 + 1500,
-          easing: "cubic-bezier(0.1, 0.8, 0.3, 1)",
-          fill: "forwards" as FillMode,
-        }
-
-        const animation = confetti.animate(keyframes, timing)
-
-        animation.onfinish = () => {
-          confetti.remove()
-          if (confettiContainer && confettiContainer.childElementCount === 0) {
-            confettiContainer.remove()
-          }
-        }
-
-        fragment.appendChild(confetti)
-      }
-
-      // Add all confetti at once to minimize reflows
-      confettiContainer.appendChild(fragment)
-    }
-
-    // Use requestAnimationFrame for better timing
-    requestAnimationFrame(createConfetti)
-
-    return () => {
-      // Clean up the confetti container on unmount
-      if (confettiContainer) {
-        confettiContainer.remove()
-      }
-    }
-  }, [showConfetti])
-
   if (isLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
 
-  // Animation variants
-  const cardVariants = {
-    initial: (direction: number) => ({
-      x: direction > 0 ? 300 : -300,
-      opacity: 0,
-      scale: 0.9,
-      willChange: "transform, opacity",
-      transform: "translate3d(0,0,0)", // Force GPU acceleration
-    }),
-    animate: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      willChange: "transform, opacity",
-      transform: "translate3d(0,0,0)",
-      transition: {
-        x: { type: "spring", stiffness: 300, damping: 25 },
-        opacity: { duration: 0.4 },
-        scale: { type: "spring", stiffness: 300, damping: 25 },
-      },
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 300 : -300,
-      opacity: 0,
-      scale: 0.9,
-      willChange: "transform, opacity",
-      transform: "translate3d(0,0,0)",
-      transition: {
-        x: { type: "spring", stiffness: 300, damping: 25 },
-        opacity: { duration: 0.4 },
-        scale: { duration: 0.3 },
-      },
-    }),
-  }  // Enhance animation variants with 3D transforms and hardware acceleration
+  // Enhanced animation variants with 3D transforms and hardware acceleration
   const frontCardVariants = {
     initial: { opacity: 0, rotateY: 0 },
-    animate: { opacity: 1, rotateY: 0, transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] } },
-    exit: { opacity: 0, rotateY: 90, transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] } }
-  };
+    animate: {
+      opacity: 1,
+      rotateY: 0,
+      transition: {
+        duration: animationsEnabled ? 0.4 : 0.1,
+        ease: [0.23, 1, 0.32, 1],
+      },
+    },
+    exit: {
+      opacity: 0,
+      rotateY: 90,
+      transition: {
+        duration: animationsEnabled ? 0.3 : 0.1,
+        ease: [0.23, 1, 0.32, 1],
+      },
+    },
+  }
+
   const backCardVariants = {
     initial: { opacity: 0, rotateY: -90 },
-    animate: { opacity: 1, rotateY: 0, transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] } },
-    exit: { opacity: 0, rotateY: -90, transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] } }
+    animate: {
+      opacity: 1,
+      rotateY: 0,
+      transition: {
+        duration: animationsEnabled ? 0.4 : 0.1,
+        ease: [0.23, 1, 0.32, 1],
+      },
+    },
+    exit: {
+      opacity: 0,
+      rotateY: -90,
+      transition: {
+        duration: animationsEnabled ? 0.3 : 0.1,
+        ease: [0.23, 1, 0.32, 1],
+      },
+    },
   }
 
   // Render different content based on quiz state
@@ -807,510 +641,451 @@ function FlashCardQuiz({
 
     // Not completed or in review mode - show flashcard UI
     return (
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="rounded-lg shadow-md border bg-background">
-          {/* Header Section */}
-          <div className="px-6 py-4 flex justify-between items-center">
-            <QuizProgress
-              currentQuestionIndex={currentQuestionIndex}
-              totalQuestions={reviewMode ? reviewCards.length : cards?.length || 0}
-              timeSpent={[]}
-              title={reviewMode ? `Review Mode: ${title}` : title}
-              quizType="Flashcard"
-              animate={animationsEnabled}
-            />
+      <QuizContainer
+        questionNumber={currentQuestionIndex + 1}
+        totalQuestions={reviewMode ? reviewCards.length : cards?.length || 0}
+        quizType="Flashcard"
+        animationKey={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
+      >
+        <div className="space-y-6">
+          {/* Settings Header */}
+          <div className="flex justify-between items-center">
+            <motion.h3
+              className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+            >
+              {reviewMode ? `Review Mode: ${title}` : title}
+            </motion.h3>
 
-            {/* Settings popover */}
+            {/* Enhanced Settings popover */}
             <Popover open={showSettings} onOpenChange={setShowSettings}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Settings className="h-4 w-4" />
-                </Button>
+                <motion.div whileHover={{ scale: 1.05, rotate: 90 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 rounded-xl border-2 border-muted hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </motion.div>
               </PopoverTrigger>
-              <PopoverContent className="w-80">
+              <PopoverContent className="w-80 rounded-2xl border-2 border-muted/30 shadow-2xl">
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Flashcard Settings</h4>
+                  <h4 className="font-bold text-lg bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    Flashcard Settings
+                  </h4>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-muted/30">
                     <div className="space-y-0.5">
-                      <div className="text-sm font-medium">Auto-advance</div>
+                      <div className="text-sm font-semibold">Auto-advance</div>
                       <div className="text-xs text-muted-foreground">Automatically move to next card after rating</div>
                     </div>
                     <Switch checked={autoAdvance} onCheckedChange={setAutoAdvance} />
                   </div>
 
-                  {reviewMode && (
-                    <Button variant="outline" size="sm" onClick={() => handleEnterReviewMode()} className="w-full">
-                      Review Incorrect
-                    </Button>
-                  )}
+                  <div className="space-y-2">
+                    {reviewMode && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEnterReviewMode()}
+                          className="w-full rounded-xl border-2 hover:border-destructive/40 hover:bg-destructive/5"
+                        >
+                          Review Incorrect
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEnterReviewMode("still_learning")}
+                          className="w-full rounded-xl border-2 hover:border-amber-500/40 hover:bg-amber-500/5"
+                        >
+                          Review Still Learning
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExitReviewMode}
+                          className="w-full rounded-xl border-2 hover:border-primary/40 hover:bg-primary/5"
+                        >
+                          Exit Review Mode
+                        </Button>
+                      </>
+                    )}
+                  </div>
 
-                  {reviewMode && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEnterReviewMode("still_learning")}
-                      className="w-full"
-                    >
-                      Review Still Learning
-                    </Button>
-                  )}
-
-                  {reviewMode && (
-                    <Button variant="outline" size="sm" onClick={handleExitReviewMode} className="w-full">
-                      Exit Review Mode
-                    </Button>
-                  )}
-
-                  <div className="pt-2 text-xs text-muted-foreground">
-                    <p className="font-medium mb-1">Keyboard shortcuts:</p>
-                    <p>Space/Left Arrow: Flip card</p>
-                    <p>Right Arrow: Next card</p>
-                    <p>1/Y: Mark as known</p>
-                    <p>2/S: Still learning</p>
-                    <p>3/N: Mark as incorrect</p>
+                  <div className="pt-2 text-xs text-muted-foreground bg-muted/10 p-3 rounded-xl">
+                    <p className="font-semibold mb-2">Keyboard shortcuts:</p>
+                    <div className="space-y-1">
+                      <p>Space/Left Arrow: Flip card</p>
+                      <p>Right Arrow: Next card</p>
+                      <p>1/Y: Mark as known</p>
+                      <p>2/S: Still learning</p>
+                      <p>3/N: Mark as incorrect</p>
+                    </div>
                   </div>
                 </div>
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* Flashcard Content with Swipe Gestures */}
-          <div className="p-4 sm:p-6 md:p-8 border-b border-border/50">
-            <div className="relative min-h-[250px] sm:min-h-[300px] md:min-h-[350px] w-full perspective-1000">
-              <motion.div
-                key={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
-                drag={!swipeDisabled && !isCompleted ? "x" : false}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.12} /* Reduce elasticity for more precise feel */
-                onDragEnd={handleDragEnd}
-                animate={cardControls}
-                layoutId={`card-${currentQuestionIndex}`} /* Add layout ID for FLIP animations */
-                className="absolute inset-0 w-full h-full touch-manipulation" /* Improve touch behavior */
-                ref={cardRef}
-              >
-                {!flipped ? (
-                  // Front of card
-                  <motion.div
-                    onClick={toggleFlip}
-                    className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden"
-                    variants={frontCardVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    role="button"
-                    aria-label="Flip card to see answer"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault()
-                        toggleFlip()
-                      }
-                    }}
-                    style={{ willChange: 'transform, opacity', transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
-                  >
-                    {/* Decorative elements */}
-                    <motion.div
-                      className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-primary/10 rounded-full -mr-12 sm:-mr-16 -mt-12 sm:-mt-16"
-                      animate={{
-                        scale: [1, 1.05, 1],
-                        rotate: [0, 5, 0],
-                      }}
-                      transition={{
-                        duration: 8,
-                        repeat: Number.POSITIVE_INFINITY,
-                        repeatType: "reverse",
-                      }}
-                    />
-                    <motion.div
-                      className="absolute bottom-0 left-0 w-16 sm:w-24 h-16 sm:h-24 bg-primary/10 rounded-full -ml-8 sm:-ml-12 -mb-8 sm:-mb-12"
-                      animate={{
-                        scale: [1, 1.1, 1],
-                        rotate: [0, -5, 0],
-                      }}
-                      transition={{
-                        duration: 7,
-                        repeat: Number.POSITIVE_INFINITY,
-                        repeatType: "reverse",
-                        delay: 1,
-                      }}
-                    />
-
-                    {/* Question text */}
-                    <div className="text-lg sm:text-xl md:text-2xl font-medium text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[200px] sm:max-h-[250px] md:max-h-[300px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
-                      {currentCard?.question || "No question available"}
-                    </div>
-
-                    {/* Swipe instructions */}
-                    <div className="mt-6 flex flex-col items-center">
-                      <motion.span
-                        className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1"
-                        animate={{
-                          y: [0, -5, 0],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Number.POSITIVE_INFINITY,
-                          repeatType: "reverse",
-                        }}
-                      >
-                        Tap to reveal answer
-                      </motion.span>
-                      <div className="mt-2 flex items-center gap-8 text-xs text-muted-foreground">
-                        <div className="flex flex-col items-center">
-                          <motion.div
-                            animate={{
-                              x: [-5, 0, -5],
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Number.POSITIVE_INFINITY,
-                              repeatType: "reverse",
-                            }}
-                          >
-                            ← Swipe
-                          </motion.div>
-                          <span>Flip card</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <motion.div
-                            animate={{
-                              x: [5, 0, 5],
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Number.POSITIVE_INFINITY,
-                              repeatType: "reverse",
-                            }}
-                          >
-                            Swipe →
-                          </motion.div>
-                          <span>Next card</span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ) : (
-                  // Back of card
-                  <motion.div
-                    onClick={toggleFlip}
-                    className="w-full h-full rounded-xl border border-border/50 shadow-lg cursor-pointer bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden"
-                    variants={backCardVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    role="button"
-                    aria-label="Flip card back to see question"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault()
-                        toggleFlip()
-                      }
-                    }}
-                    style={{ willChange: 'transform, opacity', transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
-                  >
-                    {/* Decorative elements */}
-                    <motion.div
-                      className="absolute top-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-secondary/20 rounded-full -ml-12 sm:-ml-16 -mt-12 sm:-mt-16"
-                      animate={{
-                        scale: [1, 1.05, 1],
-                        rotate: [0, -5, 0],
-                      }}
-                      transition={{
-                        duration: 8,
-                        repeat: Number.POSITIVE_INFINITY,
-                        repeatType: "reverse",
-                      }}
-                    />
-                    <motion.div
-                      className="absolute bottom-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-secondary/20 rounded-full -mr-8 sm:-mr-12 -mb-8 sm:-mb-12"
-                      animate={{
-                        scale: [1, 1.1, 1],
-                        rotate: [0, 5, 0],
-                      }}
-                      transition={{
-                        duration: 7,
-                        repeat: Number.POSITIVE_INFINITY,
-                        repeatType: "reverse",
-                        delay: 1,
-                      }}
-                    />
-
-                    {/* Answer text */}
-                    <div className="text-base sm:text-lg md:text-xl text-center text-foreground z-10 max-w-full sm:max-w-md leading-relaxed overflow-auto max-h-[150px] sm:max-h-[180px] md:max-h-[220px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-2">
-                      {currentCard?.answer}
-                    </div>
-
-                    {/* Self-rating buttons - now with three options */}
-                    <div className="mt-6 md:mt-8 flex flex-col gap-2 sm:gap-3 w-full max-w-sm z-10">
-                      <p className="text-xs sm:text-sm text-center text-muted-foreground mb-1 sm:mb-2 font-medium">
-                        How well did you know this?
-                      </p>
-                      <div className="flex justify-center gap-2">
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            variant={selfRating[currentCard?.id || ""] === "correct" ? "default" : "outline"}
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (currentCard?.id) {
-                                handleSelfRating(currentCard.id.toString(), "correct")
-                              }
-                            }}
-                            className="flex items-center gap-1 relative overflow-hidden h-9 px-3"
-                          >
-                            <ThumbsUp className="h-3 w-3" />
-                            <span className="text-xs">Got it</span>
-                          </Button>
-                        </motion.div>
-
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            variant={selfRating[currentCard?.id || ""] === "still_learning" ? "secondary" : "outline"}
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (currentCard?.id) {
-                                handleSelfRating(currentCard.id.toString(), "still_learning")
-                              }
-                            }}
-                            className="flex items-center gap-1 relative overflow-hidden h-9 px-3"
-                          >
-                            <BookOpen className="h-3 w-3" />
-                            <span className="text-xs">Learning</span>
-                          </Button>
-                        </motion.div>
-
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            variant={selfRating[currentCard?.id || ""] === "incorrect" ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (currentCard?.id) {
-                                handleSelfRating(currentCard.id.toString(), "incorrect")
-                              }
-                            }}
-                            className="flex items-center gap-1 relative overflow-hidden h-9 px-3"
-                          >
-                            <ThumbsDown className="h-3 w-3" />
-                            <span className="text-xs">Missed</span>
-                          </Button>
-                        </motion.div>
-                      </div>
-
-                      <motion.span
-                        className="mt-4 text-xs text-muted-foreground text-center"
-                        animate={{
-                          opacity: [0.7, 1, 0.7],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Number.POSITIVE_INFINITY,
-                          repeatType: "reverse",
-                        }}
-                      >
-                        {autoAdvance ? "Will advance automatically after rating" : "Tap to see question"}
-                      </motion.span>
-                    </div>
-
-                    {/* Rating feedback animation - updated for three states */}
-                    <AnimatePresence>
-                      {ratingAnimation && (
-                        <motion.div
-                          key={`rating-${currentCard?.id}-${ratingAnimation}`}
-                          variants={ratingFeedbackVariants}
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
-                          className={`absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20 ${
-                            ratingAnimation === "correct"
-                              ? "bg-primary/10"
-                              : ratingAnimation === "still_learning"
-                                ? "bg-secondary/10"
-                                : "bg-destructive/10"
-                          }`}
-                        >
-                          <div
-                            className={
-                              ratingAnimation === "correct"
-                                ? "text-primary"
-                                : ratingAnimation === "still_learning"
-                                  ? "text-secondary-foreground"
-                                  : "text-destructive"
-                            }
-                          >
-                            {ratingAnimation === "correct" ? (
-                              <Check className="h-16 w-16" />
-                            ) : ratingAnimation === "still_learning" ? (
-                              <BookOpen className="h-16 w-16" />
-                            ) : (
-                              <ThumbsDown className="h-16 w-16" />
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                )}
-              </motion.div>
-            </div>
-
-            {/* Card actions */}
-            <div className="flex justify-between items-center mt-6">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleSaveCard()
-                  }}
-                  className="flex items-center gap-2 h-9 px-3"
-                >
-                  <motion.span
-                    animate={
-                      isSaved
-                        ? {
-                            scale: [1, 1.3, 1],
-                            rotate: [0, 10, 0],
-                          }
-                        : {}
+          {/* Enhanced Flashcard Content with Swipe Gestures */}
+          <div className="relative min-h-[350px] w-full perspective-1000">
+            <motion.div
+              key={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
+              drag={!swipeDisabled && !isCompleted ? "x" : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.12}
+              onDragEnd={handleDragEnd}
+              animate={cardControls}
+              layoutId={`card-${currentQuestionIndex}`}
+              className="absolute inset-0 w-full h-full touch-manipulation"
+              ref={cardRef}
+            >
+              {!flipped ? (
+                // Enhanced Front of card
+                <motion.div
+                  onClick={toggleFlip}
+                  className="w-full h-full rounded-3xl border-2 border-primary/20 shadow-2xl cursor-pointer bg-gradient-to-br from-background via-background to-muted/10 p-8 flex flex-col items-center justify-center relative overflow-hidden group"
+                  variants={frontCardVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  role="button"
+                  aria-label="Flip card to see answer"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      toggleFlip()
                     }
-                    transition={{ duration: 0.5 }}
-                  >
-                    {isSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
-                  </motion.span>
-                  <span>{isSaved ? "Saved" : "Save Card"}</span>
-                </Button>
-              </motion.div>
-
-              {/* Progress indicator */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {currentQuestionIndex + 1}/{reviewMode ? reviewCards.length : cards?.length || 0}
-                </span>
-                <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <motion.div
-                    className={`h-full rounded-full ${reviewMode ? "bg-destructive" : "bg-primary"}`}
-                    style={{ width: `${progress}%` }}
-                    initial={{
-                      width: `${(currentQuestionIndex / (reviewMode ? reviewCards.length : cards?.length || 1)) * 100}%`,
-                    }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                  ></motion.div>
-                </div>
-              </div>
-
-              {/* Skip button */}
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={moveToNextCard}
-                  disabled={currentQuestionIndex >= (cards?.length || 0) - 1}
-                  className="flex items-center gap-1 h-9 px-3"
+                  }}
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 25px 50px -12px rgba(var(--primary), 0.25)",
+                    borderColor: "rgba(var(--primary), 0.4)",
+                  }}
+                  style={{
+                    willChange: "transform, opacity",
+                    transformStyle: "preserve-3d",
+                    backfaceVisibility: "hidden",
+                  }}
                 >
-                  <span>Skip</span>
-                  <X className="h-3 w-3" />
-                </Button>
+                  {/* Enhanced decorative elements */}
+                  <motion.div
+                    className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full -mr-16 -mt-16"
+                    animate={{
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 10, 0],
+                    }}
+                    transition={{
+                      duration: 8,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-accent/20 to-accent/5 rounded-full -ml-12 -mb-12"
+                    animate={{
+                      scale: [1, 1.15, 1],
+                      rotate: [0, -10, 0],
+                    }}
+                    transition={{
+                      duration: 7,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                      delay: 1,
+                    }}
+                  />
+
+                  {/* Enhanced Question text */}
+                  <div className="text-2xl font-bold text-center text-foreground z-10 max-w-md leading-relaxed overflow-auto max-h-[250px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-4">
+                    {currentCard?.question || "No question available"}
+                  </div>
+
+                  {/* Enhanced Swipe instructions */}
+                  <div className="mt-8 flex flex-col items-center z-10">
+                    <motion.span
+                      className="text-sm text-muted-foreground flex items-center gap-2 bg-muted/20 px-4 py-2 rounded-full border border-muted/30"
+                      animate={{
+                        y: [0, -3, 0],
+                        opacity: [0.7, 1, 0.7],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                      }}
+                    >
+                      ✨ Tap to reveal answer
+                    </motion.span>
+                    <div className="mt-4 flex items-center gap-8 text-xs text-muted-foreground">
+                      <div className="flex flex-col items-center">
+                        <motion.div
+                          className="bg-muted/20 px-2 py-1 rounded-lg border border-muted/30"
+                          animate={{
+                            x: [-3, 0, -3],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Number.POSITIVE_INFINITY,
+                            repeatType: "reverse",
+                          }}
+                        >
+                          ← Swipe
+                        </motion.div>
+                        <span className="mt-1 font-medium">Flip card</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <motion.div
+                          className="bg-muted/20 px-2 py-1 rounded-lg border border-muted/30"
+                          animate={{
+                            x: [3, 0, 3],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Number.POSITIVE_INFINITY,
+                            repeatType: "reverse",
+                          }}
+                        >
+                          Swipe →
+                        </motion.div>
+                        <span className="mt-1 font-medium">Next card</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                // Enhanced Back of card
+                <motion.div
+                  onClick={toggleFlip}
+                  className="w-full h-full rounded-3xl border-2 border-primary/20 shadow-2xl cursor-pointer bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8 flex flex-col relative overflow-hidden group"
+                  variants={backCardVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  role="button"
+                  aria-label="Flip card to see question"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      toggleFlip()
+                    }
+                  }}
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 25px 50px -12px rgba(var(--primary), 0.25)",
+                    borderColor: "rgba(var(--primary), 0.4)",
+                  }}
+                  style={{
+                    willChange: "transform, opacity",
+                    transformStyle: "preserve-3d",
+                    backfaceVisibility: "hidden",
+                  }}
+                >
+                  {/* Enhanced decorative elements for back */}
+                  <motion.div
+                    className="absolute top-0 left-0 w-28 h-28 bg-gradient-to-br from-accent/20 to-accent/5 rounded-full -ml-14 -mt-14"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      rotate: [0, -15, 0],
+                    }}
+                    transition={{
+                      duration: 9,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                    }}
+                  />
+
+                  {/* Enhanced Answer text */}
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-xl font-semibold text-center text-foreground max-w-md leading-relaxed overflow-auto max-h-[200px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-4">
+                      {currentCard?.answer || "No answer available"}
+                    </div>
+                  </div>
+
+                  {/* Enhanced Rating buttons with three options */}
+                  <div className="mt-6 space-y-4">
+                    <div className="text-center">
+                      <span className="text-sm font-semibold text-muted-foreground bg-muted/20 px-3 py-1 rounded-full border border-muted/30">
+                        How well did you know this?
+                      </span>
+                    </div>
+
+                    <div className="flex gap-3 justify-center">
+                      {/* Correct/Known button */}
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (currentCard?.id) {
+                              handleSelfRating(currentCard.id.toString(), "correct")
+                            }
+                          }}
+                          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-400/30 hover:border-green-400/50"
+                          size="lg"
+                        >
+                          <ThumbsUp className="w-5 h-5 mr-2" />I knew it!
+                        </Button>
+                      </motion.div>
+
+                      {/* Still Learning button */}
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (currentCard?.id) {
+                              handleSelfRating(currentCard.id.toString(), "still_learning")
+                            }
+                          }}
+                          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-amber-400/30 hover:border-amber-400/50"
+                          size="lg"
+                        >
+                          <BookOpen className="w-5 h-5 mr-2" />
+                          Still learning
+                        </Button>
+                      </motion.div>
+
+                      {/* Incorrect/Don't know button */}
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (currentCard?.id) {
+                              handleSelfRating(currentCard.id.toString(), "incorrect")
+                            }
+                          }}
+                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-red-400/30 hover:border-red-400/50"
+                          size="lg"
+                        >
+                          <ThumbsDown className="w-5 h-5 mr-2" />
+                          Need to study
+                        </Button>
+                      </motion.div>
+                    </div>
+
+                    {/* Enhanced keyboard shortcuts */}
+                    <div className="text-center text-xs text-muted-foreground mt-4">
+                      <div className="flex justify-center gap-6 bg-muted/10 px-4 py-2 rounded-xl border border-muted/20">
+                        <span className="flex items-center gap-1">
+                          <kbd className="px-2 py-1 bg-muted/30 rounded text-xs font-mono">1</kbd> Known
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <kbd className="px-2 py-1 bg-muted/30 rounded text-xs font-mono">2</kbd> Learning
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <kbd className="px-2 py-1 bg-muted/30 rounded text-xs font-mono">3</kbd> Study
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Enhanced Save button */}
+                  {onSaveCard && (
+                    <motion.div
+                      className="absolute top-4 right-4"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSaveCard()
+                        }}
+                        className={cn(
+                          "h-12 w-12 rounded-xl border-2 transition-all duration-300",
+                          isSaved
+                            ? "bg-primary/10 border-primary/40 text-primary hover:bg-primary/20"
+                            : "border-muted/40 hover:border-primary/40 hover:bg-primary/5",
+                        )}
+                      >
+                        {isSaved ? <BookmarkCheck className="h-6 w-6" /> : <Bookmark className="h-6 w-6" />}
+                      </Button>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Enhanced Rating feedback overlay */}
+          <AnimatePresence>
+            {ratingAnimation && (
+              <motion.div
+                className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+                variants={ratingFeedbackVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <div
+                  className={cn(
+                    "px-8 py-6 rounded-3xl text-white font-bold text-2xl shadow-2xl border-4",
+                    ratingAnimation === "correct" && "bg-gradient-to-r from-green-500 to-green-600 border-green-400",
+                    ratingAnimation === "still_learning" &&
+                      "bg-gradient-to-r from-amber-500 to-amber-600 border-amber-400",
+                    ratingAnimation === "incorrect" && "bg-gradient-to-r from-red-500 to-red-600 border-red-400",
+                  )}
+                >
+                  {ratingAnimation === "correct" && "✅ I knew it!"}
+                  {ratingAnimation === "still_learning" && "📚 Still learning"}
+                  {ratingAnimation === "incorrect" && "❌ Need to study"}
+                </div>
               </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Enhanced Navigation buttons */}
+          <div className="flex justify-between items-center pt-6">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="outline"
+                onClick={toggleFlip}
+                className="px-6 py-3 rounded-xl border-2 font-semibold hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
+              >
+                {flipped ? "Show Question" : "Show Answer"}
+              </Button>
+            </motion.div>
+
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground font-medium">
+                {reviewMode ? "Review Progress" : "Study Progress"}
+              </div>
+              <div className="text-2xl font-bold text-primary">
+                {currentQuestionIndex + 1} / {reviewMode ? reviewCards.length : cards?.length || 0}
+              </div>
             </div>
+
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                onClick={moveToNextCard}
+                className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                {currentQuestionIndex >= (reviewMode ? reviewCards.length - 1 : (cards?.length || 0) - 1)
+                  ? reviewMode
+                    ? "Finish Review"
+                    : "Complete"
+                  : "Next Card"}
+              </Button>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </QuizContainer>
     )
   }
 
   return (
     <>
       {renderQuizContent()}
-
-      {/* Add confetti component */}
-      <Confetti isActive={showConfetti} count={150} duration={3000} />
-
-      {/* Existing scrollbar styles */}
-      <style jsx global>{`
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background-color: rgba(var(--primary), 0.2);
-          border-radius: 9999px;
-          will-change: background-color;
-        }
-        .scrollbar-thumb-rounded::-webkit-scrollbar-thumb {
-          border-radius: 9999px;
-        }
-        .scrollbar-thumb-primary::-webkit-scrollbar-thumb {
-          background-color: rgba(var(--primary), 0.2);
-        }
-        .scrollbar-track-transparent::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .perspective-1000 {
-          perspective: 1000px;
-          transform-style: preserve-3d;
-        }
-        /* Use CSS variables for animation speed and consistent easing */
-        .card-flip {
-          transition: all var(--card-flip-duration, 0.4s) var(--card-transition-easing, cubic-bezier(0.23, 1, 0.32, 1));
-          will-change: transform, opacity;
-          backface-visibility: hidden;
-          transform-style: preserve-3d;
-        }
-        /* Reduce motion for users who prefer it */
-        @media (prefers-reduced-motion: reduce) {
-          .card-flip {
-            transition-duration: 0.1s;
-            transition-timing-function: ease-out;
-          }
-          
-          .rating-animation {
-            transition-duration: 0.1s;
-          }
-        }
-        
-        /* Touch optimization for mobile */
-        .touch-manipulation {
-          touch-action: manipulation;
-        }
-      `}</style>
+      {showConfetti && <Confetti isActive={false} />}
     </>
   )
-}
-
-// More precise custom comparison function for memoization
-function arePropsEqual(prevProps: FlashCardComponentProps, nextProps: FlashCardComponentProps) {
-  // Check if arrays have changed by reference
-  if (
-    prevProps.quizId !== nextProps.quizId ||
-    prevProps.slug !== nextProps.slug ||
-    prevProps.title !== nextProps.title
-  ) {
-    return false
-  }
-
-  // Check card length
-  if (prevProps.cards?.length !== nextProps.cards?.length) {
-    return false
-  }
-
-  // Check if savedCardIds has changed
-  const prevSavedLength = prevProps.savedCardIds?.length || 0
-  const nextSavedLength = nextProps.savedCardIds?.length || 0
-
-  if (prevSavedLength !== nextSavedLength) {
-    return false
-  }
-
-  // If all checks passed, components are equal
-  return true
 }
 
 export default FlashCardQuiz

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import {
   Clock,
   HelpCircle,
@@ -316,6 +316,9 @@ export const RandomQuiz: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [selectedType, setSelectedType] = useState<string | null>(null)
 
+  // useRef to store the previous card index
+  const prevCardIndex = useRef(0)
+
   // Debug quizzes data when it changes
   useEffect(() => {
     console.log("Current quizzes data:", quizzes)
@@ -336,7 +339,7 @@ export const RandomQuiz: React.FC = () => {
       duration: quiz.duration || 5 + (index % 5),
       description: quiz.description || `Test your knowledge with this interactive ${quiz.quizType || "mcq"} quiz.`,
       popularity: quiz.popularity || (index % 2 === 0 ? "High" : "Medium"),
-      completionRate: quiz.completionRate ?? 50 + (index * 5) % 50,
+      completionRate: quiz.completionRate ?? 50 + ((index * 5) % 50),
     }))
   }, [quizzes])
 
@@ -360,22 +363,24 @@ export const RandomQuiz: React.FC = () => {
     if (isTransitioning || displayQuizzes.length <= 1) return
 
     setIsTransitioning(true)
+    prevCardIndex.current = activeCardIndex // Store the previous index
     setTimeout(() => {
       setActiveCardIndex((prev) => (prev + 1) % displayQuizzes.length)
       setIsTransitioning(false)
     }, 200)
-  }, [displayQuizzes.length, isTransitioning])
+  }, [displayQuizzes.length, isTransitioning, activeCardIndex])
 
   // Show previous card with smooth transition
   const prevCard = useCallback(() => {
     if (isTransitioning || displayQuizzes.length <= 1) return
 
     setIsTransitioning(true)
+    prevCardIndex.current = activeCardIndex // Store the previous index
     setTimeout(() => {
       setActiveCardIndex((prev) => (prev === 0 ? displayQuizzes.length - 1 : prev - 1))
       setIsTransitioning(false)
     }, 200)
-  }, [displayQuizzes.length, isTransitioning])
+  }, [displayQuizzes.length, isTransitioning, activeCardIndex])
 
   // Manual refresh with loading indicator
   const handleRefresh = useCallback(() => {

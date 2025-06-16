@@ -91,106 +91,151 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 
   return (
     <motion.div
-      className="w-full space-y-4"
-      initial={animate ? { opacity: 0, y: -10 } : false}
+      className="w-full space-y-6"
+      initial={animate ? { opacity: 0, y: -15 } : false}
       animate={animate ? { opacity: 1, y: 0 } : false}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${performanceBadge.className}`}>
-              <performanceBadge.icon className="w-3 h-3 inline mr-1" />
+      {/* Header Section - Enhanced */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-2">
+          <motion.h3
+            className="text-2xl font-bold text-foreground bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+            initial={animate ? { opacity: 0, x: -20 } : false}
+            animate={animate ? { opacity: 1, x: 0 } : false}
+            transition={{ delay: 0.1, duration: 0.5 }}
+          >
+            {title}
+          </motion.h3>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <motion.span
+              className={`px-4 py-2 rounded-full text-sm font-bold border-2 shadow-md ${performanceBadge.className}`}
+              initial={animate ? { scale: 0, opacity: 0 } : false}
+              animate={animate ? { scale: 1, opacity: 1 } : false}
+              transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 25 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <motion.span
+                className="inline-block mr-2"
+                animate={{
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  repeatDelay: 3,
+                }}
+              >
+                <performanceBadge.icon className="w-4 h-4 inline" />
+              </motion.span>
               {performanceBadge.text}
-            </span>
+            </motion.span>
             {totalTimeSpent > 0 && (
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>{formatTime(totalTimeSpent)}</span>
-              </div>
+              <motion.div
+                className="flex items-center gap-2 bg-muted/50 px-3 py-1 rounded-full"
+                initial={animate ? { opacity: 0, x: 20 } : false}
+                animate={animate ? { opacity: 1, x: 0 } : false}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              >
+                <Clock className="w-4 h-4" />
+                <span className="font-medium">{formatTime(totalTimeSpent)}</span>
+              </motion.div>
             )}
           </div>
         </div>
 
-        <div className="text-right">
-          <div className="text-2xl font-bold text-foreground">
+        <motion.div
+          className="text-right"
+          initial={animate ? { opacity: 0, scale: 0.8 } : false}
+          animate={animate ? { opacity: 1, scale: 1 } : false}
+          transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 20 }}
+        >
+          <div className="text-4xl font-black text-foreground">
             {current}
             <span className="text-muted-foreground">/{total}</span>
           </div>
-          <p className="text-xs text-muted-foreground">Questions</p>
-        </div>
+          <p className="text-sm text-muted-foreground font-medium">Questions</p>
+        </motion.div>
       </div>
 
-      {/* Progress Section */}
-      <div className="space-y-3">
+      {/* Progress Section - Enhanced */}
+      <div className="space-y-4">
         {/* Main Progress Bar */}
         <div className="relative">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-foreground">Progress</span>
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-lg font-bold text-foreground">Progress</span>
             <motion.span
-              className="text-sm font-bold text-primary"
+              className="text-lg font-black text-primary"
               key={percentage}
-              initial={animate ? { scale: 1.2, opacity: 0 } : false}
+              initial={animate ? { scale: 1.3, opacity: 0 } : false}
               animate={animate ? { scale: 1, opacity: 1 } : false}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.4, type: "spring", stiffness: 300 }}
             >
               {Math.round(percentage)}%
             </motion.span>
           </div>
 
-          <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+          <div className="relative h-4 bg-muted/50 rounded-full overflow-hidden shadow-inner">
             <motion.div
-              className={`h-full rounded-full ${getProgressColor()}`}
+              className={`h-full rounded-full ${getProgressColor()} shadow-lg`}
               initial={animate ? { width: 0 } : { width: `${percentage}%` }}
               animate={{ width: `${percentage}%` }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              transition={{ duration: 1, ease: "easeOut" }}
             />
 
-            {/* Add a subtle shine effect */}
+            {/* Enhanced shine effect */}
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full"
               animate={{
                 x: ["-100%", "100%"],
               }}
               transition={{
-                duration: 2,
+                duration: 2.5,
                 repeat: Number.POSITIVE_INFINITY,
                 repeatType: "loop",
                 ease: "linear",
-                repeatDelay: 1,
+                repeatDelay: 1.5,
               }}
               style={{ opacity: percentage > 0 ? 1 : 0 }}
             />
 
             {/* Milestone markers */}
             {[25, 50, 75].map((mark) => (
-              <div key={mark} className="absolute top-0 bottom-0 w-0.5 bg-background/50" style={{ left: `${mark}%` }} />
+              <motion.div
+                key={mark}
+                className="absolute top-0 bottom-0 w-0.5 bg-background/70 shadow-sm"
+                style={{ left: `${mark}%` }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.3 }}
+              />
             ))}
           </div>
 
-          {/* Milestone Achievement */}
+          {/* Milestone Achievement - Enhanced */}
           <AnimatePresence>
             {milestone && (
               <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                initial={{ opacity: 0, y: 15, scale: 0.8 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                className="absolute -top-8 right-0 flex items-center gap-1 px-2 py-1 bg-background border border-border rounded-md shadow-sm"
+                exit={{ opacity: 0, y: -15, scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className="absolute -top-12 right-0 flex items-center gap-2 px-4 py-2 bg-background border-2 border-border rounded-xl shadow-lg"
               >
-                <milestone.icon className={`w-3 h-3 ${milestone.color}`} />
-                <span className={`text-xs font-medium ${milestone.color}`}>{milestone.text}</span>
+                <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 0.6, repeat: 2 }}>
+                  <milestone.icon className={`w-4 h-4 ${milestone.color}`} />
+                </motion.div>
+                <span className={`text-sm font-bold ${milestone.color}`}>{milestone.text}</span>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Question Indicators */}
+        {/* Question Indicators - Enhanced */}
         <div className="flex justify-between items-center">
-          <div className="flex gap-1 flex-wrap">
-            {Array.from({ length: Math.min(total, 10) }).map((_, i) => {
+          <div className="flex gap-2 flex-wrap">
+            {Array.from({ length: Math.min(total, 12) }).map((_, i) => {
               const isCompleted = i < current - 1
               const isCurrent = i === current - 1
               const isUpcoming = i >= current
@@ -199,16 +244,16 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
                 <motion.div
                   key={i}
                   className={`
-                    w-2 h-2 rounded-full transition-all duration-300
+                    w-3 h-3 rounded-full transition-all duration-400 shadow-sm
                     ${
                       isCompleted
-                        ? "bg-green-500 scale-110"
+                        ? "bg-emerald-500 scale-110 shadow-emerald-500/30"
                         : isCurrent
-                          ? "bg-primary scale-125 ring-2 ring-primary/30"
+                          ? "bg-primary scale-125 ring-3 ring-primary/40 shadow-primary/30"
                           : "bg-muted scale-100"
                     }
                   `}
-                  initial={animate ? { scale: 0.8, opacity: 0.5 } : false}
+                  initial={animate ? { scale: 0.6, opacity: 0.4 } : false}
                   animate={
                     animate
                       ? {
@@ -218,49 +263,50 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
                       : false
                   }
                   transition={{
-                    duration: 0.3,
+                    duration: 0.4,
                     delay: i * 0.05,
                     type: "spring",
-                    stiffness: 300,
-                    damping: 20,
+                    stiffness: 400,
+                    damping: 25,
                   }}
+                  whileHover={{ scale: isCurrent ? 1.4 : isCompleted ? 1.2 : 1.1 }}
                 />
               )
             })}
-            {total > 10 && <span className="text-xs text-muted-foreground ml-2">+{total - 10} more</span>}
+            {total > 12 && <span className="text-sm text-muted-foreground ml-3 font-medium">+{total - 12} more</span>}
           </div>
 
-          {/* Stats */}
+          {/* Stats - Enhanced */}
           {avgTimePerQuestion > 0 && (
             <motion.div
-              className="text-xs text-muted-foreground flex items-center gap-1"
-              initial={animate ? { opacity: 0 } : false}
-              animate={animate ? { opacity: 1 } : false}
-              transition={{ delay: 0.5 }}
+              className="text-sm text-muted-foreground flex items-center gap-2 bg-muted/30 px-3 py-1 rounded-full"
+              initial={animate ? { opacity: 0, x: 20 } : false}
+              animate={animate ? { opacity: 1, x: 0 } : false}
+              transition={{ delay: 0.6, duration: 0.4 }}
             >
-              <Clock className="w-3 h-3" />
-              <span>~{formatTime(avgTimePerQuestion)}/q</span>
+              <Clock className="w-4 h-4" />
+              <span className="font-medium">~{formatTime(avgTimePerQuestion)}/q</span>
             </motion.div>
           )}
         </div>
       </div>
 
-      {/* Completion Celebration */}
+      {/* Completion Celebration - Enhanced */}
       <AnimatePresence>
         {percentage === 100 && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -10 }}
+            exit={{ opacity: 0, scale: 0.8, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 shadow-md"
+            className="bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 dark:from-emerald-950/30 dark:via-green-950/30 dark:to-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 shadow-xl"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <motion.div
-                className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center"
+                className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-500 rounded-full flex items-center justify-center shadow-lg"
                 animate={{
                   scale: [1, 1.1, 1],
-                  rotate: [0, 5, 0],
+                  rotate: [0, 10, -10, 0],
                 }}
                 transition={{
                   duration: 2,
@@ -268,11 +314,11 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
                   repeatType: "reverse",
                 }}
               >
-                <CheckCircle2 className="w-5 h-5 text-white" />
+                <CheckCircle2 className="w-8 h-8 text-white" />
               </motion.div>
               <div>
-                <h4 className="font-semibold text-green-800 dark:text-green-200">Quiz Completed!</h4>
-                <p className="text-sm text-green-600 dark:text-green-300">
+                <h4 className="font-bold text-xl text-emerald-800 dark:text-emerald-200">Quiz Completed! 🎉</h4>
+                <p className="text-lg text-emerald-600 dark:text-emerald-300">
                   Great job finishing all {total} questions
                   {totalTimeSpent > 0 && ` in ${formatTime(totalTimeSpent)}`}
                 </p>

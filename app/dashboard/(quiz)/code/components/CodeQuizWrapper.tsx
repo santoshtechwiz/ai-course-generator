@@ -28,6 +28,7 @@ import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
+import { useEnhancedLoader } from "@/components/ui/enhanced-loader"
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -37,6 +38,8 @@ interface CodeQuizWrapperProps {
 export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
+
+  const enhancedLoader = useEnhancedLoader();
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -95,11 +98,11 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   useEffect(() => {
     if (!isCompleted || isSubmitting) return
 
-    toast.success("🎉 Quiz completed! Calculating your results...", { duration: 2000 })
+      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..."})
 
     submissionTimeoutRef.current = setTimeout(() => {
       router.push(`/dashboard/code/${slug}/results`)
-    }, 1500)
+    }, 500)
   }, [isCompleted, isSubmitting, router, slug])
 
   const currentQuestion = useMemo(() => {
@@ -141,7 +144,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     if (isSubmitting) return
 
     setIsSubmitting(true)
-
+    enhancedLoader.showLoader({ message: "Submitting your quiz...", variant: "shimmer", fullscreen: true });
     try {
       const results = {
         quizId,
@@ -157,14 +160,15 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       dispatch(setQuizCompleted())
 
       await dispatch(submitQuiz()).unwrap()
-      toast.success("Quiz submitted successfully!")
     } catch (err) {
       console.error("Error submitting quiz:", err)
-      toast.error("Failed to submit quiz. Please try again.")
+      enhancedLoader.showLoader({ message: "Failed to submit quiz. Please try again.", variant: "pulse", fullscreen: true });
+      setTimeout(() => enhancedLoader.hideLoader(), 2000);
     } finally {
       setIsSubmitting(false)
+      setTimeout(() => enhancedLoader.hideLoader(), 1200);
     }
-  }, [isSubmitting, quizId, slug, quizTitle, title, questions, answers, dispatch])
+  }, [isSubmitting, quizId, slug, quizTitle, title, questions, answers, dispatch, enhancedLoader])
 
   const handleRetakeQuiz = useCallback(() => {
     dispatch(clearQuizState())
@@ -183,9 +187,10 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   )
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
+  const canSubmit = isLastQuestion ? !!currentAnswer : canGoNext
 
   if (loading || quizStatus === "loading") {
-    return <QuizLoader message="Loading code quiz..." subMessage="Preparing your coding challenge" />
+    return <QuizLoader message="Loading code quiz..." />
   }
 
   if (error || quizStatus === "failed") {
@@ -235,10 +240,9 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
         existingAnswer={currentAnswer}
         onAnswer={handleAnswer}
         onNext={handleNext}
-        onPrevious={handlePrevious}
         onSubmit={handleSubmitQuiz}
         onRetake={handleRetakeQuiz}
-        canGoNext={canGoNext}
+        canGoNext={canSubmit}
         canGoPrevious={canGoPrevious}
         isLastQuestion={isLastQuestion}
         isSubmitting={isSubmitting}

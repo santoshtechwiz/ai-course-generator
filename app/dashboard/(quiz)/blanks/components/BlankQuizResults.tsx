@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { Confetti } from "@/components/ui/confetti"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircleIcon, AlertTriangle, Trophy, Target, Share2, RefreshCw, Home } from "lucide-react"
+import { CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircle, XCircle, Trophy, Target, Share2, RefreshCw, Home } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import type { BlanksQuizResult } from "@/types/blanks-quiz"
@@ -30,9 +30,9 @@ function getPerformanceLevel(percentage: number) {
     return {
       level: "Excellent",
       message: "Outstanding! You've mastered this topic.",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50",
-      borderColor: "border-emerald-200",
+      color: "text-green-500",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
       emoji: "🏆",
     }
   if (percentage >= 80)
@@ -48,7 +48,7 @@ function getPerformanceLevel(percentage: number) {
     return {
       level: "Good",
       message: "Well done! Your knowledge is solid.",
-      color: "text-green-600",
+      color: "text-green-500",
       bgColor: "bg-green-50",
       borderColor: "border-green-200",
       emoji: "✅",
@@ -74,7 +74,7 @@ function getPerformanceLevel(percentage: number) {
   return {
     level: "Poor",
     message: "Keep learning! Review the material thoroughly.",
-    color: "text-red-600",
+    color: "text-red-500",
     bgColor: "bg-red-50",
     borderColor: "border-red-200",
     emoji: "📖",
@@ -93,55 +93,26 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
   const [showConfetti, setShowConfetti] = useState(false)
   const hasShownConfettiRef = useRef(false)
   const enhancedResults = useMemo(() => {
-    // Early check for empty results
     if (!result?.questionResults) return []
 
     return result.questionResults.map((q) => {
-      // Extract the question ID with reliable string conversion
-      const questionId = String(q.questionId || q.id || "");
-      
-      // Find the actual user answer from the answers array with enhanced type safety
-      const actualAnswer = result.answers?.find((a) => 
-        String(a.questionId || a.id || "") === questionId
-      );
-      
-      // Find the full question data from the questions array with more robust matching
-      const questionData = result.questions?.find((quest) => 
-        String(quest.id || quest.questionId || "") === questionId
-      );
-      
-      // Extract question text with improved fallback chain
-      const questionText = q.question || q.text || 
-                          questionData?.question || questionData?.text || 
-                          `Question ${questionId}`;
-      
-      // Extract user answer with comprehensive fallbacks
-      const userAnswer = actualAnswer?.userAnswer || 
-                        actualAnswer?.text || 
-                        actualAnswer?.answer || 
-                        q.userAnswer || 
-                        q.answer || 
-                        "";
-      
-      // Extract correct answer with comprehensive fallbacks
-      const correctAnswer = q.correctAnswer || 
-                           questionData?.correctAnswer || 
-                           questionData?.answer || 
-                           "";
-      
-      // Calculate or use provided similarity score with null coalescing
-      const similarity = typeof q.similarity === 'number' ? q.similarity : 
-                         getSimilarity(userAnswer, correctAnswer);
-      
-      // Generate or use provided similarity label
-      const similarityLabel = q.similarityLabel || getSimilarityLabel(similarity);
-      
-      // Determine correctness with explicit checks
-      const isCorrect = typeof actualAnswer?.isCorrect === 'boolean' ? actualAnswer.isCorrect : 
-                        typeof q.isCorrect === 'boolean' ? q.isCorrect : 
-                        similarity >= 0.7;
+      const questionId = String(q.questionId || q.id || "")
+      const actualAnswer = result.answers?.find((a) => String(a.questionId || a.id || "") === questionId)
+      const questionData = result.questions?.find((quest) => String(quest.id || quest.questionId || "") === questionId)
+      const questionText =
+        q.question || q.text || questionData?.question || questionData?.text || `Question ${questionId}`
+      const userAnswer =
+        actualAnswer?.userAnswer || actualAnswer?.text || actualAnswer?.answer || q.userAnswer || q.answer || ""
+      const correctAnswer = q.correctAnswer || questionData?.correctAnswer || questionData?.answer || ""
+      const similarity = typeof q.similarity === "number" ? q.similarity : getSimilarity(userAnswer, correctAnswer)
+      const similarityLabel = q.similarityLabel || getSimilarityLabel(similarity)
+      const isCorrect =
+        typeof actualAnswer?.isCorrect === "boolean"
+          ? actualAnswer.isCorrect
+          : typeof q.isCorrect === "boolean"
+            ? q.isCorrect
+            : similarity >= 0.7
 
-      // Return a comprehensive result object
       return {
         ...q,
         questionId,
@@ -151,16 +122,12 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
         similarity,
         similarityLabel,
         isCorrect,
-        // Include original data references for potential debugging
-        _originalQuestionResult: q,
-        _actualAnswer: actualAnswer,
-        _questionData: questionData
       }
     })
   }, [result])
 
   const correctCount = enhancedResults.filter((q) => q.isCorrect).length
-  const totalQuestions = enhancedResults.length || 1 // Prevent division by zero
+  const totalQuestions = enhancedResults.length || 1
   const percentage = result?.percentage ?? Math.round((correctCount / totalQuestions) * 100)
   const performance = useMemo(() => getPerformanceLevel(percentage), [percentage])
 
@@ -174,8 +141,8 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
     }
   }, [result, percentage])
 
-   const dispatch = useDispatch();
- const handleRetake = useCallback(() => {
+  const dispatch = useDispatch()
+  const handleRetake = useCallback(() => {
     if (onRetake) return onRetake()
     dispatch(clearQuizState())
     router.push(`/dashboard/blanks/${result.slug}`)
@@ -196,12 +163,9 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
         await navigator.share(shareData)
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
-        // toast.success("Results copied to clipboard!")
-      } else {
-        // toast.error("Sharing not supported on this device")
       }
     } catch (error) {
-      // toast.error("Failed to share results")
+      // Handle error silently
     }
   }
 
@@ -214,16 +178,16 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
         action={{
           label: "Retake Quiz",
           onClick: handleRetake,
-          icon: <RefreshCw className="h-4 w-4" />
+          icon: <RefreshCw className="h-4 w-4" />,
         }}
         secondaryAction={{
           label: "Browse Quizzes",
           onClick: handleViewAllQuizzes,
           variant: "outline",
-          icon: <Home className="h-4 w-4" />
+          icon: <Home className="h-4 w-4" />,
         }}
       />
-    );
+    )
   }
 
   if (!Array.isArray(result.questionResults)) {
@@ -235,10 +199,10 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
         action={{
           label: "Retake Quiz",
           onClick: handleRetake,
-          icon: <RefreshCw className="h-4 w-4" />
+          icon: <RefreshCw className="h-4 w-4" />,
         }}
       />
-    );
+    )
   }
 
   return (
@@ -250,174 +214,373 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
         transition={{ duration: 0.5, ease: "easeInOut" }}
       >
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Target className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">{result.title || "Fill in the Blanks Quiz Results"}</h1>
-              <Badge
-                variant="secondary"
-                className={`mt-2 ${performance.color} ${performance.bgColor} ${performance.borderColor}`}
+        <motion.div
+          className="text-center space-y-6 relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 shadow-lg"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <div className="flex items-center justify-center gap-4">
+            <motion.div
+              className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Target className="w-8 h-8 text-primary" />
+            </motion.div>
+            <div className="text-left">
+              <motion.h1
+                className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
               >
-                {performance.emoji} {performance.level}
-              </Badge>
+                {result.title || "Fill in the Blanks Quiz Results"}
+              </motion.h1>
+              <motion.div
+                className="h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent rounded-full mt-2"
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
+              />
             </div>
           </div>
-          <p className="text-muted-foreground">
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <Badge
+              variant="secondary"
+              className={`mt-3 px-4 py-2 text-sm font-semibold shadow-md ${performance.color} ${performance.bgColor} ${performance.borderColor} border-2`}
+            >
+              <motion.span
+                className="mr-2 text-lg"
+                animate={{
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  repeatDelay: 3,
+                }}
+              >
+                {performance.emoji}
+              </motion.span>
+              {performance.level}
+            </Badge>
+          </motion.div>
+
+          <motion.p
+            className="text-muted-foreground text-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
             Completed on {new Date(result.completedAt || new Date()).toLocaleDateString()} at{" "}
             {new Date(result.completedAt || new Date()).toLocaleTimeString()}
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Score Overview */}
         <motion.div
-          className="overflow-hidden rounded-2xl shadow-lg"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="overflow-hidden rounded-3xl shadow-2xl border-2 border-primary/10"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          whileHover={{
+            scale: 1.02,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+          }}
         >
-          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b p-6">
+          <CardHeader className="bg-gradient-to-br from-primary/8 via-primary/5 to-primary/10 border-b-2 border-primary/10 p-8">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Trophy className="w-8 h-8 text-primary" />
+              <div className="flex items-center gap-6">
+                <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
+                  <Trophy className="w-12 h-12 text-primary drop-shadow-lg" />
+                </motion.div>
                 <div>
-                  <CardTitle className="text-2xl font-semibold">Your Score</CardTitle>
-                  <p className="text-muted-foreground">Fill-in-the-blanks performance summary</p>
+                  <CardTitle className="text-3xl font-bold text-foreground">Your Score</CardTitle>
+                  <p className="text-muted-foreground text-lg">Fill-in-the-blanks performance summary</p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-4xl font-bold text-primary">{percentage}%</div>
-                <div className="text-sm text-muted-foreground">
+                <motion.div
+                  className="text-6xl font-black text-primary drop-shadow-lg"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    delay: 0.3,
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 15,
+                  }}
+                >
+                  {percentage}%
+                </motion.div>
+                <div className="text-lg text-muted-foreground font-medium">
                   {correctCount} of {enhancedResults.length}
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
+
+          <CardContent className="p-8">
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <div className="flex justify-between text-lg font-medium">
                   <span>Progress</span>
-                  <span>
+                  <motion.span
+                    key={percentage}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     {correctCount}/{enhancedResults.length} correct
-                  </span>
+                  </motion.span>
                 </div>
-                <Progress value={percentage} className="h-2" />
+                <div className="relative">
+                  <Progress value={percentage} className="h-4 rounded-full bg-muted/50" />
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                    animate={{
+                      x: ["-100%", "100%"],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                      repeatDelay: 1,
+                    }}
+                    style={{ opacity: percentage > 0 ? 1 : 0 }}
+                  />
+                </div>
               </div>
-              <div className={`p-4 rounded-lg border-2 ${performance.bgColor} ${performance.borderColor}`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{performance.emoji}</span>
-                  <p className={`font-medium ${performance.color}`}>{performance.message}</p>
+
+              <motion.div
+                className={`p-6 rounded-2xl border-3 ${performance.bgColor} ${performance.borderColor} shadow-lg`}
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <div className="flex items-center gap-4">
+                  <motion.span
+                    className="text-4xl"
+                    animate={{
+                      rotate: [0, 10, -10, 0],
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatDelay: 2,
+                    }}
+                  >
+                    {performance.emoji}
+                  </motion.span>
+                  <p className={`font-bold text-xl ${performance.color}`}>{performance.message}</p>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-success/10 border border-success/20 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-success">{correctCount}</div>
-                  <div className="text-sm text-muted-foreground">Correct</div>
-                </div>
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-destructive">{enhancedResults.length - correctCount}</div>
-                  <div className="text-sm text-muted-foreground">Incorrect</div>
-                </div>
-                <div className="bg-muted/50 border border-muted-foreground/20 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-muted-foreground">{enhancedResults.length}</div>
-                  <div className="text-sm text-muted-foreground">Total</div>
-                </div>
+              </motion.div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <motion.div
+                  className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 text-center shadow-lg"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <motion.div
+                    className="text-4xl font-black text-green-500"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  >
+                    {correctCount}
+                  </motion.div>
+                  <div className="text-sm text-green-700 dark:text-green-300 font-semibold">Correct</div>
+                </motion.div>
+
+                <motion.div
+                  className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-2xl p-6 text-center shadow-lg"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <motion.div
+                    className="text-4xl font-black text-red-500"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                  >
+                    {enhancedResults.length - correctCount}
+                  </motion.div>
+                  <div className="text-sm text-red-700 dark:text-red-300 font-semibold">Incorrect</div>
+                </motion.div>
+
+                <motion.div
+                  className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center shadow-lg"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <motion.div
+                    className="text-4xl font-black text-slate-600 dark:text-slate-400"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                  >
+                    {enhancedResults.length}
+                  </motion.div>
+                  <div className="text-sm text-slate-700 dark:text-slate-300 font-semibold">Total</div>
+                </motion.div>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="bg-muted/30 border-t flex flex-wrap gap-3 justify-between p-6">
-            <div className="flex gap-2">
-              <Button onClick={handleRetake} className="gap-2">
-                <RefreshCw className="w-4 h-4" />
-                Retake Quiz
-              </Button>
-              <Button variant="outline" onClick={handleViewAllQuizzes} className="gap-2">
-                <Home className="w-4 h-4" />
-                All Quizzes
-              </Button>
+
+          <CardFooter className="bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 border-t-2 border-muted/20 flex flex-wrap gap-4 justify-between p-8">
+            <div className="flex gap-3">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={handleRetake}
+                  className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                    <RefreshCw className="w-5 h-5" />
+                  </motion.div>
+                  Retake Quiz
+                </Button>
+              </motion.div>
+
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  onClick={handleViewAllQuizzes}
+                  className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl border-2 hover:bg-muted/50 transition-all duration-300"
+                >
+                  <Home className="w-5 h-5" />
+                  All Quizzes
+                </Button>
+              </motion.div>
             </div>
-            <Button variant="outline" onClick={handleShare} className="gap-2">
-              <Share2 className="w-4 h-4" />
-              Share Results
-            </Button>
+
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="outline"
+                onClick={handleShare}
+                className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl border-2 hover:bg-muted/50 transition-all duration-300"
+              >
+                <motion.div whileHover={{ rotate: 15, scale: 1.1 }} transition={{ duration: 0.2 }}>
+                  <Share2 className="w-5 h-5" />
+                </motion.div>
+                Share Results
+              </Button>
+            </motion.div>
           </CardFooter>
         </motion.div>
 
         {/* Question Results */}
         <motion.div
-          className="rounded-2xl shadow-lg"
-          initial={{ opacity: 0, y: 20 }}
+          className="rounded-3xl shadow-2xl border-2 border-muted/20"
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2, ease: "easeInOut" }}
+          transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         >
-          <CardHeader className="p-6">
-            <CardTitle className="flex items-center gap-2 text-xl font-semibold">
-              <Target className="w-5 h-5" />
+          <CardHeader className="p-8 bg-gradient-to-r from-muted/10 to-muted/20 border-b-2 border-muted/20">
+            <CardTitle className="flex items-center gap-4 text-2xl font-bold">
+              <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6 }}>
+                <Target className="w-7 h-7 text-primary" />
+              </motion.div>
               Answer Review ({enhancedResults.length} Questions)
             </CardTitle>
-            <p className="text-muted-foreground">Review your answers and learn from mistakes</p>
+            <p className="text-muted-foreground text-lg">Review your answers and learn from mistakes</p>
           </CardHeader>
-          <CardContent className="space-y-4 p-6">
-            {enhancedResults.map((q, index) => (
-              <div key={q.questionId} className="p-4 rounded-lg border">
-                <div className="font-semibold mb-3">
-                  Question {index + 1}: {q.question}
-                </div>
 
-                <div className="space-y-3">
+          <CardContent className="space-y-6 p-8">
+            {enhancedResults.map((q, index) => (
+              <motion.div
+                key={q.questionId}
+                className="p-6 rounded-2xl border-2 border-muted/30 bg-gradient-to-r from-background to-muted/5 shadow-lg hover:shadow-xl transition-all duration-300"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                whileHover={{ scale: 1.01, y: -2 }}
+              >
+                <div className="flex items-start gap-4 mb-4">
                   <div
-                    className={`p-3 rounded-md border ${
-                      q.isCorrect ? "bg-success/10 border-success/30" : "bg-muted border-muted-foreground/20"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md ${
+                      q.isCorrect ? "bg-green-100 text-green-500" : "bg-red-100 text-red-500"
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-2">
+                    {q.isCorrect ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold mb-3 text-lg text-foreground">
+                      Question {index + 1}: {q.question}
+                    </div>
+
+                    <div className="space-y-4">
                       <div
-                        className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                          q.isCorrect ? "bg-success text-white" : "bg-muted-foreground/20"
+                        className={`p-4 rounded-xl border-2 shadow-md ${
+                          q.isCorrect
+                            ? "bg-gradient-to-r from-green-50 to-green-100 border-green-200"
+                            : "bg-gradient-to-r from-red-50 to-red-100 border-red-200"
                         }`}
                       >
-                        Y
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="font-semibold text-base">Your answer:</span>
+                        </div>
+                        <div className="pl-0">
+                          <span
+                            className={`text-base font-medium ${
+                              q.similarityLabel === "Correct"
+                                ? "text-green-500"
+                                : q.similarityLabel === "Close"
+                                  ? "text-yellow-600"
+                                  : "text-red-500"
+                            }`}
+                          >
+                            {q.userAnswer || "(no answer)"}
+                          </span>
+                          {q.similarityLabel === "Close" && (
+                            <motion.span
+                              className="ml-3 text-sm text-yellow-600 font-bold bg-yellow-100 px-2 py-1 rounded-full"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                            >
+                              (Close enough!)
+                            </motion.span>
+                          )}
+                        </div>
                       </div>
-                      <span className="font-medium text-sm">Your answer:</span>
-                    </div>
-                    <div className="pl-7">
-                      <span
-                        className={
-                          q.similarityLabel === "Correct"
-                            ? "text-green-700"
-                            : q.similarityLabel === "Close"
-                              ? "text-yellow-700"
-                              : "text-red-700"
-                        }
-                      >
-                        {q.userAnswer || "(no answer)"}
-                      </span>
-                      {q.similarityLabel === "Close" && (
-                        <span className="ml-2 text-xs text-yellow-700 font-semibold">(Close enough!)</span>
+
+                      {!q.isCorrect && (
+                        <motion.div
+                          className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 shadow-md"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          transition={{ delay: 0.1, duration: 0.3 }}
+                          whileHover={{ scale: 1.02 }}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <span className="font-semibold text-base">Correct answer:</span>
+                          </div>
+                          <p className="text-base font-medium text-green-500 pl-8">{q.correctAnswer}</p>
+                        </motion.div>
                       )}
                     </div>
+
+                    <motion.div
+                      className="text-sm text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg border border-muted/30"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <strong>Similarity:</strong> {Math.round((q.similarity || 0) * 100)}% ({q.similarityLabel})
+                    </motion.div>
                   </div>
-
-                  {!q.isCorrect && (
-                    <div className="p-3 rounded-md bg-success/10 border border-success/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-5 h-5 rounded-full bg-success text-white flex items-center justify-center">
-                          <CheckCircleIcon className="w-3 h-3" />
-                        </div>
-                        <span className="font-medium text-sm">Correct answer:</span>
-                      </div>
-                      <p className="text-sm pl-7">{q.correctAnswer}</p>
-                    </div>
-                  )}
                 </div>
-
-                <div className="text-xs text-muted-foreground mt-3">
-                  Similarity: {Math.round((q.similarity || 0) * 100)}% ({q.similarityLabel})
-                </div>
-              </div>
+              </motion.div>
             ))}
           </CardContent>
         </motion.div>
