@@ -92,29 +92,69 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
   const hasShownConfettiRef = useRef(false)
-
   const enhancedResults = useMemo(() => {
+    // Early check for empty results
     if (!result?.questionResults) return []
 
     return result.questionResults.map((q) => {
-      // Find the actual user answer from the answers array
-      const actualAnswer = result.answers?.find((a) => a.questionId.toString() === q.questionId.toString())
-      // Find the question text from the questions array
-      const questionData = result.questions?.find((quest) => quest.id.toString() === q.questionId.toString())
+      // Extract the question ID with reliable string conversion
+      const questionId = String(q.questionId || q.id || "");
+      
+      // Find the actual user answer from the answers array with enhanced type safety
+      const actualAnswer = result.answers?.find((a) => 
+        String(a.questionId || a.id || "") === questionId
+      );
+      
+      // Find the full question data from the questions array with more robust matching
+      const questionData = result.questions?.find((quest) => 
+        String(quest.id || quest.questionId || "") === questionId
+      );
+      
+      // Extract question text with improved fallback chain
+      const questionText = q.question || q.text || 
+                          questionData?.question || questionData?.text || 
+                          `Question ${questionId}`;
+      
+      // Extract user answer with comprehensive fallbacks
+      const userAnswer = actualAnswer?.userAnswer || 
+                        actualAnswer?.text || 
+                        actualAnswer?.answer || 
+                        q.userAnswer || 
+                        q.answer || 
+                        "";
+      
+      // Extract correct answer with comprehensive fallbacks
+      const correctAnswer = q.correctAnswer || 
+                           questionData?.correctAnswer || 
+                           questionData?.answer || 
+                           "";
+      
+      // Calculate or use provided similarity score with null coalescing
+      const similarity = typeof q.similarity === 'number' ? q.similarity : 
+                         getSimilarity(userAnswer, correctAnswer);
+      
+      // Generate or use provided similarity label
+      const similarityLabel = q.similarityLabel || getSimilarityLabel(similarity);
+      
+      // Determine correctness with explicit checks
+      const isCorrect = typeof actualAnswer?.isCorrect === 'boolean' ? actualAnswer.isCorrect : 
+                        typeof q.isCorrect === 'boolean' ? q.isCorrect : 
+                        similarity >= 0.7;
 
-      const userAnswer = actualAnswer?.userAnswer || q.userAnswer || ""
-      const correctAnswer = q.correctAnswer || questionData?.answer || ""
-      const similarity = q.similarity ?? getSimilarity(userAnswer, correctAnswer)
-      const similarityLabel = q.similarityLabel || getSimilarityLabel(similarity)
-
+      // Return a comprehensive result object
       return {
         ...q,
-        question: q.question || questionData?.question || `Question ${q.questionId}`,
+        questionId,
+        question: questionText,
         userAnswer,
         correctAnswer,
         similarity,
         similarityLabel,
-        isCorrect: actualAnswer?.isCorrect ?? similarity >= 0.7,
+        isCorrect,
+        // Include original data references for potential debugging
+        _originalQuestionResult: q,
+        _actualAnswer: actualAnswer,
+        _questionData: questionData
       }
     })
   }, [result])

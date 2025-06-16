@@ -32,6 +32,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import { OpenEndedQuestion } from "@/types/quiz"
 import { useAuth } from "@/hooks"
+import { useSubscription } from "@/hooks/use-subscription" // Import useSubscription
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -42,6 +43,9 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { isAuthenticated } = useAuth()
+  
+  // Use subscription hook with skipInitialFetch to prevent unnecessary API calls
+  useSubscription({ skipInitialFetch: true })
 
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
   const [attemptedQuestions, setAttemptedQuestions] = useState<Set<string>>(new Set())
