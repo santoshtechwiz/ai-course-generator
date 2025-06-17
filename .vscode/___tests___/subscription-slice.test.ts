@@ -1,36 +1,38 @@
 import { configureStore } from '@reduxjs/toolkit';
 import subscriptionReducer, {
-  fetchSubscription,
-  cancelSubscription,
-  resumeSubscription,
-  activateFreeTrial,
-  forceRefreshSubscription,
-  clearSubscriptionData,
-  resetState,
-  setSubscriptionData,
-  resetSubscriptionState,
-  selectSubscriptionData,
-  selectSubscriptionLoading,
-  selectSubscriptionError,
-  selectSubscription,
-  selectTokenUsage,
-  selectIsSubscribed,
-  selectSubscriptionPlan,
-  selectSubscriptionStatus,
-  selectIsCancelled,
-  type SubscriptionData,
-  type SubscriptionState
+    fetchSubscription,
+    cancelSubscription,
+    resumeSubscription,
+    activateFreeTrial,
+    forceRefreshSubscription,
+    clearSubscriptionData,
+    resetState,
+    setSubscriptionData,
+    resetSubscriptionState,
+    selectSubscriptionData,
+    selectSubscriptionLoading,
+    selectSubscriptionError,
+    selectSubscription,
+    selectTokenUsage,
+    selectIsSubscribed,
+    selectSubscriptionPlan,
+    selectSubscriptionStatus,
+    selectIsCancelled,
+    selectSubscriptionShallow,
+    type SubscriptionData,
+    type SubscriptionState
 } from '@/store/slices/subscription-slice';
+import { vi, describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import fetchMock from 'jest-fetch-mock';
 
 // Mock the logger to avoid console output during tests
-jest.mock('@/lib/logger', () => ({
-  logger: {
-    info: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn()
-  }
+vi.mock('@/lib/logger', () => ({
+    logger: {
+        info: vi.fn(),
+        debug: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn()
+    }
 }));
 
 describe('Subscription Slice', () => {
