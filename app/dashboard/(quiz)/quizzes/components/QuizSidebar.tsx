@@ -96,7 +96,7 @@ function QuizSidebarComponent({
 
   return (
     <motion.div
-      className="space-y-6 lg:w-1/4 lg:sticky lg:top-20 bg-background border rounded-lg p-4 shadow-sm"
+      className="space-y-6 lg:w-1/4 lg:sticky lg:top-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm"
       variants={sidebarVariants}
       initial="hidden"
       animate="visible"
@@ -124,7 +124,7 @@ function QuizSidebarComponent({
           variant="outline"
           size="sm"
           onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="flex items-center gap-2 border-dashed w-full justify-between group transition-all duration-200 hover:border-primary/50 hover:bg-primary/5"
+          className="border-dashed w-full justify-between group transition-all duration-200 hover:border-primary/50 hover:bg-primary/5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         >
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 group-hover:text-primary transition-colors" />
@@ -145,7 +145,7 @@ function QuizSidebarComponent({
             variant="ghost"
             size="sm"
             onClick={onClearSearch}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
             <X className="h-3.5 w-3.5 mr-1" />
             Clear All
@@ -157,7 +157,7 @@ function QuizSidebarComponent({
       <AnimatePresence>
         {(showMobileFilters || isDesktop) && (
           <motion.div
-            className="space-y-5 bg-card p-5 rounded-lg border shadow-sm"
+            className="space-y-5 bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm"
             initial={{ height: 0, opacity: 0, overflow: "hidden" }}
             animate={{ height: "auto", opacity: 1, overflow: "visible" }}
             exit={{ height: 0, opacity: 0, overflow: "hidden" }}
@@ -165,7 +165,7 @@ function QuizSidebarComponent({
           >
             {/* Filter by Type */}
             <motion.div className="flex justify-between items-center" variants={itemVariants}>
-              <h3 className="font-medium text-foreground flex items-center gap-2">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Filter className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">Filter by Type</span>
               </h3>
@@ -174,13 +174,12 @@ function QuizSidebarComponent({
                   variant="ghost"
                   size="sm"
                   onClick={() => selectedTypes.forEach(toggleQuizType)}
-                  className="text-muted-foreground hover:text-foreground text-xs hover:bg-destructive/10 transition-colors"
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 text-xs hover:bg-destructive/10 transition-colors"
                 >
                   <X className="h-3 w-3 mr-1" /> Clear
                 </Button>
               )}
             </motion.div>
-
             <motion.div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2" variants={itemVariants}>
               {quizTypes.map((type) => {
                 const isSelected = selectedTypes.includes(type.id)
@@ -191,7 +190,7 @@ function QuizSidebarComponent({
                     className={`transition-all duration-200 flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium border ${
                       isSelected
                         ? "bg-primary text-white shadow-md shadow-primary/20"
-                        : "bg-muted/50 text-foreground hover:bg-accent hover:border-accent/50"
+                        : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
                     }`}
                     whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
                     whileTap={{ scale: 0.98 }}
@@ -202,15 +201,17 @@ function QuizSidebarComponent({
                         isSelected
                           ? "text-white"
                           : type.id === "mcq"
-                          ? "text-blue-600 dark:text-blue-300"
-                          : type.id === "openended"
-                          ? "text-green-600 dark:text-green-300"
-                          : type.id === "blanks"
-                          ? "text-yellow-600 dark:text-yellow-300"
-                          : "text-purple-600 dark:text-purple-300"
+                            ? "text-blue-600 dark:text-blue-300"
+                            : type.id === "openended"
+                              ? "text-green-600 dark:text-green-300"
+                              : type.id === "blanks"
+                                ? "text-yellow-600 dark:text-yellow-300"
+                                : type.id === "code"
+                                  ? "text-purple-600 dark:text-purple-300"
+                                  : "text-orange-600 dark:text-orange-300"
                       }`}
                     />
-                    {type.label}
+                    <span className="break-words">{type.label}</span>
                     {isSelected && (
                       <motion.span
                         initial={{ scale: 0 }}
@@ -224,12 +225,11 @@ function QuizSidebarComponent({
                 )
               })}
             </motion.div>
-
             {/* Question Count */}
             {onQuestionCountChange && (
               <motion.div className="pt-4 space-y-3" variants={itemVariants}>
                 <Separator className="my-4" />
-                <h3 className="font-medium text-foreground flex items-center gap-2">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                   <FileQuestion className="h-4 w-4 text-primary" />
                   Question Count
                 </h3>
@@ -242,13 +242,14 @@ function QuizSidebarComponent({
                     onValueChange={handleQuestionCountChange}
                     className="my-6"
                   />
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                     <span>{localQuestionCount[0]} questions</span>
                     <span>{localQuestionCount[1]} questions</span>
                   </div>
                 </div>
               </motion.div>
-            )}            {/* Public Switch */}
+            )}
+            {/* Public Switch */}
             {onPublicOnlyChange && (
               <motion.div className="pt-4" variants={itemVariants}>
                 <Separator className="my-4" />

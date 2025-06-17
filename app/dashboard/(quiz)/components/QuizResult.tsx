@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { clearQuizState } from "@/store/slices/quiz-slice"
-import { AppDispatch } from "@/store"
+import type { AppDispatch } from "@/store"
 import BlankQuizResults from "../blanks/components/BlankQuizResults"
-import {McqQuizResult} from "../mcq/components/McqQuizResult"
+import { McqQuizResult } from "../mcq/components/McqQuizResult"
 import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded"
 import { NoResults } from "@/components/ui/no-results"
 import FlashCardResults from "../flashcard/components/FlashCardQuizResults"
@@ -21,12 +21,7 @@ interface QuizResultProps {
   onRetake?: () => void
 }
 
-export default function QuizResult({
-  result,
-  slug,
-  quizType = "mcq",
-  onRetake,
-}: QuizResultProps) {
+export default function QuizResult({ result, slug, quizType = "mcq", onRetake }: QuizResultProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
 
@@ -51,10 +46,11 @@ export default function QuizResult({
 
   const isValidResult =
     result &&
-    (result.percentage !== undefined ||
-      result.score !== undefined ||
-      (result.questionResults && result.questionResults.length) ||
-      (result.questions && result.questions.length))
+    (typeof result.percentage === "number" ||
+      typeof result.score === "number" ||
+      (Array.isArray(result.questionResults) && result.questionResults.length > 0) ||
+      (Array.isArray(result.questions) && result.questions.length > 0) ||
+      (Array.isArray(result.answers) && result.answers.length > 0))
 
   if (!isValidResult) {
     return (
@@ -73,16 +69,14 @@ export default function QuizResult({
   const quizContent = renderQuizResultComponent(quizType, result, slug, handleRetake)
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 animate-fade-in">
+    <div className="max-w-4xl mx-auto px-4 py-6 animate-fade-in">
       <Card className="shadow-xl border-muted rounded-2xl">
         <CardHeader className="bg-muted/50 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight text-primary">
-            Quiz Results
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight text-primary">Quiz Results</CardTitle>
         </CardHeader>
         <Separator />
-        <CardContent className="p-6 space-y-6">{quizContent}</CardContent>
-        <CardFooter className="flex justify-center items-center py-6">
+        <CardContent className="p-4 space-y-4">{quizContent}</CardContent>
+        <CardFooter className="flex justify-center items-center py-4">
           <button
             onClick={handleRetake}
             className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition"
@@ -95,35 +89,16 @@ export default function QuizResult({
   )
 }
 
-function renderQuizResultComponent(
-  quizType: QuizType,
-  result: any,
-  slug: string,
-  onRetake: () => void
-) {
+function renderQuizResultComponent(quizType: QuizType, result: any, slug: string, onRetake: () => void) {
   switch (quizType) {
     case "mcq":
       return <McqQuizResult result={result} />
     case "blanks":
-      return (
-        <BlankQuizResults
-          result={result}
-          isAuthenticated={true}
-          slug={slug}
-          onRetake={onRetake}
-        />
-      )
+      return <BlankQuizResults result={result} isAuthenticated={true} slug={slug} onRetake={onRetake} />
     case "openended":
-      return (
-        <OpenEndedQuizResults
-          result={result}
-          isAuthenticated={true}
-          slug={slug}
-          onRetake={onRetake}
-        />
-      )
+      return <OpenEndedQuizResults result={result} isAuthenticated={true} slug={slug} onRetake={onRetake} />
     case "code":
-      return <CodeQuizResult result={result}  onRetake={onRetake} />
+      return <CodeQuizResult result={result} onRetake={onRetake} />
     case "flashcard":
       // Pass all result fields as props for consistency
       return (
