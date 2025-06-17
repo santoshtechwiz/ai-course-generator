@@ -48,6 +48,24 @@ const itemVariants = {
 export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
   const { title, score, maxScore, percentage, questionResults } = result
 
+  // Enhanced score validation with proper fallbacks
+  const validatedScore = typeof score === "number" && score >= 0 ? score : 0
+  const validatedMaxScore = typeof maxScore === "number" && maxScore > 0 ? maxScore : questionResults?.length || 1
+
+  // Count correct answers from questionResults as backup
+  const correctFromResults = questionResults?.filter((q) => q.isCorrect === true).length || 0
+  const totalFromResults = questionResults?.length || 0
+
+  // Use the most reliable source for final calculations
+  const finalScore = validatedScore > 0 ? validatedScore : correctFromResults
+  const finalMaxScore = validatedMaxScore > 1 ? validatedMaxScore : Math.max(totalFromResults, 1)
+
+  // Calculate percentage with proper bounds checking
+  const calculatedPercentage = finalMaxScore > 0 ? Math.round((finalScore / finalMaxScore) * 100) : 0
+  const validatedPercentage =
+    typeof percentage === "number" && percentage >= 0 ? Math.min(percentage, 100) : calculatedPercentage
+  const finalPercentage = Math.max(0, Math.min(validatedPercentage, 100))
+
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return "text-green-500"
     if (percentage >= 60) return "text-yellow-500"
@@ -69,13 +87,13 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
     >
       {/* Header */}
       <motion.div variants={itemVariants} className="text-center space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">{title}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground break-words">{title}</h1>
         <p className="text-muted-foreground">Multiple Choice Quiz Results</p>
       </motion.div>
 
       {/* Score Card */}
       <motion.div variants={itemVariants}>
-        <Card className={cn("border-2", getScoreBgColor(percentage))}>
+        <Card className={cn("border-2", getScoreBgColor(finalPercentage))}>
           <CardHeader className="text-center pb-4">
             <CardTitle className="flex items-center justify-center gap-2">
               <Target className="h-6 w-6" />
@@ -84,22 +102,24 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="space-y-2">
-              <div className={cn("text-6xl font-bold", getScoreColor(percentage))}>{percentage}%</div>
-              <p className="text-lg text-muted-foreground">
-                {score} out of {maxScore} correct
+              <div className={cn("text-4xl sm:text-5xl font-bold", getScoreColor(finalPercentage))}>
+                {finalPercentage}%
+              </div>
+              <p className="text-base text-muted-foreground">
+                {finalScore} out of {finalMaxScore} questions correct
               </p>
             </div>
 
-            <Progress value={percentage} className="h-3" />
+            <Progress value={finalPercentage} className="h-3" />
 
-            <div className="flex justify-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
+            <div className="flex justify-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>{score} Correct</span>
+                <span className="font-medium">{finalScore} Correct</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <XCircle className="h-4 w-4 text-red-500" />
-                <span>{maxScore - score} Incorrect</span>
+                <span className="font-medium">{finalMaxScore - finalScore} Incorrect</span>
               </div>
             </div>
           </CardContent>
@@ -108,7 +128,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
 
       {/* Question Results */}
       <motion.div variants={itemVariants} className="space-y-4">
-        <h2 className="text-2xl font-semibold text-foreground">Question Review</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Question Review</h2>
 
         <div className="space-y-4">
           {questionResults.map((questionResult, index) => (
@@ -121,11 +141,11 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                     : "border-l-red-500 bg-red-50/50 dark:bg-red-950/10",
                 )}
               >
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="space-y-4">
                     {/* Question Header */}
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <Badge variant="outline" className="text-xs">
                             Question {index + 1}
@@ -140,7 +160,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                             <XCircle className="h-5 w-5 text-red-500" />
                           )}
                         </div>
-                        <p className="text-base font-medium text-foreground leading-relaxed">
+                        <p className="text-sm sm:text-base font-medium text-foreground leading-relaxed break-words">
                           {questionResult.question}
                         </p>
                       </div>
@@ -161,17 +181,20 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                               <div
                                 key={option.id}
                                 className={cn(
-                                  "p-3 rounded-lg border-2 text-sm transition-all",
+                                  "p-3 rounded-lg border-2 text-sm transition-all break-words",
                                   isCorrectAnswer && "border-green-500 bg-green-50 dark:bg-green-950/20",
                                   isUserAnswer && !isCorrectAnswer && "border-red-500 bg-red-50 dark:bg-red-950/20",
                                   !isUserAnswer && !isCorrectAnswer && "border-muted bg-muted/30",
                                 )}
                               >
                                 <div className="flex items-center gap-2">
-                                  {isCorrectAnswer && <CheckCircle className="h-4 w-4 text-green-500" />}
-                                  {isUserAnswer && !isCorrectAnswer && <XCircle className="h-4 w-4 text-red-500" />}
+                                  {isCorrectAnswer && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
+                                  {isUserAnswer && !isCorrectAnswer && (
+                                    <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                  )}
                                   <span
                                     className={cn(
+                                      "flex-1 min-w-0",
                                       isCorrectAnswer && "font-medium text-green-700 dark:text-green-300",
                                       isUserAnswer && !isCorrectAnswer && "font-medium text-red-700 dark:text-red-300",
                                     )}
@@ -179,12 +202,15 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                                     {option.text}
                                   </span>
                                   {isUserAnswer && (
-                                    <Badge variant="outline" className="ml-auto text-xs">
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">
                                       Your Choice
                                     </Badge>
                                   )}
                                   {isCorrectAnswer && (
-                                    <Badge variant="outline" className="ml-auto text-xs bg-green-100 text-green-700">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs bg-green-100 text-green-700 flex-shrink-0"
+                                    >
                                       Correct
                                     </Badge>
                                   )}
@@ -204,7 +230,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                           <div className="flex items-center gap-2">
                             <div
                               className={cn(
-                                "w-3 h-3 rounded-full",
+                                "w-3 h-3 rounded-full flex-shrink-0",
                                 questionResult.isCorrect ? "bg-green-500" : "bg-red-500",
                               )}
                             />
@@ -212,7 +238,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                           </div>
                           <div
                             className={cn(
-                              "p-3 rounded-lg border-2",
+                              "p-3 rounded-lg border-2 break-words",
                               questionResult.isCorrect
                                 ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20"
                                 : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20",
@@ -227,10 +253,10 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                         {/* Correct Answer */}
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-green-500" />
+                            <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
                             <span className="text-sm font-medium text-muted-foreground">Correct Answer</span>
                           </div>
-                          <div className="p-3 rounded-lg border-2 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
+                          <div className="p-3 rounded-lg border-2 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20 break-words">
                             {questionResult.correctAnswer}
                           </div>
                         </div>

@@ -6,23 +6,9 @@ import { useDispatch } from "react-redux"
 import { clearQuizState } from "@/store/slices/quiz-slice"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import {
-  Check,
-  X,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  Code,
-  BookOpen,
-} from "lucide-react"
+import { Check, X, ChevronDown, ChevronUp, RefreshCw, Code, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import SyntaxHighlighter from "react-syntax-highlighter"
 import { vs2015 } from "react-syntax-highlighter/dist/esm/styles/hljs"
@@ -51,7 +37,6 @@ interface CodeQuizResultProps {
       expectedOutput?: string
       userAnswer?: string
       submittedAnswer?: string
-      // Add any other possible properties
       [key: string]: any
     }[]
     answers: {
@@ -62,10 +47,8 @@ interface CodeQuizResultProps {
       code?: string
       text?: string
       isCorrect: boolean
-      // Add any other possible properties
       [key: string]: any
     }[]
-    // Add questionResults property that might be present in normalized results
     questionResults?: {
       questionId: string | number
       id?: string | number
@@ -76,10 +59,8 @@ interface CodeQuizResultProps {
       type?: string
       similarity?: number
       timeSpent?: number
-      // Add any other possible properties
       [key: string]: any
     }[]
-    // Add metrics property from latest normalization
     metrics?: {
       correct: number
       incorrect: number
@@ -87,7 +68,7 @@ interface CodeQuizResultProps {
       percentage: number
       [key: string]: any
     }
-    [key: string]: any // Allow other properties
+    [key: string]: any
   }
   onRetake?: () => void
 }
@@ -124,7 +105,7 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
     })
   }, [])
 
-  const performance = useMemo(() => getPerformanceData(result.percentage), [result.percentage])
+  const performance = useMemo(() => getPerformanceData(result.percentage || 0), [result.percentage])
   const formattedDate = useMemo(() => {
     try {
       return new Date(result.completedAt).toLocaleDateString()
@@ -132,81 +113,85 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
       return "Recently"
     }
   }, [result.completedAt])
-  
-  // Enhanced metrics calculation with better fallbacks and metrics object
+
+  // Simplified and reliable metrics calculation
   const metrics = useMemo(() => {
-    // First check if result has a metrics object from the latest normalization
-    if (result.metrics && typeof result.metrics === 'object') {
-      const { correct, total, percentage, incorrect } = result.metrics;
-      if (typeof correct === 'number' && typeof total === 'number') {
-        return {
-          correct,
-          total,
-          percentage: typeof percentage === 'number' ? percentage : 
-                     (total > 0 ? Math.round((correct / total) * 100) : 0),
-          incorrect: typeof incorrect === 'number' ? incorrect : (total - correct)
-        };
+    let correctAnswers = 0
+    let totalQuestions = 0
+
+    // Primary: Use direct score values if available and valid
+    if (typeof result.score === "number" && typeof result.maxScore === "number" && result.maxScore > 0) {
+      correctAnswers = Math.max(0, result.score)
+      totalQuestions = result.maxScore
+    }
+    // Secondary: Count from questionResults
+    else if (Array.isArray(result.questionResults) && result.questionResults.length > 0) {
+      correctAnswers = result.questionResults.filter((qr) => qr.isCorrect === true).length
+      totalQuestions = result.questionResults.length
+    }
+    // Tertiary: Count from answers array
+    else if (Array.isArray(result.answers) && result.answers.length > 0) {
+      correctAnswers = result.answers.filter((a) => a.isCorrect === true).length
+      totalQuestions = result.answers.length
+    }
+    // Final fallback: Use questions array
+    else if (Array.isArray(result.questions) && result.questions.length > 0) {
+      totalQuestions = result.questions.length
+      // Try to match answers to questions for correct count
+      if (Array.isArray(result.answers)) {
+        correctAnswers = result.questions.filter((q, index) => {
+          const answer = result.answers[index]
+          return answer?.isCorrect === true
+        }).length
       }
     }
-    
-    // Calculate correct answers from all possible sources
-    const questionResultsCorrect = Array.isArray(result.questionResults) ? 
-      result.questionResults.filter(qr => qr.isCorrect === true).length : 0;
-      
-    const answersCorrect = Array.isArray(result.answers) ? 
-      result.answers.filter(a => a.isCorrect === true).length : 0;
-      
-    // Take the most reliable score source in order of preference
-    const score = typeof result.score === 'number' ? result.score : 
-                 questionResultsCorrect > 0 ? questionResultsCorrect :
-                 answersCorrect > 0 ? answersCorrect : 0;
-    
-    // Calculate total with fallbacks
-    const total = typeof result.maxScore === 'number' ? result.maxScore : 
-                 Array.isArray(result.questions) ? result.questions.length : 
-                 Array.isArray(result.questionResults) ? result.questionResults.length : 0;
-    
-    // Calculate percentage with proper validation
-    const percentage = typeof result.percentage === 'number' ? result.percentage : 
-                      (total > 0 ? Math.round((score / total) * 100) : 0);
-    
+
+    // Ensure we have valid numbers
+    correctAnswers = Math.max(0, correctAnswers)
+    totalQuestions = Math.max(1, totalQuestions)
+
+    const calculatedPercentage = Math.round((correctAnswers / totalQuestions) * 100)
+    const finalPercentage =
+      typeof result.percentage === "number" && result.percentage >= 0
+        ? Math.min(result.percentage, 100)
+        : calculatedPercentage
+
     return {
-      correct: score,
-      total: total,
-      percentage: percentage,
-      incorrect: total - score
-    };
+      correct: correctAnswers,
+      total: totalQuestions,
+      percentage: Math.max(0, Math.min(finalPercentage, 100)),
+      incorrect: totalQuestions - correctAnswers,
+    }
   }, [result])
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-8">
+    <div className="max-w-4xl mx-auto space-y-6 py-6">
       {/* Overview */}
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-2">
             <Badge className="w-fit">{result.title}</Badge>
-            <CardTitle className="text-3xl">Code Quiz Results</CardTitle>
+            <CardTitle className="text-2xl sm:text-3xl break-words">Code Quiz Results</CardTitle>
             <CardDescription className="flex items-center gap-2 text-muted-foreground text-sm">
               <Code className="w-4 h-4" />
               Completed on {formattedDate}
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-6 pt-4">
-          <div>
-            <span className="text-muted-foreground text-sm">Score</span>
-            <div className="text-2xl font-semibold">{metrics.correct} / {metrics.total}</div>
+        <CardContent className="grid md:grid-cols-3 gap-4 pt-4">
+          <div className="text-center">
+            <span className="text-muted-foreground text-sm block mb-1">Score</span>
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
+              {metrics.correct} / {metrics.total}
+            </div>
           </div>
-          <div>
-            <span className="text-muted-foreground text-sm">Accuracy</span>
-            <div className="text-2xl font-semibold text-blue-600">{metrics.percentage}%</div>
+          <div className="text-center">
+            <span className="text-muted-foreground text-sm block mb-1">Accuracy</span>
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{metrics.percentage}%</div>
           </div>
-          <div>
-            <span className="text-muted-foreground text-sm">Performance</span>
-            <div className={cn(
-              "text-2xl font-semibold",
-              `text-${performance.color}-600`
-            )}>
+          <div className="text-center">
+            <span className="text-muted-foreground text-sm block mb-1">Performance</span>
+            <div className={cn("text-xl sm:text-2xl font-bold", `text-${performance.color}-600`)}>
               {performance.label}
             </div>
           </div>
@@ -226,13 +211,18 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
       </div>
 
       {/* Breakdown */}
-      <Card>        <CardHeader className="flex flex-row items-center justify-between">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Question Breakdown</CardTitle>
           <div className="space-x-2">
-            <Button size="sm" variant="outline" onClick={() => {
-              const allIds = result.questions.map((q) => String(q.id || q.questionId || ""))
-              setExpandedQuestions(new Set(allIds))
-            }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const allIds = result.questions.map((q) => String(q.id || q.questionId || ""))
+                setExpandedQuestions(new Set(allIds))
+              }}
+            >
               Expand All
             </Button>
             <Button size="sm" variant="outline" onClick={() => setExpandedQuestions(new Set())}>
@@ -240,208 +230,71 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">          {result.questions.map((q, index) => {
-            // Get normalized question ID with all possible fallbacks
-            const qid = String(q.id || q.questionId || index);
-            
-            // THREE-PHASE ANSWER MATCHING STRATEGY 
-            // Phase 1: Direct ID matching (most reliable)
-            let answer = result.answers?.find(a => 
-              String(a.questionId) === qid || 
-              String(a.id) === qid
-            );
-            
-            let questionResult = result.questionResults?.find(qr => 
-              String(qr.questionId) === qid || 
-              String(qr.id) === qid
-            );
-            
-            // Phase 2: Try more relaxed matching if needed
-            if (!answer && result.answers) {
-              // Try matching by index first
-              if (result.answers[index]) {
-                answer = result.answers[index];
-              }
-              
-              // If still not found, try fuzzy matching by looking at answer content
-              if (!answer && typeof q.question === 'string') {
-                // Find by question text similarity (sometimes IDs don't match but question text does)
-                answer = result.answers.find(a => 
-                  (a.question && q.question && 
-                   String(a.question).toLowerCase().includes(q.question.toLowerCase().substring(0, 15)))
-                );
-              }
+        <CardContent className="space-y-3">
+          {result.questions.map((q, index) => {
+            const qid = String(q.id || q.questionId || index)
+            const answer = result.answers?.find((a) => String(a.questionId || a.id) === qid) || result.answers?.[index]
+            const questionResult =
+              result.questionResults?.find((qr) => String(qr.questionId || qr.id) === qid) ||
+              result.questionResults?.[index]
+
+            // Extract question text
+            let questionText = ""
+            if (typeof q.question === "string" && q.question.trim().length > 0) {
+              questionText = q.question
+            } else if (typeof q.text === "string" && q.text.trim().length > 0) {
+              questionText = q.text
+            } else if (typeof q.prompt === "string" && q.prompt.trim().length > 0) {
+              questionText = q.prompt
             }
-            
-            // Phase 3: Get from questionResults as final fallback
-            if (!questionResult && result.questionResults) {
-              if (result.questionResults[index]) {
-                questionResult = result.questionResults[index];
-              }
+
+            // Extract code snippet
+            let codeSnippet = ""
+            if (typeof q.code === "string" && q.code.trim().length > 0) {
+              codeSnippet = q.code
+            } else if (typeof q.codeSnippet === "string" && q.codeSnippet.trim().length > 0) {
+              codeSnippet = q.codeSnippet
             }
-            
-            // Extract question text using comprehensive fallbacks - prioritize the most descriptive
-            // First check if question has detailed properties
-            let questionText = "";
-            
-            if (typeof q.question === 'string' && q.question.trim().length > 0) {
-              questionText = q.question;
-            } else if (typeof q.text === 'string' && q.text.trim().length > 0) {
-              questionText = q.text;
-            } else if (typeof q.prompt === 'string' && q.prompt.trim().length > 0) {
-              questionText = q.prompt;
-            } else if (questionResult && typeof questionResult.question === 'string') {
-              questionText = questionResult.question;
-            } else if (answer && typeof answer.question === 'string') {
-              questionText = answer.question;
+
+            const codeLanguage = q.language || answer?.language || questionResult?.language || "javascript"
+
+            // Get user answer
+            const getUserAnswer = () => {
+              if (answer?.userAnswer) return answer.userAnswer
+              if (answer?.code) return answer.code
+              if (answer?.answer) return answer.answer
+              if (questionResult?.userAnswer) return questionResult.userAnswer
+              if (q.userAnswer) return q.userAnswer
+              if (q.submittedAnswer) return q.submittedAnswer
+              return null
             }
-            
-            // Extract code snippet with enhanced fallbacks and type safety
-            let codeSnippet = "";
-            
-            // First try question object (most reliable source)
-            if (typeof q.code === 'string' && q.code.trim().length > 0) {
-              codeSnippet = q.code;
-            } else if (typeof q.codeSnippet === 'string' && q.codeSnippet.trim().length > 0) {
-              codeSnippet = q.codeSnippet;
-            } 
-            // Then try answer object
-            else if (answer) {
-              if (typeof answer.code === 'string' && answer.code.trim().length > 0) {
-                codeSnippet = answer.code;
-              } else if (typeof answer.codeSnippet === 'string' && answer.codeSnippet.trim().length > 0) {
-                codeSnippet = answer.codeSnippet;
-              }
+
+            const userAnswer = getUserAnswer()
+
+            // Get correct answer
+            let correctAnswer = ""
+            if (typeof q.correctAnswer === "string" && q.correctAnswer.trim()) {
+              correctAnswer = q.correctAnswer
+            } else if (typeof q.answer === "string" && q.answer.trim()) {
+              correctAnswer = q.answer
+            } else if (typeof q.expectedOutput === "string" && q.expectedOutput.trim()) {
+              correctAnswer = q.expectedOutput
             }
-            // Finally check questionResult object
-            else if (questionResult) {
-              if (typeof questionResult.code === 'string' && questionResult.code.trim().length > 0) {
-                codeSnippet = questionResult.code;
-              } else if (typeof questionResult.codeSnippet === 'string' && questionResult.codeSnippet.trim().length > 0) {
-                codeSnippet = questionResult.codeSnippet;
-              }
-            }
-            
-            // Get language with multiple fallbacks - default to javascript for syntax highlighting
-            const codeLanguage = q.language || answer?.language || questionResult?.language || "javascript";
-            
-            // ULTRA-COMPREHENSIVE answer extraction with stronger type safety
-            // Helper function to safely check if a value exists and isn't empty
-            const hasValue = (val: any): boolean => {
-                if (val === undefined || val === null) return false;
-                if (typeof val === 'string') return val.trim() !== '';
-                if (typeof val === 'object' && val !== null) return Object.keys(val).length > 0;
-                return false;
-            };
-            
-            // ALL possible answer sources in priority order:
-            
-            // 1. Direct answer from answer object - highest priority with type safety
-            const directAnswer = answer && (
-                hasValue(answer.userAnswer) ? answer.userAnswer :
-                hasValue(answer.code) ? answer.code :
-                hasValue(answer.answer) ? answer.answer :
-                hasValue(answer.text) ? answer.text : null
-            );
-            
-            // 2. Results object answers with type safety
-            const resultsAnswer = questionResult && (
-                hasValue(questionResult.userAnswer) ? questionResult.userAnswer : null
-            );
-            
-            // 3. Question object answers (sometimes stored here)
-            const questionAnswer = hasValue(q.userAnswer) ? q.userAnswer :
-                                hasValue(q.submittedAnswer) ? q.submittedAnswer :
-                                hasValue(q.response) ? q.response : null;
-                                  // 4. For conceptual questions, check specialized locations
-            const conceptualAnswer = 
-                (answer && hasValue(answer.conceptualAnswer) ? answer.conceptualAnswer : null) ||
-                (hasValue(q.conceptualAnswer) ? q.conceptualAnswer : null) ||
-                (answer && answer?.metadata && hasValue(answer?.metadata?.answer) ? answer.metadata.answer : null) ||
-                (q.content && hasValue(q.content?.answer) ? q.content.answer : null);
-                                  
-            // 5. Check other index-based locations in arrays as last resort
-            const alternateIndexAnswer = 
-                (result.answers && result.answers[index] && hasValue(result.answers[index].userAnswer)) ? 
-                    result.answers[index].userAnswer : 
-                (result.answers && result.answers[index] && hasValue(result.answers[index].answer)) ? 
-                    result.answers[index].answer : null;
-                                  
-            // 6. For framework-specific questions, check subject-specific fields
-            const frameworkAnswer = 
-                (answer && hasValue(answer.angularAnswer)) ? answer.angularAnswer : 
-                hasValue(q.angularAnswer) ? q.angularAnswer : null;
-            
-            // Combine all sources with fallbacks - ANY non-empty value will be used
-            const rawUserAnswer = directAnswer || resultsAnswer || questionAnswer || 
-                                conceptualAnswer || alternateIndexAnswer || frameworkAnswer || "";
-            
-            // Handle different data types gracefully
-            let userAnswerStr: string;
-            if (typeof rawUserAnswer === 'string') {
-                userAnswerStr = rawUserAnswer.trim();
-            } else if (rawUserAnswer === null || rawUserAnswer === undefined) {
-                userAnswerStr = "";
-            } else if (typeof rawUserAnswer === 'object') {
-                try {
-                    userAnswerStr = JSON.stringify(rawUserAnswer, null, 2).trim();
-                } catch (e) {
-                    userAnswerStr = String(rawUserAnswer).trim();
-                }
-            } else {
-                userAnswerStr = String(rawUserAnswer).trim();
-            }
-            
-            // We consider it answered if there's ANY content after all our extraction attempts
-            const userAnswer = userAnswerStr !== "" ? rawUserAnswer : null;
-            
-            // Extract correct answer with comprehensive fallbacks
-            let correctAnswer: string;
-            
-            // Try getting correct answer from question first (most reliable)
-            if (typeof q.correctAnswer === 'string' && q.correctAnswer.trim()) {
-                correctAnswer = q.correctAnswer;
-            } else if (typeof q.answer === 'string' && q.answer.trim()) {
-                correctAnswer = q.answer;
-            } else if (typeof q.expectedOutput === 'string' && q.expectedOutput.trim()) {
-                correctAnswer = q.expectedOutput;
-            }
-            // Then try answer object
-            else if (answer && typeof answer.correctAnswer === 'string' && answer.correctAnswer.trim()) {
-                correctAnswer = answer.correctAnswer;
-            }
-            // Finally try questionResult object
-            else if (questionResult && typeof questionResult.correctAnswer === 'string' && questionResult.correctAnswer.trim()) {
-                correctAnswer = questionResult.correctAnswer;
-            } else {
-                correctAnswer = "";
-            }
-            
-            // Get explanation with proper type checking
-            const explanation = 
-                (typeof q.explanation === 'string' && q.explanation.trim()) ? q.explanation : 
-                (answer && typeof answer.explanation === 'string' && answer.explanation.trim()) ? answer.explanation : 
-                (questionResult && typeof questionResult.explanation === 'string' && questionResult.explanation.trim()) ? questionResult.explanation : "";
-            
-            // Determine correctness with multiple fallback paths and explicit type checking
-            const isCorrect = 
-                (answer && answer.isCorrect === true) || 
-                (questionResult && questionResult.isCorrect === true) ||
-                false;
-                
+
+            const explanation = q.explanation || answer?.explanation || questionResult?.explanation || ""
+            const isCorrect =
+              (answer && answer.isCorrect === true) || (questionResult && questionResult.isCorrect === true) || false
             const expanded = expandedQuestions.has(qid)
 
             return (
-              <Collapsible
-                key={q.id}
-                open={expanded}
-                onOpenChange={() => toggleQuestion(String(q.id))}
-              >
+              <Collapsible key={q.id} open={expanded} onOpenChange={() => toggleQuestion(String(q.id))}>
                 <CollapsibleTrigger asChild>
-                  <CardHeader className={cn(
-                    "cursor-pointer hover:bg-muted rounded-lg px-4 py-3 transition-all",
-                    isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
-                  )}>
+                  <CardHeader
+                    className={cn(
+                      "cursor-pointer hover:bg-muted rounded-lg px-4 py-3 transition-all",
+                      isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200",
+                    )}
+                  >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">
                         {isCorrect ? (
@@ -457,9 +310,11 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent className="space-y-4 bg-muted/30 rounded-lg">
-                    <div>                      <span className="font-semibold">Question:</span>
-                      <p className="text-muted-foreground mt-1">{questionText}</p>
-                    </div>                    {codeSnippet && codeSnippet.trim() !== "" && (
+                    <div>
+                      <span className="font-semibold">Question:</span>
+                      <p className="text-muted-foreground mt-1 break-words">{questionText}</p>
+                    </div>
+                    {codeSnippet && codeSnippet.trim() !== "" && (
                       <div>
                         <span className="font-semibold mb-2 block">Code Snippet:</span>
                         <div className="rounded-md overflow-hidden">
@@ -467,65 +322,63 @@ export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps
                             language={codeLanguage}
                             style={vs2015}
                             showLineNumbers
-                            customStyle={{ padding: '1rem' }}
+                            customStyle={{ padding: "1rem", fontSize: "0.85rem" }}
                           >
                             {codeSnippet}
                           </SyntaxHighlighter>
                         </div>
                       </div>
-                    )}<div>                      <span className="font-semibold">Your Answer:</span>
+                    )}
+                    <div>
+                      <span className="font-semibold">Your Answer:</span>
                       {userAnswer === null ? (
                         <div className="mt-1 p-3 bg-background border rounded-md text-muted-foreground italic">
                           Not Answered
                         </div>
-                      ) : typeof userAnswer === 'string' && userAnswer.includes('\n') ? (
-                        // Multi-line code answer with syntax highlighting
+                      ) : typeof userAnswer === "string" && userAnswer.includes("\n") ? (
                         <div className="mt-1 rounded-md overflow-hidden">
                           <SyntaxHighlighter
                             language={codeLanguage}
                             style={vs2015}
                             showLineNumbers
+                            customStyle={{ fontSize: "0.85rem" }}
                           >
                             {userAnswer}
                           </SyntaxHighlighter>
                         </div>
                       ) : (
-                        // Single-line answer or non-code answer
-                        <div className="mt-1 p-3 bg-background border rounded-md whitespace-pre-wrap font-mono text-sm">
+                        <div className="mt-1 p-3 bg-background border rounded-md whitespace-pre-wrap font-mono text-sm break-words">
                           {userAnswer}
                         </div>
                       )}
                     </div>
-                    
                     <div>
                       <span className="font-semibold">Correct Answer:</span>
                       {!correctAnswer ? (
                         <div className="mt-1 p-3 bg-background border rounded-md text-muted-foreground italic">
                           Unavailable
                         </div>
-                      ) : typeof correctAnswer === 'string' && correctAnswer.includes('\n') ? (
-                        // Multi-line code answer with syntax highlighting
+                      ) : typeof correctAnswer === "string" && correctAnswer.includes("\n") ? (
                         <div className="mt-1 rounded-md overflow-hidden">
                           <SyntaxHighlighter
                             language={codeLanguage}
                             style={vs2015}
                             showLineNumbers
+                            customStyle={{ fontSize: "0.85rem" }}
                           >
                             {correctAnswer}
                           </SyntaxHighlighter>
                         </div>
                       ) : (
-                        // Single-line answer
-                        <div className="mt-1 p-3 bg-background border rounded-md whitespace-pre-wrap font-mono text-sm">
+                        <div className="mt-1 p-3 bg-background border rounded-md whitespace-pre-wrap font-mono text-sm break-words">
                           {correctAnswer}
                         </div>
                       )}
                     </div>
-
                     {explanation && (
                       <div>
                         <span className="font-semibold">Explanation:</span>
-                        <div className="mt-1 p-3 bg-background/60 border rounded-md whitespace-pre-wrap">
+                        <div className="mt-1 p-3 bg-background/60 border rounded-md whitespace-pre-wrap break-words">
                           {explanation}
                         </div>
                       </div>

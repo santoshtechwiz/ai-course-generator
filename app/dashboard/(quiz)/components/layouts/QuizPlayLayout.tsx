@@ -28,34 +28,45 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
 
   // Extract quiz information from document head for structured data
   useEffect(() => {
-    // Get document title - defaults to a fallback if not set
-    const pageTitle = document.title || "Interactive Programming Quiz"
+    try {
+      // Get document title with better fallback
+      const pageTitle = document?.title || "Interactive Programming Quiz"
 
-    // Get description from meta tag
-    const metaDescription =
-      document.querySelector('meta[name="description"]')?.getAttribute("content") ||
-      document.querySelector('meta[property="og:description"]')?.getAttribute("content") ||
-      "Test your programming knowledge with this interactive quiz"
+      // Get description from meta tag with better error handling
+      const metaDescription =
+        document?.querySelector('meta[name="description"]')?.getAttribute("content") ||
+        document?.querySelector('meta[property="og:description"]')?.getAttribute("content") ||
+        "Test your programming knowledge with this interactive quiz"
 
-    // Extract quiz type from URL if not provided in props
-    const urlSegments = pathname.split("/")
-    const typeFromUrl = urlSegments[2] || quizType
-    const slugFromUrl = urlSegments[3] || quizSlug
+      // Extract quiz type from URL if not provided in props
+      const urlSegments = pathname.split("/").filter(Boolean)
+      const typeFromUrl = urlSegments[1] || quizType
+      const slugFromUrl = urlSegments[2] || quizSlug
 
-    // Update quiz metadata state
-    setQuizMeta({
-      title: pageTitle,
-      description: metaDescription,
-      type: typeFromUrl as any,
-    })
+      // Update quiz metadata state
+      setQuizMeta({
+        title: pageTitle,
+        description: metaDescription,
+        type: typeFromUrl as any,
+      })
 
-    // Add an additional handler to properly set document title when not set correctly
-    if (!document.title.includes("Quiz") && !document.title.includes("quiz") && slugFromUrl) {
-      const formattedTitle = `${slugFromUrl
-        .split("-")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")} Quiz | CourseAI`
-      document.title = formattedTitle
+      // Improve title formatting with better fallbacks
+      if (slugFromUrl && !pageTitle.toLowerCase().includes("quiz")) {
+        const formattedTitle = `${slugFromUrl
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ")} Quiz`
+
+        try {
+          if (document) {
+            document.title = formattedTitle
+          }
+        } catch (titleError) {
+          console.warn("Failed to update document title:", titleError)
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to update quiz metadata:", error)
     }
   }, [pathname, quizType, quizSlug])
 
@@ -77,7 +88,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
   const quizTypeLabel = getQuizTypeLabel(quizMeta.type)
 
   return (
-    <div className="container mx-auto py-6 px-4 md:px-6">
+    <div className="container mx-auto py-4 px-3 md:px-4 lg:px-6">
       <JsonLD
         type="Quiz"
         data={{
@@ -96,9 +107,9 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
         }}
       />
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8">
         {/* Main quiz content area */}
-        <div className="flex-1 min-w-0">{children}</div>
+        <div className="flex-1 min-w-0 max-w-none">{children}</div>
 
         {/* Sidebar - hidden on mobile, shown as a column on desktop */}
         {sidebarContent}
