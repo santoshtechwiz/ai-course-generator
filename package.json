@@ -18,7 +18,7 @@
     "dev:migrate": "npx prisma migrate dev",
     "prod:migrate": "npx prisma migrate deploy",
     "dev": "next dev --turbopack",
-    "build": "npm run build",
+    "build": "next build",
     "start": "next start",
     "export": "next export",
     "server": "node server",
