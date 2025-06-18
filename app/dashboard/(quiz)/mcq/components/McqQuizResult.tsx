@@ -87,39 +87,82 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
     >
       {/* Header */}
       <motion.div variants={itemVariants} className="text-center space-y-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground break-words">{title}</h1>
-        <p className="text-muted-foreground">Multiple Choice Quiz Results</p>
+        <div className="space-y-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight break-words">{title}</h1>
+          <p className="text-lg text-muted-foreground">Multiple Choice Quiz Results</p>
+          <motion.div
+            className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full max-w-xs mx-auto"
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
+          />
+        </div>
       </motion.div>
 
       {/* Score Card */}
-      <motion.div variants={itemVariants}>
-        <Card className={cn("border-2", getScoreBgColor(finalPercentage))}>
+      <motion.div
+        variants={itemVariants}
+        whileHover={{ scale: 1.02 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      >
+        <Card className={cn("border-2 shadow-xl", getScoreBgColor(finalPercentage))}>
           <CardHeader className="text-center pb-4">
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Target className="h-6 w-6" />
+            <CardTitle className="flex items-center justify-center gap-3 text-2xl">
+              <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
+                <Target className="h-8 w-8 text-primary" />
+              </motion.div>
               Your Score
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <div className="space-y-2">
-              <div className={cn("text-4xl sm:text-5xl font-bold", getScoreColor(finalPercentage))}>
+          <CardContent className="text-center space-y-6">
+            <div className="space-y-3">
+              <motion.div
+                className={cn("text-5xl md:text-6xl font-black", getScoreColor(finalPercentage))}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  delay: 0.3,
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 15,
+                }}
+              >
                 {finalPercentage}%
-              </div>
-              <p className="text-base text-muted-foreground">
+              </motion.div>
+              <p className="text-lg text-muted-foreground font-medium">
                 {finalScore} out of {finalMaxScore} questions correct
               </p>
             </div>
 
-            <Progress value={finalPercentage} className="h-3" />
+            <div className="space-y-3">
+              <div className="relative">
+                <Progress value={finalPercentage} className="h-4 rounded-full bg-muted/50" />
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                  animate={{
+                    x: ["-100%", "100%"],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "linear",
+                    repeatDelay: 1,
+                  }}
+                  style={{ opacity: finalPercentage > 0 ? 1 : 0 }}
+                />
+              </div>
+            </div>
 
-            <div className="flex justify-center gap-6 text-sm text-muted-foreground">
+            <div className="flex justify-center gap-8 text-sm">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="font-medium">{finalScore} Correct</span>
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <span className="font-semibold text-green-700 dark:text-green-300">{finalScore} Correct</span>
               </div>
               <div className="flex items-center gap-2">
-                <XCircle className="h-4 w-4 text-red-500" />
-                <span className="font-medium">{finalMaxScore - finalScore} Incorrect</span>
+                <XCircle className="h-5 w-5 text-red-500" />
+                <span className="font-semibold text-red-700 dark:text-red-300">
+                  {finalMaxScore - finalScore} Incorrect
+                </span>
               </div>
             </div>
           </CardContent>
