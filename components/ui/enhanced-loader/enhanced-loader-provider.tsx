@@ -1,7 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import { EnhancedLoader, type EnhancedLoaderProps } from "./enhanced-loader";
+import { usePathname } from "next/navigation";
 
 interface EnhancedLoaderContextType {
   showLoader: (options?: Partial<EnhancedLoaderProps>) => void;
@@ -32,8 +39,9 @@ export function EnhancedLoaderProvider({
   const [isLoading, setIsLoading] = useState(false);
   const [options, setOptions] = useState<Partial<EnhancedLoaderProps>>({
     message: "Loading...",
-    variant: "shimmer",
+    variant: "dots",
     fullscreen: true,
+    showLogo: true,
     ...defaultOptions,
   });
 
@@ -43,12 +51,30 @@ export function EnhancedLoaderProvider({
   }, []);
 
   const hideLoader = useCallback(() => {
-    setIsLoading(false);
+    setTimeout(() => setIsLoading(false), 200); // graceful exit
   }, []);
 
   const updateLoader = useCallback((newOptions: Partial<EnhancedLoaderProps>) => {
     setOptions((prev) => ({ ...prev, ...newOptions }));
   }, []);
+
+  const pathname = usePathname();
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    showLoader();
+
+    const minVisibleDuration = 400;
+    const startTime = Date.now();
+
+    timeoutId = setTimeout(() => {
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, minVisibleDuration - elapsed);
+      setTimeout(hideLoader, delay);
+    }, 50); // render latency
+
+    return () => clearTimeout(timeoutId);
+  }, [pathname, showLoader, hideLoader]);
 
   return (
     <EnhancedLoaderContext.Provider value={{ showLoader, hideLoader, updateLoader, isLoading }}>

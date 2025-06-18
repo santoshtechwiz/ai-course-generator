@@ -98,9 +98,23 @@ export function QuizPlayer({ quizId }: QuizPlayerProps) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle className="animate-pulse bg-muted h-8 w-3/4 rounded"></CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="animate-pulse bg-muted h-6 w-full rounded"></div>
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="animate-pulse bg-muted h-12 w-full rounded"></div>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <div className="animate-pulse bg-muted h-10 w-24 rounded"></div>
+          <div className="animate-pulse bg-muted h-10 w-24 rounded"></div>
+        </CardFooter>
+      </Card>
     )
   }
 

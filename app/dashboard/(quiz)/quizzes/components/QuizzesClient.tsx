@@ -173,6 +173,25 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     return counts;
   }, [quizzes])
 
+  // Error fallback component
+  const ErrorFallback = ({ error, resetErrorBoundary }) => (
+    <motion.div 
+      className="rounded-lg border bg-card p-6 shadow-sm flex flex-col items-center"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <AlertCircle className="h-10 w-10 text-destructive mb-3" />
+      <h3 className="text-lg font-semibold mb-2">Something went wrong</h3>
+      <p className="text-sm text-muted-foreground text-center mb-4">
+        {error.message || "We had trouble loading the quiz filters"}
+      </p>
+      <Button onClick={resetErrorBoundary} size="sm" className="gap-2">
+        <RefreshCw className="h-4 w-4" />
+        Try again
+      </Button>
+    </motion.div>
+  )
+
   const renderErrorState = () => (
     <div className="text-center p-6 bg-destructive/10 border border-destructive rounded-lg text-destructive flex flex-col items-center">
       <AlertCircle className="w-8 h-8 mb-2" />
@@ -196,20 +215,26 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
       </Button>
     </div>
   )
-
   return (
-    <div className="flex flex-col lg:flex-row gap-6 min-h-[50vh]">      <QuizSidebar
-        search={search}
-        onSearchChange={handleSearchChange}
-        onClearSearch={handleClearSearch}
-        isSearching={isSearching}
-        selectedTypes={selectedTypes}
-        toggleQuizType={toggleQuizType}
-        questionCountRange={questionCountRange}
-        onQuestionCountChange={setQuestionCountRange}
-        showPublicOnly={showPublicOnly}
-        onPublicOnlyChange={setShowPublicOnly}
-      />
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[50vh]">      
+      <ErrorBoundary 
+        fallbackRender={ErrorFallback} 
+        onReset={handleRetry} 
+        resetKeys={[debouncedSearch]}
+      >
+        <QuizSidebar
+          search={search}
+          onSearchChange={handleSearchChange}
+          onClearSearch={handleClearSearch}
+          isSearching={isSearching}
+          selectedTypes={selectedTypes}
+          toggleQuizType={toggleQuizType}
+          questionCountRange={questionCountRange}
+          onQuestionCountChange={setQuestionCountRange}
+          showPublicOnly={showPublicOnly}
+          onPublicOnlyChange={setShowPublicOnly}
+        />
+      </ErrorBoundary>
 
       <motion.div
         className="lg:w-3/4 w-full space-y-6"
@@ -217,7 +242,7 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <ErrorBoundary fallback={renderErrorState()} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
+        <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
           {isLoading ? (
             <QuizzesSkeleton />
           ) : isError ? (

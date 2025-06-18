@@ -1,0 +1,79 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <rect width="1200" height="630" fill="url(#gradient-bg)"/>
+  
+  <!-- Abstract code-like patterns -->
+  <g opacity="0.08" stroke="#FFFFFF" stroke-width="2">
+    <path d="M100,100 L300,100" />
+    <path d="M100,130 L250,130" />
+    <path d="M100,160 L280,160" />
+    <path d="M100,190 L200,190" />
+    <path d="M100,220 L270,220" />
+    <path d="M100,250 L230,250" />
+    
+    <path d="M850,400 L1050,400" />
+    <path d="M850,430 L1000,430" />
+    <path d="M850,460 L1030,460" />
+    <path d="M850,490 L950,490" />
+    <path d="M850,520 L1020,520" />
+    
+    <path d="M200,400 C300,350 400,450 500,400" />
+    <path d="M800,200 C900,150 1000,250 1100,200" />
+    
+    <!-- Code brackets -->
+    <path d="M150,350 L120,380 L150,410" />
+    <path d="M200,350 L230,380 L200,410" />
+    <path d="M970,170 L940,200 L970,230" />
+    <path d="M1020,170 L1050,200 L1020,230" />
+  </g>
+  
+  <!-- Central container -->
+  <rect x="300" y="175" width="600" height="280" rx="20" fill="url(#card-gradient)" opacity="0.95"/>
+  
+  <!-- CourseAI Logo/Text -->
+  <g transform="translate(350, 250)">
+    <!-- AI icon -->
+    <path d="M35,0 L65,0 L80,25 L65,50 L35,50 L20,25 L35,0 Z" fill="#4F46E5"/>
+    <text x="90" y="38" font-family="Arial, sans-serif" font-weight="800" font-size="48" fill="white">CourseAI</text>
+  </g>
+  
+  <!-- Tagline -->
+  <text x="600" y="330" font-family="Arial, sans-serif" font-size="24" font-weight="500" fill="white" text-anchor="middle">Interactive Programming Courses & Quizzes</text>
+  
+  <!-- Features -->
+  <g font-family="Arial, sans-serif" font-size="18" fill="white">
+    <g transform="translate(350, 370)">
+      <circle cx="12" cy="12" r="12" fill="#4F46E5"/>
+      <path d="M6,12 L10,16 L18,8" stroke="white" stroke-width="2" fill="none"/>
+      <text x="35" y="18">AI-Powered Learning</text>
+    </g>
+    
+    <g transform="translate(550, 370)">
+      <circle cx="12" cy="12" r="12" fill="#4F46E5"/>
+      <path d="M6,12 L10,16 L18,8" stroke="white" stroke-width="2" fill="none"/>
+      <text x="35" y="18">Coding Challenges</text>
+    </g>
+    
+    <g transform="translate(750, 370)">
+      <circle cx="12" cy="12" r="12" fill="#4F46E5"/>
+      <path d="M6,12 L10,16 L18,8" stroke="white" stroke-width="2" fill="none"/>
+      <text x="35" y="18">Progress Tracking</text>
+    </g>
+  </g>
+  
+  <!-- URL at bottom -->
+  <text x="600" y="480" font-family="Arial, sans-serif" font-size="20" font-weight="600" fill="white" text-anchor="middle">courseai.io</text>
+  
+  <!-- Definitions -->
+  <defs>
+    <linearGradient id="gradient-bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2A2D67"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    
+    <linearGradient id="card-gradient" x1="300" y1="175" x2="900" y2="455" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3730A3"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+</svg>

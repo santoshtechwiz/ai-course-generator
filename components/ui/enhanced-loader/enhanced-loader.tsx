@@ -1,35 +1,24 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Sparkles } from "lucide-react";
+import React, { useEffect, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { LoaderCircle, Brain, Zap, Target, BookOpen, FileQuestion, CheckCircle2, Clock, Sparkles } from "lucide-react"
 
 export interface EnhancedLoaderProps {
-  /** Whether the loader is currently active */
-  isLoading: boolean;
-  /** Main message to display during loading */
-  message?: string;
-  /** Secondary message below the main message */
-  subMessage?: string;
-  /** Whether to show the loader in fullscreen mode */
-  fullscreen?: boolean;
-  /** Animation variant style */
-  variant?: "shimmer" | "pulse" | "progress" | "dots" | "glow";
-  /** Show progress percentage */
-  showProgress?: boolean;
-  /** Custom progress value (0-100) */
-  progress?: number;
-  /** Animation speed (ms) */
-  speed?: "slow" | "normal" | "fast";
-  /** Theme override */
-  theme?: "light" | "dark" | "system";
-  /** Optional CSS class for customization */
-  className?: string;
-  /** Optional logo at the top of the loader */
-  showLogo?: boolean;
-  /** Optional custom content to show in the loader */
-  children?: React.ReactNode;
+  isLoading: boolean
+  message?: string
+  subMessage?: string
+  fullscreen?: boolean
+  variant?: "shimmer" | "pulse" | "progress" | "dots" | "glow"
+  showProgress?: boolean
+  progress?: number
+  speed?: "slow" | "normal" | "fast"
+  theme?: "light" | "dark" | "system"
+  className?: string
+  showLogo?: boolean
+  children?: React.ReactNode
+  context?: "quiz" | "result" | "loading" | "submitting" | "processing"
 }
 
 export function EnhancedLoader({
@@ -44,165 +33,267 @@ export function EnhancedLoader({
   className,
   showLogo = false,
   children,
+  context = "loading",
 }: EnhancedLoaderProps) {
-  const [progress, setProgress] = useState(externalProgress ?? 0);
-  const [mounted, setMounted] = useState(false);
+  const [progress, setProgress] = useState(externalProgress ?? 0)
+  const [mounted, setMounted] = useState(false)
+  const [currentIcon, setCurrentIcon] = useState(0)
 
-  // Initialize and track progress if needed
+  // Context-aware icons and messages
+  const contextConfig = {
+    quiz: {
+      icons: [Brain, FileQuestion, Target, BookOpen],
+      defaultMessage: "Loading quiz...",
+      defaultSubMessage: "Preparing your questions",
+    },
+    result: {
+      icons: [CheckCircle2, Target, Sparkles, Brain],
+      defaultMessage: "Processing results...",
+      defaultSubMessage: "Calculating your score",
+    },
+    loading: {
+      icons: [LoaderCircle, Zap, Brain, Target],
+      defaultMessage: "Loading...",
+      defaultSubMessage: "Please wait",
+    },
+    submitting: {
+      icons: [Clock, CheckCircle2, Zap, Target],
+      defaultMessage: "Submitting answers...",
+      defaultSubMessage: "Processing your responses",
+    },
+    processing: {
+      icons: [Brain, Sparkles, Target, CheckCircle2],
+      defaultMessage: "Processing...",
+      defaultSubMessage: "Analyzing your performance",
+    },
+  }
+
+  const config = contextConfig[context] || contextConfig.loading
+  const icons = config.icons
+  const contextMessage = message === "Loading..." ? config.defaultMessage : message
+  const contextSubMessage = subMessage || config.defaultSubMessage
+
   useEffect(() => {
-    setMounted(true);
+    setMounted(true)
 
     if (isLoading && showProgress && externalProgress === undefined) {
-      // Simulate progress if not externally controlled
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          // Slow down as we approach 100% for a more natural feel
-          const remaining = 100 - prev;
-          const increment = Math.max(0.1, remaining * 0.03);
-          const newProgress = prev + increment;
-          return newProgress >= 98 ? 98 : newProgress;
-        });
-      }, speed === "fast" ? 100 : speed === "slow" ? 300 : 200);
+      const interval = setInterval(
+        () => {
+          setProgress((prev) => {
+            const remaining = 100 - prev
+            const increment = Math.max(0.4, remaining * 0.05)
+            const newProgress = prev + increment
+            return newProgress >= 98 ? 98 : newProgress
+          })
+        },
+        speed === "fast" ? 60 : speed === "slow" ? 200 : 120,
+      )
 
-      return () => clearInterval(interval);
+      return () => clearInterval(interval)
     } else if (externalProgress !== undefined) {
-      // Use external progress if provided
-      setProgress(externalProgress);
+      setProgress(externalProgress)
     }
 
-    return () => {};
-  }, [isLoading, showProgress, externalProgress, speed]);
+    return () => {}
+  }, [isLoading, showProgress, externalProgress, speed])
 
-  // Update progress when external progress changes
   useEffect(() => {
     if (externalProgress !== undefined) {
-      setProgress(externalProgress);
+      setProgress(externalProgress)
     }
-  }, [externalProgress]);
+  }, [externalProgress])
 
-  // Reset progress when loading stops
   useEffect(() => {
     if (!isLoading) {
-      // Small delay before resetting progress when loading stops
       const timeout = setTimeout(() => {
-        setProgress(0);
-      }, 500);
-      return () => clearTimeout(timeout);
+        setProgress(0)
+      }, 200)
+      return () => clearTimeout(timeout)
     }
-  }, [isLoading]);
+  }, [isLoading])
 
-  // Don't render anything server-side to avoid hydration issues
-  if (!mounted) return null;
+  // Context-aware icon rotation
+  useEffect(() => {
+    if (isLoading) {
+      const iconInterval = setInterval(
+        () => {
+          setCurrentIcon((prev) => (prev + 1) % icons.length)
+        },
+        context === "result" ? 800 : 1200,
+      )
+      return () => clearInterval(iconInterval)
+    }
+  }, [isLoading, icons.length, context])
 
-  // If not loading and not fullscreen, render nothing
-  if (!isLoading && !fullscreen) return null;
+  if (!mounted) return null
 
   const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.3 } },
-    exit: { opacity: 0, transition: { duration: 0.2 } },
-  };
+    hidden: { opacity: 0, scale: 0.96 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.25,
+        ease: "easeOut",
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.96,
+      transition: {
+        duration: 0.15,
+        ease: "easeIn",
+      },
+    },
+  }
 
   const contentVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    hidden: { opacity: 0, y: 8 },
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { 
-        duration: 0.4, 
-        delay: 0.1,
-        ease: "easeOut"
-      } 
+      transition: {
+        duration: 0.3,
+        delay: 0.05,
+        ease: "easeOut",
+      },
     },
-    exit: { 
-      opacity: 0, 
-      y: -10, 
-      transition: { duration: 0.2 } 
+    exit: {
+      opacity: 0,
+      y: -4,
+      transition: { duration: 0.1 },
     },
-  };
+  }
 
   const renderVariant = () => {
     switch (variant) {
       case "shimmer":
         return (
-          <div className="relative overflow-hidden rounded-lg bg-primary/10 w-24 h-1.5 my-4">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-shimmer" />
-          </div>
-        );
-      
-      case "pulse":
-        return (
-          <div className="flex gap-2 my-4">
-            {[1, 2, 3].map((i) => (
-              <div 
-                key={i}
-                className={cn(
-                  "w-2 h-2 rounded-full bg-primary animate-pulse",
-                  i === 1 ? "opacity-30" : i === 2 ? "opacity-60" : "opacity-90",
-                  i === 1 ? "animate-delay-0" : i === 2 ? "animate-delay-150" : "animate-delay-300"
-                )}
-              />
-            ))}
-          </div>
-        );
-        
-      case "progress":
-        return (
-          <div className="w-48 h-1.5 bg-primary/20 rounded-full overflow-hidden my-4">
-            <motion.div 
-              className="h-full bg-primary rounded-full"
-              initial={{ width: "0%" }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
+          <div className="relative overflow-hidden rounded-xl bg-primary/6 w-40 h-2.5 my-6">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/50 to-transparent"
+              animate={{
+                x: ["-100%", "100%"],
+              }}
+              transition={{
+                duration: 1.2,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "linear",
+              }}
             />
           </div>
-        );
-        
-      case "dots":
+        )
+
+      case "pulse":
         return (
-          <div className="flex space-x-2 my-4">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="flex gap-2.5 my-6">
+            {[1, 2, 3].map((i) => (
               <motion.div
                 key={i}
-                className="w-2 h-2 bg-primary rounded-full"
-                initial={{ opacity: 0.3 }}
-                animate={{ opacity: [0.3, 1, 0.3] }}
+                className="w-3.5 h-3.5 rounded-full bg-primary"
+                animate={{
+                  scale: [0.7, 1.3, 0.7],
+                  opacity: [0.4, 1, 0.4],
+                }}
                 transition={{
-                  repeat: Infinity,
-                  repeatType: "loop",
-                  duration: 1.5,
-                  delay: i * 0.2,
+                  duration: 1,
+                  repeat: Number.POSITIVE_INFINITY,
+                  delay: i * 0.15,
+                  ease: "easeInOut",
                 }}
               />
             ))}
           </div>
-        );
-        
+        )
+
+      case "progress":
+        return (
+          <div className="w-64 space-y-3 my-6">
+            <div className="h-2.5 bg-primary/12 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-full"
+                initial={{ width: "0%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+              />
+            </div>
+            {showProgress && (
+              <motion.p
+                className="text-xs text-center text-muted-foreground tabular-nums font-medium"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.15 }}
+              >
+                {Math.round(progress)}%
+              </motion.p>
+            )}
+          </div>
+        )
+
+      case "dots":
+        return (
+          <div className="flex space-x-2.5 my-6">
+            {[1, 2, 3, 4].map((i) => (
+              <motion.div
+                key={i}
+                className="w-3 h-3 bg-primary rounded-full"
+                animate={{
+                  y: [0, -12, 0],
+                  opacity: [0.3, 1, 0.3],
+                }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Number.POSITIVE_INFINITY,
+                  delay: i * 0.1,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </div>
+        )
+
       case "glow":
         return (
-          <motion.div 
-            className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center my-4"
-            animate={{ 
-              boxShadow: ["0 0 0 0 rgba(var(--primary), 0.2)", "0 0 0 10px rgba(var(--primary), 0)"] 
+          <motion.div
+            className="relative w-18 h-18 rounded-2xl bg-primary/8 flex items-center justify-center my-6"
+            animate={{
+              boxShadow: ["0 0 0 0 rgba(var(--primary), 0.08)", "0 0 0 25px rgba(var(--primary), 0)"],
             }}
             transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut"
+              duration: 1.2,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "easeInOut",
             }}
           >
-            <Sparkles className="w-6 h-6 text-primary" />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{
+                duration: 1.8,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "linear",
+              }}
+            >
+              <LoaderCircle className="w-9 h-9 text-primary" />
+            </motion.div>
           </motion.div>
-        );
-        
+        )
+
       default:
         return (
-          <div className="w-32 h-1.5 bg-primary/20 rounded-full overflow-hidden my-4">
-            <div className="h-full w-1/3 bg-primary rounded-full animate-pulse" />
+          <div className="w-40 h-2.5 bg-primary/12 rounded-full overflow-hidden my-6">
+            <motion.div
+              className="h-full w-1/3 bg-primary rounded-full"
+              animate={{ x: ["-100%", "250%"] }}
+              transition={{
+                duration: 1.2,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "easeInOut",
+              }}
+            />
           </div>
-        );
+        )
     }
-  };
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -214,66 +305,62 @@ export function EnhancedLoader({
           exit="exit"
           className={cn(
             "flex items-center justify-center",
-            fullscreen ? 
-              "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" : 
-              "w-full py-8",
-            className
+            fullscreen ? "fixed inset-0 z-50 bg-background/96 backdrop-blur-md" : "w-full py-16",
+            className,
           )}
         >
           <motion.div
             variants={contentVariants}
             className={cn(
-              "flex flex-col items-center justify-center p-6 rounded-xl",
-              fullscreen ? "bg-background/40 shadow-lg backdrop-blur-sm" : ""
+              "flex flex-col items-center justify-center p-8 rounded-2xl max-w-sm mx-auto",
+              fullscreen ? "bg-card/90 shadow-2xl backdrop-blur-sm border border-border/40" : "",
             )}
           >
             {showLogo && (
-              <div className="mb-4 opacity-90">
-                <Sparkles className="w-8 h-8 text-primary animate-pulse" />
-              </div>
+              <motion.div
+                className="mb-6"
+                key={currentIcon}
+                initial={{ scale: 0.7, opacity: 0, rotate: -20 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                exit={{ scale: 0.7, opacity: 0, rotate: 20 }}
+                transition={{ duration: 0.25, type: "spring", stiffness: 300, damping: 25 }}
+              >
+                {React.createElement(icons[currentIcon], {
+                  className: "w-14 h-14 text-primary",
+                })}
+              </motion.div>
             )}
-            
+
             {renderVariant()}
-            
-            {message && (
-              <motion.h3 
-                className="text-base font-medium text-foreground mt-2"
+
+            {contextMessage && (
+              <motion.h3
+                className="text-lg font-semibold text-foreground text-center mb-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.15 }}
               >
-                {message}
+                {contextMessage}
               </motion.h3>
             )}
-            
-            {subMessage && (
-              <motion.p 
-                className="text-sm text-muted-foreground mt-1"
+
+            {contextSubMessage && (
+              <motion.p
+                className="text-sm text-muted-foreground text-center max-w-xs leading-relaxed"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.25 }}
               >
-                {subMessage}
+                {contextSubMessage}
               </motion.p>
             )}
-            
-            {showProgress && (
-              <motion.p 
-                className="text-xs text-muted-foreground/70 mt-2 tabular-nums"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                {Math.round(progress)}%
-              </motion.p>
-            )}
-            
+
             {children && (
-              <motion.div 
-                className="mt-4"
+              <motion.div
+                className="mt-6 w-full"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.35 }}
               >
                 {children}
               </motion.div>
@@ -282,5 +369,5 @@ export function EnhancedLoader({
         </motion.div>
       )}
     </AnimatePresence>
-  );
+  )
 }

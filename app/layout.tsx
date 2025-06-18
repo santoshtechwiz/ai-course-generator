@@ -8,7 +8,7 @@ import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 import ClientLayoutWrapper from "./client-layout-wrapper"
-
+import { fontRobotoSans } from "./font"
 
 
 
@@ -28,6 +28,10 @@ export const metadata: Metadata = {
     "interactive coding",
     "tech education",
     "programming practice",
+    "AI learning platform",
+    "programming education",
+    "learn to code",
+    "coding quiz app",
   ],
   viewport: {
     width: "device-width",
@@ -41,6 +45,29 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://courseai.io",
+    siteName: "CourseAI",
+    title: "CourseAI - Interactive Programming Quizzes and Learning",
+    description: "Enhance your programming skills with interactive quizzes, coding challenges, and learning resources designed for developers of all levels.",
+    images: [
+      {
+        url: "/images/og/courseai-og.png",
+        width: 1200,
+        height: 630,
+        alt: "CourseAI - Interactive Programming Learning Platform"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CourseAI - Interactive Programming Quizzes and Learning",
+    description: "Enhance your programming skills with interactive quizzes, coding challenges, and learning resources designed for developers of all levels.",
+    creator: "@courseai",
+    images: ["/images/og/courseai-og.png"]
+  },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -50,9 +77,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
-      </head>      
-      
-      <body className={` antialiased min-h-screen flex flex-col`}>
+      </head>
+
+      <body className={`${fontRobotoSans.className} antialiased min-h-screen flex flex-col`}>
 
         <Providers>
           <ClientLayoutWrapper>
