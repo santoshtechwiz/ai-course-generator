@@ -139,20 +139,22 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
   }, [currentQuestionIndex, dispatch])
-
   const handleSubmitQuiz = useCallback(async () => {
     if (isSubmitting) return
 
     setIsSubmitting(true)
     enhancedLoader.showLoader({ message: "Submitting your quiz...", variant: "shimmer", fullscreen: true });
     try {
+      // Filter out any null answers to prevent errors
+      const validAnswers = Object.values(answers).filter(answer => answer !== null && answer !== undefined);
+      
       const results = {
         quizId,
         slug,
         title: quizTitle || title || "Code Quiz",
         quizType: "code",
         questions,
-        answers: Object.values(answers),
+        answers: validAnswers,
         completedAt: new Date().toISOString(),
       }
 
@@ -174,12 +176,15 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     dispatch(clearQuizState())
     router.replace(`/dashboard/code/${slug}`)
   }, [dispatch, router, slug])
-
-  const currentAnswer = useMemo(
-    () =>
-      currentQuestion && answers[currentQuestion.id?.toString() || currentQuestionIndex.toString()]?.selectedOptionId,
-    [currentQuestion, answers, currentQuestionIndex],
-  )
+  const currentAnswer = useMemo(() => {
+    if (!currentQuestion || !answers) return null;
+    
+    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString();
+    const answerObj = answers[questionId];
+    
+    // Only try to access selectedOptionId if the answer object exists
+    return answerObj?.selectedOptionId || null;
+  }, [currentQuestion, answers, currentQuestionIndex])
 
   const canGoNext = useMemo(
     () => currentQuestionIndex < questions.length - 1 && !!currentAnswer,

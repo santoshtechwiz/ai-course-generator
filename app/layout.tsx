@@ -8,7 +8,6 @@ import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 import ClientLayoutWrapper from "./client-layout-wrapper"
-import { fontRobotoSans } from "./font"
 
 
 
@@ -79,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
 
-      <body className={`${fontRobotoSans.className} antialiased min-h-screen flex flex-col`}>
+      <body className={` antialiased min-h-screen flex flex-col`}>
 
         <Providers>
           <ClientLayoutWrapper>

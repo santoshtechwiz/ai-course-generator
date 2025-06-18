@@ -1,111 +1,162 @@
-"use client"
-import { useRouter } from "next/navigation"
-import { Home, PlusCircle, Compass, HelpCircle, ArrowLeft } from "lucide-react"
+import { Suspense } from "react"
+import Link from "next/link"
+import { Metadata } from "next"
+import { notFoundMetadata } from "@/app/metadata/not-found-metadata"
+import { Compass, ArrowLeft, BookOpen, SearchX } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { getRecommendedItems } from "@/app/utils/get-recommended-items"
+import { RecommendedCard } from "@/components/shared/RecommendedCard"
 import { motion } from "framer-motion"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
+import ClientOnly from "@/components/ClientOnly"
 
+// Export metadata for SEO optimization
+export const metadata: Metadata = notFoundMetadata
+
+// Fallback component for recommendations when loading or error occurs
+function RecommendationsFallback() {
+  return (
+    <div className="w-full py-12 text-center">
+      <div className="flex justify-center">
+        <SearchX className="h-16 w-16 text-muted-foreground animate-pulse" />
+      </div>
+      <p className="mt-4 text-muted-foreground">
+        Loading recommendations...
+      </p>
+    </div>
+  );
+}
+
+// Recommendations component with server-side data fetching
+async function Recommendations() {
+  const recommendedItems = await getRecommendedItems(3);
+  
+  if (recommendedItems.length === 0) {
+    return (
+      <div className="w-full py-12 text-center">
+        <div className="flex justify-center">
+          <BookOpen className="h-16 w-16 text-muted-foreground" />
+        </div>
+        <p className="mt-4 text-muted-foreground">
+          We couldn't load recommendations right now. Try exploring our courses directly.
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+      {recommendedItems.map((item, index) => (
+        <RecommendedCard key={item.id} item={item} index={index} />
+      ))}
+    </div>
+  );
+}
+
+// Container animations
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.7,
+      when: "beforeChildren",
+      staggerChildren: 0.2,
+    },
+  }
+};
+
+// Item animations
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    },
+  }
+};
 
 export default function NotFound() {
-  const router = useRouter()
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-      },
-    },
-    exit: {
-      opacity: 0,
-      transition: { duration: 0.3 },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 },
-    },
-    exit: {
-      opacity: 0,
-      y: -20,
-      transition: { duration: 0.3 },
-    },
-  }
-
-  const suggestedPages = [
-    { href: "/", icon: Home, title: "Home", description: "Return to the main page" },
-    { href: "/dashboard/explore", icon: PlusCircle, title: "Create", description: "Start creating your own content" },
-    { href: "/dashboard", icon: Compass, title: "Explore", description: "Discover new learning opportunities" },
-    { href: "/dashboard/quizzes", icon: HelpCircle, title: "Quiz", description: "Discover new quizzes" },
-  ]
-
-  const handleNavigation = (href: string) => {
-    // Add a small delay to allow exit animations to complete
-    setTimeout(() => {
-      router.push(href)
-    }, 100)
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <MainNavbar />
-      <main className="flex-grow flex items-center justify-center px-6 py-16">
+      <main className="flex-grow flex items-center justify-center px-4 py-12 md:py-16">
         <motion.div
-          className="max-w-4xl w-full space-y-16 text-center"
+          className="max-w-5xl w-full space-y-12 md:space-y-16"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          exit="exit"
         >
-          <motion.div variants={itemVariants}>
-            <h1 className="text-7xl font-bold text-primary mb-4">404</h1>
-            <p className="text-3xl font-semibold text-foreground">Page Not Found</p>
+          {/* 404 Header Section */}
+          <div className="text-center">
+            <motion.div 
+              variants={itemVariants}
+              className="relative inline-block"
+            >
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl opacity-30" />
+              <h1 className="text-7xl md:text-8xl font-bold text-primary relative z-10">404</h1>
+            </motion.div>
+            
+            <motion.h2 
+              className="text-3xl md:text-4xl font-bold text-foreground mt-4"
+              variants={itemVariants}
+            >
+              Page Not Found
+            </motion.h2>
+            
+            <motion.p 
+              className="text-xl text-muted-foreground max-w-2xl mx-auto mt-6 leading-relaxed"
+              variants={itemVariants}
+            >
+              Looks like you've ventured into uncharted territory! Don't worry, 
+              we've gathered some excellent learning opportunities below to get you back on track.
+            </motion.p>
+          </div>
+
+          {/* Recommendations Section */}
+          <motion.div 
+            variants={itemVariants}
+            className="w-full"
+          >
+            <h3 className="text-2xl font-semibold text-foreground mb-6 text-center md:text-left">
+              Recommended for You
+            </h3>
+            
+            <ClientOnly>
+              <Suspense fallback={<RecommendationsFallback />}>
+                <Recommendations />
+              </Suspense>
+            </ClientOnly>
           </motion.div>
 
-          <motion.p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed" variants={itemVariants}>
-            Oops! It seems you&apos;ve ventured into uncharted territory. Don&apos;t worry, though – there&apos;s still
-            plenty to explore in our digital realm!
-          </motion.p>
-
-          <motion.div variants={itemVariants}>
-            <h2 className="text-2xl font-semibold text-foreground mb-8">Where to next?</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {suggestedPages.map((item) => (
-                <motion.div
-                  key={item.href}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleNavigation(item.href)}
-                  className="cursor-pointer"
-                >
-                  <Card className="h-full hover:shadow-md transition-all duration-300">
-                    <CardContent className="flex flex-col items-center justify-center p-8 h-full">
-                      <item.icon className="h-14 w-14 text-primary mb-6" />
-                      <h3 className="font-semibold text-xl text-foreground mb-3">{item.title}</h3>
-                      <p className="text-base text-muted-foreground">{item.description}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
+          {/* Navigation Buttons */}
+          <motion.div 
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6"
+            variants={itemVariants}
+          >
             <Button
               size="lg"
               variant="default"
-              onClick={() => handleNavigation("/dashboard")}
-              className="h-12 px-8 text-base font-medium"
+              className="h-12 px-8 text-base font-medium w-full sm:w-auto"
+              asChild
             >
-              <ArrowLeft className="mr-2 h-5 w-5" /> Return to Home
+              <Link href="/dashboard">
+                <ArrowLeft className="mr-2 h-5 w-5" /> Go to Dashboard
+              </Link>
+            </Button>
+            
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 px-8 text-base font-medium w-full sm:w-auto"
+              asChild
+            >
+              <Link href="/dashboard/explore">
+                <Compass className="mr-2 h-5 w-5" /> Explore More
+              </Link>
             </Button>
           </motion.div>
         </motion.div>

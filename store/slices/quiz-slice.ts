@@ -144,11 +144,10 @@ export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getSta
 
   try {
     let score = 0
-    let totalAnswered = 0
-
+    let totalAnswered = 0      
     const questionResults = questions.map((question) => {
       const qid = String(question.id)
-      const answer = answers[qid]
+      const answer = answers[qid] || null
       const correctAnswer = question.correctOptionId || question.correctAnswer || question.answer || ""
       let userAnswer: string | null = null
       let isCorrect = false
@@ -166,8 +165,9 @@ export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getSta
       switch (question.type) {
         case "mcq":
         case "code":
-          userAnswer = answer.selectedOptionId || answer.selectedOption || ""
-          isCorrect = answer.isCorrect === true
+          // Safely access properties with null checks
+          userAnswer = answer && (answer.selectedOptionId || answer.selectedOption || "") || ""
+          isCorrect = answer && answer.isCorrect === true
           break
 
         case "blanks":
@@ -185,7 +185,7 @@ export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getSta
         default:
           userAnswer = ""
       }
-
+      
       if (userAnswer) totalAnswered++
       if (isCorrect) score++
 
@@ -195,11 +195,11 @@ export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getSta
         userAnswer,
         correctAnswer,
         skipped: false,
-      }
-    })
+      };
+    });
 
     const results = {
-      quizId:  slug,
+      quizId: slug,
       slug: slug,
       title: title || "Quiz Results",
       quizType,
@@ -727,30 +727,80 @@ const quizSlice = createSlice({
 
     resetPendingQuiz: (state) => {
       // Clear redirect cache
-    },
-
-    saveAnswer: (state, action: PayloadAction<{ questionId: string; answer: any }>) => {
+    },    saveAnswer: (state, action: PayloadAction<{ questionId: string; answer: any }>) => {
       const { questionId, answer } = action.payload
-      const qid = String(questionId)
-      const question = state.questions.find((q) => String(q.id) === qid)
+      // Handle null/undefined answer with better defensive coding
+      if (!answer || typeof answer !== 'object') {
+        console.warn(`Skipping invalid answer for question ${questionId}:`, answer);
+        return;
+      }
+      
+      const qid = String(questionId || '')
+      if (!qid) {
+        console.warn('Skipping answer with invalid question ID');
+        return;
+      }
+      
+      const question = state.questions.find((q) => String(q?.id || '') === qid)
+      if (!question) {
+        console.warn(`Question not found for ID: ${qid}`);
+        return;
+      }      let isCorrect = false
+      let userAnswer: string | null = null
+      let selectedOptionId: string | null = null // Track this separately for robust storage
 
-      if (!question) return
-
-      let isCorrect = false
-      let userAnswer = null
-
+      // Enhanced switch with better type handling and validation
       switch (question.type) {
         case "mcq":
         case "code": {
-          const selected = answer.selectedOptionId || answer.selectedOption
-          const correct = question.correctOptionId || question.correctAnswer || question.answer
-          isCorrect = selected === correct
-          userAnswer = selected
-          break
+          // Use a try/catch for extra safety when accessing potentially null properties
+          try {
+            // First try to get selectedOptionId with multiple fallbacks
+            selectedOptionId = answer.selectedOptionId ?? 
+                              answer.selectedOption ?? 
+                              answer.optionId ?? 
+                              answer.answerId ?? 
+                              answer.userAnswer ?? 
+                              null;
+                              
+            // Convert to string for consistent comparison and storage
+            if (selectedOptionId !== null) {
+              selectedOptionId = String(selectedOptionId);
+            }
+            
+            // Also extract the user answer text if available
+            userAnswer = selectedOptionId;
+            
+            // Handle the MCQ option text extraction if options are available
+            if (selectedOptionId && question.options && Array.isArray(question.options)) {
+              const selectedOption = question.options.find((o: any) => 
+                String(o?.id || '') === String(selectedOptionId)
+              );
+              if (selectedOption?.text) {
+                userAnswer = selectedOption.text;
+              }
+            }
+            
+            // Get correct answer with multiple fallbacks
+            const correct = question.correctOptionId || question.correctAnswer || question.answer || '';
+            
+            // Compare for correctness (with type safety)
+            if (selectedOptionId !== null && correct) {
+              isCorrect = String(selectedOptionId) === String(correct);
+            } else {
+              isCorrect = false;
+            }
+          } catch (e) {
+            console.error(`Error processing ${question.type} answer:`, e);
+            userAnswer = '';
+            selectedOptionId = null;
+            isCorrect = false;
+          }
+          break;
         }
 
         case "blanks": {
-          const userInput = answer.userAnswer || answer.text || ""
+          const userInput = answer?.userAnswer || answer?.text || ""
           const correctAnswer = question.answer?.trim().toLowerCase() || ""
           isCorrect = userInput.trim().toLowerCase() === correctAnswer
           userAnswer = userInput
@@ -758,23 +808,29 @@ const quizSlice = createSlice({
         }
 
         case "openended": {
-          const text = answer.text || answer.userAnswer || ""
-          isCorrect = answer.isCorrect === true // Use provided isCorrect for openended
+          const text = answer?.text || answer?.userAnswer || ""
+          isCorrect = answer?.isCorrect === true // Use provided isCorrect for openended
           userAnswer = text
           break
         }
 
         default:
-          userAnswer = answer.userAnswer || answer.text || ""
-          isCorrect = answer.isCorrect === true
-      }
-
+          userAnswer = answer?.userAnswer || answer?.text || ""
+          isCorrect = answer?.isCorrect === true
+      }      // Ensure we don't store null/undefined values that could cause issues
       state.answers[qid] = {
         ...answer,
-        userAnswer,
-        isCorrect,
-        type: question.type,
+        // Always store selectedOptionId safely even if it's null
+        selectedOptionId: selectedOptionId, 
+        // Always use a string for userAnswer to prevent null reference issues
+        userAnswer: userAnswer || "", 
+        // Explicit boolean for isCorrect
+        isCorrect: Boolean(isCorrect), 
+        type: question.type || "unknown",
         timestamp: Date.now(),
+        // Additional metadata for debugging
+        questionType: question.type,
+        questionId: qid,
       }
 
       // Remove auto-completion logic - let the user decide when to submit
@@ -1207,25 +1263,46 @@ export const selectAuthRedirectUrl = createSelector([selectQuizState], (quiz) =>
 export const selectOrGenerateQuizResults = createSelector(
   [selectQuestions, selectAnswers, selectQuizTitle, selectQuizId],
   (questions, answers, title, quizId) => {
-    // Don't generate if we have no questions or answers
-    if (Object.keys(answers).length === 0 || questions.length === 0) {
+    // Protect against null/undefined values and ensure we have data
+    if (!answers || !questions || Object.keys(answers).length === 0 || questions.length === 0) {
       return null
-    }    // Generate questionResults from answers
-    const questionResults = Object.entries(answers).map(([questionId, answerData]: [string, any]) => {
+    }
+    
+    // Filter out any null answers to prevent errors
+    const validAnswers = Object.entries(answers).reduce((acc, [key, val]) => {
+      if (val !== null && val !== undefined) {
+        acc[key] = val;
+      }
+      return acc;
+    }, {} as Record<string, any>);    // Generate questionResults from answers
+    const questionResults = Object.entries(validAnswers).map(([questionId, answerData]: [string, any]) => {
+      // First make sure answerData is not null
+      if (!answerData) {
+        return {
+          questionId,
+          userAnswer: "Not answered",
+          selectedOptionId: null,
+          isCorrect: false,
+        }
+      }
+      
       // Find the matching question to determine if the answer was correct
       const question = questions.find((q: any) => q.id.toString() === questionId)
       let isCorrect = false
 
-      if (question && answerData.selectedOptionId) {
-        if (question.answer === answerData.selectedOptionId) {
+      // Safely access selectedOptionId
+      const selectedOptionId = answerData.selectedOptionId || null
+      
+      if (question && selectedOptionId) {
+        if (question.answer === selectedOptionId) {
           isCorrect = true
         }
       }
 
       return {
         questionId,
-        userAnswer: answerData.selectedOptionId || "Not answered",
-        selectedOptionId: answerData.selectedOptionId,
+        userAnswer: selectedOptionId || "Not answered",
+        selectedOptionId: selectedOptionId,
         isCorrect,
       }
     })

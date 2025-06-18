@@ -243,7 +243,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     setTimeout(() => {
       router.push(`/dashboard/${quizType}/${normalizedSlug}`);
     }, 50);
-  }, [dispatch, router, quizType, normalizedSlug]);
+  }, [dispatch, router, quizType, normalizedSlug])
 
   // Enhanced sign in action with robust state preservation
   const handleSignIn = useCallback(async () => {
@@ -361,59 +361,79 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         // Handle each quiz type with improved extraction logic
       switch (question.type) {
         case "mcq": {
-          // Get the selected option ID with enhanced fallbacks
-          rawAnswer = answer.selectedOptionId || answer.selectedOption || answer.userAnswer || answer.answer || answer.text || "";
-          
-          // Store raw ID for reference
-          const selectedOptionId = String(rawAnswer);
-
-          // Try to extract full option text for better display
-          if (question.options && Array.isArray(question.options)) {
-            // Support both object options and string options
-            const selectedOption = question.options.find((opt: any) => {
-              const optId = typeof opt === 'object' ? String(opt.id) : String(opt);
-              return optId === selectedOptionId || String(opt) === selectedOptionId;
-            });
+          // Get the selected option ID with enhanced fallbacks and safety checks
+          try {
+            // Add defensive null checks with nullish coalescing operator
+            rawAnswer = answer?.selectedOptionId ?? answer?.selectedOption ?? answer?.userAnswer ?? answer?.answer ?? answer?.text ?? "";
             
-            if (selectedOption) {
-              userAnswer = typeof selectedOption === 'object' ? 
-                (selectedOption.text || selectedOption.label || String(selectedOption.id)) : 
-                String(selectedOption);
+            // Store raw ID for reference (as string to prevent null reference issues)
+            const selectedOptionId = String(rawAnswer || "");
+  
+            // Try to extract full option text for better display
+            if (question.options && Array.isArray(question.options)) {
+              // Support both object options and string options
+              const selectedOption = question.options.find((opt: any) => {
+                if (!opt) return false;
+                const optId = typeof opt === 'object' ? String(opt.id || "") : String(opt || "");
+                return optId === selectedOptionId || String(opt || "") === selectedOptionId;
+              });
+              
+              if (selectedOption) {
+                userAnswer = typeof selectedOption === 'object' ? 
+                  (selectedOption.text || selectedOption.label || String(selectedOption.id || "")) : 
+                  String(selectedOption || "");
+              } else {
+                // If we can't find the option, use the raw answer
+                userAnswer = rawAnswer || "";
+              }
             } else {
-              // If we can't find the option, use the raw answer
-              userAnswer = rawAnswer;
+              userAnswer = rawAnswer || "";
             }
-          } else {
-            userAnswer = rawAnswer;
-          }
-          
-          // Calculate correctness - check if selected option matches correct option
-          const correct = question.correctOptionId || question.correctAnswer || question.answer;
-          // If isCorrect wasn't explicitly set, derive it from answer matching
-          if (typeof answer.isCorrect !== 'boolean') {
-            // If we have both values, do a case-insensitive string comparison for more flexibility
-            if (selectedOptionId && correct) {
-              isCorrect = String(selectedOptionId).toLowerCase().trim() === String(correct).toLowerCase().trim();
-            } else {
-              isCorrect = false;
+            
+            // Calculate correctness - check if selected option matches correct option
+            const correct = question.correctOptionId || question.correctAnswer || question.answer;
+            // If isCorrect wasn't explicitly set, derive it from answer matching
+            if (typeof answer?.isCorrect !== 'boolean') {
+              // If we have both values, do a case-insensitive string comparison for more flexibility
+              if (selectedOptionId && correct) {
+                isCorrect = String(selectedOptionId).toLowerCase().trim() === String(correct).toLowerCase().trim();
+              } else {
+                isCorrect = false;
+              }
             }
+          } catch (e) {
+            console.error("Error processing MCQ answer:", e);
+            userAnswer = "Error processing answer";
+            isCorrect = false;
           }
           break;
         }
         
         case "code": {
           // For code quizzes and LINQ queries, extract answer with comprehensive fallbacks
-          rawAnswer = answer.selectedOptionId || answer.userAnswer || answer.answer || answer.code || answer.text || "";
-          userAnswer = rawAnswer;
-          
-          // If correctness isn't explicitly set, try to match with correct answer with more flexibility
-          if (typeof answer.isCorrect !== 'boolean') {
-            // For code, first normalize both strings by trimming whitespace and converting to lowercase for more lenient matching
-            const normalizedUserAnswer = String(rawAnswer).trim().toLowerCase().replace(/\s+/g, ' ');
-            const normalizedCorrectAnswer = String(question.correctAnswer).trim().toLowerCase().replace(/\s+/g, ' ');
+          try {
+            // Use nullish coalescing for safer property access
+            rawAnswer = answer?.selectedOptionId ?? answer?.userAnswer ?? answer?.answer ?? answer?.code ?? answer?.text ?? "";
+            userAnswer = rawAnswer || "";
             
-            // Check if answers match with normalization
-            isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+            // If correctness isn't explicitly set, try to match with correct answer with more flexibility
+            if (typeof answer?.isCorrect !== 'boolean') {
+              // Only proceed if we have actual values to compare
+              if (rawAnswer && question.correctAnswer) {
+                // For code, first normalize both strings by trimming whitespace and converting to lowercase for more lenient matching
+                const normalizedUserAnswer = String(rawAnswer || "").trim().toLowerCase().replace(/\s+/g, ' ');
+                const normalizedCorrectAnswer = String(question.correctAnswer || "").trim().toLowerCase().replace(/\s+/g, ' ');
+                
+                // Check if answers match with normalization
+                isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+              } else {
+                isCorrect = false;
+              }
+            }
+          } catch (e) {
+            console.error("Error processing code answer:", e);
+            userAnswer = "Error processing answer";
+            isCorrect = false;
           }
           break;
         }

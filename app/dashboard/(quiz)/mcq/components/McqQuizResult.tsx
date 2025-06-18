@@ -1,20 +1,23 @@
 "use client"
 import { motion } from "framer-motion"
-import { CheckCircle, XCircle, HelpCircle, Target, RotateCcw, Home } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { CheckCircle, XCircle, HelpCircle } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { QuizResultLayout } from "../../components/QuizResultLayout"
 
 interface McqQuizResultProps {
   result: {
-    title: string
+    title?: string
+    slug?: string
+    quizId?: string
     score: number
     maxScore: number
     percentage: number
-    completedAt: string
+    completedAt?: string
+    totalTime?: number
+    questions?: Array<any>  // Original quiz questions with options
+    answers?: Array<any>    // Original answer data with selectedOptionId
     questionResults: Array<{
       questionId: string
       question: string
@@ -23,21 +26,10 @@ interface McqQuizResultProps {
       isCorrect: boolean
       type: string
       options?: Array<{ id: string; text: string }>
+      selectedOptionId?: string // Added field for selectedOptionId
     }>
   }
   onRetake?: () => void
-}
-
-const containerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      staggerChildren: 0.1,
-    },
-  },
 }
 
 const itemVariants = {
@@ -46,7 +38,43 @@ const itemVariants = {
 }
 
 export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
-  const { title, score, maxScore, percentage, questionResults } = result
+  // Apply defensive coding to handle potential null/undefined values
+  const title = result?.title || ""
+  const slug = result?.slug || ""
+  const quizId = result?.quizId || ""
+  const score = typeof result?.score === "number" ? result.score : 0
+  const maxScore = typeof result?.maxScore === "number" ? result.maxScore : 0
+  const percentage = typeof result?.percentage === "number" ? result.percentage : 0
+  const questionResults = Array.isArray(result?.questionResults) ? result.questionResults : []
+  const completedAt = result?.completedAt || new Date().toISOString()
+  const totalTime = result?.totalTime || 0
+
+  // Enhanced title resolution with multiple fallbacks
+  const getQuizTitle = () => {
+    // Priority 1: Use provided title if it's meaningful
+    if (title && title.trim() && !title.match(/^[a-zA-Z0-9]{6,}$/)) {
+      return title.trim()
+    }
+
+    // Priority 2: Generate from quiz metadata
+    const quizIdentifier = slug || quizId || "quiz"
+
+    // Check if it looks like a slug/ID (alphanumeric, short)
+    if (quizIdentifier.match(/^[a-zA-Z0-9]{6,}$/)) {
+      return "Multiple Choice Quiz"
+    }
+
+    // Priority 3: Use identifier if it looks like a proper title
+    return quizIdentifier.replace(/[-_]/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+  }
+
+  const getQuizSubtitle = () => {
+    const identifier = slug || quizId
+    if (identifier && identifier !== title) {
+      return `Quiz ID: ${identifier}`
+    }
+    return "Test your knowledge with multiple choice questions"
+  }
 
   // Enhanced score validation with proper fallbacks
   const validatedScore = typeof score === "number" && score >= 0 ? score : 0
@@ -60,122 +88,114 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
   const finalScore = validatedScore > 0 ? validatedScore : correctFromResults
   const finalMaxScore = validatedMaxScore > 1 ? validatedMaxScore : Math.max(totalFromResults, 1)
 
-  // Calculate percentage with proper bounds checking
-  const calculatedPercentage = finalMaxScore > 0 ? Math.round((finalScore / finalMaxScore) * 100) : 0
+  // Calculate percentage with proper bounds checking  // Calculate percentage score
+  const calculatedPercentage = finalMaxScore > 0 ? Math.round((finalScore / finalMaxScore) * 100) : 0;  
   const validatedPercentage =
-    typeof percentage === "number" && percentage >= 0 ? Math.min(percentage, 100) : calculatedPercentage
-  const finalPercentage = Math.max(0, Math.min(validatedPercentage, 100))
+    typeof percentage === "number" && percentage >= 0 ? Math.min(percentage, 100) : calculatedPercentage;
+  const finalPercentage = Math.max(0, Math.min(validatedPercentage, 100));  
+    // Prepare formatted questions for QuizResultLayout with enhanced answer extraction
+  const formattedQuestions = Array.isArray(questionResults) ? questionResults.map(q => {
+    // Extract user answer from multiple possible sources with priority order
+    let userAnswerText = q.userAnswer;
+    
+    // Try to get the answer from the Redux state if available
+    if ((!userAnswerText || userAnswerText === "") && result.answers) {
+      // Safely look through the answers object for this question ID
+      const answerObj = result.answers.find((ans: any) => 
+        String(ans?.questionId) === String(q.questionId)
+      );
+      if (answerObj) {
+        // Try multiple fields that might contain the user's answer
+        userAnswerText = answerObj.userAnswer || 
+                        answerObj.selectedOptionId || 
+                        answerObj.text || 
+                        userAnswerText;
+      }
+    }
+    
+    // 2. If result contains the original questions with options, match the selected answer to option text
+    const originalQuestion = Array.isArray(result.questions) && result.questions.find((origQ: any) => 
+      String(origQ.id) === String(q.questionId)
+    );
+    
+    // If we found matching options in the original question
+    if (originalQuestion?.options && Array.isArray(originalQuestion.options)) {
+      // Try to find selected option by ID or by matching text
+      const selectedOption = originalQuestion.options.find((opt: any) => {
+        if (!userAnswerText) return false;
+        
+        return (
+          // Match by option ID
+          String(opt) === String(userAnswerText) ||
+          // Match by option text
+          String(opt) === String(userAnswerText) ||
+          // Match by nested ID
+          (opt.id && String(opt.id) === String(userAnswerText)) ||
+          // Match by nested text
+          (opt.text && String(opt.text) === String(userAnswerText))
+        );
+      });
+      
+      // If we found a matching option with text, use that
+      if (selectedOption && selectedOption.text) {
+        userAnswerText = selectedOption.text;
+      }
+    }    
+    return {
+      id: q.questionId || String(Math.random()),
+      question: q.question || "",
+      type: "MCQ",
+      userAnswer: userAnswerText || null,
+      correctAnswer: q.correctAnswer || "",
+      isCorrect: Boolean(q.isCorrect),
+      explanation: "", // No explanation field available in MCQ questions
+      options: q.options || []
+    };
+  }) : [];
 
-  const getScoreColor = (percentage: number) => {
-    if (percentage >= 80) return "text-green-500"
-    if (percentage >= 60) return "text-yellow-500"
-    return "text-red-500"
-  }
+  const totalQuestions = finalMaxScore;
+  const correctAnswers = finalScore;
+  const incorrectAnswers = totalQuestions - correctAnswers;
+  // Define safe event handlers that won't be undefined
+  const handleRetry = () => {
+    if (onRetake) {
+      onRetake();
+    } else {
+      // Fallback if onRetake is undefined
+      window.location.href = `/dashboard/quizzes/${slug || ''}`;
+    }
+  };
 
-  const getScoreBgColor = (percentage: number) => {
-    if (percentage >= 80) return "bg-green-50 dark:bg-green-950/20"
-    if (percentage >= 60) return "bg-yellow-50 dark:bg-yellow-950/20"
-    return "bg-red-50 dark:bg-red-950/20"
-  }
+  const handleGoHome = () => {
+    window.location.href = "/dashboard";
+  };
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="max-w-4xl mx-auto p-4 space-y-6"
+    <QuizResultLayout
+      title={getQuizTitle()}
+      subtitle={getQuizSubtitle()}
+      score={finalScore}
+      totalQuestions={totalQuestions}
+      correctAnswers={correctAnswers}
+      incorrectAnswers={incorrectAnswers}
+      timeTaken={totalTime ? `${totalTime} seconds` : undefined}
+      questions={formattedQuestions}
+      onRetry={handleRetry}
+      onGoHome={handleGoHome}
     >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="text-center space-y-4">
-        <div className="space-y-3">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight break-words">{title}</h1>
-          <p className="text-lg text-muted-foreground">Multiple Choice Quiz Results</p>
-          <motion.div
-            className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full max-w-xs mx-auto"
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
-          />
-        </div>
-      </motion.div>
-
-      {/* Score Card */}
-      <motion.div
-        variants={itemVariants}
-        whileHover={{ scale: 1.02 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      >
-        <Card className={cn("border-2 shadow-xl", getScoreBgColor(finalPercentage))}>
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="flex items-center justify-center gap-3 text-2xl">
-              <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
-                <Target className="h-8 w-8 text-primary" />
-              </motion.div>
-              Your Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-6">
-            <div className="space-y-3">
-              <motion.div
-                className={cn("text-5xl md:text-6xl font-black", getScoreColor(finalPercentage))}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  delay: 0.3,
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 15,
-                }}
-              >
-                {finalPercentage}%
-              </motion.div>
-              <p className="text-lg text-muted-foreground font-medium">
-                {finalScore} out of {finalMaxScore} questions correct
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="relative">
-                <Progress value={finalPercentage} className="h-4 rounded-full bg-muted/50" />
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
-                  animate={{
-                    x: ["-100%", "100%"],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                    repeatDelay: 1,
-                  }}
-                  style={{ opacity: finalPercentage > 0 ? 1 : 0 }}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-8 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="font-semibold text-green-700 dark:text-green-300">{finalScore} Correct</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-500" />
-                <span className="font-semibold text-red-700 dark:text-red-300">
-                  {finalMaxScore - finalScore} Incorrect
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Question Results */}
-      <motion.div variants={itemVariants} className="space-y-4">
+      {/* Question Review Section */}
+      <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Question Review</h2>
 
         <div className="space-y-4">
-          {questionResults.map((questionResult, index) => (
-            <motion.div key={questionResult.questionId} variants={itemVariants} transition={{ delay: index * 0.05 }}>
+          {questionResults?.map((questionResult, index) => (
+            <motion.div
+              key={questionResult.questionId}
+              variants={itemVariants}
+              transition={{ delay: index * 0.05 }}
+              initial="hidden"
+              animate="visible"
+            >
               <Card
                 className={cn(
                   "border-l-4 transition-all duration-200 hover:shadow-md",
@@ -189,7 +209,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                     {/* Question Header */}
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <Badge variant="outline" className="text-xs">
                             Question {index + 1}
                           </Badge>
@@ -209,20 +229,47 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                       </div>
                     </div>
 
-                    {/* Options (if available) */}
-                    {questionResult.options && questionResult.options.length > 0 && (
+                    {/* Options Display */}
+                    {questionResult.options && Array.isArray(questionResult.options) && questionResult.options.length > 0 ? (
                       <div className="space-y-2">
                         <span className="text-sm font-medium text-muted-foreground">Answer Options</span>
                         <div className="grid gap-2">
-                          {questionResult.options.map((option) => {
+                          {questionResult.options.map((option, optionIndex) => {
+                            // Apply defensive coding to avoid null reference errors
+                            if (!option) return null;
+                            
+                            const optionId = option.id || `option-${optionIndex}`;
+                            const optionText = option.text || `Option ${optionIndex + 1}`;
+                            
+                            // Enhanced matching logic that tries multiple comparison strategies
+                            // Try multiple ways to determine if this was the user's answer
                             const isUserAnswer =
-                              option.text === questionResult.userAnswer || option.id === questionResult.userAnswer
+                              // Direct text/content matching
+                              optionText === questionResult.userAnswer || 
+                              // ID-based matching
+                              optionId === questionResult.userAnswer ||
+                              // Try matching on part of the ID or text (for partial matches)
+                              (questionResult.userAnswer && 
+                               (String(questionResult.userAnswer).includes(optionId) || 
+                                String(optionId).includes(questionResult.userAnswer))) ||
+                              // Additional pass for case-insensitive matching if needed
+                              (questionResult.userAnswer && 
+                                optionText.toLowerCase() === String(questionResult.userAnswer).toLowerCase());
+                                
+                            // Similar approach for correct answer matching
                             const isCorrectAnswer =
-                              option.text === questionResult.correctAnswer || option.id === questionResult.correctAnswer
+                              optionText === questionResult.correctAnswer || 
+                              optionId === questionResult.correctAnswer ||
+                              (questionResult.correctAnswer &&
+                               (String(questionResult.correctAnswer).includes(optionId) ||
+                                String(optionId).includes(questionResult.correctAnswer))) ||
+                              // Additional pass for case-insensitive matching if needed
+                              (questionResult.correctAnswer && 
+                                optionText.toLowerCase() === String(questionResult.correctAnswer).toLowerCase());
 
                             return (
                               <div
-                                key={option.id}
+                                key={optionId}
                                 className={cn(
                                   "p-3 rounded-lg border-2 text-sm transition-all break-words",
                                   isCorrectAnswer && "border-green-500 bg-green-50 dark:bg-green-950/20",
@@ -242,7 +289,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                                       isUserAnswer && !isCorrectAnswer && "font-medium text-red-700 dark:text-red-300",
                                     )}
                                   >
-                                    {option.text}
+                                    {optionText}
                                   </span>
                                   {isUserAnswer && (
                                     <Badge variant="outline" className="text-xs flex-shrink-0">
@@ -263,10 +310,8 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
                           })}
                         </div>
                       </div>
-                    )}
-
-                    {/* Fallback Answer Display */}
-                    {(!questionResult.options || questionResult.options.length === 0) && (
+                    ) : (
+                      /* Fallback Answer Display */
                       <div className="grid gap-4 md:grid-cols-2">
                         {/* User Answer */}
                         <div className="space-y-2">
@@ -311,23 +356,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
             </motion.div>
           ))}
         </div>
-      </motion.div>
-
-      {/* Action Buttons */}
-      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-        {onRetake && (
-          <Button onClick={onRetake} size="lg" className="flex items-center gap-2">
-            <RotateCcw className="h-4 w-4" />
-            Retake Quiz
-          </Button>
-        )}
-        <Button variant="outline" size="lg" asChild>
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Home className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-      </motion.div>
-    </motion.div>
+      </div>
+    </QuizResultLayout>
   )
 }
