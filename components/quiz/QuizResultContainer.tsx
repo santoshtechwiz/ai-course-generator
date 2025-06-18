@@ -109,78 +109,60 @@ export function QuizResultContainer({
       className={cn("max-w-4xl mx-auto", className)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <Card className="shadow-xl border-muted rounded-2xl overflow-hidden">
         {showHeader && (
           <>
             <CardHeader className="bg-muted/50 pb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <motion.div 
-                    className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center"
-                    whileHover={{ scale: 1.05, rotate: 5 }}
-                  >
-                    <Trophy className="w-6 h-6 text-primary" />
-                  </motion.div>
-                  <div>
-                    <Badge variant="outline" className="mb-2">
-                      {quizType.charAt(0).toUpperCase() + quizType.slice(1)} Quiz
-                    </Badge>
-                    <CardTitle className="text-2xl font-bold tracking-tight">
-                      Quiz Results
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Completed on {formattedDate}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-primary">
-                    {percentage}%
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {score} of {totalQuestions} correct
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="text-center sm:text-left">
+                  <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight break-words">
+                    {title}
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm sm:text-base">
+                    {completedAt
+                      ? `Completed on ${new Date(completedAt).toLocaleDateString()} at ${new Date(
+                          completedAt
+                        ).toLocaleTimeString()}`
+                      : "Quiz results"}
                   </p>
                 </div>
-              </div>
-              
-              <div className="mt-4">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">{performance.label}</span>
-                  <span className="text-sm text-muted-foreground">{score}/{totalQuestions}</span>
+                <div className="flex flex-col items-center justify-center">
+                  <div className="text-3xl sm:text-4xl font-bold text-primary">{percentage}%</div>
+                  <div className="text-sm text-muted-foreground">
+                    {score}/{totalQuestions} questions
+                  </div>
                 </div>
-                <div className="relative">
-                  <Progress 
-                    value={percentage} 
-                    className="h-2" 
-                  />
-                </div>
-                <p className={cn("text-sm mt-2", performance.color)}>
-                  {performance.emoji} {performance.message}
-                </p>
               </div>
             </CardHeader>
             <div className="w-full h-1 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20" />
           </>
         )}
 
-        <CardContent className="p-6 space-y-6">
-          {children}
+        <CardContent className={cn("p-0", 
+          showHeader ? "pt-0" : "", 
+          "overflow-auto max-h-[70vh] sm:max-h-[none]"
+        )}>
+          <div className="space-y-1 px-4 py-6 sm:px-6">{children}</div>
         </CardContent>
         
         {showFooter && (
-          <CardFooter className="flex justify-between items-center p-6 bg-muted/30 border-t">
-            <Button variant="outline" onClick={handleBrowseQuizzes} className="gap-2">
-              <Home className="w-4 h-4" />
-              Browse Quizzes
-            </Button>
-            <Button onClick={handleRetake} className="gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Retake Quiz
-            </Button>
-          </CardFooter>
+          <>
+            <div className="w-full h-px bg-muted" />
+            <CardFooter className="bg-muted/30 p-4 sm:p-6 flex flex-wrap gap-4 justify-between">
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={handleRetake} variant="default" className="gap-2 font-medium">
+                  <RefreshCw className="h-4 w-4" />
+                  Retake Quiz
+                </Button>
+                <Button onClick={handleBrowseQuizzes} variant="outline" className="gap-2 font-medium">
+                  <Home className="h-4 w-4" />
+                  Browse Quizzes
+                </Button>
+              </div>
+            </CardFooter>
+          </>
         )}
       </Card>
     </motion.div>

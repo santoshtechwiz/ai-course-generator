@@ -1,23 +1,22 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import type React from "react"
 import { useEffect, useState } from "react"
+import type React from "react"
 
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
-import { QuizHeader } from "@/components/quiz/QuizHeader" // Adjust the import path as needed
+import { QuizHeader } from "@/components/quiz/QuizHeader"
+import { Progress } from "@/components/ui/progress"
 
 interface QuizContainerProps {
   children: React.ReactNode
   questionNumber: number
   totalQuestions: number
   quizType?: string
-  progressPercentage?: number
   animationKey?: string | number
   className?: string
-  timeElapsed?: number
-  showTimer?: boolean
+  contentClassName?: string
   quizTitle: string
   quizSubtitle?: string
   difficulty?: string
@@ -32,8 +31,7 @@ export function QuizContainer({
   quizType = "Quiz",
   animationKey,
   className,
-  timeElapsed,
-  showTimer = false,
+  contentClassName,
   quizTitle,
   quizSubtitle,
   difficulty,
@@ -45,6 +43,8 @@ export function QuizContainer({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const progress = totalQuestions > 0 ? (questionNumber / totalQuestions) * 100 : 0
 
   if (!mounted) {
     return (
@@ -63,36 +63,45 @@ export function QuizContainer({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Header */}
-      <QuizHeader
-        title={quizTitle}
-        subtitle={quizSubtitle}
-        quizType={quizType}
-        totalQuestions={totalQuestions}
-        currentQuestion={questionNumber}
-        difficulty={difficulty}
-        timeLimit={timeLimit}
-        category={category}
-        animate
-      />
+    <div className="min-h-screen bg-background py-4 sm:py-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Cleaner Header */}
+        <QuizHeader
+          title={quizTitle}
+          subtitle={quizSubtitle}
+          quizType={quizType}
+          totalQuestions={totalQuestions}
+          currentQuestion={questionNumber}
+          difficulty={difficulty}
+          timeLimit={timeLimit}
+          category={category}
+          className="rounded-xl px-4 py-4 sm:px-6 sm:py-5 shadow-none border bg-card"
+        />
 
-      {/* Main Quiz Card */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={animationKey || questionNumber}
             initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.98 }}
-            transition={{
-              duration: 0.4,
-              ease: [0.23, 1, 0.32, 1],
-            }}
-            className={cn("w-full", className)}
+            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+            className={cn("mt-6", className)}
           >
-            <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-xl rounded-3xl overflow-hidden">
-              <div className="p-6 sm:p-8">{children}</div>
+            <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-xl rounded-2xl overflow-hidden">
+              <div className="p-6 sm:p-8 flex flex-col min-h-[400px]">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Question {questionNumber} of {totalQuestions}
+                  </h3>
+                  <span className="text-xs font-medium uppercase text-muted-foreground bg-muted px-2 py-1 rounded">
+                    {quizType}
+                  </span>
+                </div>
+
+                <Progress value={progress} className="h-2 mb-6" />
+
+                <div className={cn("flex-1", contentClassName)}>{children}</div>
+              </div>
             </Card>
           </motion.div>
         </AnimatePresence>

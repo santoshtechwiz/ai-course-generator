@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useState, memo, useCallback } from "react"
-import type React from "react"
-import { FileQuestion, AlignJustify, PenTool, Code, Filter, X, ChevronDown, Flashlight } from "lucide-react"
+import React, { useEffect, useState, memo, useCallback } from "react"
+import { FileQuestion, AlignJustify, PenTool, Code, Filter, X, ChevronDown, Flashlight, RefreshCw } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -49,15 +48,37 @@ function QuizSidebarComponent({
 }: QuizSidebarProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  const [isRendered, setIsRendered] = useState(false)
   const [localQuestionCount, setLocalQuestionCount] = useState<[number, number]>(questionCountRange)
 
+  // Safely handle window measurements with mounting state to prevent white screen
   useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024)
+    try {
+      setIsMounted(true)
+      const handleResize = () => {
+        if (typeof window !== "undefined") {
+          setIsDesktop(window.innerWidth >= 1024)
+        }
+      }
+      
+      handleResize() // Initial check
+      
+      // Set rendered state after a small delay to allow React to render once
+      const renderTimer = setTimeout(() => setIsRendered(true), 50)
+
+      window.addEventListener("resize", handleResize)
+      return () => {
+        window.removeEventListener("resize", handleResize)
+        clearTimeout(renderTimer)
+      }
+    } catch (error) {
+      console.error("Error setting up QuizSidebar:", error)
+      // Ensure component still renders even if there's an error
+      setIsMounted(true)
+      setIsRendered(true)
+      setIsDesktop(false)
     }
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
   }, [])
 
   useEffect(() => {
@@ -93,6 +114,56 @@ function QuizSidebarComponent({
     hidden: { opacity: 0, x: -10 },
     visible: { opacity: 1, x: 0 },
   }
+  
+  // Return skeleton during initial mounting to prevent white screen
+  if (!isMounted) {
+    return <SidebarSkeleton />
+  }
+
+  // Mobile filter panel with animation and backdrop
+  const renderMobileFilterPanel = () => (
+    <AnimatePresence>
+      {showMobileFilters && (
+        <>
+          {/* Semi-transparent backdrop */}
+          <motion.div 
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowMobileFilters(false)}
+          />
+          
+          {/* Filter panel */}
+          <motion.div 
+            className="fixed bottom-0 inset-x-0 bg-card shadow-lg rounded-t-xl z-50 p-4 pb-8 border border-border max-h-[80vh] overflow-y-auto"
+            initial={{ y: "100%" }}
+            animate={{ y: "0%" }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filter Quizzes
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowMobileFilters(false)} aria-label="Close filters">
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="space-y-6">
+              {renderFilters()}
+              <div className="flex justify-end pt-2">
+                <Button onClick={() => setShowMobileFilters(false)}>
+                  Apply Filters
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
 
   return (
     <motion.div
@@ -100,6 +171,7 @@ function QuizSidebarComponent({
       variants={sidebarVariants}
       initial="hidden"
       animate="visible"
+      style={{ opacity: isRendered ? 1 : 0.5 }}
     >
       {/* Desktop Search */}
       <motion.div className="hidden lg:block" variants={itemVariants}>
@@ -154,6 +226,7 @@ function QuizSidebarComponent({
       </motion.div>
 
       {/* Filter Panel */}
+      {renderMobileFilterPanel()}
       <AnimatePresence>
         {(showMobileFilters || isDesktop) && (
           <motion.div
@@ -271,4 +344,76 @@ function QuizSidebarComponent({
   )
 }
 
-export const QuizSidebar = memo(QuizSidebarComponent)
+// Separated skeleton component for better readability
+function SidebarSkeleton() {
+  return (
+    <div className="space-y-6 lg:w-1/4 lg:sticky lg:top-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse mb-4"></div>
+      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-md w-3/4 animate-pulse"></div>
+      <div className="space-y-2 mt-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div 
+            key={i} 
+            className="h-10 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse" 
+            style={{ 
+              animationDelay: `${i * 100}ms`,
+              animationDuration: `${800 + i * 100}ms`
+            }}
+          ></div>
+        ))}
+      </div>
+      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-md w-1/2 mt-6 animate-pulse" 
+           style={{animationDelay: "600ms"}}></div>
+    </div>
+  )
+}
+
+// ErrorBoundary wrapper component to prevent white screen on error
+class QuizSidebarErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    // Update state so the next render will show the fallback UI.
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("QuizSidebar error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="space-y-6 lg:w-1/4 lg:sticky lg:top-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+          <div className="p-4 text-center">
+            <p className="text-sm text-red-500 dark:text-red-400 mb-2">Unable to display filters</p>
+            <Button variant="outline" size="sm" onClick={() => {
+              this.setState({ hasError: false });
+              window.location.reload();
+            }}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Reload
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function QuizSidebarWithErrorHandling(props: QuizSidebarProps) {
+  return (
+    <QuizSidebarErrorBoundary>
+      <QuizSidebarComponent {...props} />
+    </QuizSidebarErrorBoundary>
+  );
+}
+
+export const QuizSidebar = memo(QuizSidebarWithErrorHandling)

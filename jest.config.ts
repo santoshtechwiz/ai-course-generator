@@ -7,11 +7,14 @@ const createJestConfig = nextJest({
 });
 
 // Jest config overrides
-const customJestConfig: Config = {
-  testEnvironment: "jest-environment-jsdom",
+const customJestConfig: Config = {  testEnvironment: "jest-environment-jsdom",
   coverageProvider: "v8",
   verbose: true,
-  reporters: ["default", "jest-summary-reporter"],
+  reporters: [
+    "default", 
+    "jest-summary-reporter",
+    ["<rootDir>/jest-better-reporter.js", { keepLogs: false, debug: false }]
+  ],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
 
   moduleNameMapper: {

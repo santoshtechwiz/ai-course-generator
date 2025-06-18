@@ -119,9 +119,20 @@ export function OpenEndedQuizQuestion({
         value={answerText}
         onChange={(e) => handleAnswerChange(e.target.value)}
         placeholder="Type your answer here..."
-        className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary"
+        className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary md:min-h-[200px]"
         data-testid="answer-textarea"
         disabled={isSubmitting}
+        aria-label="Your answer"
+        autoComplete="off"
+        onKeyDown={(e) => {
+          // Submit with Ctrl+Enter or Cmd+Enter
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (answerText.trim()) {
+              isLastQuestion ? onSubmit?.() : onNext?.();
+            }
+          }
+        }}
       />
 
       {hints.length > 0 && (
