@@ -10,8 +10,9 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import CodeQuizOptions from "./CodeQuizOptions"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
-import { Code2, Terminal } from "lucide-react"
+import { Code2, Terminal, Copy, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 interface CodeQuizProps {
   question: CodeQuestion
@@ -28,6 +29,11 @@ interface CodeQuizProps {
   isLastQuestion?: boolean
   showNavigation?: boolean
   showRetake?: boolean
+  quizTitle?: string
+  quizSubtitle?: string
+  difficulty?: string
+  category?: string
+  timeLimit?: number
 }
 
 const CodeQuiz = ({
@@ -45,14 +51,19 @@ const CodeQuiz = ({
   isLastQuestion = false,
   showNavigation = true,
   showRetake = false,
+  quizTitle = "Code Challenge",
+  quizSubtitle = "Analyze the code and choose the correct answer",
+  difficulty = "Medium",
+  category = "Programming",
+  timeLimit,
 }: CodeQuizProps) => {
   const dispatch = useAppDispatch()
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(existingAnswer || null)
+  const [copied, setCopied] = useState(false)
 
   const handleAnswerSelection = (option: string) => {
     if (isSubmitting) return
 
-    // Simple validation for plain array of options
     if (!Array.isArray(question.options)) return
     if (!question.options.includes(option)) return
 
@@ -76,6 +87,18 @@ const CodeQuiz = ({
     }
   }
 
+  const handleCopyCode = async () => {
+    if (question.codeSnippet) {
+      try {
+        await navigator.clipboard.writeText(question.codeSnippet)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        console.error("Failed to copy code:", err)
+      }
+    }
+  }
+
   const progressPercentage = Math.round((questionNumber / totalQuestions) * 100)
   const hasAnswer = !!selectedAnswer
 
@@ -86,9 +109,14 @@ const CodeQuiz = ({
       progressPercentage={progressPercentage}
       quizType="Code Challenge"
       animationKey={question.id}
+      quizTitle={quizTitle}
+      quizSubtitle={quizSubtitle}
+      difficulty={difficulty}
+      category={category}
+      timeLimit={timeLimit}
     >
       <div className="space-y-6">
-        {/* Question Header */}
+        {/* Question Header - Aligned with MCQ */}
         <motion.div
           className="text-center space-y-4 mb-6"
           initial={{ opacity: 0, y: -20 }}
@@ -96,7 +124,7 @@ const CodeQuiz = ({
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <motion.h2
-            className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed px-4 break-words whitespace-normal hyphens-auto"
+            className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground leading-relaxed max-w-4xl mx-auto px-4 break-words"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
@@ -104,6 +132,7 @@ const CodeQuiz = ({
               wordWrap: "break-word",
               overflowWrap: "break-word",
               wordBreak: "break-word",
+              hyphens: "auto",
             }}
           >
             {question.text || question.question}
@@ -117,51 +146,79 @@ const CodeQuiz = ({
           />
         </motion.div>
 
-        {/* Code Block */}
+        {/* Code Block - Enhanced and Aligned */}
         {question.codeSnippet && (
           <motion.div
-            className="rounded-3xl overflow-hidden shadow-2xl border border-border/30 group"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-border/30 group"
+            initial={{ opacity: 0, scale: 0.98, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
             whileHover={{
-              scale: 1.01,
+              scale: 1.005,
               transition: { duration: 0.2 },
             }}
           >
-            {/* Code Header */}
-            <motion.div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
+            {/* Code Header - Improved */}
+            <motion.div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700/50">
               <div className="flex items-center gap-3">
                 {/* Terminal Dots */}
-                <div className="flex gap-2">
-                  <motion.div className="w-3 h-3 rounded-full bg-red-500" whileHover={{ scale: 1.1 }} />
-                  <motion.div className="w-3 h-3 rounded-full bg-yellow-500" whileHover={{ scale: 1.1 }} />
-                  <motion.div className="w-3 h-3 rounded-full bg-green-500" whileHover={{ scale: 1.1 }} />
+                <div className="flex gap-1.5">
+                  <motion.div
+                    className="w-3 h-3 rounded-full bg-red-500/80"
+                    whileHover={{ scale: 1.1, backgroundColor: "#ef4444" }}
+                  />
+                  <motion.div
+                    className="w-3 h-3 rounded-full bg-yellow-500/80"
+                    whileHover={{ scale: 1.1, backgroundColor: "#eab308" }}
+                  />
+                  <motion.div
+                    className="w-3 h-3 rounded-full bg-green-500/80"
+                    whileHover={{ scale: 1.1, backgroundColor: "#22c55e" }}
+                  />
                 </div>
 
                 {/* Language Badge */}
                 <motion.div
-                  className="flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-full"
-                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg backdrop-blur-sm"
+                  whileHover={{ scale: 1.02, backgroundColor: "rgba(51, 65, 85, 0.7)" }}
                 >
-                  <Terminal className="w-4 h-4 text-slate-300" />
-                  <span className="text-slate-300 text-sm font-mono font-medium">
+                  <Terminal className="w-3.5 h-3.5 text-slate-300" />
+                  <span className="text-slate-300 text-xs font-mono font-medium">
                     {question.language || "javascript"}
                   </span>
                 </motion.div>
               </div>
 
-              {/* Language Badge with Glow */}
-              <Badge
-                variant="secondary"
-                className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30 font-semibold text-xs"
-              >
-                <Code2 className="w-3 h-3 mr-1" />
-                {(question.language || "javascript").toUpperCase()}
-              </Badge>
+              <div className="flex items-center gap-2">
+                {/* Language Badge with Icon */}
+                <Badge
+                  variant="secondary"
+                  className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30 font-semibold text-xs"
+                >
+                  <Code2 className="w-3 h-3 mr-1" />
+                  {(question.language || "javascript").toUpperCase()}
+                </Badge>
+
+                {/* Copy Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyCode}
+                  className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700/50"
+                >
+                  <motion.div
+                    key={copied ? "check" : "copy"}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  </motion.div>
+                </Button>
+              </div>
             </motion.div>
 
-            {/* Code Content */}
+            {/* Code Content - Enhanced */}
             <motion.div className="relative overflow-hidden">
               <SyntaxHighlighter
                 language={question.language || "javascript"}
@@ -170,27 +227,30 @@ const CodeQuiz = ({
                 customStyle={{
                   margin: 0,
                   borderRadius: "0",
-                  fontSize: "0.9rem",
-                  padding: "1.25rem",
+                  fontSize: "0.875rem",
+                  padding: "1.5rem",
                   background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+                  lineHeight: "1.6",
                 }}
                 lineNumberStyle={{
                   color: "#64748b",
                   paddingRight: "1rem",
                   userSelect: "none",
+                  fontSize: "0.75rem",
                 }}
               >
                 {question.codeSnippet}
               </SyntaxHighlighter>
 
-              {/* Code overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-transparent pointer-events-none" />
+              {/* Subtle overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none" />
             </motion.div>
           </motion.div>
         )}
 
-        {/* Options */}
+        {/* Options - Aligned with MCQ styling */}
         <motion.div
+          className="max-w-3xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
@@ -203,7 +263,7 @@ const CodeQuiz = ({
           />
         </motion.div>
 
-        {/* Footer */}
+        {/* Footer - Consistent with MCQ */}
         {showNavigation && (
           <QuizFooter
             onNext={onNext}
