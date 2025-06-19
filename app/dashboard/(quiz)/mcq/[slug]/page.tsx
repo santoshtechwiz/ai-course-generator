@@ -36,9 +36,14 @@ export default function McqQuizPage({
       </div>
     )
   }
-
   return (
-    <QuizPlayLayout quizSlug={slug} quizType="mcq">
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="mcq"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
       <QuizSEO 
         slug={slug}
         quizType="mcq"

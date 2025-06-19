@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import QuizSEO from "../../components/QuizSEO"
 
 
 export default function OpenEndedQuizPage({
@@ -39,9 +40,19 @@ export default function OpenEndedQuizPage({
       </div>
     )
   }
-
   return (
-    <QuizPlayLayout>
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="openended"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
+      <QuizSEO 
+        slug={slug}
+        quizType="openended"
+        description={`Challenge yourself with this ${slug.replace(/-/g, ' ')} open-ended quiz. Provide your own answers and test your knowledge!`}
+      />
       <OpenEndedQuizWrapper slug={slug} />
     </QuizPlayLayout>
   );

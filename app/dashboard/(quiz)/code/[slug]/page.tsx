@@ -32,9 +32,14 @@ export default function CodeQuizPage({
       </div>
     )
   }
-
   return (
-    <QuizPlayLayout quizSlug={slug} quizType="code">
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="code"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
       <QuizSEO 
         slug={slug}
         quizType="code"

@@ -39,15 +39,20 @@ export default function BlanksQuizPage({
       </div>
     )
   }
-
   return (
-    <QuizPlayLayout quizSlug={slug} quizType="blanks">
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="blanks"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
       <QuizSEO 
         slug={slug}
         quizType="blanks"
         description={`Improve your knowledge with this ${slug.replace(/-/g, ' ')} fill-in-the-blanks exercise. Complete the missing words and enhance your understanding!`}
       />
-      <BlanksQuizWrapper slug={slug} />
+     
     </QuizPlayLayout>
   )
 }

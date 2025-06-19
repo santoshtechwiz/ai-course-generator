@@ -113,13 +113,14 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const handleAnswer = (selectedOption: string) => {
     if (!currentQuestion) return false
 
-    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
+    // Always use string for questionId and selectedOptionId
+    const questionId = String(currentQuestion.id)
     dispatch(
       saveAnswer({
         questionId,
         answer: {
           questionId,
-          selectedOptionId: selectedOption,
+          selectedOptionId: String(selectedOption),
           type: "code",
           timestamp: Date.now(),
         },
@@ -185,14 +186,14 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     
     return answerObj?.selectedOptionId || null;
   }, [currentQuestion, answers, currentQuestionIndex])
-
   const canGoNext = useMemo(
-    () => currentQuestionIndex < questions.length - 1 && !!currentAnswer,
-    [currentQuestionIndex, questions.length, currentAnswer],
+    () => currentQuestionIndex < questions.length - 1,
+    [currentQuestionIndex, questions.length],
   )
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
-  const canSubmit = isLastQuestion ? !!currentAnswer : canGoNext
+  const hasAnswer = !!currentAnswer
+  const canSubmit = isLastQuestion ? hasAnswer : (hasAnswer && canGoNext)
 
   // ✅ Fixed condition to avoid unnecessary loading state flicker
   const isQuizLoading = loading || (quizStatus === "loading" && questions.length === 0)
@@ -251,7 +252,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
         onNext={handleNext}
         onSubmit={handleSubmitQuiz}
         onRetake={handleRetakeQuiz}
-        canGoNext={canSubmit}
+        canGoNext={hasAnswer && canGoNext}
         canGoPrevious={canGoPrevious}
         isLastQuestion={isLastQuestion}
         isSubmitting={isSubmitting}

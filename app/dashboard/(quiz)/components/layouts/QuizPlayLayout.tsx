@@ -12,6 +12,9 @@ interface QuizPlayLayoutProps {
   children: React.ReactNode
   quizSlug?: string
   quizType?: "mcq" | "code" | "blanks" | "quiz" | "openended" | "flashcard" | "others"
+  quizId?: string
+  isPublic?: boolean
+  isFavorite?: boolean
 }
 
 /**
@@ -150,8 +153,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
           },
         }}
       />
-
-
 
       <motion.div
         className="flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8"

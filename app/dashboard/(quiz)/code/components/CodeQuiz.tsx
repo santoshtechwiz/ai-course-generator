@@ -101,12 +101,10 @@ const CodeQuiz = ({
 
   const progressPercentage = Math.round((questionNumber / totalQuestions) * 100)
   const hasAnswer = !!selectedAnswer
-
   return (
     <QuizContainer
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
-      progressPercentage={progressPercentage}
       quizType="Code Challenge"
       animationKey={question.id}
       quizTitle={quizTitle}
@@ -270,7 +268,7 @@ const CodeQuiz = ({
             onPrevious={canGoPrevious ? () => {} : undefined}
             onSubmit={onSubmit}
             onRetake={onRetake}
-            canGoNext={hasAnswer && canGoNext}
+            canGoNext={!!selectedAnswer }
             canGoPrevious={canGoPrevious}
             isLastQuestion={isLastQuestion}
             isSubmitting={isSubmitting}
