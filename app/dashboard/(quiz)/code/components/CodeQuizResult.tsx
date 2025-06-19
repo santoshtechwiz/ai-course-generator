@@ -49,9 +49,15 @@ const getDisplaySubtitle = (quiz: any): string | undefined => {
   return quiz?.description || quiz?.category || quiz?.language || undefined
 }
 
-export default function CodeQuizResult() {
+interface CodeQuizResultProps {
+  result?: any;
+  onRetake?: () => void;
+}
+
+export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps = {}) {
   const router = useRouter()
-  const quiz = useSelector((state: RootState) => state.quiz)
+  // Use result prop if provided, otherwise fall back to Redux state
+  const quiz = result || useSelector((state: RootState) => state.quiz)
 
   // Calculate results
   const totalQuestions = Array.isArray(quiz.questions) ? quiz.questions.length : 0
@@ -108,7 +114,7 @@ export default function CodeQuizResult() {
       return {
         id: questionId,
         question: question.question || question.text || "",
-        type: "CODE",
+        type: "code",
         userAnswer: userAnswer, // Will be handled by the layout as null if not available
         correctAnswer: correctAnswer,
         isCorrect: isCorrect,
@@ -122,12 +128,13 @@ export default function CodeQuizResult() {
   // Get smart title and subtitle
   const displayTitle = getDisplayTitle(quiz)
   const displaySubtitle = getDisplaySubtitle(quiz)
-
   const handleRetry = () => {
-    if (quiz.slug) {
-      router.push(`/quiz/code/${quiz.slug}`)
+    if (onRetake) {
+      onRetake()
+    } else if (quiz.slug) {
+      router.push(`/dashboard/code/${quiz.slug}`)
     } else {
-      router.push("/quiz/code")
+      router.push("/dashboard/quizzes")
     }
   }
 

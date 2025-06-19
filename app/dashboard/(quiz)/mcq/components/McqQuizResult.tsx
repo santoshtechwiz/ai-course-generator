@@ -94,62 +94,78 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
     typeof percentage === "number" && percentage >= 0 ? Math.min(percentage, 100) : calculatedPercentage;
   const finalPercentage = Math.max(0, Math.min(validatedPercentage, 100));  
     // Prepare formatted questions for QuizResultLayout with enhanced answer extraction
-  const formattedQuestions = Array.isArray(questionResults) ? questionResults.map(q => {
-    // Extract user answer from multiple possible sources with priority order
+  const formattedQuestions = Array.isArray(questionResults) ? questionResults.map(q => {    // Extract user answer from multiple possible sources with priority order
     let userAnswerText = q.userAnswer;
+    let selectedOptionId = q.selectedOptionId || null;
+    let actuallyCorrect = Boolean(q.isCorrect);
     
-    // Try to get the answer from the Redux state if available
-    if ((!userAnswerText || userAnswerText === "") && result.answers) {
-      // Safely look through the answers object for this question ID
+    // Step 1: Look for answers in the Redux store
+    if (result.answers) {
+      // Find the answer object for this question
       const answerObj = result.answers.find((ans: any) => 
         String(ans?.questionId) === String(q.questionId)
       );
+      
       if (answerObj) {
-        // Try multiple fields that might contain the user's answer
-        userAnswerText = answerObj.userAnswer || 
-                        answerObj.selectedOptionId || 
-                        answerObj.text || 
-                        userAnswerText;
+        // Get the selected option ID with fallbacks
+        selectedOptionId = answerObj.selectedOptionId || 
+                          answerObj.optionId || 
+                          selectedOptionId;
+        
+        // Get the user answer text with fallbacks (empty string could be intentional)
+        if (!userAnswerText) {
+          userAnswerText = answerObj.userAnswer || 
+                          answerObj.text || 
+                          userAnswerText;
+        }
+        
+        // Determine correctness from answer object if available
+        if (answerObj.isCorrect !== undefined) {
+          actuallyCorrect = Boolean(answerObj.isCorrect);
+        }
       }
     }
     
-    // 2. If result contains the original questions with options, match the selected answer to option text
+    // Step 2: Find the original question to get options and correct answers
     const originalQuestion = Array.isArray(result.questions) && result.questions.find((origQ: any) => 
       String(origQ.id) === String(q.questionId)
     );
     
-    // If we found matching options in the original question
+    // Step 3: Map selected option ID to actual text if possible
     if (originalQuestion?.options && Array.isArray(originalQuestion.options)) {
-      // Try to find selected option by ID or by matching text
-      const selectedOption = originalQuestion.options.find((opt: any) => {
-        if (!userAnswerText) return false;
-        
-        return (
-          // Match by option ID
-          String(opt) === String(userAnswerText) ||
-          // Match by option text
-          String(opt) === String(userAnswerText) ||
-          // Match by nested ID
-          (opt.id && String(opt.id) === String(userAnswerText)) ||
-          // Match by nested text
-          (opt.text && String(opt.text) === String(userAnswerText))
-        );
-      });
+      // Try to find correct answer
+      const correctAnswer = originalQuestion.answer || q.correctAnswer || '';
       
-      // If we found a matching option with text, use that
-      if (selectedOption && selectedOption.text) {
-        userAnswerText = selectedOption.text;
+      // If we have a selectedOptionId, try to extract the option text
+      if (selectedOptionId) {
+        const selectedOption = originalQuestion.options.find((opt: any) => {
+          // Try different ways to match the option
+          return String(opt.id || opt) === String(selectedOptionId) || 
+                 (typeof opt === 'string' && opt === selectedOptionId);
+        });
+        
+        if (selectedOption) {
+          // Extract user answer text from the option
+          userAnswerText = selectedOption.text || selectedOption;
+          
+          // Re-calculate correctness based on selected option and correct answer
+          const correctOptionId = originalQuestion.answer || originalQuestion.correctOptionId || '';
+          if (correctOptionId) {
+            actuallyCorrect = String(selectedOptionId) === String(correctOptionId);
+          }
+        }
       }
-    }    
+    }
+    
     return {
       id: q.questionId || String(Math.random()),
       question: q.question || "",
       type: "MCQ",
-      userAnswer: userAnswerText || null,
-      correctAnswer: q.correctAnswer || "",
-      isCorrect: Boolean(q.isCorrect),
+      userAnswer: userAnswerText || selectedOptionId || null,
+      correctAnswer: q.correctAnswer || (originalQuestion ? originalQuestion.answer : null) || "",
+      isCorrect: actuallyCorrect,
       explanation: "", // No explanation field available in MCQ questions
-      options: q.options || []
+      options: originalQuestion?.options || q.options || []
     };
   }) : [];
 
@@ -169,9 +185,7 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
   const handleGoHome = () => {
     window.location.href = "/dashboard";
   };
-
-  return (
-    <QuizResultLayout
+  return (    <QuizResultLayout
       title={getQuizTitle()}
       subtitle={getQuizSubtitle()}
       score={finalScore}
@@ -182,181 +196,6 @@ export function McqQuizResult({ result, onRetake }: McqQuizResultProps) {
       questions={formattedQuestions}
       onRetry={handleRetry}
       onGoHome={handleGoHome}
-    >
-      {/* Question Review Section */}
-      <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Question Review</h2>
-
-        <div className="space-y-4">
-          {questionResults?.map((questionResult, index) => (
-            <motion.div
-              key={questionResult.questionId}
-              variants={itemVariants}
-              transition={{ delay: index * 0.05 }}
-              initial="hidden"
-              animate="visible"
-            >
-              <Card
-                className={cn(
-                  "border-l-4 transition-all duration-200 hover:shadow-md",
-                  questionResult.isCorrect
-                    ? "border-l-green-500 bg-green-50/50 dark:bg-green-950/10"
-                    : "border-l-red-500 bg-red-50/50 dark:bg-red-950/10",
-                )}
-              >
-                <CardContent className="p-4 sm:p-6">
-                  <div className="space-y-4">
-                    {/* Question Header */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            Question {index + 1}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            <HelpCircle className="h-3 w-3 mr-1" />
-                            MCQ
-                          </Badge>
-                          {questionResult.isCorrect ? (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <XCircle className="h-5 w-5 text-red-500" />
-                          )}
-                        </div>
-                        <p className="text-sm sm:text-base font-medium text-foreground leading-relaxed break-words">
-                          {questionResult.question}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Options Display */}
-                    {questionResult.options && Array.isArray(questionResult.options) && questionResult.options.length > 0 ? (
-                      <div className="space-y-2">
-                        <span className="text-sm font-medium text-muted-foreground">Answer Options</span>
-                        <div className="grid gap-2">
-                          {questionResult.options.map((option, optionIndex) => {
-                            // Apply defensive coding to avoid null reference errors
-                            if (!option) return null;
-                            
-                            const optionId = option.id || `option-${optionIndex}`;
-                            const optionText = option.text || `Option ${optionIndex + 1}`;
-                            
-                            // Enhanced matching logic that tries multiple comparison strategies
-                            // Try multiple ways to determine if this was the user's answer
-                            const isUserAnswer =
-                              // Direct text/content matching
-                              optionText === questionResult.userAnswer || 
-                              // ID-based matching
-                              optionId === questionResult.userAnswer ||
-                              // Try matching on part of the ID or text (for partial matches)
-                              (questionResult.userAnswer && 
-                               (String(questionResult.userAnswer).includes(optionId) || 
-                                String(optionId).includes(questionResult.userAnswer))) ||
-                              // Additional pass for case-insensitive matching if needed
-                              (questionResult.userAnswer && 
-                                optionText.toLowerCase() === String(questionResult.userAnswer).toLowerCase());
-                                
-                            // Similar approach for correct answer matching
-                            const isCorrectAnswer =
-                              optionText === questionResult.correctAnswer || 
-                              optionId === questionResult.correctAnswer ||
-                              (questionResult.correctAnswer &&
-                               (String(questionResult.correctAnswer).includes(optionId) ||
-                                String(optionId).includes(questionResult.correctAnswer))) ||
-                              // Additional pass for case-insensitive matching if needed
-                              (questionResult.correctAnswer && 
-                                optionText.toLowerCase() === String(questionResult.correctAnswer).toLowerCase());
-
-                            return (
-                              <div
-                                key={optionId}
-                                className={cn(
-                                  "p-3 rounded-lg border-2 text-sm transition-all break-words",
-                                  isCorrectAnswer && "border-green-500 bg-green-50 dark:bg-green-950/20",
-                                  isUserAnswer && !isCorrectAnswer && "border-red-500 bg-red-50 dark:bg-red-950/20",
-                                  !isUserAnswer && !isCorrectAnswer && "border-muted bg-muted/30",
-                                )}
-                              >
-                                <div className="flex items-center gap-2">
-                                  {isCorrectAnswer && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
-                                  {isUserAnswer && !isCorrectAnswer && (
-                                    <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                                  )}
-                                  <span
-                                    className={cn(
-                                      "flex-1 min-w-0",
-                                      isCorrectAnswer && "font-medium text-green-700 dark:text-green-300",
-                                      isUserAnswer && !isCorrectAnswer && "font-medium text-red-700 dark:text-red-300",
-                                    )}
-                                  >
-                                    {optionText}
-                                  </span>
-                                  {isUserAnswer && (
-                                    <Badge variant="outline" className="text-xs flex-shrink-0">
-                                      Your Choice
-                                    </Badge>
-                                  )}
-                                  {isCorrectAnswer && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs bg-green-100 text-green-700 flex-shrink-0"
-                                    >
-                                      Correct
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      /* Fallback Answer Display */
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {/* User Answer */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={cn(
-                                "w-3 h-3 rounded-full flex-shrink-0",
-                                questionResult.isCorrect ? "bg-green-500" : "bg-red-500",
-                              )}
-                            />
-                            <span className="text-sm font-medium text-muted-foreground">Your Answer</span>
-                          </div>
-                          <div
-                            className={cn(
-                              "p-3 rounded-lg border-2 break-words",
-                              questionResult.isCorrect
-                                ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20"
-                                : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20",
-                            )}
-                          >
-                            {questionResult.userAnswer || (
-                              <span className="text-muted-foreground italic">No answer selected</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Correct Answer */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
-                            <span className="text-sm font-medium text-muted-foreground">Correct Answer</span>
-                          </div>
-                          <div className="p-3 rounded-lg border-2 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20 break-words">
-                            {questionResult.correctAnswer}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </QuizResultLayout>
+    />
   )
 }
