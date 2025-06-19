@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import QuizResult from "../../../components/QuizResult"
 import QuizResultHandler from "../../../components/QuizResultHandler"
+import { McqQuizResult } from "../../components/McqQuizResult"
 import { use } from "react"
 
 interface ResultsPageProps {
@@ -38,18 +39,16 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   }
 
   return (
-    <div className="container max-w-4xl py-10">
-      <QuizResultHandler 
+    <div className="container max-w-4xl py-10">      <QuizResultHandler 
         slug={slug} 
         quizType="mcq"
-       
       >
         {({ result }) => (
           result ? (
-            <QuizResult 
+            // Render the McqQuizResult directly instead of going through QuizResult
+            // to avoid potential duplicate rendering
+            <McqQuizResult 
               result={result} 
-              slug={slug} 
-              quizType="mcq" 
               onRetake={handleRetakeQuiz}
             />
           ) : null

@@ -12,7 +12,8 @@ import { NoResults } from "@/components/ui/no-results"
 import FlashCardResults from "../flashcard/components/FlashCardQuizResults"
 import CodeQuizResult from "../code/components/CodeQuizResult"
 import type { QuizType } from "@/types/quiz"
-import {McqQuizResult} from "../mcq/components/McqQuizResult"
+import { McqQuizResult } from "../mcq/components/McqQuizResult"
+import { Button } from "@/components/ui/button"
 
 interface QuizResultProps {
   result: any
@@ -152,7 +153,7 @@ function renderQuizResultComponent(quizType: QuizType, result: any, slug: string
     case "openended":
       return <OpenEndedQuizResults result={result} isAuthenticated={true} slug={slug} onRetake={onRetake} />
     case "code":
-      return <CodeQuizResult />
+      return <CodeQuizResult result={result} onRetake={onRetake} />
     case "flashcard":
       // Pass all result fields as props for consistency
       return (
@@ -167,6 +168,11 @@ function renderQuizResultComponent(quizType: QuizType, result: any, slug: string
         />
       )
     default:
-      return <McqQuizResult result={result} onRetake={onRetake} />
+      // Don't render McqQuizResult as default, use a more generic approach or fallback
+      return <div className="p-6 text-center">
+        <div className="mb-4 text-xl font-medium">Quiz Results</div>
+        <div className="mb-2">Score: {result?.percentage ?? result?.score ?? 0}%</div>
+        <Button onClick={onRetake} className="mt-4">Retake Quiz</Button>
+      </div>
   }
 }

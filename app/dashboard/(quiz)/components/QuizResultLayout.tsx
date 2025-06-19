@@ -255,15 +255,14 @@ export function QuizResultLayout({
           <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-0 shadow-xl">
             <CardHeader>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Question Review</h2>
-            </CardHeader>            <CardContent className="space-y-4">
-              {Array.isArray(questions) && questions.length > 0 ? questions.map((question, index) => (
+            </CardHeader>            <CardContent className="space-y-4">              {Array.isArray(questions) && questions.length > 0 ? questions.map((question, index) => (
                 <motion.div
                   key={question.id}
                   className={cn(
-                    "border-l-4 rounded-lg p-4 transition-all duration-200",
+                    "border-l-4 rounded-lg p-4 transition-all duration-200 hover:shadow-md",
                     question.isCorrect
-                      ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                      : "border-red-500 bg-red-50 dark:bg-red-900/20",
+                      ? "border-green-500 bg-green-50/80 dark:bg-green-900/20"
+                      : "border-red-500 bg-red-50/80 dark:bg-red-900/20",
                   )}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -303,16 +302,23 @@ export function QuizResultLayout({
 
                         <div className="grid md:grid-cols-2 gap-4">
                           {/* Your Answer */}
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <Circle className="w-4 h-4 text-red-500 fill-current" />
+                          <div className="space-y-2">                            <div className="flex items-center space-x-2">
+                              {question.isCorrect ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-red-500" />
+                              )}
                               <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                                 Your Answer
                               </span>
-                            </div>
-                            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg border border-red-200 dark:border-red-800">
-                              <span className="text-slate-600 dark:text-slate-400 italic">
-                                {question.userAnswer || "No answer selected"}
+                            </div>                            <div className={cn(
+                              "p-3 rounded-lg border",
+                              question.isCorrect
+                                ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+                                : "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+                            )}>
+                              <span className={question.userAnswer != null && question.userAnswer !== "" ? "text-slate-700 dark:text-slate-300" : "text-slate-600 dark:text-slate-400 italic"}>
+                                {question.userAnswer != null && question.userAnswer !== "" ? question.userAnswer : "No answer selected"}
                               </span>
                             </div>
                           </div>
@@ -324,9 +330,8 @@ export function QuizResultLayout({
                               <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                                 Correct Answer
                               </span>
-                            </div>
-                            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
-                              <span className="text-slate-700 dark:text-slate-300">{question.correctAnswer}</span>
+                            </div>                        <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
+                              <span className="text-slate-700 dark:text-slate-300 font-medium">{question.correctAnswer}</span>
                             </div>
                           </div>
                         </div>
