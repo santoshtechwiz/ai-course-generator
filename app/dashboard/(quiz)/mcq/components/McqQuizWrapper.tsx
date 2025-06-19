@@ -112,14 +112,15 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const handleAnswer = (selectedOption: string) => {
     if (!currentQuestion) return false
 
-    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString()
+    // Always use string for questionId and selectedOptionId
+    const questionId = String(currentQuestion.id)
     dispatch(
       saveAnswer({
         questionId,
         answer: {
           questionId,
-          selectedOptionId: selectedOption,
-          isCorrect: selectedOption === currentQuestion.answer,
+          selectedOptionId: String(selectedOption),
+          isCorrect: String(selectedOption) === String(currentQuestion.answer),
           timestamp: Date.now(),
         },
       }),
@@ -165,14 +166,15 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     dispatch(clearQuizState())
     router.replace(`/dashboard/mcq/${slug}`)
   }, [dispatch, router, slug])
-
   const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
-  const currentAnswerId =
-    currentQuestion?.id?.toString()
-      ? answers[currentQuestion.id.toString()]?.selectedOptionId
-      : undefined
+  const currentAnswerId = currentQuestion?.id?.toString()
+    ? answers[currentQuestion.id.toString()]?.selectedOptionId
+    : undefined
+    
+  // Make sure currentAnswerId is properly accessed
+  const hasAnswer = !!currentAnswerId
 
   if (loading || quizStatus === "loading") {
     return <QuizLoader message="Loading quiz..." />
@@ -230,7 +232,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         onNext={handleNext}
         onSubmit={handleSubmitQuiz}
         onRetake={handleRetakeQuiz}
-        canGoNext={isLastQuestion ? !!currentAnswerId : !!currentAnswerId && canGoNext}
+        canGoNext={!!currentAnswerId && canGoNext}
         isLastQuestion={isLastQuestion}
         isSubmitting={isSubmitting || quizStatus === "submitting"}
       />

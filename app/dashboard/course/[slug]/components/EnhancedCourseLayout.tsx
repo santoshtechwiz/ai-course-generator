@@ -32,26 +32,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
         "transition-all duration-300",
         theatreMode && "h-0 p-0 overflow-hidden opacity-0"
       )}>
-        <Breadcrumb>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/dashboard">
-              <Home className="h-4 w-4" />
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/dashboard/courses">Courses</BreadcrumbLink>
-          </BreadcrumbItem>
-          {breadcrumbs.map((item, index) => (
-            <BreadcrumbItem key={index}>
-              <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
-            </BreadcrumbItem>
-          ))}
-          <BreadcrumbItem>
-            <span className="text-muted-foreground line-clamp-1 max-w-32 md:max-w-64">
-              {course.title}
-            </span>
-          </BreadcrumbItem>
-        </Breadcrumb>
+       
 
         <Button
           variant="outline"

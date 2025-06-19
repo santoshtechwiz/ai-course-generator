@@ -31,8 +31,7 @@ export function QuizFooter({
   showRetake = false,
   className,
   hasAnswer = false,
-}: QuizFooterProps) {
-  const buttonVariants = {
+}: QuizFooterProps) {  const buttonVariants = {
     hidden: { opacity: 0, y: 20, scale: 0.9 },
     visible: {
       opacity: 1,
@@ -53,6 +52,9 @@ export function QuizFooter({
       transition: { duration: 0.1 },
     },
   }
+  
+  // Debug log for troubleshooting
+  // console.log('QuizFooter props:', { canGoNext, hasAnswer, isLastQuestion })
 
   return (
     <motion.div
@@ -167,8 +169,7 @@ export function QuizFooter({
 
       {/* Next Button */}
       <AnimatePresence>
-        {!isLastQuestion && onNext ? (
-          <motion.div
+        {!isLastQuestion && onNext ? (          <motion.div
             variants={buttonVariants}
             initial="hidden"
             animate="visible"

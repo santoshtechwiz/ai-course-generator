@@ -100,13 +100,10 @@ const McqQuiz = ({
   }
 
   const questionText = question.text || question.question || "Question not available"
-
   return (
     <QuizContainer
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
-      
-      progressPercentage={progressPercentage}
       quizType="Multiple Choice"
       animationKey={question.id}
       quizTitle={quizTitle}
@@ -286,7 +283,7 @@ const McqQuiz = ({
           onPrevious={undefined}
           onSubmit={isLastQuestion ? onSubmit : undefined}
           onRetake={onRetake}
-          canGoNext={!!selectedOption && canGoNext}
+      canGoNext={!!selectedOption }
           canGoPrevious={false}
           isLastQuestion={isLastQuestion}
           isSubmitting={isSubmitting}
