@@ -151,26 +151,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
         }}
       />
 
-      {/* Quiz Header */}
-      <motion.div
-        className="text-center mb-8 space-y-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: isLoaded ? 1 : 0, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight break-words px-4">
-            {quizMeta.title.split("|")[0].trim()}
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground">{quizTypeLabel} Quiz</p>
-          <motion.div
-            className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full max-w-md mx-auto"
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
-          />
-        </div>
-      </motion.div>
+
 
       <motion.div
         className="flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8"
