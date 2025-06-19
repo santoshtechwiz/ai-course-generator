@@ -139,13 +139,13 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
   }, [currentQuestionIndex, dispatch])
+
   const handleSubmitQuiz = useCallback(async () => {
     if (isSubmitting) return
 
     setIsSubmitting(true)
     enhancedLoader.showLoader({ message: "Submitting your quiz...", variant: "shimmer", fullscreen: true });
     try {
-      // Filter out any null answers to prevent errors
       const validAnswers = Object.values(answers).filter(answer => answer !== null && answer !== undefined);
       
       const results = {
@@ -176,13 +176,13 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     dispatch(clearQuizState())
     router.replace(`/dashboard/code/${slug}`)
   }, [dispatch, router, slug])
+
   const currentAnswer = useMemo(() => {
     if (!currentQuestion || !answers) return null;
     
     const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString();
     const answerObj = answers[questionId];
     
-    // Only try to access selectedOptionId if the answer object exists
     return answerObj?.selectedOptionId || null;
   }, [currentQuestion, answers, currentQuestionIndex])
 
@@ -194,7 +194,10 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   const canSubmit = isLastQuestion ? !!currentAnswer : canGoNext
 
-  if (loading || quizStatus === "loading") {
+  // ✅ Fixed condition to avoid unnecessary loading state flicker
+  const isQuizLoading = loading || (quizStatus === "loading" && questions.length === 0)
+
+  if (isQuizLoading) {
     return <QuizLoader message="Loading code quiz..." />
   }
 
@@ -240,6 +243,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     >
       <CodeQuiz
         question={currentQuestion}
+        quizTitle={title || quizTitle || "Code Quiz"}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
         existingAnswer={currentAnswer}

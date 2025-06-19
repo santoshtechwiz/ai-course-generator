@@ -220,6 +220,8 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     >
       <McqQuiz
         key={currentQuestion.id}
+        quizTitle={quizTitle || title}
+      
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}

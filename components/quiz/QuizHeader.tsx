@@ -110,7 +110,7 @@ export function QuizHeader({
       </div>
 
       {/* Progress Line */}
-      <div className="mt-6">
+      {/* <div className="mt-6">
         <p className="text-center text-sm text-muted-foreground font-medium mb-2">
           Question <span className="font-bold text-primary">{currentQuestion}</span> of{" "}
           <span className="font-semibold">{totalQuestions}</span> ·{" "}
@@ -124,7 +124,7 @@ export function QuizHeader({
             transition={{ duration: 0.6, ease: "easeOut" }}
           />
         </div>
-      </div>
+      </div> */}
     </motion.div>
   )
 }

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { CheckCircle2 } from "lucide-react"
 
 interface McqQuizProps {
+  
   question: {
     id: string
     text?: string
@@ -104,6 +105,7 @@ const McqQuiz = ({
     <QuizContainer
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
+      
       progressPercentage={progressPercentage}
       quizType="Multiple Choice"
       animationKey={question.id}
