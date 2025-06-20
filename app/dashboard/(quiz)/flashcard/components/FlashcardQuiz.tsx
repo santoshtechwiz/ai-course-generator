@@ -44,9 +44,10 @@ interface FlashCardComponentProps {
   onSaveCard?: (card: FlashCard) => void
   savedCardIds?: string[]
   isReviewMode?: boolean
+  onComplete?: (results: any) => void
 }
 
-function FlashCardQuiz({
+export default function FlashCardQuiz({
   cards,
   quizId,
   slug,
@@ -54,6 +55,7 @@ function FlashCardQuiz({
   onSaveCard,
   savedCardIds = [],
   isReviewMode = false,
+  onComplete,
 }: FlashCardComponentProps) {
   // Get state from flashcard slice only
   const dispatch = useAppDispatch()
@@ -345,32 +347,9 @@ function FlashCardQuiz({
       }
 
       // Otherwise, complete the quiz
-      const correctCount = calculateScore()
-      const totalQuestions = cards.length
-      const score = totalQuestions ? (correctCount / totalQuestions) * 100 : 0
-
-      // Calculate total time from answers
-      const totalTime = Array.isArray(answers) ? answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0) : 0
-
-      // Complete the quiz with proper result data
-      const quizResults = {
-        score,
-        answers: answers || [],
-        completedAt: new Date().toISOString(),
-        percentage: score,
-        correctAnswers: correctCount,
-        stillLearningAnswers: processedResults.stillLearningCount,
-        incorrectAnswers: processedResults.incorrectCount,
-        totalQuestions: totalQuestions,
-        totalTime: totalTime,
-        reviewCards: processedResults.reviewCards,
-        stillLearningCards: processedResults.stillLearningCards,
+      if (onComplete) {
+        onComplete()
       }
-
-      dispatch(completeFlashCardQuiz(quizResults))
-
-      // Show confetti for completion
-      setShowConfetti(true)
     }
   }, [
     currentQuestionIndex,
@@ -378,10 +357,8 @@ function FlashCardQuiz({
     reviewCards.length,
     cards,
     dispatch,
-    calculateScore,
-    answers,
     cardControls,
-    processedResults,
+    onComplete,
   ])
 
   // Rating feedback optimization with smoother spring physics
@@ -642,6 +619,8 @@ function FlashCardQuiz({
     // Not completed or in review mode - show flashcard UI
     return (
       <QuizContainer
+        quizTitle="Flashcard Quiz"
+        quizSubtitle="Test your knowledge with interactive flashcards"
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={reviewMode ? reviewCards.length : cards?.length || 0}
         quizType="Flashcard"
@@ -1064,7 +1043,20 @@ function FlashCardQuiz({
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
-                onClick={moveToNextCard}
+                onClick={() => {
+                  if (
+                    currentQuestionIndex >=
+                    (reviewMode ? reviewCards.length - 1 : (cards?.length || 0) - 1)
+                  ) {
+                    if (reviewMode) {
+                      handleExitReviewMode();
+                    } else if (onComplete) {
+                      onComplete(processedResults);
+                    }
+                  } else {
+                    moveToNextCard();
+                  }
+                }}
                 className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {currentQuestionIndex >= (reviewMode ? reviewCards.length - 1 : (cards?.length || 0) - 1)
@@ -1088,4 +1080,4 @@ function FlashCardQuiz({
   )
 }
 
-export default FlashCardQuiz
+

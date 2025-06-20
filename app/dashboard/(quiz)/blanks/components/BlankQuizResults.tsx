@@ -2,27 +2,61 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { levenshteinDistance } from "@/lib/utils/text-similarity"
 import { Confetti } from "@/components/ui/confetti"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, XCircle, Trophy, Target, Share2, RefreshCw, Home } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import type { BlanksQuizResult } from "@/types/blanks-quiz"
+
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import { clearQuizState } from "@/store"
 import { useDispatch } from "react-redux"
 
-function getSimilarity(userAnswer: string, correctAnswer: string) {
-  return getBestSimilarityScore(userAnswer || "", correctAnswer || "") / 100
-}
+// Using standardized similarity utilities
+import { 
+  calculateAnswerSimilarity,
+  getSimilarityFeedback } from "@/lib/utils/similarity-scoring"
+import { BestGuess } from "@/components/ui/best-guess"
+import { getSimilarityLabel } from "@/lib/utils/quiz-result-helpers"
+import { BlanksQuizResult } from "@/app/types/quiz-types"
 
-function getSimilarityLabel(similarity: number) {
-  if (similarity >= 0.7) return "Correct"
-  if (similarity >= 0.5) return "Close"
-  return "Incorrect"
+// Move function outside component to prevent recreation
+function getSimilarity(userAnswer: string, correctAnswer: string) {
+  try {
+    // Make sure userAnswer and correctAnswer are strings and handle the case where they might be null/undefined
+    const userStr = (userAnswer || "").toString().trim().toLowerCase();
+    const correctStr = (correctAnswer || "").toString().trim().toLowerCase();
+    
+    // Do an exact match check first for simple answers 
+    if (userStr === correctStr) {
+      return 1.0; // 100% match
+    }
+      // Special case for blanks quizzes - enhance similarity detection for minor misspellings
+    // Use Levenshtein distance to give more weight to misspelled words that are structurally similar
+    
+    // For short answers (typical in blanks quizzes), use Levenshtein directly with higher tolerance
+    if (correctStr.length < 20 && userStr.length > 0) {
+      const maxLen = Math.max(userStr.length, correctStr.length);
+      const distance = levenshteinDistance(userStr, correctStr);
+      const levScore = 1 - (distance / maxLen);
+      
+      // More generous threshold for short answers with minor misspellings
+      // e.g. "orchestions" vs "orchestration" should get partial credit
+      if (levScore >= 0.7) {
+        return levScore; // Give proportional score based on similarity
+      }
+    }
+    
+    // Fall back to standard similarity scoring for more complex answers
+    return calculateAnswerSimilarity(userStr, correctStr);
+  } catch (error) {
+    console.error("Error in getSimilarity:", error);
+    // Fall back to standard method if anything fails
+    return calculateAnswerSimilarity(userAnswer || "", correctAnswer || "");
+  }
 }
 
 function getPerformanceLevel(percentage: number) {
@@ -92,65 +126,107 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
   const hasShownConfettiRef = useRef(false)
-  const enhancedResults = useMemo(() => {
-    if (!result?.questionResults) return []
-
-    return result.questionResults.map((q) => {
+  
+  // Memoize enhanced results to prevent recalculation on every render
+  const enhancedResults = useMemo(() => {    // Early validation to prevent processing invalid data
+    if (!result?.questionResults) return [];return result.questionResults.map((q: any) => {
+      // Normalize question ID for consistent comparison
       const questionId = String(q.questionId || q.id || "")
-      const actualAnswer = result.answers?.find((a) => String(a.questionId || a.id || "") === questionId)
-      const questionData = result.questions?.find((quest) => String(quest.id || quest.questionId || "") === questionId)
+
+      // Find the actual user answer from the answers array with enhanced matching
+      const actualAnswer = result.answers?.find((a: any) => String(a.questionId || a.id || "") === questionId)
+
+      // Find the question text from the questions array with more robust matching
+      const questionData = result.questions?.find((quest: any) => String(quest.id || quest.questionId || "") === questionId)
+
+      // Extract question text with improved priority and fallbacks
       const questionText =
         q.question || q.text || questionData?.question || questionData?.text || `Question ${questionId}`
+
+      // Extract user answer with comprehensive fallbacks for fill-in-the-blanks format
       const userAnswer =
         actualAnswer?.userAnswer || actualAnswer?.text || actualAnswer?.answer || q.userAnswer || q.answer || ""
-      const correctAnswer = q.correctAnswer || questionData?.correctAnswer || questionData?.answer || ""
-      const similarity = typeof q.similarity === "number" ? q.similarity : getSimilarity(userAnswer, correctAnswer)
-      const similarityLabel = q.similarityLabel || getSimilarityLabel(similarity)
+
+      // Extract correct answer with comprehensive fallbacks
+      const correctAnswer = q.correctAnswer || questionData?.correctAnswer || questionData?.answer || ""      // Calculate or use provided similarity with proper type checking and NaN protection
+      let sim = typeof q.similarity === "number" && !isNaN(q.similarity) ? q.similarity : getSimilarity(userAnswer, correctAnswer);
+      
+      // Ensure similarity is never NaN - default to 0 if it somehow is
+      if (isNaN(sim)) {
+        console.warn(`Calculated similarity is NaN for question "${questionText}", userAnswer="${userAnswer}", correctAnswer="${correctAnswer}"`);
+        sim = 0;
+      }
+
+      // Generate similarity label from calculated or existing value
+      const similarityLabel = q.similarityLabel || getSimilarityLabel(sim)      // Determine correctness with explicit boolean checks and fallback to similarity
+      // Use more lenient thresholds for blanks quizzes to account for minor typos
       const isCorrect =
         typeof actualAnswer?.isCorrect === "boolean"
           ? actualAnswer.isCorrect
           : typeof q.isCorrect === "boolean"
             ? q.isCorrect
-            : similarity >= 0.7
+            : sim >= 0.7 // Anything at 70% or higher is considered correct (matches similarity-scoring.ts logic)
 
+      // Return a comprehensive and normalized result object
       return {
         ...q,
         questionId,
         question: questionText,
         userAnswer,
         correctAnswer,
-        similarity,
+        similarity: sim,
         similarityLabel,
         isCorrect,
+        // Include debug info
+        _originalData: {          questionResult: q,
+          answerData: actualAnswer,
+          questionData: questionData,
+        }
       }
     })
-  }, [result])
+  }, [result]);  // Memoize derived values to avoid recalculation
+  
+  const { correctCount, totalQuestions, percentage } = useMemo(() => {
+    const correct = enhancedResults.filter((q: any) => q.isCorrect).length;
+    const total = enhancedResults.length || 1;
+    let finalPercentage = result?.percentage;
 
-  const correctCount = enhancedResults.filter((q) => q.isCorrect).length
-  const totalQuestions = enhancedResults.length || 1
-  const percentage = result?.percentage ?? Math.round((correctCount / totalQuestions) * 100)
-  const performance = useMemo(() => getPerformanceLevel(percentage), [percentage])
+    // Calculate percentage if not provided
+    if (finalPercentage === undefined || finalPercentage === null) {
+      // Use existing scoring logic or provide fallback
+      if (result?.score !== undefined && result?.maxScore && result.maxScore > 0) {
+        finalPercentage = Math.round((result.score / result.maxScore) * 100);
+      } else {
+        finalPercentage = Math.round((correct / total) * 100);
+      }
+    }
+    
+    return {      correctCount: correct,
+      totalQuestions: total,
+      percentage: Math.max(0, Math.min(finalPercentage, 100)) // Clamp between 0-100
+    };
+  }, [enhancedResults, result]);
+  
+  const performance = useMemo(() => getPerformanceLevel(percentage), [percentage]);
 
   useEffect(() => {
-    const resultId = result?.completedAt
+    const resultId = result?.completedAt;
     if (result && resultId && !hasShownConfettiRef.current && percentage >= 70) {
-      hasShownConfettiRef.current = true
-      setShowConfetti(true)
-      const timer = setTimeout(() => setShowConfetti(false), 3000)
-      return () => clearTimeout(timer)
+      hasShownConfettiRef.current = true;
+      setShowConfetti(true);
+      const timer = setTimeout(() => setShowConfetti(false), 3000);
+      return () => clearTimeout(timer);
     }
-  }, [result, percentage])
-
-  const dispatch = useDispatch()
+  }, [result, percentage]);
+  const dispatch = useDispatch();
   const handleRetake = useCallback(() => {
-    if (onRetake) return onRetake()
-    dispatch(clearQuizState())
-    router.push(`/dashboard/blanks/${result.slug}`)
-  }, [onRetake, dispatch, router, result.slug])
-
+    if (onRetake) return onRetake();
+    dispatch(clearQuizState());
+    router.push(`/dashboard/blanks/${result?.slug || slug}`);
+  }, [onRetake, dispatch, router, result?.slug, slug]);
   const handleViewAllQuizzes = () => {
-    router.push("/dashboard/quizzes")
-  }
+    router.push("/dashboard/quizzes");
+  };
 
   const handleShare = async () => {
     try {
@@ -492,10 +568,7 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
               Answer Review ({enhancedResults.length} Questions)
             </CardTitle>
             <p className="text-muted-foreground text-lg">Review your answers and learn from mistakes</p>
-          </CardHeader>
-
-          <CardContent className="space-y-6 p-8">
-            {enhancedResults.map((q, index) => (
+          </CardHeader>          <CardContent className="space-y-6 p-8">            {enhancedResults.map((q: any, index: number) => (
               <motion.div
                 key={q.questionId}
                 className="p-6 rounded-2xl border-2 border-muted/30 bg-gradient-to-r from-background to-muted/5 shadow-lg hover:shadow-xl transition-all duration-300"
@@ -515,68 +588,37 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
                   <div className="flex-1">
                     <div className="font-bold mb-3 text-lg text-foreground">
                       Question {index + 1}: {q.question}
-                    </div>
-
-                    <div className="space-y-4">
-                      <div
-                        className={`p-4 rounded-xl border-2 shadow-md ${
-                          q.isCorrect
-                            ? "bg-gradient-to-r from-green-50 to-green-100 border-green-200"
-                            : "bg-gradient-to-r from-red-50 to-red-100 border-red-200"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="font-semibold text-base">Your answer:</span>
-                        </div>
-                        <div className="pl-0">
-                          <span
-                            className={`text-base font-medium ${
-                              q.similarityLabel === "Correct"
-                                ? "text-green-500"
-                                : q.similarityLabel === "Close"
-                                  ? "text-yellow-600"
-                                  : "text-red-500"
-                            }`}
-                          >
-                            {q.userAnswer || "(no answer)"}
-                          </span>
-                          {q.similarityLabel === "Close" && (
-                            <motion.span
-                              className="ml-3 text-sm text-yellow-600 font-bold bg-yellow-100 px-2 py-1 rounded-full"
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-                            >
-                              (Close enough!)
-                            </motion.span>
-                          )}
-                        </div>
-                      </div>
-
-                      {!q.isCorrect && (
-                        <motion.div
-                          className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 shadow-md"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          transition={{ delay: 0.1, duration: 0.3 }}
-                          whileHover={{ scale: 1.02 }}
-                        >
-                          <div className="flex items-center gap-3 mb-2">
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                            <span className="font-semibold text-base">Correct answer:</span>
-                          </div>
-                          <p className="text-base font-medium text-green-500 pl-8">{q.correctAnswer}</p>
-                        </motion.div>
-                      )}
-                    </div>
-
-                    <motion.div
+                    </div>                    <div className="space-y-4">
+                      <BestGuess 
+                        userAnswer={q.userAnswer || ""} 
+                        correctAnswer={q.correctAnswer || ""} 
+                        similarity={isNaN(q.similarity) ? 0 : q.similarity} 
+                        explanation={getSimilarityFeedback(isNaN(q.similarity) ? 0 : q.similarity)}
+                        showDetailedInfo={true}
+                      />
+                    </div>                    <motion.div
                       className="text-sm text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg border border-muted/30"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 }}
                     >
                       <strong>Similarity:</strong> {Math.round((q.similarity || 0) * 100)}% ({q.similarityLabel})
+                      {process.env.NODE_ENV !== 'production' && q.userAnswer !== q.correctAnswer && (
+                        <div className="mt-1 text-xs text-muted-foreground italic">
+                          <details>
+                            <summary>Debug Info</summary>
+                            <div className="pl-2 mt-1">
+                              <div>User: "{q.userAnswer}"</div>
+                              <div>Expected: "{q.correctAnswer}"</div>
+                              <div>Raw similarity score: {(q.similarity || 0).toFixed(4)}</div>
+                              <div>Levenshtein distance: {levenshteinDistance(
+                                (q.userAnswer || "").toString().trim().toLowerCase(),
+                                (q.correctAnswer || "").toString().trim().toLowerCase()
+                              )}</div>
+                            </div>
+                          </details>
+                        </div>
+                      )}
                     </motion.div>
                   </div>
                 </div>

@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import QuizResult from "../../../components/QuizResult"
+
 import QuizResultHandler from "../../../components/QuizResultHandler"
-import { McqQuizResult } from "../../components/McqQuizResult"
+
 import { use } from "react"
+import { McqQuizResult } from "../../components/McqQuizResult"
 
 interface ResultsPageProps {
   params: Promise<{

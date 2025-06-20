@@ -137,6 +137,30 @@ export const fetchQuiz = createAsyncThunk(
   }
 )
 
+// Add helper function at the top of file
+const calculateQuizScore = (answers: Record<string, QuizAnswer>, questions: QuizQuestion[]) => {
+  let correctCount = 0;
+  let totalCount = 0;
+
+  questions.forEach(question => {
+    const answer = answers[question.id];
+    if (!answer) return;
+
+    totalCount++;
+    if (answer.type === 'mcq' && (answer as MCQAnswer).isCorrect) {
+      correctCount++;
+    } else if (answer.type === 'code' && (answer as CodeAnswer).isCorrect) {
+      correctCount++;
+    }
+  });
+
+  return {
+    score: correctCount,
+    totalQuestions: totalCount,
+    percentage: totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0
+  };
+};
+
 // Enhanced submitQuiz thunk that preserves state
 export const submitQuiz = createAsyncThunk("quiz/submitQuiz", async (_, { getState, rejectWithValue }) => {
   const state = getState() as RootState
@@ -714,15 +738,18 @@ const quizSlice = createSlice({
 
     // Update setQuizResults to handle potential slug object structures
     setQuizResults: (state, action: PayloadAction<any>) => {
-      state.results = action.payload
-      state.isProcessingResults = false // Mark processing as complete
-
-      // If we have nested slug in the results, normalize it
-      if (action.payload?.slug && typeof action.payload.slug === "object") {
-        state.slug = normalizeSlug(action.payload.slug)
-      }
-
-      state.status = "succeeded"
+      const scoreData = calculateQuizScore(state.answers, state.questions);
+      state.results = {
+        ...action.payload,
+        ...scoreData,
+        completedAt: new Date().toISOString(),
+        quizId: state.quizId,
+        slug: state.slug,
+        title: state.title,
+        questions: state.questions,
+        answers: Object.values(state.answers)
+      };
+      state.isCompleted = true;
     },
 
     resetPendingQuiz: (state) => {
@@ -1511,4 +1538,4 @@ export const saveQuizResultsToDatabase = createAsyncThunk(
       return rejectWithValue(error.message || "Failed to save results")
     }
   }
-)
+);
