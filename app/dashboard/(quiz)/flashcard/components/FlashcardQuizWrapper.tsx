@@ -13,6 +13,8 @@ import {
   selectIsQuizComplete,
   clearQuizState,
   fetchFlashCardQuiz,
+  saveFlashCardResults,
+  completeFlashCardQuiz,
 } from "@/store/slices/flashcard-slice"
 import FlashcardQuiz from "./FlashcardQuiz"
 import { toast } from "sonner"
@@ -79,12 +81,12 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
     }
   }, [slug, dispatch, isResetMode, isReviewMode, questions.length])
 
-  // Handle quiz completion and navigation - REMOVED DELAY
+  // Handle quiz completion and navigation
   useEffect(() => {
-    if (!isCompleted) return
-
-    // No automatic redirect - let the quiz component handle it
-    // The FlashcardQuiz component will handle the redirect immediately
+    if (isCompleted) {
+      // Redirect to results page when quiz is completed
+      router.push(`/dashboard/flashcard/${slug}/results`)
+    }
   }, [isCompleted, router, slug])
 
   // Get cards to review (based on incorrect and still_learning answers)
@@ -108,6 +110,52 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   // Loading state
   if (quizStatus === "loading") {
     return <div>Loading...</div>
+  }
+
+  // Handle quiz completion
+  const onComplete = () => {
+    // Calculate total time from answers
+    const totalTime = Array.isArray(answers) ? answers.reduce((acc, answer) => acc + (answer?.timeSpent || 0), 0) : 0
+
+    // Calculate score based on "correct" self-ratings
+    const correctCount = answers.filter((answer) => answer.answer === "correct").length
+    const stillLearningCount = answers.filter((answer) => answer.answer === "still_learning").length
+    const incorrectCount = answers.filter((answer) => answer.answer === "incorrect").length
+
+    const totalQuestions = questions.length
+    const score = totalQuestions ? (correctCount / totalQuestions) * 100 : 0
+
+    // Complete the quiz with proper result data
+    const quizResults = {
+      score,
+      answers: answers || [],
+      completedAt: new Date().toISOString(),
+      percentage: score,
+      correctAnswers: correctCount,
+      stillLearningAnswers: stillLearningCount,
+      incorrectAnswers: incorrectCount,
+      totalQuestions: totalQuestions,
+      totalTime: totalTime,
+      reviewCards: answers.filter((a) => a.answer === "incorrect").map((_, index) => index),
+      stillLearningCards: answers.filter((a) => a.answer === "still_learning").map((_, index) => index),
+    }
+
+    dispatch(completeFlashCardQuiz(quizResults))
+
+    // Save the final results
+    dispatch(
+      saveFlashCardResults({
+        slug,
+        data: answers.map((answer) => ({
+          questionId: answer.questionId,
+          answer: answer.answer,
+          isCorrect: answer.isCorrect,
+        })),
+      }),
+    )
+
+    // Navigate to results page
+    router.push(`/dashboard/flashcard/${slug}/results`)
   }
 
   // Error state
@@ -168,6 +216,11 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
         cards={currentQuestions}
         quizId={slug}
         slug={slug}
+        onComplete={onComplete}
+        onSaveCard={(saveData) => {
+          // Save the card answer immediately
+          dispatch(saveFlashCardResults({ slug, data: [saveData] }))
+        }}
         title={
           isReviewMode ? `Review: ${quizTitle || title || "Flashcard Quiz"}` : quizTitle || title || "Flashcard Quiz"
         }

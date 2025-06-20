@@ -167,8 +167,16 @@ const flashcardSlice = createSlice({
 
     completeFlashCardQuiz: (state, action: PayloadAction<any>) => {
       state.isCompleted = true
-      state.results = action.payload
-      state.status = "succeeded"
+      state.results = {
+        ...action.payload,
+        completedAt: new Date().toISOString(),
+        quizId: state.quizId,
+        slug: state.slug,
+        title: state.title,
+        questions: state.questions,
+        answers: state.answers,
+      }
+      state.shouldRedirectToResults = true // Add this flag
     },
 
     resetFlashCards: (state) => {

@@ -9,6 +9,7 @@ import FlashCardResults from "./FlashCardQuizResults"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { setQuizResults } from "@/store/slices/flashcard-slice"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
+import { Button } from "@/components/ui/button"
 
 interface FlashcardResultHandlerProps {
   slug: string
@@ -55,6 +56,7 @@ export default function FlashcardResultHandler({
     quizId,
     results: storedResults,
     questions: storeQuestions,
+    shouldRedirectToResults, // <-- ADD THIS
   } = useAppSelector((state) => state.flashcard)
 
   // Process answers to get detailed counts including still_learning
@@ -199,36 +201,20 @@ export default function FlashcardResultHandler({
 
     hasInitializedRef.current = true
 
-    // Immediate check without delay
     const hasValidResults =
       (isCompleted && answers?.length > 0) || // Fresh completion
       storedResults || // Stored results in Redux
       restoredResults // Restored from storage
 
-    // Check storage for pending results immediately
-    let hasStoredResults = false
-    try {
-      const sessionData = sessionStorage.getItem("pendingQuizResults")
-      const localData = localStorage.getItem("pendingQuizResults")
-
-      if (sessionData || localData) {
-        const storedData = JSON.parse(sessionData || localData || "{}")
-        if (storedData.slug === slug && storedData.quizType === "flashcard") {
-          hasStoredResults = true
-        }
-      }
-    } catch (error) {
-      console.warn("Failed to check stored results:", error)
-    }
-
-    if (!hasValidResults && !hasStoredResults) {
+    // Add check for shouldRedirectToResults
+    if (!hasValidResults && !shouldRedirect) {
       console.log("No valid results found, redirecting to quiz page")
       setShouldRedirect(true)
       router.replace(`/dashboard/flashcard/${slug}`)
     } else {
       setIsLoading(false)
     }
-  }, [status, isCompleted, answers, storedResults, restoredResults, slug, router])
+  }, [status, isCompleted, answers, storedResults, restoredResults, slug, router, shouldRedirect])
 
   // Restore results after authentication
   useEffect(() => {
@@ -336,8 +322,50 @@ export default function FlashcardResultHandler({
     }
   }, [onReviewStillLearning, processedResults.stillLearningCards, questions, storeQuestions])
 
-  // Show loading while session is loading or processing
-  if (isLoading || status === "loading" || shouldRedirect) {
+  // --- EARLY RETURN: Show loader during any loading, redirect, or result submission state ---
+  const isNoAnswersCompleted = isCompleted && (!answers || answers.length === 0)
+  if (
+    (isLoading || status === "loading" || shouldRedirect || shouldRedirectToResults || (!completeResults && (status === "authenticated" || status === "unauthenticated"))) && !isNoAnswersCompleted
+  ) {
+    if (typeof window !== 'undefined') document.body.classList.add('quiz-loading')
+    return <QuizLoader message="Loading results..." subMessage="Please wait while we process your session" />
+  }
+  if (typeof window !== 'undefined') document.body.classList.remove('quiz-loading')
+
+  // If quiz is completed but no answers, show a proper error UI
+  if (isNoAnswersCompleted) {
+    return (
+      <div className="container max-w-2xl py-10 text-center">
+        <h2 className="text-2xl font-bold mb-4">No Results Available</h2>
+        <p className="text-muted-foreground mb-6">You did not answer any flashcards. Please try the quiz again.</p>
+        <Button onClick={onRestart} className="mr-2">Try Again</Button>
+        <Button variant="outline" onClick={() => router.push("/dashboard/flashcard")}>Browse Topics</Button>
+      </div>
+    )
+  }
+
+  // --- REDIRECT TO RESULTS PAGE WHEN shouldRedirectToResults IS TRUE ---
+  useEffect(() => {
+    if (shouldRedirectToResults) {
+      if (typeof window !== 'undefined') document.body.classList.add('quiz-redirect')
+      if (!window.location.pathname.endsWith('/results')) {
+        setIsLoading(true)
+        router.replace(`/dashboard/flashcard/${slug}/results`)
+      }
+    } else {
+      if (typeof window !== 'undefined') document.body.classList.remove('quiz-redirect')
+    }
+    return () => { if (typeof window !== 'undefined') document.body.classList.remove('quiz-redirect') }
+  }, [shouldRedirectToResults, router, slug])
+
+  // --- EARLY RETURN: Show loader during any loading, redirect, or result submission state ---
+  if (
+    isLoading ||
+    status === "loading" ||
+    shouldRedirect ||
+    shouldRedirectToResults ||
+    (!completeResults && (status === "authenticated" || status === "unauthenticated"))
+  ) {
     return <QuizLoader message="Loading results..." subMessage="Please wait while we process your session" />
   }
 
@@ -394,7 +422,7 @@ export default function FlashcardResultHandler({
   }
 
   // For unauthenticated users without results, redirect to quiz
-  if (status === "unauthenticated" && !completeResults) {
+  if (status === "unauthenticated" && !completeResults && !isLoading) {
     router.replace(`/dashboard/flashcard/${slug}`)
     return <QuizLoader message="Redirecting to quiz..." subMessage="Authentication required" />
   }

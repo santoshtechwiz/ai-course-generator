@@ -9,6 +9,7 @@ import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
+import BlankQuizWrapper from "../components/BlankQuizWrapper"
 
 export default function BlanksQuizPage({
   params,
@@ -52,7 +53,10 @@ export default function BlanksQuizPage({
         quizType="blanks"
         description={`Improve your knowledge with this ${slug.replace(/-/g, ' ')} fill-in-the-blanks exercise. Complete the missing words and enhance your understanding!`}
       />
-     
+      <BlanksQuizWrapper
+      slug={slug}
+      title="Fill in the Blanks Quiz"
+      />
     </QuizPlayLayout>
   )
 }

@@ -38,19 +38,7 @@ export default function FlashCardResultsPage({
   return (
     <div className="container max-w-4xl py-10">
       <FlashcardResultHandler slug={slug}>
-        {({ result }) => (
-          <FlashCardResults
-            slug={slug}
-            title={result?.title}
-            score={result?.percentage ?? result?.score ?? 0}
-            totalQuestions={result?.totalQuestions ?? 0}
-            correctAnswers={result?.correctAnswers ?? 0}
-            totalTime={result?.totalTime ?? 0}
-            onReview={result?.reviewCards ? 
-              () => router.push(`/dashboard/flashcard/${slug}?review=true&t=${Date.now()}`) 
-              : undefined}
-          />
-        )}
+       
       </FlashcardResultHandler>
     </div>
   )

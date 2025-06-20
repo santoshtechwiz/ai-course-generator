@@ -1,22 +1,37 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 import { Confetti } from "@/components/ui/confetti"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircleIcon, AlertTriangle } from "lucide-react"
-import { motion } from "framer-motion"
+import { CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircle, XCircle, Trophy, Target, Share2, RefreshCw, Home } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { NoResults } from "@/components/ui/no-results"
+import { BestGuess } from "@/components/ui/best-guess"
+import { useDispatch } from "react-redux"
+import { clearQuizState } from "@/store"
+
+// Using standardized similarity utilities
+import { 
+  calculateAnswerSimilarity,
+  getSimilarityFeedback,
+  calculateQuizScoreWithPartialCredit
+} from "@/lib/utils/similarity-scoring"
+import { QuizResultHeader } from "@/components/ui/quiz-result-header"
 
 interface QuestionResult {
   questionId: string | number
+  id?: string | number
   userAnswer?: string
   correctAnswer?: string
   isCorrect?: boolean
   similarity?: number
   question?: string
+  text?: string
+  answer?: string
   keywords?: string[]
   similarityLabel?: string
 }
@@ -28,7 +43,11 @@ interface OpenEndedQuizResult {
   score?: number
   percentage?: number
   completedAt?: string
+  slug?: string
+  quizId?: string
   questionResults?: QuestionResult[]
+  questions?: Array<any>
+  answers?: Array<any>
 }
 
 interface Props {
@@ -64,10 +83,10 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
       const questionId = String(q.questionId || q.id || "")
 
       // Find the actual user answer from the answers array with enhanced matching
-      const actualAnswer = result.answers?.find((a) => String(a.questionId || a.id || "") === questionId)
+      const actualAnswer = result.answers?.find((a: any) => String(a.questionId || a.id || "") === questionId)
 
       // Find the question text from the questions array with more robust matching
-      const questionData = result.questions?.find((quest) => String(quest.id || quest.questionId || "") === questionId)
+      const questionData = result.questions?.find((quest: any) => String(quest.id || quest.questionId || "") === questionId)
 
       // Extract question text with improved priority and fallbacks
       const questionText =
@@ -118,14 +137,24 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
   const { correctCount, totalQuestions, percentage } = useMemo(() => {
     const correct = enhancedResults.filter((q) => q.isCorrect).length
     const total = enhancedResults.length || 1
-    const pct = result?.percentage ?? Math.round((correct / total) * 100)
+    let finalPercentage = result?.percentage
+
+    // Calculate percentage if not provided
+    if (finalPercentage === undefined || finalPercentage === null) {
+      // Use existing scoring logic or provide fallback
+      if (result?.score !== undefined && result?.maxScore && result.maxScore > 0) {
+        finalPercentage = Math.round((result.score / result.maxScore) * 100)
+      } else {
+        finalPercentage = Math.round((correct / total) * 100)
+      }
+    }
 
     return {
       correctCount: correct,
       totalQuestions: total,
-      percentage: pct,
+      percentage: Math.max(0, Math.min(finalPercentage, 100)), // Clamp between 0-100
     }
-  }, [enhancedResults, result?.percentage])
+  }, [enhancedResults, result])
 
   useEffect(() => {
     const resultId = result?.completedAt
@@ -137,225 +166,441 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
     }
   }, [result, percentage])
 
-  // Memoize this function to prevent recreation on every render
-  const getScoreClass = useCallback(() => {
-    if (percentage >= 80) return "text-green-600"
-    if (percentage >= 60) return "text-amber-600"
-    return "text-red-600"
-  }, [percentage])
+  // Use the same performance level function as in blanks
+  function getPerformanceLevel(percentage: number) {
+    if (percentage >= 90)
+      return {
+        level: "Excellent",
+        message: "Outstanding! You've mastered this topic.",
+        color: "text-green-500",
+        bgColor: "bg-green-50",
+        borderColor: "border-green-200",
+        emoji: "🏆",
+      }
+    if (percentage >= 80)
+      return {
+        level: "Very Good",
+        message: "Great job! You have strong understanding.",
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-200",
+        emoji: "🎯",
+      }
+    if (percentage >= 70)
+      return {
+        level: "Good",
+        message: "Well done! Your knowledge is solid.",
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-200",
+        emoji: "🌟",
+      }
+    if (percentage >= 60)
+      return {
+        level: "Satisfactory",
+        message: "You're on the right track!",
+        color: "text-yellow-700",
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-200",
+        emoji: "👍",
+      }
+    if (percentage >= 50)
+      return {
+        level: "Needs Improvement",
+        message: "You're getting there. Keep studying!",
+        color: "text-orange-600",
+        bgColor: "bg-orange-50",
+        borderColor: "border-orange-200",
+        emoji: "📚",
+      }
+    return {
+      level: "Study Required",
+      message: "More practice needed to master this topic.",
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+      emoji: "📝",
+    }
+  }
 
+  const dispatch = useDispatch()
   const handleRetake = useCallback(() => {
-    onRetake?.() || router.push(`/dashboard/openended/${slug}`)
-  }, [onRetake, router, slug])
+    if (onRetake) return onRetake()
+    dispatch(clearQuizState())
+    router.push(`/dashboard/openended/${result?.slug || slug}`)
+  }, [onRetake, dispatch, router, result?.slug, slug])
 
-  const handleAllQuizzes = useCallback(() => {
+  const handleViewAllQuizzes = () => {
     router.push("/dashboard/quizzes")
-  }, [router])
+  }
+  
+  const handleShare = async () => {
+    try {
+      const shareData = {
+        title: `${result?.title || "Quiz"} - Results`,
+        text: `I scored ${percentage}% (${performance.level}) on the ${result?.title || "Quiz"} open-ended quiz! ${performance.emoji}`,
+        url: window.location.href,
+      }
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
+      }
+    } catch (error) {
+      // Handle error silently
+    }
+  }
 
-  // Early return with memoized check
-  if (!result || !Array.isArray(result.questionResults)) {
+  if (!result) {
     return (
       <NoResults
         variant="quiz"
-        title="No Results Found"
-        description="Try retaking the quiz to generate results."
+        title="Unable to Load Results"
+        description="We couldn't load your quiz results. The session may have expired or some data might be missing."
         action={{
           label: "Retake Quiz",
           onClick: handleRetake,
+          icon: <RefreshCw className="h-4 w-4" />,
         }}
         secondaryAction={{
-          label: "All Quizzes",
-          onClick: handleAllQuizzes,
-          variant: "outline",
+          label: "Browse Quizzes",
+          onClick: handleViewAllQuizzes,
+          variant="outline",
+          icon: <Home className="h-4 w-4" />,
         }}
       />
     )
   }
 
-  // Memoize card variants to avoid recreation
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeInOut" } },
+  if (!Array.isArray(result.questionResults) || enhancedResults.length === 0) {
+    return (
+      <NoResults
+        variant="quiz"
+        title="Invalid Results"
+        description="No valid question results found."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake,
+          icon: <RefreshCw className="h-4 w-4" />,
+        }}
+      />
+    )
   }
+
+  const performance = getPerformanceLevel(percentage)
 
   return (
     <>
-      <div className="max-w-4xl mx-auto">
+      <motion.div
+        className="space-y-8 max-w-4xl mx-auto"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+      >
+        {/* Header */}
         <motion.div
-          className="mb-8 rounded-2xl shadow-lg overflow-hidden"
-          variants={cardVariants}
-          initial="hidden"
-          animate="visible"
+          className="text-center space-y-6 relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 shadow-lg"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
         >
+          <div className="flex items-center justify-center gap-4">
+            <motion.div
+              className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Target className="w-8 h-8 text-primary" />
+            </motion.div>
+            <div className="text-left">
+              <motion.h1
+                className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+                {result.title || "Open-Ended Quiz Results"}
+              </motion.h1>
+              <motion.div
+                className="h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent rounded-full mt-2"
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+
           <motion.div
-            className="mb-8 rounded-2xl shadow-xl overflow-hidden"
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <Card className="border-2">
-              <CardHeader className="text-center pb-4 bg-gradient-to-r from-muted/20 to-muted/10">
-                <div className="space-y-3">
-                  <CardTitle className="text-3xl md:text-4xl font-bold text-foreground leading-tight break-words">
-                    {result.title || "Quiz Results"}
-                  </CardTitle>
-                  <p className="text-lg text-muted-foreground">Open-Ended Quiz Results</p>
-                  <motion.div
-                    className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full max-w-xs mx-auto"
-                    initial={{ width: 0 }}
-                    animate={{ width: "100%" }}
-                    transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
-                  />
-                </div>
-                <p className="text-muted-foreground text-sm mt-4">
-                  Completed {new Date(result.completedAt || new Date()).toLocaleDateString()}
-                </p>
-              </CardHeader>
-
-              <CardContent className="pt-8 pb-6">
-                <div className="flex flex-col items-center justify-center space-y-6">
-                  <motion.div
-                    className={`text-6xl md:text-7xl font-black ${getScoreClass()}`}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      delay: 0.3,
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 15,
-                    }}
-                  >
-                    {percentage}%
-                  </motion.div>
-
-                  <motion.p
-                    className="text-lg text-muted-foreground font-medium"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    {correctCount} correct out of {enhancedResults.length} questions
-                  </motion.p>
-
-                  <motion.div
-                    className="w-full max-w-md"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
-                      <motion.div
-                        className={`h-full rounded-full ${
-                          percentage >= 80 ? "bg-green-500" : percentage >= 60 ? "bg-yellow-500" : "bg-red-500"
-                        }`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${percentage}%` }}
-                        transition={{ delay: 0.6, duration: 1, ease: "easeOut" }}
-                      />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7 }}
-                  >
-                    {percentage >= 70 ? (
-                      <div className="flex items-center gap-3 text-green-600 bg-green-50 dark:bg-green-950/20 px-4 py-2 rounded-xl">
-                        <CheckCircleIcon className="h-6 w-6" />
-                        <span className="text-lg font-semibold">Excellent work!</span>
-                      </div>
-                    ) : percentage >= 50 ? (
-                      <div className="flex items-center gap-3 text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-4 py-2 rounded-xl">
-                        <AlertTriangle className="h-6 w-6" />
-                        <span className="font-semibold">You're close! Keep practicing.</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 text-red-600 bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-xl">
-                        <AlertTriangle className="h-6 w-6" />
-                        <span className="font-semibold">Keep going! You'll get there with more effort.</span>
-                      </div>
-                    )}
-                  </motion.div>
-                </div>
-              </CardContent>
-
-              <CardFooter className="flex flex-col sm:flex-row justify-center gap-4 pt-4 pb-8 bg-muted/10">
-                <Button onClick={handleRetake} variant="outline" className="min-w-[140px]">
-                  Retake Quiz
-                </Button>
-                <Button onClick={handleAllQuizzes} className="min-w-[140px]">
-                  All Quizzes
-                </Button>
-              </CardFooter>
-            </Card>
+            <Badge
+              variant="secondary"
+              className={`mt-3 px-4 py-2 text-sm font-semibold shadow-md ${performance.color} ${performance.bgColor} ${performance.borderColor} border-2`}
+            >
+              <motion.span
+                className="mr-2 text-lg"
+                animate={{
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  repeatDelay: 3,
+                }}
+              >
+                {performance.emoji}
+              </motion.span>
+              {performance.level}
+            </Badge>
           </motion.div>
+
+          <motion.p
+            className="text-muted-foreground text-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            Completed on {new Date(result.completedAt || new Date()).toLocaleDateString()} at{" "}
+            {new Date(result.completedAt || new Date()).toLocaleTimeString()}
+          </motion.p>
         </motion.div>
 
-        <div className="space-y-6 mb-8">
-          <motion.div
-            className="text-center space-y-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground">Answer Review</h2>
-            <p className="text-muted-foreground">Review your responses and learn from the feedback</p>
-            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent max-w-md mx-auto" />
-          </motion.div>
-          {enhancedResults.map((q, idx) => (
-            <motion.div
-              key={q.questionId}
-              className="rounded-xl shadow-md overflow-hidden"
-              style={{ backgroundColor: "#f9f9f9" }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 * idx }} // Use idx instead of array method to improve performance
-            >
-              <div className="px-6 py-4">
-                <div className="font-semibold text-lg mb-3">{q.question}</div>
-
-                <div className="mb-2">
-                  <span className="font-medium">Your answer:</span>{" "}
-                  <span
-                    className={
-                      q.similarityLabel === "Correct"
-                        ? "text-green-700"
-                        : q.similarityLabel === "Close"
-                          ? "text-yellow-700"
-                          : "text-red-700"
-                    }
-                  >
-                    {q.userAnswer || "(no answer)"}
-                  </span>
-                  {q.similarityLabel === "Close" && (
-                    <span className="ml-2 text-sm font-semibold text-yellow-700">(Close enough!)</span>
-                  )}
-                </div>
-
+        {/* Score Overview */}
+        <motion.div
+          className="overflow-hidden rounded-3xl shadow-2xl border-2 border-primary/10"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          whileHover={{
+            scale: 1.02,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+          }}
+        >
+          <CardHeader className="bg-gradient-to-br from-primary/8 via-primary/5 to-primary/10 border-b-2 border-primary/10 p-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
+                  <Trophy className="w-12 h-12 text-primary drop-shadow-lg" />
+                </motion.div>
                 <div>
-                  <span className="font-medium">Correct answer:</span> {q.correctAnswer}
-                </div>
-
-                <div className="text-sm text-gray-500 mt-2">
-                  Similarity: {Math.round((q.similarity || 0) * 100)}% ({q.similarityLabel})
+                  <CardTitle className="text-3xl font-bold text-foreground">Your Score</CardTitle>
+                  <p className="text-muted-foreground text-lg">Open-ended answers performance summary</p>
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+              <div className="text-right">
+                <motion.div
+                  className="text-6xl font-black text-primary drop-shadow-lg"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    delay: 0.3,
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 15,
+                  }}
+                >
+                  {percentage}%
+                </motion.div>
+                <div className="text-lg text-muted-foreground font-medium">
+                  {correctCount} of {totalQuestions}
+                </div>
+              </div>
+            </div>
+          </CardHeader>
 
-      {showConfetti && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.5 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Confetti isActive />
+          <CardContent className="p-8">
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <div className="flex justify-between text-lg font-medium">
+                  <span>Progress</span>
+                  <motion.span
+                    key={percentage}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {correctCount}/{totalQuestions} correct
+                  </motion.span>
+                </div>
+                <div className="relative">
+                  <Progress value={percentage} className="h-4 rounded-full bg-muted/50" />
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                    animate={{
+                      x: ["-100%", "100%"],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                      repeatDelay: 1,
+                    }}
+                    style={{ opacity: percentage > 0 ? 1 : 0 }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <motion.div
+                  className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 text-center shadow-lg"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <motion.div
+                    className="text-4xl font-black text-green-500"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  >
+                    {correctCount}
+                  </motion.div>
+                  <div className="text-sm text-green-700 dark:text-green-300 font-semibold">Correct</div>
+                </motion.div>
+
+                <motion.div
+                  className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-2xl p-6 text-center shadow-lg"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <motion.div
+                    className="text-4xl font-black text-red-500"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                  >
+                    {totalQuestions - correctCount}
+                  </motion.div>
+                  <div className="text-sm text-red-700 dark:text-red-300 font-semibold">Incorrect</div>
+                </motion.div>
+
+                <motion.div
+                  className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center shadow-lg"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <motion.div
+                    className="text-4xl font-black text-slate-600 dark:text-slate-400"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                  >
+                    {totalQuestions}
+                  </motion.div>
+                  <div className="text-sm text-slate-700 dark:text-slate-300 font-semibold">Total</div>
+                </motion.div>
+              </div>
+            </div>
+          </CardContent>
+
+          <CardFooter className="bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 border-t-2 border-muted/20 flex flex-wrap gap-4 justify-between p-8">
+            <div className="flex gap-3">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={handleRetake}
+                  className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                    <RefreshCw className="w-5 h-5" />
+                  </motion.div>
+                  Retry
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={handleViewAllQuizzes}
+                  className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  variant="outline"
+                >
+                  <Home className="w-5 h-5" />
+                  All Quizzes
+                </Button>
+              </motion.div>
+            </div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                onClick={handleShare}
+                className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl border-2 hover:bg-muted/50 transition-all duration-300"
+              >
+                <motion.div whileHover={{ rotate: 15, scale: 1.1 }} transition={{ duration: 0.2 }}>
+                  <Share2 className="w-5 h-5" />
+                </motion.div>
+                Share Results
+              </Button>
+            </motion.div>
+          </CardFooter>
         </motion.div>
-      )}
+
+        {/* Question Results */}
+        <motion.div
+          className="rounded-3xl shadow-2xl border-2 border-muted/20"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+        >
+          <CardHeader className="p-8 bg-gradient-to-r from-muted/10 to-muted/20 border-b-2 border-muted/20">
+            <CardTitle className="flex items-center gap-4 text-2xl font-bold">
+              <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6 }}>
+                <Target className="w-7 h-7 text-primary" />
+              </motion.div>
+              Answer Review ({enhancedResults.length} Questions)
+            </CardTitle>
+            <p className="text-muted-foreground text-lg">Review your answers and learn from mistakes</p>
+          </CardHeader>
+
+          <CardContent className="space-y-6 p-8">
+            {enhancedResults.map((q, index) => (
+              <motion.div
+                key={q.questionId}
+                className="p-6 rounded-2xl border-2 border-muted/30 bg-gradient-to-r from-background to-muted/5 shadow-lg hover:shadow-xl transition-all duration-300"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                whileHover={{ scale: 1.01, y: -2 }}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md ${
+                      q.isCorrect ? "bg-green-100 text-green-500" : "bg-red-100 text-red-500"
+                    }`}
+                  >
+                    {q.isCorrect ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold mb-3 text-lg text-foreground">
+                      Question {index + 1}: {q.question}
+                    </div>
+
+                    <div className="space-y-4">
+                      <BestGuess 
+                        userAnswer={q.userAnswer || ""} 
+                        correctAnswer={q.correctAnswer || ""} 
+                        similarity={q.similarity || 0}
+                        explanation={getSimilarityFeedback(q.similarity || 0)}
+                        showDetailedInfo={true}
+                      />
+                    </div>
+
+                    <motion.div
+                      className="text-sm text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg border border-muted/30"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <strong>Similarity:</strong> {Math.round((q.similarity || 0) * 100)}% ({q.similarityLabel})
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </CardContent>
+        </motion.div>
+      </motion.div>
+
+      {showConfetti && <Confetti isActive={showConfetti} />}
     </>
   )
 }

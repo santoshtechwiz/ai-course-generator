@@ -6,14 +6,14 @@ import { useDispatch } from "react-redux"
 import { clearQuizState } from "@/store/slices/quiz-slice"
 import type { AppDispatch } from "@/store"
 import BlankQuizResults from "../blanks/components/BlankQuizResults"
-
 import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded"
 import { NoResults } from "@/components/ui/no-results"
 import FlashCardResults from "../flashcard/components/FlashCardQuizResults"
 import CodeQuizResult from "../code/components/CodeQuizResult"
 import type { QuizType } from "@/types/quiz"
-import { McqQuizResult } from "../mcq/components/McqQuizResult"
-import { Button } from "@/components/ui/button"
+import McqQuizResult from "../mcq/components/McqQuizResult"
+import { Button } from "@/components"
+
 
 interface QuizResultProps {
   result: any
@@ -147,12 +147,14 @@ function getEnhancedTitle(result: any, slug: string, quizType: QuizType): string
 function renderQuizResultComponent(quizType: QuizType, result: any, slug: string, onRetake: () => void) {
   switch (quizType) {
     case "mcq":
+      // Use the new version of McqQuizResult by default
       return <McqQuizResult result={result} onRetake={onRetake} />
     case "blanks":
       return <BlankQuizResults result={result} isAuthenticated={true} slug={slug} onRetake={onRetake} />
-    case "openended":
+    case "openended":      // Use OpenEndedQuizResults with enhanced scoring
       return <OpenEndedQuizResults result={result} isAuthenticated={true} slug={slug} onRetake={onRetake} />
     case "code":
+      // Use the new version of CodeQuizResult by default
       return <CodeQuizResult result={result} onRetake={onRetake} />
     case "flashcard":
       // Pass all result fields as props for consistency

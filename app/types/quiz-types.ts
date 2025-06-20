@@ -236,3 +236,12 @@ export interface ProcessedQuestion extends OpenEndedQuestion {
   isProcessed: boolean;
   processingTime: number;
 }
+
+export interface BlanksQuizResult {
+  questionId: string | number;
+  userAnswer: string | null;
+  correctAnswer: string;
+  isCorrect: boolean;
+  similarity: number;
+  similarityLabel: string;
+}
