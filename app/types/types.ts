@@ -149,6 +149,13 @@ export interface UserStats {
   topPerformingTopics: TopPerformingTopic[];
 }
 
+export  interface FlashCard{
+  id: string;
+  question: string;
+  options: string[];
+  answer: string;
+}
+
 export type QuizType = 'mcq' | 'openended' | 'fill-blanks' | 'code';
 
 

@@ -122,6 +122,8 @@ export function throttle<T extends (...args: any[]) => any>(func: T, delay: numb
 /**
  * Save player preferences to localStorage
  */
+import { STORAGE_KEYS } from "@/constants/global"
+
 export function savePlayerPreferences(preferences: {
   volume?: number
   muted?: boolean
@@ -130,16 +132,16 @@ export function savePlayerPreferences(preferences: {
 }): void {
   try {
     if (preferences.volume !== undefined) {
-      localStorage.setItem("video-player-volume", preferences.volume.toString())
+      localStorage.setItem(STORAGE_KEYS.VIDEO_PLAYER_VOLUME, preferences.volume.toString())
     }
     if (preferences.muted !== undefined) {
-      localStorage.setItem("video-player-muted", preferences.muted.toString())
+      localStorage.setItem(STORAGE_KEYS.VIDEO_PLAYER_MUTED, preferences.muted.toString())
     }
     if (preferences.playbackRate !== undefined) {
-      localStorage.setItem("video-player-playback-rate", preferences.playbackRate.toString())
+      localStorage.setItem(STORAGE_KEYS.VIDEO_PLAYER_PLAYBACK_RATE, preferences.playbackRate.toString())
     }
     if (preferences.autoPlayNext !== undefined) {
-      localStorage.setItem("video-player-autoplay-next", preferences.autoPlayNext.toString())
+      localStorage.setItem(STORAGE_KEYS.VIDEO_PLAYER_AUTOPLAY_NEXT, preferences.autoPlayNext.toString())
     }
   } catch (error) {
     console.warn("Failed to save player preferences:", error)
@@ -161,12 +163,11 @@ export function loadPlayerPreferences(): {
     playbackRate: 1.0,
     autoPlayNext: true,
   }
-
   try {
-    const volume = localStorage.getItem("video-player-volume")
-    const muted = localStorage.getItem("video-player-muted")
-    const playbackRate = localStorage.getItem("video-player-playback-rate")
-    const autoPlayNext = localStorage.getItem("video-player-autoplay-next")
+    const volume = localStorage.getItem(STORAGE_KEYS.VIDEO_PLAYER_VOLUME)
+    const muted = localStorage.getItem(STORAGE_KEYS.VIDEO_PLAYER_MUTED)
+    const playbackRate = localStorage.getItem(STORAGE_KEYS.VIDEO_PLAYER_PLAYBACK_RATE)
+    const autoPlayNext = localStorage.getItem(STORAGE_KEYS.VIDEO_PLAYER_AUTOPLAY_NEXT)
 
     return {
       volume: volume ? Number.parseFloat(volume) : defaults.volume,

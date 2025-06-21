@@ -1,180 +1,109 @@
 import { createSlice, createAsyncThunk, type PayloadAction, createSelector } from "@reduxjs/toolkit"
 import type { FlashCard } from "@/app/types/types"
 import type { RootState } from ".."
-import { hydrateFromStorage } from "../middleware/persistMiddleware"
+import { STORAGE_KEYS, ANSWER_TYPES } from "@/constants/global"
+
+// Define a union type for answers to correctly reflect the different structures stored
+interface RatingAnswer {
+  questionId: string
+  answer: typeof ANSWER_TYPES[keyof typeof ANSWER_TYPES]
+  timeSpent?: number
+  userAnswer?: any
+  isCorrect?: boolean
+}
+
+interface SavedAnswer {
+  questionId: string
+  saved: boolean
+  timestamp?: number
+}
+
+type AnswerEntry = RatingAnswer | SavedAnswer
+
+interface QuizResultsState {
+  quizId: string
+  slug: string
+  title: string
+  correctCount: number
+  incorrectCount: number
+  stillLearningCount: number
+  totalTime: number
+  totalQuestions: number
+  score: number
+  percentage: number
+  reviewCards: number[]
+  stillLearningCards: number[]
+  completedAt: string
+  questions: FlashCard[]  // Optional properties for enhanced functionality
+  savedLocally?: boolean
+  error?: string
+  correctAnswers?: number  // For backward compatibility
+  stillLearningAnswers?: number  // For backward compatibility
+  incorrectAnswers?: number  // For backward compatibility
+  maxScore?: number  // Maximum possible score
+  userScore?: number  // User's actual score
+}
 
 interface FlashcardQuizState {
+  // Basic quiz info
   quizId: string | null
   slug: string | null
   title: string
+
+  // Quiz content and progress
   questions: FlashCard[]
   currentQuestion: number
-  answers: any[]
-  isCompleted: boolean
-  results: any | null
+  answers: AnswerEntry[] // Use the new union type
+
+  // Quiz state
+  status: "idle" | "loading" | "succeeded" | "failed" | "submitting" | "completed" | "completed_with_errors"
   error: string | null
-  status: "idle" | "loading" | "succeeded" | "failed" | "submitting" | "completed_with_errors"
+  isCompleted: boolean
+
+  // Results state
+  results: QuizResultsState | null
+
+  // UI state (minimal)
+  shouldRedirectToResults: boolean
   requiresAuth: boolean
   pendingAuthRequired: boolean
-  cards: any[]
-  savedCardIds: string[]
-  ownerId: string | null
-  loading: boolean
-  shouldRedirectToResults?: boolean
-  // Additional properties for flashcard management
-  score?: number
-  totalQuestions?: number
-  correctAnswers?: number
-  totalTime?: number
-  // Processing state flags like quiz-slice
-  isProcessingResults?: boolean
-  pendingResults?: any | null
 }
 
-// Load persisted state from storage for hydration - enhanced with multiple fallbacks
-const loadPersistedState = (): Partial<FlashcardQuizState> => {
-  if (typeof window === 'undefined') return {}
-  
-  try {
-    // Try multiple sources in order of preference
-    let state: Partial<FlashcardQuizState> | null = null
-    
-    // 1. First try to load direct flashcard state from Redux persist
-    const persisted = hydrateFromStorage<Partial<FlashcardQuizState>>("flashcard_state")
-    if (persisted) {
-      console.log("Restored flashcard state from Redux persist")
-      return persisted
-    }
-    
-    // 2. Try localStorage complete state (primary storage)
-    try {
-      const completeStateJson = localStorage.getItem('flashcard_complete_state')
-      if (completeStateJson) {
-        const completeState = JSON.parse(completeStateJson)
-        if (completeState && completeState.quizResults) {
-          console.log("Restored complete state from localStorage")
-          return {
-            isCompleted: true,
-            results: completeState.quizResults,
-            slug: completeState.slug || null,
-            quizId: completeState.slug || null,
-            title: completeState.title || "Flashcard Quiz",
-            questions: completeState.questions || [],
-            answers: completeState.answers || [],
-            status: "succeeded",
-            shouldRedirectToResults: false // Don't redirect if we're already hydrating from storage
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Error restoring from localStorage complete state", e)
-    }
-    
-    // 3. Try sessionStorage complete state (backup)
-    try {
-      const completeStateJson = sessionStorage.getItem('flashcard_complete_state')
-      if (completeStateJson) {
-        const completeState = JSON.parse(completeStateJson)
-        if (completeState && completeState.quizResults) {
-          console.log("Restored complete state from sessionStorage")
-          return {
-            isCompleted: true,
-            results: completeState.quizResults,
-            slug: completeState.slug || null,
-            quizId: completeState.slug || null,
-            title: completeState.title || "Flashcard Quiz",
-            questions: completeState.questions || [],
-            answers: completeState.answers || [],
-            status: "succeeded"
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Error restoring from sessionStorage complete state", e)
-    }
-    
-    // 4. Try the generic pendingQuizResults (both session and local)
-    try {
-      const pendingJson = sessionStorage.getItem('pendingQuizResults') || localStorage.getItem('pendingQuizResults')
-      if (pendingJson) {
-        const pendingState = JSON.parse(pendingJson)
-        if (pendingState && pendingState.results && pendingState.quizType === "flashcard") {
-          console.log("Restored from pendingQuizResults")
-          return {
-            isCompleted: true,
-            results: pendingState.results,
-            slug: pendingState.slug || null,
-            quizId: pendingState.slug || null,
-            status: "succeeded"
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Error restoring from pendingQuizResults", e)
-    }
-    
-    // 5. Try the old results format as last resort
-    try {
-      const resultsJson = localStorage.getItem('flashcard_results') || sessionStorage.getItem('flashcard_results')
-      if (resultsJson) {
-        const results = JSON.parse(resultsJson)
-        if (results && results.quizResults) {
-          console.log("Restored from legacy flashcard_results")
-          return {
-            isCompleted: true,
-            results: results.quizResults,
-            slug: results.slug || null,
-            status: "succeeded"
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Error restoring from flashcard_results", e)
-    }
-  } catch (e) {
-    console.warn("Error loading persisted flashcard state:", e)
-  }
-  
-  return {}
-}
-
+// Initial state for the flashcard quiz module
 const initialState: FlashcardQuizState = {
+  // Basic info
   quizId: null,
   slug: null,
   title: "",
+
+  // Quiz content
   questions: [],
   currentQuestion: 0,
   answers: [],
+
+  // State
+  status: "idle",
+  error: null,
   isCompleted: false,
   results: null,
-  error: null,
-  status: "idle",
+
+  // UI state
+  shouldRedirectToResults: false,
   requiresAuth: false,
   pendingAuthRequired: false,
-  cards: [],
-  savedCardIds: [],
-  ownerId: null,
-  loading: false,
-  shouldRedirectToResults: false,
-  isProcessingResults: false,
-  pendingResults: null,
-  // Load any persisted state
-  ...loadPersistedState()
 }
 
 export const fetchFlashCardQuiz = createAsyncThunk("flashcard/fetchQuiz", async (slug: string, { rejectWithValue }) => {
   try {
-    console.log("Fetching flashcard quiz with slug:", slug)
     const response = await fetch(`/api/quizzes/flashcard/${slug}`)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.error(`Failed to fetch flashcard quiz: ${response.status}`, errorData)
-      throw new Error(`Failed to fetch flashcard quiz: ${response.status}`)
+      return rejectWithValue(errorData.message || `Failed to fetch flashcard quiz: ${response.status}`)
     }
 
     const data = await response.json()
-    console.log("Fetched flashcard quiz data:", data)
 
     if (!data.flashCards || !Array.isArray(data.flashCards) || data.flashCards.length === 0) {
       console.warn("No flashcards found in response:", data)
@@ -191,12 +120,38 @@ export const fetchFlashCardQuiz = createAsyncThunk("flashcard/fetchQuiz", async 
     return rejectWithValue(error.message)
   }
 })
+export const saveFlashCardResultsLocally = createAsyncThunk(
+  "flashcard/saveResultsLocally",
+  async ({ slug, data }: { slug: string; data: any }, { rejectWithValue }) => {
+    try {
+      if (typeof window === 'undefined') {
+        return rejectWithValue("Local storage is not available in this environment.")
+      }
 
+      const pendingData = {
+        slug,
+        quizType: "flashcard",
+        results: data,
+        timestamp: Date.now(),
+      }
+
+      localStorage.setItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS.toString(), JSON.stringify(pendingData))
+
+      return {
+        ...data,
+        savedLocally: true, // Indicate that results are saved locally
+      }
+    } catch (error: any) {
+      console.error('Error saving flashcard results locally:', error)
+      return rejectWithValue(error.message)
+    }
+  },
+)
 export const saveFlashCardResults = createAsyncThunk(
   "flashcard/saveResults",
   async ({ slug, data }: { slug: string; data: any }, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch(`/api/quizzes/flashcard/${slug}/complete`, {
+      const response = await fetch(`/api/quizzes/common/${slug}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -206,27 +161,25 @@ export const saveFlashCardResults = createAsyncThunk(
 
       if (!response.ok) {
         console.error(`Failed to save results for ${slug}. Status: ${response.status}`)
-        
-        // Don't block the flow on API errors, return the data we were trying to save
-        // This ensures we can still show results even if saving failed
+        const errorData = await response.json().catch(() => ({}))
+
         const state = getState() as RootState
-        return {
-          savedLocally: true, 
-          error: `API error: ${response.status}`,
-          ...state.flashcard.results
-        }
+        return rejectWithValue({
+          savedLocally: true, // Indicate that results are only saved locally
+          error: errorData.message || `API error: ${response.status}`,
+          ...state.flashcard.results // Include existing results to merge
+        })
       }
 
       return await response.json()
     } catch (error: any) {
       console.error('Error saving flashcard results:', error)
-      // Still return something useful so the app can continue
       const state = getState() as RootState
-      return {
-        savedLocally: true,
+      return rejectWithValue({
+        savedLocally: true, // Indicate that results are only saved locally
         error: error.message,
-        ...state.flashcard.results
-      }
+        ...state.flashcard.results // Include existing results to merge
+      })
     }
   },
 )
@@ -251,229 +204,70 @@ const flashcardSlice = createSlice({
       state.status = "succeeded"
     },
 
-    submitFlashCardAnswer: (state, action: PayloadAction<any>) => {
-      const { questionId, answer, userAnswer, isCorrect, timeSpent } = action.payload
-
-      // Handle save actions separately
-      if (typeof action.payload.answer === "object" && action.payload.answer.saved !== undefined) {
-        const existingAnswerIndex = state.answers.findIndex((a) => a.questionId === questionId)
-        if (existingAnswerIndex >= 0) {
-          state.answers[existingAnswerIndex] = {
-            ...state.answers[existingAnswerIndex],
-            saved: action.payload.answer.saved,
-            timestamp: action.payload.answer.timestamp,
-          }
-        } else {
-          state.answers.push({
-            questionId,
-            saved: action.payload.answer.saved,
-            timestamp: action.payload.answer.timestamp,
-          })
-        }
-        return
-      }
-
-      // Handle rating answers - now supports three states: correct, incorrect, still_learning
-      if (answer === "correct" || answer === "incorrect" || answer === "still_learning") {
-        const existingAnswerIndex = state.answers.findIndex((a) => a.questionId === questionId)
-
-        const answerData = {
-          questionId,
-          answer,
-          userAnswer: userAnswer || answer,
-          isCorrect: isCorrect !== undefined ? isCorrect : answer === "correct",
-          timeSpent: timeSpent || 0,
-        }
-
-        if (existingAnswerIndex >= 0) {
-          const existingAnswer = state.answers[existingAnswerIndex]
-          state.answers[existingAnswerIndex] = {
-            ...answerData,
-            saved: existingAnswer.saved,
-            timestamp: existingAnswer.timestamp,
-          }
-        } else {
-          state.answers.push(answerData)
-        }
-      }
-    },    completeFlashCardQuiz: (state, action: PayloadAction<any>) => {
-      state.isCompleted = true
-      state.isProcessingResults = true
+   submitFlashCardAnswer: (state, action: PayloadAction<{
+      questionId: string | number
+      answer: "correct" | "incorrect" | "still_learning"
+      timeSpent?: number
+    }>) => {
+      const { questionId, answer, timeSpent } = action.payload;
       
-      // Create complete results object with all necessary data
-      const completeResults = {
+      const existingIndex = state.answers.findIndex(a => 
+        (a as RatingAnswer).questionId === questionId
+      );
+      
+      const newAnswer: RatingAnswer = {
+        questionId: String(questionId),
+        answer,
+        isCorrect: answer === "correct",
+        timeSpent: timeSpent || 0
+      };
+      
+      if (existingIndex >= 0) {
+        state.answers[existingIndex] = newAnswer;
+      } else {
+        state.answers.push(newAnswer);
+      }
+    },
+    completeFlashCardQuiz: (state, action: PayloadAction<QuizResultsState>) => {
+      state.isCompleted = true
+      state.status = "completed" // Set status to completed
+      state.results = {
         ...action.payload,
-        completedAt: new Date().toISOString(),
-        quizId: state.quizId,
-        slug: state.slug,
+        completedAt: new Date().toISOString(),        quizId: state.quizId || "",
+        slug: state.slug || "",
         title: state.title,
         questions: state.questions,
-        answers: state.answers,
       }
-      
-      state.results = completeResults
       state.shouldRedirectToResults = true
-      
-      // Enhanced persistence - save to multiple places with redundancy
-      if (typeof window !== 'undefined') {
-        try {
-          // Create a comprehensive state object with EVERYTHING
-          const completeState = {
-            quizResults: completeResults,
-            slug: state.slug,
-            title: state.title,
-            questions: state.questions,
-            answers: state.answers,
-            isCompleted: true,
-            currentQuestion: state.currentQuestion,
-            timestamp: Date.now()
-          }
-          
-          // SAVE IN MULTIPLE FORMATS AND LOCATIONS FOR MAXIMUM RELIABILITY
-          
-          // 1. Main complete state in localStorage (primary)
-          localStorage.setItem('flashcard_complete_state', JSON.stringify(completeState))
-          
-          // 2. Main complete state in sessionStorage (backup)
-          sessionStorage.setItem('flashcard_complete_state', JSON.stringify(completeState))
-          
-          // 3. Legacy format in localStorage (backward compatibility)
-          localStorage.setItem('flashcard_results', JSON.stringify({
-            quizResults: completeResults,
-            slug: state.slug,
-            timestamp: Date.now()
-          }))
-          
-          // 4. Legacy format in sessionStorage (backup for backward compatibility)
-          sessionStorage.setItem('flashcard_results', JSON.stringify({
-            quizResults: completeResults,
-            slug: state.slug,
-            timestamp: Date.now()
-          }))
-          
-          // 5. General pendingQuizResults format used across quiz types
-          const pendingData = {
-            slug: state.slug,
-            quizType: "flashcard",
-            results: completeResults,
-            timestamp: Date.now(),
-            questions: state.questions,
-            title: state.title || "Flashcard Quiz",
-            isCompleted: true
-          }
-          
-          localStorage.setItem("pendingQuizResults", JSON.stringify(pendingData))
-          sessionStorage.setItem("pendingQuizResults", JSON.stringify(pendingData))
-          
-          console.log("Successfully persisted flashcard state to ALL storage mechanisms");
-        } catch (e) {
-          console.warn("Error saving flashcard state to storage:", e)
-          
-          // Attempt emergency backup to at least one storage
-          try {
-            sessionStorage.setItem('flashcard_emergency_backup', JSON.stringify({
-              quizResults: completeResults,
-              slug: state.slug,
-              timestamp: Date.now()
-            }))
-          } catch (err) {
-            console.error("Failed emergency backup", err)
-          }
-        }
-      }
-    },resetFlashCards: (state) => {
-      // Only reset if we're not processing results
-      if (!state.isProcessingResults) {
-        state.currentQuestion = 0
-        state.answers = []
-        state.isCompleted = false
-        state.results = null
-        state.error = null
-        state.status = "idle"
-        state.requiresAuth = false
-        state.pendingAuthRequired = false
-        state.shouldRedirectToResults = false
-        
-        // Clear storage when resetting
+    },
+    resetFlashCards: (state) => {
+      // Only reset if not in a processing state
+      if (state.status !== "submitting" && state.status !== "loading") {
+        Object.assign(state, initialState) // Reset to initial state
+        // Clear only the specific pending results storage
         if (typeof window !== 'undefined') {
-          try {
-            localStorage.removeItem('flashcard_complete_state')
-            localStorage.removeItem('flashcard_results')
-            sessionStorage.removeItem('flashcard_complete_state')
-            sessionStorage.removeItem('flashcard_results')
-            console.log("Successfully cleared flashcard state from storage")
-          } catch (e) {
-            console.warn("Error clearing flashcard state from storage:", e)
-          }
+          localStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS)
+          sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS)
         }
       }
     },
-      forceResetFlashCards: (state) => {
-      // Force reset regardless of processing state
-      state.currentQuestion = 0
-      state.answers = []
-      state.isCompleted = false
-      state.results = null
-      state.error = null
-      state.status = "idle"
-      state.requiresAuth = false
-      state.pendingAuthRequired = false
-      state.shouldRedirectToResults = false
-      state.isProcessingResults = false
-      
-      // ULTRA AGGRESSIVE storage clearing - remove everything related to flashcards
+    forceResetFlashCards: (state) => {
+      Object.assign(state, initialState) // Force reset to initial state
+      // Aggressively clear all relevant storage keys
       if (typeof window !== 'undefined') {
-        try {
-          // Clear all known flashcard storage keys
-          const keysToRemove = [
-            // Main storage keys
-            'flashcard_complete_state',
-            'flashcard_results',
-            
-            // Emergency backup keys
-            'flashcard_emergency_backup',
-            
-            // Generic quiz keys that might have flashcard data
-            'pendingQuizResults',
-            
-            // Any other keys that might contain flashcard data
-            'flashcard_state',
-            'redux_state_flashcard'
-          ]
-          
-          // Try to remove from both localStorage and sessionStorage
-          keysToRemove.forEach(key => {
-            try { localStorage.removeItem(key) } catch (e) {}
-            try { sessionStorage.removeItem(key) } catch (e) {}
-          })
-          
-          // Also try to find and remove any keys that might contain the slug
-          if (state.slug) {
-            try {
-              // Look for any keys containing the slug
-              for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i)
-                if (key && key.includes(state.slug)) {
-                  localStorage.removeItem(key)
-                }
-              }
-              
-              // Do the same for sessionStorage
-              for (let i = 0; i < sessionStorage.length; i++) {
-                const key = sessionStorage.key(i)
-                if (key && key.includes(state.slug)) {
-                  sessionStorage.removeItem(key)
-                }
-              }
-            } catch (e) {
-              console.warn("Error clearing storage by slug", e)
-            }
-          }
-          
-          console.log("Successfully cleared ALL flashcard state from storage")
-        } catch (e) {
-          console.warn("Error clearing flashcard state from storage:", e)
-        }
+        const keysToRemove = [
+          STORAGE_KEYS.PENDING_QUIZ_RESULTS,
+          // Add any other legacy keys that might exist and need clearing
+          'flashcard_complete_state',
+          'flashcard_results',
+          'flashcard_emergency_backup',
+          'flashcard_state',
+          'redux_state_flashcard'
+        ]
+        keysToRemove.forEach(key => {
+          try { localStorage.removeItem(key) } catch (e) { /* ignore */ }
+          try { sessionStorage.removeItem(key) } catch (e) { /* ignore */ }
+        })
       }
     },
 
@@ -496,10 +290,121 @@ const flashcardSlice = createSlice({
     },
 
     clearQuizState: (state) => {
-      return { ...initialState }
-    },
+      return { ...initialState }    },
+      completeQuiz: (state, action: PayloadAction<{
+      totalTime?: number
+    }>) => {
+      // Safely process answers, handling potential type issues
+      const processAnswers = () => {
+        try {
+          // Default to empty array if state.answers is undefined
+          const answers = state.answers || [];
+          
+          const correctCount = answers.filter(a => 
+            (a as RatingAnswer).answer === "correct"
+          ).length;
+          
+          const stillLearningCount = answers.filter(a => 
+            (a as RatingAnswer).answer === "still_learning"
+          ).length;
+          
+          const incorrectCount = answers.filter(a => 
+            (a as RatingAnswer).answer === "incorrect"
+          ).length;
 
-    setQuizResults: (state, action: PayloadAction<any>) => {
+          // Calculate unanswered questions
+          const totalAnswered = correctCount + stillLearningCount + incorrectCount;
+          const unansweredCount = Math.max(0, state.questions.length - totalAnswered);
+          
+          // If we have unanswered questions, include them as incorrect
+          const adjustedIncorrectCount = incorrectCount + unansweredCount;
+
+          return { 
+            correctCount, 
+            stillLearningCount, 
+            incorrectCount: adjustedIncorrectCount,
+            totalAnswered
+          };
+        } catch (error) {
+          console.error("Error processing answers:", error);
+          // Fallback to default counts if we encounter errors
+          return { 
+            correctCount: 0, 
+            stillLearningCount: 0, 
+            incorrectCount: state.questions.length,
+            totalAnswered: 0
+          };
+        }
+      };
+      
+      // Get answer counts
+      const { correctCount, stillLearningCount, incorrectCount, totalAnswered } = processAnswers();
+      
+      const totalQuestions = state.questions.length;
+      const percentage = totalQuestions > 0 
+        ? Math.round((correctCount / totalQuestions) * 100) 
+        : 0;
+      
+      // Ensure we have a complete quiz ID and slug
+      const quizId = state.quizId || `quiz-${Date.now()}`;
+      const slug = state.slug || `quiz-${Date.now()}`;
+
+      // Validate that we have a proper state
+      if (!state.questions || state.questions.length === 0) {
+        console.error('Cannot complete quiz without questions');
+        return;
+      }
+
+      // Create review cards - ensure we don't have out-of-range indices
+      const reviewCards = state.answers
+        .map((a, i) => ((a as RatingAnswer).answer === "incorrect" ? i : -1))
+        .filter(i => i >= 0 && i < state.questions.length);
+
+      const stillLearningCards = state.answers
+        .map((a, i) => ((a as RatingAnswer).answer === "still_learning" ? i : -1))
+        .filter(i => i >= 0 && i < state.questions.length);
+
+      // Create results object with all required fields
+      state.results = {
+        quizId,
+        slug,
+        title: state.title || "Flashcard Quiz",
+        correctCount,
+        incorrectCount,
+        stillLearningCount,
+        totalTime: action.payload.totalTime || 0,
+        totalQuestions,
+        score: correctCount,
+        percentage,
+        reviewCards,
+        stillLearningCards,
+        completedAt: new Date().toISOString(),
+        questions: state.questions,
+        // Add additional fields for compatibility
+        correctAnswers: correctCount,
+        incorrectAnswers: incorrectCount,
+        stillLearningAnswers: stillLearningCount,
+        maxScore: totalQuestions,
+        userScore: correctCount
+      };
+      
+      // Always mark as completed regardless of results
+      state.isCompleted = true;
+      state.status = "completed";
+      state.shouldRedirectToResults = true;
+      
+      // Store in localStorage as backup
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(
+            STORAGE_KEYS.FLASHCARD_RESULTS,
+            JSON.stringify(state.results)
+          );        } catch (e) {
+          console.warn("Could not save quiz results to localStorage");
+        }
+      }
+    },
+    setQuizResults: (state, action: PayloadAction<QuizResultsState>) => {
       state.results = action.payload
       state.isCompleted = true
       state.status = "succeeded"
@@ -507,6 +412,88 @@ const flashcardSlice = createSlice({
 
     resetRedirectFlag: (state) => {
       state.shouldRedirectToResults = false
+    },
+
+    savePendingResults: (state) => {
+      console.log("Saving pending results to localStorage...", state);
+      if (!state.results || !state.slug) return
+
+      const pendingData = {
+        slug: state.slug,
+        quizType: "flashcard",
+        results: state.results,
+        timestamp: Date.now(),
+        questions: state.questions,
+        title: state.title,
+        answers: state.answers, // Save answers for full restoration
+        currentQuestion: state.currentQuestion, // Save current question
+        isCompleted: state.isCompleted, // Save completion status
+      }
+
+      // Save to localStorage for persistence across sessions
+      if (typeof window !== 'undefined') {
+
+        localStorage.setItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS.toString(), JSON.stringify(pendingData))
+      }
+      //Fix update the state to indicate results are saved
+      state.results = {
+        ...state.results,
+        savedLocally: true, // Indicate that results are saved locally
+      } as QuizResultsState
+    },
+
+    restoreResultsAfterAuth: (state, action: PayloadAction<{ slug: string }>) => {
+      try {
+        if (typeof window === 'undefined') return;
+
+        const storedData = localStorage.getItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS)
+        if (storedData) {
+          const parsedData = JSON.parse(storedData)
+
+          if (parsedData?.slug === action.payload.slug) {
+            // Ensure the results object has all required fields
+            if (parsedData.results) {
+              state.results = {
+                quizId: parsedData.results.quizId || parsedData.slug || "",
+                slug: parsedData.slug || "",
+                title: parsedData.results.title || parsedData.title || "Flashcard Quiz",
+                correctCount: parsedData.results.correctCount || parsedData.results.correctAnswers || 0,
+                incorrectCount: parsedData.results.incorrectCount || parsedData.results.incorrectAnswers || 0,
+                stillLearningCount: parsedData.results.stillLearningCount || parsedData.results.stillLearningAnswers || 0,
+                totalTime: parsedData.results.totalTime || 0,
+                totalQuestions: parsedData.results.totalQuestions || parsedData.questions?.length || 0,
+                score: parsedData.results.score || 0,
+                percentage: parsedData.results.percentage || 0,
+                reviewCards: parsedData.results.reviewCards || [],
+                stillLearningCards: parsedData.results.stillLearningCards || [],
+                completedAt: parsedData.results.completedAt || new Date().toISOString(),                questions: parsedData.questions || []
+              }
+            }
+
+            state.isCompleted = parsedData.isCompleted || true // Ensure completed
+            state.status = "succeeded"
+            state.questions = parsedData.questions || []
+            state.answers = parsedData.answers || []
+            state.currentQuestion = parsedData.currentQuestion || 0
+            state.title = parsedData.title || state.title
+            state.slug = parsedData.slug || state.slug
+            state.quizId = parsedData.quizId || state.quizId
+
+            // Reset auth-related flags after successful restoration
+            state.requiresAuth = false;
+            state.pendingAuthRequired = false;
+
+            // Clear pending results after successful restoration
+            localStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS)
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to restore results after auth:", error)
+        // Ensure pending results are cleared even on error to prevent infinite loops
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS)
+        }
+      }
     },
   },
   extraReducers: (builder) => {
@@ -525,32 +512,40 @@ const flashcardSlice = createSlice({
       })
       .addCase(fetchFlashCardQuiz.rejected, (state, action) => {
         state.status = "failed"
-        state.error = action.payload as string
+        state.error = (action.payload as string) || action.error.message || "An unknown error occurred."
       })
       .addCase(saveFlashCardResults.pending, (state) => {
         state.status = "submitting"
-      })      .addCase(saveFlashCardResults.fulfilled, (state, action) => {
-        // If we got a response, even with an error flag, we still want to show results
-        state.status = action.payload?.error ? "completed_with_errors" : "succeeded"
-        
+      })
+     .addCase(saveFlashCardResults.fulfilled, (state, action) => {
+        state.status = action.payload?.error ? "completed_with_errors" : "succeeded";
         if (action.payload) {
           state.results = {
-            ...state.results,  // Keep existing results
-            ...action.payload, // Add any new data
-          }
+            ...state.results,
+            ...action.payload,
+            savedLocally: false, // Clear local save flag when API succeeds
+          } as QuizResultsState;
         }
       })
       .addCase(saveFlashCardResults.rejected, (state, action) => {
-        // Don't set status to failed if we still have results to show
-        if (state.isCompleted && state.answers.length > 0) {
-          state.status = "completed_with_errors" 
-          state.error = action.payload as string
+        const payload = action.payload as any;
+        if (payload?.savedLocally) {
+          // If we have locally saved results, merge them
+          state.results = {
+            ...state.results,
+            ...payload,
+            savedLocally: true,
+            error: payload.error,
+          } as QuizResultsState;
+          state.status = "completed_with_errors";
         } else {
-          state.status = "failed"
-          state.error = action.payload as string
+          state.status = "failed";
+          state.error = payload?.error || action.error.message || "Failed to save results.";
         }
       })
+     
   },
+
 })
 
 export const {
@@ -558,6 +553,7 @@ export const {
   submitFlashCardAnswer,
   completeFlashCardQuiz,
   resetFlashCards,
+  forceResetFlashCards,
   setCurrentFlashCard,
   nextFlashCard,
   setRequiresFlashCardAuth,
@@ -565,30 +561,38 @@ export const {
   clearQuizState,
   setQuizResults,
   resetRedirectFlag,
+  savePendingResults,
+  restoreResultsAfterAuth,
+  completeQuiz
 } = flashcardSlice.actions
 
 // Selectors
-export const selectFlashcardQuiz = (state: RootState) => state.flashcard
-export const selectFlashcardQuestions = (state: RootState) => state.flashcard.questions
-export const selectFlashcardCurrentIndex = (state: RootState) => state.flashcard.currentQuestion
-export const selectFlashcardAnswers = (state: RootState) => state.flashcard.answers
-export const selectFlashcardIsComplete = (state: RootState) => state.flashcard.isCompleted
-export const selectFlashcardResults = (state: RootState) => state.flashcard.results
-export const selectFlashcardError = (state: RootState) => state.flashcard.error
-export const selectFlashcardStatus = (state: RootState) => state.flashcard.status
-export const selectFlashCards = (state: RootState) => state.flashcard.cards
-export const selectSavedCardIds = (state: RootState) => state.flashcard.savedCardIds
-export const selectFlashCardsLoading = (state: RootState) => state.flashcard.loading
-export const selectFlashCardsError = (state: RootState) => state.flashcard.error
-export const selectOwnerId = (state: RootState) => state.flashcard.ownerId
 export const selectQuizId = (state: RootState) => state.flashcard.quizId
-export const selectIsQuizComplete = (state: RootState) => state.flashcard.isCompleted
+export const selectQuizSlug = (state: RootState) => state.flashcard.slug
 export const selectQuizTitle = (state: RootState) => state.flashcard.title
-export const selectShouldRedirectToResults = (state: RootState) => state.flashcard.shouldRedirectToResults
-export const selectHasFlashcardQuestions = (state: RootState) =>
-  state.flashcard.questions && state.flashcard.questions.length > 0
+export const selectQuizQuestions = (state: RootState) => state.flashcard.questions
 
-// Score selectors
+export const selectIsQuizComplete = (state: RootState) => state.flashcard.isCompleted
+export const selectQuizStatus = (state: RootState) => state.flashcard.status
+export const selectQuizError = (state: RootState) => state.flashcard.error
+
+// Add the missing selectors for auth flags
+export const selectRequiresAuth = (state: RootState) => state.flashcard.requiresAuth;
+export const selectPendingAuthRequired = (state: RootState) => state.flashcard.pendingAuthRequired;
+
+// Selector for the entire flashcard state - useful for debugging
+export const selectFlashcardState = (state: RootState) => state.flashcard;
+
+export const selectQuizResults = (state: RootState) => state.flashcard.results
+export const selectQuizScore = (state: RootState) => state.flashcard.results?.score ?? 0
+export const selectQuizTotalQuestions = (state: RootState) => state.flashcard.results?.totalQuestions ?? 0
+export const selectQuizTotalTime = (state: RootState) => state.flashcard.results?.totalTime ?? 0
+
+export const selectCurrentQuestionIndex = (state: RootState) => state.flashcard.currentQuestion
+export const selectAnswers = (state: RootState) => state.flashcard.answers
+
+export const selectShouldRedirectToResults = (state: RootState) => state.flashcard.shouldRedirectToResults
+
 export const selectFlashcardScore = (state: RootState) => {
   const results = state.flashcard.results
   if (!results) return 0
@@ -613,22 +617,96 @@ export const selectFlashcardTotalTime = (state: RootState) => {
   return results.totalTime || 0
 }
 
-// Additional selectors for the three-state system
 export const selectFlashcardStillLearningCount = (state: RootState) => {
-  return state.flashcard.answers.filter((answer) => answer.answer === "still_learning").length
+  return state.flashcard.answers.filter((answer): answer is RatingAnswer =>
+    (answer as RatingAnswer).answer === "still_learning"
+  ).length
 }
 
 export const selectFlashcardIncorrectCount = (state: RootState) => {
-  return state.flashcard.answers.filter((answer) => answer.answer === "incorrect").length
+  return state.flashcard.answers.filter((answer): answer is RatingAnswer =>
+    (answer as RatingAnswer).answer === "incorrect"
+  ).length
 }
+
+export const selectProcessedResults = createSelector(
+  [selectAnswers],
+  (answers) => {
+    let correctCount = 0
+    let stillLearningCount = 0
+    let incorrectCount = 0
+    const reviewCards: number[] = []
+    const stillLearningCards: number[] = []
+
+    answers.forEach((answer, index) => {
+      if ('answer' in answer && (answer as RatingAnswer).answer) {
+        if ((answer as RatingAnswer).answer === "correct") {
+          correctCount++
+        } else if ((answer as RatingAnswer).answer === "still_learning") {
+          stillLearningCount++
+          stillLearningCards.push(index)
+        } else if ((answer as RatingAnswer).answer === "incorrect") {
+          incorrectCount++
+          reviewCards.push(index)
+        }
+      }
+    })
+
+    return {
+      correctCount,
+      stillLearningCount,
+      incorrectCount,
+      totalCount: answers.length,
+      reviewCards,
+      stillLearningCards
+    }
+  }
+)
 
 export const selectFlashcardAnswerBreakdown = (state: RootState) => {
   const answers = state.flashcard.answers
   return {
-    correct: answers.filter((answer) => answer.answer === "correct").length,
-    stillLearning: answers.filter((answer) => answer.answer === "still_learning").length,
-    incorrect: answers.filter((answer) => answer.answer === "incorrect").length,
+    correct: answers.filter((answer): answer is RatingAnswer => (answer as RatingAnswer).answer === "correct").length,
+    stillLearning: answers.filter((answer): answer is RatingAnswer => (answer as RatingAnswer).answer === "still_learning").length,
+    incorrect: answers.filter((answer): answer is RatingAnswer => (answer as RatingAnswer).answer === "incorrect").length,
   }
 }
+
+export const selectCompleteResults = createSelector(
+  [
+    selectQuizResults,
+    (state: RootState) => state.flashcard,
+    selectProcessedResults,
+    selectQuizQuestions,
+    selectQuizTitle,
+    selectQuizId,
+    selectFlashcardTotalTime
+  ],
+  (results, quizState, processed, questions, title, quizId, totalTime) => {
+    if (results) return results;
+
+    return {
+      quizId: quizId || quizState.slug || "",
+      slug: quizState.slug || "",
+      title: title || "Flashcard Quiz",
+      quizType: "flashcard",
+      score: processed.correctCount,
+      maxScore: processed.totalCount,
+      percentage: processed.totalCount > 0
+        ? Math.round((processed.correctCount / processed.totalCount) * 100)
+        : 0,
+      correctAnswers: processed.correctCount,
+      stillLearningAnswers: processed.stillLearningCount,
+      incorrectAnswers: processed.incorrectCount,
+      totalQuestions: questions.length,
+      stillLearningCards: processed.stillLearningCards,
+      reviewCards: processed.reviewCards,
+      questions,
+      answers: quizState.answers,
+      completedAt: new Date().toISOString(),
+      totalTime: totalTime || 0,
+    };
+  }
+);
 
 export default flashcardSlice.reducer

@@ -8,6 +8,7 @@ import {
   ReactNode,
 } from "react"
 import { useSession, signIn, signOut, SessionProvider } from "next-auth/react"
+import { STORAGE_KEYS } from "@/constants/global"
 import { useRouter } from "next/navigation"
 import type { Session } from "next-auth"
 import { useEffect } from "react"
@@ -103,9 +104,8 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
         // Clear Redux and storage immediately
         if (typeof window !== "undefined") {
           const itemsToClear = [
-            ["localStorage", "redux_state"],
-            ["localStorage", "persist:auth"],
-            ["localStorage", "persist:course"],
+            ["localStorage", "redux_state"],            ["localStorage", STORAGE_KEYS.PERSIST_AUTH],
+            ["localStorage", STORAGE_KEYS.PERSIST_COURSE],
             ["localStorage", "pendingQuizResults"],
             ["sessionStorage", "redux_state"],
             ["sessionStorage", "pendingQuizResults"],
