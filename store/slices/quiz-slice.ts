@@ -4,16 +4,17 @@ import type { QuizType } from "@/types/quiz"
 import { hydrateFromStorage } from "../middleware/persistMiddleware"
 import { apiClient } from "@/lib/api-client" // Fixed import path
 import { StorageService } from "@/lib/storage-service"
+import { API_PATHS, STORAGE_KEYS, QUIZ_STATUS, AUTH_STATUS, DEFAULT_VALUES, QUESTION_TYPES } from "@/constants/global"
 
 // Export API endpoints for consistency across the app
 export const API_ENDPOINTS = {
-  mcq: "/api/quizzes/mcq",
-  code: "/api/quizzes/code",
-  blanks: "/api/quizzes/blanks",
-  openended: "/api/quizzes/openended",
+  mcq: API_PATHS.MCQ,
+  code: API_PATHS.CODE,
+  blanks: API_PATHS.BLANKS,
+  openended: API_PATHS.OPENENDED,
 
   // Add a common endpoint for consistent API access
-  common: "/api/quizzes/common",
+  common: API_PATHS.COMMON,
 }
 
 export interface QuizState {
@@ -45,7 +46,7 @@ export interface QuizState {
 
 // Load persisted state from storage for hydration
 const loadPersistedState = (): Partial<QuizState> => {
-  const persisted = hydrateFromStorage<Partial<QuizState>>("quiz_state")
+  const persisted = hydrateFromStorage<Partial<QuizState>>(STORAGE_KEYS.QUIZ_STATE)
   return persisted || {}
 }
 
@@ -53,7 +54,7 @@ const initialState: QuizState = {
   navigationHistory: [], // Explicitly initialize as an empty array
   slug: null, // Primary identifier for UI operations
   quizId: null, // Keep for database compatibility
-  quizType:null,
+  quizType: null,
   title: "",
   questions: [],
   currentQuestionIndex: 0,
@@ -61,13 +62,13 @@ const initialState: QuizState = {
   isCompleted: false,
   results: null,
   error: null,
-  status: "idle",
+  status: QUIZ_STATUS.IDLE as "idle",
   sessionId: null,
   pendingQuiz: null,
   authRedirectState: null,
   shouldRedirectToAuth: false,
   shouldRedirectToResults: false,
-  authStatus: "idle",
+  authStatus: AUTH_STATUS.IDLE as "idle",
   isSaving: false,
   isSaved: false,
   saveError: null,
@@ -138,7 +139,7 @@ export const fetchQuiz = createAsyncThunk(
 )
 
 // Add helper function at the top of file
-const calculateQuizScore = (answers: Record<string, QuizAnswer>, questions: QuizQuestion[]) => {
+const calculateQuizScore = (answers: Record<string, any>, questions: any[]) => {
   let correctCount = 0;
   let totalCount = 0;
 
@@ -147,9 +148,9 @@ const calculateQuizScore = (answers: Record<string, QuizAnswer>, questions: Quiz
     if (!answer) return;
 
     totalCount++;
-    if (answer.type === 'mcq' && (answer as MCQAnswer).isCorrect) {
+    if (answer.type === QUESTION_TYPES.MCQ && answer.isCorrect) {
       correctCount++;
-    } else if (answer.type === 'code' && (answer as CodeAnswer).isCorrect) {
+    } else if (answer.type === QUESTION_TYPES.CODE && answer.isCorrect) {
       correctCount++;
     }
   });
@@ -312,17 +313,14 @@ export const restoreQuizAfterAuth = createAsyncThunk("quiz/restoreQuizAfterAuth"
   let pendingResults = null
 
   if (typeof window !== "undefined") {
-    try {
-      // First check for any specific quiz results
-      const resultJson = localStorage.getItem("pendingQuizResults")
+    try {      // First check for any specific quiz results
+      const resultJson = localStorage.getItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS)
       if (resultJson) {
         pendingResults = JSON.parse(resultJson)
         
-      }
-
-      // Then check for general pending quiz state
+      }// Then check for general pending quiz state
       if (!pendingQuiz) {
-        const stored = sessionStorage.getItem("pendingQuiz")
+        const stored = sessionStorage.getItem(STORAGE_KEYS.PENDING_QUIZ)
         if (stored) {
           pendingQuiz = JSON.parse(stored)
         }
@@ -333,9 +331,8 @@ export const restoreQuizAfterAuth = createAsyncThunk("quiz/restoreQuizAfterAuth"
   }
 
   // If we found pending results, return those directly
-  if (pendingResults?.results) {
-    // When we find results, clear the storage
-    localStorage.removeItem("pendingQuizResults")
+  if (pendingResults?.results) {    // When we find results, clear the storage
+    localStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS)
 
     // Normalize the slug
     const normalizedSlug = normalizeSlug(pendingResults.slug)
@@ -490,13 +487,13 @@ export const rehydrateQuizState = createAsyncThunk(
       // If we have data directly, use it
       if (quizData?.questions?.length > 0) {
         // Set questions and quiz data
-        dispatch(
-          setQuiz({
+        dispatch(          setQuiz({
             quizId: slug,
-            quizType: quizData.type || "mcq",
-            title: quizData.title || "Quiz",
+            slug: slug,
+            quizType: (quizData.type || QUESTION_TYPES.MCQ) as QuizType,
+            title: quizData.title || DEFAULT_VALUES.UNTITLED_QUIZ,
             questions: quizData.questions,
-            type: quizData.type || "code",
+            type: quizData.type || QUESTION_TYPES.CODE,
           }),
         )
 
@@ -533,12 +530,13 @@ export const rehydrateQuizState = createAsyncThunk(
       }
       const data = await response.json()
 
-      dispatch(
-        setQuiz({
+      dispatch(        setQuiz({
           quizId: slug,
-          title: data.title || "Quiz",
+          slug: slug,
+          quizType: (data.type || QUESTION_TYPES.MCQ) as QuizType,
+          title: data.title || DEFAULT_VALUES.UNTITLED_QUIZ,
           questions: data.questions,
-          type: data.type || "code",
+          type: data.type || QUESTION_TYPES.CODE,
         }),
       )
 
@@ -587,10 +585,9 @@ export const persistQuizState = createAsyncThunk(
         if (useLocalStorage || stateType === "results") {
           try {
             localStorage.setItem(storageKey, storageData);
-            
-            // Store special keys for quiz results
+              // Store special keys for quiz results
             if (stateType === "results") {
-              localStorage.setItem("pendingQuizResults", storageData);
+              localStorage.setItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS, storageData);
             }
           } catch (e) {
             console.warn("Error storing in localStorage:", e);
@@ -600,10 +597,9 @@ export const persistQuizState = createAsyncThunk(
         // Always store in sessionStorage for current session reliability
         try {
           sessionStorage.setItem(storageKey, storageData);
-          
-          // Store special keys for quiz results
+            // Store special keys for quiz results
           if (stateType === "results") {
-            sessionStorage.setItem("pendingQuizResults", storageData);
+            sessionStorage.setItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS, storageData);
           }
         } catch (e) {
           console.warn("Error storing in sessionStorage:", e);
@@ -649,11 +645,10 @@ const quizSlice = createSlice({
           }
         }
         
-        // Reset state
-        state.questions = []
+        // Reset state        state.questions = []
         state.answers = {}
         state.results = preservedResults // Keep results if during auth flow
-        state.status = "idle"
+        state.status = QUIZ_STATUS.IDLE as "idle"
         state.currentQuestionIndex = 0
         state.isCompleted = preservedResults !== null // Keep completed if results preserved
         state.error = null
@@ -667,32 +662,29 @@ const quizSlice = createSlice({
         state.isSaving = false
         state.isSaved = false
         state.saveError = null
-        
-        // Don't clear storage if we're preserving results
+          // Don't clear storage if we're preserving results
         if (!preservedResults && typeof window !== 'undefined') {
-          try {
-            // Only clear session-specific storage, not persistent items
-            sessionStorage.removeItem("pendingQuizState");
-            sessionStorage.removeItem("quiz_state_backup");
+          try {            // Only clear session-specific storage, not persistent items
+            sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_STATE);
+            sessionStorage.removeItem(STORAGE_KEYS.QUIZ_STATE_BACKUP);
+            sessionStorage.removeItem(STORAGE_KEYS.QUIZ_RESULT);
             
             // Don't remove pendingQuizResults if we're in auth flow
-            const authTimestamp = localStorage.getItem("quizAuthTimestamp");
+            const authTimestamp = localStorage.getItem(STORAGE_KEYS.QUIZ_AUTH_TIMESTAMP);
             if (!authTimestamp || Date.now() - parseInt(authTimestamp) >= 5 * 60 * 1000) {
-              sessionStorage.removeItem("pendingQuizResults");
+              sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
             }
           } catch (e) {
             console.warn("Error selectively clearing storage:", e);
           }
         }
       }
-    },
-
-    // New action to safely reset quiz after results are processed
+    },    // New action to safely reset quiz after results are processed
     safeResetQuiz: (state) => {
       state.questions = []
       state.answers = {}
       state.results = null
-      state.status = "idle"
+      state.status = QUIZ_STATUS.IDLE as "idle"
       state.currentQuestionIndex = 0
       state.isCompleted = false
       state.error = null
@@ -701,14 +693,22 @@ const quizSlice = createSlice({
       state.title = ""
       state.isProcessingResults = false
       state.wasReset = true
-    },
-
-    // Add a dedicated method for users to force reset regardless of processing state
+      
+      // Safely clear quiz results from sessionStorage
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(STORAGE_KEYS.QUIZ_RESULT);
+          sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
+        } catch (err) {
+          console.warn("Failed to clear quiz results from sessionStorage:", err);
+        }
+      }
+    },    // Add a dedicated method for users to force reset regardless of processing state
     forceResetQuiz: (state) => {
       state.questions = []
       state.answers = {}
       state.results = null
-      state.status = "idle"
+      state.status = QUIZ_STATUS.IDLE as "idle"
       state.currentQuestionIndex = 0
       state.isCompleted = false
       state.error = null
@@ -725,6 +725,23 @@ const quizSlice = createSlice({
       state.shouldRedirectToAuth = false
       state.shouldRedirectToResults = false
       state.authRedirectState = null
+      
+      // Aggressively clear all storage to ensure complete reset
+      if (typeof window !== "undefined") {
+        try {
+          // Clear from sessionStorage
+          sessionStorage.removeItem(STORAGE_KEYS.QUIZ_RESULT);
+          sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
+          sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ);
+          sessionStorage.removeItem(STORAGE_KEYS.QUIZ_STATE_BACKUP);
+          sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_STATE);
+          
+          // Clear from localStorage
+          localStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
+        } catch (err) {
+          console.warn("Failed to clear quiz data from storage:", err);
+        }
+      }
     },
 
     hydrateQuiz: (state, action: PayloadAction<any>) => {
@@ -734,9 +751,7 @@ const quizSlice = createSlice({
       state.quizId = quizData.id;
       state.questions = quizData.questions || [];
       state.answers = currentState?.answers || {};
-    },
-
-    // Update setQuizResults to handle potential slug object structures
+    },    // Update setQuizResults to handle potential slug object structures and safely persist to sessionStorage
     setQuizResults: (state, action: PayloadAction<any>) => {
       const scoreData = calculateQuizScore(state.answers, state.questions);
       state.results = {
@@ -750,6 +765,61 @@ const quizSlice = createSlice({
         answers: Object.values(state.answers)
       };
       state.isCompleted = true;
+      
+      // Safely persist quiz results to sessionStorage
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(STORAGE_KEYS.QUIZ_RESULT, JSON.stringify(state.results));
+        } catch (err) {
+          console.warn("Failed to save quiz results to sessionStorage:", err);
+        }
+      }
+    },
+    
+    // Add a reducer to clear quiz results from state and sessionStorage
+    clearQuizResult: (state) => {
+      state.results = null;
+      state.isCompleted = false;
+      
+      // Safely clear quiz results from sessionStorage
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(STORAGE_KEYS.QUIZ_RESULT);
+        } catch (err) {
+          console.warn("Failed to clear quiz results from sessionStorage:", err);
+        }
+      }
+    },
+      // Add a reducer to set current quiz
+    setCurrentQuiz: (state, action: PayloadAction<{
+      slug: string;
+      quizType: QuizType;
+      title: string;
+      questions: any[];
+    }>) => {
+      const { slug, quizType, title, questions } = action.payload;
+      state.slug = slug;
+      state.quizId = slug;
+      state.quizType = quizType;
+      state.title = title;
+      state.questions = questions;
+      state.status = "succeeded";
+      state.currentQuestionIndex = 0;
+      state.answers = {};
+      state.isCompleted = false;
+      state.results = null;
+    },
+    
+    // Add a reducer to clear current quiz
+    clearCurrentQuiz: (state) => {
+      state.slug = null;
+      state.quizId = null;
+      state.quizType = null;
+      state.title = "";
+      state.questions = [];
+      state.currentQuestionIndex = 0;
+      state.answers = {};
+      state.status = "idle";
     },
 
     resetPendingQuiz: (state) => {
@@ -884,11 +954,10 @@ const quizSlice = createSlice({
       // Skip if we're on the server
       if (typeof window === 'undefined') return;
       
-      try {
-        // 1. First check for pending quiz results (highest priority)
-        try {
-          const pendingResultsJson = localStorage.getItem("pendingQuizResults") || 
-                                   sessionStorage.getItem("pendingQuizResults");
+      try {          // 1. First check for pending quiz results (highest priority)
+          try {
+            const pendingResultsJson = localStorage.getItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS) || 
+                                   sessionStorage.getItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
                                    
           if (pendingResultsJson) {
             const pendingResults = JSON.parse(pendingResultsJson);
@@ -930,13 +999,11 @@ const quizSlice = createSlice({
             });
             foundState = true;
           }
-        }
-        
-        // 3. Try backup in session storage as last resort
-        if (!foundState) {
-          try {
-            const backupJson = sessionStorage.getItem("quiz_state_backup");
-            if (backupJson) {
+        }          // 3. Try backup in session storage as last resort
+          if (!foundState) {
+            try {
+              const backupJson = sessionStorage.getItem(STORAGE_KEYS.QUIZ_STATE_BACKUP);
+              if (backupJson) {
               const backup = JSON.parse(backupJson);
               if (backup) {
                 Object.entries(backup).forEach(([key, value]) => {
@@ -1003,10 +1070,21 @@ const quizSlice = createSlice({
     },
     setQuizSuccess(state) {
       state.status = "succeeded"
-    },
-    setQuizFailed(state, action: PayloadAction<string>) {
-      state.status = "failed"
-      state.error = action.payload
+    },    setQuizFailed(state, action: PayloadAction<string>) {
+      state.status = "failed";
+      state.error = action.payload;
+      
+      // Clear quiz results when failed to prevent issues
+      state.results = null;
+      
+      // Safely remove from sessionStorage
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(STORAGE_KEYS.QUIZ_RESULT);
+        } catch (err) {
+          console.warn("Failed to clear quiz results from sessionStorage:", err);
+        }
+      }
     },
     resetSaveStatus(state) {
       state.isSaving = false
@@ -1167,12 +1245,20 @@ const quizSlice = createSlice({
       .addCase(submitQuizAndPrepareResults.pending, (state) => {
         state.status = "submitting"
         state.isProcessingResults = true
-      })
-      .addCase(submitQuizAndPrepareResults.fulfilled, (state, action) => {
+      })      .addCase(submitQuizAndPrepareResults.fulfilled, (state, action) => {
         state.status = "succeeded"
         state.results = action.payload
         state.shouldRedirectToResults = true
         // Keep processing flag until results are displayed
+        
+        // Safely persist quiz results to sessionStorage
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem(STORAGE_KEYS.QUIZ_RESULT, JSON.stringify(action.payload));
+          } catch (err) {
+            console.warn("Failed to save quiz results to sessionStorage:", err);
+          }
+        }
       })
       .addCase(submitQuizAndPrepareResults.rejected, (state, action) => {
         state.status = "failed"
@@ -1204,10 +1290,19 @@ const quizSlice = createSlice({
       .addCase(saveQuizResultsToDatabase.pending, (state) => {
         state.isSaving = true
         state.saveError = null
-      })
-      .addCase(saveQuizResultsToDatabase.fulfilled, (state) => {
+      })      .addCase(saveQuizResultsToDatabase.fulfilled, (state) => {
         state.isSaving = false
         state.isSaved = true
+        
+        // After successfully saving results, we can safely clear them
+        // from sessionStorage to prevent issues when navigating 
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.removeItem(STORAGE_KEYS.QUIZ_RESULT);
+          } catch (err) {
+            console.warn("Failed to clear quiz results from sessionStorage:", err);
+          }
+        }
       })
       .addCase(saveQuizResultsToDatabase.rejected, (state, action) => {
         state.isSaving = false
@@ -1224,6 +1319,7 @@ export const {
   safeResetQuiz,
   clearResetFlag,
   setQuizResults,
+  clearQuizResult,
   setPendingQuiz,
   resetPendingQuiz,
   hydrateQuiz,
@@ -1233,6 +1329,8 @@ export const {
   setResultsRedirect,
   clearResultsRedirect,
   setQuizCompleted,
+  setCurrentQuiz,
+  clearCurrentQuiz,
   // Backward compatible exports
   setQuizId,
   setQuizType,
@@ -1241,7 +1339,7 @@ export const {
   setQuiz,
   resetState,
   hydrateStateFromStorage,
-  resetSubmissionState, // Add the missing export here
+  resetSubmissionState,
   clearQuizState,
 } = quizSlice.actions
 
@@ -1373,12 +1471,13 @@ export const selectIsSaving = createSelector([selectQuizState], (quiz) => quiz.i
 export const selectIsSaved = createSelector([selectQuizState], (quiz) => quiz.isSaved)
 export const selectSaveError = createSelector([selectQuizState], (quiz) => quiz.saveError)
 
-export default quizSlice.reducer
-
 export const saveAuthRedirectState = (state: RootState, payload: { callbackUrl: string; quizState: any }) => {
   const quiz = selectQuizState(state)
   quiz.authRedirectState = payload
 }
+
+// Export the reducer as default
+export default quizSlice.reducer
 
 // Enhanced saveQuizResultsToDatabase thunk with better data transformation
 export const saveQuizResultsToDatabase = createAsyncThunk(

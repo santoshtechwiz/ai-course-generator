@@ -3,12 +3,9 @@
 import { useEffect, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
-import type { AppDispatch, RootState } from "@/store"
+import type { AppDispatch, RootState, RootState } from "@/store"
 import {
-  selectFlashcardQuestions,
-  selectFlashcardAnswers,
-  selectFlashcardCurrentIndex,
-  selectFlashcardStatus,
+
   selectQuizTitle,
   selectIsQuizComplete,
   selectShouldRedirectToResults,
@@ -16,6 +13,10 @@ import {
   fetchFlashCardQuiz,
   saveFlashCardResults,
   completeFlashCardQuiz,
+  selectQuizQuestions,
+  selectAnswers,
+  selectCurrentQuestionIndex,
+  selectQuizStatus,
 } from "@/store/slices/flashcard-slice"
 import FlashcardQuiz from "./FlashcardQuiz"
 import { toast } from "sonner"
@@ -42,10 +43,10 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   const isResetMode = searchParams?.get("reset") === "true"
 
   // Get data from Redux (memoized selectors already)
-  const questions = useSelector((state: RootState) => selectFlashcardQuestions(state))
-  const answers = useSelector((state: RootState) => selectFlashcardAnswers(state))
-  const currentQuestionIndex = useSelector((state: RootState) => selectFlashcardCurrentIndex(state))
-  const quizStatus = useSelector((state: RootState) => selectFlashcardStatus(state))
+  const questions = useSelector((state: RootState) => selectQuizQuestions(state))
+  const answers = useSelector((state: RootState) => selectAnswers(state))
+  const currentQuestionIndex = useSelector((state: RootState) => selectCurrentQuestionIndex(state))
+  const quizStatus = useSelector((state: RootState) => selectQuizStatus(state))
   const quizTitle = useSelector((state: RootState) => selectQuizTitle(state))
   const isCompleted = useSelector((state: RootState) => selectIsQuizComplete(state))
   const shouldRedirectToResults = useSelector((state: RootState) => state.flashcard.shouldRedirectToResults)

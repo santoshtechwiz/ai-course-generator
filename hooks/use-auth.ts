@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { STORAGE_KEYS } from "@/constants/global";
 import {
   loginSuccess,
   loginFailure,
@@ -60,9 +61,8 @@ export function useAuth() {
     // Clear local/session storage for all auth/session keys
     if (typeof window !== "undefined") {
       const itemsToClear = [
-        ["localStorage", "redux_state"],
-        ["localStorage", "persist:auth"],
-        ["localStorage", "persist:course"],
+        ["localStorage", "redux_state"],        ["localStorage", STORAGE_KEYS.PERSIST_AUTH],
+        ["localStorage", STORAGE_KEYS.PERSIST_COURSE],
         ["localStorage", "pendingQuizResults"],
         ["sessionStorage", "redux_state"],
         ["sessionStorage", "pendingQuizResults"],

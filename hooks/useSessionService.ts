@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store";
+import { STORAGE_KEYS } from "@/constants/global";
 import {
   resetQuiz,
   hydrateStateFromStorage,
@@ -80,7 +81,7 @@ export function useSessionService() {
       
       if (!pendingResultsJson) {
         try {
-          pendingResultsJson = sessionStorage.getItem("pendingQuizResults");
+          pendingResultsJson = sessionStorage.getItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
         } catch (err) {
           console.warn("Error accessing sessionStorage:", err);
         }
@@ -126,7 +127,7 @@ export function useSessionService() {
           }
           
           try {
-            sessionStorage.removeItem("pendingQuizResults");
+            sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
           } catch (err) {
             console.warn("Error removing from sessionStorage:", err);
           }
@@ -151,17 +152,17 @@ export function useSessionService() {
     
     try {
       // Create a timestamp to verify when sign-in was initiated
-      localStorage.setItem("quizAuthTimestamp", Date.now().toString());
+      localStorage.setItem(STORAGE_KEYS.QUIZ_AUTH_TIMESTAMP, Date.now().toString());
 
       // If we have quiz state, preserve it for after auth
-      const quizStateJson = safeStorage.getItem("quiz_state");
+      const quizStateJson = safeStorage.getItem(STORAGE_KEYS.QUIZ_STATE);
       if (quizStateJson) {
         // Also store in sessionStorage as a backup
-        sessionStorage.setItem("pendingQuizState", quizStateJson);
+        sessionStorage.setItem(STORAGE_KEYS.PENDING_QUIZ_STATE, quizStateJson);
       }
       
       // Check if we have quiz answers backup and store them too
-      const answersBackup = localStorage.getItem("quiz_answers_backup");
+      const answersBackup = localStorage.getItem(STORAGE_KEYS.QUIZ_ANSWERS_BACKUP);
       if (answersBackup) {
         sessionStorage.setItem("quiz_answers_backup", answersBackup);
       }
@@ -198,11 +199,10 @@ export function useSessionService() {
         // If we didn't restore from localStorage, try the Redux flow
         if (!restoredFromLocal) {
           try {
-            // Also check sessionStorage backup
-            const backupState = sessionStorage.getItem("pendingQuizState");
+            // Also check sessionStorage backup            const backupState = sessionStorage.getItem(STORAGE_KEYS.PENDING_QUIZ_STATE);
             if (backupState) {
-              safeStorage.setItem("quiz_state", backupState);
-              sessionStorage.removeItem("pendingQuizState");
+              safeStorage.setItem(STORAGE_KEYS.QUIZ_STATE, backupState);
+              sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_STATE);
               dispatch(hydrateStateFromStorage());
             }
 
@@ -238,9 +238,8 @@ export function useSessionService() {
       
       safeStorage.removeItem("quiz_state");
       
-      try {
-        sessionStorage.removeItem("pendingQuizState");
-        sessionStorage.removeItem("pendingQuizResults");
+      try {        sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_STATE);
+        sessionStorage.removeItem(STORAGE_KEYS.PENDING_QUIZ_RESULTS);
         sessionStorage.removeItem("quiz_answers_backup");
         localStorage.removeItem("pendingQuizResults");
         localStorage.removeItem("quizAuthTimestamp");
