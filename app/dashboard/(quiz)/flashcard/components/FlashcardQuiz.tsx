@@ -348,7 +348,7 @@ export default function FlashCardQuiz({
 
       // Otherwise, complete the quiz
       if (onComplete) {
-        onComplete()
+        onComplete(processedResults)
       }
     }
   }, [
@@ -359,6 +359,7 @@ export default function FlashCardQuiz({
     dispatch,
     cardControls,
     onComplete,
+    processedResults
   ])
 
   // Rating feedback optimization with smoother spring physics
@@ -607,13 +608,30 @@ export default function FlashCardQuiz({
       },
     },
   }
-
   // Render different content based on quiz state
-  const renderQuizContent = () => {
-    // Only show flashcard UI if not completed or in review mode
+  const renderQuizContent = () => {    // Force immediate redirect when completed (no waiting for any processing)
     if (isCompleted && !reviewMode) {
-      // Don't render results directly - QuizResultHandler will handle this
-      return null
+      // For AGGRESSIVE redirect, don't even show a loading UI - go straight to results
+      if (typeof window !== 'undefined') {
+        window.location.href = `/dashboard/flashcard/${slug}/results`;
+      }
+      
+      // Return minimal loading UI during the transition to results page
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <div className="animate-pulse text-xl font-medium">Quiz completed!</div>
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Redirecting to results page...</p>
+            <Button 
+              onClick={() => window.location.href = `/dashboard/flashcard/${slug}/results`}
+              variant="secondary"
+            >
+              Go to Results Now
+            </Button>
+          </div>
+        </div>
+      )
     }
 
     // Not completed or in review mode - show flashcard UI
@@ -1050,8 +1068,8 @@ export default function FlashCardQuiz({
                   ) {
                     if (reviewMode) {
                       handleExitReviewMode();
-                    } else if (onComplete) {
-                      onComplete(processedResults);
+                    } else {
+                      moveToNextCard();
                     }
                   } else {
                     moveToNextCard();
@@ -1079,5 +1097,3 @@ export default function FlashCardQuiz({
     </>
   )
 }
-
-
