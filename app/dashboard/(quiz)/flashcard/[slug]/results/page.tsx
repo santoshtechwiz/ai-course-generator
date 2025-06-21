@@ -34,12 +34,15 @@ export default function FlashCardResultsPage({
       </div>
     )
   }
-
   return (
     <div className="container max-w-4xl py-10">
-      <FlashcardResultHandler slug={slug}>
-       
-      </FlashcardResultHandler>
+      <FlashcardResultHandler 
+        slug={slug} 
+        onRestart={() => {
+          // Use window.location for more reliable hard reset
+          window.location.href = `/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`;
+        }}
+      />
     </div>
   )
 }
