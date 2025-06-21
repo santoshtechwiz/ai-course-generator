@@ -21,6 +21,7 @@ import {
   calculateQuizScoreWithPartialCredit
 } from "@/lib/utils/similarity-scoring"
 import { QuizResultHeader } from "@/components/ui/quiz-result-header"
+import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
 
 interface QuestionResult {
   questionId: string | number
@@ -265,7 +266,7 @@ export default function OpenEndedQuizResults({ result, onRetake, isAuthenticated
         secondaryAction={{
           label: "Browse Quizzes",
           onClick: handleViewAllQuizzes,
-          variant="outline",
+          variant: "outline",
           icon: <Home className="h-4 w-4" />,
         }}
       />
