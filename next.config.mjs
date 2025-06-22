@@ -4,7 +4,9 @@ const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
   poweredByHeader: false, // Remove X-Powered-By header for security
-
+  experimental: {
+       missingSuspenseWithCSRBailout: false,
+  },
   // Optimize image loading
   images: {
     formats: ["image/avif", "image/webp"],
