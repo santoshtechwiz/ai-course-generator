@@ -8,10 +8,9 @@ import { BenefitsCarousel } from "./components/BenefitsCarousel"
 import { Suspense } from "react"
 import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 
-// Force dynamic rendering due to usage of headers/session
-export const dynamic = "force-dynamic"
 
-// Remove unsupported metadata fields (viewport, themeColor) if present
+
+
 export const metadata = {
   title: "Sign In ",
   description: "Sign in to your Course AI account to access your courses, quizzes, and learning progress.",
