@@ -3,13 +3,16 @@ import Link from "next/link"
 import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
-import type { Metadata } from "next"
 import { AuthButtonGroup } from "./components/AuthButtonGroup"
 import { BenefitsCarousel } from "./components/BenefitsCarousel"
 import { Suspense } from "react"
 import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 
-export const metadata: Metadata = {
+// Force dynamic rendering due to usage of headers/session
+export const dynamic = "force-dynamic"
+
+// Remove unsupported metadata fields (viewport, themeColor) if present
+export const metadata = {
   title: "Sign In ",
   description: "Sign in to your Course AI account to access your courses, quizzes, and learning progress.",
   keywords: ["sign in", "login", "account access", "user authentication", "course platform login"],
