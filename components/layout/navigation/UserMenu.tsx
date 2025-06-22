@@ -18,13 +18,14 @@ import type { ReactNode } from "react"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
-import { logout as reduxLogout, useAppDispatch, useAppSelector } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { logout, selectUser } from "@/store/slices/auth-slice"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 export function UserMenu({ children }: { children?: ReactNode }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth()
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const dispatch = useAppDispatch()
   const subscriptionData = useAppSelector(selectSubscription)
   const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
@@ -76,11 +77,11 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       // Always redirect to /explore after logout
       const targetPath = "/dashboard/explore";
       try {
-        dispatch(reduxLogout())
+        dispatch(logout())
       } catch (err) {
         console.warn("Redux dispatch failed during logout:", err);
       }
-      await logout({
+      logout({
         redirect: true,
         callbackUrl: targetPath
       });

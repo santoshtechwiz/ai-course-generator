@@ -4,29 +4,40 @@ import { useMemo, useCallback, useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { 
-  Award, 
   Clock, 
   Activity, 
-  BarChart3, 
   RefreshCw, 
   BookOpen, 
   ThumbsUp, 
   ThumbsDown, 
-  Target, 
   Trophy, 
   Share2,
-  Home,
   CheckCircle,
-  XCircle
+  AlertCircle,
+  Eye,
+  RotateCcw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { NoResults } from "@/components/ui/no-results"
 import { Confetti } from "@/components/ui/confetti"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { BestGuess } from "@/components/ui/best-guess"
+
+interface Answer {
+  questionId: string | number
+  answer: "correct" | "incorrect" | "still_learning"
+  isCorrect?: boolean
+  timeSpent?: number
+}
+
+interface Question {
+  id: string | number
+  question: string
+  answer: string
+  difficulty?: string
+  saved?: boolean
+}
 
 interface FlashCardResultsProps {
   quizId?: string
@@ -43,27 +54,18 @@ interface FlashCardResultsProps {
   onReviewStillLearning?: (cards: number[]) => void
   reviewCards?: number[]
   stillLearningCards?: number[]
-  answers?: Array<{
-    questionId: string | number
-    answer: "correct" | "incorrect" | "still_learning"
-    isCorrect?: boolean
-    timeSpent?: number
-  }>
-  questions?: Array<{
-    id: string | number
-    question: string
-    answer: string
-  }>
+  answers?: Answer[]
+  questions?: Question[]
 }
 
 export default function FlashCardResults({
   slug,
   title = "Flashcard Quiz",
   score = 0,
-  totalQuestions = 0,
-  correctAnswers = 0,
-  stillLearningAnswers = 0,
-  incorrectAnswers = 0,
+  totalQuestions: propTotalQuestions = 0,
+  correctAnswers: propCorrectAnswers = 0,
+  stillLearningAnswers: propStillLearningAnswers = 0,
+  incorrectAnswers: propIncorrectAnswers = 0,
   totalTime = 0,
   onRestart,
   onReview,
@@ -75,7 +77,34 @@ export default function FlashCardResults({
 }: FlashCardResultsProps) {
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
+  const [showDetailedResults, setShowDetailedResults] = useState(false)
   const hasShownConfettiRef = useRef(false)
+
+  // Calculate actual results from answers array to ensure consistency
+  const calculatedResults = useMemo(() => {
+    if (!answers || answers.length === 0) {
+      return {
+        totalQuestions: propTotalQuestions,
+        correctAnswers: propCorrectAnswers,
+        stillLearningAnswers: propStillLearningAnswers,
+        incorrectAnswers: propIncorrectAnswers,
+      }
+    }
+
+    const correct = answers.filter(a => a.answer === "correct" || a.isCorrect === true).length
+    const stillLearning = answers.filter(a => a.answer === "still_learning").length
+    const incorrect = answers.filter(a => a.answer === "incorrect" || a.isCorrect === false).length
+    const total = answers.length
+
+    return {
+      totalQuestions: total,
+      correctAnswers: correct,
+      stillLearningAnswers: stillLearning,
+      incorrectAnswers: incorrect,
+    }
+  }, [answers, propTotalQuestions, propCorrectAnswers, propStillLearningAnswers, propIncorrectAnswers])
+
+  const { totalQuestions, correctAnswers, stillLearningAnswers, incorrectAnswers } = calculatedResults
 
   // Format the total time
   const formattedTime = useMemo(() => {
@@ -118,7 +147,7 @@ export default function FlashCardResults({
       return {
         level: "Excellent",
         message: "Outstanding! You've mastered these flashcards.",
-        color: "text-green-500",
+        color: "text-green-600",
         bgColor: "bg-green-50",
         borderColor: "border-green-200",
         emoji: "🏆",
@@ -187,9 +216,10 @@ export default function FlashCardResults({
         await navigator.share(shareData)
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
+        // You could add a toast notification here
       }
     } catch (error) {
-      // Handle error silently
+      console.error('Error sharing:', error)
     }
   }
 
@@ -200,14 +230,22 @@ export default function FlashCardResults({
       return {
         ...answer,
         question: question?.question || "Unknown question",
-        correctAnswer: question?.answer || "Unknown answer"
+        correctAnswer: question?.answer || "Unknown answer",
+        difficulty: question?.difficulty || "medium",
+        saved: question?.saved || false
       }
     })
   }, [answers, questions])
 
+  // Group answers by result type for review
+  const reviewableCards = useMemo(() => {
+    const incorrect = enhancedAnswers.filter(a => a.answer === "incorrect" || a.isCorrect === false)
+    const stillLearning = enhancedAnswers.filter(a => a.answer === "still_learning")
+    return { incorrect, stillLearning }
+  }, [enhancedAnswers])
+
   // If no data
-  const isLoadingOrRedirect = typeof window !== 'undefined' && (document.body.classList.contains('quiz-loading') || document.body.classList.contains('quiz-redirect'));
-  if (totalQuestions === 0 && !isLoadingOrRedirect) {
+  if (totalQuestions === 0) {
     return (
       <NoResults
         variant="quiz"
@@ -224,8 +262,10 @@ export default function FlashCardResults({
 
   return (
     <>
+      {showConfetti && <Confetti />}
+      
       <motion.div
-        className="space-y-8 max-w-4xl mx-auto"
+        className="space-y-8 max-w-4xl mx-auto p-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -312,331 +352,284 @@ export default function FlashCardResults({
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
           }}
         >
-          <CardHeader className="bg-gradient-to-br from-primary/8 via-primary/5 to-primary/10 border-b-2 border-primary/10 p-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
-                  <Trophy className="w-12 h-12 text-primary drop-shadow-lg" />
-                </motion.div>
-                <div>
-                  <CardTitle className="text-3xl font-bold text-foreground">Your Score</CardTitle>
-                  <p className="text-muted-foreground text-lg">Flashcard performance summary</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <motion.div
-                  className="text-6xl font-black text-primary drop-shadow-lg"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{
-                    delay: 0.3,
-                    type: "spring",
-                    stiffness: 200,
-                    damping: 15,
-                  }}
-                >
-                  {percentCorrect}%
-                </motion.div>
-                <div className="text-lg text-muted-foreground font-medium">
-                  {correctAnswers} of {totalQuestions}
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-8">
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <div className="flex justify-between text-lg font-medium">
-                  <span>Overall Progress</span>
-                  <motion.span
-                    key={percentCorrect}
-                    initial={{ scale: 1.2, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {correctAnswers}/{totalQuestions} correct
-                  </motion.span>
-                </div>
-                <div className="relative">
-                  <Progress value={percentCorrect} className="h-4 rounded-full bg-muted/50" />
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
-                    animate={{
-                      x: ["-100%", "100%"],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "linear",
-                      repeatDelay: 1,
-                    }}
-                    style={{ opacity: percentCorrect > 0 ? 1 : 0 }}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <motion.div
-                  className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 text-center shadow-lg"
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <motion.div
-                    className="text-4xl font-black text-green-500"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  >
-                    {correctAnswers}
+          <Card className="border-0 shadow-none">
+            <CardHeader className="bg-gradient-to-br from-primary/8 via-primary/5 to-primary/10 border-b-2 border-primary/10 p-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
+                    <Trophy className="w-12 h-12 text-primary drop-shadow-lg" />
                   </motion.div>
-                  <div className="text-sm text-green-700 dark:text-green-300 font-semibold">Knew It!</div>
-                </motion.div>
-
-                <motion.div
-                  className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl p-6 text-center shadow-lg"
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <motion.div
-                    className="text-4xl font-black text-yellow-500"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                  >
-                    {stillLearningAnswers}
-                  </motion.div>
-                  <div className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold">Still Learning</div>
-                </motion.div>
-
-                <motion.div
-                  className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-2xl p-6 text-center shadow-lg"
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <motion.div
-                    className="text-4xl font-black text-red-500"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                  >
-                    {incorrectAnswers}
-                  </motion.div>
-                  <div className="text-sm text-red-700 dark:text-red-300 font-semibold">Didn't Know</div>
-                </motion.div>
-              </div>
-
-              {/* Time info */}
-              <div className="p-6 bg-muted/10 rounded-xl border border-muted/20">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-primary" />
-                    <span className="font-medium">Time Performance</span>
+                  <div>
+                    <CardTitle className="text-3xl font-bold text-foreground">Your Score</CardTitle>
+                    <p className="text-muted-foreground text-lg">Flashcard performance summary</p>
                   </div>
-                  <span className="text-lg font-semibold">{formattedTime}</span>
                 </div>
-                <div className="text-sm text-muted-foreground flex justify-between">
-                  <span>Average time per card: {avgTimePerCard} seconds</span>
+                <div className="text-right">
+                  <motion.div
+                    className="text-6xl font-black text-primary drop-shadow-lg"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{
+                      delay: 0.3,
+                      type: "spring",
+                      stiffness: 200,
+                      damping: 15,
+                    }}
+                  >
+                    {percentCorrect}%
+                  </motion.div>
+                  <div className="text-lg text-muted-foreground font-medium">
+                    {correctAnswers} of {totalQuestions}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
+            </CardHeader>
 
-          <CardFooter className="bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 border-t-2 border-muted/20 flex flex-wrap gap-4 justify-between p-8">
-            <div className="flex gap-3">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={onRestart}
-                  className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
-                    <RefreshCw className="w-5 h-5" />
+            <CardContent className="p-8">
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-lg font-medium">
+                    <span>Overall Progress</span>
+                    <motion.span
+                      key={percentCorrect}
+                      initial={{ scale: 1.2, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {correctAnswers}/{totalQuestions} correct
+                    </motion.span>
+                  </div>
+                  <div className="relative">
+                    <Progress value={percentCorrect} className="h-4 rounded-full bg-muted/50" />
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                      animate={{
+                        x: ["-100%", "100%"],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "linear",
+                        repeatDelay: 1,
+                      }}
+                      style={{ opacity: percentCorrect > 0 ? 1 : 0 }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <motion.div
+                    className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 text-center shadow-lg"
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <motion.div
+                      className="text-4xl font-black text-green-500"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    >
+                      {correctAnswers}
+                    </motion.div>
+                    <div className="text-sm text-green-700 dark:text-green-300 font-semibold">Knew It!</div>
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">{percentCorrect}%</div>
                   </motion.div>
-                  Restart
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={handleGoToFlashcards}
-                  className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                  variant="outline"
-                >
-                  <BookOpen className="w-5 h-5" />
-                  All Flashcards
-                </Button>
-              </motion.div>
-            </div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={handleShare}
-                className="gap-3 px-6 py-3 text-lg font-semibold rounded-xl border-2 hover:bg-muted/50 transition-all duration-300"
-              >
-                <motion.div whileHover={{ rotate: 15, scale: 1.1 }} transition={{ duration: 0.2 }}>
-                  <Share2 className="w-5 h-5" />
-                </motion.div>
-                Share Results
-              </Button>
-            </motion.div>
-          </CardFooter>
+
+                  <motion.div
+                    className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl p-6 text-center shadow-lg"
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <motion.div
+                      className="text-4xl font-black text-yellow-500"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                    >
+                      {stillLearningAnswers}
+                    </motion.div>
+                    <div className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold">Still Learning</div>
+                    <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">{percentStillLearning}%</div>
+                  </motion.div>
+
+                  <motion.div
+                    className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-2xl p-6 text-center shadow-lg"
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <motion.div
+                      className="text-4xl font-black text-red-500"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                    >
+                      {incorrectAnswers}
+                    </motion.div>
+                    <div className="text-sm text-red-700 dark:text-red-300 font-semibold">Didn't Know</div>
+                    <div className="text-xs text-red-600 dark:text-red-400 mt-1">{percentIncorrect}%</div>
+                  </motion.div>
+                </div>
+
+                {/* Time info */}
+                <div className="p-6 bg-muted/10 rounded-xl border border-muted/20">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Time Performance</span>
+                    </div>
+                    <span className="text-lg font-semibold">{formattedTime}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground flex justify-between">
+                    <span>Average per card: {avgTimePerCard}s</span>
+                    <span>Total questions: {totalQuestions}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+
+            <CardFooter className="p-8 pt-0">
+              <div className="w-full space-y-4">
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <Button
+                    onClick={onRestart || handleGoToFlashcards}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                    size="lg"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Try Again
+                  </Button>
+
+                  {reviewableCards.incorrect.length > 0 && (
+                    <Button
+                      onClick={() => onReview?.(reviewableCards.incorrect.map(a => Number(a.questionId)))}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      size="lg"
+                    >
+                      <ThumbsDown className="h-4 w-4" />
+                      Review Missed ({reviewableCards.incorrect.length})
+                    </Button>
+                  )}
+
+                  {reviewableCards.stillLearning.length > 0 && (
+                    <Button
+                      onClick={() => onReviewStillLearning?.(reviewableCards.stillLearning.map(a => Number(a.questionId)))}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      size="lg"
+                    >
+                      <Activity className="h-4 w-4" />
+                      Review Learning ({reviewableCards.stillLearning.length})
+                    </Button>
+                  )}
+
+                  <Button
+                    onClick={() => setShowDetailedResults(!showDetailedResults)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    size="lg"
+                  >
+                    <Eye className="h-4 w-4" />
+                    {showDetailedResults ? 'Hide' : 'Show'} Details
+                  </Button>
+
+                  <Button
+                    onClick={handleShare}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    size="lg"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                </div>
+              </div>
+            </CardFooter>
+          </Card>
         </motion.div>
 
-        {/* Specific Review Sections */}
-        {stillLearningCards.length > 0 && (
+        {/* Detailed Results */}
+        {showDetailedResults && enhancedAnswers.length > 0 && (
           <motion.div
-            className="rounded-3xl shadow-2xl border-2 border-yellow-200/50"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
           >
-            <CardHeader className="p-8 bg-gradient-to-r from-yellow-50/50 to-yellow-100/50 border-b-2 border-yellow-200/50">
-              <CardTitle className="flex items-center gap-4 text-2xl font-bold text-yellow-800">
-                <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.3 }}>
-                  <Activity className="w-7 h-7 text-yellow-600" />
-                </motion.div>
-                Still Learning ({stillLearningAnswers} Cards)
-              </CardTitle>
-              <p className="text-yellow-700/70 text-lg">These cards need more practice</p>
-            </CardHeader>
+            <h3 className="text-2xl font-bold text-center">Detailed Results</h3>
+            <div className="space-y-3">
+              {enhancedAnswers.map((answer, index) => {
+                const isCorrect = answer.answer === "correct" || answer.isCorrect === true
+                const isStillLearning = answer.answer === "still_learning"
+                const isIncorrect = answer.answer === "incorrect" || answer.isCorrect === false
 
-            <CardContent className="p-8">
-              <div className="grid gap-4">
-                {enhancedAnswers
-                  .filter(a => a.answer === "still_learning")
-                  .map((item, index) => (
-                    <motion.div
-                      key={`learning-${item.questionId}`}
-                      className="p-5 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-md"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.5 }}
-                      whileHover={{ scale: 1.01, y: -2 }}
-                    >
-                      <div className="flex gap-3 mb-3">
-                        <div className="w-6 h-6 bg-yellow-200 rounded-full flex items-center justify-center">
-                          <span className="text-yellow-700 font-bold">{index + 1}</span>
-                        </div>
-                        <h3 className="font-bold text-lg text-yellow-800">{item.question}</h3>
-                      </div>
-                      <div className="ml-9 text-base text-yellow-700">Correct answer: {item.correctAnswer}</div>
-                    </motion.div>
-                  ))}
-              </div>
-              
-              {onReviewStillLearning && (
-                <div className="mt-6 flex justify-center">
-                  <Button 
-                    variant="outline" 
-                    className="border-yellow-300 text-yellow-700 hover:bg-yellow-50"
-                    onClick={() => onReviewStillLearning(stillLearningCards)}
+                return (
+                  <motion.div
+                    key={`${answer.questionId}-${index}`}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`p-4 rounded-lg border-2 ${
+                      isCorrect 
+                        ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
+                        : isStillLearning
+                        ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800'
+                        : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'
+                    }`}
                   >
-                    Practice These Cards
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </motion.div>
-        )}
-        
-        {/* Need Review Section */}
-        {incorrectAnswers > 0 && (
-          <motion.div
-            className="rounded-3xl shadow-2xl border-2 border-red-200/50"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
-          >
-            <CardHeader className="p-8 bg-gradient-to-r from-red-50/50 to-red-100/50 border-b-2 border-red-200/50">
-              <CardTitle className="flex items-center gap-4 text-2xl font-bold text-red-800">
-                <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.3 }}>
-                  <ThumbsDown className="w-7 h-7 text-red-600" />
-                </motion.div>
-                Need Review ({incorrectAnswers} Cards)
-              </CardTitle>
-              <p className="text-red-700/70 text-lg">These cards need more focused study</p>
-            </CardHeader>
-
-            <CardContent className="p-8">
-              <div className="grid gap-4">
-                {enhancedAnswers
-                  .filter(a => a.answer === "incorrect" || a.isCorrect === false)
-                  .map((item, index) => (
-                    <motion.div
-                      key={`incorrect-${item.questionId}`}
-                      className="p-5 border-2 border-red-200 rounded-xl bg-red-50 shadow-md"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.5 }}
-                      whileHover={{ scale: 1.01, y: -2 }}
-                    >
-                      <div className="flex gap-3 mb-3">
-                        <div className="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center">
-                          <span className="text-red-700 font-bold">{index + 1}</span>
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 ${
+                        isCorrect 
+                          ? 'text-green-500'
+                          : isStillLearning
+                          ? 'text-yellow-500'
+                          : 'text-red-500'
+                      }`}>
+                        {isCorrect ? (
+                          <CheckCircle className="h-5 w-5" />
+                        ) : isStillLearning ? (
+                          <Activity className="h-5 w-5" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm mb-2">
+                          Question {index + 1}
+                          {answer.difficulty && (
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              {answer.difficulty}
+                            </Badge>
+                          )}
+                          {answer.saved && (
+                            <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700">
+                              Saved
+                            </Badge>
+                          )}
                         </div>
-                        <h3 className="font-bold text-lg text-red-800">{item.question}</h3>
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {answer.question}
+                        </div>
+                        <div className="text-sm">
+                          <strong>Answer:</strong> {answer.correctAnswer}
+                        </div>
+                        {answer.timeSpent !== undefined && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Time spent: {answer.timeSpent}s
+                          </div>
+                        )}
                       </div>
-                      <div className="ml-9 text-base text-red-700">Correct answer: {item.correctAnswer}</div>
-                    </motion.div>
-                  ))}
-              </div>
-              
-              {onReview && reviewCards.length > 0 && (
-                <div className="mt-6 flex justify-center">
-                  <Button 
-                    variant="outline" 
-                    className="border-red-300 text-red-700 hover:bg-red-50"
-                    onClick={() => onReview(reviewCards)}
-                  >
-                    Review These Cards
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </motion.div>
-        )}
-        
-        {/* Mastered Section */}
-        {correctAnswers > 0 && (
-          <motion.div
-            className="rounded-3xl shadow-2xl border-2 border-green-200/50"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
-          >
-            <CardHeader className="p-8 bg-gradient-to-r from-green-50/50 to-green-100/50 border-b-2 border-green-200/50">
-              <CardTitle className="flex items-center gap-4 text-2xl font-bold text-green-800">
-                <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.3 }}>
-                  <ThumbsUp className="w-7 h-7 text-green-600" />
-                </motion.div>
-                Mastered ({correctAnswers} Cards)
-              </CardTitle>
-              <p className="text-green-700/70 text-lg">Great job with these cards!</p>
-            </CardHeader>
-
-            <CardContent className="p-8">
-              <div className="grid gap-4 md:grid-cols-2">
-                {enhancedAnswers
-                  .filter(a => a.answer === "correct" || a.isCorrect === true)
-                  .map((item, index) => (
-                    <motion.div
-                      key={`correct-${item.questionId}`}
-                      className="p-4 border-2 border-green-200 rounded-xl bg-green-50 shadow-md"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05, duration: 0.3 }}
-                    >
-                      <div className="flex gap-2 items-center">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <p className="text-sm font-medium text-green-800 line-clamp-1">{item.question}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-              </div>
-            </CardContent>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
           </motion.div>
         )}
       </motion.div>
-
-      {showConfetti && <Confetti isActive />}
     </>
   )
 }
+
