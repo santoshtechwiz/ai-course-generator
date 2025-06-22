@@ -51,7 +51,7 @@ export function useAuth() {
 
   // Enhanced logout that ensures all auth data is cleared
   const logout = useCallback(async (options: { redirect?: boolean; callbackUrl?: string } = {}) => {
-    const redirectUrl = options.callbackUrl || "/";
+    const redirectUrl = options.callbackUrl || "/auth/signout";
     
     try {
       // Use our optimized logout that handles everything in the correct order

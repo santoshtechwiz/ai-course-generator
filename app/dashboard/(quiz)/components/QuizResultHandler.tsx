@@ -85,12 +85,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   }
 
   const handleSignIn = () => {
-    login({
-      returnPath: `/dashboard/${quizType}/${slug}/results`,
-      quizState: {
-        slug,
-        results: quizResults,
-      }
+    login(undefined, {
+      callbackUrl: `/dashboard/${quizType}/${slug}/results`,
     })
   }
 
@@ -151,10 +147,10 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         previewData={
           quizResults
             ? {
-                percentage: quizResults.percentage || 0,
-                score: quizResults.score || 0,
-                maxScore: quizResults.maxScore || 0,
-              }
+              percentage: quizResults.percentage || 0,
+              score: quizResults.score || 0,
+              maxScore: quizResults.maxScore || 0,
+            }
             : undefined
         }
       />

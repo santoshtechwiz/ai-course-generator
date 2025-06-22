@@ -79,20 +79,20 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
     if (!guestId) {
       guestId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
       sessionStorage.setItem("guestId", guestId)
-    }    return guestId
+    } return guestId
   }, [])
-  
+
   const login = useCallback(
     async (provider: string, options?: { callbackUrl?: string }) => {
       try {
-    
+
         await signIn(provider, {
           callbackUrl: options?.callbackUrl || "/dashboard",
         })
       } catch (error) {
         console.error("Login failed:", error)
       } finally {
-     
+
       }
     },
     []
@@ -100,24 +100,8 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(
     async (options: { redirect?: boolean; callbackUrl?: string } = {}) => {
       try {
-        const redirectUrl = options.callbackUrl || "/"
-        // Clear Redux and storage immediately
-        if (typeof window !== "undefined") {
-          const itemsToClear = [            ["localStorage", "redux_state"],
-            ["localStorage", "pendingQuizResults"],
-            ["sessionStorage", "redux_state"],
-            ["sessionStorage", "pendingQuizResults"],
-            ["sessionStorage", "guestId"],
-            ["sessionStorage", "next-auth.session-token"],
-            ["sessionStorage", "next-auth.callback-url"],
-            ["sessionStorage", "next-auth.csrf-token"]
-          ];
-          itemsToClear.forEach(([storageType, key]) => {
-            try {
-              window[storageType as "localStorage" | "sessionStorage"]?.removeItem(key);
-            } catch (e) { }
-          });
-        }    
+        const redirectUrl = options.callbackUrl || "/auth/signout"
+
         // Use NextAuth's fast signOut with redirect
         await signOut({ redirect: true, callbackUrl: redirectUrl });
       } catch (error) {
@@ -126,7 +110,7 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
           router.push("/");
         }
       } finally {
-        
+
       }
     },
     [router]
@@ -157,6 +141,6 @@ export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error("useAuth must be used within <AuthProvider>")
-}
+  }
   return context
 }
