@@ -1,28 +1,10 @@
+
+
 const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
   poweredByHeader: false, // Remove X-Powered-By header for security
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-    optimizeCss: true, // Enable CSS optimization
-    optimizePackageImports: [
-      '@radix-ui/react-icons',
-      '@heroicons/react',
-      'lucide-react',
-      'react-icons'
-    ],
-    turbo: {
-      resolveAlias: {
-        // Add common aliases here
-        '@': '.',
-        '@components': './components',
-      }
-    },
-    serverActions: true,
-    typedRoutes: true,
-    mdxRs: true,
-    webpackBuildWorker: true,
-  },
+
   // Optimize image loading
   images: {
     formats: ["image/avif", "image/webp"],
@@ -78,48 +60,6 @@ const nextConfig = {
 
   // Performance optimizations
   compress: true,
-
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-    styledComponents: true,
-  },
-
-  headers: async () => [
-    {
-      source: '/:all*(svg|jpg|png|webp|avif)',
-      locale: false,
-      headers: [
-        {
-          key: 'Cache-Control',
-          value: 'public, max-age=31536000, immutable',
-        }
-      ],
-    },
-    {
-      source: '/:path*',
-      headers: [
-        {
-          key: 'X-DNS-Prefetch-Control',
-          value: 'on'
-        },
-        {
-          key: 'Strict-Transport-Security',
-          value: 'max-age=31536000; includeSubDomains; preload'
-        },
-        {
-          key: 'X-Content-Type-Options',
-          value: 'nosniff'
-        },
-      ],
-    },
-  ],
-
-  transpilePackages: [
-    '@radix-ui',
-    '@hookform',
-    'lucide-react',
-    'react-hook-form'
-  ],
 
   // // Experimental features
   // experimental: {

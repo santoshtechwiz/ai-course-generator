@@ -32,15 +32,7 @@ export const metadata: Metadata = {
     "learn to code",
     "coding quiz app",
   ],
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-  },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#111827" },
-  ],
+
   alternates: {
     canonical: "/",
   },

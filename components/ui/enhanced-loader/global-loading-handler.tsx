@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { useEnhancedLoader } from "@/components/ui/enhanced-loader";
+import { useEnhancedLoader } from "./enhanced-loader-provider";
 import useNavigationLoader from "@/hooks/use-navigation-loader";
 
 /**
@@ -30,4 +30,5 @@ export function GlobalLoadingHandler() {
   return null;
 }
 
+// Add default export
 export default GlobalLoadingHandler;
