@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { NoResults } from "@/components/ui/no-results"
 import { BestGuess } from "@/components/ui/best-guess"
 import { useDispatch } from "react-redux"
-import { clearQuizState } from "@/store"
+
 
 // Using standardized similarity utilities
 import { 
@@ -22,6 +22,7 @@ import {
 } from "@/lib/utils/similarity-scoring"
 import { QuizResultHeader } from "@/components/ui/quiz-result-header"
 import { getBestSimilarityScore } from "@/lib/utils/text-similarity"
+import { clearQuizState } from "@/store/slices/quiz-slice"
 
 interface QuestionResult {
   questionId: string | number

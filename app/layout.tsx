@@ -71,7 +71,6 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerAuthSession()
-
   return (
     <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
       <head>
@@ -79,8 +78,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className={` antialiased min-h-screen flex flex-col`}>
-
-        <Providers>
+        
+        {/* Pass the server session to Providers */}
+        <Providers session={session}>
           <ClientLayoutWrapper>
             {children}
           </ClientLayoutWrapper>

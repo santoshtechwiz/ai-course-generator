@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
-import { clearQuizState } from "@/store"
+
 import { useDispatch } from "react-redux"
 
 // Using standardized similarity utilities
@@ -22,6 +22,7 @@ import {
 import { BestGuess } from "@/components/ui/best-guess"
 import { getSimilarityLabel } from "@/lib/utils/quiz-result-helpers"
 import { BlanksQuizResult } from "@/app/types/quiz-types"
+import { clearQuizState } from "@/store/slices/quiz-slice"
 
 // Move function outside component to prevent recreation
 function getSimilarity(userAnswer: string, correctAnswer: string) {
