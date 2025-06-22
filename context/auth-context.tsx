@@ -14,7 +14,7 @@ import type { Session } from "next-auth"
 import { useEffect } from "react"
 import { useAppDispatch } from "@/store/hooks"
 import { loginSuccess, logout as reduxLogout, loginStart, loginFailure } from "@/store/slices/auth-slice"
-import { EnhancedLoader } from "@/components/ui"
+
 
 
 export interface AuthContextValue {
@@ -53,6 +53,7 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const dispatch = useAppDispatch()
 
+
   // Hydrate Redux auth state from next-auth session
   useEffect(() => {
     if (status === "loading") {
@@ -78,21 +79,20 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
     if (!guestId) {
       guestId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
       sessionStorage.setItem("guestId", guestId)
-    }
-    return guestId
+    }    return guestId
   }, [])
-
+  
   const login = useCallback(
     async (provider: string, options?: { callbackUrl?: string }) => {
       try {
-        <EnhancedLoader isLoading={true} message="Signing in..." subMessage="Please wait while we log you in" />
+    
         await signIn(provider, {
           callbackUrl: options?.callbackUrl || "/dashboard",
         })
       } catch (error) {
         console.error("Login failed:", error)
       } finally {
-        <EnhancedLoader isLoading={false} />
+     
       }
     },
     []
@@ -103,9 +103,7 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
         const redirectUrl = options.callbackUrl || "/"
         // Clear Redux and storage immediately
         if (typeof window !== "undefined") {
-          const itemsToClear = [
-            ["localStorage", "redux_state"],            ["localStorage", STORAGE_KEYS.PERSIST_AUTH],
-            ["localStorage", STORAGE_KEYS.PERSIST_COURSE],
+          const itemsToClear = [            ["localStorage", "redux_state"],
             ["localStorage", "pendingQuizResults"],
             ["sessionStorage", "redux_state"],
             ["sessionStorage", "pendingQuizResults"],
@@ -119,8 +117,7 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
               window[storageType as "localStorage" | "sessionStorage"]?.removeItem(key);
             } catch (e) { }
           });
-        }
-        EnhancedLoader.show("Signing out...")
+        }    
         // Use NextAuth's fast signOut with redirect
         await signOut({ redirect: true, callbackUrl: redirectUrl });
       } catch (error) {
@@ -129,7 +126,7 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
           router.push("/");
         }
       } finally {
-        EnhancedLoader.hide()
+        
       }
     },
     [router]
@@ -160,6 +157,6 @@ export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error("useAuth must be used within <AuthProvider>")
-  }
+}
   return context
 }

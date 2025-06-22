@@ -210,16 +210,6 @@ async function protectAuthenticatedRoutes(req: NextRequest) {
   response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate")
   return response
 }
-// Import our auth helpers
-import {
-  isProtectedRoute,
-  isAdminRoute,
-  isPublicRoute,
-  getAuthToken,
-  isCleanLogout,
-  createUnauthorizedResponse,
-  createAuthResponse
-} from './middleware-auth-helpers'
 
 // Middleware function
 export async function middleware(req: NextRequest) {
@@ -229,10 +219,7 @@ export async function middleware(req: NextRequest) {
 
   const pathname = req.nextUrl.pathname
 
-  // Always allow public routes
-  if (isPublicRoute(pathname)) {
-    return NextResponse.next()
-  }
+ 
 
   if (process.env.REDIRECT === "true") {
     // Handle site-wide redirect to courseai.io
@@ -243,30 +230,7 @@ export async function middleware(req: NextRequest) {
   // Setup GitHub credentials
   setupGitHubCredentials(req)
 
-  // Check for clean logout to prevent auth loops
-  if (isCleanLogout(req)) {
-    const response = NextResponse.redirect(new URL("/", req.url))
-    response.cookies.delete("next-auth.logout-clean")
-    response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate")
-    return response
-  }
-
-  // Get the token once for all auth checks
-  const token = await getAuthToken(req)
   
-  // Handle protected routes
-  if (isProtectedRoute(pathname)) {
-    if (!token) {
-      return createUnauthorizedResponse(req)
-    }
-  }
-
-  // Handle admin routes
-  if (isAdminRoute(pathname)) {
-    if (!token || !token.isAdmin) {
-      return createUnauthorizedResponse(req, "admin")
-    }
-  }
 
   // Handle redirects
   const redirectResponse = await handleRedirects(req)
@@ -275,10 +239,7 @@ export async function middleware(req: NextRequest) {
   // Increment course view count for analytics
   incrementCourseViewCount(req)
 
-  // Set proper cache headers for authenticated routes
-  if (token) {
-    return createAuthResponse()
-  }
+
 
   // Default: allow access with basic cache headers
   const response = NextResponse.next()
