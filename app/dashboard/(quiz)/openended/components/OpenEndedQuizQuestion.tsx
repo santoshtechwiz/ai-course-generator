@@ -96,6 +96,8 @@ export function OpenEndedQuizQuestion({
       quizType="openended"
       animationKey={question.id}
       contentClassName="space-y-4"
+      quizTitle="Open-Ended Question"
+      quizSubtitle="Answer the following question in detail:"
     >
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2">

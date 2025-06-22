@@ -25,7 +25,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 export function UserMenu({ children }: { children?: ReactNode }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth()
   const dispatch = useAppDispatch()
   const subscriptionData = useAppSelector(selectSubscription)
   const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
@@ -70,32 +70,6 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     }
   }, [isAuthenticated, isLoggingOut, fetchSubscriptionData, fetchErrors])
 
-  const handleSignOut = async () => {
-    setIsLoading(true)
-    setIsLoggingOut(true)
-    try {
-      // Always redirect to /explore after logout
-      const targetPath = "/dashboard/explore";
-      try {
-        dispatch(logout())
-      } catch (err) {
-        console.warn("Redux dispatch failed during logout:", err);
-      }
-      logout({
-        redirect: true,
-        callbackUrl: targetPath
-      });
-      if (typeof window !== 'undefined') {
-        window.location.href = targetPath;
-      }
-      setIsLoggingOut(false)
-    } catch (error) {
-      setIsLoggingOut(false)
-      setIsLoading(false)
-      console.error("Logout failed", error)
-      // Optionally add toast notification here
-    }
-  }
 
   const handleSignIn = () => {
     router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
@@ -233,8 +207,20 @@ export function UserMenu({ children }: { children?: ReactNode }) {
             )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={handleSignOut} 
+          <DropdownMenuItem
+            onClick={async () => {
+              setIsLoading(true)
+              setIsLoggingOut(true)
+              try {
+                await logout()
+              
+              } catch (error) {
+                console.error("Logout failed:", error)
+              } finally {
+                setIsLoading(false)
+                setIsLoggingOut(false)
+              }
+            }}
             disabled={isLoading}
             className="cursor-pointer hover:text-red-500 transition-colors"
           >
