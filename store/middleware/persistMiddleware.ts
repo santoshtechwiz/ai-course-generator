@@ -1,159 +1,112 @@
 import { Middleware } from 'redux';
 import { RootState } from '@/store';
 
-// Safe storage access to handle SSR and edge cases
+// Safe storage utilities for browser-only environments
 export const safeStorage = {
   getItem: (key: string): string | null => {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
-        return localStorage.getItem(key);
+        return localStorage.getItem(key) || sessionStorage.getItem(key);
       } catch (e) {
-        console.error(`Error accessing localStorage for key ${key}:`, e);
-        return null;
+        console.error(`Error reading from storage for key "${key}"`, e);
       }
     }
     return null;
   },
-  
+
   setItem: (key: string, value: string): void => {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(key, value);
-        
-        // Also try to store in sessionStorage as backup
-        try {
-          sessionStorage.setItem(key, value);
-        } catch (e) {
-          console.error(`Error setting sessionStorage backup for key ${key}:`, e);
-        }
+        sessionStorage.setItem(key, value);
       } catch (e) {
-        console.error(`Error setting localStorage for key ${key}:`, e);
+        console.error(`Error writing to storage for key "${key}"`, e);
       }
     }
   },
-  
+
   removeItem: (key: string): void => {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem(key);
-        
-        // Also clean up sessionStorage backup
-        try {
-          sessionStorage.removeItem(key);
-        } catch (e) {
-          console.error(`Error removing sessionStorage backup for key ${key}:`, e);
-        }
+        sessionStorage.removeItem(key);
       } catch (e) {
-        console.error(`Error removing localStorage for key ${key}:`, e);
+        console.error(`Error removing storage key "${key}"`, e);
       }
     }
   }
 };
 
-// Helper to hydrate state from storage with fallback to sessionStorage
-export function hydrateFromStorage<T>(key: string): T | null {
-  // Try localStorage first
-  const storedData = safeStorage.getItem(key);
-  if (storedData) {
-    try {
-      return JSON.parse(storedData) as T;
-    } catch (e) {
-      console.error(`Error parsing stored data for key ${key}:`, e);
-    }
+// 🧠 Load and parse a persisted state object from storage
+export function hydrateFromStorage<T = any>(key: string): T | null {
+  const raw = safeStorage.getItem(key);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error(`Failed to parse storage JSON for key "${key}"`, e);
+    return null;
   }
-  
-  // If localStorage failed, try sessionStorage as fallback
-  if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
-    try {
-      const sessionData = sessionStorage.getItem(key);
-      if (sessionData) {
-        return JSON.parse(sessionData) as T;
-      }
-    } catch (e) {
-      console.error(`Error accessing sessionStorage for key ${key}:`, e);
-    }
-  }
-  
-  return null;
 }
 
-// Configuration for persistence
-export interface PersistConfig {
+// 🔁 Persist entire or partial Redux state with whitelist/blacklist support
+interface PersistConfig {
   key: string;
-  whitelist?: string[];
-  blacklist?: string[];
+  whitelist?: (keyof RootState)[];
+  blacklist?: (keyof RootState)[];
 }
 
-// Create the middleware function
-export const createPersistMiddleware = (config: PersistConfig) => {
+export const createPersistMiddleware = (config: PersistConfig): Middleware => {
   return store => next => action => {
-    // Run the action first
     const result = next(action);
-    
-    // Get the updated state
-    const state = store.getState();
-    
-    // Skip if in SSR
-    if (typeof window === 'undefined') {
-      return result;
+    if (typeof window === 'undefined') return result;
+
+    const fullState = store.getState();
+
+    let filteredState: Partial<RootState> = { ...fullState };
+
+    if (config.whitelist) {
+      filteredState = config.whitelist.reduce((acc, key) => {
+        acc[key] = fullState[key];
+        return acc;
+      }, {} as Partial<RootState>);
     }
-    
-    // Filter the state based on whitelist/blacklist
-    let persistState: any = { ...state };
-    
-    // Apply whitelist if specified
-    if (config.whitelist && config.whitelist.length > 0) {
-      persistState = {};
-      config.whitelist.forEach(key => {
-        if (state[key] !== undefined) {
-          persistState[key] = state[key];
-        }
-      });
-    }
-    
-    // Apply blacklist if specified
-    if (config.blacklist && config.blacklist.length > 0) {
+
+    if (config.blacklist) {
       config.blacklist.forEach(key => {
-        if (persistState[key] !== undefined) {
-          delete persistState[key];
-        }
+        delete filteredState[key];
       });
     }
-    
-    // Store the filtered state
+
     try {
-      safeStorage.setItem(config.key, JSON.stringify(persistState));
+      const json = JSON.stringify(filteredState);
+      safeStorage.setItem(config.key, json);
     } catch (e) {
-      console.error('Failed to persist state:', e);
+      console.error(`Error persisting state under key "${config.key}"`, e);
     }
-    
+
     return result;
   };
 };
 
-// Helper to create a more specific middleware for a slice
-export const createSlicePersistMiddleware = (sliceName: string, storageKey: string) => {
+// 🎯 Persist a single slice of Redux state (e.g. flashcard slice only)
+export const createSlicePersistMiddleware = <K extends keyof RootState>(
+  slice: K,
+  storageKey: string
+): Middleware<{}, RootState> => {
   return store => next => action => {
-    // Run the action first
     const result = next(action);
-    
-    // Get the updated state
-    const state = store.getState();
-    
-    // Skip if in SSR
-    if (typeof window === 'undefined') {
-      return result;
+    if (typeof window === 'undefined') return result;
+
+    try {
+      const sliceData = store.getState()[slice];
+      const json = JSON.stringify(sliceData);
+      safeStorage.setItem(storageKey, json);
+    } catch (e) {
+      console.error(`Failed to persist slice "${String(slice)}" to "${storageKey}"`, e);
     }
-    
-    // Only persist the specific slice
-    if (state[sliceName]) {
-      try {
-        safeStorage.setItem(storageKey, JSON.stringify(state[sliceName]));
-      } catch (e) {
-        console.error(`Failed to persist ${sliceName} slice:`, e);
-      }
-    }
-    
+
     return result;
   };
 };

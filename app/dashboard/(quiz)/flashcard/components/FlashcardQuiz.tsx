@@ -226,11 +226,8 @@ export default function FlashCardQuiz({
         reviewType === "incorrect" ? reviewCardsByCategory.incorrect : reviewCardsByCategory.stillLearning
 
       if (!cardsToReview.length) {
-        console.log(`No ${reviewType} cards to review`)
         return
       }
-
-      console.log(`Entering ${reviewType} review mode with cards:`, cardsToReview)
 
       // Set review cards and reset UI state
       setReviewCards(cardsToReview)
@@ -564,6 +561,13 @@ export default function FlashCardQuiz({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating])
 
+  // Redirect to results page when completed and not in review mode
+  useEffect(() => {
+    if (isCompleted && !reviewMode) {
+      router.push(`/dashboard/flashcard/${slug}/results`)
+    }
+  }, [isCompleted, reviewMode, slug, router])
+
   if (isLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
@@ -609,13 +613,8 @@ export default function FlashCardQuiz({
     },
   }
   // Render different content based on quiz state
-  const renderQuizContent = () => {    // Force immediate redirect when completed (no waiting for any processing)
+  const renderQuizContent = () => {
     if (isCompleted && !reviewMode) {
-      // For AGGRESSIVE redirect, don't even show a loading UI - go straight to results
-      if (typeof window !== 'undefined') {
-        window.location.href = `/dashboard/flashcard/${slug}/results`;
-      }
-      
       // Return minimal loading UI during the transition to results page
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -624,7 +623,7 @@ export default function FlashCardQuiz({
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
             <p className="text-muted-foreground">Redirecting to results page...</p>
             <Button 
-              onClick={() => window.location.href = `/dashboard/flashcard/${slug}/results`}
+              onClick={() => router.push(`/dashboard/flashcard/${slug}/results`)}
               variant="secondary"
             >
               Go to Results Now
@@ -1054,7 +1053,7 @@ export default function FlashCardQuiz({
               <div className="text-sm text-muted-foreground font-medium">
                 {reviewMode ? "Review Progress" : "Study Progress"}
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-primary"></div>
                 {currentQuestionIndex + 1} / {reviewMode ? reviewCards.length : cards?.length || 0}
               </div>
             </div>
@@ -1085,7 +1084,7 @@ export default function FlashCardQuiz({
               </Button>
             </motion.div>
           </div>
-        </div>
+        
       </QuizContainer>
     )
   }
