@@ -18,7 +18,7 @@ interface ResultsPageProps {
 export default function McqResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
   const { slug } = use(params)
-  
+
   const handleRetakeQuiz = () => {
     if (slug) {
       router.push(`/dashboard/mcq/${slug}`)
@@ -40,21 +40,22 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
   }
 
   return (
-    <div className="container max-w-4xl py-10">      <QuizResultHandler 
-        slug={slug} 
-        quizType="mcq"
-      >
-        {({ result }) => (
-          result ? (
-            // Render the McqQuizResult directly instead of going through QuizResult
-            // to avoid potential duplicate rendering
-            <McqQuizResult 
-              result={result} 
-              onRetake={handleRetakeQuiz}
-            />
-          ) : null
-        )}
-      </QuizResultHandler>
+    <div className="container max-w-4xl py-10">      
+    <QuizResultHandler
+      slug={slug}
+      quizType="mcq"
+    >
+      {({ result }) => (
+        result ? (
+          // Render the McqQuizResult directly instead of going through QuizResult
+          // to avoid potential duplicate rendering
+          <McqQuizResult
+            result={result}
+            onRetake={handleRetakeQuiz}
+          />
+        ) : null
+      )}
+    </QuizResultHandler>
     </div>
   )
 }

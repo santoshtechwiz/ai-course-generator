@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { useAuthInit } from "@/providers/enhanced-auth-provider"
 
 interface LogoutButtonProps {
   redirectTo?: string
@@ -24,33 +25,43 @@ export function LogoutButton({
 }: LogoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { logout } = useAuth()
+  const { cleanLogout } = useAuthInit()
   const { toast } = useToast()
 
-  // If logging out, show modal dialog
+  // If logging out, show modal dialog and prevent scrolling
   useEffect(() => {
     if (isLoading && typeof window !== 'undefined') {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden'
     } else if (typeof window !== 'undefined') {
-      document.body.style.overflow = '';
+      document.body.style.overflow = ''
     }
     return () => {
-      if (typeof window !== 'undefined') document.body.style.overflow = '';
+      if (typeof window !== 'undefined') document.body.style.overflow = ''
     }
   }, [isLoading])
 
   const handleLogout = async () => {
-    const targetPath = "/explore";
     try {
       setIsLoading(true)
-      await logout({ 
-        redirect: true,
-        callbackUrl: targetPath
-      });
-      if (typeof window !== 'undefined') {
-        window.location.href = targetPath;
-      }
+      
+      // Set a flag in localStorage to indicate clean logout
+      // This helps prevent automatic re-login attempts
+      localStorage.setItem('next-auth.logout-clean', 'true')
+      
+      // Use our enhanced clean logout to prevent auto-relogin
+      await cleanLogout(redirectTo)
+      
+      // Backup force navigation if the redirect doesn't happen
+      // The setTimeout ensures we give NextAuth time to process the logout
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && document.visibilityState === 'visible') {
+          window.location.href = redirectTo
+        }
+      }, 1000)
     } catch (error) {
+      console.error("Logout error:", error)
       setIsLoading(false)
+      
       toast({
         title: "Error",
         description: "Failed to sign out. Please try again.",
@@ -77,7 +88,7 @@ export function LogoutButton({
           </>
         )}
       </Button>
-      <Dialog open={isLoading}>
+      <Dialog open={isLoading} onOpenChange={() => {}}>
         <DialogContent className="flex flex-col items-center gap-4 py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <div className="text-lg font-semibold">Logging out...</div>

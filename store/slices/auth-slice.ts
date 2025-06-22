@@ -127,10 +127,14 @@ export const authSlice = createSlice({
       state.error = action.payload
       state.user = null
       state.token = null
-    },
-    logout: () => {
-      // ✅ Completely reset the auth state
-      return { ...initialState }
+    },    logout: (state) => {
+      // Complete auth state reset with proper initialization status
+      state.user = null;
+      state.token = null;
+      state.error = null;
+      state.isAdmin = false;
+      state.isInitialized = true; // Keep as initialized to prevent loading loops
+      state.status = "unauthenticated"; // Explicitly mark as unauthenticated
     },
     setUser: (state, action: PayloadAction<AuthUser | null>) => {
       state.user = action.payload

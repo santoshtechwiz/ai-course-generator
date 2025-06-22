@@ -11,7 +11,7 @@ import { NoResults } from "@/components/ui/no-results"
 import FlashCardResults from "../flashcard/components/FlashCardQuizResults"
 import CodeQuizResult from "../code/components/CodeQuizResult"
 import type { QuizType } from "@/types/quiz"
-import McqQuizResult from "../mcq/components/McqQuizResult"
+import {McqQuizResult} from "../mcq/components/McqQuizResult"
 import { Button } from "@/components"
 
 
