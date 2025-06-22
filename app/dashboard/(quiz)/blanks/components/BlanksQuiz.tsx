@@ -1,283 +1,264 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+import { useState, useEffect, useCallback, memo, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { QuizContainer } from "@/components/quiz/QuizContainer"
-import { QuizFooter } from "@/components/quiz/QuizFooter"
-import { cn } from "@/lib/utils"
-import { PenTool, Lightbulb, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-interface BlanksQuestion {
-  id: string | number
-  question?: string
-  text?: string
-  answer?: string
-  hint?: string
-  keywords?: string[]
-}
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { CheckCircle, ArrowRight, ArrowLeft, Flag, Lightbulb, Target, Zap } from "lucide-react"
+import type { BlankQuestion } from "./types"
 
 interface BlanksQuizProps {
-  question: BlanksQuestion
+  question: BlankQuestion
+  questionNumber: number
+  totalQuestions: number
+  existingAnswer?: string
   onAnswer: (answer: string) => boolean
   onNext?: () => void
   onPrevious?: () => void
   onSubmit?: () => void
-  onRetake?: () => void
-  questionNumber?: number
-  totalQuestions?: number
-  existingAnswer?: string
   canGoNext?: boolean
   canGoPrevious?: boolean
   isLastQuestion?: boolean
-  isSubmitting?: boolean
-  showRetake?: boolean
 }
 
-const BlanksQuiz = ({
+function calculateEnhancedSimilarity(input: string, target: string) {
+  if (!input || !target) return { score: 0, isPartialMatch: false, feedback: "poor" as const }
+
+  const normalize = (text: string) => text.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim()
+  const a = normalize(input)
+  const b = normalize(target)
+
+  if (a === b) return { score: 100, isPartialMatch: true, feedback: "perfect" }
+
+  const levDist = (() => {
+    const matrix = Array.from({ length: b.length + 1 }, (_, j) => Array(a.length + 1).fill(0))
+    for (let i = 0; i <= a.length; i++) matrix[0][i] = i
+    for (let j = 0; j <= b.length; j++) matrix[j][0] = j
+    for (let j = 1; j <= b.length; j++)
+      for (let i = 1; i <= a.length; i++)
+        matrix[j][i] = Math.min(
+          matrix[j - 1][i] + 1,
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+        )
+    return matrix[b.length][a.length]
+  })()
+
+  const simScore = (1 - levDist / Math.max(a.length, b.length)) * 100
+  const wordSim = (() => {
+    const aWords = a.split(" "), bWords = b.split(" ")
+    const match = aWords.filter(w => bWords.some(bw => bw.includes(w) || w.includes(bw))).length
+    return (match / Math.max(aWords.length, bWords.length)) * 100
+  })()
+
+  const final = Math.round(simScore * 0.6 + wordSim * 0.4)
+  const feedback = final >= 95 ? "perfect" : final >= 80 ? "excellent" : final >= 60 ? "good" : final >= 40 ? "fair" : "poor"
+  return { score: final, isPartialMatch: final >= 40, feedback }
+}
+
+function useDebounce<T>(value: T, delay: number) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debounced
+}
+
+const BlanksQuiz = memo(function BlanksQuiz({
   question,
+  questionNumber,
+  totalQuestions,
+  existingAnswer = "",
   onAnswer,
   onNext,
   onPrevious,
   onSubmit,
-  onRetake,
-  questionNumber = 1,
-  totalQuestions = 1,
-  existingAnswer = "",
   canGoNext = false,
   canGoPrevious = false,
   isLastQuestion = false,
-  isSubmitting = false,
-  showRetake = false,
-}: BlanksQuizProps) => {
+}: BlanksQuizProps) {
   const [answer, setAnswer] = useState(existingAnswer)
+  const [isFocused, setIsFocused] = useState(false)
+  const [isAnswered, setIsAnswered] = useState(!!existingAnswer)
+  const [showValidation, setShowValidation] = useState(false)
   const [showHint, setShowHint] = useState(false)
-  const [hasInteracted, setHasInteracted] = useState(false)
+  const [attemptCount, setAttemptCount] = useState(0)
+  const [hintLevel, setHintLevel] = useState(0)
+
+  const debouncedAnswer = useDebounce(answer, 500)
+
+  const similarity = useMemo(() => calculateEnhancedSimilarity(answer, question.answer || ""), [answer, question.answer])
+
+  const questionParts = question.question?.split("________") || ["", ""]
+  const before = questionParts[0]
+  const after = questionParts[1]
+  const progress = (questionNumber / totalQuestions) * 100
+  const canProceed = answer.trim() && similarity.isPartialMatch
+  const maxHint = question.hints?.length || 4
 
   useEffect(() => {
-    setAnswer(existingAnswer)
-  }, [existingAnswer])
+    if (debouncedAnswer.trim() && debouncedAnswer !== existingAnswer) {
+      setIsAnswered(true)
+      onAnswer(debouncedAnswer)
+    }
+  }, [debouncedAnswer, onAnswer, existingAnswer])
 
-  const handleAnswerChange = (value: string) => {
-    setAnswer(value)
-    setHasInteracted(true)
-    onAnswer(value)
-  }
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAnswer(e.target.value)
+    setShowValidation(false)
+    setAttemptCount(a => a + 1)
+  }, [])
 
-  const questionText = question.question || question.text || "Fill in the blank"
-  const progressPercentage = Math.round((questionNumber / totalQuestions) * 100)
-  const hasAnswer = answer.trim().length > 0
+  const handleNext = useCallback(() => {
+    if (!canProceed) return setShowValidation(true)
+    if (onAnswer(answer) && onNext) onNext()
+    setHintLevel(0); setShowHint(false)
+  }, [answer, onAnswer, onNext, canProceed])
+
+  const handleSubmit = useCallback(() => {
+    if (!canProceed) return setShowValidation(true)
+    if (onAnswer(answer) && onSubmit) onSubmit()
+  }, [answer, onAnswer, onSubmit, canProceed])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      isLastQuestion ? handleSubmit() : handleNext()
+    }
+  }, [handleNext, handleSubmit, isLastQuestion])
+
+  const generateHint = useCallback(() => {
+    const answerText = question.answer?.trim()
+    if (!answerText) return "Consider the context."
+    if (question.hints?.length) return question.hints[Math.min(hintLevel, question.hints.length - 1)]
+
+    const words = answerText.split(" ")
+    const firstLetter = answerText[0]
+    const isPhrase = words.length > 1
+    const lengthHint = answerText.length > 8 ? "longer than 8 characters" : "short and concise"
+    const defaultHints = [
+      `It starts with \"${firstLetter.toUpperCase()}\"`,
+      `It's ${isPhrase ? `${words.length} words` : "a single word"}`,
+      `It's ${lengthHint}`,
+      `It's similar to: \"${words[0]}...\"`
+    ]
+    return defaultHints[Math.min(hintLevel, defaultHints.length - 1)]
+  }, [question.answer, question.hints, hintLevel])
+
+  const feedback = {
+    perfect: { color: "text-green-600", bg: "bg-green-50", icon: "🎯" },
+    excellent: { color: "text-blue-600", bg: "bg-blue-50", icon: "⭐" },
+    good: { color: "text-yellow-600", bg: "bg-yellow-50", icon: "👍" },
+    fair: { color: "text-orange-600", bg: "bg-orange-50", icon: "🤔" },
+    poor: { color: "text-gray-600", bg: "bg-gray-50", icon: "💭" },
+  }[similarity.feedback]
 
   return (
-    <QuizContainer
-      questionNumber={questionNumber}
-      totalQuestions={totalQuestions}
-      progressPercentage={progressPercentage}
-      quizType="Fill in the Blanks"
-      animationKey={question.id}
-    >
-      <div className="space-y-8">
-        {/* Question Header */}
-        <motion.div
-          className="text-center space-y-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <motion.h2
-            className="text-2xl sm:text-3xl font-bold text-foreground leading-tight px-4"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-          >
-            {questionText}
-          </motion.h2>
-
-          <motion.div
-            className="h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full mx-auto max-w-32"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
-          />
-        </motion.div>
-
-        {/* Answer Input Section */}
-        <motion.div
-          className="space-y-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          {/* Input Field */}
-          <div className="relative">
-            <motion.div
-              className={cn(
-                "relative overflow-hidden rounded-2xl border-2 transition-all duration-300",
-                hasAnswer
-                  ? "border-primary bg-gradient-to-r from-primary/5 to-primary/2 shadow-lg shadow-primary/10"
-                  : "border-border/50 bg-gradient-to-r from-card/80 to-card/40 hover:border-primary/30 focus-within:border-primary/50",
-              )}
-              whileHover={{ scale: 1.01 }}
-              whileFocus={{ scale: 1.01 }}
-            >
-              {/* Input Icon */}
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                <PenTool className="w-5 h-5" />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-4xl mx-auto">
+      <Card className="border-2 border-border/50 shadow-lg">
+        <CardHeader className="bg-primary/5 border-b border-border/40 pb-4">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <span className="bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg">
+                {questionNumber}
+              </span>
+              <div>
+                <Label className="text-lg font-semibold">Question {questionNumber} of {totalQuestions}</Label>
+                <p className="text-sm text-muted-foreground mt-1">Fill in the blank</p>
               </div>
+            </div>
+            {isAnswered && (
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-2">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Target className="h-3 w-3" /> {similarity.score}%
+                </Badge>
+                <CheckCircle className="h-6 w-6 text-success" />
+              </motion.div>
+            )}
+          </div>
+          <Progress value={progress} className="h-2" />
+        </CardHeader>
 
-              <Input
-                type="text"
-                value={answer}
-                onChange={(e) => handleAnswerChange(e.target.value)}
-                placeholder="Type your answer here..."
-                className="pl-12 pr-16 py-6 text-lg font-medium border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
-                disabled={isSubmitting}
-              />
-
-              {/* Answer Status Indicator */}
-              <AnimatePresence>
-                {hasAnswer && (
-                  <motion.div
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"
-                    initial={{ scale: 0, opacity: 0, rotate: -180 }}
-                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                    exit={{ scale: 0, opacity: 0, rotate: 180 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 25,
-                    }}
-                  >
-                    <CheckCircle2 className="w-6 h-6" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Shimmer Effect */}
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 hover:opacity-100"
-                animate={{
-                  x: ["-100%", "100%"],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Number.POSITIVE_INFINITY,
-                  repeatType: "loop",
-                  ease: "linear",
-                }}
-                style={{
-                  transform: "translateX(-100%)",
-                }}
-              />
-            </motion.div>
-
-            {/* Character Counter */}
-            <AnimatePresence>
-              {hasInteracted && (
-                <motion.div
-                  className="absolute -bottom-6 right-0 text-xs text-muted-foreground"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {answer.length} characters
-                </motion.div>
-              )}
-            </AnimatePresence>
+        <CardContent className="p-6 md:p-8">
+          <div className="mb-6 text-xl">
+            {before} <Input
+              value={answer}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder="Your answer"
+              className="inline-block px-4 py-2 border-2 border-dashed"
+              aria-label="Blank answer"
+              autoFocus
+            /> {after}
+            {showValidation && !canProceed && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-destructive mt-1">
+                {!answer.trim() ? "Enter an answer" : "Answer doesn't match well enough"}
+              </motion.p>
+            )}
           </div>
 
-          {/* Hint Section */}
-          {question.hint && (
-            <motion.div
-              className="space-y-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-            >
+          <AnimatePresence>
+            {answer.trim() && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`mb-6 p-4 rounded-lg border ${feedback.bg}`}>
+                <div className="flex justify-between items-center">
+                  <div className={`flex items-center gap-2 ${feedback.color}`}>
+                    <span>{feedback.icon}</span>
+                    <span className="font-medium">{similarity.feedback}</span>
+                    <Badge variant="outline" className="text-xs">{similarity.score}%</Badge>
+                  </div>
+                  <Zap className={`h-4 w-4 ${feedback.color}`} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {attemptCount >= 2 && (
+            <div className="mb-6">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={() => setShowHint(!showHint)}
-                className="group text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-xl px-4 py-2 transition-all duration-200"
+                onClick={() => {
+                  setShowHint(!showHint)
+                  if (!showHint) setHintLevel(h => Math.min(h + 1, maxHint - 1))
+                }}
               >
-                <Lightbulb className="w-4 h-4 mr-2 group-hover:animate-pulse" />
-                {showHint ? "Hide Hint" : "Show Hint"}
+                <Lightbulb className="h-4 w-4" /> {showHint ? "Hide Hint" : "Show Hint"}
               </Button>
-
-              <AnimatePresence>
-                {showHint && (
-                  <motion.div
-                    className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl p-4"
-                    initial={{ opacity: 0, height: 0, y: -10 }}
-                    animate={{ opacity: 1, height: "auto", y: 0 }}
-                    exit={{ opacity: 0, height: 0, y: -10 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                        <Lightbulb className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-800 mb-1">Hint</p>
-                        <p className="text-sm text-amber-700">{question.hint}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+              {showHint && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <Lightbulb className="h-4 w-4 text-blue-600 inline mr-1" />
+                  <span className="text-sm text-blue-800">{generateHint()}</span>
+                </motion.div>
+              )}
+            </div>
           )}
 
-          {/* Keywords Helper */}
-          {question.keywords && question.keywords.length > 0 && (
-            <motion.div
-              className="space-y-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-            >
-              <p className="text-sm font-medium text-muted-foreground">Keywords to consider:</p>
-              <div className="flex flex-wrap gap-2">
-                {question.keywords.map((keyword, index) => (
-                  <motion.span
-                    key={keyword}
-                    className="px-3 py-1 bg-gradient-to-r from-muted/80 to-muted/60 text-muted-foreground text-xs font-medium rounded-full border border-border/50"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{
-                      delay: 0.6 + index * 0.1,
-                      duration: 0.3,
-                      type: "spring",
-                      stiffness: 300,
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    {keyword}
-                  </motion.span>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Footer */}
-        <QuizFooter
-          onNext={onNext}
-          onPrevious={canGoPrevious ? onPrevious : undefined}
-          onSubmit={isLastQuestion ? onSubmit : undefined}
-          onRetake={onRetake}
-          canGoNext={hasAnswer && canGoNext}
-          canGoPrevious={canGoPrevious}
-          isLastQuestion={isLastQuestion}
-          isSubmitting={isSubmitting}
-          showRetake={showRetake}
-          hasAnswer={hasAnswer}
-        />
-      </div>
-    </QuizContainer>
+          <div className="flex justify-between pt-6 border-t">
+            <div>{canGoPrevious && <Button variant="outline" onClick={onPrevious}><ArrowLeft className="w-4 h-4" /> Previous</Button>}</div>
+            <div>
+              {!isLastQuestion ? (
+                <Button onClick={handleNext} disabled={!canProceed} className="min-w-[120px]">
+                  Next <ArrowRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button onClick={handleSubmit} disabled={!canProceed} className="bg-success hover:bg-success/90 min-w-[140px]">
+                  <Flag className="w-4 h-4" /> Finish Quiz
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
-}
+})
 
 export default BlanksQuiz
