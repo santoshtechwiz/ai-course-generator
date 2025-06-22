@@ -146,7 +146,7 @@
     "react-scroll": "^1.9.0",
     "react-share": "^5.2.2",
     "react-swipeable": "^7.0.2",
-    "react-syntax-highlighter": "^15.6.1",
+    "react-syntax-highlighter": "5.8.0",
     "react-virtualized-auto-sizer": "^1.0.25",
     "react-window": "^1.8.11",
     "recharts": "^2.15.0",
@@ -179,6 +179,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.1.10",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -195,7 +196,7 @@
     "@types/node": "^20.17.30",
     "@types/nodemailer": "^6.4.17",
     "@types/nprogress": "^0.2.3",
-    "@types/postcss-load-config": "2.0.1",
+    "@types/postcss-load-config": "3.0.1",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@types/react-syntax-highlighter": "^15.5.13",
