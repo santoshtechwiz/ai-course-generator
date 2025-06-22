@@ -1,9 +1,6 @@
-
-
 const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
-  standalone: true, // Enable standalone mode for better performance
   poweredByHeader: false, // Remove X-Powered-By header for security
 
   // Optimize image loading
