@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import { useEnhancedLoader } from './enhanced-loader-provider';
+import { useLoader as useEnhancedLoader } from '@/components/ui/loader/loader-context';
 import type { EnhancedLoaderProps } from './enhanced-loader';
 
 interface AsyncNavLinkProps {
