@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import "../globals.css"
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
+import { fontInterSans, fontRobotoSans } from "./font"
 
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
@@ -11,7 +12,8 @@ import ClientLayoutWrapper from "./client-layout-wrapper"
 import { Suspense } from "react"
 import { Loader2 } from "lucide-react"
 
-
+// Check if we're in production environment
+const isProduction = process.env.NODE_ENV === 'production';
 
 export const metadata: Metadata = {
   ...defaultMetadata,
@@ -66,12 +68,28 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerAuthSession()
   return (
-    <html lang="en" suppressHydrationWarning className={` scroll-smooth`}>
+    <html 
+      lang="en" 
+      suppressHydrationWarning 
+      className={`scroll-smooth ${isProduction ? `${fontInterSans.variable} ${fontRobotoSans.variable}` : ''}`}
+    >
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
+        {!isProduction && (
+          <>
+            <link 
+              href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" 
+              rel="stylesheet"
+            />
+            <link 
+              href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;1,100;1,300;1,400;1,500&display=swap" 
+              rel="stylesheet"
+            />
+          </>
+        )}
       </head>
 
-      <body className={` antialiased min-h-screen flex flex-col`}>
+      <body className={`antialiased min-h-screen flex flex-col`}>
         
         {/* Pass the server session to Providers */}
         <Suspense
