@@ -50,12 +50,9 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   }
 
   return (
-    <div className="container max-w-4xl py-10">
-      <GenericQuizResultHandler 
+    <div className="container max-w-4xl py-10">      <GenericQuizResultHandler 
         slug={slugString}  
         quizType="code"
-  
-       
       >
         {({ result }) => (
           <QuizResult 
