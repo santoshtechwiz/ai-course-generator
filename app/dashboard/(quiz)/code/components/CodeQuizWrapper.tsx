@@ -28,7 +28,7 @@ import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
-import { useEnhancedLoader } from "@/components/ui/enhanced-loader"
+import { useLoader } from "@/components/ui/loader/loader-context"
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -39,7 +39,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
 
-  const enhancedLoader = useEnhancedLoader();
+  const enhancedLoader = useLoader();
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -145,7 +145,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     if (isSubmitting) return
 
     setIsSubmitting(true)
-    enhancedLoader.showLoader({ message: "Submitting your quiz...", variant: "shimmer", fullscreen: true });
+    enhancedLoader.showLoader({ message: "Submitting your quiz...", variant: "pulse", fullscreen: true });
     try {
       const validAnswers = Object.values(answers).filter(answer => answer !== null && answer !== undefined);
       

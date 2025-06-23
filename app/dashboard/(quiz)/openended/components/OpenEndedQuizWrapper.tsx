@@ -21,7 +21,8 @@ import {
   clearQuizState,
   saveAnswer,
 } from "@/store/slices/quiz-slice"
-import { EnhancedLoader, useEnhancedLoader } from "@/components/ui/enhanced-loader"
+import { LoaderComponent } from "@/components/ui/loader/loader"
+import { useLoader } from "@/components/ui/loader/loader-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Flag, RefreshCw } from "lucide-react"
@@ -63,7 +64,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizType = useSelector(selectQuizType)
-  const enhancedLoader = useEnhancedLoader();
+  const enhancedLoader = useLoader();
   useEffect(() => {
     const init = async () => {
       setLoading(true)
@@ -198,7 +199,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     timeStartRef.current = Date.now()
   }
   if (loading || quizStatus === "loading") {
-    return <EnhancedLoader isLoading={true} message="Loading quiz..." subMessage="Preparing questions" />
+    return <LoaderComponent isLoading={true} message="Loading quiz..." subMessage="Preparing questions" />
   }
 
   if (error || quizStatus === "failed") {

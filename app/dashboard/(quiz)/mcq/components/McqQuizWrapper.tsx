@@ -43,7 +43,7 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { NoResults } from "@/components/ui/no-results"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
-import { useEnhancedLoader } from "@/components/ui/enhanced-loader/enhanced-loader-provider"
+import { useLoader } from "@/components/ui/loader/loader-context"
 
 interface McqQuizWrapperProps {
   slug: string
@@ -53,7 +53,7 @@ interface McqQuizWrapperProps {
 export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const enhancedLoader = useEnhancedLoader()
+  const enhancedLoader = useLoader()
 
   // Local state
   const [loading, setLoading] = useState(true)

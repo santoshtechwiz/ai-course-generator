@@ -1,24 +1,21 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect } from "react";
-import { useLoader as useEnhancedLoader } from '@/components/ui/loader/loader-context';
-import useNavigationLoader from "@/hooks/use-navigation-loader";
+import { useNavigationLoader } from "./use-navigation-loader";
 
 /**
- * This component can be placed in a layout to automatically show the enhanced loader
+ * This component can be placed in a layout to automatically show the loader
  * during navigation and provide a global way to handle loading states.
  * 
  * Usage:
  * 1. Add to a layout: <GlobalLoadingHandler />
  * 2. Use the exposed hook in components: 
- *    const { showLoader, hideLoader } = useEnhancedLoader();
+ *    const { showLoader, hideLoader } = useLoader();
  */
 export function GlobalLoadingHandler() {
   // Set up navigation loading
   useNavigationLoader({
     enabled: true,
-    variant: "shimmer",
+    variant: "clip",
     fullscreen: true,
     message: "Loading page...",
   });
@@ -29,6 +26,3 @@ export function GlobalLoadingHandler() {
   // Return null as this is just a hook wrapper
   return null;
 }
-
-// Add default export
-export default GlobalLoadingHandler;

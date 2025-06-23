@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback } from 'react';
-import { useLoader as useEnhancedLoader } from '@/components/ui/loader/loader-context';
-import type { EnhancedLoaderProps } from './enhanced-loader';
+import { useCallback } from "react";
+import { useLoader } from "./loader-context";
+import type { LoaderProps } from "./types";
 
 /**
- * A hook that provides functionality for handling async operations with the enhanced loader.
+ * A hook that provides functionality for handling async operations with the loader.
+ * This is a wrapper around the useLoader hook that provides convenience methods
+ * for showing the loader during async operations.
  */
 export function useAsyncWithLoader() {
-  const { showLoader, hideLoader, updateLoader } = useEnhancedLoader();
+  const { showLoader, hideLoader, updateLoader } = useLoader();
 
   /**
    * Wraps an async function with loader handling.
@@ -21,13 +23,13 @@ export function useAsyncWithLoader() {
   const withLoader = useCallback(
     <T extends any[], R>(
       asyncFn: (...args: T) => Promise<R>,
-      options: Partial<EnhancedLoaderProps> = {}
+      options: Partial<LoaderProps> = {}
     ) => {
       return async (...args: T): Promise<R> => {
         try {
           // Show the loader with default options
           showLoader({
-            variant: "shimmer",
+            variant: "clip",
             message: "Loading...",
             fullscreen: true,
             ...options
@@ -61,18 +63,18 @@ export function useAsyncWithLoader() {
    */
   const updateProgress = useCallback(
     (progress: number, message?: string) => {
-      updateLoader({ 
-        progress, 
-        ...(message ? { message } : {}) 
-      });
+      const updates: Partial<LoaderProps> = { 
+        progress,
+        ...(message ? { message } : {})
+      };
+      
+      updateLoader(updates);
     },
     [updateLoader]
   );
 
   return {
     withLoader,
-    updateProgress
+    updateProgress,
   };
 }
-
-export default useAsyncWithLoader;
