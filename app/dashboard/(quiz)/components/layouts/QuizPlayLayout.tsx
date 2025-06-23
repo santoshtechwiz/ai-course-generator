@@ -7,7 +7,7 @@ import { Suspense, useMemo, useEffect, useState } from "react"
 import { JsonLD } from "@/app/schema/components"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-
+export const dynamic = 'force-dynamic'
 interface QuizPlayLayoutProps {
   children: React.ReactNode
   quizSlug?: string

@@ -6,7 +6,8 @@ import { useAppDispatch } from "@/store"
 import { saveAnswer } from "@/store/slices/quiz-slice"
 import type { CodeQuestion } from "./types"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
+import { a11yDark } from "react-syntax-highlighter/dist/esm/styles/prism"
+
 import CodeQuizOptions from "./CodeQuizOptions"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
@@ -217,10 +218,9 @@ const CodeQuiz = ({
             </motion.div>
 
             {/* Code Content - Enhanced */}
-            <motion.div className="relative overflow-hidden">
-              <SyntaxHighlighter
+            <motion.div className="relative overflow-hidden">              <SyntaxHighlighter
                 language={question.language || "javascript"}
-                style={vscDarkPlus}
+                style={a11yDark}
                 showLineNumbers
                 customStyle={{
                   margin: 0,
