@@ -14,7 +14,8 @@ export const STORAGE_KEYS = {
   FLASHCARD_EMERGENCY_BACKUP: "flashcard_emergency_backup",
   QUIZ_TYPE: {
     FLASHCARD: "flashcard"
-  }
+  },
+  GUEST_ID: "guestId",
 };
 
 // Status Constants
