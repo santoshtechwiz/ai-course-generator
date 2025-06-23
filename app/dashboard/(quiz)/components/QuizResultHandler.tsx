@@ -52,13 +52,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   const hasRestoredAfterAuth = useRef(false)
   const mountedRef = useRef(true)
 
-  // Debug logging
-  const logDebug = (message: string, data?: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[QuizResultHandler] ${message}`, data || '')
-    }
-  }
-  
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -69,7 +62,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   // Check if system is ready (store hydrated + auth state resolved)
   useEffect(() => {
     if (isPersistedReady && !isAuthLoading) {
-      logDebug('System ready')
       setIsReady(true)
       return
     }
@@ -77,7 +69,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // Fallback timer to prevent blocking
     const timer = setTimeout(() => {
       if (mountedRef.current) {
-        logDebug('Fallback system ready')
         setIsReady(true)
       }
     }, 3000)  // 3 seconds timeout
@@ -87,7 +78,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   // Reset state when slug changes
   useEffect(() => {
-    logDebug(`Slug changed to: ${slug}`)
     hasRequestedResults.current = false
     hasRestoredAfterAuth.current = false
     setError(null)
@@ -102,13 +92,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       quizResults.data &&
       typeof quizResults.percentage === 'number'
     )
-    
-    logDebug(`Results check: ${hasResults}`, {
-      hasQuizResults: !!quizResults,
-      resultSlug: quizResults?.slug,
-      currentSlug: slug,
-      hasData: !!quizResults?.data
-    })
     
     return hasResults
   }, [quizResults, slug])
@@ -129,20 +112,16 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     if (!mountedRef.current) return
     
     try {
-      logDebug(`Loading results for ${slug}, retry: ${retryCount}`)
-      
       await dispatch(checkAuthAndLoadResults({
         slug,
         authStatus: isAuthenticated ? 'authenticated' : 'unauthenticated',
       })).unwrap()
       
-      logDebug('Results loaded successfully')
       setError(null)
     } catch (error) {
       if (!mountedRef.current) return
       
       const errorMsg = error instanceof Error ? error.message : 'Failed to load results'
-      logDebug(`Load error: ${errorMsg}`)
       
       if (retryCount < 2) {
         // Exponential backoff for retries
@@ -164,7 +143,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     
     // Don't load if we already have matching results
     if (hasMatchingResults) {
-      logDebug('Skipping load - already have matching results')
       return
     }
     
@@ -174,7 +152,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // Don't load if there's an error (user needs to manually retry)
     if (error) return
     
-    logDebug('Initiating result load')
     hasRequestedResults.current = true
     loadResults()
   }, [isReady, slug, hasMatchingResults, isLoading, error, loadResults])
@@ -186,11 +163,9 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     // Only restore if we don't have results and haven't already tried
     if (hasMatchingResults || hasRestoredAfterAuth.current) return
 
-    logDebug('Restoring after auth')
     hasRestoredAfterAuth.current = true
     
     dispatch(restoreQuizAfterAuth()).catch((error) => {
-      logDebug('Restore failed, will try normal load', error)
       // If restore fails, try normal loading
       hasRequestedResults.current = false
     })
@@ -200,12 +175,9 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   useEffect(() => {
     if (!isReady || !isProcessingResults) return
 
-    logDebug('Starting processing state timeout monitoring')
-    
     // Set up a timeout to automatically reset the processing state if it gets stuck
     const processingTimeout = setTimeout(() => {
       if (mountedRef.current && isProcessingResults) {
-        logDebug('Processing results stuck for too long, automatically resetting')
         dispatch(resetProcessingState())
       }
     }, 10000) // 10 seconds timeout
@@ -228,20 +200,17 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   // Event handlers
   const handleRetake = useCallback(() => {
-    logDebug('Retaking quiz')
     dispatch(clearQuizState())
     router.push(`/dashboard/${quizType}/${slug}`)
   }, [dispatch, router, quizType, slug])
 
   const handleSignIn = useCallback(() => {
-    logDebug('Signing in')
     login('credentials', {
       callbackUrl: `/dashboard/${quizType}/${slug}/results`,
     })
   }, [login, quizType, slug])
 
   const handleRetry = useCallback(() => {
-    logDebug('Manual retry')
     setError(null)
     setRetryCount(0)
     hasRequestedResults.current = false
@@ -303,7 +272,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         {isProcessingResults && (
           <button 
             onClick={() => {
-              logDebug('Manually resetting processing state')
               dispatch(resetProcessingState())
             }}
             className="text-xs text-blue-500 hover:underline mt-2"
