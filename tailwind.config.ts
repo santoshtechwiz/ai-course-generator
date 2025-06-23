@@ -75,9 +75,19 @@ const config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
-        },
-      },      fontFamily: {
-        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
+        },      },      fontFamily: {
+        sans: [
+          "var(--font-inter)",
+          "Inter",
+          "Inter Fallback",
+          ...defaultTheme.fontFamily.sans
+        ],
+        roboto: [
+          "var(--font-roboto)",
+          "Roboto", 
+          "Roboto Fallback",
+          ...defaultTheme.fontFamily.sans
+        ],
       },
       borderRadius: {
         lg: "var(--radius)",
