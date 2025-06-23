@@ -94,7 +94,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       dispatch(
         hydrateQuiz({
           slug: memoizedSlug,
-          quizType: "mcq",
           quizData: data,
           currentState: {
             currentQuestionIndex: 0,

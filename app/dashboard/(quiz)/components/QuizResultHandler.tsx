@@ -37,53 +37,48 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
-  const currentSlug = useSelector(selectQuizId)
   const isCompleted = useSelector(selectIsQuizComplete)
   const isProcessingResults = useSelector(selectIsProcessingResults)
-  const hasResults = useMemo(() => {
-    return quizResults?.slug === slug
-  }, [quizResults, slug])
 
-  const isLoading = useMemo(() => {
-    // ✅ Fix: if we already have results, do not stay in loading state
-    if (hasResults) return false
-    return isAuthLoading || quizStatus === 'loading' || isProcessingResults
-  }, [hasResults, isAuthLoading, quizStatus, isProcessingResults])
-  
-  // Use refs to prevent duplicate dispatch calls and infinite loops
   const hasRequestedResults = useRef(false)
   const hasRestoredAfterAuth = useRef(false)
 
-  // Trigger loading results if needed
+  // Refs reset on slug change
   useEffect(() => {
-    // If we've already loaded results or we're currently loading, don't dispatch again
-    if (hasResults || hasRequestedResults.current || isLoading || !slug) {
-      return
-    }
-    
-    // Mark that we've requested results to prevent duplicate calls
+    hasRequestedResults.current = false
+    hasRestoredAfterAuth.current = false
+  }, [slug])
+
+  const hasResults = useMemo(() => {
+    return quizResults?.slug === slug
+  }, [quizResults?.slug, slug])
+
+  const isLoading = useMemo(() => {
+    if (hasResults) return false
+    return isAuthLoading || quizStatus === 'loading' || isProcessingResults
+  }, [hasResults, isAuthLoading, quizStatus, isProcessingResults])
+
+  // Load results initially
+  useEffect(() => {
+    if (hasResults || hasRequestedResults.current || isLoading || !slug) return
     hasRequestedResults.current = true
-    
-    dispatch(checkAuthAndLoadResults({
-      slug,
-      authStatus: isAuthenticated ? 'authenticated' : 'unauthenticated'
-    }))
+
+    dispatch(
+      checkAuthAndLoadResults({
+        slug,
+        authStatus: isAuthenticated ? 'authenticated' : 'unauthenticated',
+      })
+    )
   }, [slug, isAuthenticated, dispatch, hasResults, isLoading])
 
-  // Restore after login (rehydrate from localStorage or backend)
+  // Restore state after login
   useEffect(() => {
-    // If we're not authenticated, have results already, loading, or already restored, don't dispatch
-    if (!isAuthenticated || hasResults || isLoading || hasRestoredAfterAuth.current) {
+    if (!isAuthenticated || hasResults || isLoading || hasRestoredAfterAuth.current || hasRequestedResults.current)
       return
-    }
-    
-    // Mark that we've restored after auth to prevent duplicate calls
+
     hasRestoredAfterAuth.current = true
-    
     dispatch(restoreQuizAfterAuth())
   }, [isAuthenticated, dispatch, hasResults, isLoading])
-
-  // ==== View States ====
 
   const viewState: ViewState = useMemo(() => {
     if (isLoading) return 'loading'
@@ -92,19 +87,16 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     return 'no_results'
   }, [isLoading, hasResults, isAuthenticated, isCompleted])
 
-  // ==== Actions ====
-
   const handleRetake = () => {
     dispatch(clearQuizState())
-    router.push(`/dashboard/${quizType}/${slug}`)  }
-  
-  const handleSignIn = () => {
-    login("credentials", { 
-      callbackUrl: `/dashboard/${quizType}/${slug}/results` 
-    })
+    router.push(`/dashboard/${quizType}/${slug}`)
   }
 
-  // ==== Views ====
+  const handleSignIn = () => {
+    login('credentials', {
+      callbackUrl: `/dashboard/${quizType}/${slug}/results`,
+    })
+  }
 
   const renderLoading = () => (
     <motion.div
@@ -127,7 +119,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
           <Skeleton className="h-10 w-20 rounded-md" />
         </div>
         <div className="space-y-3">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="flex justify-between items-center">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-12" />
@@ -161,10 +153,10 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         previewData={
           quizResults
             ? {
-              percentage: quizResults.percentage || 0,
-              score: quizResults.score || 0,
-              maxScore: quizResults.maxScore || 0,
-            }
+                percentage: quizResults.percentage || 0,
+                score: quizResults.score || 0,
+                maxScore: quizResults.maxScore || 0,
+              }
             : undefined
         }
       />
@@ -207,9 +199,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       />
     </motion.div>
   )
-  // ==== Final Render ====
 
-  // Use a key for AnimatePresence to ensure proper transitions and prevent render loops
   return (
     <AnimatePresence mode="wait" initial={false}>
       {viewState === 'loading' && renderLoading()}
