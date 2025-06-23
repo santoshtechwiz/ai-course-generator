@@ -1192,9 +1192,7 @@ const quizSlice = createSlice({
         ...initialState,
         wasReset: true
       })
-    },
-
-    /**
+    },    /**
      * Clear the reset flag
      */
     clearResetFlag: (state) => {
@@ -1681,6 +1679,17 @@ const quizSlice = createSlice({
     resetState: () => {
       return initialState
     },
+
+    /**
+     * Reset the processing state flag
+     */
+    resetProcessingState: (state) => {
+      state.isProcessingResults = false
+      // Log the reset for debugging purposes
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Reset processing state to false')
+      }
+    },
   },
 
   // ========================================================================
@@ -1929,9 +1938,9 @@ export const {
   setQuizLoading,
   setQuizSuccess,
   setQuizFailed,
-  resetSaveStatus,
-  resetSubmissionState,
+  resetSaveStatus,  resetSubmissionState,
   resetState,
+  resetProcessingState,    // Added to fix stuck loading states
   
   // Backward compatibility (DEPRECATED)
   setQuizId,               // DEPRECATED: Use setCurrentQuiz instead
