@@ -12,6 +12,9 @@ export const notFoundMetadata: Metadata = {
       follow: false,
     },
   },
+  alternates: {
+    canonical: "https://courseai.com/404",
+  },
   openGraph: {
     title: "Page Not Found | CourseAI",
     description: "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
@@ -27,5 +30,12 @@ export const notFoundMetadata: Metadata = {
     ],
     locale: "en_US",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Page Not Found | CourseAI",
+    description: "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
+    images: ["/images/og-image-404.jpg"],
+    creator: "@courseai",
   },
 }

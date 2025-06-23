@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, BarChart3, Clock, Award } from "lucide-react"
-import UserNotFound from "@/components/UserNotFound"
+import UserNotFound from "@/components/common/UserNotFound"
 
 import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
 import DashboardHeader from "./components/DashboardHeader"

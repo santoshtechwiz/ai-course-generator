@@ -9,9 +9,21 @@ import { RecommendedCard } from "@/components/shared/RecommendedCard"
 import { motion } from "framer-motion"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import ClientOnly from "@/components/ClientOnly"
+import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-found-utils"
+import { JsonLD } from "@/app/schema/components"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = notFoundMetadata
+
+// Use dynamic rendering to ensure proper 404 handling
+export const dynamic = "force-dynamic"
+
+// Set appropriate headers
+export async function generateMetadata() {
+  // Next.js will use this to set appropriate headers including status code
+  setNotFoundHeaders();
+  return notFoundMetadata;
+}
 
 // Fallback component for recommendations when loading or error occurs
 function RecommendationsFallback() {
@@ -80,8 +92,29 @@ const itemVariants = {
 };
 
 export default function NotFound() {
+  // Use the global notFoundStructuredData with additional site-specific properties
+  const rootNotFoundStructuredData = {
+    ...notFoundStructuredData,
+    mainEntity: {
+      ...notFoundStructuredData.mainEntity,
+      additionalProperty: {
+        "@type": "PropertyValue",
+        "name": "pageType",
+        "value": "404 Not Found - Root"
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      {/* Add structured data for SEO */}
+      <JsonLD type="WebPage" data={rootNotFoundStructuredData} />
+      
+      {/* Add noindex meta tag explicitly */}
+      <head>
+        <meta name="robots" content="noindex, nofollow" />
+      </head>
+      
       <MainNavbar />
       <main className="flex-grow flex items-center justify-center px-4 py-12 md:py-16">
         <motion.div

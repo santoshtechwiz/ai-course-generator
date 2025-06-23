@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '@/store'
@@ -40,7 +40,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   const currentSlug = useSelector(selectQuizId)
   const isCompleted = useSelector(selectIsQuizComplete)
   const isProcessingResults = useSelector(selectIsProcessingResults)
-
   const hasResults = useMemo(() => {
     return quizResults?.slug === slug
   }, [quizResults, slug])
@@ -50,23 +49,39 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     if (hasResults) return false
     return isAuthLoading || quizStatus === 'loading' || isProcessingResults
   }, [hasResults, isAuthLoading, quizStatus, isProcessingResults])
+  
+  // Use refs to prevent duplicate dispatch calls and infinite loops
+  const hasRequestedResults = useRef(false)
+  const hasRestoredAfterAuth = useRef(false)
 
   // Trigger loading results if needed
   useEffect(() => {
-    if (!hasResults && !isLoading && slug) {
-      dispatch(checkAuthAndLoadResults({
-        slug,
-        authStatus: isAuthenticated ? 'authenticated' : 'unauthenticated'
-      }))
+    // If we've already loaded results or we're currently loading, don't dispatch again
+    if (hasResults || hasRequestedResults.current || isLoading || !slug) {
+      return
     }
-  }, [hasResults, isLoading, slug, isAuthenticated, dispatch])
+    
+    // Mark that we've requested results to prevent duplicate calls
+    hasRequestedResults.current = true
+    
+    dispatch(checkAuthAndLoadResults({
+      slug,
+      authStatus: isAuthenticated ? 'authenticated' : 'unauthenticated'
+    }))
+  }, [slug, isAuthenticated, dispatch, hasResults, isLoading])
 
   // Restore after login (rehydrate from localStorage or backend)
   useEffect(() => {
-    if (isAuthenticated && !hasResults && !isLoading) {
-      dispatch(restoreQuizAfterAuth())
+    // If we're not authenticated, have results already, loading, or already restored, don't dispatch
+    if (!isAuthenticated || hasResults || isLoading || hasRestoredAfterAuth.current) {
+      return
     }
-  }, [isAuthenticated, hasResults, isLoading, dispatch])
+    
+    // Mark that we've restored after auth to prevent duplicate calls
+    hasRestoredAfterAuth.current = true
+    
+    dispatch(restoreQuizAfterAuth())
+  }, [isAuthenticated, dispatch, hasResults, isLoading])
 
   // ==== View States ====
 
@@ -81,12 +96,11 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   const handleRetake = () => {
     dispatch(clearQuizState())
-    router.push(`/dashboard/${quizType}/${slug}`)
-  }
-
+    router.push(`/dashboard/${quizType}/${slug}`)  }
+  
   const handleSignIn = () => {
-    login(undefined, {
-      callbackUrl: `/dashboard/${quizType}/${slug}/results`,
+    login("credentials", { 
+      callbackUrl: `/dashboard/${quizType}/${slug}/results` 
     })
   }
 
@@ -193,11 +207,11 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       />
     </motion.div>
   )
-
   // ==== Final Render ====
 
+  // Use a key for AnimatePresence to ensure proper transitions and prevent render loops
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       {viewState === 'loading' && renderLoading()}
       {viewState === 'show_results' && quizResults && renderResults()}
       {viewState === 'show_signin' && renderSignIn()}
