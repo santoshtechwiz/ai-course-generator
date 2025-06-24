@@ -12,20 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle, ArrowRight, ArrowLeft, Flag, Lightbulb, Target, Zap } from "lucide-react"
 import type { BlankQuestion } from "./types"
 
-interface BlanksQuizProps {
-  question: BlankQuestion
-  questionNumber: number
-  totalQuestions: number
-  existingAnswer?: string
-  onAnswer: (answer: string) => boolean
-  onNext?: () => void
-  onPrevious?: () => void
-  onSubmit?: () => void
-  canGoNext?: boolean
-  canGoPrevious?: boolean
-  isLastQuestion?: boolean
-}
-
 function calculateEnhancedSimilarity(input: string, target: string) {
   if (!input || !target) return { score: 0, isPartialMatch: false, feedback: "poor" as const }
 
@@ -70,6 +56,20 @@ function useDebounce<T>(value: T, delay: number) {
   return debounced
 }
 
+interface BlanksQuizProps {
+  question: BlankQuestion
+  questionNumber: number
+  totalQuestions: number
+  existingAnswer?: string
+  onAnswer: (answer: string) => boolean
+  onNext?: () => void
+  onPrevious?: () => void
+  onSubmit?: () => void
+  canGoNext?: boolean
+  canGoPrevious?: boolean
+  isLastQuestion?: boolean
+}
+
 const BlanksQuiz = memo(function BlanksQuiz({
   question,
   questionNumber,
@@ -93,7 +93,10 @@ const BlanksQuiz = memo(function BlanksQuiz({
 
   const debouncedAnswer = useDebounce(answer, 500)
 
-  const similarity = useMemo(() => calculateEnhancedSimilarity(answer, question.answer || ""), [answer, question.answer])
+  const similarity = useMemo(
+    () => calculateEnhancedSimilarity(answer, question.answer || ""),
+    [answer, question.answer]
+  )
 
   const questionParts = question.question?.split("________") || ["", ""]
   const before = questionParts[0]
@@ -103,11 +106,11 @@ const BlanksQuiz = memo(function BlanksQuiz({
   const maxHint = question.hints?.length || 4
 
   useEffect(() => {
-    if (debouncedAnswer.trim() && debouncedAnswer !== existingAnswer) {
+    if (debouncedAnswer.trim()) {
       setIsAnswered(true)
       onAnswer(debouncedAnswer)
     }
-  }, [debouncedAnswer, onAnswer, existingAnswer])
+  }, [debouncedAnswer, onAnswer])
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setAnswer(e.target.value)
@@ -117,21 +120,27 @@ const BlanksQuiz = memo(function BlanksQuiz({
 
   const handleNext = useCallback(() => {
     if (!canProceed) return setShowValidation(true)
-    if (onAnswer(answer) && onNext) onNext()
-    setHintLevel(0); setShowHint(false)
-  }, [answer, onAnswer, onNext, canProceed])
+    onAnswer(answer)
+    onNext?.()
+    setHintLevel(0)
+    setShowHint(false)
+  }, [answer, canProceed, onAnswer, onNext])
 
   const handleSubmit = useCallback(() => {
     if (!canProceed) return setShowValidation(true)
-    if (onAnswer(answer) && onSubmit) onSubmit()
-  }, [answer, onAnswer, onSubmit, canProceed])
+    onAnswer(answer)
+    onSubmit?.()
+  }, [answer, canProceed, onAnswer, onSubmit])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      isLastQuestion ? handleSubmit() : handleNext()
-    }
-  }, [handleNext, handleSubmit, isLastQuestion])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        isLastQuestion ? handleSubmit() : handleNext()
+      }
+    },
+    [handleNext, handleSubmit, isLastQuestion]
+  )
 
   const generateHint = useCallback(() => {
     const answerText = question.answer?.trim()
@@ -143,10 +152,10 @@ const BlanksQuiz = memo(function BlanksQuiz({
     const isPhrase = words.length > 1
     const lengthHint = answerText.length > 8 ? "longer than 8 characters" : "short and concise"
     const defaultHints = [
-      `It starts with \"${firstLetter.toUpperCase()}\"`,
+      `It starts with "${firstLetter.toUpperCase()}"`,
       `It's ${isPhrase ? `${words.length} words` : "a single word"}`,
       `It's ${lengthHint}`,
-      `It's similar to: \"${words[0]}...\"`
+      `It's similar to: "${words[0]}..."`
     ]
     return defaultHints[Math.min(hintLevel, defaultHints.length - 1)]
   }, [question.answer, question.hints, hintLevel])
@@ -187,17 +196,22 @@ const BlanksQuiz = memo(function BlanksQuiz({
 
         <CardContent className="p-6 md:p-8">
           <div className="mb-6 text-xl">
-            {before} <Input
+            {before}{" "}
+            <Input
               value={answer}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+              onBlur={() => {
+                setIsFocused(false)
+                if (answer.trim()) onAnswer(answer)
+              }}
               placeholder="Your answer"
               className="inline-block px-4 py-2 border-2 border-dashed"
               aria-label="Blank answer"
               autoFocus
-            /> {after}
+            />{" "}
+            {after}
             {showValidation && !canProceed && (
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-destructive mt-1">
                 {!answer.trim() ? "Enter an answer" : "Answer doesn't match well enough"}
