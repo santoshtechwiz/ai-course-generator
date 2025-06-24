@@ -13,7 +13,8 @@ import { NoResults } from "@/components/ui/no-results"
 import { BestGuess } from "@/components/ui/best-guess"
 import { useDispatch } from "react-redux"
 import { clearQuizState } from "@/store/slices/quiz-slice"
-import { calculateAnswerSimilarity, getSimilarityFeedback } from "@/lib/utils/similarity-scoring"
+import { getPerformanceLevel, getSimilarityLabel, calculateAnswerSimilarity, getSimilarityFeedback } from "@/lib/utils/text-similarity"
+
 
 interface QuestionResult {
   questionId: string | number
@@ -51,24 +52,9 @@ interface QuizResultsProps {
   quizType: 'open-ended' | 'blanks'
 }
 
-const performanceLevels = [
-  { threshold: 90, level: "Excellent", message: "Outstanding! You've mastered this topic.", color: "text-green-500", bgColor: "bg-green-50", borderColor: "border-green-200", emoji: "🏆" },
-  { threshold: 80, level: "Very Good", message: "Great job! You have strong understanding.", color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200", emoji: "🎯" },
-  { threshold: 70, level: "Good", message: "Well done! Your knowledge is solid.", color: "text-green-500", bgColor: "bg-green-50", borderColor: "border-green-200", emoji: "✅" },
-  { threshold: 60, level: "Fair", message: "Good effort! Keep studying to improve.", color: "text-yellow-600", bgColor: "bg-yellow-50", borderColor: "border-yellow-200", emoji: "📚" },
-  { threshold: 50, level: "Needs Work", message: "You're making progress. More study needed.", color: "text-orange-600", bgColor: "bg-orange-50", borderColor: "border-orange-200", emoji: "💪" },
-  { threshold: 0, level: "Poor", message: "Keep learning! Review the material thoroughly.", color: "text-red-500", bgColor: "bg-red-50", borderColor: "border-red-200", emoji: "📖" }
-]
 
-function getPerformanceLevel(percentage: number) {
-  return performanceLevels.find(level => percentage >= level.threshold) || performanceLevels[performanceLevels.length - 1]
-}
 
-function getSimilarityLabel(similarity: number) {
-  if (similarity >= 0.7) return "Correct"
-  if (similarity >= 0.5) return "Close"
-  return "Incorrect"
-}
+
 
 export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug, quizType }: QuizResultsProps) {
   const router = useRouter()
@@ -88,15 +74,19 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
       const questionText = q.question || q.text || questionData?.question || questionData?.text || `Question ${questionId}`
       const userAnswer = actualAnswer?.userAnswer || actualAnswer?.text || actualAnswer?.answer || q.userAnswer || q.answer || ""
       const correctAnswer = q.correctAnswer || questionData?.correctAnswer || questionData?.answer || ""
+        // Calculate similarity using existing value or compute a new one
+      const simResult = typeof q.similarity === "number"
+        ? q.similarity
+        : calculateAnswerSimilarity(userAnswer, correctAnswer).similarity;
       
-      let sim = typeof q.similarity === "number" ? q.similarity : calculateAnswerSimilarity(userAnswer, correctAnswer)
-      if (isNaN(sim)) sim = 0
+      // Ensure we have a valid number
+      const sim = typeof simResult === 'number' && !isNaN(simResult) ? simResult : 0;
       
-      const similarityLabel = q.similarityLabel || getSimilarityLabel(sim)
-      const isCorrect = typeof actualAnswer?.isCorrect === "boolean" 
-        ? actualAnswer.isCorrect 
-        : typeof q.isCorrect === "boolean" 
-          ? q.isCorrect 
+      const similarityLabel = q.similarityLabel || getSimilarityLabel(sim);
+      const isCorrect = typeof actualAnswer?.isCorrect === "boolean"
+        ? actualAnswer.isCorrect
+        : typeof q.isCorrect === "boolean"
+          ? q.isCorrect
           : sim >= 0.7
 
       return {

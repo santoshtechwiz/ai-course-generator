@@ -6,7 +6,7 @@ import { useMemo } from "react"
 import { CheckIcon, XIcon, AlertTriangleIcon, InfoIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { getSimilarityFeedback } from "@/lib/utils/similarity-scoring"
+import { getSimilarityFeedback } from "@/lib/utils/text-similarity"
 
 interface BestGuessProps {
   userAnswer: string

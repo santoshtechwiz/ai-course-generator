@@ -11,7 +11,7 @@ import {
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Confetti } from "@/components/ui/confetti"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getPerformanceLevel } from "@/lib/utils/quiz-utils"
+
 import { PerformanceSummary } from "./PerformanceSummary"
 import { QuestionCard } from "./QuestionCard"
 import { QuestionNavigation } from "./QuestionNavigation"
