@@ -35,7 +35,8 @@ export interface BlankQuestion extends BaseQuestion {
 export interface OpenEndedQuestion extends BaseQuestion {
   type: 'openended';
   keywords?: string[]; // Optional keywords to check against
-  modelAnswer: string; // Reference answer for comparison
+  modelAnswer?: string; // Reference answer for comparison
+  userAnswer?: string; // User's answer for grading
 }
 
 export type QuizQuestion = 
