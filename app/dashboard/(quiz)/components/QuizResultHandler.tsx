@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/use-auth'
 import {
   selectQuizResults,
   selectQuizStatus,
+  selectQuizQuestions,
   clearQuizState,
   checkAuthAndLoadResults,
 } from '@/store/slices/quiz-slice'
@@ -34,6 +35,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
+  const quizQuestions = useSelector(selectQuizQuestions)
 
   const [error, setError] = useState<string | null>(null)
 
@@ -42,10 +44,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     if (isAuthLoading || !slug) return
 
     dispatch(
-      checkAuthAndLoadResults({
-        slug,
-        authStatus: isAuthenticated ? 'authenticated' : 'unauthenticated',
-      })
+      checkAuthAndLoadResults()
     )
       .unwrap()
       .catch((err: any) => {
@@ -53,6 +52,49 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         setError(message)
       })
   }, [slug, isAuthLoading, isAuthenticated, dispatch])
+
+  // Transform quiz results to match expected format for McqQuizResult component
+  const processedResults = useMemo(() => {
+    if (!quizResults) return null    // Map the results to include questionResults format that McqQuizResult component expects
+    return {
+      ...quizResults,
+      title: slug || 'Quiz Results',
+      questions: quizQuestions || [], // Include the full questions data
+      
+      // Ensure metadata fields are properly formatted for display
+      score: quizResults.score || 0,
+      maxScore: quizResults.maxScore || 0,
+      percentage: quizResults.percentage || 0,
+      submittedAt: quizResults.submittedAt || new Date().toISOString(),
+      completedAt: quizResults.completedAt || new Date().toISOString(),
+      questionResults: quizResults.results?.map((result) => {
+        // Find the corresponding answer detail
+        const answerDetail = quizResults.answers?.find(
+          (answer) => answer.questionId === result.questionId
+        )
+        
+        // Find the corresponding question
+        const questionData = quizQuestions?.find(
+          (q) => String(q.id) === result.questionId
+        )
+
+        return {
+          questionId: result.questionId,
+          // Use actual question text instead of just the ID
+          question: questionData?.question || result.questionId,
+          // Explicitly show "(No answer selected)" for null or undefined answers
+          userAnswer: result.userAnswer === null || result.userAnswer === undefined 
+            ? '(No answer selected)' 
+            : result.userAnswer || '',
+          correctAnswer: result.correctAnswer || '',
+          isCorrect: result.isCorrect,
+          type: answerDetail?.type || 'mcq',
+          selectedOptionId: answerDetail?.selectedOptionId || '',
+          options: questionData?.options || [], // Include options from the question data
+        }
+      }) || [],
+    }
+  }, [quizResults, quizQuestions, slug])
 
   // Derived states
   const isLoading = quizStatus === 'loading' || isAuthLoading
@@ -105,7 +147,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
       {viewState === 'show_results' && (
         <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          {children({ result: quizResults })}
+          {children({ result: processedResults })}
         </motion.div>
       )}
 

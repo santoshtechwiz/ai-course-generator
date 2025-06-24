@@ -459,7 +459,7 @@ export const selectQuizScore = (state: RootState) => state.flashcard.results?.sc
 export const selectQuizTotalQuestions = (state: RootState) => state.flashcard.results?.totalQuestions ?? 0
 export const selectQuizTotalTime = (state: RootState) => state.flashcard.results?.totalTime ?? 0
 export const selectCurrentQuestionIndex = (state: RootState) => state.flashcard.currentQuestion
-export const selectAnswers = (state: RootState) => state.flashcard.answers
+export const selectQuizAnswers = (state: RootState) => state.flashcard.answers
 export const selectShouldRedirectToResults = (state: RootState) => state.flashcard.shouldRedirectToResults
 
 export const selectFlashcardScore = (state: RootState) => {
@@ -499,7 +499,7 @@ export const selectFlashcardIncorrectCount = (state: RootState) => {
 }
 
 export const selectProcessedResults = createSelector(
-  [selectAnswers, selectQuizQuestions],
+  [selectQuizAnswers, selectQuizQuestions],
   (answers, questions) => {
     let correctCount = 0
     let stillLearningCount = 0

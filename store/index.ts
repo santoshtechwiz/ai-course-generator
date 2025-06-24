@@ -52,11 +52,24 @@ const flashcardPersistConfig = {
     "pendingAuthRequired",
   ],
 }
+
 const quizPersistConfig = {
   key: "quiz",
   storage,
-  whitelist: ["quizId", "slug", "title", "questions", "currentQuestion", "answers", "status", "isCompleted"],
+  whitelist: [
+    "quizId",
+    "slug",
+    "title",
+    "questions",
+    "currentQuestion",
+    "answers",
+    "status",
+    "isCompleted",
+    "results", // ✅ Added
+    "shouldRedirectToResults", // ✅ Added (if applicable)
+  ],
 }
+
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   quiz: persistReducer(quizPersistConfig, quizReducer),

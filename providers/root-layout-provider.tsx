@@ -36,17 +36,7 @@ interface RootLayoutProviderProps {
   session: any
 }
 
-// Auth initializer component that will dispatch the initializeAuth action
-function AuthInitializer() {
-  const dispatch = useDispatch()
 
-  useEffect(() => {
-    // Initialize auth state when the app loads
-    dispatch(initializeAuth())
-  }, [dispatch])
-
-  return null
-}
 
 export function RootLayoutProvider({ children, session }: RootLayoutProviderProps) {
   // Create QueryClient with proper initialization
@@ -63,7 +53,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <AuthProvider session={session}>
-            <AuthInitializer />
+          
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
