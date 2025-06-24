@@ -349,6 +349,7 @@ const quizSlice = createSlice({
         state.status = 'submitting'
         state.error = null
       })
+      
       .addCase(submitQuiz.fulfilled, (state, action) => {
         state.status = 'succeeded'
         state.results = action.payload
