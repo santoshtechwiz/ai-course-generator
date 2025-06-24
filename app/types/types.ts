@@ -158,8 +158,3 @@ export  interface FlashCard{
 export interface QueryParams {
   [key: string]: string | string[] | undefined;
 }
-
-export type QuizType = 'mcq' | 'openended' | 'fill-blanks' | 'code';
-
-
-
