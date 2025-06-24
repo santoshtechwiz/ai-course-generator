@@ -17,6 +17,7 @@ import { QuestionCard } from "./QuestionCard"
 import { QuestionNavigation } from "./QuestionNavigation"
 import { ReviewControls } from "./ReviewControls"
 import { BaseQuizResultProps, ProcessedAnswer } from "./quiz-result-types"
+import { getPerformanceLevel } from "@/lib/utils/text-similarity"
 
 /**
  * BaseQuizResult - Abstract base component for quiz results
