@@ -7,7 +7,7 @@ interface ReviewControlsProps {
   searchQuery: string
   setSearchQuery: (v: string) => void
   filterType: string
-  setFilterType: (v: string) => void
+  setFilterType: (value: string) => void
   showAllQuestions: boolean
   setShowAllQuestions: (v: boolean) => void
 }

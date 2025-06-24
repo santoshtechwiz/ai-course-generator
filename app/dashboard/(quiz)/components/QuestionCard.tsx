@@ -1,7 +1,8 @@
 import { motion } from "framer-motion"
-import { CheckCircle, XCircle, BookOpen, Clock } from "lucide-react"
+import { CheckCircle, XCircle, BookOpen, Clock, Code } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { ProcessedAnswer } from "../mcq/components/mcq.props"
+import { ProcessedAnswer } from "./quiz-result-types"
+import CodeQuizEditor from "../code/components/CodeQuizEditor"
 
 interface QuestionCardProps {
   question: ProcessedAnswer
@@ -47,10 +48,32 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
                 </Badge>
               )}
             </div>
-          </div>
-          <p className="text-foreground mb-6 text-base leading-relaxed">
+          </div>          <p className="text-foreground mb-4 text-base leading-relaxed">
             {question.question}
           </p>
+          
+          {/* Code Snippet Display for Code Quiz */}
+          {question.codeSnippet && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Code className="w-4 h-4 text-blue-600" />
+                <span className="font-semibold text-sm text-blue-700">Code Snippet:</span>
+                {question.language && (
+                  <Badge variant="outline" className="text-xs">
+                    {question.language}
+                  </Badge>
+                )}
+              </div>
+              <CodeQuizEditor
+                value={question.codeSnippet}
+                onChange={() => {}}
+                language={question.language || "javascript"}
+                readOnly={true}
+                className="mb-4"
+              />
+            </div>
+          )}
+          
           {/* All Options Display */}
           <div className="space-y-3 mb-6">
             <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
