@@ -39,7 +39,6 @@ export function LoaderProvider({
     showLogo: true,
     ...defaultOptions,
   });
-
   const showLoader = useCallback((newOptions?: Partial<LoaderProps>) => {
     setOptions((prev) => ({ ...prev, ...(newOptions || {}) }));
     setIsLoading(true);
@@ -53,28 +52,15 @@ export function LoaderProvider({
   const updateLoader = useCallback((newOptions: Partial<LoaderProps>) => {
     setOptions((prev) => ({ ...prev, ...newOptions }));
   }, []);
-
   // Track path changes
   const pathname = usePathname();
-
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
-    // Show loader on route change
-    showLoader();
-
-    const minVisibleDuration = 400;
-    const startTime = Date.now();
-
-    // Hide loader after minimum duration
-    timeoutId = setTimeout(() => {
-      const elapsed = Date.now() - startTime;
-      const delay = Math.max(0, minVisibleDuration - elapsed);
-      setTimeout(hideLoader, delay);
-    }, 50); // render latency buffer
-
-    return () => clearTimeout(timeoutId);
-  }, [pathname, showLoader, hideLoader]);
+    if (prevPathname !== pathname) {
+      setPrevPathname(pathname);
+    }
+  }, [pathname, prevPathname]);
 
   return (
     <LoaderContext.Provider value={{ showLoader, hideLoader, updateLoader, isLoading }}>

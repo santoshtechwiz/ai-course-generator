@@ -1,34 +1,28 @@
 "use client"
 
-import { useEffect, useMemo, useState, useRef, useCallback } from "react"
+import { useEffect, useMemo, useCallback, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
 import {
-  selectQuestions,
-  selectAnswers,
+  selectQuizQuestions,
+  selectQuizAnswers,
   selectCurrentQuestionIndex,
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
-  hydrateQuiz,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
-  setQuizResults,
-  setQuizCompleted,
-  fetchQuiz,
-  resetSubmissionState,
   submitQuiz,
-  selectQuizId,
-  clearQuizState,
+  fetchQuiz,
 } from "@/store/slices/quiz-slice"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { toast } from "sonner"
-import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
+
 
 interface CodeQuizWrapperProps {
   slug: string
@@ -36,227 +30,155 @@ interface CodeQuizWrapperProps {
 }
 
 export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
-  const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-
-  const enhancedLoader = useLoader();
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter();
+  const enhancedLoader = useLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hasShownLoaderRef = useRef(false)
 
-  const questions = useSelector(selectQuestions)
-  const answers = useSelector(selectAnswers)
+  const questions = useSelector(selectQuizQuestions)
+  const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
-  const quizId = useSelector(selectQuizId)
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
+  // Load the quiz
   useEffect(() => {
-    const init = async () => {
-      setLoading(true)
-      dispatch(resetQuiz())
-
+    const loadQuiz = async () => {
       try {
-        const result = await dispatch(fetchQuiz({ slug, quizType: "code" })).unwrap()
-        if (!result) throw new Error("No data received")
+        dispatch(resetQuiz())
 
-        dispatch(
-          hydrateQuiz({
-            slug,
-            quizType: "code",
-            quizData: result,
-            currentState: {
-              currentQuestionIndex: 0,
-              answers: {},
-              isCompleted: false,
-              showResults: false,
-            },
-          }),
-        )
-        setError(null)
+        await dispatch(fetchQuiz({ slug, quizType: "code" })).unwrap()
       } catch (err) {
-        setError("Failed to load quiz. Please try again.")
-      } finally {
-        setLoading(false)
+        console.error("Failed to load quiz:", err)
+        toast.error("Failed to load quiz. Please try again.")
       }
     }
 
-    init()
-    dispatch(resetSubmissionState())
+    loadQuiz()
 
     return () => {
-      if (submissionTimeoutRef.current) {
-        clearTimeout(submissionTimeoutRef.current)
-      }
+      if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
-  }, [slug, dispatch])
-
+  }, [slug, dispatch])  // Navigate to result
   useEffect(() => {
-    if (!isCompleted || isSubmitting) return
+    // To prevent infinite loop, we track if we've already shown the loader for this completion    
+    if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current) {
+      hasShownLoaderRef.current = true;
+      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
 
-    enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
+      submissionTimeoutRef.current = setTimeout(() => {
+        router.push(`/dashboard/code/${slug}/results`)
+      }, 500)
+    }
 
-    submissionTimeoutRef.current = setTimeout(() => {
-      router.push(`/dashboard/code/${slug}/results`)
-    }, 500)
-  }, [isCompleted, isSubmitting, router, slug])
+    return () => {
+      if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
+    }
+  }, [isCompleted, quizStatus, router, slug, enhancedLoader])
 
   const currentQuestion = useMemo(() => {
-    if (!questions.length || currentQuestionIndex >= questions.length) return null
-    return questions[currentQuestionIndex]
+    return questions[currentQuestionIndex] || null
   }, [questions, currentQuestionIndex])
 
-  const handleAnswer = (selectedOption: string) => {
+  const handleAnswer = useCallback((selectedOptionId: string) => {
     if (!currentQuestion) return false
 
-    // Always use string for questionId and selectedOptionId
-    const questionId = String(currentQuestion.id)
-    dispatch(
-      saveAnswer({
-        questionId,
-        answer: {
-          questionId,
-          selectedOptionId: String(selectedOption),
-          type: "code",
-          timestamp: Date.now(),
-        },
-      }),
-    )
-    return true
-  }
+    dispatch(saveAnswer({
+      questionId: String(currentQuestion.id),
+      answer: selectedOptionId,
+      selectedOptionId
+    }))
 
-  const handleNext = useCallback(() => {
+    return true
+  }, [currentQuestion, dispatch])
+
+  const handleNextQuestion = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }, [currentQuestionIndex, questions.length, dispatch])
 
-  const handlePrevious = useCallback(() => {
-    if (currentQuestionIndex > 0) {
-      dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
+const handleSubmitQuiz = useCallback(async () => {
+  try {
+    toast.success("Quiz submitted successfully!")
+    enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
+
+    await dispatch(submitQuiz()).unwrap()
+
+    setTimeout(() => {
+      router.push(`/dashboard/code/${slug}/results`)
+    }, 500)
+  } catch (err) {
+    console.error("Error submitting quiz:", err)
+    toast.error("Failed to submit quiz. Please try again.")
+  }
+}, [dispatch, router, slug, enhancedLoader])
+
+
+  const isLoading = quizStatus === "loading" || quizStatus === "idle"
+  const hasError = quizStatus === "failed"
+  const isSubmitting = quizStatus === "submitting"
+
+  const formattedQuestion = useMemo(() => {
+    if (!currentQuestion) return null
+
+    const questionText = currentQuestion.question || currentQuestion.text || ''
+    const options = Array.isArray(currentQuestion.options)
+      ? currentQuestion.options.map((opt: any) => typeof opt === "string" ? opt : opt.text || '')
+      : []
+
+    return {
+      id: String(currentQuestion.id),
+      text: questionText,
+      question: questionText,
+      options,
     }
-  }, [currentQuestionIndex, dispatch])
+  }, [currentQuestion])
 
-  const handleSubmitQuiz = useCallback(async () => {
-    if (isSubmitting) return
+  const existingAnswer = useMemo(() => {
+    if (!currentQuestion) return undefined
+    return answers[String(currentQuestion.id)]?.selectedOptionId || undefined
+  }, [currentQuestion, answers])
 
-    setIsSubmitting(true)
-    enhancedLoader.showLoader({ message: "Submitting your quiz...", variant: "pulse", fullscreen: true });
-    try {
-      const validAnswers = Object.values(answers).filter(answer => answer !== null && answer !== undefined);
-      
-      const results = {
-        quizId,
-        slug,
-        title: quizTitle || title || "Code Quiz",
-        quizType: "code",
-        questions,
-        answers: validAnswers,
-        completedAt: new Date().toISOString(),
-      }
-
-      dispatch(setQuizResults(results))
-      dispatch(setQuizCompleted())
-
-      await dispatch(submitQuiz()).unwrap()
-    } catch (err) {
-      console.error("Error submitting quiz:", err)
-      enhancedLoader.showLoader({ message: "Failed to submit quiz. Please try again.", variant: "pulse", fullscreen: true });
-      setTimeout(() => enhancedLoader.hideLoader(), 2000);
-    } finally {
-      setIsSubmitting(false)
-      setTimeout(() => enhancedLoader.hideLoader(), 1200);
-    }
-  }, [isSubmitting, quizId, slug, quizTitle, title, questions, answers, dispatch, enhancedLoader])
-
-  const handleRetakeQuiz = useCallback(() => {
-    dispatch(clearQuizState())
-    router.replace(`/dashboard/code/${slug}`)
-  }, [dispatch, router, slug])
-
-  const currentAnswer = useMemo(() => {
-    if (!currentQuestion || !answers) return null;
-    
-    const questionId = currentQuestion.id?.toString() || currentQuestionIndex.toString();
-    const answerObj = answers[questionId];
-    
-    return answerObj?.selectedOptionId || null;
-  }, [currentQuestion, answers, currentQuestionIndex])
-  const canGoNext = useMemo(
-    () => currentQuestionIndex < questions.length - 1,
-    [currentQuestionIndex, questions.length],
-  )
-  const canGoPrevious = currentQuestionIndex > 0
+  const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
-  const hasAnswer = !!currentAnswer
-  const canSubmit = isLastQuestion ? hasAnswer : (hasAnswer && canGoNext)
 
-  // ✅ Fixed condition to avoid unnecessary loading state flicker
-  const isQuizLoading = loading || (quizStatus === "loading" && questions.length === 0)
-
-  if (isQuizLoading) {
-    return <QuizLoader message="Loading code quiz..." />
+  if (isLoading) {
+    return <QuizLoader message="Loading quiz..." />
   }
 
-  if (error || quizStatus === "failed") {
+  if (hasError) {
     return (
       <NoResults
         variant="error"
         title="Error Loading Quiz"
-        description={error || "Unable to load the code quiz."}
+        description="We couldn't load this quiz. Please try again later or contact support if the problem persists."
         action={{
-          label: "Back to Quizzes",
-          onClick: () => router.push("/dashboard/quizzes"),
+          label: "Return to Dashboard",
+          onClick: () => router.push("/dashboard"),
         }}
       />
     )
   }
 
-  if (!currentQuestion) {
-    return (
-      <NoResults
-        variant="error"
-        title="Quiz Error"
-        description="Could not load quiz questions."
-        action={{
-          label: "Try Again",
-          onClick: () => window.location.reload(),
-        }}
-        secondaryAction={{
-          label: "Back to Quizzes",
-          onClick: () => router.push("/dashboard/quizzes"),
-          variant: "outline",
-        }}
-      />
-    )
+  if (!formattedQuestion) {
+    return <QuizLoader message="Preparing quiz..." />
   }
-
   return (
-    <motion.div
-      className="space-y-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <CodeQuiz
-        question={currentQuestion}
-        quizTitle={title || quizTitle || "Code Quiz"}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={currentAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNext}
-        onSubmit={handleSubmitQuiz}
-        onRetake={handleRetakeQuiz}
-        canGoNext={hasAnswer && canGoNext}
-        canGoPrevious={canGoPrevious}
-        isLastQuestion={isLastQuestion}
-        isSubmitting={isSubmitting}
-      />
-    </motion.div>
+    <CodeQuiz
+      question={formattedQuestion}
+      questionNumber={currentQuestionIndex + 1}
+      totalQuestions={questions.length}
+      existingAnswer={existingAnswer}
+      onAnswer={handleAnswer}
+      onNext={handleNextQuestion}
+      onSubmit={handleSubmitQuiz}
+      isSubmitting={isSubmitting}
+      canGoNext={canGoNext}
+      isLastQuestion={isLastQuestion}
+      quizTitle={quizTitle || title || "Code Quiz"}
+    />
   )
 }

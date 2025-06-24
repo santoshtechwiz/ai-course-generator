@@ -20,7 +20,7 @@ import flashcardReducer, {
   selectIsQuizComplete,
   selectQuizTitle,
   selectCurrentQuestionIndex,
-  selectAnswers,
+  selectQuizAnswers,
   selectShouldRedirectToResults,
   selectCompleteResults,
   selectQuizStatus,
@@ -558,7 +558,7 @@ describe('Flashcard Redux Slice', () => {
       expect(currentIndex).toBe(2);
     });
     
-    test('selectAnswers should return answers', () => {
+    test('selectQuizAnswers should return answers', () => {
       const answers = [
         { 
           questionId: '1', 
@@ -578,7 +578,7 @@ describe('Flashcard Redux Slice', () => {
         answers
       });
       
-      const selectedAnswers = applySelector(selectAnswers, store.getState);
+      const selectedAnswers = applySelector(selectQuizAnswers, store.getState);
       expect(selectedAnswers).toEqual(answers);
     });
     

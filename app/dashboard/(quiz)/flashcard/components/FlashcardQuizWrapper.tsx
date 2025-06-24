@@ -10,7 +10,7 @@ import {
   completeFlashCardQuiz,
   saveFlashCardResults,
   selectQuizQuestions,
-  selectAnswers,
+  selectQuizAnswers,
   selectCurrentQuestionIndex,
   selectQuizStatus,
   selectQuizTitle,
@@ -38,7 +38,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   const isResetMode = searchParams?.get("reset") === "true"
 
   const questions = useSelector((state: RootState) => selectQuizQuestions(state))
-  const answers = useSelector((state: RootState) => selectAnswers(state))
+  const answers = useSelector((state: RootState) => selectQuizAnswers(state))
   const currentQuestionIndex = useSelector((state: RootState) => selectCurrentQuestionIndex(state))
   const quizStatus = useSelector((state: RootState) => selectQuizStatus(state))
   const quizTitle = useSelector((state: RootState) => selectQuizTitle(state))

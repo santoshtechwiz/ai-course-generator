@@ -9,7 +9,7 @@ import {
   clearQuizState,
   resetRedirectFlag,
   selectQuizResults,
-  selectAnswers,
+  selectQuizAnswers,
   selectIsQuizComplete,
   selectFlashcardState,
 } from "@/store/slices/flashcard-slice"
