@@ -42,19 +42,14 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
-  const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
-  const quizId = useSelector(selectQuizId)
   const quizType = useSelector(selectQuizType)
 
-  // Load quiz when component mounts
+  // Load quiz on mount
   useEffect(() => {
     const loadQuiz = async () => {
       try {
-        // Reset quiz state
         dispatch(resetQuiz())
-
-        // Fetch the quiz data
         await dispatch(fetchQuiz({ slug, quizType: "blanks" })).unwrap()
         setError(null)
       } catch (err) {
@@ -66,7 +61,6 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
 
     loadQuiz()
 
-    // Clean up any timeouts when unmounting
     return () => {
       if (submissionTimeoutRef.current) {
         clearTimeout(submissionTimeoutRef.current)
@@ -74,29 +68,19 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     }
   }, [slug, dispatch])
 
-  // Handle quiz completion and navigation to results
+  // Auto-redirect if quiz already completed
   useEffect(() => {
-    if (!isCompleted || quizStatus === "submitting") return
-
-    enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
-
-    submissionTimeoutRef.current = setTimeout(() => {
+    if (isCompleted && quizStatus === "succeeded") {
       router.push(`/dashboard/blanks/${slug}/results`)
-    }, 500)
-
-    return () => {
-      if (submissionTimeoutRef.current) {
-        clearTimeout(submissionTimeoutRef.current)
-      }
     }
-  }, [isCompleted, quizStatus, router, slug, enhancedLoader])
+  }, [isCompleted, quizStatus, router, slug])
 
-  // Get the current question
+  // Get current question
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex] || null
   }, [questions, currentQuestionIndex])
 
-  // Handle saving an answer
+  // Save answer
   const handleAnswer = useCallback(
     (answer: string) => {
       if (!currentQuestion) return false
@@ -105,7 +89,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         saveAnswer({
           questionId: String(currentQuestion.id),
           answer,
-          selectedOptionId: undefined, // Use undefined instead of null
+          selectedOptionId: undefined,
         }),
       )
 
@@ -114,56 +98,51 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
     [currentQuestion, dispatch],
   )
 
-  // Handle moving to the next question
+  // Navigation
   const handleNextQuestion = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }, [currentQuestionIndex, questions.length, dispatch])
 
-  // Handle moving to the previous question
   const handlePrevQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
   }, [currentQuestionIndex, dispatch])
 
-  // Handle quiz submission
+  // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
     try {
+      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
       await dispatch(submitQuiz()).unwrap()
       toast.success("Quiz submitted successfully!")
+      router.push(`/dashboard/blanks/${slug}/results`)
     } catch (err) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
+      enhancedLoader.hideLoader()
     }
-  }, [dispatch])
+  }, [dispatch, enhancedLoader, slug, router])
 
-  // Calculate UI state
+  // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
   const hasError = quizStatus === "failed" || !!error
-  const isSubmitting = quizStatus === "submitting"
 
-  // Get the existing answer for the current question
+  // Existing answer
   const existingAnswer = useMemo(() => {
     if (!currentQuestion) return undefined
     const answer = answers[String(currentQuestion.id)]
     return answer?.userAnswer || undefined
   }, [currentQuestion, answers])
 
-  // Calculate navigation state
   const canGoNext = currentQuestionIndex < questions.length - 1
   const canGoPrevious = currentQuestionIndex > 0
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
-  // Format the question for the BlanksQuiz component
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
-
-    // Use type assertion to safely work with the question
     const cq = currentQuestion as any
-
-    // Create a formatted question for BlanksQuiz component
     return {
       id: String(cq.id),
       text: cq.text || cq.question || "",
@@ -172,10 +151,10 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       promptText: cq.promptText || cq.text || "",
       correctAnswers: cq.correctAnswers || {},
       answer: cq.answer || "",
+      hints: cq.hints || [],
     }
   }, [currentQuestion])
 
-  // UI state renders with early returns to prevent unnecessary processing
   if (isLoading) {
     return <QuizLoader message="Loading quiz..." />
   }
@@ -209,7 +188,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
 
   return (
     <BlanksQuiz
-      question={formattedQuestion as any}
+      question={formattedQuestion}
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={questions.length}
       existingAnswer={existingAnswer}
