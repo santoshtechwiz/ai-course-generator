@@ -4,9 +4,13 @@ import { Award } from "lucide-react"
 interface LearningInsightsProps {
   performance: any
   stats: any
+  extraInfo?: {
+    title?: string
+    tips?: string[]
+  }
 }
 
-export function LearningInsights({ performance, stats }: LearningInsightsProps) {
+export function LearningInsights({ performance, stats, extraInfo }: LearningInsightsProps) {
   return (
     <motion.div
       className="rounded-3xl shadow-2xl border-2 border-muted/20 p-8"
@@ -14,10 +18,9 @@ export function LearningInsights({ performance, stats }: LearningInsightsProps) 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
     >
-      <div className="text-center space-y-6">
-        <div className="flex items-center justify-center gap-4">
+      <div className="text-center space-y-6">        <div className="flex items-center justify-center gap-4">
           <Award className="w-12 h-12 text-primary" />
-          <h2 className="text-3xl font-bold">Learning Insights</h2>
+          <h2 className="text-3xl font-bold">{extraInfo?.title || "Learning Insights"}</h2>
         </div>
         <div className={`p-6 rounded-2xl ${performance.bgColor} ${performance.borderColor} border-2`}>
           <div className="text-6xl mb-4">{performance.emoji}</div>
@@ -47,8 +50,19 @@ export function LearningInsights({ performance, stats }: LearningInsightsProps) 
               {stats.accuracy < 70 && <li>• Focus on core concepts</li>}
               {stats.avgTime > 60000 && <li>• Work on response speed</li>}
             </ul>
+          </div>        </div>
+
+        {/* Additional tips if provided */}
+        {extraInfo?.tips && extraInfo.tips.length > 0 && (
+          <div className="p-6 rounded-2xl bg-violet-50 border-2 border-violet-200 mt-6">
+            <h4 className="font-bold text-violet-700 mb-3">Additional Tips</h4>
+            <ul className="text-violet-600 space-y-2">
+              {extraInfo.tips.map((tip, index) => (
+                <li key={index}>• {tip}</li>
+              ))}
+            </ul>
           </div>
-        </div>
+        )}
       </div>
     </motion.div>
   )
