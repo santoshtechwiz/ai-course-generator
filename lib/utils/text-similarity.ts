@@ -1,4 +1,15 @@
 /**
+ * Text Similarity Utilities
+ * 
+ * This file contains all functions related to text similarity calculations,
+ * answer checking, hint generation, and quiz result processing.
+ */
+
+//===========================================================================
+// CORE TEXT SIMILARITY ALGORITHMS
+//===========================================================================
+
+/**
  * Normalize text by trimming, lowercasing, and removing punctuation.
  * @param input The text to normalize
  * @returns Normalized text
@@ -62,20 +73,6 @@ export function similarityScore(a: string, b: string): number {
   const maxLen = Math.max(normA.length, normB.length)
 
   return 1 - distance / maxLen
-}
-
-/**
- * Helper to get similarity result with metadata.
- */
-export function getTextSimilarity(userAnswer: string, correctAnswer: string) {
-  const similarity = similarityScore(userAnswer, correctAnswer)
-
-  return {
-    userAnswer,
-    correctAnswer,
-    similarity: Number.parseFloat(similarity.toFixed(4)), // limit float precision
-    isMatch: similarity >= 0.8, // configurable threshold
-  }
 }
 
 /**
@@ -146,6 +143,24 @@ export function cosineSimilarity(a: string, b: string): number {
   return dotProduct / (magnitudeA * magnitudeB)
 }
 
+//===========================================================================
+// COMBINED SIMILARITY FUNCTIONS
+//===========================================================================
+
+/**
+ * Helper to get similarity result with metadata.
+ */
+export function getTextSimilarity(userAnswer: string, correctAnswer: string) {
+  const similarity = similarityScore(userAnswer, correctAnswer)
+
+  return {
+    userAnswer,
+    correctAnswer,
+    similarity: Number.parseFloat(similarity.toFixed(4)), // limit float precision
+    isMatch: similarity >= 0.8, // configurable threshold
+  }
+}
+
 /**
  * Get the best similarity score using multiple algorithms.
  * Returns a percentage (0-100).
@@ -200,6 +215,10 @@ export function getDetailedSimilarityAnalysis(userAnswer: string, correctAnswer:
   }
 }
 
+//===========================================================================
+// ANSWER EVALUATION FUNCTIONS
+//===========================================================================
+
 /**
  * Determines if a user answer is close enough to the correct answer
  * to be considered acceptable
@@ -222,15 +241,271 @@ export function isAnswerCloseEnough(
 
   try {
     // Get similarity score (as percentage 0-100)
-    const similarityScore = getBestSimilarityScore(userInput, correctAnswer);
+    const score = getBestSimilarityScore(userInput, correctAnswer);
 
     // Return true if the similarity meets or exceeds the threshold
-    return similarityScore >= threshold;
+    return score >= threshold;
   } catch (error) {
     console.error('Error in isAnswerCloseEnough:', error);
     return false;
   }
 }
+
+/**
+ * Calculates similarity score and determines if an answer is correct based on thresholds
+ * @param userAnswer The user's answer
+ * @param correctAnswer The correct answer
+ * @returns Object with similarity score and correctness indicators
+ */
+export function calculateAnswerSimilarity(userAnswer: string, correctAnswer: string) {
+  // Get similarity score between 0-1
+  const similarity = similarityScore(userAnswer || "", correctAnswer || "")
+
+  // Determine correctness based on thresholds:
+  // - 90%+ similarity: Fully correct (1 point)
+  // - 70-90% similarity: Partially correct (0.5 points)
+  // - Below 70%: Incorrect (0 points)
+  const isFullyCorrect = similarity >= 0.9
+  const isPartiallyCorrect = similarity >= 0.7 && similarity < 0.9
+  const isIncorrect = similarity < 0.7
+
+  // Calculate points (1.0 for fully correct, 0.5 for partially correct)
+  const points = isFullyCorrect ? 1 : isPartiallyCorrect ? 0.5 : 0
+
+  // Get appropriate feedback label
+  let similarityLabel = ""
+  if (isFullyCorrect) similarityLabel = "Correct"
+  else if (isPartiallyCorrect) similarityLabel = "Almost Correct"
+  else if (similarity >= 0.5) similarityLabel = "Close"
+  else similarityLabel = "Incorrect"
+
+  return {
+    similarity,
+    similarityLabel,
+    isFullyCorrect,
+    isPartiallyCorrect, 
+    isIncorrect,
+    isCorrect: similarity >= 0.7, // Legacy boolean for backward compatibility
+    points,
+  }
+}
+
+/**
+ * Get similarity feedback message based on similarity score
+ * @param similarity Similarity score (0-1)
+ * @returns Feedback message
+ */
+export function getSimilarityFeedback(similarity: number): string {
+  if (similarity >= 0.9) return "Your answer matches perfectly!"
+  if (similarity >= 0.85) return "Your answer is very close to correct!"
+  if (similarity >= 0.8) return "Your answer is close enough to be correct!"
+  if (similarity >= 0.7) return "Your answer has the right idea but could be more precise."
+  if (similarity >= 0.6) return "Your answer contains some correct elements."
+  if (similarity >= 0.5) return "Your answer is getting close but needs improvement."
+  if (similarity >= 0.4) return "Your answer shows some understanding of the concept."
+  if (similarity >= 0.3) return "Your answer is partially on track but needs work."
+  return "Your answer needs significant improvement."
+}
+
+/**
+ * Convert a similarity score to a user-friendly label
+ */
+export function getSimilarityLabel(similarity: number) {
+  if (similarity >= 0.9) return "Correct"
+  if (similarity >= 0.7) return "Almost Correct"
+  if (similarity >= 0.5) return "Close"
+  if (similarity >= 0.3) return "Somewhat Related"
+  return "Incorrect"
+}
+
+//===========================================================================
+// QUIZ RESULT PROCESSING FUNCTIONS
+//===========================================================================
+
+/**
+ * Recalculate quiz score with partial credit for "almost correct" answers
+ * @param questionResults Array of question results with similarity scores
+ * @returns Updated score information
+ */
+export function calculateQuizScoreWithPartialCredit(questionResults: Array<any>) {
+  let totalPoints = 0
+  let maxPossiblePoints = questionResults.length
+
+  questionResults.forEach(result => {
+    // For each question, add points based on similarity
+    const similarity = result.similarity || 0
+    
+    if (similarity >= 0.9) {
+      // Full credit (100%)
+      totalPoints += 1.0
+    } else if (similarity >= 0.7) {
+      // Partial credit (50%)
+      totalPoints += 0.5
+    }
+    // Otherwise no points (0%)
+  })
+
+  const percentage = Math.round((totalPoints / maxPossiblePoints) * 100)
+  
+  return {
+    score: percentage,
+    totalPoints,
+    maxPossiblePoints,
+    percentage
+  }
+}
+
+/**
+ * Determines the performance level based on percentage score
+ */
+export function getPerformanceLevel(percentage: number) {
+  if (percentage >= 90)
+    return {
+      level: "Excellent",
+      message: "Outstanding! You've mastered this topic.",
+      color: "text-green-500",
+      bgColor: "bg-green-50", 
+      borderColor: "border-green-200",
+      emoji: "🏆",
+    }
+  if (percentage >= 80)
+    return {
+      level: "Very Good",
+      message: "Great job! You have strong understanding.",
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      emoji: "🎯",
+    }
+  if (percentage >= 70)
+    return {
+      level: "Good",
+      message: "Well done! Your knowledge is solid.",
+      color: "text-green-500", 
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      emoji: "✅",
+    }
+  if (percentage >= 60)
+    return {
+      level: "Satisfactory",
+      message: "Good effort! Keep studying to improve.",
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      borderColor: "border-yellow-200",
+      emoji: "📚",
+    }
+  if (percentage >= 50)
+    return {
+      level: "Needs Improvement",
+      message: "You're making progress. More study needed.",
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      emoji: "💪",
+    }
+  return {
+    level: "Study Required",
+    message: "Keep learning! Review the material thoroughly.",
+    color: "text-red-500",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
+    emoji: "📖",
+  }
+}
+
+/**
+ * Calculate whether an answer should receive credit based on similarity score
+ * and determine the color and visual indicators
+ */
+export function getAnswerVisualElements(similarity: number) {
+  if (similarity >= 0.9) {
+    return {
+      color: "text-green-500",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      textColor: "text-green-700",
+      label: "Correct",
+      emoji: "✓",
+      isCorrect: true,
+      isPartiallyCorrect: false
+    }
+  } else if (similarity >= 0.7) {
+    return {
+      color: "text-blue-500",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200", 
+      textColor: "text-blue-700",
+      label: "Almost Correct",
+      emoji: "~",
+      isCorrect: false,
+      isPartiallyCorrect: true
+    }
+  } else if (similarity >= 0.5) {
+    return {
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      borderColor: "border-yellow-200",
+      textColor: "text-yellow-700", 
+      label: "Close",
+      emoji: "⚠️",
+      isCorrect: false,
+      isPartiallyCorrect: false
+    }
+  } else {
+    return {
+      color: "text-red-500",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+      textColor: "text-red-700",
+      label: "Incorrect",
+      emoji: "✗",
+      isCorrect: false, 
+      isPartiallyCorrect: false
+    }
+  }
+}
+
+/**
+ * Process a raw answer object to ensure consistent presentation and scoring
+ * across all quiz types
+ */
+export function processQuizAnswer({
+  userAnswer,
+  correctAnswer,
+  isCorrect,
+  similarity
+}: {
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect?: boolean;
+  similarity?: number;
+}) {
+  // Calculate similarity if not provided
+  const simScore = similarity !== undefined ? similarity : 
+    calculateAnswerSimilarity(userAnswer, correctAnswer).similarity;
+  
+  // Determine correctness based on similarity if not explicitly set
+  const isAnswerCorrect = isCorrect !== undefined ? isCorrect : simScore >= 0.7;
+  
+  // Generate visual elements and feedback based on similarity
+  const visuals = getAnswerVisualElements(simScore);
+  
+  return {
+    userAnswer,
+    correctAnswer,
+    similarity: simScore,
+    isCorrect: isAnswerCorrect,
+    similarityLabel: getSimilarityLabel(simScore),
+    feedback: getSimilarityFeedback(simScore),
+    visualElements: visuals,
+    points: simScore >= 0.9 ? 1 : simScore >= 0.7 ? 0.5 : 0
+  };
+}
+
+//===========================================================================
+// HINT GENERATION FUNCTIONS
+//===========================================================================
 
 /**
  * Generates a hint for a correct answer
