@@ -2,30 +2,56 @@
 
 import { useCallback, useMemo, useRef, useEffect } from "react";
 import { signIn, signOut, getSession, useSession } from "next-auth/react";
-import { useAuthInit } from "@/providers/enhanced-auth-provider";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectIsAuthenticated,
+  selectIsAuthLoading,
+  selectAuth,
+  initializeAuth,
+  logout as reduxLogout,
+} from "@/store/slices/auth-slice";
 import { STORAGE_KEYS } from "@/constants/global";
+import { AppDispatch } from "@/store";
 
 /**
- * useAuth - Centralized hook for all auth operations.
- * Updated for production sync issues & best UX practices.
+ * useAuth - Unified hook for auth with session + Redux integration
  */
 export function useAuth() {
+  const dispatch = useDispatch<AppDispatch>();
+
   const mountedRef = useRef(true);
-  const guestIdCacheRef = useRef<string | null>(null);
   const loginInProgressRef = useRef(false);
   const logoutInProgressRef = useRef(false);
 
-  // Native next-auth
+  // Next-auth session
   const { data: session, status } = useSession();
-  const user = session?.user ?? null;
-  const token = (session as any)?.accessToken ?? null;
-  const isAuthenticated = status === "authenticated";
-  const isLoading = status === "loading";
-  const isInitialized = status !== "loading";
 
-  const { clearAllAuthData } = useAuthInit();
+  // Redux state
+  const authState = useSelector(selectAuth);
+  const reduxIsAuthenticated = useSelector(selectIsAuthenticated);
+  const reduxIsLoading = useSelector(selectIsAuthLoading);
 
-  // --- Login ---
+  const user = authState.user;
+  const token = authState.token;
+  const isAuthenticated = reduxIsAuthenticated;
+  const isInitialized = authState.isInitialized;
+  const isLoading = reduxIsLoading || status === "loading";
+
+  const getGuestId = useCallback((): string | null => {
+    if (typeof window === "undefined") return null;
+
+    const existing = sessionStorage.getItem(STORAGE_KEYS.GUEST_ID);
+    if (existing?.startsWith("guest-")) return existing;
+
+    const newId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+    sessionStorage.setItem(STORAGE_KEYS.GUEST_ID, newId);
+    return newId;
+  }, []);
+
+  const guestId = useMemo(() => getGuestId(), [getGuestId]);
+  const userId = useMemo(() => user?.id || null, [user?.id]);
+  const isAdmin = useMemo(() => !!user?.isAdmin, [user]);
+
   const login = useCallback(
     async (provider: string, options?: { callbackUrl?: string }) => {
       if (loginInProgressRef.current || !provider) return false;
@@ -33,13 +59,10 @@ export function useAuth() {
 
       try {
         const callbackUrl = options?.callbackUrl || "/dashboard";
-        const res = await signIn(provider, {
-          callbackUrl,
-          redirect: false,
-        });
+        const res = await signIn(provider, { callbackUrl, redirect: false });
 
-        if (res?.ok && res?.url) {
-          await getSession(); // force sync session
+        if (res?.ok && res.url) {
+          await getSession();
           window.location.href = res.url;
         }
 
@@ -54,7 +77,6 @@ export function useAuth() {
     []
   );
 
-  // --- Logout ---
   const logout = useCallback(
     async (options: { redirect?: boolean; callbackUrl?: string } = {}) => {
       if (logoutInProgressRef.current) return false;
@@ -64,18 +86,13 @@ export function useAuth() {
 
       try {
         await signOut({ redirect: true, callbackUrl: redirectUrl });
-        guestIdCacheRef.current = null;
+        dispatch(reduxLogout());
         sessionStorage.removeItem(STORAGE_KEYS.GUEST_ID);
         return true;
-      } catch (error) {
-        console.error("Logout error:", error);
-        try {
-          clearAllAuthData();
-          guestIdCacheRef.current = null;
-          sessionStorage.removeItem(STORAGE_KEYS.GUEST_ID);
-        } catch (cleanupError) {
-          console.error("Manual cleanup failed:", cleanupError);
-        }
+      } catch (err) {
+        console.error("Logout error:", err);
+        dispatch(reduxLogout());
+        sessionStorage.removeItem(STORAGE_KEYS.GUEST_ID);
         if (options.redirect !== false && typeof window !== "undefined") {
           window.location.href = redirectUrl;
         }
@@ -84,103 +101,48 @@ export function useAuth() {
         logoutInProgressRef.current = false;
       }
     },
-    [clearAllAuthData]
+    [dispatch]
   );
 
-  // --- Guest ID ---
-  const getGuestId = useCallback((): string | null => {
-    if (typeof window === "undefined") return null;
-    if (guestIdCacheRef.current) return guestIdCacheRef.current;
-
-    try {
-      let guestId = sessionStorage.getItem(STORAGE_KEYS.GUEST_ID);
-      if (guestId && !guestId.startsWith("guest-")) {
-        console.warn("Invalid guest ID format, regenerating...");
-        guestId = null;
-      }
-
-      if (!guestId) {
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 10);
-        guestId = `guest-${timestamp}-${random}`;
-        sessionStorage.setItem(STORAGE_KEYS.GUEST_ID, guestId);
-      }
-
-      guestIdCacheRef.current = guestId;
-      return guestId;
-    } catch (err) {
-      const fallbackId = `guest-temp-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 6)}`;
-      guestIdCacheRef.current = fallbackId;
-      return fallbackId;
+  // Sync Redux auth state on mount if needed
+  useEffect(() => {
+    if (!authState.isInitialized) {
+      dispatch(initializeAuth());
     }
-  }, []);
+  }, [authState.isInitialized, dispatch]);
 
-  // Memoized values
-  const guestId = useMemo(() => {
-    return typeof window !== "undefined" ? getGuestId() : null;
-  }, [getGuestId]);
-
-  const isAdmin = useMemo(() => Boolean(user?.isAdmin), [user?.isAdmin]);
-  const userId = useMemo(() => user?.id || null, [user?.id]);
-
-  // Cleanup ref on unmount
   useEffect(() => {
     return () => {
       mountedRef.current = false;
     };
   }, []);
 
-  // Optional: sync session on tab focus or storage change
-  useEffect(() => {
-    const syncSession = async () => await getSession();
-    window.addEventListener("storage", syncSession);
-    window.addEventListener("focus", syncSession);
-    return () => {
-      window.removeEventListener("storage", syncSession);
-      window.removeEventListener("focus", syncSession);
-    };
-  }, []);
-
   return useMemo(
     () => ({
-      // Session state
       user,
       token,
-      status,
       isAuthenticated,
-      isLoading,
       isInitialized,
-      session,
-
-      // Actions
+      isLoading,
       login,
       logout,
-      updateUserData: async () => await getSession(),
-
-      // Utilities
-      isAdmin,
       userId,
       guestId,
-      getGuestId,
+      isAdmin,
+      session,
     }),
     [
       user,
       token,
-      status,
       isAuthenticated,
-      isLoading,
       isInitialized,
-      session,
+      isLoading,
       login,
       logout,
-      isAdmin,
       userId,
       guestId,
-      getGuestId,
+      isAdmin,
+      session,
     ]
   );
 }
-
-export default useAuth;

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { BookOpen, LogIn, RefreshCw, ListChecks, Code2, FileText } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
 import { Skeleton } from "@/components/ui/skeleton"
 
 // Quiz type icon and message map
@@ -37,7 +36,7 @@ const quizTypeMeta: Record<QuizType, { icon: typeof ListChecks; title: string; f
 
 const getQuizMeta = (quizType: QuizType = "flashcard") => quizTypeMeta[quizType] || quizTypeMeta.flashcard
 
-// Enhanced Sign-In Prompt Component for quiz results
+// Sign-In Prompt Component
 const SignInPrompt = ({
   onSignIn,
   onRetake,
@@ -59,17 +58,16 @@ const SignInPrompt = ({
   }
   isLoading?: boolean
 }) => {
-  const { isLoading: authLoading } = useAuth();
-  const loading = isLoading || authLoading;
   const meta = getQuizMeta(quizType)
   const Icon = meta.icon
+
   const showScore = previewData && (previewData.score !== undefined || previewData.correctAnswers !== undefined)
   const correct = previewData?.correctAnswers ?? previewData?.score ?? 0
   const total = previewData?.totalQuestions ?? previewData?.maxScore ?? 0
   const percentage = previewData?.percentage ?? (total > 0 ? Math.round((correct / total) * 100) : 0)
 
-  // Improved loading state with layout-preserving skeleton
-  if (loading) {
+  // Skeleton loading UI
+  if (isLoading) {
     return (
       <div className="max-w-md mx-auto w-full">
         <Card className="shadow-lg border-primary/20">
@@ -97,7 +95,7 @@ const SignInPrompt = ({
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -114,6 +112,7 @@ const SignInPrompt = ({
             <Icon className="w-8 h-8 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold">{meta.title}</CardTitle>
+
           {showScore && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <div className="text-3xl font-bold text-primary mb-2">
@@ -149,8 +148,16 @@ const SignInPrompt = ({
                     </div>
                     <div className="flex justify-between">
                       <span>Status:</span>
-                      <span className={`font-medium ${percentage >= 70 ? 'text-green-600' : percentage >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
-                        {percentage >= 70 ? 'Passed' : 'Not Passed'}
+                      <span
+                        className={`font-medium ${
+                          percentage >= 70
+                            ? "text-green-600"
+                            : percentage >= 40
+                            ? "text-amber-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {percentage >= 70 ? "Passed" : "Not Passed"}
                       </span>
                     </div>
                   </>
@@ -159,6 +166,7 @@ const SignInPrompt = ({
             </div>
           )}
         </CardHeader>
+
         <CardContent className="text-center pb-4">
           <p className="text-muted-foreground mb-2 font-medium">{meta.feedback}</p>
           <p className="text-muted-foreground mb-6">
@@ -175,6 +183,7 @@ const SignInPrompt = ({
             </Button>
           </div>
         </CardContent>
+
         <CardFooter className="bg-muted/20 text-center text-sm text-muted-foreground">
           Create a free account to track your progress across sessions
         </CardFooter>
@@ -182,4 +191,5 @@ const SignInPrompt = ({
     </motion.div>
   )
 }
+
 export default SignInPrompt

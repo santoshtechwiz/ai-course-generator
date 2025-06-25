@@ -95,13 +95,19 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     return quizResults?.slug === slug && typeof quizResults?.percentage === 'number'
   }, [quizResults, slug])
 
-  const viewState = useMemo(() => {
-    if (isLoading) return 'loading'
-    if (hasResults) return 'show_results'
-    if (!isAuthenticated) return 'show_signin'
-    if (error) return 'error'
-    return 'no_results'
-  }, [isLoading, hasResults, isAuthenticated, error])
+const viewState = useMemo(() => {
+  if (isLoading || !isInitialized) return 'loading';
+
+  // If results exist but user is NOT authenticated, force sign-in
+  if (hasResults && !isAuthenticated) return 'show_signin';
+
+  // Only show results when both are true
+  if (hasResults && isAuthenticated) return 'show_results';
+
+  if (error) return 'error';
+  return 'no_results';
+}, [isLoading, isInitialized, hasResults, isAuthenticated, error]);
+
 
   const handleRetake = () => {
     dispatch(clearQuizState())
