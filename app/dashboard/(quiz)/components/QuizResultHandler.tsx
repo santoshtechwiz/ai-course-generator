@@ -31,7 +31,7 @@ interface Props {
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { isAuthenticated, isLoading: isAuthLoading, login } = useAuth()
+  const { isAuthenticated, isInitialized, isLoading: isAuthLoading, login } = useAuth()
 
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
@@ -39,73 +39,66 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   const [error, setError] = useState<string | null>(null)
 
-  // Effect: Load results once auth is resolved
+  // Load results after auth is initialized
   useEffect(() => {
-    if (isAuthLoading || !slug) return
+    if (!slug || !isInitialized) return
 
-    dispatch(
-      checkAuthAndLoadResults()
-    )
+    dispatch(checkAuthAndLoadResults())
       .unwrap()
       .catch((err: any) => {
         const message = err instanceof Error ? err.message : 'Failed to load results'
         setError(message)
       })
-  }, [slug, isAuthLoading, isAuthenticated, dispatch])
+  }, [slug, isInitialized, dispatch])
 
-  // Transform quiz results to match expected format for McqQuizResult component
   const processedResults = useMemo(() => {
-    if (!quizResults) return null    // Map the results to include questionResults format that McqQuizResult component expects
+    if (!quizResults) return null
+
     return {
       ...quizResults,
       title: slug || 'Quiz Results',
-      questions: quizQuestions || [], // Include the full questions data
-      
-      // Ensure metadata fields are properly formatted for display
+      questions: quizQuestions || [],
       score: quizResults.score || 0,
       maxScore: quizResults.maxScore || 0,
       percentage: quizResults.percentage || 0,
       submittedAt: quizResults.submittedAt || new Date().toISOString(),
       completedAt: quizResults.completedAt || new Date().toISOString(),
       questionResults: quizResults.results?.map((result) => {
-        // Find the corresponding answer detail
         const answerDetail = quizResults.answers?.find(
           (answer) => answer.questionId === result.questionId
         )
-        
-        // Find the corresponding question
+
         const questionData = quizQuestions?.find(
           (q) => String(q.id) === result.questionId
         )
 
         return {
           questionId: result.questionId,
-          // Use actual question text instead of just the ID
           question: questionData?.question || result.questionId,
-          // Explicitly show "(No answer selected)" for null or undefined answers
-          userAnswer: result.userAnswer === null || result.userAnswer === undefined 
-            ? '(No answer selected)' 
-            : result.userAnswer || '',
+          userAnswer:
+            result.userAnswer === null || result.userAnswer === undefined
+              ? '(No answer selected)'
+              : result.userAnswer || '',
           correctAnswer: result.correctAnswer || '',
           isCorrect: result.isCorrect,
           type: answerDetail?.type || 'mcq',
           selectedOptionId: answerDetail?.selectedOptionId || '',
-          options: questionData?.options || [], // Include options from the question data
+          options: questionData?.options || [],
         }
       }) || [],
     }
   }, [quizResults, quizQuestions, slug])
 
-  // Derived states
-  const isLoading = quizStatus === 'loading' || isAuthLoading
+  const isLoading = quizStatus === 'loading' || isAuthLoading || !isInitialized
+
   const hasResults = useMemo(() => {
     return quizResults?.slug === slug && typeof quizResults?.percentage === 'number'
   }, [quizResults, slug])
 
   const viewState = useMemo(() => {
     if (isLoading) return 'loading'
-    if (hasResults && !isAuthenticated) return 'show_signin'
     if (hasResults) return 'show_results'
+    if (!isAuthenticated) return 'show_signin'
     if (error) return 'error'
     return 'no_results'
   }, [isLoading, hasResults, isAuthenticated, error])
