@@ -1,11 +1,9 @@
 "use client"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
-
 import { Button } from "@/components/ui/button"
-import { Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown, Settings, BookOpen } from "lucide-react"
+import { Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown, Settings, BookOpen, Trophy, Flame } from "lucide-react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
-
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -13,6 +11,9 @@ import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
+import { Progress } from "@/components/ui/progress"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 
 // Import the flashcard slice actions
 import {
@@ -86,6 +87,18 @@ export default function FlashCardQuiz({
   const [swipeDisabled, setSwipeDisabled] = useState(false)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [cardTimes, setCardTimes] = useState<Record<string, number>>({})
+
+  // New state variables for enhanced features
+  const [streak, setStreak] = useState(0)
+  const [showHint, setShowHint] = useState(false)
+  const [cardRotation, setCardRotation] = useState(0)
+  const [lastRating, setLastRating] = useState<"correct" | "incorrect" | "still_learning" | null>(null)
+  const [studyStats, setStudyStats] = useState({
+    totalTime: 0,
+    correctStreak: 0,
+    bestStreak: 0,
+    cardsPerMinute: 0,
+  })
 
   // Animation controls
   const cardControls = useAnimation()
@@ -359,113 +372,134 @@ export default function FlashCardQuiz({
     processedResults
   ])
 
-  // Rating feedback optimization with smoother spring physics
-  const ratingFeedbackVariants = {
-    hidden: {
+  // Enhanced card animation variants
+  const cardAnimationVariants = {
+    initial: { 
       opacity: 0,
       scale: 0.8,
-      willChange: "transform, opacity",
+      rotateY: 0
     },
-    visible: {
+    animate: {
       opacity: 1,
-      scale: [0.9, 1.05, 1],
-      willChange: "transform, opacity",
+      scale: 1,
+      rotateY: flipped ? 180 : 0,
       transition: {
-        duration: 0.4,
-        times: [0, 0.6, 1],
         type: "spring",
         stiffness: 300,
-        damping: 15,
-      },
+        damping: 20
+      }
     },
     exit: {
       opacity: 0,
-      scale: 1.1,
-      willChange: "transform, opacity",
+      scale: 0.8,
       transition: {
-        duration: 0.25,
-        ease: "easeOut",
-      },
-    },
+        duration: 0.2
+      }
+    }
   }
 
-  // Handle self-rating functionality with improved animation coordination - now supports three states
+  // Enhanced feedback variants
+  const feedbackVariants = {
+    correct: {
+      scale: [1, 1.2, 1],
+      rotate: [0, 10, 0],
+      transition: {
+        duration: 0.6,
+        ease: "easeInOut"
+      }
+    },
+    incorrect: {
+      x: [0, -10, 10, -10, 0],
+      transition: {
+        duration: 0.4,
+        ease: "easeInOut"
+      }
+    }
+  }
+
+  // Enhanced handleSelfRating with streak system
   const handleSelfRating = useCallback(
     (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
       if (!cardId) return
 
-      // Calculate time spent
       const endTime = Date.now()
       const timeSpent = Math.floor((endTime - startTime) / 1000)
 
-      // Update card times
-      setCardTimes((prev) => ({
+      // Update streak
+      if (rating === "correct") {
+        setStreak(prev => prev + 1)
+        if (streak + 1 > studyStats.bestStreak) {
+          setStudyStats(prev => ({ ...prev, bestStreak: streak + 1 }))
+        }
+      } else {
+        setStreak(0)
+      }
+
+      // Update last rating for animation
+      setLastRating(rating)
+
+      // Update card times with optimistic update
+      setCardTimes(prev => ({
         ...prev,
-        [cardId]: (prev[cardId] || 0) + timeSpent,
+        [cardId]: (prev[cardId] || 0) + timeSpent
       }))
 
       // Disable swipe during animation
       setSwipeDisabled(true)
 
-      // Submit answer - still_learning is neither correct nor incorrect
+      // Submit answer with enhanced data
       const answerData = {
         answer: rating,
         userAnswer: rating,
         timeSpent: timeSpent,
         isCorrect: rating === "correct",
         questionId: cardId,
+        streak: rating === "correct" ? streak + 1 : 0
       }
 
       dispatch(submitFlashCardAnswer(answerData))
 
-      // Show rating animation with coordinated timing
-      setRatingAnimation(rating)
-
-      // Add haptic feedback for mobile if available
+      // Add haptic feedback
       if (window.navigator && window.navigator.vibrate) {
-        if (rating === "correct") {
-          window.navigator.vibrate([50])
-        } else if (rating === "still_learning") {
-          window.navigator.vibrate([30, 20, 30])
-        } else {
-          window.navigator.vibrate([20, 30, 40])
+        switch (rating) {
+          case "correct":
+            window.navigator.vibrate([50, 30, 50])
+            break
+          case "still_learning":
+            window.navigator.vibrate([30, 20, 30])
+            break
+          case "incorrect":
+            window.navigator.vibrate([100])
+            break
         }
       }
 
-      let timerRef: NodeJS.Timeout | null = null
+      // Show confetti for milestones
+      if (rating === "correct" && (streak + 1) % 5 === 0) {
+        setShowConfetti(true)
+        setTimeout(() => setShowConfetti(false), 2500)
+      }
 
-      // Handle auto-advance with coordinated timing
+      // Handle auto-advance with enhanced animation
       if (autoAdvance) {
-        // Use a slight delay to show feedback before advancing
-        timerRef = setTimeout(() => {
+        setTimeout(() => {
           if (isMountedRef.current) {
-            setRatingAnimation(null)
-            // Short delay before advancing to next card for better UX
-            const advanceTimer = setTimeout(() => {
-              if (isMountedRef.current) {
-                moveToNextCard()
-                setSwipeDisabled(false)
-                setStartTime(Date.now())
-              }
-            }, 50)
-
-            return () => clearTimeout(advanceTimer)
+            setLastRating(null)
+            moveToNextCard()
+            setSwipeDisabled(false)
+            setStartTime(Date.now())
           }
-        }, 700)
+        }, 1000)
       } else {
-        timerRef = setTimeout(() => {
+        setTimeout(() => {
           if (isMountedRef.current) {
-            setRatingAnimation(null)
+            setLastRating(null)
             setSwipeDisabled(false)
           }
-        }, 700)
-      }
-
-      return () => {
-        if (timerRef) clearTimeout(timerRef)
+        }, 1000)
       }
     },
-    [dispatch, autoAdvance, moveToNextCard, startTime],
+    [dispatch, autoAdvance, moveToNextCard, startTime, streak, studyStats.bestStreak],
   )
 
   // Handle restart quiz
