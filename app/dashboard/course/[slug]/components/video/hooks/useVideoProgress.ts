@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { progressApi } from "../../../api/progressApi"
-import useAuth from "../../../../../../../hooks/use-auth"
+
 import { useAppDispatch } from "@/store/hooks"
 import { PROGRESS_MILESTONES, checkMilestoneReached, throttle } from "./progressUtils"
 import type { CourseProgress } from "@/app/types/types"
+import { useAuth } from "@/hooks"
 
 // Simplified options interface
 interface VideoProgressOptions {
