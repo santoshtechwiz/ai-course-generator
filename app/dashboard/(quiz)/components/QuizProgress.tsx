@@ -3,6 +3,7 @@
 import type React from "react"
 import { motion } from "framer-motion"
 import { CheckCircle2, Clock, Target, TrendingUp, Zap } from "lucide-react"
+import { UnifiedLoader } from "./ui/unified-loader"
 
 interface QuizProgressProps {
   currentQuestionIndex: number
@@ -11,6 +12,7 @@ interface QuizProgressProps {
   title?: string
   quizType?: string
   animate?: boolean
+  isLoading?: boolean
 }
 
 export const QuizProgress: React.FC<QuizProgressProps> = ({
@@ -20,7 +22,13 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
   title = "Quiz Progress",
   quizType = "Quiz",
   animate = true,
+  isLoading = false,
 }) => {
+  // Show loader if loading
+  if (isLoading) {
+    return <UnifiedLoader variant="skeleton" message="Loading quiz progress..." className="max-w-4xl mx-auto" />
+  }
+
   // Ensure values are valid
   const current = Math.max(0, Math.min(currentQuestionIndex + 1, totalQuestions))
   const total = Math.max(1, totalQuestions)
@@ -86,7 +94,7 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 
   return (
     <motion.div
-      className="w-full max-w-4xl mx-auto"
+      className="w-full max-w-4xl mx-auto px-4 sm:px-6"
       initial={animate ? { opacity: 0, y: -20 } : false}
       animate={animate ? { opacity: 1, y: 0 } : false}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -227,7 +235,7 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
       {/* Additional Stats */}
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <motion.div
-          className="bg-card rounded-xl shadow-md p-3 flex items-center space-x-3"
+          className="bg-card rounded-xl shadow-md p-3 flex items-center space-x-3 border border-border/50"
           initial={animate ? { opacity: 0, y: 20 } : false}
           animate={animate ? { opacity: 1, y: 0 } : false}
           transition={{ delay: 0.3, duration: 0.5 }}
@@ -242,7 +250,7 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
         </motion.div>
 
         <motion.div
-          className="bg-card rounded-xl shadow-md p-3 flex items-center space-x-3"
+          className="bg-card rounded-xl shadow-md p-3 flex items-center space-x-3 border border-border/50"
           initial={animate ? { opacity: 0, y: 20 } : false}
           animate={animate ? { opacity: 1, y: 0 } : false}
           transition={{ delay: 0.4, duration: 0.5 }}
@@ -257,7 +265,7 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
         </motion.div>
 
         <motion.div
-          className="bg-card rounded-xl shadow-md p-3 flex items-center space-x-3"
+          className="bg-card rounded-xl shadow-md p-3 flex items-center space-x-3 border border-border/50"
           initial={animate ? { opacity: 0, y: 20 } : false}
           animate={animate ? { opacity: 1, y: 0 } : false}
           transition={{ delay: 0.5, duration: 0.5 }}

@@ -133,64 +133,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
               )
             })}
           </div>
-          {/* Answer Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div
-              className={`p-4 rounded-xl border-2 ${
-                question.userAnswer === '(No answer selected)'
-                  ? "bg-orange-50 border-orange-200"
-                  : question.isCorrect
-                    ? "bg-green-50 border-green-200"
-                    : "bg-red-50 border-red-200"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-semibold text-sm">Your Answer:</span>
-                {question.userAnswer === '(No answer selected)' && (
-                  <Badge variant="outline" className="text-xs text-orange-600 bg-orange-50 border-orange-200">
-                    Skipped
-                  </Badge>
-                )}
-              </div>
-              <p className={`font-medium ${
-                question.userAnswer === '(No answer selected)'
-                  ? "text-orange-600 italic"
-                  : question.isCorrect
-                    ? "text-green-700"
-                    : "text-red-700"
-              }`}>
-                {question.userAnswer}
-              </p>
-            </div>
-            {(!question.isCorrect || question.userAnswer === '(No answer selected)') && (
-              <div className="p-4 rounded-xl bg-green-50 border-2 border-green-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="font-semibold text-sm">Correct Answer:</span>
-                </div>
-                <p className="font-medium text-green-700">
-                  {question.correctAnswer}
-                </p>
-              </div>
-            )}
-          </div>
-          {/* Explanation */}
-          {question.explanation && (
-            <motion.div
-              className="mt-4 p-4 rounded-xl bg-blue-50 border-2 border-blue-200"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="w-4 h-4 text-blue-600" />
-                <span className="font-semibold text-sm text-blue-700">Explanation:</span>
-              </div>
-              <p className="text-blue-700 text-sm leading-relaxed">
-                {question.explanation}
-              </p>
-            </motion.div>
-          )}
+     
         </div>
       </div>
     </motion.div>

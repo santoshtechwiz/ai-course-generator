@@ -144,11 +144,11 @@ export default function FlashcardResultHandler({
           stillLearningAnswers={processedResults?.stillLearningAnswers}
           incorrectAnswers={processedResults?.incorrectAnswers}
           totalTime={processedResults?.totalTime}
-          reviewCards={processedResults?.reviewCards}
-          stillLearningCards={processedResults?.stillLearningCards}
+       
+        
           onRestart={handleRestart}
-          onReview={handleReview}
-          onReviewStillLearning={handleReviewStillLearning}
+        
+        
         />
       </motion.div>
     </AnimatePresence>

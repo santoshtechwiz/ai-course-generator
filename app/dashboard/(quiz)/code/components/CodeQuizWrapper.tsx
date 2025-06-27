@@ -121,21 +121,28 @@ const handleSubmitQuiz = useCallback(async () => {
   const hasError = quizStatus === "failed"
   const isSubmitting = quizStatus === "submitting"
 
-  const formattedQuestion = useMemo(() => {
-    if (!currentQuestion) return null
+const formattedQuestion = useMemo(() => {
+  if (!currentQuestion) return null
 
-    const questionText = currentQuestion.question || currentQuestion.text || ''
-    const options = Array.isArray(currentQuestion.options)
-      ? currentQuestion.options.map((opt: any) => typeof opt === "string" ? opt : opt.text || '')
-      : []
+  const questionText = currentQuestion.question || currentQuestion.text || ''
+  const options = Array.isArray(currentQuestion.options)
+    ? currentQuestion.options.map((opt: any) =>
+        typeof opt === "string" ? opt : opt.text || ''
+      )
+    : []
 
-    return {
-      id: String(currentQuestion.id),
-      text: questionText,
-      question: questionText,
-      options,
-    }
-  }, [currentQuestion])
+  return {
+    id: String(currentQuestion.id),
+    text: questionText,
+    question: questionText,
+    options,
+    codeSnippet: currentQuestion.codeSnippet || '',
+    language: currentQuestion.language || 'javascript',
+    correctAnswer: currentQuestion.answer || '',
+  }
+}, [currentQuestion])
+
+
 
   const existingAnswer = useMemo(() => {
     if (!currentQuestion) return undefined

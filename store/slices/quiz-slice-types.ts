@@ -5,7 +5,9 @@ export interface QuizQuestion {
   question: string
   type: string
   options?: { id: string | number; text: string }[]
-  correctOptionId?: string
+  correctOptionId?: string,
+  codeSnippet?: string
+  language?: string
   answer?: string
 }
 
