@@ -50,37 +50,7 @@ export function FlashcardController({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{title}</h1>
-          <div className="flex items-center gap-4 mt-1">
-            <span className="text-sm text-muted-foreground">
-              Card {currentIndex + 1} of {totalCards}
-            </span>
-            {isReviewMode && (
-              <Badge variant="secondary" className="text-xs">
-                Review Mode
-              </Badge>
-            )}
-            {streak > 0 && (
-              <div className="flex items-center gap-1">
-                <Flame className="w-4 h-4 text-orange-500" />
-                <span className="text-sm font-semibold text-orange-600">{streak}</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onSetShowSettings(!showSettings)}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
-      </div>
 
     
       {/* Settings Panel */}
@@ -112,31 +82,7 @@ export function FlashcardController({
         </motion.div>
       )}
 
-      {/* Control Buttons */}
-      <div className="flex items-center justify-center gap-3 sm:gap-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onToggleFlip}
-          className={cn(
-            "px-4 sm:px-6 py-3 sm:py-4 min-w-[100px] sm:min-w-[120px]",
-            flipped && "bg-primary/10 border-primary/30",
-          )}
-        >
-          <Eye className="w-4 h-4 mr-2" />
-          {flipped ? "Question" : "Answer"}
-        </Button>
-
-        <Button
-          onClick={onNextCard}
-          disabled={isLastCard}
-          size="sm"
-          className="px-4 sm:px-6 py-3 sm:py-4 min-w-[100px] sm:min-w-[120px]"
-        >
-          <ChevronRight className="w-4 h-4 mr-2" />
-          {isLastCard ? "Complete" : "Next"}
-        </Button>
-      </div>
+     
 
       {/* Keyboard Shortcuts */}
       <div className="text-center">
