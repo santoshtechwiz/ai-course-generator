@@ -27,25 +27,43 @@ export function QuizFooter({
   submitLabel = "Submit",
   className,
 }: QuizFooterProps) {
+  const showSubmit = isLastQuestion && canGoNext
+
   return (
-    <div className={cn("flex items-center justify-between pt-6 border-t border-border", className)}>
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-5 border-t border-border bg-muted",
+        className
+      )}
+    >
+      {/* Previous */}
       <Button
         variant="outline"
         onClick={onPrevious}
         disabled={!canGoPrevious}
-        className="flex items-center gap-2 bg-transparent"
+        className="flex items-center gap-2 w-full sm:w-auto"
       >
         <ChevronLeft className="w-4 h-4" />
         Previous
       </Button>
 
-      {isLastQuestion ? (
-        <Button onClick={onSubmit} disabled={!canGoNext} className="flex items-center gap-2">
+      {/* Submit or Next */}
+      {showSubmit ? (
+        <Button
+          onClick={onSubmit}
+          variant="default"
+          className="flex items-center gap-2 w-full sm:w-auto"
+        >
           <CheckCircle className="w-4 h-4" />
           {submitLabel}
         </Button>
       ) : (
-        <Button onClick={onNext} disabled={!canGoNext} className="flex items-center gap-2">
+        <Button
+          onClick={onNext}
+          disabled={!canGoNext}
+          variant="secondary"
+          className="flex items-center gap-2 w-full sm:w-auto"
+        >
           {nextLabel}
           <ChevronRight className="w-4 h-4" />
         </Button>

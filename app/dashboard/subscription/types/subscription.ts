@@ -10,16 +10,7 @@ import type { LucideIcon } from "lucide-react"
 // Import shared types from types/shared-types instead of local declarations
 import type {
   SubscriptionPlanType,
-  SubscriptionStatusType,
-  FeatureAvailability,
-  PlanLimits,
-  PriceOption,
-  PaymentOptions,
-  SubscriptionPlan,
-  SubscriptionData,
-  TokenUsage,
-  TokenUsageResponse,
-  UserSubscription,
+ 
 } from '../../../../types/shared-types'
 
 // Subscription status response
