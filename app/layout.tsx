@@ -4,7 +4,7 @@ import "../globals.css"
 import "../fonts.css"  // Import our fallback font configuration
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
-// import { fontInterSans, fontRobotoSans } from "./font"
+ import { fontInterSans, fontRobotoSans } from "./font"
 
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
@@ -75,7 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
 
-      <body className={`antialiased min-h-screen flex flex-col`}>
+      <body className={`${fontInterSans.variable} ${fontRobotoSans.variable} antialiased min-h-screen flex flex-col`}>
         
         {/* Pass the server session to Providers */}
         <Suspense
