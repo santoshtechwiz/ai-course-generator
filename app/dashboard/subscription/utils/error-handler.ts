@@ -5,6 +5,7 @@
  *
  * This file provides standardized error handling for subscription-related operations.
  */
+import { useToast } from "@/hooks"
 
 export type SubscriptionErrorType =
   | "AUTHENTICATION_REQUIRED"

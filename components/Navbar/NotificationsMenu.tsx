@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell } from "lucide-react"
+import { Bell, RefreshCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,44 +13,49 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
-
-import useSubscription from "@/hooks/use-subscription"
+import { useAppSelector, useAppDispatch } from "@/store"
+import { selectSubscription, fetchSubscription } from "@/store/slices/subscription-slice"
+import { logger } from "@/lib/logger"
 
 interface NotificationsMenuProps {
-  initialCount?: number
   refreshCredits?: () => void
 }
 
-export default function NotificationsMenu({ initialCount = 0, refreshCredits }: NotificationsMenuProps) {
+export default function NotificationsMenu({ refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [creditCount, setCreditCount] = useState(initialCount)
-  const { data, setRefreshing } = useSubscription()
-  const [isClient, setIsClient] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const subscription = useAppSelector(selectSubscription)
+  const dispatch = useAppDispatch()
 
-  // Set isClient to true when component mounts (client-side only)
   useEffect(() => {
-    setIsClient(true)
-  }, [])
+    // Fetch subscription data on mount
+    dispatch(fetchSubscription())
+  }, [dispatch])
 
-  // Update credit count when subscription status changes
-  useEffect(() => {
-    if (data && typeof data.credits === "number") {
-      setCreditCount(data.credits - (data.tokensUsed ?? 0))
-    } else if (initialCount > 0) {
-      setCreditCount(initialCount)
-    }
-  }, [data, initialCount])
-
-  // Refresh credits when the dropdown is opened
   const handleOpen = (open: boolean) => {
     setIsOpen(open)
-    if (open) {
-      setRefreshing(true)
-      if (refreshCredits) {
-        refreshCredits()
-      }
+    if (open && refreshCredits) {
+      refreshCredits()
     }
   }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await dispatch(fetchSubscription()).unwrap()
+    } catch (error) {
+      logger.error("Failed to refresh subscription:", error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  const creditCount = subscription?.credits || 0
+  const tokensUsed = subscription?.tokensUsed || 0
+  const subscriptionPlan = subscription?.subscriptionPlan || "FREE"
+  const isSubscribed = subscription?.isSubscribed || false
+  const isExpired = subscription?.status === "EXPIRED"
+  const subscriptionStatus = isExpired ? "Expired" : subscription?.status || "Inactive"
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpen}>
@@ -89,23 +94,31 @@ export default function NotificationsMenu({ initialCount = 0, refreshCredits }: 
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium">Credits Available</p>
-            <p className="text-xs text-muted-foreground">You have {creditCount} credits remaining</p>
+            <p className="text-xs text-muted-foreground">
+              You have {creditCount} credits remaining. Tokens used: {tokensUsed}.
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <div className="max-h-80 overflow-y-auto">
-          <DropdownMenuItem className="cursor-pointer flex flex-col items-start p-3 hover:bg-accent rounded-lg transition-colors duration-200">
-            <div className="flex w-full justify-between items-center">
-              <span className="font-medium">Subscription Status</span>
-              <Badge variant="outline" className="ml-2">
-                {data?.subscriptionPlan || "FREE"}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {data?.isSubscribed ? "Your subscription is active" : "Your subscription is inactive"}
-            </p>
-          </DropdownMenuItem>
-        </div>
+        <DropdownMenuItem className="cursor-pointer flex flex-col items-start p-3 hover:bg-accent rounded-lg transition-colors duration-200">
+          <div className="flex w-full justify-between items-center">
+            <span className="font-medium">Subscription Status</span>
+            <Badge variant="outline" className="ml-2">
+              {subscriptionPlan} ({subscriptionStatus})
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isSubscribed ? "Your subscription is active" : "Your subscription is inactive"}
+          </p>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="cursor-pointer flex items-center justify-center p-3 hover:bg-accent rounded-lg transition-colors duration-200"
+          onClick={handleRefresh}
+        >
+          <RefreshCcw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+          <span>Refresh</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

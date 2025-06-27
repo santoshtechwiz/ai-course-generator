@@ -1,87 +1,48 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useDispatch, useSelector } from "react-redux"
-import { useSession } from "next-auth/react"
-import type { AppDispatch } from "@/store"
-import {
-  selectQuizResults,
-  selectQuizStatus,
-  selectOrGenerateQuizResults,
-  selectQuizTitle,
-  selectAnswers,
-  selectQuestions,
-  resetQuiz,
-} from "@/store/slices/quizSlice"
+import { use } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { QuizLoadingSteps } from "../../../components/QuizLoadingSteps"
 import QuizResult from "../../../components/QuizResult"
+import GenericQuizResultHandler from "../../../components/QuizResultHandler"
+import { getQuizSlug } from "../../../components/utils"
 
 interface ResultsPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default function CodeResultsPage({ params }: ResultsPageProps) {
-  const slug = params.slug
-  const searchParams = useSearchParams()
-  const fromAuth = searchParams.get("fromAuth") === "true"
-
   const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
-  const { status: authStatus } = useSession()
 
-  const quizResults = useSelector(selectQuizResults)
-  const quizStatus = useSelector(selectQuizStatus)
-  const generatedResults = useSelector(selectOrGenerateQuizResults)
-  const quizTitle = useSelector(selectQuizTitle)
-  const answers = useSelector(selectAnswers)
-  const questions = useSelector(selectQuestions)
+  const slugString = getQuizSlug(params);
 
-  const resultData = quizResults || generatedResults
-
-  useEffect(() => {
-    if (authStatus === "authenticated" && fromAuth) {
-      dispatch(resetQuiz())
-    }
-  }, [authStatus, fromAuth, dispatch])
-
-  useEffect(() => {
-    if (authStatus !== "loading" && quizStatus !== "loading") {
-      const hasResults = resultData !== null
-      const hasAnswers = Object.keys(answers || {}).length > 0
-
-      if (!hasResults && !hasAnswers) {
-        router.push(`/dashboard/code/${slug}`)
-      }
-    }
-  }, [authStatus, quizStatus, resultData, router, slug, answers])
-
-  const handleRetake = () => {
-    dispatch(resetQuiz())
-    router.push(`/dashboard/code/${slug}?reset=true`)
+  // Handle retake quiz
+  const handleRetakeQuiz = () => {
+    router.replace(`/dashboard/code/${slugString}`)
   }
 
-  if (authStatus === "loading" || quizStatus === "loading") {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: "Checking authentication", status: authStatus === "loading" ? "loading" : "completed" },
-          { label: "Loading quiz results", status: quizStatus === "loading" ? "loading" : "completed" },
-        ]}
-      />
-    )
+  // Handle errors from the generic handler
+  const handleError = (error: string) => {
+    console.error('Quiz result error:', error);
+    // You can add additional error handling here if needed
   }
 
-  if (!resultData) {
+  // Handle redirects from the generic handler
+  const handleRedirect = (path: string) => {
+    console.log('Redirecting to:', path);
+    // You can add additional redirect handling here if needed
+  }
+
+  // If slug is missing, show error
+  if (!slugString) {
     return (
-      <div className="container max-w-4xl py-10 text-center">
+      <div className="container max-w-4xl py-6">
         <Card>
-          <CardContent className="p-8">
-            <h2 className="text-xl font-semibold mb-2">No Results Available</h2>
-            <p className="text-muted-foreground mb-6">Taking you to the quiz page...</p>
-            <Button onClick={() => router.push(`/dashboard/code/${slug}`)}>Take Quiz Now</Button>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold mb-4">Error</h2>
+            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
+            <Button onClick={() => router.replace("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
       </div>
@@ -89,15 +50,20 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   }
 
   return (
-    <div className="container max-w-4xl py-6">
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <QuizResult result={resultData} quizType={"code"} />
-          <Button onClick={handleRetake} className="mt-4">
-            Retake Quiz
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="container max-w-4xl py-10">      <GenericQuizResultHandler 
+        slug={slugString}  
+        quizType="code"
+      >
+        {({ result }) => (
+          <QuizResult 
+            result={result} 
+            slug={slugString} 
+            quizType="code" 
+            onRetake={handleRetakeQuiz}
+          />
+        )}
+      </GenericQuizResultHandler>
     </div>
   )
 }
+

@@ -53,7 +53,17 @@ async function generateQuizInternal(transcript: string, chapterId: number, chapt
 
     await prisma.courseQuiz.createMany({
       data: questions.map((question: Question) => {
-        const options = [question.answer, ...question.options].sort(() => Math.random() - 0.5)
+        // Ensure options is an array before processing
+        const questionOptions = Array.isArray(question.options) 
+          ? question.options 
+          : typeof question.options === 'string'
+            ? JSON.parse(question.options)
+            : [];
+            
+        const options = [question.answer, ...questionOptions].filter(
+          (opt, index, array) => array.indexOf(opt) === index // Remove duplicates
+        ).sort(() => Math.random() - 0.5);
+        
         return {
           question: question.question,
           answer: question.answer,

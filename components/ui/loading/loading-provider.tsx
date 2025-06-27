@@ -1,3 +1,5 @@
+// This file is deprecated and replaced by EnhancedLoader. Please use EnhancedLoaderProvider and related components.
+
 "use client"
 
 import type React from "react"
@@ -93,13 +95,4 @@ export function LoadingIndicator({ className, size = "md" }: { className?: strin
   }
 
   return <Loader2 className={cn(sizeClasses[size], "animate-spin text-primary", className)} />
-}
-
-export function SectionLoader({ className }: { className?: string }) {
-  return (
-    <div className={cn("flex flex-col items-center justify-center p-8 space-y-4", className)}>
-      <LoadingIndicator size="lg" />
-      <p className="text-sm text-muted-foreground animate-pulse">Loading content...</p>
-    </div>
-  )
 }

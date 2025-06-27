@@ -1,191 +1,180 @@
 "use client"
 
-import { useCallback } from "react"
+import React, { useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useDispatch, useSelector } from "react-redux"
-import { signIn } from "next-auth/react"
-import { resetQuiz } from "@/store/slices/quizSlice"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Check, RefreshCw, ChevronRight } from "lucide-react"
-import { useSessionService } from "@/hooks/useSessionService"
-import { selectIsAuthenticated } from "@/store/slices/authSlice"
-import NonAuthenticatedUserSignInPrompt from "./NonAuthenticatedUserSignInPrompt"
-
-// Import CodeQuizResult and MCQQuizResult
+import { useDispatch } from "react-redux"
+import { clearQuizState } from "@/store/slices/quiz-slice"
+import type { AppDispatch } from "@/store"
+import BlankQuizResults from "../blanks/components/BlankQuizResults"
+import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded"
+import { NoResults } from "@/components/ui/no-results"
+import FlashCardResults from "../flashcard/components/FlashCardQuizResults"
 import CodeQuizResult from "../code/components/CodeQuizResult"
-import MCQQuizResult from "../mcq/components/McqQuizResult"
+import type { QuizType } from "@/types/quiz"
+import {McqQuizResult} from "../mcq/components/McqQuizResult"
+import { Button } from "@/components/ui"
+
 
 interface QuizResultProps {
   result: any
+  slug: string
+  quizType: QuizType
   onRetake?: () => void
-  quizType: "code" | "mcq" | "blanks" | "openended"
-  slug?: string
-  onSignIn?: () => void
-  hideAuthPrompt?: boolean
 }
 
-export default function QuizResult({ 
-  result, 
-  onRetake, 
-  quizType, 
-  slug,
-  onSignIn: externalSignInHandler,
-  hideAuthPrompt = false
-}: QuizResultProps) {
+export default function QuizResult({ result, slug, quizType = "mcq", onRetake }: QuizResultProps) {
   const router = useRouter()
-  const dispatch = useDispatch()
-  const { clearQuizResults, saveAuthRedirectState } = useSessionService()
-  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const dispatch = useDispatch<AppDispatch>()
 
-  const handleRetake = useCallback(() => {
-    if (onRetake) {
-      // Use provided retake handler if available
-      clearQuizResults()
-      onRetake()
-    } else if (result?.slug || slug) {
-      // Otherwise navigate to the quiz
-      clearQuizResults()
-      router.push(`/dashboard/${quizType}/${result?.slug || slug}?reset=true`)
-    }
-  }, [onRetake, result?.slug, slug, quizType, router, clearQuizResults])
+  const handleRetake = () => {
+    dispatch(clearQuizState())
+    router.push(`/dashboard/${quizType}/${slug}`)
+  }
 
-  const handleBrowseQuizzes = useCallback(() => {
-    // Clear quiz state when navigating away
-    clearQuizResults()
-    router.push('/dashboard/quizzes')
-  }, [router, clearQuizResults])
-  
-  const handleSignIn = useCallback(async () => {
-    // Use external handler if provided
-    if (externalSignInHandler) {
-      return externalSignInHandler();
-    }
-    
-    // Default sign-in behavior
-    if (!slug && !result?.slug) {
-      // Simple sign-in without state preservation
-      await signIn();
-      return;
-    }
-    
-    // Build auth redirect state
-    const safeSlug = slug || result?.slug;
-    const returnPath = `/dashboard/${quizType}/${safeSlug}/results?fromAuth=true`;
-
-    saveAuthRedirectState({
-      returnPath,
-      quizState: {
-        slug: safeSlug,
-        quizData: result?.quizData,
-        currentState: {
-          answers: result?.answers || {},
-          showResults: true,
-          results: result,
-        },
-      },
-    });
-    
-    await signIn(undefined, { callbackUrl: returnPath });
-  }, [externalSignInHandler, slug, result, quizType, saveAuthRedirectState]);
-  
-  // If no result data, show empty state
   if (!result) {
     return (
-      <Card className="w-full max-w-md mx-auto shadow-xl border-0">
-        <CardContent className="p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <RefreshCw className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h2 className="text-xl font-bold mb-3">No Results Available</h2>
-          <p className="text-muted-foreground mb-8">
-            We couldn't find any quiz results. Try taking a quiz first!
-          </p>
-          <Button onClick={handleBrowseQuizzes}>Browse Quizzes</Button>
-        </CardContent>
-      </Card>
+      <NoResults
+        variant="quiz"
+        title="Results Not Found"
+        description="We couldn't load your quiz results. The quiz may not have been completed."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake,
+        }}
+      />
+    )
+  }  // Ensure we sanitize the result object to prevent null reference errors
+  const sanitizedResult = useMemo(() => {
+    if (!result) return null;
+    
+    // Make a defensive copy and sanitize answers if needed
+    const cleanResult = {...result};
+    
+    // Ensure answers is an array and filter out null values
+    if (cleanResult.answers) {
+      cleanResult.answers = Array.isArray(cleanResult.answers) 
+        ? cleanResult.answers.filter((answer: any) => answer !== null && answer !== undefined)
+        : [];
+    } else {
+      cleanResult.answers = [];
+    }
+    
+    // Ensure questionResults is an array
+    if (!Array.isArray(cleanResult.questionResults)) {
+      cleanResult.questionResults = [];
+    }
+    
+    // Ensure questions is an array
+    if (!Array.isArray(cleanResult.questions)) {
+      cleanResult.questions = [];
+    }
+    
+    // Ensure each question has at least basic valid properties
+    if (cleanResult.questions.length > 0) {
+      cleanResult.questions = cleanResult.questions.map((q: any, idx: number) => ({
+        id: q?.id || String(idx),
+        question: q?.question || q?.text || "Question " + (idx + 1),
+        ...q,
+      }));
+    }
+    
+    return cleanResult;
+  }, [result]);
+  
+  const isValidResult =
+    sanitizedResult &&
+    (typeof sanitizedResult.percentage === "number" ||
+      typeof sanitizedResult.score === "number" ||
+      (Array.isArray(sanitizedResult.questionResults) && sanitizedResult.questionResults.length > 0) ||
+      (Array.isArray(sanitizedResult.questions) && sanitizedResult.questions.length > 0) ||
+      (Array.isArray(sanitizedResult.answers) && sanitizedResult.answers.length > 0))
+
+  if (!isValidResult) {
+    return (
+      <NoResults
+        variant="quiz"
+        title="Invalid Quiz Results"
+        description="Your quiz results appear to be incomplete or invalid. It's recommended to retake the quiz."
+        action={{
+          label: "Retake Quiz",
+          onClick: handleRetake,
+        }}
+      />
     )
   }
-  
-  // Show authentication prompt for unauthenticated users
-  if (!isAuthenticated && !hideAuthPrompt) {
-    return (
-      <div className="space-y-6">
-        {/* Authentication Prompt */}
-        <NonAuthenticatedUserSignInPrompt
-          onSignIn={handleSignIn}
-          previewData={result}
-          title="Sign In to View Full Results"
-          quizType={quizType}
-          fallbackAction={{
-            label: "Retake Quiz",
-            onClick: handleRetake,
-            variant: "outline"
-          }}
+
+  // Enhanced result object with better title resolution
+  const enhancedResult = {
+    ...result,
+    slug: slug,
+    // Ensure we have a proper title
+    title: getEnhancedTitle(result, slug, quizType),
+  }
+
+  const quizContent = renderQuizResultComponent(quizType, enhancedResult, slug, handleRetake)
+
+  return <div className="max-w-5xl mx-auto px-4 py-6 animate-fade-in">{quizContent}</div>
+}
+
+// Enhanced title resolution function
+function getEnhancedTitle(result: any, slug: string, quizType: QuizType): string {
+  // Priority 1: Use provided title if it's meaningful
+  if (result?.title && result.title.trim() && !result.title.match(/^[a-zA-Z0-9]{6,}$/)) {
+    return result.title.trim()
+  }
+
+  // Priority 2: Generate from quiz metadata
+  const quizIdentifier = slug || result?.quizId || result?.id || "quiz"
+
+  // Check if it looks like a slug/ID (alphanumeric, short)
+  if (String(quizIdentifier).match(/^[a-zA-Z0-9]{6,}$/)) {
+    const typeMap = {
+      mcq: "Multiple Choice Quiz",
+      code: "Code Challenge Quiz",
+      blanks: "Fill in the Blanks Quiz",
+      openended: "Open Ended Quiz",
+      flashcard: "Flashcard Quiz",
+    }
+    return typeMap[quizType] || "Quiz"
+  }
+
+  // Priority 3: Use identifier if it looks like a proper title
+  return String(quizIdentifier)
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase())
+}
+
+function renderQuizResultComponent(quizType: QuizType, result: any, slug: string, onRetake: () => void) {
+  switch (quizType) {
+    case "mcq":
+      // Use the new version of McqQuizResult by default
+      return <McqQuizResult result={result} onRetake={onRetake} />
+    case "blanks":
+      return <BlankQuizResults result={result} isAuthenticated={true} slug={slug} onRetake={onRetake} />
+    case "openended":      // Use OpenEndedQuizResults with enhanced scoring
+      return <OpenEndedQuizResults result={result} isAuthenticated={true} slug={slug} onRetake={onRetake} />
+    case "code":
+      // Use the new version of CodeQuizResult by default
+      return <CodeQuizResult result={result} onRetake={onRetake} />
+    case "flashcard":
+      // Pass all result fields as props for consistency
+      return (
+        <FlashCardResults
+          slug={slug}
+          title={result?.title}
+          score={result?.percentage ?? result?.score ?? 0}
+          totalQuestions={result?.totalQuestions ?? result?.maxScore ?? result?.questions?.length ?? 0}
+          correctAnswers={result?.correctAnswers ?? result?.userScore ?? 0}
+          totalTime={result?.totalTime ?? 0}
+          onRestart={onRetake}
         />
-        
-        {/* Blurred Preview of Results */}
-        <div className="relative opacity-50 pointer-events-none select-none filter blur-sm">
-          {/* Use the appropriate result component */}
-          {quizType === "code" && <CodeQuizResult result={result} onRetake={handleRetake} />}
-          {quizType === "mcq" && <MCQQuizResult result={result} />}
-          {(quizType === "blanks" || quizType === "openended") && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold">{result.title || "Quiz Results"}</h2>
-                <div className="mt-6 flex items-center justify-center gap-2">
-                  <div className="text-5xl font-bold text-primary">{result.percentage}%</div>
-                  <div className="text-xl text-muted-foreground">Score</div>
-                </div>
-                <p className="mt-2 text-muted-foreground">
-                  You got {result.score} out of {result.maxScore} questions correct
-                </p>
-              </div>
-            </div>
-          )}
-          
-          {/* Overlay sign-in prompt */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-primary/90 text-white px-6 py-3 rounded-lg shadow-lg">
-              Sign in to view detailed results
-            </div>
-          </div>
-        </div>
+      )
+    default:
+      // Don't render McqQuizResult as default, use a more generic approach or fallback
+      return <div className="p-6 text-center">
+        <div className="mb-4 text-xl font-medium">Quiz Results</div>
+        <div className="mb-2">Score: {result?.percentage ?? result?.score ?? 0}%</div>
+        <Button onClick={onRetake} className="mt-4">Retake Quiz</Button>
       </div>
-    );
   }
-
-  // Delegate to the appropriate result component based on quiz type for authenticated users
-  if (quizType === "code") {
-    return <CodeQuizResult result={result} onRetake={handleRetake} />
-  } else if (quizType === "mcq") {
-    return <MCQQuizResult result={result} />
-  }
-
-  // Fallback generic result UI for other quiz types
-  return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold">{result.title || "Quiz Results"}</h2>
-        <div className="mt-6 flex items-center justify-center gap-2">
-          <div className="text-5xl font-bold text-primary">{result.percentage}%</div>
-          <div className="text-xl text-muted-foreground">Score</div>
-        </div>
-        <p className="mt-2 text-muted-foreground">
-          You got {result.score} out of {result.maxScore} questions correct
-        </p>
-      </div>
-
-      <div className="flex justify-center gap-4 mt-8">
-        <Button onClick={handleRetake} variant="outline" className="gap-2">
-          <RefreshCw className="w-4 h-4" />
-          Retake Quiz
-        </Button>
-        <Button onClick={handleBrowseQuizzes} className="gap-2">
-          Browse Quizzes
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
-  )
 }

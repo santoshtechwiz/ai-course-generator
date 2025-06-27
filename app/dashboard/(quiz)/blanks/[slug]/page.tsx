@@ -6,13 +6,17 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { QuizLoader } from "@/components/ui/quiz-loader"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import QuizSEO from "../../components/QuizSEO"
+
 
 export default function BlanksQuizPage({
   params,
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
+  // Unwrap params for future compatibility
   const resolvedParams = params instanceof Promise ? use(params) : params
   const slug = resolvedParams.slug
   const { status: authStatus } = useSession()
@@ -20,7 +24,7 @@ export default function BlanksQuizPage({
 
   // Check for loading state
   if (authStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+    return <QuizLoader full message="Initializing quiz..." subMessage="Loading user session" />
   }
 
   if (!slug) {
@@ -36,10 +40,23 @@ export default function BlanksQuizPage({
       </div>
     )
   }
-
   return (
-    <div className="container max-w-4xl py-6">
-      <BlanksQuizWrapper slug={slug} />
-    </div>
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="blanks"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
+      <QuizSEO 
+        slug={slug}
+        quizType="blanks"
+        description={`Improve your knowledge with this ${slug.replace(/-/g, ' ')} fill-in-the-blanks exercise. Complete the missing words and enhance your understanding!`}
+      />
+      <BlanksQuizWrapper
+      slug={slug}
+      title="Fill in the Blanks Quiz"
+      />
+    </QuizPlayLayout>
   )
 }

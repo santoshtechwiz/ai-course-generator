@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { BookOpen, Search, Clock, CheckCircle, PlusCircle, Loader2 } from "lucid
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import type { DashboardUser } from "@/app/types/types"
+import type { DashboardUser, Course, CourseProgress, Favorite } from "@/app/types/types"
 
 interface CoursesTabProps {
   userData: DashboardUser
@@ -23,34 +23,52 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
   const [loadingCourseId, setLoadingCourseId] = useState<string | null>(null)
   const router = useRouter()
 
-  // Filter and sort courses
-  const allCourses = userData.courses || []
-  const inProgressCourses = userData.courseProgress.filter((course) => !course.isCompleted) || []
-  const completedCourses = userData.courseProgress.filter((course) => course.isCompleted) || []
-  const favoriteCourses = userData.favorites.map((fav) => fav.course) || []
+  // Ensure proper null checks for all arrays
+  const allCourses = userData?.courses || []
+  const inProgressCourses = (userData?.courseProgress || []).filter((course) => !course.isCompleted)
+  const completedCourses = (userData?.courseProgress || []).filter((course) => course.isCompleted)
+  const favoriteCourses = (userData?.favorites || [])
+    .map((fav) => fav.course)
+    .filter((course): course is Course => Boolean(course))
 
   // Apply search filter
-  const filterCourses = (courses: any[]) => {
+  const filterCourses = (courses: Course[]) => {
     if (!searchTerm) return courses
 
     return courses.filter(
       (course) =>
-        course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+        course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course?.description?.toLowerCase().includes(searchTerm.toLowerCase()),
     )
   }
 
+  // Ensure we're properly filtering and type-checking
   const filteredAllCourses = filterCourses(allCourses)
-  const filteredInProgressCourses = filterCourses(inProgressCourses.map((p) => p.course).filter(Boolean))
-  const filteredCompletedCourses = filterCourses(completedCourses.map((p) => p.course).filter(Boolean))
+
+  const filteredInProgressCourses = filterCourses(
+    inProgressCourses
+      .map((p) => p.course)
+      .filter((course): course is Course => Boolean(course))
+  )
+  
+  const filteredCompletedCourses = filterCourses(
+    completedCourses
+      .map((p) => p.course)
+      .filter((course): course is Course => Boolean(course))
+  )
+  
   const filteredFavoriteCourses = filterCourses(favoriteCourses)
 
-  const handleCourseClick = (courseId: string, slug: string) => {
-    setLoadingCourseId(courseId)
-    setTimeout(() => {
-      router.push(`/dashboard/course/${slug}`)
-    }, 100)
-  }
+  // Use useCallback to prevent recreation on each render
+  const handleCourseClick = useCallback(
+    (courseId: string, slug: string) => {
+      setLoadingCourseId(courseId)
+      requestAnimationFrame(() => {
+        router.push(`/dashboard/course/${slug}`)
+      })
+    },
+    [router],
+  )
 
   return (
     <div className="space-y-6">

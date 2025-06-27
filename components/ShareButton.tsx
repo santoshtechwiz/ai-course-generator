@@ -3,7 +3,7 @@ import { Share2, Facebook, Twitter, Check, LinkIcon, Linkedin } from "lucide-rea
 import { useState } from "react";
 import { Button } from "./ui/button";
 
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks";
 import { QuizType } from "@/app/types/quiz-types";
 import { buildQuizUrl } from "@/lib/utils/utils";
 

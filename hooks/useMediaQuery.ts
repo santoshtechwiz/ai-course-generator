@@ -1,29 +1,35 @@
-import { useState, useEffect } from 'react';
+"use client";
+
+import { useState, useEffect } from "react";
 
 // Hook for media query matching
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
-  
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
-    // Create media query list
-    const mediaQuery = window.matchMedia(query);
-    
+    setMounted(true);
+
     // Set initial value
-    setMatches(mediaQuery.matches);
-    
-    // Define callback for changes
-    const handleChange = (event: MediaQueryListEvent) => {
-      setMatches(event.matches);
-    };
-    
-    // Add listener for changes
-    mediaQuery.addEventListener('change', handleChange);
-    
-    // Clean up
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+
+    // Add listener
+    const listener = () => setMatches(media.matches);
+    window.addEventListener("resize", listener);
+    media.addEventListener("change", listener);
+
+    // Cleanup
     return () => {
-      mediaQuery.removeEventListener('change', handleChange);
+      window.removeEventListener("resize", listener);
+      media.removeEventListener("change", listener);
     };
-  }, [query]);
-  
-  return matches;
+  }, [query, matches]);
+
+  // Return false until mounted to avoid hydration mismatch
+  return mounted ? matches : false;
 }
+
+export default useMediaQuery;

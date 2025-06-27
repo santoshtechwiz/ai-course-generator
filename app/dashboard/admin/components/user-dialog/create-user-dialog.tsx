@@ -20,7 +20,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 
 const USER_TYPES = [
   { value: "FREE", label: "Free" },

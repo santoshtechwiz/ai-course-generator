@@ -1,279 +1,219 @@
 "use client"
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import {
-  Check,
-  Clock,
-  HelpCircle,
-  CheckCircle2,
-  X
-} from "lucide-react"
+import { useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Progress } from "@/components/ui/progress"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { saveAnswer } from "@/store/slices/quizSlice"
-
-
-interface Option {
-  id: string
-  text: string
-}
+import { QuizContainer } from "@/components/quiz/QuizContainer"
+import { QuizFooter } from "@/components/quiz/QuizFooter"
+import { cn } from "@/lib/utils"
+import { CheckCircle2 } from "lucide-react"
 
 interface McqQuizProps {
   question: {
     id: string
     text?: string
     question?: string
-    options: (string | Option)[]
+    options: string[]
   }
   onAnswer: (answer: string) => void
+  onNext?: () => void
+  onSubmit?: () => void
+  onRetake?: () => void
   isSubmitting?: boolean
   questionNumber?: number
   totalQuestions?: number
   existingAnswer?: string
-  feedbackType?: "correct" | "incorrect" | null
+  canGoNext?: boolean
+  isLastQuestion?: boolean
+  showRetake?: boolean
+  quizTitle?: string
+  quizSubtitle?: string
+  difficulty?: string
+  category?: string
+  timeLimit?: number
 }
 
 const McqQuiz = ({
   question,
   onAnswer,
+  onNext,
+  onSubmit,
+  onRetake,
   isSubmitting = false,
   questionNumber = 1,
   totalQuestions = 1,
   existingAnswer,
-  feedbackType,
+  canGoNext = false,
+  isLastQuestion = false,
+  showRetake = false,
+  quizTitle = "Multiple Choice Quiz",
+  quizSubtitle = "Choose the best answer for each question",
+  difficulty = "Medium",
+  category = "General Knowledge",
+  timeLimit,
 }: McqQuizProps) => {
-  // Remove all local state and logic, just render UI and call onAnswer
+  const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
 
-  if (!question) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto shadow-xl border-0 bg-gradient-to-br from-background to-muted/20">
-        <CardContent className="p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <HelpCircle className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-bold mb-3">Question Unavailable</h3>
-          <p className="text-muted-foreground mb-6">
-            We’re having trouble loading this question. Please try refreshing.
-          </p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Reload Quiz
-          </Button>
-        </CardContent>
-      </Card>
-    )
+  const options = useMemo(() => {
+    return (question?.options || []).map((option, index) => ({
+      id: option,
+      text: option,
+      letter: String.fromCharCode(65 + index),
+    }))
+  }, [question?.options])
+
+  const handleOptionSelect = (optionId: string) => {
+    setSelectedOption(optionId)
+    onAnswer(optionId)
   }
 
-  // Prepare options for rendering
-  const options = (question?.options || []).map((option, index) => {
-    if (typeof option === "string") {
-      return { id: option, text: option }
-    }
-    if (option && typeof option === "object" && option.id && option.text) {
-      return option
-    }
-    return { id: `option_${index}`, text: `Option ${index + 1}` }
-  })
-
-  const progressPercentage = (questionNumber / totalQuestions) * 100
-
-  if (!question || (!question.text && !question.question) || !options.length) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto shadow-xl border-0 bg-gradient-to-br from-background to-muted/20">
-        <CardContent className="p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <HelpCircle className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-bold mb-3">Question Unavailable</h3>
-          <p className="text-muted-foreground mb-6">
-            We’re having trouble loading this question. Please try refreshing.
-          </p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Reload Quiz
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
+  const questionText = question.text || question.question || "Question not available"
 
   return (
-    <motion.div
-      data-testid="mcq-quiz"
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -24 }}
-      transition={{ duration: 0.3 }}
-      className="w-full max-w-4xl mx-auto"
+    <QuizContainer
+      questionNumber={questionNumber}
+      totalQuestions={totalQuestions}
+      quizType="Multiple Choice"
+      animationKey={question.id}
+      quizTitle={quizTitle}
+      quizSubtitle={quizSubtitle}
+      difficulty={difficulty}
+      category={category}
+      timeLimit={timeLimit}
     >
-      <Card className="shadow-xl border-0 bg-gradient-to-br from-background via-background to-muted/10 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 p-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <HelpCircle className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-bold">Question {questionNumber}</CardTitle>
-                <CardDescription className="text-sm">of {totalQuestions}</CardDescription>
-              </div>
-            </div>
-
-            <div className="text-right">
-              <div className="text-2xl font-bold text-primary">{Math.round(progressPercentage)}%</div>
-              <p className="text-xs text-muted-foreground">Complete</p>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <Progress value={progressPercentage} className="h-3 bg-muted/50" />
-          </div>
-        </CardHeader>
-        <CardContent className="p-8 space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-center"
+      <div className="space-y-6">
+        <motion.div
+          className="text-center space-y-4 mb-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.h2
+            className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground leading-relaxed max-w-4xl mx-auto px-4 break-words"
+            transition={{ delay: 0.1, duration: 0.5 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/5 rounded-full border border-primary/20 mb-6">
-              <Clock className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Choose the best answer</span>
-            </div>
-            <h3 className="text-xl font-semibold text-foreground max-w-3xl mx-auto">
-              {question.text || question.question || "Question text unavailable"}
-            </h3>
-          </motion.div>
+            {questionText}
+          </motion.h2>
 
           <motion.div
-            className="space-y-3"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-            }}
-            role="radiogroup"
-            aria-label="Answer options"
-          >
+            className="h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full mx-auto max-w-32"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          />
+        </motion.div>
+
+        <div className="max-w-3xl mx-auto space-y-3">
+          <AnimatePresence>
             {options.map((option, index) => {
-              const isSelected = existingAnswer === option.id
-              const isAnswered = !!existingAnswer
-              let optionFeedback = ""
-              if (isAnswered) {
-                if (isSelected && feedbackType === "correct") optionFeedback = "correct"
-                else if (isSelected && feedbackType === "incorrect") optionFeedback = "incorrect"
-                else optionFeedback = ""
-              }
+              const isSelected = selectedOption === option.id
               return (
                 <motion.div
                   key={option.id}
-                  data-testid={`option-${index}`}
-                  variants={{
-                    hidden: { opacity: 0, x: -10 },
-                    visible: { opacity: 1, x: 0 }
-                  }}
+                  whileHover={{ scale: 1.01, x: 2 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 >
-                  <div
-                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300
-                      ${
-                        isSelected
-                          ? optionFeedback === "correct"
-                            ? "border-green-500 bg-green-50 dark:bg-green-900/10"
-                            : optionFeedback === "incorrect"
-                            ? "border-red-500 bg-red-50 dark:bg-red-900/10"
-                            : "border-primary bg-primary/5 shadow-lg"
-                          : "border-border bg-card hover:bg-muted/30"
-                      }
-                      ${isSubmitting || isAnswered ? "opacity-70 pointer-events-none" : ""}
-                    `}
-                    tabIndex={0}
-                    role="radio"
-                    aria-checked={isSelected}
-                    aria-disabled={isSubmitting || isAnswered}
-                    onClick={() => !isSubmitting && !isAnswered && onAnswer(option.id)}
-                    onKeyDown={e => {
-                      if (
-                        !isSubmitting &&
-                        !isAnswered &&
-                        (e.key === "Enter" || e.key === " ")
-                      ) {
-                        onAnswer(option.id)
-                      }
-                    }}
+                  <motion.label
+                    htmlFor={`option-${option.id}`}
+                    className={cn(
+                      "group relative flex items-start space-x-3 p-3 sm:p-4 overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300",
+                      "hover:shadow-lg hover:shadow-primary/10",
+                      isSelected
+                        ? "border-primary bg-gradient-to-r from-primary/15 via-primary/8 to-primary/5 shadow-lg shadow-primary/20"
+                        : "border-border/60 bg-gradient-to-r from-card/90 to-card/70 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/8 hover:to-primary/4",
+                    )}
+                    onClick={() => handleOptionSelect(option.id)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-6 h-6 rounded-full border-2 ${
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-primary/12 to-primary/6"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      )}
+                    </AnimatePresence>
+
+                    {/* Radio Input */}
+                    <input
+                      type="radio"
+                      name="mcq-option"
+                      id={`option-${option.id}`}
+                      value={option.id}
+                      checked={isSelected}
+                      disabled={isSubmitting}
+                      onChange={() => handleOptionSelect(option.id)}
+                      className="sr-only"
+                    />
+
+                    {/* Letter */}
+                    <div
+                      className={cn(
+                        "flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm flex-shrink-0 transition-all duration-300",
                         isSelected
-                          ? optionFeedback === "correct"
-                            ? "border-green-500 bg-green-500"
-                            : optionFeedback === "incorrect"
-                            ? "border-red-500 bg-red-500"
-                            : "border-primary bg-primary"
-                          : "border-muted-foreground/30 bg-background"
-                      } flex items-center justify-center`}>
-                        {isSelected && (
-                          <motion.div
-                            className="w-2 h-2 rounded-full bg-white"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0 }}
-                          />
-                        )}
-                      </div>
-                      <span className={`text-base font-medium ${
-                        isSelected
-                          ? optionFeedback === "correct"
-                            ? "text-green-700 dark:text-green-400"
-                            : optionFeedback === "incorrect"
-                            ? "text-red-700 dark:text-red-400"
-                            : "text-primary"
-                          : "text-foreground"
-                      }`}>
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-muted/60 text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
+                      )}
+                    >
+                      {option.letter}
+                    </div>
+
+                    {/* Option Text */}
+                    <div
+                      className={cn(
+                        "flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0",
+                        "break-words whitespace-normal",
+                        isSelected ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground",
+                      )}
+                    >
+                      <motion.span
+                        initial={false}
+                        animate={isSelected ? { x: 4 } : { x: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        className="block"
+                      >
                         {option.text}
-                      </span>
-                      {isSelected && feedbackType === "correct" && (
-                        <Check className="ml-2 w-5 h-5 text-green-600" aria-label="Correct" />
-                      )}
-                      {isSelected && feedbackType === "incorrect" && (
-                        <X className="ml-2 w-5 h-5 text-red-600" aria-label="Incorrect" />
-                      )}
+                      </motion.span>
                     </div>
-                    <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center
-                      ${isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground"}
-                    `}>
-                      {String.fromCharCode(65 + index)}
-                    </div>
-                  </div>
+
+                    {/* Check Icon */}
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.div
+                          className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground flex-shrink-0"
+                          initial={{ scale: 0, opacity: 0, rotate: -180 }}
+                          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                          exit={{ scale: 0, opacity: 0, rotate: 180 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.label>
                 </motion.div>
               )
             })}
-          </motion.div>
-          {/* Feedback message */}
-          {feedbackType && (
-            <div className="flex justify-center mt-4">
-              <span
-                className={`px-4 py-2 rounded-lg font-semibold text-lg ${
-                  feedbackType === "correct"
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300"
-                }`}
-                role="status"
-                aria-live="polite"
-              >
-                {feedbackType === "correct" ? "Correct!" : "Incorrect"}
-              </span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Footer */}
+        <QuizFooter
+          onNext={onNext}
+          onPrevious={undefined}
+          onSubmit={isLastQuestion ? onSubmit : undefined}
+          onRetake={onRetake}
+          canGoNext={!!selectedOption}
+          canGoPrevious={false}
+          isLastQuestion={isLastQuestion}
+          isSubmitting={isSubmitting}
+          showRetake={showRetake}
+          hasAnswer={!!selectedOption}
+        />
+      </div>
+    </QuizContainer>
   )
 }
 

@@ -1,20 +1,29 @@
-export * from "./use-idle-timer"
+// Main hooks export file - organized by functionality
+
+// UI/UX Hooks
+export * from "./use-media-query"
 export * from "./use-responsive"
-export * from "./use-ripple"
-export * from "./use-scroll-direction"
-export * from "./use-similarity"
-export * from "./use-visibility-change"
 export * from "./use-debounce"
 export * from "./use-interval"
-export * from "./use-persistent-state"
-export * from "./use-chapter-summary"
+export * from "./use-navigation-loader"
+
 export * from "./use-toast"
-export * from "./use-form"
+export * from "./use-similarity"
 
-// Export these hooks directly, not via the conditional block
-export { useAuth } from "./useAuth"
+// Data Persistence Hooks
+export * from "./use-persistent-state"
 
-export { _createMockUseAuth } from "./useAuth"
+// Auth & User Hooks
+// Import useAuth directly from auth-context
+export { useAuth } from "@/context/auth-context"
+export * from "./use-subscription"
+// export * from "./use-session-service"; // File not found, commented out to avoid errors
+export * from "./use-notifications"
+export * from "./use-user-dashboard"
 
-// Don't try to modify module.exports in test mode
-// This was causing the error because module.exports is read-only after these exports
+// Course & Quiz Hooks
+export * from "./use-chapter-summary" 
+export * from "./useCourseActions"
+
+export * from "../app/dashboard/course/[slug]/components/video/hooks/useVideoProgress"
+export * from "./useRandomQuizzes"

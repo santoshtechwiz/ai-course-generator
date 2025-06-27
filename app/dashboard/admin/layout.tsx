@@ -12,7 +12,7 @@ export default async function AdminLayout({
   // Check if user is authenticated and is an admin
   const session = await getServerSession(authOptions)
 
-  if (!session || !session.user || session.user.isAdmin !== true) {
+  if (!session?.user?.isAdmin) {
     redirect("/dashboard")
   }
 

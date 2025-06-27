@@ -1,66 +1,47 @@
-"use client"
+import React from "react";
 
-import type React from "react"
-import { useState } from "react"
-import { cn } from "@/lib/tailwindUtils"
-import { AlertCircle } from "lucide-react"
+//
+//  <VideoPlayer
+//                   videoId={chapter.videoId}
+//                   title={`Preview: ${chapter.title}`}
+//                   className="w-full"
+//                   fallbackMessage="Video not available"
+//                 />
 
-interface VideoPlayerProps {
-  videoId: string | null
-  title?: string
-  className?: string
-  fallbackMessage?: string
-}
+
+type VideoPlayerProps = {
+    videoId: string;
+    title?: string;
+    className?: string;
+    fallbackMessage?: string;
+};
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
-  videoId,
-  title,
-  className,
-  fallbackMessage = "No video available",
+    videoId,
+    title,
+    className = "",
+    fallbackMessage = "Video not available",
 }) => {
-  const [error, setError] = useState(false)
+    const youtubeEmbedUrl = `https://www.youtube.com/embed/${videoId}`;
 
-  // Handle video errors
-  const handleError = () => {
-    setError(true)
-  }
-
-  if (!videoId) {
     return (
-      <div className={cn("w-full aspect-video bg-muted flex items-center justify-center rounded-md", className)}>
-        <p className="text-muted-foreground">{fallbackMessage}</p>
-      </div>
-    )
-  }
+        <div className={`flex flex-col items-center ${className}`}>
+            {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
+            <div className="w-full aspect-w-16 aspect-h-9">
+                <iframe
+                    className="w-full h-full rounded-lg shadow-lg"
+                    src={youtubeEmbedUrl}
+                    title={title || "YouTube Video"}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                ></iframe>
+            </div>
+            {!videoId && (
+                <p className="text-sm text-gray-500 mt-2">{fallbackMessage}</p>
+            )}
+        </div>
+    );
+};
 
-  // Check if it's a YouTube video ID (11 characters) or a full URL
-  const isYouTubeId = /^[a-zA-Z0-9_-]{11}$/.test(videoId)
-  const embedUrl = isYouTubeId ? `https://www.youtube.com/embed/${videoId}` : videoId
-
-  if (error) {
-    return (
-      <div
-        className={cn("w-full aspect-video bg-muted flex flex-col items-center justify-center rounded-md", className)}
-      >
-        <AlertCircle className="h-8 w-8 text-destructive mb-2" />
-        <p className="text-destructive font-medium">Failed to load video</p>
-        <p className="text-sm text-muted-foreground mt-1">Please check the video ID or URL</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className={cn("w-full", className)}>
-      {title && <h3 className="text-lg font-medium mb-2">{title}</h3>}
-      <iframe
-        className="w-full aspect-video rounded-md"
-        src={embedUrl}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        onError={handleError}
-      />
-    </div>
-  )
-}
-
-export default VideoPlayer
+export default VideoPlayer;

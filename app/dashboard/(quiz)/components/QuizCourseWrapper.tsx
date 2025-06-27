@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 
 import type { QueryParams } from "@/app/types/types"
-import CreateQuizForm from "./CreateQuizForm"
+import CreateQuizForm from "../mcq/components/CreateQuizForm"
 
 import { Loader2 } from "lucide-react"
 import ConsistentCard from "../../../../components/ConsistentCard"

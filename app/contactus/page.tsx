@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
-
-import { generatePageMetadata } from "@/lib/seo-utils"
+import { generateMetadata } from "@/lib/seo"
+import { JsonLD } from "@/app/schema/components"
 import ImprovedContactForm from "./ContactForm"
 
-export const metadata: Metadata = generatePageMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "Contact CourseAI | Get Support for AI Coding Education Platform",
   description:
     "Have questions about CourseAI's AI-powered coding education platform? Contact our team for support, partnership inquiries, or feedback on our programming learning tools.",
@@ -28,7 +28,6 @@ export const metadata: Metadata = generatePageMetadata({
 const ContactUsPage = () => {
   // Organization contact information for schema
   const contactInfo = {
-    "@context": "https://schema.org",
     "@type": "ContactPage",
     name: "CourseAI Contact Page",
     description:
@@ -53,7 +52,7 @@ const ContactUsPage = () => {
 
   return (
     <div className="container py-12">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(contactInfo) }} />
+      <JsonLD type="contactPage" data={contactInfo} />
       <ImprovedContactForm />
     </div>
   )

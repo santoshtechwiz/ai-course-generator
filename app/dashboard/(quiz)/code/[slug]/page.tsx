@@ -1,53 +1,51 @@
 "use client"
 
 import { use } from "react"
-import { useSelector } from "react-redux"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { useSession } from "next-auth/react"
-import { selectIsAuthenticated } from '@/store/slices/authSlice'
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import {
-  hydrateQuiz, // Use renamed action
-} from "@/store/slices/quizSlice"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import QuizSEO from "../../components/QuizSEO"
+import { getQuizSlug } from "../../components/utils"
 
 export default function CodeQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: Promise<{ slug: string }> 
 }) {
-  const resolvedParams = params instanceof Promise ? use(params) : params;
-  const slug = resolvedParams.slug;
-  const { status: authStatus } = useSession();
+  const slug = getQuizSlug(params);
   const router = useRouter();
-
-  // Check for loading state
-  if (authStatus === 'loading') {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: 'Initializing quiz', status: 'loading' }
-        ]}
-      />
-    );
-  }
 
   if (!slug) {
     return (
       <div className="container max-w-4xl py-6">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-4">Error</h2>
-          <p className="text-muted-foreground">Quiz slug is missing. Please check the URL.</p>
-        </div>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold mb-4">Error</h2>
+            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
+            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+          </CardContent>
+        </Card>
       </div>
-    );
+    )
   }
-
-  // Allow all users to take quiz (authenticated or not)
   return (
-    <div className="container max-w-4xl py-6">
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="code"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
+      <QuizSEO 
+        slug={slug}
+        quizType="code"
+        description={`Test your programming skills with this ${slug.replace(/-/g, ' ')} coding challenge. Write code and improve your development abilities!`}
+      />
       <CodeQuizWrapper slug={slug} />
-    </div>
-  );
+    </QuizPlayLayout>
+  )
 }

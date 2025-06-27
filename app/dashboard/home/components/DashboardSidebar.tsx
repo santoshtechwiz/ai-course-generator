@@ -1,14 +1,12 @@
 "use client"
 import Link from "next/link"
+import { memo } from "react"
 import { Button } from "@/components/ui/button"
 import {
   GraduationCap,
   LayoutDashboard,
   BookOpen,
   BarChart3,
-  Settings,
-  Users,
-  PlusCircle,
   ChevronRight,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -22,15 +20,14 @@ interface DashboardSidebarProps {
   setIsOpen: (isOpen: boolean) => void
 }
 
-export default function DashboardSidebar({
+// Memoize the component to prevent unnecessary renders
+const DashboardSidebar = memo(function DashboardSidebar({
   activeTab,
   setActiveTab,
   userData,
   isOpen,
   setIsOpen,
 }: DashboardSidebarProps) {
-  const isAdmin = userData.isAdmin
-
   const menuItems = [
     {
       icon: LayoutDashboard,
@@ -47,20 +44,12 @@ export default function DashboardSidebar({
       icon: GraduationCap,
       label: "My Quizzes",
       value: "quizzes",
-      count: userData.userQuizzes?.length || 0, // Added null check for userQuizzes
+      count: userData.userQuizzes?.length || 0,
     },
     {
       icon: BarChart3,
       label: "Statistics",
       value: "stats",
-    },
-  ]
-
-  const adminItems = [
-    {
-      icon: Users,
-      label: "User Management",
-      href: "/admin/users",
     },
   ]
 
@@ -103,63 +92,9 @@ export default function DashboardSidebar({
             </Button>
           ))}
         </nav>
-
-        {isOpen && (
-          <>
-            <div className="px-4 py-2 mt-6">
-              <h3 className="text-xs uppercase text-muted-foreground font-medium tracking-wider mb-2">Create New</h3>
-              <div className="space-y-1">
-                <Button variant="outline" className="w-full justify-start text-sm" asChild>
-                  <Link href="/dashboard/course">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    <span className="flex-1 text-left">New Course</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start text-sm" asChild>
-                  <Link href="/dashboard/explore">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    New Quiz
-                  </Link>
-                </Button>
-              </div>
-            </div>
-
-            {isAdmin && (
-              <div className="px-4 py-2">
-                <h3 className="text-xs uppercase text-muted-foreground font-medium tracking-wider mb-2">Admin</h3>
-                <div className="space-y-1">
-                  {adminItems.map((item) => (
-                    <Button key={item.href} variant="outline" className="w-full justify-start text-sm" asChild>
-                      <Link href={item.href}>
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {item.label}
-                      </Link>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="border-t p-4">
-        <Button variant="outline" className={`w-full ${isOpen ? "justify-between" : "justify-center"}`} asChild>
-          <Link href="/dashboard/settings">
-            {isOpen ? (
-              <>
-                <div className="flex items-center">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </div>
-                <ChevronRight className="h-4 w-4" />
-              </>
-            ) : (
-              <Settings className="h-4 w-4" />
-            )}
-          </Link>
-        </Button>
       </div>
     </div>
   )
-}
+})
+
+export default DashboardSidebar

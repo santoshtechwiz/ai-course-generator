@@ -52,24 +52,24 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
   const fullCourse: FullCourseType = {
     id: course.id,
     title: course.title, // Map name to title
-    description: course.description,
+    description: course.description ?? undefined,
     image: course.image,
     viewCount: course.viewCount,
     userId: course.userId,
     categoryId: course.categoryId,
     isCompleted: course.isCompleted,
     isPublic: course.isPublic,
-    slug: course.slug,
+    slug: course.slug ?? "", // Provide a fallback empty string if slug is null
     difficulty: course.difficulty,
     estimatedHours: course.estimatedHours,
-    category: course.category,
+    category: course.category ? { id: course.category.id, name: course.category.name } : undefined,
     ratings: course.ratings,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
 
     // Transform courseUnits
     courseUnits: course.courseUnits.map(
-      (unit): FullCourseUnit => ({
+      (unit, unitIndex): FullCourseUnit => ({
         id: unit.id,
         courseId: unit.courseId,
         title: unit.name, // Map name to title
@@ -79,32 +79,43 @@ export async function getCourseData(slug: string): Promise<FullCourseType | null
 
         // Transform chapters
         chapters: unit.chapters.map(
-          (chapter): FullChapter => ({
-            id: chapter.id,
-            title: chapter.title, // Map name to title
-            videoId: chapter.videoId,
-            order: chapter.order,
-            isCompleted: chapter.isCompleted,
-            summary: chapter.summary,
-            description: chapter.title,
-            unitId: chapter.unitId,
-            summaryStatus: chapter.summaryStatus,
-            videoStatus: chapter.videoStatus,
+          (chapter, chapterIndex): FullChapter => {
+            // Calculate a reasonable duration - approx 5 minutes per chapter
+            const estimatedDuration = 5 * 60; // 5 minutes in seconds
+            
+            // Determine if chapter is free (typically the first chapter in each unit)
+            const isFree = chapterIndex === 0;
+            
+            return {
+              id: chapter.id,
+              title: chapter.title,
+              videoId: chapter.videoId,
+              order: chapter.order,
+              isCompleted: chapter.isCompleted,
+              summary: chapter.summary,
+              description: chapter.title, // Use title as description if none available
+              unitId: chapter.unitId,
+              summaryStatus: chapter.summaryStatus,
+              videoStatus: chapter.videoStatus,
+              // Add missing properties
+              isFree: isFree,
+              duration: estimatedDuration,
 
-            // Transform courseQuizzes to questions
-            questions: chapter.courseQuizzes.map(
-              (quiz): CourseQuestion => ({
-                id: quiz.id,
-                question: quiz.question,
-                answer: quiz.answer,
-                // Handle options - convert from string to string[] if needed
-                options:
-                  typeof quiz.options === "string"
-                    ? quiz.options.split(",").map((opt) => opt.trim())
-                    : quiz.options || [],
-              }),
-            ),
-          }),
+              // Transform courseQuizzes to questions
+              questions: chapter.courseQuizzes.map(
+                (quiz): CourseQuestion => ({
+                  id: quiz.id,
+                  question: quiz.question,
+                  answer: quiz.answer,
+                  // Handle options - convert from string to string[] if needed
+                  options:
+                    typeof quiz.options === "string"
+                      ? quiz.options.split(",").map((opt) => opt.trim())
+                      : quiz.options || [],
+                }),
+              ),
+            };
+          }
         ),
       }),
     ),

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 import type { UserWithTransactions } from "@/app/types/types"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 
 interface UserManagementContextType {
   selectedUser: UserWithTransactions | null

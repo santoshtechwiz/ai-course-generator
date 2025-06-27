@@ -1,4 +1,4 @@
-// A persistent storage solution using IndexedDB
+// A persistent storage solution using IndexedDB (safely for SSR)
 import type { QuizQuestion } from "@/app/types/quiz-types";
 
 export interface Question extends QuizQuestion {
@@ -20,21 +20,40 @@ const DB_NAME = "quizAppDB"
 const DB_VERSION = 1
 const QUIZ_STORE = "quizzes"
 
+// Check if we're running in a browser environment
+const isBrowser = typeof window !== 'undefined'
+
 class IndexedDBStore {
   private db: IDBDatabase | null = null
   private dbReady: Promise<boolean>
   private dbReadyResolver!: (value: boolean) => void
+  private isInitialized = false
 
   constructor() {
     this.dbReady = new Promise((resolve) => {
       this.dbReadyResolver = resolve
     })
-    this.initDB()
+    
+    // Only initialize if in browser, otherwise it will be lazy loaded
+    if (isBrowser) {
+      this.initDB()
+    } else {
+      // Resolve the promise to avoid hanging in a server environment
+      this.dbReadyResolver(false)
+    }
   }
 
   private initDB(): void {
+    // Skip if not in browser or already initialized
+    if (!isBrowser || this.isInitialized) {
+      return
+    }
+    
+    this.isInitialized = true
+
     if (!window.indexedDB) {
       console.error("Your browser doesn't support IndexedDB")
+      this.dbReadyResolver(false)
       return
     }
 
@@ -59,22 +78,36 @@ class IndexedDBStore {
       }
     }
   }
-
   private async ensureDBReady(): Promise<void> {
-    await this.dbReady
-    if (!this.db) {
+    // Check if we're in browser environment first
+    if (!isBrowser) {
+      // Return early without throwing on server
+      return
+    }
+    
+    // Wait for DB initialization to complete
+    const isReady = await this.dbReady
+    
+    // If we're in browser but DB failed to initialize
+    if (isReady && !this.db) {
       throw new Error("Database not initialized")
     }
   }
-
   async saveQuiz(title: string, questions: Question[]): Promise<Quiz> {
     await this.ensureDBReady()
 
+    // Create the quiz object
     const quiz: Quiz = {
       id: crypto.randomUUID(),
       title,
       questions,
       createdAt: Date.now(),
+    }
+
+    // Return the quiz without saving if not in browser
+    if (!isBrowser || !this.db) {
+      console.warn("Cannot save quiz: IndexedDB not available")
+      return quiz
     }
 
     return new Promise((resolve, reject) => {
@@ -92,9 +125,14 @@ class IndexedDBStore {
       store.add(quiz)
     })
   }
-
   async updateQuiz(id: string, updates: Partial<Quiz>): Promise<Quiz | null> {
     await this.ensureDBReady()
+
+    // Return null if not in browser
+    if (!isBrowser || !this.db) {
+      console.warn("Cannot update quiz: IndexedDB not available")
+      return null
+    }
 
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([QUIZ_STORE], "readwrite")
@@ -125,9 +163,14 @@ class IndexedDBStore {
       }
     })
   }
-
   async getAllQuizzes(): Promise<Quiz[]> {
     await this.ensureDBReady()
+
+    // Return empty array if not in browser
+    if (!isBrowser || !this.db) {
+      console.warn("Cannot get quizzes: IndexedDB not available")
+      return []
+    }
 
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([QUIZ_STORE], "readonly")
@@ -152,9 +195,14 @@ class IndexedDBStore {
       }
     })
   }
-
   async getQuiz(id: string): Promise<Quiz | null> {
     await this.ensureDBReady()
+
+    // Return null if not in browser
+    if (!isBrowser || !this.db) {
+      console.warn("Cannot get quiz: IndexedDB not available")
+      return null
+    }
 
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([QUIZ_STORE], "readonly")
@@ -170,9 +218,14 @@ class IndexedDBStore {
       }
     })
   }
-
   async deleteQuiz(id: string): Promise<boolean> {
     await this.ensureDBReady()
+
+    // Return false if not in browser
+    if (!isBrowser || !this.db) {
+      console.warn("Cannot delete quiz: IndexedDB not available")
+      return false
+    }
 
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([QUIZ_STORE], "readwrite")
@@ -192,3 +245,10 @@ class IndexedDBStore {
 
 // Create a singleton instance
 export const quizStore = new IndexedDBStore()
+
+// For debugging
+if (isBrowser) {
+  console.debug("Quiz store initialized in browser environment")
+} else {
+  console.debug("Quiz store initialized in server environment (IndexedDB unavailable)")
+}

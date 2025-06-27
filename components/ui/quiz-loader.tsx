@@ -1,58 +1,50 @@
-"use client"
+// Using the new loader implementation for backwards compatibility
+"use client";
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Loader2 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import React from 'react';
+import { LoaderComponent as Loader } from '@/components/ui/loader/loader';
+import type { LoaderProps } from '@/components/ui/loader/types';
 
-interface QuizLoaderProps {
-  message?: string
-  subMessage?: string
-  size?: "sm" | "md" | "lg"
-}
+export type QuizLoaderProps = {
+  full?: boolean;
+  message?: string;
+  subMessage?: string;
+  className?: string;
+  size?: "sm" | "md" | "lg";
+  showTiming?: boolean;
+  displayProgress?: number;
+  showSpinner?: boolean;
+  steps?: Array<{
+    label: string;
+    status: "loading" | "completed" | "pending";
+  }>;
+  isLoading?: boolean;
+};
 
-export const QuizLoader: React.FC<QuizLoaderProps> = ({ message = "Loading...", subMessage, size = "md" }) => {
-  const sizeClasses = {
-    sm: "w-6 h-6",
-    md: "w-8 h-8",
-    lg: "w-12 h-12",
-  }
+export function QuizLoader(props: QuizLoaderProps) {
+  const {
+    full = false,
+    message = "Loading...",
+    subMessage,
+    className,
+    size = "md",
+    showTiming = false,
+    displayProgress,
+    showSpinner = true,
+    steps,
+    isLoading = false,
+  } = props;
 
-  return (
-    <Card className="w-full max-w-3xl mx-auto my-8 border border-border/50 shadow-sm">
-      <CardContent className="flex flex-col items-center justify-center py-12">
-        <motion.div
-          animate={{
-            rotate: 360,
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-          className="mb-4"
-        >
-          <Loader2 className={`text-primary ${sizeClasses[size]}`} />
-        </motion.div>
-        <motion.h3
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-lg font-medium text-foreground mb-2"
-        >
-          {message}
-        </motion.h3>
-        {subMessage && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-sm text-muted-foreground text-center max-w-md"
-          >
-            {subMessage}
-          </motion.p>
-        )}
-      </CardContent>
-    </Card>
-  )
+  // Convert QuizLoader props to LoaderProps
+  const loaderProps: LoaderProps = {
+    isLoading,
+    message,
+    subMessage,
+    fullscreen: full,
+    variant: showSpinner ? "clip" : "bar",
+    showProgress: displayProgress !== undefined,
+    progress: displayProgress,
+    className,
+    context: "quiz"  };  // Return the new Loader component with the mapped props
+  return <Loader {...loaderProps} />;
 }

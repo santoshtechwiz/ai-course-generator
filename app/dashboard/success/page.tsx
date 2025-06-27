@@ -58,105 +58,106 @@ function SuccessPageSkeleton() {
   )
 }
 
-// Update the SuccessPageContent component to maintain the original functionality
-// and only show success information for confirmed payments
-
-async function SuccessPageContent({
-  userId,
-  sessionId,
-}: { userId: string | undefined; sessionId: string | undefined }) {
-  let subscriptionDetails = null
-  let planName = "your plan"
-  let tokensAdded = 0
-
-  if (userId) {
-    try {
-      // Get the user's subscription details
-      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(userId)
-      const plan = subscriptionStatus?.subscriptionPlan // Adjust this line based on the actual structure of SubscriptionStatus
-
-      if (plan) {
-        // Find the plan details to get token information
-        const planConfig = SUBSCRIPTION_PLANS.find((p) => p.id === plan)
-        if (planConfig) {
-          planName = planConfig.name
-          tokensAdded = planConfig.tokens
-        }
-      }
-
-      subscriptionDetails = { plan, tokensAdded }
-    } catch (error) {
-      console.error("Error fetching subscription details:", error)
-    }
+async function SuccessPageContent({ userId, sessionId }: { userId?: string; sessionId?: string }) {
+  // Check if we have both a userId and sessionId to verify payment
+  if (!userId || !sessionId) {
+    return (
+      <div className="text-center">
+        <p className="text-muted-foreground mb-6">
+          Unable to verify payment details. If you believe this is an error, please contact support.
+        </p>
+        <Button asChild>
+          <Link href="/dashboard/home">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return to Dashboard
+          </Link>
+        </Button>
+      </div>
+    )
   }
 
+  // Verify the payment and subscription status
+  const subscriptionDetails = await SubscriptionService.verifyPaymentSuccess(userId, sessionId)
+  const plan = SUBSCRIPTION_PLANS.find((p) => p.id === subscriptionDetails?.planId)
+
   return (
-    <div className="space-y-8">
-      <Card className="border border-slate-200 dark:border-slate-700 shadow-md">
+    <>
+      <Card className="mb-8">
         <CardHeader>
           <CardTitle>Subscription Activated</CardTitle>
-          <CardDescription>Your {planName} plan is now active</CardDescription>
+          <CardDescription>
+            Your {plan?.name || "Premium"} subscription is now active
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center mb-4">
-              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-4">
-                <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Tokens Added</h3>
-                <p className="text-muted-foreground">{tokensAdded} tokens have been added to your account</p>
-              </div>
-            </div>
-
-            <div className="flex items-center">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full mr-4">
-                <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Receipt</h3>
-                <p className="text-muted-foreground">A receipt has been sent to your email address</p>
-              </div>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Plan</span>
+            <span className="font-medium">{plan?.name || "Premium Plan"}</span>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-              <h3 className="font-medium mb-2">Next Steps</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Start using your new subscription features and create amazing content.
-              </p>
-              <Button
-                asChild
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-              >
-                <Link href="/dashboard">
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+          {subscriptionDetails?.credits && (
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Credits Added</span>
+              <span className="font-medium">{subscriptionDetails.credits} tokens</span>
             </div>
-
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-              <h3 className="font-medium mb-2">Manage Your Subscription</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                View your subscription details, billing history, and manage your payment methods.
-              </p>
-              <Button asChild variant="outline" className="w-full border-slate-300 dark:border-slate-600">
-                <Link href="/dashboard/account">Account Settings</Link>
-              </Button>
-            </div>
+          )}
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Status</span>
+            <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
           </div>
+          {subscriptionDetails?.currentPeriodEnd && (
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Next Billing Date</span>
+              <span className="font-medium">
+                {new Date(subscriptionDetails.currentPeriodEnd).toLocaleDateString()}
+              </span>
+            </div>
+          )}
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button variant="ghost" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Return to Dashboard
+        <CardFooter className="flex flex-col space-y-4">
+          <p className="text-sm text-muted-foreground">
+            You can manage your subscription in your account settings at any time.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <Button className="w-full" asChild>
+              <Link href="/dashboard/home">
+                Start Learning <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button className="w-full" variant="outline" asChild>
+              <Link href="/dashboard/account">
+                <FileText className="mr-2 h-4 w-4" />
+                Manage Subscription
+              </Link>
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Zap className="h-5 w-5 mr-2 text-yellow-500" />
+            Get Started with Your New Plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p>Here are some things you can do with your new subscription:</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Create unlimited AI-generated quizzes</li>
+            <li>Access premium courses and content</li>
+            <li>Generate personalized learning paths</li>
+            <li>Track your progress with detailed analytics</li>
+          </ul>
+        </CardContent>
+        <CardFooter>
+          <Button variant="ghost" asChild className="w-full">
+            <Link href="/dashboard/explore">
+              Explore New Content
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </CardFooter>
       </Card>
-    </div>
+    </>
   )
 }

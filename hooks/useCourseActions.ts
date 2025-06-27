@@ -22,10 +22,13 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
 
   const fetchCourseStatus = useCallback(async () => {
     try {
-      const response = await fetch(`/api/course/${slug}`)
-      if (!response.ok) throw new Error("Failed to fetch course status")
+      setLoading("status")
+      const response = await fetch(`/api/course/${slug}/status`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch course status: ${response.statusText}`)
+      }
       const data = await response.json()
-      setStatus({ isPublic: data.isPublic, isFavorite: data.isFavorite, rating: data.rating })
+      setStatus(data)
     } catch (error) {
       console.error("Error fetching course status:", error)
       toast({
@@ -33,6 +36,8 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
         description: "Failed to fetch course status. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setLoading(null)
     }
   }, [slug])
 
@@ -57,10 +62,8 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
           response = await fetch(`/api/course/${slug}`, {
             method: "DELETE",
           })
-        }
-
-        if (!response.ok) {
-          throw new Error("Failed to perform action")
+        }        if (!response || !response.ok) {
+          throw new Error(`Failed to perform action: ${response?.statusText || 'Unknown error'}`)
         }
 
         const result = await response.json()
@@ -104,26 +107,23 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
     async (rating: number) => {
       setLoading("rating")
       try {
-        const response = await fetch(`/api/rating`, {
+        const response = await fetch(`/api/course/${slug}/rate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "course", id: slug, rating }),
+          body: JSON.stringify({ rating }),
         })
 
         if (!response.ok) {
-          throw new Error("Failed to update rating")
+          throw new Error(`Failed to submit rating: ${response.statusText}`)
         }
 
-        const result = await response.json()
-        setStatus((prev) => ({ ...prev, rating: result.data.rating }))
+        await fetchCourseStatus() // Refresh status after rating
         toast({
           title: "Rating Updated",
           description: "Your rating has been successfully updated.",
         })
-
-        router.refresh()
       } catch (error) {
-        console.error("Error updating rating:", error)
+        console.error("Error submitting rating:", error)
         toast({
           title: "Error",
           description: "Failed to update rating. Please try again.",
@@ -133,7 +133,7 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
         setLoading(null)
       }
     },
-    [slug, router],
+    [slug, fetchCourseStatus],
   )
 
   return { status, loading, handleAction, handleRating, fetchCourseStatus }

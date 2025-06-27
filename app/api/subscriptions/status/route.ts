@@ -10,14 +10,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check for cache control headers
-    const skipCache = req.headers.get("x-force-refresh") === "true"
-
-    // Use a more aggressive cache for non-forced refreshes
-    const cacheMaxAge = skipCache ? 0 : 30 // 30 seconds cache for normal requests
-    const staleWhileRevalidate = 60 // 1 minute stale-while-revalidate
-
-    // Optimize database query to only select needed fields
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -42,39 +34,19 @@ export async function GET(req: NextRequest) {
 
     const subscription = user.subscription
     const isActive = subscription?.status.toLowerCase() === "active"
-
-    const credits = typeof user.credits === "number" ? user.credits : 0
-    const tokensUsed = typeof user.creditsUsed === "number" ? user.creditsUsed : 0
+    const isExpired = subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
 
     const response = {
-      credits,
-      tokensUsed,
-      isSubscribed: !!subscription && isActive,
+      credits: typeof user.credits === "number" ? user.credits : 0,
+      tokensUsed: typeof user.creditsUsed === "number" ? user.creditsUsed : 0,
+      isSubscribed: !!subscription && isActive && !isExpired,
       subscriptionPlan: subscription?.planId || "FREE",
       expirationDate: subscription?.currentPeriodEnd?.toISOString() || null,
-      isActive,
-      active: isActive,
-      plan: subscription?.planId || "FREE",
-      status: subscription?.status || null,
-      expiresAt: subscription?.currentPeriodEnd || null,
+      status: isExpired ? "EXPIRED" : subscription?.status || "INACTIVE",
       cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
     }
 
-    const headers = new Headers()
-    if (!skipCache) {
-      headers.set(
-        "Cache-Control",
-        `max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
-      )
-    } else {
-      headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
-    }
-
-    return NextResponse.json(response, {
-      headers: {
-        "Cache-Control": headers.get("Cache-Control") || "no-cache",
-      },
-    })
+    return NextResponse.json(response)
   } catch (error) {
     console.error("Subscription status API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -14,9 +14,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is requesting their own data or is an admin
+    // Fix: Allow users to access their own data OR admins to access any user data
     if (session.user.id !== params.id && session.user.isAdmin !== true) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ 
+        error: "Forbidden: You can only access your own dashboard data" 
+      }, { status: 403 })
     }
 
     const userData = await getUserData(params.id)

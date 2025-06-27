@@ -40,12 +40,16 @@ export const redirectFromNumericId = async (
       // Check for any pending quiz with a different slug
       const pendingQuizStr = sessionStorage.getItem('pendingQuiz');
       if (pendingQuizStr) {
-        const parsedQuiz = JSON.parse(pendingQuizStr);
-        if (parsedQuiz.slug && parsedQuiz.slug !== currentSlugOrId) {
-          console.log(`Redirecting from numeric ID ${currentSlugOrId} to proper slug ${parsedQuiz.slug}`);
-          const path = getNormalizedQuizPath(quizType, parsedQuiz.slug, segment);
-          router.replace(path);
-          return true;
+        try {
+          const pendingQuiz = JSON.parse(pendingQuizStr);
+          if (pendingQuiz.slug && pendingQuiz.slug !== currentSlugOrId) {
+            console.log(`Redirecting from numeric ID ${currentSlugOrId} to proper slug ${pendingQuiz.slug}`);
+            const path = getNormalizedQuizPath(quizType, pendingQuiz.slug, segment);
+            router.replace(path);
+            return true;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse pendingQuiz:", parseError);
         }
       }
       
@@ -65,7 +69,8 @@ export const redirectFromNumericId = async (
         }
       }
     } catch (e) {
-      console.warn('Error while attempting slug redirect:', e);
+      console.error("Error accessing sessionStorage:", e);
+      return false;
     }
   }
   
@@ -80,20 +85,10 @@ export const navigateToQuizResults = (
   quizType: string,
   slug: string | number | null | undefined
 ): void => {
-  if (!slug) return;
-  
-  // Ensure slug is a string
-  const safeSlug = String(slug).trim();
-  if (!safeSlug) return;
-  
+  const safeSlug = slug ? String(slug) : 'unknown';
   try {
     router.push(`/dashboard/${quizType}/${safeSlug}/results`);
   } catch (e) {
-    console.error("Error navigating to results:", e);
-    
-    // Fallback to window.location if needed
-    if (typeof window !== 'undefined') {
-      window.location.href = `/dashboard/${quizType}/${safeSlug}/results`;
-    }
+    console.error("Navigation error:", e);
   }
 };

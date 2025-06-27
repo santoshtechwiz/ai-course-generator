@@ -177,7 +177,7 @@ class YoutubeService {
 
   private static async getYtTranscript(videoId: string): Promise<string | null> {
     const transcript = await new YtTranscript({ videoId }).getTranscript()
-    return transcript ? transcript.map((item) => item.text).join(" ") : null
+    return transcript ? transcript.map((item) => item?.text).join(" ") : null
   }
 }
 

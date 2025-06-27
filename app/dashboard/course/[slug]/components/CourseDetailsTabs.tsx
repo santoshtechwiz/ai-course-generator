@@ -1,473 +1,310 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
-import axios from "axios"
-import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, ChevronRight, AlertCircle, ChevronLeft, Lock } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import { useState, useCallback, useMemo } from "react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/hooks/use-toast"
-import { useSession } from "next-auth/react"
+import { FileText, MessageSquare, BarChart3, Award, TrendingUp, Bookmark as BookmarkIcon, Trash, File } from "lucide-react"
 
-import QuizBackground from "./QuizBackground"
+import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
+import type { FullCourseType, FullChapterType } from "@/app/types/types"
+import CourseDetailsQuiz from "./CourseQuiz"
+import CourseAISummary from "./CourseSummary"
 
-import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
-
-type Props = {
+interface AccessLevels {
   isPremium: boolean
-  isPublicCourse: boolean
-  chapter: FullChapterType
-  course: FullCourseType
-  chapterId?: string
+  isProUser: boolean
+  isBasicUser: boolean
+  isAuthenticated: boolean
 }
 
-// Improve the quiz experience for unauthenticated users
-export default function CourseDetailsQuiz({ chapter, course, isPremium, isPublicCourse, chapterId }: Props) {
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [score, setScore] = useState(0)
-  const [showResults, setShowResults] = useState(false)
-  const [quizStarted, setQuizStarted] = useState(false)
-  const [quizProgress, setQuizProgress] = useState<Record<string, any>>({})
-  const { toast } = useToast()
-  const { data: session } = useSession()
-  const isAuthenticated = !!session
+interface CourseDetailsTabsProps {
+  course: FullCourseType
+  currentChapter?: FullChapterType
+  isAuthenticated?: boolean // Keep for backward compatibility
+  isPremium?: boolean // Keep for backward compatibility
+  isAdmin?: boolean
+  accessLevels?: AccessLevels // New prop for standardized access control
+  onSeekToBookmark?: (time: number, title?: string) => void
+}
 
-  // Use the provided chapterId or fall back to chapter.id
-  const effectiveChapterId = chapterId || chapter?.id?.toString()
+export default function CourseDetailsTabs({
+  course,
+  currentChapter,
+  isAuthenticated = true, // Default value for backward compatibility
+  isPremium = false, // Default value for backward compatibility
+  isAdmin = false,
+  accessLevels,
+  onSeekToBookmark,
+}: CourseDetailsTabsProps) {
+  const dispatch = useAppDispatch()
+  const [activeTab, setActiveTab] = useState("summary")
 
-  // Load saved quiz progress from localStorage
-  useEffect(() => {
-    if (effectiveChapterId) {
-      const savedProgress = localStorage.getItem(`quiz-progress-${effectiveChapterId}`)
-      if (savedProgress) {
-        try {
-          const progress = JSON.parse(savedProgress)
-          setQuizProgress(progress)
+  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const bookmarks = useAppSelector((state) => state.course.bookmarks[currentVideoId || ""] || [])
+  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
 
-          // If quiz was completed, show results
-          if (progress.completed) {
-            setQuizCompleted(true)
-            setScore(progress.score || 0)
-            setAnswers(progress.answers || {})
-          } else if (progress.currentIndex !== undefined) {
-            setCurrentQuestionIndex(progress.currentIndex)
-            setAnswers(progress.answers || {})
-            setQuizStarted(true)
-          }
-        } catch (e) {
-          console.error("Error parsing saved quiz progress:", e)
-        }
-      }
+  const courseStats = useMemo(() => {
+    const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
+    const completedChapters = courseProgress?.completedChapters?.length || 0
+    const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
+
+    return {
+      totalChapters,
+      completedChapters,
+      progressPercentage,
     }
-  }, [effectiveChapterId])
+  }, [course.courseUnits, courseProgress?.completedChapters?.length])
 
-  // Save quiz progress to localStorage
-  const saveProgress = useCallback(
-    (data: Record<string, any>) => {
-      if (effectiveChapterId) {
-        localStorage.setItem(
-          `quiz-progress-${effectiveChapterId}`,
-          JSON.stringify({
-            ...quizProgress,
-            ...data,
-            lastUpdated: new Date().toISOString(),
+  const formatTime = useCallback((seconds: number): string => {
+    if (isNaN(seconds)) return "0:00"
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = Math.floor(seconds % 60)
+    return h > 0
+      ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+      : `${m}:${s.toString().padStart(2, "0")}`
+  }, [])
+
+  const handleAddBookmark = useCallback(
+    (time: number, title?: string) => {
+      if (currentVideoId) {
+        dispatch(
+          addBookmark({
+            videoId: currentVideoId,
+            time,
+            title: title || `Bookmark at ${formatTime(time)}`,
+            id: `${currentVideoId}-${time}-${Date.now()}`,
           }),
         )
       }
     },
-    [effectiveChapterId, quizProgress],
+    [currentVideoId, dispatch, formatTime],
   )
 
-  // Create a set of demo questions for unauthenticated users
-  const demoQuestions = useMemo(() => {
-    return [
-      {
-        id: "demo1",
-        question: "What is the primary purpose of this course?",
-        options: [
-          "To teach programming fundamentals",
-          "To explore advanced concepts",
-          "To provide practical examples",
-          "All of the above",
-        ],
-        answer: "All of the above",
-      },
-      {
-        id: "demo2",
-        question: "Which of the following is a key benefit of taking this course?",
-        options: [
-          "Hands-on coding exercises",
-          "Theoretical knowledge only",
-          "No practical applications",
-          "Limited examples",
-        ],
-        answer: "Hands-on coding exercises",
-      },
-      {
-        id: "demo3",
-        question: "What would you need to access the full quiz content?",
-        options: ["A premium subscription", "Nothing, it's all free", "A different browser", "Special software"],
-        answer: "A premium subscription",
-      },
-    ]
-  }, [])
-
-  const {
-    data: questions,
-    isError,
-    error,
-    isLoading: isQuizLoading,
-  } = useQuery<CourseQuestion[]>({
-    queryKey: ["transcript", effectiveChapterId],
-    queryFn: async () => {
-      if (!chapter?.videoId || !effectiveChapterId) {
-        throw new Error("Required chapter data is missing.")
-      }
-      const response = await axios.post("/api/coursequiz", {
-        videoId: chapter.videoId,
-        chapterId: Number(effectiveChapterId),
-        chapterName: chapter.title || chapter.title,
-      })
-
-      // Also, let's improve the error handling and logging
-      if (response.data.error) {
-        console.error("Quiz API error:", response.data.error)
-        throw new Error(response.data.error)
-      }
-
-      // Add better logging to help diagnose the issue
-      console.log("Quiz data received:", response.data)
-
-      // Make sure we're properly handling empty responses
-      if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-        console.warn("Empty quiz data received for chapter:", effectiveChapterId)
-        throw new Error("No quiz questions available for this chapter")
-      }
-
-      // Ensure we're properly parsing the options
-      return response.data.map((question: any) => ({
-        ...question,
-        options: Array.isArray(question.options)
-          ? question.options
-          : typeof question.options === "string"
-            ? JSON.parse(question.options)
-            : [],
-      }))
-    },
-    retry: 3,
-    staleTime: 5 * 60 * 1000,
-    enabled: isPremium && quizStarted && isAuthenticated, // Only fetch if user is premium, authenticated and quiz has started
-  })
-
-  // Use demo questions for unauthenticated users
-  const effectiveQuestions = useMemo(() => {
-    if (!isPremium || !isAuthenticated) {
-      return demoQuestions
-    }
-    return questions || []
-  }, [isPremium, isAuthenticated, questions, demoQuestions])
-
-  const currentQuestion = useMemo(
-    () => (effectiveQuestions && effectiveQuestions.length > 0 ? effectiveQuestions[currentQuestionIndex] : null),
-    [effectiveQuestions, currentQuestionIndex],
-  )
-
-  const handleAnswer = useCallback(
-    (value: string) => {
-      if (currentQuestion) {
-        const newAnswers = { ...answers, [currentQuestion.id]: value }
-        setAnswers(newAnswers)
-        saveProgress({ answers: newAnswers, currentIndex: currentQuestionIndex })
+  const handleRemoveBookmark = useCallback(
+    (bookmarkId: string) => {
+      if (currentVideoId) {
+        dispatch(removeBookmark({ videoId: currentVideoId, bookmarkId }))
       }
     },
-    [currentQuestion, answers, currentQuestionIndex, saveProgress],
+    [currentVideoId, dispatch],
   )
 
-  const checkAnswer = useCallback(() => {
-    if (currentQuestion) {
-      const userAnswer = answers[currentQuestion.id]
-      const isCorrect = userAnswer?.trim() === currentQuestion.answer?.trim()
-
-      if (isCorrect) {
-        setScore((prev) => prev + 1)
+  const handleSeekToBookmark = useCallback(
+    (time: number) => {
+      if (onSeekToBookmark) {
+        onSeekToBookmark(time)
       }
+    },
+    [onSeekToBookmark],
+  )
 
-      if (currentQuestionIndex < (effectiveQuestions?.length ?? 0) - 1) {
-        const nextIndex = currentQuestionIndex + 1
-        setCurrentQuestionIndex(nextIndex)
-        saveProgress({ currentIndex: nextIndex })
-      } else {
-        const finalScore = score + (isCorrect ? 1 : 0)
-        setQuizCompleted(true)
-        saveProgress({
-          completed: true,
-          score: finalScore,
-          completedAt: new Date().toISOString(),
-        })
+  // Use new accessLevels or fall back to the legacy props
+  const finalAccessLevels = accessLevels || {
+    isPremium,
+    isProUser: isPremium, // Assuming premium users have pro access
+    isBasicUser: isAuthenticated, // Assuming authenticated users have basic access
+    isAuthenticated
+  };
 
-        toast({
-          title: "Quiz Completed!",
-          description: `You scored ${finalScore} out of ${effectiveQuestions?.length}`,
-        })
-      }
-    }
-  }, [currentQuestion, answers, currentQuestionIndex, effectiveQuestions?.length, score, saveProgress, toast])
-
-  const retakeQuiz = useCallback(() => {
-    setAnswers({})
-    setCurrentQuestionIndex(0)
-    setQuizCompleted(false)
-    setScore(0)
-    setShowResults(false)
-    saveProgress({
-      completed: false,
-      currentIndex: 0,
-      answers: {},
-      score: 0,
-    })
-  }, [saveProgress])
-
-  const handleShowResults = useCallback(() => {
-    setShowResults(true)
-  }, [])
-
-  const startQuiz = useCallback(() => {
-    setQuizStarted(true)
-    saveProgress({ started: true, startedAt: new Date().toISOString() })
-  }, [saveProgress])
-
-  // If not premium but public course, show demo quiz with a premium upgrade prompt
-  if (!isPremium && isPublicCourse) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto bg-card">
-        <CardHeader className="relative z-10 text-center">
-          <CardTitle className="text-2xl">Chapter Quiz Preview</CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10 p-6">
-          <div className="bg-background/50 rounded-lg p-6 border border-border mb-6">
-            <h3 className="text-lg font-semibold mb-2">Sample Question</h3>
-            <p className="mb-4">What is the primary purpose of this course?</p>
-            <div className="space-y-2">
-              {[
-                "To teach programming fundamentals",
-                "To explore advanced concepts",
-                "To provide practical examples",
-                "All of the above",
-              ].map((option, i) => (
-                <div key={i} className="p-3 border rounded-md bg-card/50">
-                  {option}
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 flex justify-between">
-              <Button variant="outline" disabled>
-                Previous
-              </Button>
-              <Button disabled>Next</Button>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
-            <p className="text-muted-foreground mb-4">
-              Upgrade to Premium to access interactive quizzes for all chapters.
-            </p>
-            <Button onClick={() => (window.location.href = "/dashboard/subscription")}>Upgrade to Premium</Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!isPremium) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="flex flex-col items-center justify-center h-40 text-center">
-          <Lock className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
-          <p className="text-muted-foreground mb-4">Upgrade to Premium to access quizzes.</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (isError) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="flex items-center justify-center h-40">
-          <div className="flex items-center space-x-2 text-destructive">
-            <AlertCircle className="w-6 h-6" />
-            <p className="text-lg">Error loading quiz: {(error as Error).message || "Please try again later."}</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (isQuizLoading) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="p-8">
-          <div className="flex items-center space-x-2 mb-4">
-            <Skeleton className="h-6 w-6 rounded-full" />
-            <Skeleton className="h-6 w-48" />
-          </div>
-          <Skeleton className="h-4 w-full mb-8" />
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full rounded-md" />
-            <Skeleton className="h-12 w-full rounded-md" />
-            <Skeleton className="h-12 w-full rounded-md" />
-            <Skeleton className="h-12 w-full rounded-md" />
-          </div>
-          <div className="flex justify-between mt-8">
-            <Skeleton className="h-10 w-24 rounded-md" />
-            <Skeleton className="h-10 w-24 rounded-md" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!effectiveQuestions || effectiveQuestions.length === 0) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="flex items-center justify-center h-40">
-          <p className="text-muted-foreground text-lg">No quiz available for this chapter.</p>
-        </CardContent>
-      </Card>
-    )
-  }
+  // Add a tab for bookmarks, if they don't exist already
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: <FileText className="h-4 w-4 mr-2" /> },
+    { id: 'notes', label: 'Notes', icon: <MessageSquare className="h-4 w-4 mr-2" /> },
+    { id: 'transcripts', label: 'Transcript', icon: <FileText className="h-4 w-4 mr-2" /> },
+    { id: 'bookmarks', label: 'Bookmarks', icon: <BookmarkIcon className="h-4 w-4 mr-2" /> },
+    { id: 'resources', label: 'Resources', icon: <File className="h-4 w-4 mr-2" /> },
+  ];
 
   return (
-    <Card className="w-full max-w-4xl mx-auto relative overflow-hidden bg-card">
-      <QuizBackground />
-      <CardHeader className="p-8 bg-background/50 relative z-10 border-b">
-        <CardTitle className="text-3xl flex items-center space-x-4">
-          <CheckCircle className="w-8 h-8 text-primary" />
-          <span>Concept Check</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-8 relative z-10">
-        <AnimatePresence mode="wait">
-          {!quizCompleted && currentQuestion ? (
-            <motion.div
-              key={currentQuestionIndex}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Progress value={((currentQuestionIndex + 1) / effectiveQuestions.length) * 100} className="mb-6 h-2" />
-              <h2 className="text-xl font-semibold mb-6">{currentQuestion.question}</h2>
-              <RadioGroup onValueChange={handleAnswer} value={answers[currentQuestion.id]} className="space-y-2">
-                {currentQuestion.options.map((option: string, index: number) => (
-                  <div
-                    key={`${option}-${index}`}
-                    className={cn(
-                      "flex items-center space-x-3 p-3 rounded-lg transition-colors",
-                      answers[currentQuestion.id] === option
-                        ? "bg-primary/10 text-primary dark:bg-primary/20"
-                        : "hover:bg-accent/50 dark:hover:bg-accent/20",
-                    )}
-                  >
-                    <RadioGroupItem value={option} id={`option-${index}`} className="w-5 h-5" />
-                    <Label htmlFor={`option-${index}`} className="text-base flex-grow cursor-pointer">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </motion.div>
-          ) : quizCompleted ? (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
-              <h2 className="text-4xl font-bold mb-8">Quiz Completed!</h2>
-              <p className="text-2xl mb-8">
-                Your score:{" "}
-                <span className="text-primary font-bold">
-                  {score} / {effectiveQuestions.length}
-                </span>
-              </p>
-              <div className="space-x-4">
-                <Button onClick={handleShowResults} size="lg" className="text-xl px-10 py-6" variant="outline">
-                  Show Results
-                </Button>
-                <Button onClick={retakeQuiz} size="lg" className="text-xl px-10 py-6">
-                  Retake Quiz
-                </Button>
+    <div className="h-full w-full flex flex-col overflow-hidden">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden">
+        {/* Tab Navigation */}
+        <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/20 rounded-none flex-shrink-0">
+          <TabsTrigger value="summary" className="flex items-center gap-2 text-sm">
+            <FileText className="h-4 w-4" />
+            Summary
+          </TabsTrigger>
+          <TabsTrigger value="quiz" className="flex items-center gap-2 text-sm">
+            <MessageSquare className="h-4 w-4" />
+            Quiz
+          </TabsTrigger>
+          <TabsTrigger value="progress" className="flex items-center gap-2 text-sm">
+            <BarChart3 className="h-4 w-4" />
+            Progress
+          </TabsTrigger>
+          <TabsTrigger value="bookmarks" className="flex items-center gap-2 text-sm">
+            <BookmarkIcon className="h-4 w-4" />
+            Bookmarks
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tabs Content */}
+        <TabsContent value="summary" className="h-full overflow-auto p-4">
+          {currentChapter ? (
+            <CourseAISummary
+              chapterId={currentChapter.id}
+              name={currentChapter.title || currentChapter.name || "Chapter Summary"}
+              existingSummary={currentChapter.summary || null}
+              hasAccess={finalAccessLevels.isPremium}
+              isAdmin={isAdmin}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No Chapter Selected</h3>
+                <p className="text-sm">Select a chapter to view AI-generated summary</p>
               </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-        {showResults && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
-            <h3 className="text-2xl font-bold mb-4">Quiz Results</h3>
-            {effectiveQuestions.map((question, index) => (
-              <div
-                key={`${question.id}-${index}`}
-                className={cn(
-                  "mb-6 p-4 rounded-lg",
-                  answers[question.id] === question.answer
-                    ? "bg-green-100/50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-                    : "bg-red-100/50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
-                )}
-              >
-                <p className="font-semibold mb-2">
-                  {index + 1}. {question.question}
-                </p>
-                <p
-                  className={cn(
-                    "text-sm mb-1",
-                    answers[question.id] === question.answer
-                      ? "text-green-700 dark:text-green-400"
-                      : "text-red-700 dark:text-red-400",
-                  )}
-                >
-                  Your answer: {answers[question.id] || "Not answered"}
-                </p>
-                <p className="text-sm text-primary font-medium">Correct answer: {question.answer}</p>
-              </div>
-            ))}
-            <div className="mt-6 text-center">
-              <Button onClick={retakeQuiz} size="lg">
-                Retake Quiz
-              </Button>
             </div>
-          </motion.div>
-        )}
-      </CardContent>
-      {!quizCompleted && currentQuestion && (
-        <CardFooter className="flex justify-between p-8 bg-muted/50 border-t border-border relative z-10">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-            disabled={currentQuestionIndex === 0}
-            size="lg"
-            className="text-lg px-6 py-3"
-          >
-            <ChevronLeft className="w-6 h-6 mr-2" />
-            Previous
-          </Button>
-          <Button
-            onClick={checkAnswer}
-            disabled={!answers[currentQuestion.id]}
-            className={cn("text-lg px-6 py-3", {
-              "opacity-50 cursor-not-allowed": !answers[currentQuestion.id],
-            })}
-            size="lg"
-          >
-            {currentQuestionIndex === effectiveQuestions.length - 1 ? "Finish" : "Next"}
-            <ChevronRight className="w-6 h-6 ml-2" />
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="quiz" className="h-full overflow-auto p-4">
+          {currentChapter ? (
+            <CourseDetailsQuiz
+              course={course}
+              chapter={currentChapter}
+              hasAccess={finalAccessLevels.isPremium}
+              isAuthenticated={finalAccessLevels.isAuthenticated}
+              isPublicCourse={course.isPublic || false}
+              chapterId={currentChapter.id.toString()}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No Chapter Selected</h3>
+                <p className="text-sm">Select a chapter to take the quiz</p>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="progress" className="h-full overflow-auto p-4">
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <TrendingUp className="h-5 w-5" />
+                Learning Progress
+              </CardTitle>
+              <CardDescription>Track your progress through the course</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Course Completion</span>
+                  <span className="font-medium">{courseStats.progressPercentage}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${courseStats.progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <div className="text-xl font-bold text-primary">{courseStats.completedChapters}</div>
+                  <div className="text-xs text-muted-foreground">Completed</div>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <div className="text-xl font-bold">{courseStats.totalChapters}</div>
+                  <div className="text-xs text-muted-foreground">Total</div>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <div className="text-xl font-bold text-green-600">{bookmarks.length}</div>
+                  <div className="text-xs text-muted-foreground">Bookmarks</div>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <div className="text-xl font-bold text-yellow-600">
+                    {courseStats.progressPercentage === 100 ? "1" : "0"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Certificates</div>
+                </div>
+              </div>
+              {courseStats.progressPercentage === 100 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
+                  <div className="flex items-center gap-3">
+                    <Award className="h-8 w-8 text-yellow-600" />
+                    <div>
+                      <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Course Completed!</h3>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        Congratulations! You've completed all chapters.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" className="ml-auto">
+                      <Award className="h-4 w-4 mr-2" />
+                      Certificate
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bookmarks" className="h-full overflow-auto p-4">
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BookmarkIcon className="h-5 w-5" />
+                Bookmarks
+              </CardTitle>
+              <CardDescription>
+                {bookmarks.length > 0
+                  ? "Jump to specific parts of the video you've saved"
+                  : "You haven't saved any bookmarks for this video yet"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {accessLevels.isAuthenticated && bookmarks.length > 0 ? (
+                <div className="space-y-3">
+                  {bookmarks.map((bookmark) => (
+                    <div
+                      key={bookmark.id}
+                      onClick={() => handleSeekToBookmark(bookmark.time)}
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/20 text-primary font-medium rounded px-2 py-1 text-xs">
+                          {formatTime(bookmark.time)}
+                        </div>
+                        <span className="line-clamp-1">{bookmark.title}</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveBookmark(bookmark.id)
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : accessLevels?.isAuthenticated ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <BookmarkIcon className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>No bookmarks yet</p>
+                  <p className="text-sm">Press 'B' while watching to add a bookmark</p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Sign in to save video bookmarks</p>
+                  <Button variant="outline" className="mt-4">
+                    Sign In
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

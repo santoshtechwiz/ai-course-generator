@@ -3,12 +3,15 @@ import Link from "next/link"
 import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
-import type { Metadata } from "next"
 import { AuthButtonGroup } from "./components/AuthButtonGroup"
 import { BenefitsCarousel } from "./components/BenefitsCarousel"
 import { Suspense } from "react"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
 
-export const metadata: Metadata = {
+
+
+
+export const metadata = {
   title: "Sign In ",
   description: "Sign in to your Course AI account to access your courses, quizzes, and learning progress.",
   keywords: ["sign in", "login", "account access", "user authentication", "course platform login"],
@@ -16,16 +19,6 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
-}
-
-function LoadingProviders() {
-  return (
-    <div className="flex flex-col space-y-3 w-full max-w-sm mx-auto px-4 sm:px-0">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="w-full h-12 bg-gray-200 animate-pulse rounded-lg"></div>
-      ))}
-    </div>
-  )
 }
 
 export default async function LoginPage({
@@ -49,7 +42,7 @@ export default async function LoginPage({
           <div className="text-4xl font-bold text-center mb-10 text-gray-800">Log in to Course AI</div>
 
           <div className="flex flex-col space-y-6 items-center">
-            <Suspense fallback={<LoadingProviders />}>
+            <Suspense fallback={<EnhancedLoader isLoading={true} message="Loading providers..." fullscreen />}>
               {providers && <AuthButtonGroup providers={providers} callbackUrl={callbackUrl || "/"} />}
             </Suspense>
           </div>

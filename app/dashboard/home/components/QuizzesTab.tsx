@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -23,31 +23,41 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
   const [loadingQuizId, setLoadingQuizId] = useState<string | null>(null)
   const router = useRouter()
 
-  // Filter and sort quizzes
-  const allQuizzes = userData.userQuizzes || []
-  const completedQuizzes = allQuizzes.filter((quiz) => quiz.timeEnded !== null)
-  const inProgressQuizzes = allQuizzes.filter((quiz) => quiz.timeEnded === null)
-  const quizAttempts = userData.quizAttempts || []
+  // Use useMemo to calculate filtered data only when dependencies change
+  const {
+    filteredAllQuizzes,
+    filteredCompletedQuizzes,
+    filteredInProgressQuizzes,
+    filteredAttempts
+  } = useMemo(() => {
+    // Filter and sort quizzes with null checks
+    const allQuizzes = userData?.userQuizzes || []
+    const completedQuizzes = allQuizzes.filter((quiz) => quiz.timeEnded !== null)
+    const inProgressQuizzes = allQuizzes.filter((quiz) => quiz.timeEnded === null)
+    const quizAttempts = userData?.quizAttempts || []
 
-  // Apply search filter
-  const filterQuizzes = (quizzes: UserQuiz[]) => {
-    if (!searchTerm) return quizzes
+    // Apply search filter
+    const filterQuizzes = (quizzes: UserQuiz[]) => {
+      if (!searchTerm) return quizzes
 
-    return quizzes.filter((quiz) => quiz.title?.toLowerCase().includes(searchTerm.toLowerCase()))
-  }
+      return quizzes.filter((quiz) => quiz.title?.toLowerCase().includes(searchTerm.toLowerCase()))
+    }
 
-  const filterAttempts = (attempts: UserQuizAttempt[]) => {
-    if (!searchTerm) return attempts
+    const filterAttempts = (attempts: UserQuizAttempt[]) => {
+      if (!searchTerm) return attempts
 
-    return attempts.filter((attempt) => attempt.userQuiz?.title?.toLowerCase().includes(searchTerm.toLowerCase()))
-  }
+      return attempts.filter((attempt) => attempt.userQuiz?.title?.toLowerCase().includes(searchTerm.toLowerCase()))
+    }
 
-  const filteredAllQuizzes = filterQuizzes(allQuizzes)
-  const filteredCompletedQuizzes = filterQuizzes(completedQuizzes)
-  const filteredInProgressQuizzes = filterQuizzes(inProgressQuizzes)
-  const filteredAttempts = filterAttempts(quizAttempts)
+    return {
+      filteredAllQuizzes: filterQuizzes(allQuizzes),
+      filteredCompletedQuizzes: filterQuizzes(completedQuizzes),
+      filteredInProgressQuizzes: filterQuizzes(inProgressQuizzes),
+      filteredAttempts: filterAttempts(quizAttempts)
+    }
+  }, [userData, searchTerm])
 
-  const getQuizTypeLabel = (quizType: QuizType) => {
+  const getQuizTypeLabel = useCallback((quizType: QuizType) => {
     switch (quizType) {
       case "mcq":
         return "Multiple Choice"
@@ -60,9 +70,9 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
       default:
         return "Quiz"
     }
-  }
+  }, [])
 
-  const getQuizTypeColor = (quizType: QuizType) => {
+  const getQuizTypeColor = useCallback((quizType: QuizType) => {
     switch (quizType) {
       case "mcq":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
@@ -75,14 +85,16 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
     }
-  }
+  }, [])
 
-  const handleQuizClick = (quizId: string, quizType: string, slug: string) => {
+  // Use useCallback to memoize this function
+  const handleQuizClick = useCallback((quizId: string, quizType: string, slug: string) => {
     setLoadingQuizId(quizId)
-    setTimeout(() => {
+    // Use requestAnimationFrame to ensure this happens after render
+    requestAnimationFrame(() => {
       router.push(`/dashboard/${quizType}/${slug}`)
-    }, 100)
-  }
+    })
+  }, [router])
 
   return (
     <div className="space-y-6">

@@ -12,6 +12,11 @@ const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> 
   return response.data
 }
 
+/**
+ * Hook to fetch and manage chapter summary data
+ * @param chapterId - The ID of the chapter to get summary for
+ * @returns Query object with summary data and status
+ */
 export const useChapterSummary = (chapterId: number) => {
   return useQuery({
     queryKey: ["chapterSummary", chapterId],
@@ -20,5 +25,8 @@ export const useChapterSummary = (chapterId: number) => {
     retryDelay: 60000, // 1 minute
     enabled: false, // Disable automatic fetching
     refetchInterval: false, // Disable automatic refetching
+    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+    cacheTime: 30 * 60 * 1000, // Cache for 30 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   })
 }

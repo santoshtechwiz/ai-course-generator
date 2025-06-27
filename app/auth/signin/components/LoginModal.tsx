@@ -1,13 +1,14 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getProviders, signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useToast } from "@/hooks/use-toast"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
+import { useToast } from "@/hooks"
 
 interface LoginModalProps {
   isOpen: boolean
@@ -31,26 +32,42 @@ export function LoginModal({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [providers, setProviders] = useState<any>(null)
-  const [isLoadingProviders, setIsLoadingProviders] = useState(false)
   const [isAuthenticating, setIsAuthenticating] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  
+  // Prevent duplicate provider fetches
+  const isFetchingProviders = useRef(false)
 
   // Store subscription data in localStorage when modal opens
   useEffect(() => {
     if (isOpen && subscriptionData) {
-      localStorage.setItem("pendingSubscription", JSON.stringify(subscriptionData))
+      try {
+        localStorage.setItem("pendingSubscription", JSON.stringify(subscriptionData))
+      } catch (error) {
+        console.error("Failed to store subscription data:", error)
+      }
     }
   }, [isOpen, subscriptionData])
 
   // Fetch auth providers when modal is opened
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !providers && !isFetchingProviders.current) {
       const fetchProviders = async () => {
-        setIsLoadingProviders(true)
+        isFetchingProviders.current = true
         try {
           const res = await getProviders()
-          setProviders(res)
+          // Validate the response
+          if (res && typeof res === 'object') {
+            setProviders(res)
+          } else {
+            console.error("Invalid providers response:", res)
+            toast({
+              title: "Error",
+              description: "Failed to load authentication options. Please try again.",
+              variant: "destructive",
+            })
+          }
         } catch (error) {
           console.error("Failed to fetch providers:", error)
           toast({
@@ -59,13 +76,26 @@ export function LoginModal({
             variant: "destructive",
           })
         } finally {
-          setIsLoadingProviders(false)
+          isFetchingProviders.current = false
         }
       }
 
       fetchProviders()
     }
-  }, [isOpen, toast])
+    
+    // Cleanup function to reset state when modal closes
+    return () => {
+      if (!isOpen) {
+        // Don't clear providers to avoid refetching if modal reopens
+        setEmail("")
+        setPassword("")
+        // Only reset authentication state if not in progress
+        if (!isAuthenticating) {
+          setIsAuthenticating(false)
+        }
+      }
+    }
+  }, [isOpen, providers, toast])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,12 +147,19 @@ export function LoginModal({
     }
   }
 
-  // Custom handler for provider sign in to prevent modal dismissal
+  // Custom handler for provider sign in with debounce to prevent multiple clicks
   const handleProviderSignIn = async (provider: string) => {
+    if (isAuthenticating) return
+    
     setIsAuthenticating(true)
     try {
+      // Validate callbackUrl is a valid URL path
+      const safeCallbackUrl = callbackUrl && typeof callbackUrl === 'string' 
+        ? callbackUrl 
+        : '/dashboard'
+        
       // Using signIn directly here instead of through AuthContext
-      await signIn(provider.toLowerCase(), { callbackUrl })
+      await signIn(provider.toLowerCase(), { callbackUrl: safeCallbackUrl })
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error)
       setIsAuthenticating(false)
@@ -235,11 +272,8 @@ export function LoginModal({
 
         <form onSubmit={handleLogin} className="space-y-5 p-6">
           {/* Auth Providers */}
-          {isLoadingProviders ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-              <p className="text-sm text-muted-foreground">Loading authentication options...</p>
-            </div>
+          {!providers ? (
+            <EnhancedLoader isLoading={true} message="Loading authentication options..." fullscreen />
           ) : (
             <ModalAuthButtonGroup />
           )}

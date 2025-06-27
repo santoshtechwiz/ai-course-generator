@@ -103,7 +103,7 @@ interface ChatbotProps {
   userId: string
 }
 
-export function Chatbot({ userId }: ChatbotProps) {
+export default function Chatbot({ userId }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
