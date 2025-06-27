@@ -1,23 +1,21 @@
 'use client'
 
-import { useEffect, useMemo, useCallback } from "react"
-import { useSession, signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useEffect, useCallback } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/store"
 import {
-  resetFlashCards,
   clearQuizState,
-  resetRedirectFlag,
-  selectQuizResults,
-  selectQuizAnswers,
   selectIsQuizComplete,
   selectFlashcardState,
+  selectProcessedResults,
+  checkAuthAndLoadResults,
 } from "@/store/slices/flashcard-slice"
+import { useAuth } from '@/hooks/use-auth'
 import { AnimatePresence, motion } from "framer-motion"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import FlashCardResults from "./FlashCardQuizResults"
-import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 import { Button } from "@/components/ui/button"
+import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 
 interface FlashcardResultHandlerProps {
   slug: string
@@ -35,170 +33,122 @@ export default function FlashcardResultHandler({
   onReviewStillLearning,
 }: FlashcardResultHandlerProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const dispatch = useAppDispatch()
-  const { data: session, status } = useSession()
+  const { isAuthenticated, isInitialized, isLoading: isAuthLoading } = useAuth()
 
   const {
-    results,
-    answers,
-    isCompleted,
     shouldRedirectToResults,
-    questions: storeQuestions,
+    isLoading,
+    error: stateError,
   } = useAppSelector(selectFlashcardState)
 
-  const processedResults = useMemo(() => {
-    let correct = 0,
-      stillLearning = 0,
-      incorrect = 0
-    const reviewCards: number[] = []
-    const stillLearningCards: number[] = []
+  const isCompleted = useAppSelector(selectIsQuizComplete)
+  const processedResults = useAppSelector(selectProcessedResults)
 
-    answers?.forEach((a, i) => {
-      switch (a.answer) {
-        case "correct":
-          correct++
-          break
-        case "still_learning":
-          stillLearning++
-          stillLearningCards.push(i)
-          break
-        case "incorrect":
-          incorrect++
-          reviewCards.push(i)
-          break
-      }
-    })
+  const isOnResultsPage = pathname?.endsWith('/results')
 
-    return {
-      correct,
-      stillLearning,
-      incorrect,
-      total: correct + stillLearning + incorrect,
-      reviewCards,
-      stillLearningCards,
-    }
-  }, [answers])
+  // ✅ Only load results on results page
+  useEffect(() => {
+    if (!slug || !isInitialized || !isOnResultsPage) return
+    dispatch(checkAuthAndLoadResults())
+  }, [dispatch, slug, isInitialized, isOnResultsPage])
 
-  const finalResults = useMemo(() => {
-    if (results) return results
-
-    // fallback to computed state if Redux hasn't generated `results` slice yet
-    if (!isCompleted || !answers?.length) return null
-
-    return {
-      quizId: slug,
-      slug,
-      title: title || "Flashcard Quiz",
-      quizType: "flashcard",
-      score: processedResults.correct,
-      maxScore: processedResults.total,
-      percentage: processedResults.total
-        ? Math.round((processedResults.correct / processedResults.total) * 100)
-        : 0,
-      correctAnswers: processedResults.correct,
-      stillLearningAnswers: processedResults.stillLearning,
-      incorrectAnswers: processedResults.incorrect,
-      totalQuestions: storeQuestions.length || 0,
-      totalTime: answers.reduce((acc, a) => acc + (a?.timeSpent || 0), 0),
-      completedAt: new Date().toISOString(),
-      answers,
-      questions: storeQuestions,
-      reviewCards: processedResults.reviewCards,
-      stillLearningCards: processedResults.stillLearningCards,
-    }
-  }, [results, isCompleted, answers, storeQuestions, slug, title, processedResults])
-
-  const handleSignIn = useCallback(() => {
-    signIn(undefined, {
-      callbackUrl: `/dashboard/flashcard/${slug}/results`,
-    })
-  }, [slug])
-
-  const handleRetake = useCallback(() => {
-    dispatch(resetFlashCards())
+  const handleRestart = useCallback(() => {
     dispatch(clearQuizState())
     onRestart?.()
-
-    setTimeout(() => {
-      window.location.href = `/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`
-    }, 100)
-  }, [dispatch, slug, onRestart])
+  }, [dispatch, onRestart])
 
   const handleReview = useCallback(() => {
+    if (!processedResults?.reviewCards) return
     onReview?.(processedResults.reviewCards)
-  }, [onReview, processedResults.reviewCards])
+  }, [processedResults?.reviewCards, onReview])
 
   const handleReviewStillLearning = useCallback(() => {
+    if (!processedResults?.stillLearningCards) return 
     onReviewStillLearning?.(processedResults.stillLearningCards)
-  }, [onReviewStillLearning, processedResults.stillLearningCards])
+  }, [processedResults?.stillLearningCards, onReviewStillLearning])
 
-  // Clear redirect flag after result landing
-  useEffect(() => {
-    if (shouldRedirectToResults) {
-      dispatch(resetRedirectFlag())
-    }
-  }, [shouldRedirectToResults, dispatch])
+  // ✅ No localStorage – just redirect with state
+  const signIn = useCallback(() => {
+    router.push(`/auth/signin?redirect=${window.location.pathname}`)
+  }, [router])
 
-  if (status === "loading") {
-    return <QuizLoader message="Loading results..." subMessage="Please wait..." />
-  }
-
-  if (!finalResults) {
+  // Loading state
+  if (isAuthLoading || (isLoading && isOnResultsPage) || !isInitialized) {
     return (
-      <div className="container max-w-2xl py-10 text-center">
-        <h2 className="text-2xl font-bold mb-4">Quiz Completed</h2>
-        <p className="text-muted-foreground mb-6">We couldn’t load detailed results. Try again or start a new quiz.</p>
-        <div className="space-y-4">
-          <Button onClick={handleRetake} className="w-full">
-            Try Again
-          </Button>
-          <Button variant="outline" onClick={() => router.replace("/dashboard/flashcard")} className="w-full">
-            Browse Topics
-          </Button>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <QuizLoader />
       </div>
     )
   }
 
-  if (status === "unauthenticated") {
+  // Not signed in
+  if (!isAuthenticated) {
     return (
-      <AnimatePresence mode="wait">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <SignInPrompt
-            onSignIn={handleSignIn}
-            onRetake={handleRetake}
-            previewData={{
-              correctAnswers: processedResults.correct,
-              totalQuestions: processedResults.total,
-              stillLearningAnswers: processedResults.stillLearning,
-              incorrectAnswers: processedResults.incorrect,
-            }}
-          />
-        </motion.div>
-      </AnimatePresence>
+      <SignInPrompt
+        onSignIn={signIn}
+        onRetake={handleRestart}
+        quizType="flashcard"
+        previewData={{
+          correctAnswers: processedResults?.correctAnswers ?? 0,
+          totalQuestions: processedResults?.totalQuestions ?? 0,
+          stillLearningAnswers: processedResults?.stillLearningAnswers ?? 0,
+          incorrectAnswers: processedResults?.incorrectAnswers ?? 0,
+        }}
+      />
+    )
+  }
+
+  // Error state
+  if (stateError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+        <div className="text-xl text-red-500">{stateError}</div>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
+      </div>
+    )
+  }
+
+  // ✅ Only redirect to play if not completed, not on results
+  const shouldAutoRedirect = !isCompleted && !isOnResultsPage && shouldRedirectToResults
+  if (shouldAutoRedirect) {
+    router.replace(`/dashboard/flashcard/${slug}`)
+    return null
+  }
+
+  if (!processedResults && isOnResultsPage) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+        <p>No results found</p>
+        <Button onClick={handleRestart}>Start Quiz</Button>
+      </div>
     )
   }
 
   return (
     <AnimatePresence mode="wait">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.2 }}
+      >
         <FlashCardResults
-          quizId={finalResults.quizId}
           slug={slug}
-          title={finalResults.title}
-          score={finalResults.score}
-          totalQuestions={finalResults.totalQuestions}
-          correctAnswers={finalResults.correctAnswers}
-          stillLearningAnswers={finalResults.stillLearningAnswers}
-          incorrectAnswers={finalResults.incorrectAnswers}
-          totalTime={finalResults.totalTime}
-          onRestart={handleRetake}
+          title={title}
+          quizId={processedResults?.quizId}
+          score={processedResults?.percentage}
+          totalQuestions={processedResults?.totalQuestions}
+          correctAnswers={processedResults?.correctAnswers}
+          stillLearningAnswers={processedResults?.stillLearningAnswers}
+          incorrectAnswers={processedResults?.incorrectAnswers}
+          totalTime={processedResults?.totalTime}
+          reviewCards={processedResults?.reviewCards}
+          stillLearningCards={processedResults?.stillLearningCards}
+          onRestart={handleRestart}
           onReview={handleReview}
           onReviewStillLearning={handleReviewStillLearning}
-          reviewCards={finalResults.reviewCards}
-          stillLearningCards={finalResults.stillLearningCards}
-          answers={finalResults.answers}
-          questions={finalResults.questions}
         />
       </motion.div>
     </AnimatePresence>

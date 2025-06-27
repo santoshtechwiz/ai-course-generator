@@ -4,25 +4,22 @@ import { useMemo, useCallback, useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { 
-  Clock, 
-  Activity, 
-  RefreshCw, 
-  BookOpen, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Trophy, 
+  RefreshCw,
+  RotateCcw,
+  Eye,
   Share2,
   CheckCircle,
+  Activity,
   AlertCircle,
-  Eye,
-  RotateCcw
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { NoResults } from "@/components/ui/no-results"
 import { Confetti } from "@/components/ui/confetti"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { getPerformanceLevel } from "@/lib/utils/text-similarity"
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface Answer {
   questionId: string | number
@@ -56,6 +53,15 @@ interface FlashCardResultsProps {
   stillLearningCards?: number[]
   answers?: Answer[]
   questions?: Question[]
+  result?: any // Add the result prop
+}
+
+interface ReviewableCard {
+  questionId: string | number;
+  answer: string;
+  question?: string;
+  correctAnswer?: string;
+  [key: string]: any;
 }
 
 export default function FlashCardResults({
@@ -74,35 +80,78 @@ export default function FlashCardResults({
   stillLearningCards = [],
   answers = [],
   questions = [],
+  result
 }: FlashCardResultsProps) {
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
   const [showDetailedResults, setShowDetailedResults] = useState(false)
   const hasShownConfettiRef = useRef(false)
-
-  // Calculate actual results from answers array to ensure consistency
-  const calculatedResults = useMemo(() => {
-    if (!answers || answers.length === 0) {
-      return {
-        totalQuestions: propTotalQuestions,
-        correctAnswers: propCorrectAnswers,
-        stillLearningAnswers: propStillLearningAnswers,
-        incorrectAnswers: propIncorrectAnswers,
+  // Title handling with useState to allow for dynamic updates
+  const [internalTitle, setInternalTitle] = useState(result?.title || title);
+  const titleRef = useRef(result?.title || title);
+  
+  // Process result prop if available
+  useEffect(() => {
+    if (result) {
+      // Map result data to component state
+      if (result.title) {
+        setInternalTitle(result.title);
+        titleRef.current = result.title;
       }
     }
-
-    const correct = answers.filter(a => a.answer === "correct" || a.isCorrect === true).length
-    const stillLearning = answers.filter(a => a.answer === "still_learning").length
-    const incorrect = answers.filter(a => a.answer === "incorrect" || a.isCorrect === false).length
-    const total = answers.length
-
-    return {
-      totalQuestions: total,
-      correctAnswers: correct,
-      stillLearningAnswers: stillLearning,
-      incorrectAnswers: incorrect,
+  }, [result]);
+  // Calculate actual results from answers array to ensure consistency
+  const calculatedResults = useMemo(() => {
+    // If we have result object with quiz data, prioritize it
+    if (result) {
+      if (result.totalQuestions && result.correctAnswers !== undefined) {
+        return {
+          totalQuestions: result.totalQuestions,
+          correctAnswers: result.correctAnswers,
+          stillLearningAnswers: result.stillLearningAnswers || 0,
+          incorrectAnswers: result.incorrectAnswers || 0,
+        };
+      }
+        // If result contains answers, calculate from those
+      if (result.answers && result.answers.length > 0) {
+        const resultAnswers = result.answers as Answer[];
+        const correct = resultAnswers.filter((a: Answer) => a.answer === "correct" || a.isCorrect === true).length;
+        const stillLearning = resultAnswers.filter((a: Answer) => a.answer === "still_learning").length;
+        const incorrect = resultAnswers.filter((a: Answer) => a.answer === "incorrect" || a.isCorrect === false).length;
+        const total = result.totalQuestions || resultAnswers.length;
+        
+        return {
+          totalQuestions: total,
+          correctAnswers: correct,
+          stillLearningAnswers: stillLearning,
+          incorrectAnswers: incorrect,
+        };
+      }
     }
-  }, [answers, propTotalQuestions, propCorrectAnswers, propStillLearningAnswers, propIncorrectAnswers])
+    
+    // Use provided answers if available
+    if (answers && answers.length > 0) {
+      const correct = answers.filter(a => a.answer === "correct" || a.isCorrect === true).length;
+      const stillLearning = answers.filter(a => a.answer === "still_learning").length;
+      const incorrect = answers.filter(a => a.answer === "incorrect" || a.isCorrect === false).length;
+      const total = propTotalQuestions || answers.length;
+      
+      return {
+        totalQuestions: total,
+        correctAnswers: correct,
+        stillLearningAnswers: stillLearning,
+        incorrectAnswers: incorrect,
+      };
+    }
+    
+    // Fall back to props
+    return {
+      totalQuestions: propTotalQuestions,
+      correctAnswers: propCorrectAnswers,
+      stillLearningAnswers: propStillLearningAnswers,
+      incorrectAnswers: propIncorrectAnswers,
+    }
+  }, [result, answers, propTotalQuestions, propCorrectAnswers, propStillLearningAnswers, propIncorrectAnswers])
 
   const { totalQuestions, correctAnswers, stillLearningAnswers, incorrectAnswers } = calculatedResults
 
@@ -142,61 +191,7 @@ export default function FlashCardResults({
     }
   }, [percentCorrect]);
 
-  function getPerformanceLevel(percentage: number) {
-    if (percentage >= 90)
-      return {
-        level: "Excellent",
-        message: "Outstanding! You've mastered these flashcards.",
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-        borderColor: "border-green-200",
-        emoji: "🏆",
-      }
-    if (percentage >= 80)
-      return {
-        level: "Very Good",
-        message: "Great job! You have strong recall.",
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-        borderColor: "border-blue-200",
-        emoji: "🎯",
-      }
-    if (percentage >= 70)
-      return {
-        level: "Good",
-        message: "Well done! Your memory is solid.",
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-50",
-        borderColor: "border-yellow-200",
-        emoji: "🌟",
-      }
-    if (percentage >= 60)
-      return {
-        level: "Satisfactory",
-        message: "You're on the right track!",
-        color: "text-yellow-700",
-        bgColor: "bg-yellow-50",
-        borderColor: "border-yellow-200",
-        emoji: "👍",
-      }
-    if (percentage >= 50)
-      return {
-        level: "Needs Improvement",
-        message: "You're getting there. Keep studying!",
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
-        borderColor: "border-orange-200",
-        emoji: "📚",
-      }
-    return {
-      level: "Study Required",
-      message: "More practice needed to master these flashcards.",
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-200",
-      emoji: "📝",
-    }
-  }
+
 
   const performance = getPerformanceLevel(percentCorrect)
 
@@ -223,26 +218,270 @@ export default function FlashCardResults({
     }
   }
 
+  // Always extract answers/questions from result if present
+  const resultAnswers = result?.answers && Array.isArray(result.answers) ? result.answers : answers;
+  const resultQuestions = result?.questions && Array.isArray(result.questions) ? result.questions : questions;
+
   // Helper for enhancing answers with question data
   const enhancedAnswers = useMemo(() => {
-    return answers.map((answer) => {
-      const question = questions.find(q => String(q.id) === String(answer.questionId))
+    if (!resultAnswers || !resultQuestions) return [];
+    return resultAnswers.map((answer) => {
+      const question = resultQuestions.find(q => String(q.id) === String(answer.questionId)) || {};
       return {
         ...answer,
-        question: question?.question || "Unknown question",
-        correctAnswer: question?.answer || "Unknown answer",
-        difficulty: question?.difficulty || "medium",
-        saved: question?.saved || false
+        question: question.question || "Unknown question",
+        correctAnswer: question.answer || "Unknown answer",
+        difficulty: question.difficulty || "medium",
+        saved: question.saved || false
       }
     })
-  }, [answers, questions])
+  }, [resultAnswers, resultQuestions]);
 
-  // Group answers by result type for review
+  // Enhanced reviewable cards functionality with better mapping
   const reviewableCards = useMemo(() => {
-    const incorrect = enhancedAnswers.filter(a => a.answer === "incorrect" || a.isCorrect === false)
-    const stillLearning = enhancedAnswers.filter(a => a.answer === "still_learning")
-    return { incorrect, stillLearning }
-  }, [enhancedAnswers])
+    // Prefer result.reviewCards/stillLearningCards if available
+    if (result?.reviewCards?.length > 0 || result?.stillLearningCards?.length > 0) {
+      return {
+        incorrect: (result.reviewCards || []).map((id: number) => ({
+          questionId: id,
+          answer: "incorrect"
+        })),
+        stillLearning: (result.stillLearningCards || []).map((id: number) => ({
+          questionId: id,
+          answer: "still_learning"
+        }))
+      };
+    }
+    // Otherwise use enhancedAnswers
+    const incorrect = enhancedAnswers.filter((a: any) => a.answer === "incorrect" || a.isCorrect === false);
+    const stillLearning = enhancedAnswers.filter((a: any) => a.answer === "still_learning");
+    return { incorrect, stillLearning };
+  }, [result, enhancedAnswers]);
+
+  // State for card click visual feedback
+  const [clickedCardId, setClickedCardId] = useState<string | number | null>(null);
+  // State for review loading indicator
+  const [isReviewLoading, setIsReviewLoading] = useState<'incorrect' | 'stillLearning' | null>(null);
+  // State to track clicked details cards for visual feedback
+  const [clickedDetailCardIds, setClickedDetailCardIds] = useState<Set<string>>(new Set());
+  // State for option selection visual feedback
+  const [selectedOption, setSelectedOption] = useState<{
+    questionId: string | number;
+    selection: 'correct' | 'still_learning' | 'incorrect';
+  } | null>(null);
+
+  // Handle click on detail card with visual feedback
+  const handleDetailCardClick = useCallback((cardId: string) => {
+    setClickedDetailCardIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(cardId);
+      // Remove the card ID after animation completes
+      setTimeout(() => {
+        setClickedDetailCardIds(prevSet => {
+          const updatedSet = new Set(prevSet);
+          updatedSet.delete(cardId);
+          return updatedSet;
+        });
+      }, 500);
+      return newSet;
+    });
+  }, []);
+  // Handle option selection with visual feedback
+  const handleOptionSelect = useCallback((
+    questionId: string | number,
+    selection: 'correct' | 'still_learning' | 'incorrect'
+  ) => {
+    setSelectedOption({ questionId, selection });
+    // Clear the selection after animation completes
+    setTimeout(() => {
+      setSelectedOption(null);
+    }, 800);
+  }, []);
+  
+  // Helper function for showing visual feedback and navigating
+  const showVisualFeedbackAndNavigate = useCallback((type: 'incorrect' | 'stillLearning', callback: () => void) => {
+    // Set the card ID for visual feedback
+    setClickedCardId(type === 'incorrect' ? 'review-incorrect' : 'review-learning');
+    
+    // Set loading state
+    setIsReviewLoading(type);
+    
+    // Use requestAnimationFrame to ensure visual feedback happens before navigating
+    requestAnimationFrame(() => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('Error in navigation callback:', error);
+      } finally {
+        // Reset loading state after a delay to ensure user sees feedback
+        setTimeout(() => setIsReviewLoading(null), 1000);
+      }
+    });
+  }, []);
+
+  // Enhanced review handlers with direct navigation and debugging
+  const handleReview = useCallback(() => {
+    try {
+      if (reviewableCards?.incorrect?.length > 0) {
+        const reviewCardIds = reviewableCards.incorrect.map((a: ReviewableCard) => 
+          typeof a.questionId === 'string' ? parseInt(a.questionId, 10) : a.questionId
+        ).filter(Boolean); // Filter out any null or undefined values
+        
+        // Add visual feedback before navigating
+        setClickedCardId('review-incorrect');
+        
+        if (reviewCardIds.length === 0) {
+          console.warn('No valid review card IDs were found');
+          return;
+        }
+        
+        // Create the review URL with timestamp to prevent caching
+        const timestamp = Date.now();
+        const reviewUrl = `/dashboard/flashcard/${slug}?review=true&cards=${reviewCardIds.join(',')}&t=${timestamp}`;
+        console.log('Navigating to review incorrect cards:', reviewUrl);
+        
+        // Navigate directly
+        window.location.href = reviewUrl;
+      } else {
+        console.warn('No incorrect cards to review');
+      }
+    } catch (err) {
+      console.error('Error in handleReview:', err);
+    }
+  }, [reviewableCards?.incorrect, slug]);
+
+  const handleReviewStillLearning = useCallback(() => {
+    try {
+      if (reviewableCards?.stillLearning?.length > 0) {
+        const reviewCardIds = reviewableCards.stillLearning.map((a: ReviewableCard) => 
+          typeof a.questionId === 'string' ? parseInt(a.questionId, 10) : a.questionId
+        ).filter(Boolean); // Filter out any null or undefined values
+        
+        // Add visual feedback before navigating
+        setClickedCardId('review-learning');
+        
+        if (reviewCardIds.length === 0) {
+          console.warn('No valid review card IDs were found');
+          return;
+        }
+        
+        // Create the review URL with timestamp to prevent caching
+        const timestamp = Date.now();
+        const reviewUrl = `/dashboard/flashcard/${slug}?review=true&cards=${reviewCardIds.join(',')}&t=${timestamp}`;
+        console.log('Navigating to review still learning cards:', reviewUrl);
+        
+        // Navigate directly
+        window.location.href = reviewUrl;
+      } else {
+        console.warn('No still learning cards to review');
+      }
+    } catch (err) {
+      console.error('Error in handleReviewStillLearning:', err);
+    }
+  }, [reviewableCards?.stillLearning, slug]);  // Direct fallback method for review navigation
+  const navigateToReview = useCallback((cardIds: (string | number)[]) => {
+    try {
+      if (!cardIds || cardIds.length === 0) {
+        console.error('No card IDs provided for review');
+        return;
+      }
+      
+      // Format card IDs
+      const formattedIds = cardIds
+        .map(id => {
+          if (typeof id === 'string') {
+            const parsed = parseInt(id, 10);
+            return isNaN(parsed) ? null : parsed;
+          }
+          return id;
+        })
+        .filter(id => id !== null && id !== undefined);
+      
+      if (formattedIds.length === 0) {
+        console.error('No valid card IDs for review');
+        return;
+      }
+      
+      // Create review URL with additional timestamp to force reload
+      const timestamp = new Date().getTime();
+      const reviewUrl = `/dashboard/flashcard/${slug}?review=true&cards=${formattedIds.join(',')}&ts=${timestamp}`;
+      console.log('Navigating directly to:', reviewUrl);
+      
+      // Use direct window location for most reliable navigation
+      window.location.href = reviewUrl;
+    } catch (err) {
+      console.error('Error in navigateToReview:', err);
+    }
+  }, [slug]);
+  // Enhanced redirect handling from sign-in with persistence
+  useEffect(() => {
+    // Check for redirect parameters or localStorage flag for sign-in redirect
+    const searchParams = new URLSearchParams(window.location.search);
+    const fromSignIn = searchParams.get('fromSignIn') === 'true' || localStorage.getItem('flashcard_from_signin') === 'true';
+    
+    if (fromSignIn) {
+      // When returning from sign-in, we want to ensure results are displayed
+      if (result || answers.length > 0 || (correctAnswers > 0 && totalQuestions > 0)) {
+        // Show confetti animation if score is good and we're coming back from sign-in
+        if (percentCorrect >= 70) {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 3000);
+        }
+
+        // Update localStorage to prevent repeated animations on page refresh
+        localStorage.setItem('flashcard_results_shown', 'true');
+        
+        // Replace URL to remove the redirect parameter
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('fromSignIn');
+        window.history.replaceState(null, '', currentUrl.toString());
+        
+        // Clear the sign-in flag
+        localStorage.removeItem('flashcard_from_signin');
+      }
+    }
+  }, [result, percentCorrect, answers.length, correctAnswers, totalQuestions]);
+
+  // Try to load cached results if available
+  useEffect(() => {
+    // Only try to load from localStorage if we don't have explicit results yet
+    if ((!result || Object.keys(result).length === 0) && 
+        totalQuestions === 0 && 
+        localStorage.getItem('flashcard_temp_results')) {
+      try {
+        const cachedResults = JSON.parse(localStorage.getItem('flashcard_temp_results') || '{}');
+        if (cachedResults.totalQuestions && cachedResults.correctAnswers !== undefined) {
+          // Set internal state from cached results
+          const updatedCalculatedResults = {
+            totalQuestions: cachedResults.totalQuestions,
+            correctAnswers: cachedResults.correctAnswers,
+            stillLearningAnswers: cachedResults.stillLearningAnswers || 0,
+            incorrectAnswers: cachedResults.incorrectAnswers || 0,
+          };
+          
+          // This is a bit of a hack to update the calculated results,
+          // but we're not changing the props directly
+          Object.assign(calculatedResults, updatedCalculatedResults);
+          
+          // Show confetti if it's a good score
+          if ((cachedResults.correctAnswers / cachedResults.totalQuestions) >= 0.7 && 
+              !hasShownConfettiRef.current) {
+            hasShownConfettiRef.current = true;
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 3000);
+          }
+          
+          // Clean up after using
+          localStorage.removeItem('flashcard_temp_results');
+        }
+      } catch (error) {
+        console.error('Error loading cached results:', error);
+        localStorage.removeItem('flashcard_temp_results');
+      }
+    }
+  }, [result, totalQuestions]);
+
+
 
   // If no data
   if (totalQuestions === 0) {
@@ -260,376 +499,372 @@ export default function FlashCardResults({
     )
   }
 
+  // Main result UI
+  if (totalQuestions > 0) {
+    return (
+      <div className="space-y-8">
+        {showConfetti && <Confetti isActive={showConfetti} />}
+        <FlashCardHeader title={internalTitle} performance={performance} />
+        <FlashCardScoreOverview
+          percentCorrect={percentCorrect}
+          percentStillLearning={percentStillLearning}
+          percentIncorrect={percentIncorrect}
+          correctAnswers={correctAnswers}
+          totalQuestions={totalQuestions}
+          stillLearningAnswers={stillLearningAnswers}
+          incorrectAnswers={incorrectAnswers}
+          formattedTime={formattedTime}
+          avgTimePerCard={avgTimePerCard}
+        />
+        <FlashCardActionButtons
+          onRestart={onRestart}
+          handleGoToFlashcards={handleGoToFlashcards}
+          reviewableCards={reviewableCards}
+          clickedCardId={clickedCardId}
+          isReviewLoading={isReviewLoading}
+          showVisualFeedbackAndNavigate={showVisualFeedbackAndNavigate}
+          onReview={onReview}
+          handleReview={handleReview}
+          navigateToReview={navigateToReview}
+          slug={slug}
+          onReviewStillLearning={onReviewStillLearning}
+          handleReviewStillLearning={handleReviewStillLearning}
+          setShowDetailedResults={setShowDetailedResults}
+          showDetailedResults={showDetailedResults}
+          handleShare={handleShare}
+        />
+        <FlashCardDetailedResults
+          showDetailedResults={showDetailedResults}
+          enhancedAnswers={enhancedAnswers}
+          clickedDetailCardIds={clickedDetailCardIds}
+          handleDetailCardClick={handleDetailCardClick}
+          selectedOption={selectedOption}
+          handleOptionSelect={handleOptionSelect}
+        />
+      </div>
+    );
+  }
+
+  // Loading state
   return (
-    <>
-      {showConfetti && <Confetti />}
-      
-      <motion.div
-        className="space-y-8 max-w-4xl mx-auto p-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-      >
-        {/* Header */}
-        <motion.div
-          className="text-center space-y-6 relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 shadow-lg"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <div className="flex items-center justify-center gap-4">
-            <motion.div
-              className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg"
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <BookOpen className="w-8 h-8 text-primary" />
-            </motion.div>
-            <div className="text-left">
-              <motion.h1
-                className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                {title}
-              </motion.h1>
-              <motion.div
-                className="h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent rounded-full mt-2"
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-              />
+    <div className="flex flex-col items-center justify-center h-screen space-y-4">
+      <h2 className="text-2xl font-bold">Loading Results...</h2>
+      <p className="text-center text-muted-foreground">
+        Please wait while we fetch your flashcard results. This may take a few seconds.
+      </p>
+      <div className="animate-spin h-10 w-10 rounded-full border-4 border-t-4 border-primary" />
+    </div>
+  );
+}
+
+// Define missing subcomponents within the file
+
+// FlashCardHeader component
+function FlashCardHeader({ title, performance }: { title: string; performance: any }) {
+  return (
+    <motion.div
+      className="text-center space-y-6 relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 shadow-lg"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      <h1 className="text-4xl font-bold">{title}</h1>
+      <p className="text-lg font-medium text-primary">{performance.level} {performance.emoji}</p>
+    </motion.div>
+  );
+}
+
+// FlashCardScoreOverview component
+function FlashCardScoreOverview({
+  percentCorrect,
+  percentStillLearning,
+  percentIncorrect,
+  correctAnswers,
+  totalQuestions,
+  stillLearningAnswers,
+  incorrectAnswers,
+  formattedTime,
+  avgTimePerCard,
+}: any) {
+  return (
+    <motion.div
+      className="overflow-hidden rounded-3xl shadow-2xl border-2 border-primary/10"
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      whileHover={{
+        scale: 1.02,
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+      }}
+    >
+      <Card className="border-0 shadow-none">
+        <CardContent className="p-8">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <h2 className="text-2xl font-bold">{percentCorrect}%</h2>
+              <p className="text-sm text-primary">Correct</p>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">{percentStillLearning}%</h2>
+              <p className="text-sm text-primary">Still Learning</p>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">{percentIncorrect}%</h2>
+              <p className="text-sm text-primary">Incorrect</p>
             </div>
           </div>
+        </CardContent>
+        <CardFooter className="p-8 pt-0">
+          <p className="text-sm text-center">Time: {formattedTime} | Avg/Card: {avgTimePerCard}s</p>
+        </CardFooter>
+      </Card>
+    </motion.div>
+  );
+}
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+// FlashCardActionButtons component
+function FlashCardActionButtons({
+  onRestart,
+  handleGoToFlashcards,
+  reviewableCards,
+  clickedCardId,
+  isReviewLoading,
+  showVisualFeedbackAndNavigate,
+  onReview,
+  handleReview,
+  navigateToReview,
+  slug,
+  onReviewStillLearning,
+  handleReviewStillLearning,
+  setShowDetailedResults,
+  showDetailedResults,
+  handleShare,
+}: any) {
+  return (
+    <div className="w-full space-y-4">
+      <div className="flex flex-wrap gap-4 justify-center">
+        <motion.div whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.03 }}>
+          <Button
+            onClick={onRestart || handleGoToFlashcards}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+            size="lg"
           >
-            <Badge
-              variant="secondary"
-              className={`mt-3 px-4 py-2 text-sm font-semibold shadow-md ${performance.color} ${performance.bgColor} ${performance.borderColor} border-2`}
-            >
-              <motion.span
-                className="mr-2 text-lg"
-                animate={{
-                  rotate: [0, 10, -10, 0],
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Number.POSITIVE_INFINITY,
-                  repeatDelay: 3,
-                }}
-              >
-                {performance.emoji}
-              </motion.span>
-              {performance.level}
-            </Badge>
-          </motion.div>
-
-          <motion.p
-            className="text-muted-foreground text-lg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            {performance.message}
-          </motion.p>
+            <RotateCcw className="h-4 w-4" />
+            Try Again
+          </Button>
         </motion.div>
-
-        {/* Score Overview */}
-        <motion.div
-          className="overflow-hidden rounded-3xl shadow-2xl border-2 border-primary/10"
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          whileHover={{
-            scale: 1.02,
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-          }}
-        >
-          <Card className="border-0 shadow-none">
-            <CardHeader className="bg-gradient-to-br from-primary/8 via-primary/5 to-primary/10 border-b-2 border-primary/10 p-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
-                    <Trophy className="w-12 h-12 text-primary drop-shadow-lg" />
-                  </motion.div>
-                  <div>
-                    <CardTitle className="text-3xl font-bold text-foreground">Your Score</CardTitle>
-                    <p className="text-muted-foreground text-lg">Flashcard performance summary</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <motion.div
-                    className="text-6xl font-black text-primary drop-shadow-lg"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      delay: 0.3,
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 15,
-                    }}
-                  >
-                    {percentCorrect}%
-                  </motion.div>
-                  <div className="text-lg text-muted-foreground font-medium">
-                    {correctAnswers} of {totalQuestions}
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-8">
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-lg font-medium">
-                    <span>Overall Progress</span>
-                    <motion.span
-                      key={percentCorrect}
-                      initial={{ scale: 1.2, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {correctAnswers}/{totalQuestions} correct
-                    </motion.span>
-                  </div>
-                  <div className="relative">
-                    <Progress value={percentCorrect} className="h-4 rounded-full bg-muted/50" />
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
-                      animate={{
-                        x: ["-100%", "100%"],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Number.POSITIVE_INFINITY,
-                        ease: "linear",
-                        repeatDelay: 1,
-                      }}
-                      style={{ opacity: percentCorrect > 0 ? 1 : 0 }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <motion.div
-                    className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 text-center shadow-lg"
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <motion.div
-                      className="text-4xl font-black text-green-500"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    >
-                      {correctAnswers}
-                    </motion.div>
-                    <div className="text-sm text-green-700 dark:text-green-300 font-semibold">Knew It!</div>
-                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">{percentCorrect}%</div>
-                  </motion.div>
-
-                  <motion.div
-                    className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl p-6 text-center shadow-lg"
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <motion.div
-                      className="text-4xl font-black text-yellow-500"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                    >
-                      {stillLearningAnswers}
-                    </motion.div>
-                    <div className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold">Still Learning</div>
-                    <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">{percentStillLearning}%</div>
-                  </motion.div>
-
-                  <motion.div
-                    className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-2xl p-6 text-center shadow-lg"
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <motion.div
-                      className="text-4xl font-black text-red-500"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                    >
-                      {incorrectAnswers}
-                    </motion.div>
-                    <div className="text-sm text-red-700 dark:text-red-300 font-semibold">Didn't Know</div>
-                    <div className="text-xs text-red-600 dark:text-red-400 mt-1">{percentIncorrect}%</div>
-                  </motion.div>
-                </div>
-
-                {/* Time info */}
-                <div className="p-6 bg-muted/10 rounded-xl border border-muted/20">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <span className="font-medium">Time Performance</span>
-                    </div>
-                    <span className="text-lg font-semibold">{formattedTime}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground flex justify-between">
-                    <span>Average per card: {avgTimePerCard}s</span>
-                    <span>Total questions: {totalQuestions}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-
-            <CardFooter className="p-8 pt-0">
-              <div className="w-full space-y-4">
-                {/* Action buttons */}
-                <div className="flex flex-wrap gap-4 justify-center">
-                  <Button
-                    onClick={onRestart || handleGoToFlashcards}
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90"
-                    size="lg"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Try Again
-                  </Button>
-
-                  {reviewableCards.incorrect.length > 0 && (
-                    <Button
-                      onClick={() => onReview?.(reviewableCards.incorrect.map(a => Number(a.questionId)))}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                      size="lg"
-                    >
-                      <ThumbsDown className="h-4 w-4" />
-                      Review Missed ({reviewableCards.incorrect.length})
-                    </Button>
-                  )}
-
-                  {reviewableCards.stillLearning.length > 0 && (
-                    <Button
-                      onClick={() => onReviewStillLearning?.(reviewableCards.stillLearning.map(a => Number(a.questionId)))}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                      size="lg"
-                    >
-                      <Activity className="h-4 w-4" />
-                      Review Learning ({reviewableCards.stillLearning.length})
-                    </Button>
-                  )}
-
-                  <Button
-                    onClick={() => setShowDetailedResults(!showDetailedResults)}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    size="lg"
-                  >
-                    <Eye className="h-4 w-4" />
-                    {showDetailedResults ? 'Hide' : 'Show'} Details
-                  </Button>
-
-                  <Button
-                    onClick={handleShare}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    size="lg"
-                  >
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
-              </div>
-            </CardFooter>
-          </Card>
-        </motion.div>
-
-        {/* Detailed Results */}
-        {showDetailedResults && enhancedAnswers.length > 0 && (
+        {reviewableCards.incorrect.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            animate={{ scale: clickedCardId === "review-incorrect" ? [1, 0.95, 1] : 1 }}
             transition={{ duration: 0.3 }}
-            className="space-y-4"
           >
-            <h3 className="text-2xl font-bold text-center">Detailed Results</h3>
-            <div className="space-y-3">
-              {enhancedAnswers.map((answer, index) => {
-                const isCorrect = answer.answer === "correct" || answer.isCorrect === true
-                const isStillLearning = answer.answer === "still_learning"
-                const isIncorrect = answer.answer === "incorrect" || answer.isCorrect === false
-
-                return (
-                  <motion.div
-                    key={`${answer.questionId}-${index}`}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`p-4 rounded-lg border-2 ${
-                      isCorrect 
-                        ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
-                        : isStillLearning
-                        ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800'
-                        : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-1 ${
-                        isCorrect 
-                          ? 'text-green-500'
-                          : isStillLearning
-                          ? 'text-yellow-500'
-                          : 'text-red-500'
-                      }`}>
-                        {isCorrect ? (
-                          <CheckCircle className="h-5 w-5" />
-                        ) : isStillLearning ? (
-                          <Activity className="h-5 w-5" />
-                        ) : (
-                          <AlertCircle className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm mb-2">
-                          Question {index + 1}
-                          {answer.difficulty && (
-                            <Badge variant="outline" className="ml-2 text-xs">
-                              {answer.difficulty}
-                            </Badge>
-                          )}
-                          {answer.saved && (
-                            <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700">
-                              Saved
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground mb-2">
-                          {answer.question}
-                        </div>
-                        <div className="text-sm">
-                          <strong>Answer:</strong> {answer.correctAnswer}
-                        </div>
-                        {answer.timeSpent !== undefined && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Time spent: {answer.timeSpent}s
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
+            <Button
+              onClick={handleReview}
+              className="flex items-center gap-2 bg-red-500 hover:bg-red-400"
+              size="lg"
+            >
+              Review Incorrect
+            </Button>
           </motion.div>
         )}
-      </motion.div>
-    </>
-  )
+        {reviewableCards.stillLearning.length > 0 && (
+          <motion.div
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            animate={{ scale: clickedCardId === "review-learning" ? [1, 0.95, 1] : 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Button
+              onClick={handleReviewStillLearning}
+              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400"
+              size="lg"
+            >
+              Review Still Learning
+            </Button>
+          </motion.div>
+        )}
+        <Button
+          onClick={() => setShowDetailedResults((v: boolean) => !v)}
+          variant="outline"
+          className="flex items-center gap-2"
+          size="lg"
+        >
+          <Eye className="h-4 w-4" />
+          {showDetailedResults ? "Hide" : "Show"} Details
+        </Button>
+        <Button
+          onClick={handleShare}
+          variant="outline"
+          className="flex items-center gap-2"
+          size="lg"
+        >
+          <Share2 className="h-4 w-4" />
+          Share
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// FlashCardDetailedResults component
+function FlashCardDetailedResults({
+  showDetailedResults,
+  enhancedAnswers,
+  clickedDetailCardIds,
+  handleDetailCardClick,
+  selectedOption,
+  handleOptionSelect,
+}: any) {
+  if (!showDetailedResults || enhancedAnswers.length === 0) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-4"
+    >
+      <h3 className="text-2xl font-bold text-center">Detailed Results</h3>
+      <div className="space-y-3">
+        {enhancedAnswers.map((answer: any, index: number) => {
+          const isCorrect = answer.answer === "correct" || answer.isCorrect === true;
+          const isStillLearning = answer.answer === "still_learning";
+          const isIncorrect = answer.answer === "incorrect" || answer.isCorrect === false;
+          const cardId = `${answer.questionId}-${index}`;
+          const isCardClicked = clickedDetailCardIds.has(cardId);
+
+          return (
+            <motion.div
+              key={cardId}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ 
+                opacity: 1, 
+                x: 0,
+                scale: isCardClicked ? 0.98 : 1,
+                boxShadow: isCardClicked ? '0 0 0 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+              whileHover={{ scale: 1.01, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleDetailCardClick(cardId)}
+              transition={{ delay: index * 0.1 }}
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                isCorrect 
+                  ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
+                  : isStillLearning
+                  ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800'
+                  : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'                    } ${isCardClicked ? 'ring-2 ring-offset-1 ring-primary/30' : ''} 
+              ${selectedOption && String(selectedOption.questionId) === String(answer.questionId) ? 'shadow-lg transform scale-[1.01]' : ''}`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`mt-1 ${
+                  isCorrect 
+                    ? 'text-green-500'
+                    : isStillLearning
+                    ? 'text-yellow-500'
+                    : 'text-red-500'
+                }`}>
+                  <motion.div
+                    animate={{
+                      scale: selectedOption && 
+                             String(selectedOption.questionId) === String(answer.questionId) ? 
+                             [1, 1.4, 1] : 1,
+                      rotate: selectedOption && 
+                              String(selectedOption.questionId) === String(answer.questionId) ? 
+                              [0, 15, -15, 0] : 0
+                    }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {isCorrect ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : isStillLearning ? (
+                      <Activity className="h-5 w-5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5" />
+                    )}
+                  </motion.div>
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm mb-2">
+                    Question {index + 1}
+                    {answer.difficulty && (
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {answer.difficulty}
+                      </Badge>
+                    )}
+                    {answer.saved && (
+                      <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700">
+                        Saved
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    {answer.question}
+                  </div>
+                  <div className="text-sm">
+                    <strong>Answer:</strong> {answer.correctAnswer}
+                  </div>
+                  {answer.timeSpent !== undefined && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Time spent: {answer.timeSpent}s
+                    </div>
+                  )}
+                  
+                  {/* Option feedback buttons */}
+                  <div className="flex gap-2 mt-3">
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOptionSelect(answer.questionId, 'correct');
+                      }}
+                      className={`rounded-full p-1.5 ${
+                        isCorrect ? 'bg-green-100 text-green-600 ring-1 ring-green-300' : 'bg-muted/40 hover:bg-green-50 hover:text-green-500'
+                      } transition-all`}
+                    >
+                      <ThumbsUp size={14} />
+                    </motion.button>
+                    
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOptionSelect(answer.questionId, 'still_learning');
+                      }}
+                      className={`rounded-full p-1.5 ${
+                        isStillLearning ? 'bg-yellow-100 text-yellow-600 ring-1 ring-yellow-300' : 'bg-muted/40 hover:bg-yellow-50 hover:text-yellow-500'
+                      } transition-all`}
+                    >
+                      <Activity size={14} />
+                    </motion.button>
+                    
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOptionSelect(answer.questionId, 'incorrect');
+                      }}
+                      className={`rounded-full p-1.5 ${
+                        isIncorrect ? 'bg-red-100 text-red-600 ring-1 ring-red-300' : 'bg-muted/40 hover:bg-red-50 hover:text-red-500'
+                      } transition-all`}
+                    >
+                      <ThumbsDown size={14} />
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+    </div>
+  </motion.div>
+);
 }
 
