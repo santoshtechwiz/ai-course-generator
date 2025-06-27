@@ -6,12 +6,13 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { QuizType } from "@/app/types/quiz-types"
 
 interface QuizContainerProps {
   children: React.ReactNode
   questionNumber: number
   totalQuestions: number
-  quizType: "mcq" | "openended" | "blanks" | "code" | "flashcard"
+  quizType: QuizType,
   animationKey?: string | number
   className?: string
   contentClassName?: string

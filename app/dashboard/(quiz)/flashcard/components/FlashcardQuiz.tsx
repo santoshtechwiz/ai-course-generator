@@ -40,7 +40,6 @@ interface FlashCardComponentProps {
   slug: string
   title: string
   onSaveCard?: (card: FlashCard) => void
-  savedCardIds?: string[]
   isReviewMode?: boolean
   onComplete?: (results: any) => void
 }
@@ -57,7 +56,6 @@ export default function FlashCardQuiz({
   slug,
   title,
   onSaveCard,
-  savedCardIds = [],
   isReviewMode = false,
   onComplete,
 }: FlashCardComponentProps) {
@@ -82,7 +80,23 @@ export default function FlashCardQuiz({
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [cardTimes, setCardTimes] = useState<Record<string, number>>({})
   const [streak, setStreak] = useState(0)
+  const [bestStreak, setBestStreak] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(localStorage.getItem("flashcard_best_streak") || 0)
+    }
+    return 0
+  })
   const [showHint, setShowHint] = useState(false)
+  const [savedCardIds, setSavedCardIds] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return JSON.parse(localStorage.getItem("flashcard_saved_cards") || "[]")
+      } catch {
+        return []
+      }
+    }
+    return []
+  })
 
   // Animation controls
   const cardControls = useAnimation()
@@ -172,33 +186,53 @@ export default function FlashCardQuiz({
     [currentCard?.id, savedCardIds],
   )
 
+  // Update best streak in localStorage
+  useEffect(() => {
+    if (streak > bestStreak) {
+      setBestStreak(streak)
+      localStorage.setItem("flashcard_best_streak", String(streak))
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 2000)
+    }
+  }, [streak, bestStreak])
+
+  // Persist saved cards to localStorage
+  useEffect(() => {
+    localStorage.setItem("flashcard_saved_cards", JSON.stringify(savedCardIds))
+  }, [savedCardIds])
+
   // Toggle card flip
   const toggleFlip = useCallback(() => {
+    if (swipeDisabled) return
     if (!flipped) {
       setStartTime(Date.now())
     }
-    setFlipped(!flipped)
+    setFlipped((prev) => !prev)
     setShowHint(false)
-  }, [flipped])
+  }, [flipped, swipeDisabled])
 
   // Save card
   const handleSaveCard = useCallback(() => {
-    if (onSaveCard && currentCard) {
-      onSaveCard(currentCard)
-      toast.success(isSaved ? "Removed from saved cards" : "Added to saved cards")
-    }
-  }, [onSaveCard, currentCard, isSaved])
+    if (!currentCard) return
+    setSavedCardIds((prev) => {
+      const id = currentCard.id.toString()
+      if (prev.includes(id)) {
+        toast.success("Removed from saved cards")
+        return prev.filter((cid) => cid !== id)
+      } else {
+        toast.success("Added to saved cards")
+        return [...prev, id]
+      }
+    })
+  }, [currentCard])
 
   // Move to next card
   const moveToNextCard = useCallback(() => {
-    if (!cards?.length) return
-
+    if (!cards?.length || swipeDisabled) return
     const maxIndex = cards.length - 1
-
     if (currentQuestionIndex < maxIndex) {
       setFlipped(false)
       setSwipeDisabled(true)
-
       if (animationsEnabled) {
         cardControls
           .start({
@@ -222,30 +256,29 @@ export default function FlashCardQuiz({
     } else if (onComplete) {
       onComplete(processedResults)
     }
-  }, [currentQuestionIndex, cards, dispatch, cardControls, onComplete, processedResults, animationsEnabled])
+  }, [currentQuestionIndex, cards, dispatch, cardControls, onComplete, processedResults, animationsEnabled, swipeDisabled])
 
   // Handle self rating
   const handleSelfRating = useCallback(
     (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
-      if (!cardId) return
-
+      if (!cardId || swipeDisabled) return
+      setSwipeDisabled(true)
       const endTime = Date.now()
       const timeSpent = Math.floor((endTime - startTime) / 1000)
-
       // Update streak
+      let newStreak = streak
       if (rating === "correct") {
-        setStreak((prev) => prev + 1)
+        newStreak = streak + 1
+        setStreak(newStreak)
       } else {
+        newStreak = 0
         setStreak(0)
       }
-
       setRatingAnimation(rating)
       setCardTimes((prev) => ({
         ...prev,
         [cardId]: (prev[cardId] || 0) + timeSpent,
       }))
-      setSwipeDisabled(true)
-
       // Submit answer
       const answerData = {
         answer: rating,
@@ -253,24 +286,20 @@ export default function FlashCardQuiz({
         timeSpent: timeSpent,
         isCorrect: rating === "correct",
         questionId: cardId,
-        streak: rating === "correct" ? streak + 1 : 0,
+        streak: rating === "correct" ? newStreak : 0,
       }
-
       dispatch(submitFlashCardAnswer(answerData))
-
       // Haptic feedback
       if (window.navigator?.vibrate) {
         window.navigator.vibrate(
           rating === "correct" ? [50, 30, 50] : rating === "still_learning" ? [30, 20, 30] : [100],
         )
       }
-
       // Confetti for milestones
-      if (rating === "correct" && (streak + 1) % 5 === 0) {
+      if (rating === "correct" && (newStreak) % 5 === 0 && newStreak > 0) {
         setShowConfetti(true)
         setTimeout(() => setShowConfetti(false), 2500)
       }
-
       // Auto-advance or reset animation
       setTimeout(() => {
         if (isMountedRef.current) {
@@ -282,7 +311,7 @@ export default function FlashCardQuiz({
         }
       }, 1000)
     },
-    [dispatch, autoAdvance, moveToNextCard, startTime, streak],
+    [dispatch, autoAdvance, moveToNextCard, startTime, streak, swipeDisabled],
   )
 
   // Restart quiz
@@ -298,14 +327,11 @@ export default function FlashCardQuiz({
   const handleDragEnd = useCallback(
     (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       if (swipeDisabled) return
-
       const swipeThreshold = 100
       const swipeDirection = info.offset.x > 0 ? "right" : "left"
       const isEffectiveSwipe = Math.abs(info.offset.x) > swipeThreshold || Math.abs(info.velocity.x) > 500
-
       if (isEffectiveSwipe) {
         if (window.navigator?.vibrate) window.navigator.vibrate(50)
-
         if (swipeDirection === "left") {
           moveToNextCard()
         } else {
@@ -325,8 +351,8 @@ export default function FlashCardQuiz({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isCompleted) return
-
+      if (isLoading || isCompleted || swipeDisabled) return
+      if (e.repeat) return
       switch (e.key) {
         case "ArrowRight":
           moveToNextCard()
@@ -337,36 +363,34 @@ export default function FlashCardQuiz({
           break
         case "1":
         case "y":
-          if (currentCard?.id && flipped) {
+          if (currentCard?.id && flipped && !ratingAnimation) {
             handleSelfRating(currentCard.id.toString(), "correct")
           }
           break
         case "2":
         case "s":
-          if (currentCard?.id && flipped) {
+          if (currentCard?.id && flipped && !ratingAnimation) {
             handleSelfRating(currentCard.id.toString(), "still_learning")
           }
           break
         case "3":
         case "n":
-          if (currentCard?.id && flipped) {
+          if (currentCard?.id && flipped && !ratingAnimation) {
             handleSelfRating(currentCard.id.toString(), "incorrect")
           }
           break
         case "h":
-          setShowHint(!showHint)
+          setShowHint((v) => !v)
           break
       }
     }
-
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating, showHint])
+  }, [isLoading, isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating, showHint, ratingAnimation, swipeDisabled])
 
   if (isLoading) {
     return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
   }
-
   if (!cards || cards.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -377,7 +401,6 @@ export default function FlashCardQuiz({
       </div>
     )
   }
-
   return (
     <>
       <QuizContainer
@@ -385,7 +408,7 @@ export default function FlashCardQuiz({
         quizSubtitle="Test your knowledge with interactive flashcards"
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={cards?.length || 0}
-        quizType="Flashcard"
+        quizType="flashcard"
         animationKey={`card-${currentQuestionIndex}`}
       >
         <div className="space-y-4 sm:space-y-6">
@@ -405,7 +428,6 @@ export default function FlashCardQuiz({
             onSetShowSettings={setShowSettings}
             onRestartQuiz={handleRestartQuiz}
           />
-
           {/* Flashcard Content */}
           <div className="relative min-h-[300px] sm:min-h-[350px] w-full perspective-1000">
             <motion.div
@@ -418,6 +440,8 @@ export default function FlashCardQuiz({
               layoutId={`card-${currentQuestionIndex}`}
               className="absolute inset-0 w-full h-full touch-manipulation"
               ref={cardRef}
+              tabIndex={0}
+              aria-label="Flashcard"
             >
               <AnimatePresence mode="wait">
                 {!flipped ? (
@@ -426,7 +450,7 @@ export default function FlashCardQuiz({
                     question={currentCard?.question || ""}
                     keywords={currentCard?.keywords}
                     showHint={showHint}
-                    onToggleHint={() => setShowHint(!showHint)}
+                    onToggleHint={() => setShowHint((v) => !v)}
                     onFlip={toggleFlip}
                     animationsEnabled={animationsEnabled}
                     codeSnippet={currentCard?.codeSnippet}
@@ -439,11 +463,11 @@ export default function FlashCardQuiz({
                     answer={currentCard?.answer || ""}
                     onFlip={toggleFlip}
                     onSelfRating={(rating) => {
-                      if (currentCard?.id) {
+                      if (currentCard?.id && !ratingAnimation && !swipeDisabled) {
                         handleSelfRating(currentCard.id.toString(), rating)
                       }
                     }}
-                    onSaveCard={onSaveCard ? handleSaveCard : undefined}
+                    onSaveCard={handleSaveCard}
                     isSaved={isSaved}
                     animationsEnabled={animationsEnabled}
                   />
@@ -453,7 +477,6 @@ export default function FlashCardQuiz({
           </div>
         </div>
       </QuizContainer>
-
       {/* Rating feedback overlay */}
       <AnimatePresence>
         {ratingAnimation && (
@@ -479,8 +502,8 @@ export default function FlashCardQuiz({
           </motion.div>
         )}
       </AnimatePresence>
-
       {showConfetti && <Confetti isActive={true} />}
     </>
   )
 }
+  
