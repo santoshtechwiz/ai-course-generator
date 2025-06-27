@@ -390,7 +390,7 @@ const QuizCard: React.FC<{
 
                 {/* Button */}
                 <Link
-                  href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}
+                  href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || `dashboard/${quiz.quizType}/${quiz.slug}`}`}
                   prefetch={true}
                   className="w-full sm:w-auto"
                 >

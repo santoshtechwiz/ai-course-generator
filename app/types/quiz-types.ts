@@ -18,8 +18,9 @@ export interface OpenEndedQuestion extends BaseQuestion {
   answer: string;
   hints?: string[];
   type: 'openended';
-  keywords?: string[]; // Keywords for similarity matching
+  tags?: string[]; // Keywords for similarity matching
   similarityThreshold?: number; // Threshold to consider answer correct (0.0-1.0)
+  difficulty?: 'easy' | 'medium' | 'hard'; // Difficulty level
 }
 
 // Fill in the blanks questions

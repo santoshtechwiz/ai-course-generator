@@ -1,111 +1,120 @@
 "use client"
 
-import { motion, AnimatePresence } from "framer-motion"
-import { useEffect, useState } from "react"
 import type React from "react"
-
-import { cn } from "@/lib/utils"
-import { Card } from "@/components/ui/card"
-import { QuizHeader } from "@/components/quiz/QuizHeader"
+import { motion } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { Clock } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface QuizContainerProps {
   children: React.ReactNode
   questionNumber: number
   totalQuestions: number
-  quizType?: string
+  quizType: "mcq" | "openended" | "blanks" | "code" | "flashcard"
   animationKey?: string | number
   className?: string
   contentClassName?: string
-  quizTitle: string
+  quizTitle?: string
   quizSubtitle?: string
-  difficulty?: string
-  category?: string
-  timeLimit?: number
+  timeSpent?: number
+  difficulty?: "easy" | "medium" | "hard"
 }
 
 export function QuizContainer({
   children,
   questionNumber,
   totalQuestions,
-  quizType = "Quiz",
+  quizType,
   animationKey,
   className,
   contentClassName,
   quizTitle,
   quizSubtitle,
-  difficulty,
-  category,
-  timeLimit,
+  timeSpent,
 }: QuizContainerProps) {
-  const [mounted, setMounted] = useState(false)
+  const progress = (questionNumber / totalQuestions) * 100
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const progress = totalQuestions > 0 ? (questionNumber / totalQuestions) * 100 : 0
-
-  if (!mounted) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="animate-pulse space-y-4 w-full max-w-2xl">
-          <div className="h-4 bg-muted rounded-full w-full" />
-          <div className="h-32 bg-muted rounded-2xl" />
-          <div className="space-y-2">
-            <div className="h-12 bg-muted rounded-xl" />
-            <div className="h-12 bg-muted rounded-xl" />
-            <div className="h-12 bg-muted rounded-xl" />
-          </div>
-        </div>
-      </div>
-    )
+  const getQuizTypeInfo = () => {
+    switch (quizType) {
+      case "mcq":
+        return { label: "Multiple Choice", color: "bg-blue-500" }
+      case "openended":
+        return { label: "Open Ended", color: "bg-green-500" }
+      case "blanks":
+        return { label: "Fill in Blanks", color: "bg-purple-500" }
+      case "code":
+        return { label: "Code Challenge", color: "bg-orange-500" }
+      case "flashcard":
+        return { label: "Flashcard", color: "bg-pink-500" }
+      default:
+        return { label: "Quiz", color: "bg-gray-500" }
+    }
   }
 
-  return (
-    <div className="min-h-screen bg-background py-4 sm:py-6">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        {/* Cleaner Header */}
-        <QuizHeader
-          title={quizTitle}
-          subtitle={quizSubtitle}
-          quizType={quizType}
-          totalQuestions={totalQuestions}
-          currentQuestion={questionNumber}
-          difficulty={difficulty}
-          timeLimit={timeLimit}
-          category={category}
-          className="rounded-xl px-4 py-4 sm:px-6 sm:py-5 shadow-none border bg-card"
-        />
+  const typeInfo = getQuizTypeInfo()
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={animationKey || questionNumber}
-            initial={{ opacity: 0, y: 20, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.98 }}
-            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            className={cn("mt-6", className)}
-          >
-            <Card className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-xl rounded-2xl overflow-hidden">
-              <div className="p-6 sm:p-8 flex flex-col min-h-[400px]">
-                <div className="flex items-center justify-between mb-4 flex-wrap gap-y-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">
+  return (
+    <motion.div
+      key={animationKey}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className={cn("w-full max-w-4xl mx-auto", className)}
+    >
+      <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="bg-muted/30 border-b border-border px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                  {questionNumber}
+                </span>
+                <div>
+                  <div className="text-sm font-medium text-foreground">
                     Question {questionNumber} of {totalQuestions}
-                  </h3>
-                  <span className="text-xs font-medium uppercase text-muted-foreground bg-muted px-2 py-1 rounded">
-                    {quizType}
+                  </div>
+                  {quizSubtitle && <div className="text-xs text-muted-foreground">{quizSubtitle}</div>}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className={cn("text-white text-xs", typeInfo.color)}>
+                {typeInfo.label}
+              </Badge>
+              {timeSpent && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  <span>
+                    {Math.floor(timeSpent / 60)}:{(timeSpent % 60).toString().padStart(2, "0")}
                   </span>
                 </div>
+              )}
+            </div>
+          </div>
 
-                <Progress value={progress} className="h-2 mb-6" />
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Progress</span>
+              <span>{Math.round(progress)}% Complete</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
 
-                <div className={cn("flex-1", contentClassName)}>{children}</div>
-              </div>
-            </Card>
-          </motion.div>
-        </AnimatePresence>
+          {quizTitle && (
+            <div className="mt-3">
+              <h1 className="text-lg font-semibold text-foreground">{quizTitle}</h1>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className={cn("p-6", contentClassName)}>{children}</div>
       </div>
-    </div>
+    </motion.div>
   )
 }
