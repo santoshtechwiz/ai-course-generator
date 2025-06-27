@@ -100,7 +100,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       if (!unit.chapters) return
 
       unit.chapters
-        .filter((chapter): chapter is FullChapterType => {
+        .filter((chapter) => {
           // Enhanced validation to make sure we have valid chapters
           const isValid = Boolean(
             chapter &&
@@ -124,7 +124,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           return isValid
         })
         .forEach((chapter) => {
-          playlist.push({ videoId: chapter.videoId!, chapter })
+          // Ensure description is never null, only string or undefined
+          const safeChapter = {
+            ...chapter,
+            description: chapter.description === null ? undefined : chapter.description,
+          }
+          playlist.push({ videoId: chapter.videoId!, chapter: safeChapter })
         })
     })
 

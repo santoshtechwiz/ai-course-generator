@@ -1,147 +1,95 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Lightbulb, Eye, EyeOff, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { HintLevel } from "@/lib/utils/hint-system"
-import { getNextHint } from "@/lib/utils/hint-system"
 
 interface HintSystemProps {
-  hints: HintLevel[]
-  onHintUsed: (hintLevel: number) => void
-  maxHints?: number
-  allowDirectAnswer?: boolean
+  hints: string[]
+  onHintUsed?: (hintIndex: number) => void
   className?: string
 }
 
-export function HintSystem({ hints, onHintUsed, maxHints = 3, allowDirectAnswer = false, className }: HintSystemProps) {
-  const [currentHintLevel, setCurrentHintLevel] = useState(0)
-  const [revealedHints, setRevealedHints] = useState<HintLevel[]>([])
-
-  const handleGetHint = useCallback(() => {
-    const nextHint = getNextHint(hints, currentHintLevel, {
-      maxHints,
-      progressiveReveal: true,
-      allowDirectAnswer,
-    })
-
-    if (nextHint) {
-      setCurrentHintLevel(nextHint.level)
-      setRevealedHints((prev) => [...prev, nextHint])
-      onHintUsed(nextHint.level)
-    }
-  }, [hints, currentHintLevel, maxHints, allowDirectAnswer, onHintUsed])
-
-  const canGetMoreHints = currentHintLevel < maxHints && currentHintLevel < hints.length
-
-  const getSpoilerColor = (level: string) => {
-    switch (level) {
-      case "low":
-        return "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
-      case "medium":
-        return "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20"
-      case "high":
-        return "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
-      default:
-        return "border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950/20"
-    }
-  }
-
-  const getSpoilerIcon = (level: string) => {
-    switch (level) {
-      case "low":
-        return Eye
-      case "medium":
-        return EyeOff
-      case "high":
-        return AlertTriangle
-      default:
-        return Lightbulb
-    }
-  }
+export function HintSystem({ hints, onHintUsed, className }: HintSystemProps) {
+  const [revealedHints, setRevealedHints] = useState<number[]>([])
 
   if (!hints || hints.length === 0) return null
 
-  return (
-    <div className={cn("space-y-4", className)}>
-      {/* Hint Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Lightbulb className="w-4 h-4 text-yellow-600" />
-          <span className="text-sm font-medium text-foreground">Need help?</span>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleGetHint}
-          disabled={!canGetMoreHints}
-          className="text-xs bg-transparent"
-        >
-          {currentHintLevel === 0 ? "Get Hint" : `Get Hint ${currentHintLevel + 1}`}
-          {currentHintLevel > 0 && (
-            <Badge variant="secondary" className="ml-2 text-xs">
-              -{currentHintLevel * 5}%
-            </Badge>
-          )}
-        </Button>
-      </div>
+  const revealHint = (index: number) => {
+    if (!revealedHints.includes(index)) {
+      setRevealedHints([...revealedHints, index])
+      onHintUsed?.(index)
+    }
+  }
 
-      {/* Revealed Hints */}
-      <AnimatePresence>
-        {revealedHints.map((hint, index) => {
-          const SpoilerIcon = getSpoilerIcon(hint.spoilerLevel)
+  const getSpoilerLevel = (index: number) => {
+    if (index === 0) return { level: "Low", color: "bg-green-100 text-green-800 border-green-200" }
+    if (index === 1) return { level: "Medium", color: "bg-yellow-100 text-yellow-800 border-yellow-200" }
+    return { level: "High", color: "bg-red-100 text-red-800 border-red-200" }
+  }
+
+  return (
+    <Card className={cn("border-blue-200 bg-blue-50/50", className)}>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Lightbulb className="w-5 h-5 text-blue-600" />
+          Hints Available
+          <Badge variant="outline" className="ml-auto">
+            {revealedHints.length}/{hints.length} used
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {hints.map((hint, index) => {
+          const isRevealed = revealedHints.includes(index)
+          const spoiler = getSpoilerLevel(index)
+
           return (
-            <motion.div
-              key={hint.level}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <Card className={cn("border-2", getSpoilerColor(hint.spoilerLevel))}>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <SpoilerIcon className="w-4 h-4 mt-0.5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs">
-                          Hint {hint.level}
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "text-xs",
-                            hint.spoilerLevel === "low"
-                              ? "bg-blue-100 text-blue-800"
-                              : hint.spoilerLevel === "medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800",
-                          )}
-                        >
-                          {hint.spoilerLevel} spoiler
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed">{hint.content}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+            <div key={index} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">Hint {index + 1}</span>
+                  <Badge variant="outline" className={cn("text-xs", spoiler.color)}>
+                    {spoiler.level} Spoiler
+                  </Badge>
+                </div>
+                {!isRevealed && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => revealHint(index)}
+                    className="flex items-center gap-1 text-xs"
+                  >
+                    <Eye className="w-3 h-3" />
+                    Reveal
+                  </Button>
+                )}
+              </div>
+
+              {isRevealed ? (
+                <div className="p-3 bg-white rounded-md border border-gray-200">
+                  <p className="text-sm text-gray-700">{hint}</p>
+                </div>
+              ) : (
+                <div className="p-3 bg-gray-100 rounded-md border border-gray-200 flex items-center gap-2">
+                  <EyeOff className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-500">Click reveal to see this hint</span>
+                </div>
+              )}
+            </div>
           )
         })}
-      </AnimatePresence>
 
-      {/* Hint Progress */}
-      {currentHintLevel > 0 && (
-        <div className="text-xs text-muted-foreground text-center">
-          {currentHintLevel} of {Math.min(maxHints, hints.length)} hints used
-          {currentHintLevel > 0 && ` • Score penalty: -${currentHintLevel * 5}%`}
-        </div>
-      )}
-    </div>
+        {revealedHints.length > 0 && (
+          <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+            <AlertTriangle className="w-4 h-4 text-yellow-600" />
+            <span className="text-xs text-yellow-700">Score penalty: -{revealedHints.length * 5}% for using hints</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

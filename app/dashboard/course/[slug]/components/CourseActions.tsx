@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
 import { useCourseActions } from "@/hooks/useCourseActions"
-import { useScrollDirection } from "@/hooks/use-scroll-direction"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
+import { useScrollDirection } from "@/hooks/useScrollDirection"
 
 interface CourseActionsProps {
   slug: string

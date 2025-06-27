@@ -246,3 +246,27 @@ export interface BlanksQuizResult {
   similarity: number;
   similarityLabel: string;
 }
+export type DifficultyLevel = "easy" | "medium" | "hard"
+export type RatingType = "correct" | "incorrect" | "still_learning"
+export type SwipeDirection = "left" | "right" | "center"
+export type StudyMode = "normal" | "review" | "challenge" | "easy_day"
+
+// Core flashcard types with comprehensive type safety
+export interface FlashCard {
+  id: string
+  question: string
+  answer: string
+  options?: string[]
+  keywords?: string[]
+  imageUrl?: string
+  audioUrl?: string
+  codeSnippet?: string
+  language?: string
+  type?: QuizType
+  difficulty?: "easy" | "medium" | "hard"
+  category?: string
+  tags?: string[]
+  estimatedTime?: number // in seconds
+  createdAt?: string
+  lastReviewed?: string
+}
