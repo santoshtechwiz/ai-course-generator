@@ -65,19 +65,23 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerAuthSession()
-  return (    <html 
+
+  const isProd = process.env.NODE_ENV === "development" ? false : true
+  const fontClasses = isProd
+    ? `${fontInterSans.variable} ${fontRobotoSans.variable}`
+    : ""
+
+  return (
+    <html 
       lang="en" 
       suppressHydrationWarning 
-      className={`scroll-smooth `}
+      className={`scroll-smooth`}
     >
-      {/* ${fontInterSans.variable} ${fontRobotoSans.variable} */}
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
 
-      <body className={`${fontInterSans.variable} ${fontRobotoSans.variable} antialiased min-h-screen flex flex-col`}>
-        
-        {/* Pass the server session to Providers */}
+      <body className={`${fontClasses} antialiased min-h-screen flex flex-col`}>
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -94,7 +98,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </Providers>
           <Footer />
         </Suspense>
-
 
         <JsonLD
           type="website"
