@@ -2,24 +2,20 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown, Settings, BookOpen, Trophy, Flame } from "lucide-react"
+import { Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown, Settings, BookOpen, RotateCw } from "lucide-react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Progress } from "@/components/ui/progress"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
-import { Progress } from "@/components/ui/progress"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
-
-// Import the flashcard slice actions
+import { toast } from "sonner"
 import {
   initFlashCardQuiz,
   submitFlashCardAnswer,
-  completeFlashCardQuiz,
   resetFlashCards,
   setCurrentFlashCard,
   nextFlashCard,
@@ -48,6 +44,12 @@ interface FlashCardComponentProps {
   onComplete?: (results: any) => void
 }
 
+const ratingFeedbackVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -20, scale: 0.95 }
+}
+
 export default function FlashCardQuiz({
   cards,
   quizId,
@@ -58,66 +60,49 @@ export default function FlashCardQuiz({
   isReviewMode = false,
   onComplete,
 }: FlashCardComponentProps) {
-  // Get state from flashcard slice only
   const dispatch = useAppDispatch()
   const {
     currentQuestion: currentQuestionIndex,
     isCompleted,
     answers,
-    requiresAuth,
-    pendingAuthRequired,
     quizId: storeQuizId,
   } = useAppSelector((state) => state.flashcard)
 
   const { data: session } = useSession()
-  const router = useRouter()
-  const searchParams = useSearchParams()
 
-  // Local UI state
+  // State management
   const [flipped, setFlipped] = useState(false)
-  const [direction, setDirection] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
   const [ratingAnimation, setRatingAnimation] = useState<"correct" | "incorrect" | "still_learning" | null>(null)
-  const [reviewMode, setReviewMode] = useState(false)
+  const [reviewMode, setReviewMode] = useState(isReviewMode)
   const [reviewCards, setReviewCards] = useState<number[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [autoAdvance, setAutoAdvance] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
-  const [swipeThreshold, setSwipeThreshold] = useState(100)
   const [swipeDisabled, setSwipeDisabled] = useState(false)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [cardTimes, setCardTimes] = useState<Record<string, number>>({})
-
-  // New state variables for enhanced features
   const [streak, setStreak] = useState(0)
   const [showHint, setShowHint] = useState(false)
-  const [cardRotation, setCardRotation] = useState(0)
   const [lastRating, setLastRating] = useState<"correct" | "incorrect" | "still_learning" | null>(null)
-  const [studyStats, setStudyStats] = useState({
-    totalTime: 0,
-    correctStreak: 0,
-    bestStreak: 0,
-    cardsPerMinute: 0,
-  })
+  const [firstVisit, setFirstVisit] = useState(true)
 
   // Animation controls
   const cardControls = useAnimation()
   const cardRef = useRef<HTMLDivElement>(null)
   const { animationsEnabled } = useAnimationContext()
 
-  // Add isMounted ref to prevent animations after unmount
+  // Mount tracking
   const isMountedRef = useRef(true)
 
-  // Set up mount tracking
   useEffect(() => {
     isMountedRef.current = true
-
     return () => {
       isMountedRef.current = false
     }
   }, [])
 
-  // Initialize quiz in Redux using the flashcard slice
+  // Initialize quiz
   useEffect(() => {
     if (cards && cards.length > 0 && (!storeQuizId || storeQuizId !== quizId.toString())) {
       dispatch(
@@ -131,35 +116,30 @@ export default function FlashCardQuiz({
     }
   }, [cards, quizId, slug, title, dispatch, storeQuizId])
 
-  // Add loading state with timeout
+  // Loading state
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false)
+      setFirstVisit(false)
     }, 500)
     return () => clearTimeout(timer)
   }, [])
 
-  // Get self-ratings from the answers in Redux with proper null checks
+  // Self ratings from answers
   const selfRating = useMemo(() => {
     const ratings: Record<string, "correct" | "incorrect" | "still_learning" | null> = {}
-
-    if (answers && Array.isArray(answers) && cards) {
+    
+    if (answers && Array.isArray(answers)) {
       answers.forEach((answer) => {
         if (answer && answer.questionId) {
           ratings[answer.questionId] = answer.answer as "correct" | "incorrect" | "still_learning"
         }
       })
     }
-
     return ratings
-  }, [answers, cards])
+  }, [answers])
 
-  // Calculate score based on "correct" self-ratings
-  const calculateScore = useCallback(() => {
-    return Object.values(selfRating).filter((rating) => rating === "correct").length
-  }, [selfRating])
-
-  // Process answers to get detailed counts including still_learning - FIXED CARD MAPPING
+  // Process results
   const processedResults = useMemo(() => {
     if (!answers || !Array.isArray(answers) || !cards || !cards.length) {
       return {
@@ -180,9 +160,7 @@ export default function FlashCardQuiz({
 
     answers.forEach((answer) => {
       if (answer && typeof answer.answer === "string" && answer.questionId) {
-        // Find the card index by matching the question ID
         const cardIndex = cards.findIndex((card) => card.id?.toString() === answer.questionId.toString())
-
         if (cardIndex !== -1) {
           switch (answer.answer) {
             case "correct":
@@ -211,7 +189,7 @@ export default function FlashCardQuiz({
     }
   }, [answers, cards])
 
-  // Get cards that need review by category - IMPROVED MAPPING
+  // Review cards by category
   const reviewCardsByCategory = useMemo(() => {
     if (!cards || !cards.length) return { incorrect: [], stillLearning: [] }
 
@@ -232,68 +210,26 @@ export default function FlashCardQuiz({
     return { incorrect, stillLearning }
   }, [selfRating, cards])
 
-  // Fixed enter review mode function with better error handling
-  const handleEnterReviewMode = useCallback(
-    (reviewType: "incorrect" | "still_learning" = "incorrect") => {
-      const cardsToReview =
-        reviewType === "incorrect" ? reviewCardsByCategory.incorrect : reviewCardsByCategory.stillLearning
-
-      if (!cardsToReview.length) {
-        return
-      }
-
-      // Set review cards and reset UI state
-      setReviewCards(cardsToReview)
-      setReviewMode(true)
-      setFlipped(false)
-
-      // Reset to first review card via Redux
-      dispatch(setCurrentFlashCard(0))
-
-      // Don't reset completed state - we want to maintain the results
-      setStartTime(Date.now())
-    },
-    [reviewCardsByCategory, dispatch],
-  )
-
-  // Handle exiting review mode
-  const handleExitReviewMode = useCallback(() => {
-    setReviewMode(false)
-    dispatch(setCurrentFlashCard(0))
-    setFlipped(false)
-    setStartTime(Date.now())
-  }, [dispatch])
-
-  // Memoize getCurrentCard function to prevent recreating on every render
-  const getCurrentCard = useCallback(() => {
+  // Current card
+  const currentCard = useMemo(() => {
     if (!cards || !cards.length) return null
 
-    if (reviewMode && reviewCards && reviewCards.length > 0) {
-      // Get the current review index, bounded by array length
+    if (reviewMode && reviewCards.length > 0) {
       const reviewIndex = Math.min(currentQuestionIndex, reviewCards.length - 1)
-
-      // Get the actual card index from our array of review indices
       const cardIndex = reviewCards[reviewIndex]
-
-      if (cardIndex !== undefined && cardIndex >= 0 && cardIndex < cards.length) {
-        return cards[cardIndex]
-      }
+      return cards[cardIndex] || null
     }
 
-    // In normal mode or if review index was invalid
     return cards[Math.min(currentQuestionIndex, cards.length - 1)]
   }, [reviewMode, reviewCards, currentQuestionIndex, cards])
 
-  // Memoize current card to prevent unnecessary re-renders
-  const currentCard = useMemo(() => getCurrentCard(), [getCurrentCard])
-
-  // Check if current card is saved - memoized to prevent recalculation
+  // Card saved status
   const isSaved = useMemo(
     () => (currentCard?.id ? savedCardIds.includes(currentCard.id.toString()) : false),
     [currentCard?.id, savedCardIds],
   )
 
-  // Calculate progress percentage - memoized for performance
+  // Progress calculation
   const progress = useMemo(() => {
     if (reviewMode) {
       return reviewCards.length ? ((currentQuestionIndex + 1) / reviewCards.length) * 100 : 0
@@ -301,33 +237,65 @@ export default function FlashCardQuiz({
     return cards?.length ? ((currentQuestionIndex + 1) / cards.length) * 100 : 0
   }, [reviewMode, currentQuestionIndex, reviewCards.length, cards?.length])
 
-  // Handle card flip
+  // Enter review mode
+  const handleEnterReviewMode = useCallback(
+    (reviewType: "incorrect" | "still_learning" = "incorrect") => {
+      const cardsToReview = reviewType === "incorrect" 
+        ? reviewCardsByCategory.incorrect 
+        : reviewCardsByCategory.stillLearning
+
+      if (!cardsToReview.length) {
+        toast.info(`No cards to review in this category`)
+        return
+      }
+
+      setReviewCards(cardsToReview)
+      setReviewMode(true)
+      setFlipped(false)
+      dispatch(setCurrentFlashCard(0))
+      setStartTime(Date.now())
+      toast.success(`Entered review mode with ${cardsToReview.length} cards`)
+    },
+    [reviewCardsByCategory, dispatch],
+  )
+
+  // Exit review mode
+  const handleExitReviewMode = useCallback(() => {
+    setReviewMode(false)
+    dispatch(setCurrentFlashCard(0))
+    setFlipped(false)
+    setStartTime(Date.now())
+    toast("Exited review mode")
+  }, [dispatch])
+
+  // Toggle card flip
   const toggleFlip = useCallback(() => {
     if (!flipped) {
       setStartTime(Date.now())
     }
     setFlipped(!flipped)
+    setShowHint(false)
   }, [flipped])
 
-  // Handle saving/bookmarking cards
+  // Save card
   const handleSaveCard = useCallback(() => {
     if (onSaveCard && currentCard) {
       onSaveCard(currentCard)
+      toast.success(isSaved ? "Removed from saved cards" : "Added to saved cards")
     }
-  }, [onSaveCard, currentCard])
+  }, [onSaveCard, currentCard, isSaved])
 
-  // Handle moving to the next flashcard - FIXED REVIEW MODE NAVIGATION
+  // Move to next card
   const moveToNextCard = useCallback(() => {
     if (!cards?.length) return
 
     const maxIndex = reviewMode ? reviewCards.length - 1 : cards.length - 1
 
     if (currentQuestionIndex < maxIndex) {
-      setDirection(1)
       setFlipped(false)
+      setSwipeDisabled(true)
 
-      // Only animate if component is still mounted
-      if (isMountedRef.current) {
+      if (animationsEnabled) {
         cardControls
           .start({
             x: -300,
@@ -335,29 +303,22 @@ export default function FlashCardQuiz({
             transition: { duration: 0.3 },
           })
           .then(() => {
-            // Additional check before updating state after animation
             if (isMountedRef.current) {
               dispatch(nextFlashCard())
               cardControls.set({ x: 0, opacity: 1 })
               setStartTime(Date.now())
+              setSwipeDisabled(false)
             }
           })
       } else {
-        // If not mounted, just update state without animation
         dispatch(nextFlashCard())
+        setStartTime(Date.now())
+        setSwipeDisabled(false)
       }
     } else {
-      // If we're in review mode and finished reviewing, go back to normal mode
       if (reviewMode) {
-        setReviewMode(false)
-        setReviewCards([])
-        dispatch(setCurrentFlashCard(0))
-        setFlipped(false)
-        return
-      }
-
-      // Otherwise, complete the quiz
-      if (onComplete) {
+        handleExitReviewMode()
+      } else if (onComplete) {
         onComplete(processedResults)
       }
     }
@@ -369,55 +330,12 @@ export default function FlashCardQuiz({
     dispatch,
     cardControls,
     onComplete,
-    processedResults
+    processedResults,
+    animationsEnabled,
+    handleExitReviewMode
   ])
 
-  // Enhanced card animation variants
-  const cardAnimationVariants = {
-    initial: { 
-      opacity: 0,
-      scale: 0.8,
-      rotateY: 0
-    },
-    animate: {
-      opacity: 1,
-      scale: 1,
-      rotateY: flipped ? 180 : 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 20
-      }
-    },
-    exit: {
-      opacity: 0,
-      scale: 0.8,
-      transition: {
-        duration: 0.2
-      }
-    }
-  }
-
-  // Enhanced feedback variants
-  const feedbackVariants = {
-    correct: {
-      scale: [1, 1.2, 1],
-      rotate: [0, 10, 0],
-      transition: {
-        duration: 0.6,
-        ease: "easeInOut"
-      }
-    },
-    incorrect: {
-      x: [0, -10, 10, -10, 0],
-      transition: {
-        duration: 0.4,
-        ease: "easeInOut"
-      }
-    }
-  }
-
-  // Enhanced handleSelfRating with streak system
+  // Handle self rating
   const handleSelfRating = useCallback(
     (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
       if (!cardId) return
@@ -428,26 +346,19 @@ export default function FlashCardQuiz({
       // Update streak
       if (rating === "correct") {
         setStreak(prev => prev + 1)
-        if (streak + 1 > studyStats.bestStreak) {
-          setStudyStats(prev => ({ ...prev, bestStreak: streak + 1 }))
-        }
       } else {
         setStreak(0)
       }
 
-      // Update last rating for animation
       setLastRating(rating)
-
-      // Update card times with optimistic update
+      setRatingAnimation(rating)
       setCardTimes(prev => ({
         ...prev,
         [cardId]: (prev[cardId] || 0) + timeSpent
       }))
-
-      // Disable swipe during animation
       setSwipeDisabled(true)
 
-      // Submit answer with enhanced data
+      // Submit answer
       const answerData = {
         answer: rating,
         userAnswer: rating,
@@ -459,105 +370,74 @@ export default function FlashCardQuiz({
 
       dispatch(submitFlashCardAnswer(answerData))
 
-      // Add haptic feedback
-      if (window.navigator && window.navigator.vibrate) {
-        switch (rating) {
-          case "correct":
-            window.navigator.vibrate([50, 30, 50])
-            break
-          case "still_learning":
-            window.navigator.vibrate([30, 20, 30])
-            break
-          case "incorrect":
-            window.navigator.vibrate([100])
-            break
-        }
+      // Haptic feedback
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(
+          rating === "correct" ? [50, 30, 50] :
+          rating === "still_learning" ? [30, 20, 30] : [100]
+        )
       }
 
-      // Show confetti for milestones
+      // Confetti for milestones
       if (rating === "correct" && (streak + 1) % 5 === 0) {
         setShowConfetti(true)
         setTimeout(() => setShowConfetti(false), 2500)
       }
 
-      // Handle auto-advance with enhanced animation
-      if (autoAdvance) {
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            setLastRating(null)
+      // Auto-advance or reset animation
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          setRatingAnimation(null)
+          if (autoAdvance) {
             moveToNextCard()
-            setSwipeDisabled(false)
-            setStartTime(Date.now())
           }
-        }, 1000)
-      } else {
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            setLastRating(null)
-            setSwipeDisabled(false)
-          }
-        }, 1000)
-      }
+          setSwipeDisabled(false)
+        }
+      }, 1000)
     },
-    [dispatch, autoAdvance, moveToNextCard, startTime, streak, studyStats.bestStreak],
+    [dispatch, autoAdvance, moveToNextCard, startTime, streak],
   )
 
-  // Handle restart quiz
+  // Restart quiz
   const handleRestartQuiz = useCallback(() => {
     dispatch(resetFlashCards())
-
     setFlipped(false)
     setReviewMode(false)
     setReviewCards([])
     setShowConfetti(false)
-
-    // Add reset parameters to URL
-    const url = new URL(window.location.href)
-    url.searchParams.set("reset", "true")
-    url.searchParams.set("t", Date.now().toString())
-    router.push(url.toString())
-  }, [dispatch, router])
+    setStreak(0)
+    toast("Quiz has been reset")
+  }, [dispatch])
 
   // Handle swipe gestures
   const handleDragEnd = useCallback(
     (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       if (swipeDisabled) return
 
+      const swipeThreshold = 100
       const swipeDirection = info.offset.x > 0 ? "right" : "left"
-      const swipeDistance = Math.abs(info.offset.x)
-      const swipeVelocity = Math.abs(info.velocity.x)
-
-      // Consider both distance and velocity for more natural swipe detection
-      const isEffectiveSwipe = swipeDistance > swipeThreshold || swipeVelocity > 0.5
+      const isEffectiveSwipe = Math.abs(info.offset.x) > swipeThreshold || Math.abs(info.velocity.x) > 500
 
       if (isEffectiveSwipe) {
-        // Add haptic feedback for mobile if available
-        if (window.navigator && window.navigator.vibrate) {
-          window.navigator.vibrate(50)
-        }
-
+        if (window.navigator?.vibrate) window.navigator.vibrate(50)
+        
         if (swipeDirection === "left") {
           moveToNextCard()
         } else {
           toggleFlip()
         }
       } else {
-        // Animate back to original position with spring physics
         cardControls.start({
           x: 0,
           opacity: 1,
-          transition: {
-            type: "spring",
-            stiffness: 500,
-            damping: 30,
-          },
+          transition: { type: "spring", stiffness: 500, damping: 30 },
         })
       }
     },
-    [swipeDisabled, swipeThreshold, moveToNextCard, toggleFlip, cardControls],
+    [swipeDisabled, moveToNextCard, toggleFlip, cardControls],
   )
 
-  // Keyboard navigation - updated to support three rating options
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCompleted) return
@@ -567,7 +447,7 @@ export default function FlashCardQuiz({
           moveToNextCard()
           break
         case "ArrowLeft":
-        case " ": // Space bar
+        case " ":
           toggleFlip()
           break
         case "1":
@@ -588,42 +468,28 @@ export default function FlashCardQuiz({
             handleSelfRating(currentCard.id.toString(), "incorrect")
           }
           break
+        case "h":
+          setShowHint(!showHint)
+          break
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating])
+  }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating, showHint])
 
-  // Redirect to results page when completed and not in review mode
-  useEffect(() => {
-    if (isCompleted && !reviewMode) {
-      router.push(`/dashboard/flashcard/${slug}/results`)
-    }
-  }, [isCompleted, reviewMode, slug, router])
-
-  if (isLoading) {
-    return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
-  }
-
-  // Enhanced animation variants with 3D transforms and hardware acceleration
+  // Animation variants
   const frontCardVariants = {
     initial: { opacity: 0, rotateY: 0 },
     animate: {
       opacity: 1,
       rotateY: 0,
-      transition: {
-        duration: animationsEnabled ? 0.4 : 0.1,
-        ease: [0.23, 1, 0.32, 1],
-      },
+      transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
     exit: {
       opacity: 0,
       rotateY: 90,
-      transition: {
-        duration: animationsEnabled ? 0.3 : 0.1,
-        ease: [0.23, 1, 0.32, 1],
-      },
+      transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
   }
 
@@ -632,43 +498,32 @@ export default function FlashCardQuiz({
     animate: {
       opacity: 1,
       rotateY: 0,
-      transition: {
-        duration: animationsEnabled ? 0.4 : 0.1,
-        ease: [0.23, 1, 0.32, 1],
-      },
+      transition: { duration: animationsEnabled ? 0.4 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
     exit: {
       opacity: 0,
       rotateY: -90,
-      transition: {
-        duration: animationsEnabled ? 0.3 : 0.1,
-        ease: [0.23, 1, 0.32, 1],
-      },
+      transition: { duration: animationsEnabled ? 0.3 : 0.1, ease: [0.23, 1, 0.32, 1] },
     },
   }
-  // Render different content based on quiz state
-  const renderQuizContent = () => {
-    if (isCompleted && !reviewMode) {
-      // Return minimal loading UI during the transition to results page
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4">
-            <div className="animate-pulse text-xl font-medium">Quiz completed!</div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-muted-foreground">Redirecting to results page...</p>
-            <Button 
-              onClick={() => router.push(`/dashboard/flashcard/${slug}/results`)}
-              variant="secondary"
-            >
-              Go to Results Now
-            </Button>
-          </div>
-        </div>
-      )
-    }
 
-    // Not completed or in review mode - show flashcard UI
+  if (isLoading) {
+    return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
+  }
+
+  if (!cards || cards.length === 0) {
     return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <div className="text-xl font-medium">No flashcards available</div>
+          <p className="text-muted-foreground">Please check back later or create your own flashcards</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
       <QuizContainer
         quizTitle="Flashcard Quiz"
         quizSubtitle="Test your knowledge with interactive flashcards"
@@ -678,63 +533,71 @@ export default function FlashCardQuiz({
         animationKey={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
       >
         <div className="space-y-6">
-          {/* Settings Header */}
-          <div className="flex justify-between items-center">
-            <motion.h3
-              className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-            >
-              {reviewMode ? `Review Mode: ${title}` : title}
-            </motion.h3>
+          {/* Header with progress and settings */}
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <motion.h3
+                className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+              >
+                {reviewMode ? `Review Mode: ${title}` : title}
+                {streak > 0 && (
+                  <span className="ml-2 text-sm bg-green-500/10 text-green-600 px-2 py-1 rounded-full">
+                    Streak: {streak} 🔥
+                  </span>
+                )}
+              </motion.h3>
 
-            {/* Enhanced Settings popover */}
-            <Popover open={showSettings} onOpenChange={setShowSettings}>
-              <PopoverTrigger asChild>
-                <motion.div whileHover={{ scale: 1.05, rotate: 90 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-xl border-2 border-muted hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                </motion.div>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 rounded-2xl border-2 border-muted/30 shadow-2xl">
-                <div className="space-y-4">
-                  <h4 className="font-bold text-lg bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                    Flashcard Settings
-                  </h4>
+              <Popover open={showSettings} onOpenChange={setShowSettings}>
+                <PopoverTrigger asChild>
+                  <motion.div whileHover={{ scale: 1.05, rotate: 90 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 rounded-xl border-2 border-muted hover:border-primary/40 hover:bg-primary/5"
+                    >
+                      <Settings className="h-5 w-5" />
+                    </Button>
+                  </motion.div>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 rounded-2xl border-2 border-muted/30 shadow-2xl">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-lg bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      Flashcard Settings
+                    </h4>
 
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-muted/30">
-                    <div className="space-y-0.5">
-                      <div className="text-sm font-semibold">Auto-advance</div>
-                      <div className="text-xs text-muted-foreground">Automatically move to next card after rating</div>
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-muted/30">
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-semibold">Auto-advance</div>
+                        <div className="text-xs text-muted-foreground">Move to next card after rating</div>
+                      </div>
+                      <Switch checked={autoAdvance} onCheckedChange={setAutoAdvance} />
                     </div>
-                    <Switch checked={autoAdvance} onCheckedChange={setAutoAdvance} />
-                  </div>
 
-                  <div className="space-y-2">
-                    {reviewMode && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEnterReviewMode()}
-                          className="w-full rounded-xl border-2 hover:border-destructive/40 hover:bg-destructive/5"
-                        >
-                          Review Incorrect
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEnterReviewMode("still_learning")}
-                          className="w-full rounded-xl border-2 hover:border-amber-500/40 hover:bg-amber-500/5"
-                        >
-                          Review Still Learning
-                        </Button>
+                    <div className="space-y-2">
+                      {!reviewMode && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEnterReviewMode()}
+                            className="w-full rounded-xl border-2 hover:border-destructive/40 hover:bg-destructive/5"
+                          >
+                            Review Incorrect
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEnterReviewMode("still_learning")}
+                            className="w-full rounded-xl border-2 hover:border-amber-500/40 hover:bg-amber-500/5"
+                          >
+                            Review Still Learning
+                          </Button>
+                        </>
+                      )}
+                      {reviewMode && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -743,26 +606,38 @@ export default function FlashCardQuiz({
                         >
                           Exit Review Mode
                         </Button>
-                      </>
-                    )}
-                  </div>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRestartQuiz}
+                        className="w-full rounded-xl border-2 hover:border-primary/40 hover:bg-primary/5"
+                      >
+                        <RotateCw className="w-4 h-4 mr-2" />
+                        Restart Quiz
+                      </Button>
+                    </div>
 
-                  <div className="pt-2 text-xs text-muted-foreground bg-muted/10 p-3 rounded-xl">
-                    <p className="font-semibold mb-2">Keyboard shortcuts:</p>
-                    <div className="space-y-1">
-                      <p>Space/Left Arrow: Flip card</p>
-                      <p>Right Arrow: Next card</p>
-                      <p>1/Y: Mark as known</p>
-                      <p>2/S: Still learning</p>
-                      <p>3/N: Mark as incorrect</p>
+                    <div className="pt-2 text-xs text-muted-foreground bg-muted/10 p-3 rounded-xl">
+                      <p className="font-semibold mb-2">Keyboard shortcuts:</p>
+                      <div className="space-y-1">
+                        <p>Space/Left Arrow: Flip card</p>
+                        <p>Right Arrow: Next card</p>
+                        <p>1/Y: Mark as known</p>
+                        <p>2/S: Still learning</p>
+                        <p>3/N: Mark as incorrect</p>
+                        <p>H: Toggle hint</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <Progress value={progress} className="h-2" />
           </div>
 
-          {/* Enhanced Flashcard Content with Swipe Gestures */}
+          {/* Flashcard Content */}
           <div className="relative min-h-[350px] w-full perspective-1000">
             <motion.div
               key={reviewMode ? `review-${currentQuestionIndex}` : `card-${currentQuestionIndex}`}
@@ -776,7 +651,6 @@ export default function FlashCardQuiz({
               ref={cardRef}
             >
               {!flipped ? (
-                // Enhanced Front of card
                 <motion.div
                   onClick={toggleFlip}
                   className="w-full h-full rounded-3xl border-2 border-primary/20 shadow-2xl cursor-pointer bg-gradient-to-br from-background via-background to-muted/10 p-8 flex flex-col items-center justify-center relative overflow-hidden group"
@@ -804,7 +678,7 @@ export default function FlashCardQuiz({
                     backfaceVisibility: "hidden",
                   }}
                 >
-                  {/* Enhanced decorative elements */}
+                  {/* Decorative elements */}
                   <motion.div
                     className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full -mr-16 -mt-16"
                     animate={{
@@ -831,12 +705,30 @@ export default function FlashCardQuiz({
                     }}
                   />
 
-                  {/* Enhanced Question text */}
+                  {/* Question text */}
                   <div className="text-2xl font-bold text-center text-foreground z-10 max-w-md leading-relaxed overflow-auto max-h-[250px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-4">
                     {currentCard?.question || "No question available"}
                   </div>
 
-                  {/* Enhanced Swipe instructions */}
+                  {/* Hint (if available) */}
+                  {showHint && currentCard?.keywords && (
+                    <motion.div
+                      className="mt-4 text-sm text-muted-foreground bg-muted/20 px-3 py-2 rounded-lg"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <p className="font-medium">Keywords:</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {currentCard.keywords.map((keyword, i) => (
+                          <span key={i} className="bg-background px-2 py-1 rounded text-xs">
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Instructions */}
                   <div className="mt-8 flex flex-col items-center z-10">
                     <motion.span
                       className="text-sm text-muted-foreground flex items-center gap-2 bg-muted/20 px-4 py-2 rounded-full border border-muted/30"
@@ -852,44 +744,22 @@ export default function FlashCardQuiz({
                     >
                       ✨ Tap to reveal answer
                     </motion.span>
-                    <div className="mt-4 flex items-center gap-8 text-xs text-muted-foreground">
-                      <div className="flex flex-col items-center">
-                        <motion.div
-                          className="bg-muted/20 px-2 py-1 rounded-lg border border-muted/30"
-                          animate={{
-                            x: [-3, 0, -3],
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Number.POSITIVE_INFINITY,
-                            repeatType: "reverse",
-                          }}
-                        >
-                          ← Swipe
-                        </motion.div>
-                        <span className="mt-1 font-medium">Flip card</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <motion.div
-                          className="bg-muted/20 px-2 py-1 rounded-lg border border-muted/30"
-                          animate={{
-                            x: [3, 0, 3],
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Number.POSITIVE_INFINITY,
-                            repeatType: "reverse",
-                          }}
-                        >
-                          Swipe →
-                        </motion.div>
-                        <span className="mt-1 font-medium">Next card</span>
-                      </div>
-                    </div>
+                    {currentCard?.keywords && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowHint(!showHint)
+                        }}
+                      >
+                        {showHint ? "Hide hint" : "Show hint (H)"}
+                      </Button>
+                    )}
                   </div>
                 </motion.div>
               ) : (
-                // Enhanced Back of card
                 <motion.div
                   onClick={toggleFlip}
                   className="w-full h-full rounded-3xl border-2 border-primary/20 shadow-2xl cursor-pointer bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8 flex flex-col relative overflow-hidden group"
@@ -917,7 +787,7 @@ export default function FlashCardQuiz({
                     backfaceVisibility: "hidden",
                   }}
                 >
-                  {/* Enhanced decorative elements for back */}
+                  {/* Decorative elements for back */}
                   <motion.div
                     className="absolute top-0 left-0 w-28 h-28 bg-gradient-to-br from-accent/20 to-accent/5 rounded-full -ml-14 -mt-14"
                     animate={{
@@ -931,14 +801,14 @@ export default function FlashCardQuiz({
                     }}
                   />
 
-                  {/* Enhanced Answer text */}
+                  {/* Answer text */}
                   <div className="flex-1 flex items-center justify-center">
                     <div className="text-xl font-semibold text-center text-foreground max-w-md leading-relaxed overflow-auto max-h-[200px] scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20 scrollbar-track-transparent px-4">
                       {currentCard?.answer || "No answer available"}
                     </div>
                   </div>
 
-                  {/* Enhanced Rating buttons with three options */}
+                  {/* Rating buttons */}
                   <div className="mt-6 space-y-4">
                     <div className="text-center">
                       <span className="text-sm font-semibold text-muted-foreground bg-muted/20 px-3 py-1 rounded-full border border-muted/30">
@@ -946,8 +816,7 @@ export default function FlashCardQuiz({
                       </span>
                     </div>
 
-                    <div className="flex gap-3 justify-center">
-                      {/* Correct/Known button */}
+                    <div className="flex gap-3 justify-center flex-wrap">
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button
                           onClick={(e) => {
@@ -956,14 +825,13 @@ export default function FlashCardQuiz({
                               handleSelfRating(currentCard.id.toString(), "correct")
                             }
                           }}
-                          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-400/30 hover:border-green-400/50"
+                          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-400/30 hover:border-green-400/50"
                           size="lg"
                         >
                           <ThumbsUp className="w-5 h-5 mr-2" />I knew it!
                         </Button>
                       </motion.div>
 
-                      {/* Still Learning button */}
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button
                           onClick={(e) => {
@@ -972,7 +840,7 @@ export default function FlashCardQuiz({
                               handleSelfRating(currentCard.id.toString(), "still_learning")
                             }
                           }}
-                          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-amber-400/30 hover:border-amber-400/50"
+                          className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-amber-400/30 hover:border-amber-400/50"
                           size="lg"
                         >
                           <BookOpen className="w-5 h-5 mr-2" />
@@ -980,7 +848,6 @@ export default function FlashCardQuiz({
                         </Button>
                       </motion.div>
 
-                      {/* Incorrect/Don't know button */}
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button
                           onClick={(e) => {
@@ -989,7 +856,7 @@ export default function FlashCardQuiz({
                               handleSelfRating(currentCard.id.toString(), "incorrect")
                             }
                           }}
-                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-red-400/30 hover:border-red-400/50"
+                          className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-red-400/30 hover:border-red-400/50"
                           size="lg"
                         >
                           <ThumbsDown className="w-5 h-5 mr-2" />
@@ -998,7 +865,7 @@ export default function FlashCardQuiz({
                       </motion.div>
                     </div>
 
-                    {/* Enhanced keyboard shortcuts */}
+                    {/* Keyboard shortcuts */}
                     <div className="text-center text-xs text-muted-foreground mt-4">
                       <div className="flex justify-center gap-6 bg-muted/10 px-4 py-2 rounded-xl border border-muted/20">
                         <span className="flex items-center gap-1">
@@ -1014,7 +881,7 @@ export default function FlashCardQuiz({
                     </div>
                   </div>
 
-                  {/* Enhanced Save button */}
+                  {/* Save button */}
                   {onSaveCard && (
                     <motion.div
                       className="absolute top-4 right-4"
@@ -1044,7 +911,7 @@ export default function FlashCardQuiz({
             </motion.div>
           </div>
 
-          {/* Enhanced Rating feedback overlay */}
+          {/* Rating feedback overlay */}
           <AnimatePresence>
             {ratingAnimation && (
               <motion.div
@@ -1057,10 +924,9 @@ export default function FlashCardQuiz({
                 <div
                   className={cn(
                     "px-8 py-6 rounded-3xl text-white font-bold text-2xl shadow-2xl border-4",
-                    ratingAnimation === "correct" && "bg-gradient-to-r from-green-500 to-green-600 border-green-400",
-                    ratingAnimation === "still_learning" &&
-                      "bg-gradient-to-r from-amber-500 to-amber-600 border-amber-400",
-                    ratingAnimation === "incorrect" && "bg-gradient-to-r from-red-500 to-red-600 border-red-400",
+                    ratingAnimation === "correct" && "bg-green-500 border-green-400",
+                    ratingAnimation === "still_learning" && "bg-amber-500 border-amber-400",
+                    ratingAnimation === "incorrect" && "bg-red-500 border-red-400",
                   )}
                 >
                   {ratingAnimation === "correct" && "✅ I knew it!"}
@@ -1071,7 +937,7 @@ export default function FlashCardQuiz({
             )}
           </AnimatePresence>
 
-          {/* Enhanced Navigation buttons */}
+          {/* Navigation buttons */}
           <div className="flex justify-between items-center pt-6">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
@@ -1087,7 +953,7 @@ export default function FlashCardQuiz({
               <div className="text-sm text-muted-foreground font-medium">
                 {reviewMode ? "Review Progress" : "Study Progress"}
               </div>
-              <div className="text-2xl font-bold text-primary"></div>
+              <div className="text-2xl font-bold text-primary">
                 {currentQuestionIndex + 1} / {reviewMode ? reviewCards.length : cards?.length || 0}
               </div>
             </div>
@@ -1100,15 +966,15 @@ export default function FlashCardQuiz({
                     (reviewMode ? reviewCards.length - 1 : (cards?.length || 0) - 1)
                   ) {
                     if (reviewMode) {
-                      handleExitReviewMode();
-                    } else {
-                      moveToNextCard();
+                      handleExitReviewMode()
+                    } else if (onComplete) {
+                      onComplete(processedResults)
                     }
                   } else {
-                    moveToNextCard();
+                    moveToNextCard()
                   }
                 }}
-                className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
+                className="px-6 py-3 rounded-xl font-semibold bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {currentQuestionIndex >= (reviewMode ? reviewCards.length - 1 : (cards?.length || 0) - 1)
                   ? reviewMode
@@ -1118,15 +984,10 @@ export default function FlashCardQuiz({
               </Button>
             </motion.div>
           </div>
-        
+        </div>
       </QuizContainer>
-    )
-  }
 
-  return (
-    <>
-      {renderQuizContent()}
-      {showConfetti && <Confetti isActive={false} />}
+      {showConfetti && <Confetti isActive={true} />}
     </>
   )
 }

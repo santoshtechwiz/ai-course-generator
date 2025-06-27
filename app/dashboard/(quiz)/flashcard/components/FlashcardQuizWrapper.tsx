@@ -16,12 +16,23 @@ import {
   selectQuizTitle,
   selectIsQuizComplete,
   selectShouldRedirectToResults,
+  selectQuizError,
+  selectRequiresAuth,
+  setPendingFlashCardAuth,
+} from "@/store/slices/flashcard-slice"
+
+import {
+  ANSWER_TYPES,
+  type RatingAnswer,
+  type QuizResultsState,
 } from "@/store/slices/flashcard-slice"
 
 import FlashcardQuiz from "./FlashcardQuiz"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
+import { useAuth } from "@/hooks/use-auth"
+import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 
 interface FlashcardQuizWrapperProps {
   slug: string
@@ -33,54 +44,64 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { isAuthenticated, isInitialized, login } = useAuth()
 
   const isReviewMode = searchParams?.get("review") === "true"
   const isResetMode = searchParams?.get("reset") === "true"
 
-  const questions = useSelector((state: RootState) => selectQuizQuestions(state))
-  const answers = useSelector((state: RootState) => selectQuizAnswers(state))
-  const currentQuestionIndex = useSelector((state: RootState) => selectCurrentQuestionIndex(state))
-  const quizStatus = useSelector((state: RootState) => selectQuizStatus(state))
-  const quizTitle = useSelector((state: RootState) => selectQuizTitle(state))
-  const isCompleted = useSelector((state: RootState) => selectIsQuizComplete(state))
-  const shouldRedirectToResults = useSelector((state: RootState) => selectShouldRedirectToResults(state))
+  const questions = useSelector(selectQuizQuestions)
+  const answers = useSelector(selectQuizAnswers)
+  const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
+  const quizStatus = useSelector(selectQuizStatus)
+  const quizTitle = useSelector(selectQuizTitle)
+  const isCompleted = useSelector(selectIsQuizComplete)
+  const shouldRedirectToResults = useSelector(selectShouldRedirectToResults)
+  const error = useSelector(selectQuizError)
+  const requiresAuth = useSelector(selectRequiresAuth)
 
-  // Init logic
+  // Initial load: clear state if needed and fetch quiz
   useEffect(() => {
-    if (initRef.current) return
-    initRef.current = true
+    if (!slug || !isInitialized) return
 
     if (isResetMode || isReviewMode) {
       dispatch(clearQuizState())
     }
 
     if (!questions.length) {
-      dispatch(fetchFlashCardQuiz(slug)).unwrap().catch(() => {
-        toast.error("Failed to load flashcards. Please try again.")
-      })
+      dispatch(fetchFlashCardQuiz(slug))
+        .unwrap()
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : "Failed to load flashcards"
+          toast.error(message)
+        })
     }
-  }, [dispatch, isResetMode, isReviewMode, questions.length, slug])
+  }, [dispatch, isResetMode, isReviewMode, questions.length, slug, isInitialized])
 
-  // Redirect to results when quiz is complete
+  // Redirect if auth required
   useEffect(() => {
-    if (shouldRedirectToResults) {
+    if (requiresAuth && !isAuthenticated && isInitialized) {
+      dispatch(setPendingFlashCardAuth(true))
+      router.push(`/auth/signin?callbackUrl=/dashboard/flashcard/${slug}`)
+    }
+  }, [requiresAuth, isAuthenticated, isInitialized, dispatch, router, slug])
+
+  // Redirect to results
+  useEffect(() => {
+    if (shouldRedirectToResults || (isCompleted && !shouldRedirectToResults)) {
       router.replace(`/dashboard/flashcard/${slug}/results`)
     }
-  }, [shouldRedirectToResults, router, slug])
-
-  // Catch missed redirects
-  useEffect(() => {
-    if (isCompleted && !shouldRedirectToResults) {
-      router.replace(`/dashboard/flashcard/${slug}/results`)
-    }
-  }, [isCompleted, shouldRedirectToResults, router, slug])
+  }, [shouldRedirectToResults, isCompleted, router, slug])
 
   const reviewQuestions = useMemo(() => {
     if (!isReviewMode || !questions.length || !answers.length) return questions
 
     const reviewIds = answers
-      .filter(
-        (a) => a.answer === "incorrect" || a.answer === "still_learning" || a.isCorrect === false
+      .filter((a): a is RatingAnswer =>
+        'answer' in a && (
+          a.answer === ANSWER_TYPES.INCORRECT ||
+          a.answer === ANSWER_TYPES.STILL_LEARNING ||
+          a.isCorrect === false
+        )
       )
       .map((a) => a.questionId)
 
@@ -90,58 +111,72 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   const currentQuestions = isReviewMode ? reviewQuestions : questions
 
   const onComplete = () => {
-    const correctCount = answers.filter((a) => a.answer === "correct").length
-    const stillLearningCount = answers.filter((a) => a.answer === "still_learning").length
-    const incorrectCount = answers.filter((a) => a.answer === "incorrect").length
-    const totalTime = answers.reduce((acc, a) => acc + (a?.timeSpent || 0), 0)
+    const ratingAnswers = answers.filter((a): a is RatingAnswer => 'answer' in a)
+
+    const correctCount = ratingAnswers.filter((a) => a.answer === ANSWER_TYPES.CORRECT).length
+    const stillLearningCount = ratingAnswers.filter((a) => a.answer === ANSWER_TYPES.STILL_LEARNING).length
+    const incorrectCount = ratingAnswers.filter((a) => a.answer === ANSWER_TYPES.INCORRECT).length
+    const totalTime = ratingAnswers.reduce((acc, a) => acc + (a.timeSpent || 0), 0)
 
     const totalQuestions = questions.length
     const percentage = totalQuestions ? (correctCount / totalQuestions) * 100 : 0
+    const timestamp = new Date().toISOString()
 
-    const results = {
+    const results: QuizResultsState = {
       score: correctCount,
       percentage,
+      correctCount,
+      incorrectCount,
+      stillLearningCount,
       correctAnswers: correctCount,
       stillLearningAnswers: stillLearningCount,
       incorrectAnswers: incorrectCount,
       totalQuestions,
       totalTime,
-      completedAt: new Date().toISOString(),
-      reviewCards: answers
-        .filter((a) => a.answer === "incorrect")
+      completedAt: timestamp,
+      submittedAt: timestamp,
+      reviewCards: ratingAnswers
+        .filter((a) => a.answer === ANSWER_TYPES.INCORRECT)
         .map((a) => parseInt(a.questionId) || a.questionId),
-      stillLearningCards: answers
-        .filter((a) => a.answer === "still_learning")
+      stillLearningCards: ratingAnswers
+        .filter((a) => a.answer === ANSWER_TYPES.STILL_LEARNING)
         .map((a) => parseInt(a.questionId) || a.questionId),
       questions,
+      answers,
       slug,
       title: quizTitle || title || "Flashcard Quiz",
       quizId: slug,
+      maxScore: totalQuestions,
     }
 
     dispatch(completeFlashCardQuiz(results))
   }
 
-  // Loading state
-  if (quizStatus === "loading") {
+  // Loading
+  if (quizStatus === "loading" || !isInitialized) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <motion.div
+        className="flex flex-col items-center justify-center min-h-[60vh]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="text-center space-y-4">
           <div className="animate-pulse text-xl font-medium">Loading flashcards...</div>
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Please wait while we prepare your quiz</p>
+          <p className="text-muted-foreground">Please wait while we prepare your study session</p>
         </div>
-      </div>
+      </motion.div>
     )
   }
 
   // Error state
-  if (quizStatus === "failed") {
+  if (quizStatus === "failed" || error) {
     return (
       <NoResults
         variant="error"
-        title="No Flashcards Found"
-        description="We couldn't find any flashcards for this topic."
+        title="Error Loading Flashcards"
+        description={error || "We couldn't load the flashcards. Please try again."}
         action={{
           label: "Try Again",
           onClick: () => {
@@ -154,6 +189,20 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
           onClick: () => router.push("/dashboard/quizzes"),
           variant: "outline",
         }}
+      />
+    )
+  }
+
+  // Sign-in prompt
+  if (requiresAuth && !isAuthenticated && isInitialized) {
+    return (
+      <SignInPrompt
+        onSignIn={() => login("credentials", { callbackUrl: `/dashboard/flashcard/${slug}` })}
+        onRetake={() => {
+          dispatch(clearQuizState())
+          router.push(`/dashboard/flashcard/${slug}?reset=true`)
+        }}
+        quizType="flashcard"
       />
     )
   }

@@ -1,26 +1,41 @@
-import { createSlice, createAsyncThunk, type PayloadAction, createSelector } from "@reduxjs/toolkit"
-import type { FlashCard } from "@/app/types/types"
-import type { RootState } from ".."
-import { ANSWER_TYPES } from "@/constants/global"
-import { createEntityAdapter } from "@reduxjs/toolkit"
+import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit'
+import type { RootState } from '@/store'
+import type { QuizType } from '@/types/quiz'
 
-interface RatingAnswer {
+export const ANSWER_TYPES = {
+  CORRECT: 'correct',
+  INCORRECT: 'incorrect',
+  STILL_LEARNING: 'still_learning',
+} as const
+
+export interface RatingAnswer {
   questionId: string
   answer: typeof ANSWER_TYPES[keyof typeof ANSWER_TYPES]
-  timeSpent?: number
-  userAnswer?: any
-  isCorrect?: boolean
+  timeSpent: number
+  userAnswer: string
+  isCorrect: boolean
+  streak?: number
 }
 
-interface SavedAnswer {
+export interface SavedAnswer {
   questionId: string
   saved: boolean
   timestamp?: number
 }
 
-type AnswerEntry = RatingAnswer | SavedAnswer
+export type AnswerEntry = RatingAnswer | SavedAnswer
 
-interface QuizResultsState {
+export interface FlashCard {
+  id: string
+  question: string
+  answer: string
+  options?: string[]
+  keywords?: string[]
+  imageUrl?: string
+  audioUrl?: string
+}
+
+export interface QuizResultsState {
   quizId: string
   slug: string
   title: string
@@ -34,8 +49,9 @@ interface QuizResultsState {
   reviewCards: number[]
   stillLearningCards: number[]
   completedAt: string
+  submittedAt: string
   questions: FlashCard[]
-  savedLocally?: boolean
+  answers: AnswerEntry[]
   error?: string
   correctAnswers?: number
   stillLearningAnswers?: number
@@ -58,6 +74,7 @@ interface FlashcardQuizState {
   shouldRedirectToResults: boolean
   requiresAuth: boolean
   pendingAuthRequired: boolean
+  isLoading: boolean
 }
 
 const initialState: FlashcardQuizState = {
@@ -74,12 +91,8 @@ const initialState: FlashcardQuizState = {
   shouldRedirectToResults: false,
   requiresAuth: false,
   pendingAuthRequired: false,
+  isLoading: false,
 }
-
-// AUTOSAVE KEYS
-const FLASHCARD_RESULTS_KEY = "flashcard_results"
-const FLASHCARD_ANSWERS_KEY = "flashcard_answers"
-const FLASHCARD_META_KEY = "flashcard_meta"
 
 export const fetchFlashCardQuiz = createAsyncThunk(
   "flashcard/fetchQuiz",
@@ -105,7 +118,7 @@ export const fetchFlashCardQuiz = createAsyncThunk(
 
 export const saveFlashCardResults = createAsyncThunk(
   "flashcard/saveResults",
-  async ({ slug, data }: { slug: string; data: any }, { rejectWithValue, getState }) => {
+  async ({ slug, data }: { slug: string; data: any }, { rejectWithValue }) => {
     try {
       const response = await fetch(`/api/quizzes/common/${slug}/complete`, {
         method: "POST",
@@ -131,6 +144,21 @@ export const saveFlashCardResults = createAsyncThunk(
   }
 )
 
+export const checkAuthAndLoadResults = createAsyncThunk(
+  'flashcard/checkAuthAndLoadResults',
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    const { isCompleted } = selectFlashcardState(state);
+    const results = selectQuizResults(state);
+
+    if (isCompleted && results) {
+      return results;
+    }
+
+    return null;
+  }
+)
+
 const flashcardSlice = createSlice({
   name: "flashcard",
   initialState,
@@ -149,45 +177,12 @@ const flashcardSlice = createSlice({
       state.results = null
       state.error = null
       state.status = "succeeded"
+    },
 
-      try {
-        localStorage.setItem(
-          FLASHCARD_META_KEY,
-          JSON.stringify({
-            id: action.payload.id,
-            slug: action.payload.slug,
-            title: action.payload.title,
-          })
-        )
-      } catch { }
-    },
-setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; title: string }>) => {
-      const { id, slug, title } = action.payload
-      state.quizId = id
-      state.slug = slug
-      state.title = title
-
-      try {
-        localStorage.setItem(
-          FLASHCARD_META_KEY,
-          JSON.stringify({ id, slug, title })
-        )
-      } catch { }
-    },
-    restoreFlashCardMeta: (state) => {
-      try {
-        const raw = localStorage.getItem(FLASHCARD_META_KEY)
-        if (raw) {
-          const { id, slug, title } = JSON.parse(raw)
-          state.quizId = id || null
-          state.slug = slug || null
-          state.title = title || ""
-        }
-      } catch { }
-    },
     resetRedirectFlag: (state) => {
       state.shouldRedirectToResults = false
     },
+
     submitFlashCardAnswer: (state, action: PayloadAction<{
       questionId: string | number
       answer: "correct" | "incorrect" | "still_learning"
@@ -196,14 +191,15 @@ setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; titl
       const { questionId, answer, timeSpent } = action.payload
       const questionIdStr = String(questionId)
 
-      const existingIndex = state.answers.findIndex(a =>
-        (a as RatingAnswer).questionId === questionIdStr
+      const existingIndex = state.answers.findIndex(
+        (a): a is RatingAnswer => 'answer' in a && a.questionId === questionIdStr
       )
 
       const newAnswer: RatingAnswer = {
         questionId: questionIdStr,
         answer,
-        isCorrect: answer === "correct",
+        userAnswer: answer,
+        isCorrect: answer === ANSWER_TYPES.CORRECT,
         timeSpent: timeSpent || 0
       }
 
@@ -212,61 +208,30 @@ setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; titl
       } else {
         state.answers.push(newAnswer)
       }
-      // Autosave answers after each answer
-      try {
-        localStorage.setItem(
-          FLASHCARD_ANSWERS_KEY,
-          JSON.stringify(state.answers)
-        );
-      } catch { }
     },
 
     completeFlashCardQuiz: (state, action: PayloadAction<QuizResultsState>) => {
-      if (state.isCompleted) return;
-
-      const results: QuizResultsState = {
+      const timestamp = new Date().toISOString()
+      state.results = {
         ...action.payload,
-        completedAt: new Date().toISOString(),
-        quizId: state.quizId || action.payload.quizId,
-        slug: state.slug || action.payload.slug,
-        title: state.title || action.payload.title,
-        questions: [...state.questions],
-        answers: [...state.answers],
-        savedLocally: false,
-      };
-
-      state.results = results;
-      state.isCompleted = true;
-      state.status = "completed";
-      state.shouldRedirectToResults = true;
-
-      try {
-        localStorage.setItem(FLASHCARD_RESULTS_KEY, JSON.stringify(results));
-      } catch { }
+        completedAt: timestamp,
+        submittedAt: timestamp,
+        answers: state.answers,
+      }
+      state.isCompleted = true
+      state.status = 'completed'
+      state.shouldRedirectToResults = true
     },
 
     setQuizResults: (state, action: PayloadAction<QuizResultsState>) => {
-      state.results = action.payload;
-      state.isCompleted = true;
-      state.status = "succeeded";
-      // Backup results to localStorage
-      try {
-        localStorage.setItem(
-          FLASHCARD_RESULTS_KEY,
-          JSON.stringify(action.payload)
-        );
-      } catch { }
+      state.results = action.payload
+      state.isCompleted = true
+      state.status = "succeeded"
     },
 
     resetFlashCards: (state) => {
-      // Only reset if not submitting/loading
       if (state.status !== "submitting" && state.status !== "loading") {
-        Object.assign(state, initialState);
-        // Clear localStorage backup
-        try {
-          localStorage.removeItem(FLASHCARD_RESULTS_KEY);
-          localStorage.removeItem(FLASHCARD_ANSWERS_KEY);
-        } catch { }
+        Object.assign(state, initialState)
       }
     },
 
@@ -292,25 +257,21 @@ setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; titl
       state.pendingAuthRequired = action.payload
     },
 
-    clearQuizState: (state) => {
-      return { ...initialState }
-    },
+clearQuizState: (state) => {
+  Object.assign(state, initialState)
+},
+
 
     completeQuiz: (state, action: PayloadAction<{ totalTime?: number }>) => {
       const answers = state.answers || []
+      const timestamp = new Date().toISOString()
       const totalQuestions = state.questions.length
 
-      const correctCount = answers.filter(a =>
-        (a as RatingAnswer).answer === "correct"
-      ).length
+      const ratingAnswers = answers.filter((a): a is RatingAnswer => 'answer' in a)
 
-      const stillLearningCount = answers.filter(a =>
-        (a as RatingAnswer).answer === "still_learning"
-      ).length
-
-      const incorrectCount = answers.filter(a =>
-        (a as RatingAnswer).answer === "incorrect"
-      ).length
+      const correctCount = ratingAnswers.filter(a => a.answer === ANSWER_TYPES.CORRECT).length
+      const stillLearningCount = ratingAnswers.filter(a => a.answer === ANSWER_TYPES.STILL_LEARNING).length
+      const incorrectCount = ratingAnswers.filter(a => a.answer === ANSWER_TYPES.INCORRECT).length
 
       const totalAnswered = correctCount + stillLearningCount + incorrectCount
       const unansweredCount = Math.max(0, totalQuestions - totalAnswered)
@@ -323,13 +284,13 @@ setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; titl
       const quizId = state.quizId || `quiz-${Date.now()}`
       const slug = state.slug || `quiz-${Date.now()}`
 
-      const reviewCards = answers
-        .map((a, i) => ((a as RatingAnswer).answer === "incorrect" ? i : -1))
-        .filter(i => i >= 0 && i < totalQuestions)
+      const reviewCards = ratingAnswers
+        .map((a, i) => (a.answer === ANSWER_TYPES.INCORRECT ? i : -1))
+        .filter(i => i >= 0)
 
-      const stillLearningCards = answers
-        .map((a, i) => ((a as RatingAnswer).answer === "still_learning" ? i : -1))
-        .filter(i => i >= 0 && i < totalQuestions)
+      const stillLearningCards = ratingAnswers
+        .map((a, i) => (a.answer === ANSWER_TYPES.STILL_LEARNING ? i : -1))
+        .filter(i => i >= 0)
 
       state.results = {
         quizId,
@@ -344,13 +305,15 @@ setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; titl
         percentage,
         reviewCards,
         stillLearningCards,
-        completedAt: new Date().toISOString(),
+        completedAt: timestamp,
+        submittedAt: timestamp,
         questions: state.questions,
+        answers: state.answers,
         correctAnswers: correctCount,
         incorrectAnswers: adjustedIncorrectCount,
         stillLearningAnswers: stillLearningCount,
         maxScore: totalQuestions,
-        userScore: correctCount
+        userScore: correctCount,
       }
 
       state.isCompleted = true
@@ -358,26 +321,9 @@ setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; titl
       state.shouldRedirectToResults = true
     },
 
-    restoreFlashcardStateFromStorage: (state) => {
-      // Restore results and answers from localStorage if present
-      try {
-        const results = localStorage.getItem(FLASHCARD_RESULTS_KEY);
-        if (results) {
-          const parsed = JSON.parse(results);
-          state.results = parsed;
-          state.isCompleted = true;
-          state.status = "succeeded";
-        }
-        const answers = localStorage.getItem(FLASHCARD_ANSWERS_KEY);
-        if (answers) {
-          state.answers = JSON.parse(answers);
-        }
-      } catch { }
-    },
-
-    resetRedirectFlag: (state) => {
+    clearRedirectFlag: (state) => {
       state.shouldRedirectToResults = false
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -422,7 +368,21 @@ setFlashcardMeta: (state, action: PayloadAction<{ id: string; slug: string; titl
           state.error = action.error.message || "Failed to save results."
         }
       })
-  },
+      .addCase(checkAuthAndLoadResults.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(checkAuthAndLoadResults.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (action.payload) {
+          state.results = action.payload;
+        }
+      })
+      .addCase(checkAuthAndLoadResults.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to load results';
+      });
+  }
 })
 
 export const {
@@ -437,13 +397,11 @@ export const {
   setPendingFlashCardAuth,
   clearQuizState,
   setQuizResults,
-  resetRedirectFlag,
+  clearRedirectFlag,
   completeQuiz,
-  restoreFlashcardStateFromStorage,
-  setFlashcardMeta
 } = flashcardSlice.actions
 
-// Selectors
+// Selectors (unchanged – still valid)
 export const selectQuizId = (state: RootState) => state.flashcard.quizId
 export const selectQuizSlug = (state: RootState) => state.flashcard.slug
 export const selectQuizTitle = (state: RootState) => state.flashcard.title
@@ -462,123 +420,31 @@ export const selectCurrentQuestionIndex = (state: RootState) => state.flashcard.
 export const selectQuizAnswers = (state: RootState) => state.flashcard.answers
 export const selectShouldRedirectToResults = (state: RootState) => state.flashcard.shouldRedirectToResults
 
-export const selectFlashcardScore = (state: RootState) => {
-  const results = state.flashcard.results
-  if (!results) return 0
-  return results.percentage || results.score || 0
-}
-
-export const selectFlashcardTotalQuestions = (state: RootState) => {
-  const results = state.flashcard.results
-  if (!results) return state.flashcard.questions.length || 0
-  return results.totalQuestions || results.questions?.length || 0
-}
-
-export const selectFlashcardCorrectAnswers = (state: RootState) => {
-  const results = state.flashcard.results
-  if (!results) return 0
-  return results.correctAnswers || results.userScore || 0
-}
-
-export const selectFlashcardTotalTime = (state: RootState) => {
-  const results = state.flashcard.results
-  if (!results) return 0
-  return results.totalTime || 0
-}
-
-export const selectFlashcardStillLearningCount = (state: RootState) => {
-  return state.flashcard.answers.filter((answer): answer is RatingAnswer =>
-    (answer as RatingAnswer).answer === "still_learning"
-  ).length
-}
-
-export const selectFlashcardIncorrectCount = (state: RootState) => {
-  return state.flashcard.answers.filter((answer): answer is RatingAnswer =>
-    (answer as RatingAnswer).answer === "incorrect"
-  ).length
-}
-
 export const selectProcessedResults = createSelector(
-  [selectQuizAnswers, selectQuizQuestions],
-  (answers, questions) => {
-    let correctCount = 0
-    let stillLearningCount = 0
-    let incorrectCount = 0
-    const reviewCards: number[] = []
-    const stillLearningCards: number[] = []
+  [selectQuizAnswers, selectQuizResults],
+  (answers, results) => {
+    if (!answers || !answers.length) return null;
 
-    answers.forEach((answer, index) => {
-      if ('answer' in answer && (answer as RatingAnswer).answer) {
-        if ((answer as RatingAnswer).answer === "correct") {
-          correctCount++
-        } else if ((answer as RatingAnswer).answer === "still_learning") {
-          stillLearningCount++
-          stillLearningCards.push(index)
-        } else if ((answer as RatingAnswer).answer === "incorrect") {
-          incorrectCount++
-          reviewCards.push(index)
-        }
-      }
-    })
+    const correct = answers.filter(a => 'isCorrect' in a && a.isCorrect).length;
+    const stillLearning = answers.filter(a => 'answer' in a && a.answer === ANSWER_TYPES.STILL_LEARNING).length;
+    const incorrect = answers.filter(a => 'isCorrect' in a && !a.isCorrect).length;
 
-    // Handle unanswered questions
-    const unansweredCount = questions.length - answers.length
-    const adjustedIncorrectCount = incorrectCount + unansweredCount
+    const totalQuestions = answers.length;
+    const percentage = Math.round((correct / totalQuestions) * 100);
+    const reviewCards = answers
+      .filter((a): a is RatingAnswer => 'questionId' in a && ('isCorrect' in a || 'answer' in a))
+      .filter(a => !a.isCorrect || a.answer === ANSWER_TYPES.STILL_LEARNING)
+      .map(a => parseInt(a.questionId));
 
     return {
-      correctCount,
-      stillLearningCount,
-      incorrectCount: adjustedIncorrectCount,
-      totalCount: questions.length,
+      correct,
+      incorrect,
+      stillLearning,
+      totalQuestions,
+      percentage,
       reviewCards,
-      stillLearningCards
-    }
-  }
-)
-
-export const selectFlashcardAnswerBreakdown = (state: RootState) => {
-  const answers = state.flashcard.answers
-  return {
-    correct: answers.filter((answer): answer is RatingAnswer => (answer as RatingAnswer).answer === "correct").length,
-    stillLearning: answers.filter((answer): answer is RatingAnswer => (answer as RatingAnswer).answer === "still_learning").length,
-    incorrect: answers.filter((answer): answer is RatingAnswer => (answer as RatingAnswer).answer === "incorrect").length,
-  }
-}
-
-export const selectCompleteResults = createSelector(
-  [
-    selectQuizResults,
-    (state: RootState) => state.flashcard,
-    selectProcessedResults,
-    selectQuizQuestions,
-    selectQuizTitle,
-    selectQuizId,
-    selectFlashcardTotalTime
-  ],
-  (results, quizState, processed, questions, title, quizId, totalTime) => {
-    if (results) return results
-
-    return {
-      quizId: quizId || quizState.slug || "",
-      slug: quizState.slug || "",
-      title: title || "Flashcard Quiz",
-      quizType: "flashcard",
-      score: processed.correctCount,
-      maxScore: processed.totalCount,
-      percentage: processed.totalCount > 0
-        ? Math.round((processed.correctCount / processed.totalCount) * 100)
-        : 0,
-      correctAnswers: processed.correctCount,
-      stillLearningAnswers: processed.stillLearningCount,
-      incorrectAnswers: processed.incorrectCount,
-      totalQuestions: questions.length,
-      stillLearningCards: processed.stillLearningCards,
-      reviewCards: processed.reviewCards,
-      questions,
-      answers: quizState.answers,
-      completedAt: new Date().toISOString(),
-      totalTime: totalTime || 0,
-    }
+      ...results,
+    };
   }
 )
 
