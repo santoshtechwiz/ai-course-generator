@@ -15,7 +15,8 @@ import { TagsDisplay } from "@/components/quiz/TagsDisplay"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { calculateAnswerSimilarity, getSimilarityLabel, getSimilarityFeedback } from "@/lib/utils/text-similarity"
 import { generateOpenEndedHints, calculateHintPenalty } from "@/lib/utils/hint-system"
-import type { OpenEndedQuestion } from "./types"
+import { OpenEndedQuestion } from "@/app/types/quiz-types"
+
 
 interface OpenEndedQuizProps {
   question: OpenEndedQuestion
@@ -55,15 +56,15 @@ export default function OpenEndedQuiz({
 
   // Extract question data with proper fallbacks
   const questionData = useMemo(() => {
-    const openEndedData = question.openEndedQuestion || {}
+    const openEndedData = question|| {}
     return {
       text: question.question || question.text || "",
-      answer: question.answer || question.sampleAnswer || openEndedData.correctAnswer || "",
-      keywords: question.keywords || [],
+      answer: question.answer || openEndedData.correctAnswer || "",
+      keywords: question.tags || [],
       hints: openEndedData.hints || question.hints || [],
       difficulty: openEndedData.difficulty || question.difficulty || "Medium",
       tags: openEndedData.tags || question.tags || [],
-      explanation: question.explanation || "",
+     
     }
   }, [question])
 
@@ -352,7 +353,7 @@ export default function OpenEndedQuiz({
         </AnimatePresence>
 
         {/* Hint System */}
-        <HintSystem hints={hints} onHintUsed={handleHintUsed} maxHints={3} allowDirectAnswer={false} />
+        <HintSystem hints={hints.map((h) => h.content)} onHintUsed={handleHintUsed}   />
 
         {/* Footer */}
         <QuizFooter
