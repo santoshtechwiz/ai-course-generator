@@ -1,4 +1,5 @@
-import { Button } from "@/components";
+
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { RotateCcw, Eye, Share2 } from "lucide-react";
 

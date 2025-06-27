@@ -12,7 +12,7 @@ export const fontInterSans = Inter({
 
 // Configure Roboto font with better fallbacks and optimization
 export const fontRobotoSans = Roboto({
-  weight: ['100', '300', '400', '500'],
+
   style: ['normal', 'italic'],
   subsets: ['latin'],
   variable: '--font-roboto',

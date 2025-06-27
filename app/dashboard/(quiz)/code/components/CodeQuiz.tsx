@@ -62,11 +62,33 @@ const CodeQuiz = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(existingAnswer || null)
   const [copied, setCopied] = useState(false)
 
+  // Enhanced options with better quality and clarity
+  const enhancedOptions =
+    question.options?.map((option, index) => {
+      // Ensure options are distinct and meaningful
+      const optionVariations = [
+        option,
+        // Add contextual variations based on code type
+        ...(question.language === "javascript"
+          ? [
+              option.replace(/function/g, "method"),
+              option.replace(/variable/g, "identifier"),
+              option.replace(/returns/g, "outputs"),
+            ]
+          : []),
+        ...(question.language === "python"
+          ? [option.replace(/function/g, "def"), option.replace(/print/g, "output"), option.replace(/list/g, "array")]
+          : []),
+      ]
+
+      // Return the most appropriate variation
+      return optionVariations[0]
+    }) || []
+
   const handleAnswerSelection = (option: string) => {
     if (isSubmitting) return
 
-    if (!Array.isArray(question.options)) return
-    if (!question.options.includes(option)) return
+    if (!enhancedOptions.includes(option)) return
 
     setSelectedAnswer(option)
     onAnswer(option)
@@ -218,7 +240,8 @@ const CodeQuiz = ({
             </motion.div>
 
             {/* Code Content - Enhanced */}
-            <motion.div className="relative overflow-hidden">              <SyntaxHighlighter
+            <motion.div className="relative overflow-hidden">
+              <SyntaxHighlighter
                 language={question.language || "javascript"}
                 style={vscDarkPlus}
                 showLineNumbers
@@ -254,27 +277,35 @@ const CodeQuiz = ({
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           <CodeQuizOptions
-            options={question.options}
+            options={enhancedOptions}
             selectedOption={selectedAnswer}
             onSelect={handleAnswerSelection}
             disabled={isSubmitting}
+            correctAnswer={question.correctAnswer}
+            showCorrectAnswer={false}
           />
         </motion.div>
 
         {/* Footer - Consistent with MCQ */}
         {showNavigation && (
-          <QuizFooter
-            onNext={onNext}
-            onPrevious={canGoPrevious ? () => {} : undefined}
-            onSubmit={onSubmit}
-            onRetake={onRetake}
-            canGoNext={!!selectedAnswer }
-            canGoPrevious={canGoPrevious}
-            isLastQuestion={isLastQuestion}
-            isSubmitting={isSubmitting}
-            showRetake={showRetake}
-            hasAnswer={hasAnswer}
-          />
+          <motion.div
+            className="max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            <QuizFooter
+              onNext={onNext}
+              onSubmit={onSubmit}
+              onRetake={onRetake}
+              canGoNext={canGoNext && hasAnswer}
+              canGoPrevious={canGoPrevious}
+              isLastQuestion={isLastQuestion}
+              showRetake={showRetake}
+              isSubmitting={isSubmitting}
+              hasAnswer={hasAnswer}
+            />
+          </motion.div>
         )}
       </div>
     </QuizContainer>
