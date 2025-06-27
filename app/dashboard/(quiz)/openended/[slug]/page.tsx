@@ -6,13 +6,17 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
+import { EnhancedLoader } from "@/components/ui/enhanced-loader"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import QuizSEO from "../../components/QuizSEO"
+
 
 export default function OpenEndedQuizPage({
   params,
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
+  // Unwrap params for future compatibility
   const resolvedParams = params instanceof Promise ? use(params) : params
   const slug = resolvedParams.slug
   const { status: authStatus } = useSession()
@@ -20,7 +24,7 @@ export default function OpenEndedQuizPage({
 
   // Check for loading state
   if (authStatus === "loading") {
-    return <QuizLoadingSteps steps={[{ label: "Initializing quiz", status: "loading" }]} />
+    return <EnhancedLoader isLoading={true} message="Initializing quiz..." subMessage="Loading user session" />
   }
 
   if (!slug) {
@@ -36,10 +40,20 @@ export default function OpenEndedQuizPage({
       </div>
     )
   }
-
   return (
-    <div className="container max-w-4xl py-6">
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="openended"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
+      <QuizSEO 
+        slug={slug}
+        quizType="openended"
+        description={`Challenge yourself with this ${slug.replace(/-/g, ' ')} open-ended quiz. Provide your own answers and test your knowledge!`}
+      />
       <OpenEndedQuizWrapper slug={slug} />
-    </div>
-  )
+    </QuizPlayLayout>
+  );
 }

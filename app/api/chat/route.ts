@@ -3,11 +3,46 @@ import { streamText } from "ai"
 import { getAuthSession } from "@/lib/auth"
 import prisma from "@/lib/db"
 import type { NextRequest } from "next/server"
-import { MemoryManager } from "@/lib/memory"
+
 import { OpenAIEmbeddings } from "@langchain/openai"
 import { MemoryVectorStore } from "langchain/vectorstores/memory"
 import { Document } from "langchain/document"
 
+class MemoryManager {
+  constructor(private options: { sessionId: string; maxTokens: number }) {}
+  private messages: { role: string; content: string; id: string }[] = []
+
+  // Corrected: Added addMessage method
+  async addMessage(message: { role: string; content: string; id: string }): Promise<void> {
+    this.messages.push(message);
+    // Keep only the last 'maxTokens' messages
+    if (this.messages.length > this.options.maxTokens) {
+      this.messages = this.messages.slice(-this.options.maxTokens);
+    }
+  }
+
+  async getMessages(): Promise<{ role: string; content: string; id: string }[]> {
+    // Simulate fetching messages from a database or cache
+    return this.messages.slice(-this.options.maxTokens)
+  }
+  static cache = new Map<string, any>()
+
+  static set(key: string, value: any): void {
+    this.cache.set(key, value)
+  }
+
+  static get(key: string): any | undefined {
+    return this.cache.get(key)
+  }
+
+  static delete(key: string): boolean {
+    return this.cache.delete(key)
+  }
+
+  static clear(): void {
+    this.cache.clear()
+  }
+}
 const CONFIG = {
   URL: process.env.NEXT_PUBLIC_URL || "http://localhost:3000",
   MAX_RESULTS: 3, // Reduced from 5 to 3
@@ -149,3 +184,5 @@ Be helpful and brief. Don't provide external info. For specific course details, 
 
   return message
 }
+
+

@@ -1,128 +1,523 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Search, Menu, X, CreditCard, Sparkles, Home, BookOpen, BrainCircuit, Compass, PlusCircle } from "lucide-react"
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
-
-import MobileMenu from "@/components/layout/navigation/MobileMenu"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
 import SearchModal from "@/components/layout/navigation/SearchModal"
-import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
 import Logo from "./Logo"
-import NotificationsMenu from "./NotificationsMenu"
 import useSubscription from "@/hooks/use-subscription"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/use-auth"
+import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
+import { cn } from "@/lib/utils"
+import { AsyncNavLink } from "@/components/ui/enhanced-loader"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session } = useSession()
-  const { user, isAuthenticated } = useAuth()
+
+  const { user, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth()
   const { totalTokens, tokenUsage, subscriptionPlan, isLoading: isSubscriptionLoading } = useSubscription()
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [ready, setReady] = useState(false)
+    // Animation variants
+  const navbarVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        duration: 0.4, 
+        ease: "easeOut",
+        when: "beforeChildren",
+        staggerChildren: 0.1
+      } 
+    }
+  }
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.3, ease: "easeOut" }
+    }
+  }
+  
+  const mobileMenuVariants = {
+    hidden: { x: "100%", opacity: 0 },
+    visible: { 
+      x: 0,
+      opacity: 1,
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30,
+        when: "beforeChildren",
+        staggerChildren: 0.05
+      }
+    },
+    exit: {
+      x: "100%", 
+      opacity: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30,
+        when: "afterChildren",
+        staggerChildren: 0.05,
+        staggerDirection: -1
+      }
+    }
+  }
 
-  // Handle scroll effect
+  // Optimized scroll handler
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20)
+    let ticking = false
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 10)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Handle initial loading state
+  // Ready state for smooth animations
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500)
-    return () => clearTimeout(timer)
-  }, [])
+    if (authStatus !== "loading") {
+      const timer = setTimeout(() => setReady(true), 100)
+      return () => clearTimeout(timer)
+    }
+  }, [authStatus])
 
-  // Calculate credits
-  const credits = totalTokens || user?.credits || 0
-  const availableCredits = credits - tokenUsage
-  const showLoading = isLoading && isAuthenticated
+  // Memoized calculations
+  const availableCredits = useMemo(() => {
+    const credits = totalTokens ?? user?.credits ?? 0
+    if (typeof credits === "number" && typeof tokenUsage === "number") {
+      return Math.max(0, credits - tokenUsage)
+    }
+    return null
+  }, [totalTokens, user?.credits, tokenUsage])
 
-  return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 ${
-        scrolled ? "bg-background/95 shadow-sm" : "bg-background/80"
-      } backdrop-blur-sm border-b transition-all duration-300`}
-      data-testid="main-navbar"
-    >
-      <div className="container flex h-16 items-center px-4 sm:px-6">
-        <Logo />
+  const userInitials = useMemo(() => {
+    const name = user?.name || ""
+    return (
+      name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "U"
+    )
+  }, [user?.name])
 
-        {/* Navigation links */}
-        <nav className="mx-6 hidden items-center space-x-8 md:flex" data-testid="nav-items">
-          {navItems.map((item) => (
-            <Link href={item.href} key={item.name} data-testid={`nav-item-${item.name.toLowerCase()}`}>
-              <div
-                className={`relative py-2 text-sm font-medium transition-colors ${
-                  pathname === item.href ? "text-primary font-semibold" : "text-foreground hover:text-primary/80"
-                }`}
-              >
-                {item.name}
-                {pathname === item.href && <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary" />}
-              </div>
-            </Link>
-          ))}
-        </nav>
+  // Handlers
+  const handleSearchOpen = useCallback(() => setIsSearchModalOpen(true), [])
+  const handleSearchClose = useCallback(() => setIsSearchModalOpen(false), [])
+  const handleMobileMenuToggle = useCallback(() => setIsMobileMenuOpen((prev) => !prev), [])
+  const handleSignIn = useCallback(() => router.push("/api/auth/signin"), [router])
 
-        <div className="flex items-center ml-auto space-x-4">
-          {/* Credit display for authenticated users */}
-          {isAuthenticated && !showLoading && (
-            <div className="hidden md:flex items-center space-x-1" data-testid="credits-display">
-              <div className="text-sm font-medium">Credits: {availableCredits}</div>
-              {subscriptionPlan !== "FREE" && (
-                <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">{subscriptionPlan}</span>
-              )}
-            </div>
-          )}
-
-          {/* Loading indicator */}
-          {showLoading && (
-            <div className="hidden md:flex items-center" data-testid="loading-indicator">
-              <div className="h-4 w-24 bg-muted rounded animate-pulse"></div>
-            </div>
-          )}
-
-          {/* Search button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSearchModalOpen(true)}
-            className="relative h-8 w-8 rounded-full"
-            aria-label="Search"
-            data-testid="search-button"
+  const handleSearchResult = useCallback(
+    (url: string) => {
+      router.push(url)
+      handleSearchClose()
+    },
+    [router, handleSearchClose],
+  )  // Navigation items with active state and animations
+  const navigationItems = useMemo(
+    () =>
+      navItems.map((item) => {
+        const isActive = pathname === item.href
+        const Icon = item.icon || (() => null)
+        
+        return (
+          <motion.div
+            key={item.name}
+            variants={itemVariants}
+            className="relative"
           >
-            <Search className="h-5 w-5" />
-          </Button>
+            <AsyncNavLink
+              href={item.href}
+              className={cn(
+                "relative px-3 py-2 text-sm font-medium transition-colors group block",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-md",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              )}
+              data-testid={`nav-item-${item.name.toLowerCase()}`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <div className="flex items-center gap-1.5">
+                <Icon className="h-4 w-4" />
+                <span>{item.name}</span>
+              </div>
+              <div className="relative mt-0.5">
+                {isActive ? (
+                  <motion.div 
+                    className="absolute bottom-0 left-0 h-0.5 bg-primary rounded-full w-full" 
+                    layoutId="activeNavIndicator"
+                    transition={{ duration: 0.2, type: "spring" }}
+                  />
+                ) : (
+                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary/30 rounded-full group-hover:w-full transition-all duration-300" />
+                )}
+              </div>
+            </AsyncNavLink>
+          </motion.div>
+        )
+      }),
+    [pathname, itemVariants],
+  )
+  // Mobile navigation items with animations and icons
+  const mobileNavigationItems = useMemo(
+    () => navItems.map((item) => {
+        const isActive = pathname === item.href
+        const Icon = item.icon || (() => null)
+        
+        return (
+          <motion.div key={item.name} variants={itemVariants}>
+            <AsyncNavLink
+              href={item.href}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3.5 text-base font-medium transition-all duration-200 rounded-lg",
+                "hover:bg-accent/80",
+                isActive 
+                  ? "text-primary bg-primary/5 border-l-2 border-primary" 
+                  : "text-muted-foreground border-l-2 border-transparent hover:border-primary/40",
+              )}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <div className={cn(
+                "p-2 rounded-md",
+                isActive ? "bg-primary/10" : "bg-muted/50"
+              )}>
+                <Icon className="w-4 h-4" />
+              </div>
+              {item.name}
+            </AsyncNavLink>
+          </motion.div>
+        )
+      }),
+    [pathname, itemVariants, setIsMobileMenuOpen],
+  )
 
-          {/* Search Modal */}
-          <SearchModal
-            isOpen={isSearchModalOpen}
-            setIsOpen={setIsSearchModalOpen}
-            onResultClick={(url) => {
-              router.push(url)
-              setIsSearchModalOpen(false)
-            }}
-          />
+  // Credits display component
+  const CreditsDisplay = useMemo(() => {
+    if (!isAuthenticated) return null
 
-          <ThemeToggle />
-
-          {session && <NotificationsMenu />}
-
-          {/* User Menu */}
-          <UserMenu />
-
-          {/* Mobile Menu */}
-          <MobileMenu />
+    if (availableCredits === null) {
+      return (
+        <div className="hidden lg:flex items-center space-x-2">
+          <Skeleton className="h-4 w-16 rounded" />
+          <Skeleton className="h-5 w-12 rounded-full" />
         </div>
+      )
+    }
+
+    const isLowCredits = availableCredits < 100
+    const isPremium = subscriptionPlan && subscriptionPlan !== "FREE"
+
+    return (
+      <div className="hidden lg:flex items-center space-x-2" data-testid="credits-display">
+        <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-card border rounded-lg shadow-sm">
+          <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+          <span
+            className={cn("text-sm font-medium tabular-nums", isLowCredits ? "text-destructive" : "text-foreground")}
+          >
+            {availableCredits.toLocaleString()}
+          </span>
+        </div>
+        {isPremium && (
+          <Badge variant="secondary" className="text-xs font-medium">
+            <Sparkles className="h-3 w-3 mr-1" />
+            {subscriptionPlan}
+          </Badge>
+        )}
       </div>
-    </header>
+    )
+  }, [isAuthenticated, availableCredits, subscriptionPlan])
+
+  // User avatar component
+  const UserAvatar = useMemo(
+    () => (
+      <Avatar className="h-8 w-8 border-2 border-border/50 hover:border-primary/50 transition-all duration-200">
+        <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
+        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{userInitials}</AvatarFallback>
+      </Avatar>
+    ),
+    [user?.image, user?.name, userInitials],  )
+  
+  return (
+    <>      <header
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          "border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60",
+          scrolled && "shadow-sm bg-background/95 supports-[backdrop-filter]:bg-background/80",
+        )}
+        data-testid="main-navbar"
+        role="navigation"
+        aria-label="Main navigation"
+      >
+        <motion.div 
+          className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8"
+          initial="hidden"
+          animate="visible"
+          variants={navbarVariants}
+        >
+          {/* Logo */}
+          <motion.div 
+            className="flex items-center" 
+            variants={itemVariants}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Link href="/" aria-label="Return to homepage">
+              <Logo />
+            </Link>
+          </motion.div>
+
+          {/* Desktop Navigation */}
+          <motion.nav 
+            className="hidden md:flex items-center space-x-3" 
+            data-testid="nav-items"
+            variants={itemVariants}
+            aria-label="Primary navigation"
+          >
+            {navigationItems}
+          </motion.nav>
+
+          {/* Right Section */}
+          <motion.div 
+            className="flex items-center space-x-2 sm:space-x-3"
+            variants={itemVariants}
+          >
+            {/* Credits Display */}
+            {CreditsDisplay}
+
+            {/* Search Button */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSearchOpen}
+                className="h-9 w-9 hover:bg-accent transition-colors duration-200"
+                aria-label="Search"
+                data-testid="search-button"
+              >
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Search</span>
+              </Button>
+            </motion.div>
+
+            {/* Theme Toggle */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <ThemeToggle />
+            </motion.div>
+
+            {/* Notifications - Desktop Only */}
+            {isAuthenticated && (
+              <motion.div
+                className={cn(
+                  "hidden sm:block transition-all duration-300",
+                  ready ? "opacity-100 scale-100" : "opacity-0 scale-95",
+                )}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <NotificationsMenu />
+              </motion.div>
+            )}
+
+            {/* User Menu or Sign In Button */}
+            <motion.div 
+              className={cn("transition-all duration-300", ready ? "opacity-100 scale-100" : "opacity-0 scale-95")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <UserMenu>
+                {isAuthenticated ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 hover:bg-accent/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
+                    aria-label="User menu"
+                  >
+                    {UserAvatar}
+                  </Button>
+                ) : authLoading ? (
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                ) : (
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={handleSignIn} 
+                    className="hidden sm:inline-flex shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    Sign In
+                  </Button>
+                )}
+              </UserMenu>
+            </motion.div>
+
+            {/* Mobile Menu Trigger */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <motion.div
+                  className="md:hidden"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-9 w-9" 
+                    aria-label="Open navigation menu"
+                    aria-expanded={isMobileMenuOpen}
+                    aria-controls="mobile-menu"
+                  >
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Menu</span>
+                  </Button>
+                </motion.div>
+              </SheetTrigger>
+              <SheetContent 
+                side="right" 
+                className="w-80 sm:w-96 p-0 overflow-hidden"
+                role="dialog"
+                aria-label="Navigation"
+              >
+                <AnimatePresence>
+                  <motion.div 
+                    className="flex flex-col h-full"
+                    variants={mobileMenuVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    id="mobile-menu"
+                  >
+                    {/* Mobile Header */}
+                    <motion.div 
+                      className="flex items-center justify-between p-4 border-b"
+                      variants={itemVariants}
+                    >
+                      <Logo />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setIsMobileMenuOpen(false)} 
+                        className="h-8 w-8 hover:bg-accent/80 transition-colors"
+                        aria-label="Close menu"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close menu</span>
+                      </Button>
+                    </motion.div>
+
+                    {/* Mobile User Section */}
+                    {isAuthenticated && (
+                      <motion.div 
+                        className="py-4 px-4 border-b"
+                        variants={itemVariants}
+                      >
+                        <div className="flex items-center space-x-3 mb-3">
+                          {UserAvatar}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{user?.name || "User"}</p>
+                            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                          </div>
+                        </div>
+
+                        {/* Mobile Credits */}
+                        {availableCredits !== null && (
+                          <motion.div 
+                            className="flex items-center justify-between p-3 bg-card rounded-lg border shadow-sm"
+                            whileHover={{ scale: 1.02 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <CreditCard className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">Credits</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-semibold tabular-nums">
+                                {availableCredits.toLocaleString()}
+                              </span>
+                              {subscriptionPlan && subscriptionPlan !== "FREE" && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  {subscriptionPlan}
+                                </Badge>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {/* Mobile Navigation */}
+                    <motion.nav 
+                      className="flex-1 py-4 space-y-1 overflow-y-auto px-3"
+                      variants={itemVariants}
+                      aria-label="Mobile navigation"
+                    >
+                      {mobileNavigationItems}
+                    </motion.nav>
+
+                    {/* Mobile Footer */}
+                    <motion.div 
+                      className="p-4 border-t space-y-3"
+                      variants={itemVariants}
+                    >
+                      {/* Mobile Notifications */}
+                      {isAuthenticated && (
+                        <div className="flex items-center justify-center">
+                          <NotificationsMenu />
+                        </div>
+                      )}
+
+                      {/* Mobile Sign In */}
+                      {!isAuthenticated && !authLoading && (
+                        <motion.div
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <Button 
+                            onClick={handleSignIn} 
+                            className="w-full shadow-sm hover:shadow-md transition-all duration-200" 
+                            size="lg"
+                          >
+                            Sign In
+                          </Button>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+              </SheetContent>
+            </Sheet>          </motion.div>
+        </motion.div>
+      </header>
+
+      {/* Search Modal */}
+      <SearchModal isOpen={isSearchModalOpen} setIsOpen={setIsSearchModalOpen} onResultClick={handleSearchResult} />
+    </>
   )
 }

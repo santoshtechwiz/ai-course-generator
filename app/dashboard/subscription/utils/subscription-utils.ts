@@ -1,20 +1,21 @@
-import type { SubscriptionState } from "@/store/slices/subscription-slice"
+import type { SubscriptionState, SubscriptionData } from "@/store/slices/subscription-slice"
+import type { SubscriptionPlanType as ImportedPlanType, SubscriptionStatusType } from "../types/subscription"
 
-// Define the missing SubscriptionPlanType enum
-export enum SubscriptionPlanType {
-  FREE = "free",
-  BASIC = "basic",
-  PRO = "pro",
-  PREMIUM = "premium",
+// Fix enum declaration to match the string type from the types file
+export const enum SubscriptionPlanType {
+  FREE = "FREE",
+  BASIC = "BASIC",
+  PRO = "PRO",
+  PREMIUM = "PRO", // This should be "PRO" to match usage
 }
 
-// Define the SubscriptionStatus enum if it's not properly imported
-export enum SubscriptionStatus {
-  ACTIVE = "active",
-  INACTIVE = "inactive",
-  CANCELED = "canceled",
-  PAST_DUE = "past_due",
-  PENDING = "pending",
+// Make status values uppercase to match the SubscriptionStatusType
+export const enum SubscriptionStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE", 
+  CANCELED = "CANCELED",
+  PAST_DUE = "PAST_DUE",
+  PENDING = "PENDING",
 }
 
 /**
@@ -44,11 +45,12 @@ export function parseSubscriptionData(data: string | null): Partial<Subscription
     return null
   }
 }
+
 export function calculateSavings(subscription: SubscriptionState | null): number {
-  if (!subscription) return 0
+  if (!subscription || !subscription.data) return 0
 
   // Calculate savings based on subscription plan
-  switch (subscription.data.plan) {
+  switch (subscription.data.subscriptionPlan) {
     case SubscriptionPlanType.PREMIUM:
       return 100 // Example savings for premium plan
     case SubscriptionPlanType.PRO:
@@ -60,19 +62,20 @@ export function calculateSavings(subscription: SubscriptionState | null): number
       return 0 // No savings for free plan
   }
 }
+
 /**
  * Checks if a subscription is active
  * @param subscription The subscription to check
  * @returns True if the subscription is active
  */
 export function isSubscriptionActive(subscription: SubscriptionState | null): boolean {
-  if (!subscription) return false
+  if (!subscription || !subscription.data) return false
 
   // Check if subscription is active
-  if (subscription.status === SubscriptionStatus.ACTIVE) return true
+  if (subscription.data.status === SubscriptionStatus.ACTIVE) return true
 
   // Check if subscription is on a paid plan
-  if (subscription.plan !== SubscriptionPlanType.FREE && subscription.isSubscribed) return true
+  if (subscription.data.subscriptionPlan !== SubscriptionPlanType.FREE && subscription.data.isSubscribed) return true
 
   return false
 }
@@ -83,15 +86,15 @@ export function isSubscriptionActive(subscription: SubscriptionState | null): bo
  * @returns The number of credits available
  */
 export function getAvailableCredits(subscription: SubscriptionState | null): number {
-  if (!subscription) return 0
+  if (!subscription || !subscription.data) return 0
 
   // Return credits from subscription or calculate based on plan
-  if (typeof subscription.credits === "number") {
-    return Math.max(0, subscription.credits - (subscription.tokensUsed || 0))
+  if (typeof subscription.data.credits === "number") {
+    return Math.max(0, subscription.data.credits - (subscription.data.tokensUsed || 0))
   }
 
   // Default credits by plan if not explicitly set
-  switch (subscription.plan) {
+  switch (subscription.data.subscriptionPlan) {
     case SubscriptionPlanType.PREMIUM:
       return 500
     case SubscriptionPlanType.PRO:
@@ -114,7 +117,7 @@ export function isFeatureAvailable(
   subscription: SubscriptionState | null,
   feature: "advanced_quizzes" | "unlimited_generation" | "api_access" | "priority_support",
 ): boolean {
-  if (!subscription) return false
+  if (!subscription || !subscription.data) return false
 
   // Check if subscription is active
   if (!isSubscriptionActive(subscription)) {
@@ -123,7 +126,7 @@ export function isFeatureAvailable(
   }
 
   // Feature availability by plan
-  switch (subscription.data?.currentPlan) {
+  switch (subscription.data.subscriptionPlan) {
     case SubscriptionPlanType.PREMIUM:
       return true // All features available
     case SubscriptionPlanType.PRO:

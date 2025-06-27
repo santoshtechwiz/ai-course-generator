@@ -1,8 +1,8 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { generatePageMetadata } from "@/lib/seo-utils"
-import { JsonLd } from "../schema/components/json-ld"
-export const metadata: Metadata = generatePageMetadata({
+import { generateMetadata } from "@/lib/seo"
+import { JsonLD } from "../schema/components"
+export const metadata: Metadata = generateMetadata({
   title: "Terms of Service | CourseAI Coding Education",
   description:
     "Review the terms and conditions for using CourseAI's programming education platform. Understanding our policies for a better learning experience.",
@@ -43,7 +43,7 @@ export default function TermsAndConditions() {
   return (
     <div className="container mx-auto px-4 py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(termsSchema) }} />
-      <JsonLd type="default" />
+      <JsonLD type="default" />
       <h1 className="text-3xl font-bold mb-6">Terms and Conditions</h1>
 
       <p className="mb-4">Last updated: {new Date().toLocaleDateString("en-US")}</p>

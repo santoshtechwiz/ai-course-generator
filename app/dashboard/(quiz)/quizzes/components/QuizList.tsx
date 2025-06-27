@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useEffect } from "react"
+import React, { memo, useEffect, useMemo } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import NProgress from "nprogress"
 import { useInView } from "react-intersection-observer"
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/tailwindUtils"
-
+import type { QuizType } from "@/app/types/quiz-types"
 import type { QuizListItem } from "@/app/types/types"
 
 NProgress.configure({
@@ -38,7 +38,8 @@ interface QuizListProps {
     mcq: number
     openended: number
     code: number
-    "fill-blanks": number
+    blanks: number
+    flashcard: number
   }
 }
 
@@ -47,20 +48,21 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
+      staggerChildren: 0.08,
     },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 30, scale: 0.98 },
   visible: {
     opacity: 1,
     y: 0,
+    scale: 1,
     transition: {
       type: "spring",
-      stiffness: 300,
-      damping: 30,
+      stiffness: 180,
+      damping: 20,
     },
   },
 }
@@ -89,7 +91,6 @@ function QuizListComponent({
     } else {
       NProgress.done()
     }
-
     return () => {
       NProgress.done()
     }
@@ -97,16 +98,20 @@ function QuizListComponent({
 
   // Helper functions
   const getEstimatedTime = (questionCount: number): string => {
-    const minutes = Math.max(Math.ceil(questionCount * 0.5), 1) // At least 1 minute
+    const minutes = Math.max(Math.ceil(questionCount * 0.5), 1)
     return `${minutes} min`
   }
 
-  const getQuestionCount = (quiz: {
-    quizType: string
-    questionCount: number
-  }): number => {
-    return quiz.questionCount || 0
-  }
+  const getQuestionCount = (quiz: { questionCount: number }): number => quiz.questionCount || 0
+
+  // Memoize filtered quizzes for performance
+  const filteredQuizzes = useMemo(
+    () =>
+      activeFilter === "all"
+        ? quizzes
+        : quizzes.filter((quiz) => quiz.quizType === activeFilter),
+    [quizzes, activeFilter],
+  )
 
   if (isLoading) {
     return <QuizzesSkeleton />
@@ -136,12 +141,22 @@ function QuizListComponent({
 
   if (quizzes.length === 0) {
     return (
-      <div className="text-center p-10 bg-muted/30 rounded-lg border border-muted">
+      <motion.div
+        className="text-center p-10 bg-muted/30 rounded-lg border border-muted"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+      >
         {isSearching ? (
           <div className="max-w-md mx-auto">
-            <div className="bg-primary/10 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <motion.div
+              className="bg-primary/10 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+              initial={{ scale: 0.8, opacity: 0.7 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
               <Search className="h-8 w-8 text-primary" />
-            </div>
+            </motion.div>
             <h3 className="text-2xl font-semibold mb-3">No matching quizzes found</h3>
             <p className="text-muted-foreground mb-6">
               Try adjusting your search terms or filters to find what you're looking for.
@@ -152,9 +167,14 @@ function QuizListComponent({
           </div>
         ) : (
           <div className="max-w-md mx-auto">
-            <div className="bg-primary/10 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <motion.div
+              className="bg-primary/10 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+              initial={{ scale: 0.8, opacity: 0.7 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
               <FileQuestion className="h-8 w-8 text-primary" />
-            </div>
+            </motion.div>
             <h3 className="text-2xl font-semibold mb-3">No quizzes available</h3>
             <p className="text-muted-foreground mb-6">Be the first to create a quiz and share your knowledge!</p>
             <CreateCard
@@ -164,16 +184,12 @@ function QuizListComponent({
             />
           </div>
         )}
-      </div>
+      </motion.div>
     )
   }
 
-  // Filter quizzes based on active filter
-  const filteredQuizzes = activeFilter === "all" ? quizzes : quizzes.filter((quiz) => quiz.quizType === activeFilter)
-
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8">      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         {onFilterChange && (
           <Tabs value={activeFilter} onValueChange={onFilterChange} className="w-full sm:w-auto">
             <TabsList className="grid grid-cols-2 sm:flex sm:flex-row">
@@ -201,6 +217,18 @@ function QuizListComponent({
                   {quizCounts.code}
                 </Badge>
               </TabsTrigger>
+              <TabsTrigger value="blanks" className="flex items-center gap-1.5">
+                Blanks
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {quizCounts.blanks}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="flashcard" className="flex items-center gap-1.5">
+                Flashcard
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {quizCounts.flashcard}
+                </Badge>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         )}
@@ -221,16 +249,17 @@ function QuizListComponent({
       >
         <LayoutGroup>
           <AnimatePresence>
-            {filteredQuizzes.map((quiz) => (
+            {filteredQuizzes.map((quiz, idx) => (
               <motion.div
                 key={quiz.id}
                 variants={itemVariants}
                 layout
                 className="h-full"
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                whileHover={{ y: -5, scale: 1.01, transition: { duration: 0.18 } }}
                 initial="hidden"
                 animate="visible"
-                exit={{ opacity: 0, y: 20 }}
+                exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                transition={{ delay: idx * 0.04 }}
               >
                 <QuizCard
                   title={quiz.title}
@@ -238,7 +267,7 @@ function QuizListComponent({
                   questionCount={getQuestionCount(quiz)}
                   isPublic={quiz.isPublic}
                   slug={quiz.slug}
-                  quizType={quiz.quizType as "mcq" | "openended" | "fill-blanks" | "code"}
+                  quizType={quiz.quizType as QuizType}
                   estimatedTime={getEstimatedTime(quiz.questionCount)}
                   completionRate={Math.min(Math.max(quiz.bestScore || 0, 0), 100)}
                 />
@@ -267,7 +296,6 @@ function QuizListComponent({
 
 // Memoize the component with a custom comparison function
 export const QuizList = memo(QuizListComponent, (prevProps, nextProps) => {
-  // Only re-render if these specific props change
   return (
     prevProps.quizzes.length === nextProps.quizzes.length &&
     prevProps.isLoading === nextProps.isLoading &&

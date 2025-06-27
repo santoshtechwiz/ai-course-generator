@@ -1,54 +1,55 @@
 "use client"
 
 import { use } from "react"
-import { useSelector, useDispatch } from "react-redux"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
-import { useSession } from "next-auth/react"
-import { selectIsAuthenticated } from '@/store/slices/authSlice'
+
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import McqQuizWrapper from "../components/McqQuizWrapper"
-import { QuizLoadingSteps } from "../../components/QuizLoadingSteps"
-import {
-  hydrateQuiz, // Use renamed action
-} from "@/store/slices/quizSlice"
+
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import QuizSEO from "../../components/QuizSEO"
+import { getQuizSlug } from "../../components/utils"
+
 
 export default function McqQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: Promise<{ slug: string }> 
 }) {
-  const resolvedParams = params instanceof Promise ? use(params) : params;
-  const slug = resolvedParams.slug;
-  const { status: authStatus } = useSession();
-  const router = useRouter();
-  const dispatch = useDispatch();
+  // Unwrap params for future compatibility
+  const slug = getQuizSlug(params);
 
-  // Check for loading state
-  if (authStatus === 'loading') {
-    return (
-      <QuizLoadingSteps
-        steps={[
-          { label: 'Initializing quiz', status: 'loading' }
-        ]}
-      />
-    );
-  }
+  const router = useRouter()
+
 
   if (!slug) {
     return (
       <div className="container max-w-4xl py-6">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-4">Error</h2>
-          <p className="text-muted-foreground">Quiz slug is missing. Please check the URL.</p>
-        </div>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold mb-4">Error</h2>
+            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
+            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+          </CardContent>
+        </Card>
       </div>
-    );
+    )
   }
-
-  // Allow all users to take quiz (authenticated or not)
   return (
-    <div className="container max-w-4xl py-6">
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="mcq"
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
+      <QuizSEO 
+        slug={slug}
+        quizType="mcq"
+        description={`Test your knowledge with this ${slug.replace(/-/g, ' ')} multiple choice quiz. Challenge yourself and learn something new!`}
+      />
       <McqQuizWrapper slug={slug} />
-    </div>
-  );
+    </QuizPlayLayout>
+  )
 }

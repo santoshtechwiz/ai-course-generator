@@ -18,8 +18,9 @@ export interface OpenEndedQuestion extends BaseQuestion {
   answer: string;
   hints?: string[];
   type: 'openended';
-  keywords?: string[]; // Keywords for similarity matching
+  tags?: string[]; // Keywords for similarity matching
   similarityThreshold?: number; // Threshold to consider answer correct (0.0-1.0)
+  difficulty?: 'easy' | 'medium' | 'hard'; // Difficulty level
 }
 
 // Fill in the blanks questions
@@ -93,6 +94,7 @@ export interface McqQuizAnswer extends BaseAnswer {
   selectedOptionId: string;
   isCorrect?: boolean;
   type: 'mcq';
+  timeSpent?: number; // Time spent on question in seconds
 }
 
 export interface CodeQuizAnswer extends BaseAnswer {
@@ -120,25 +122,27 @@ export interface QuizState {
   sessionId?: string;
 }
 
-// Authentication types
-export interface AuthState {
-  isAuthenticated: boolean;
-  userId: string | null;
-  status: 'idle' | 'loading' | 'error';
-  error: string | null;
-}
+// Import AuthState from auth-types instead of duplicating
+import { AuthState } from './auth-types';
+// Re-export for backward compatibility
+export { AuthState };
 
 // Quiz result types
 export interface QuizResult {
   slug: string; // Primary identifier
+  quizId?: string | number; // For backward compatibility
   title: string;
   score: number;
   maxScore: number;
   percentage: number;
   completedAt: string;
-  submittedAt?: string;
-  questionResults?: QuizQuestionResult[];
-  type?: QuizType;
+  questions?: QuizQuestion[];
+  questionResults?: Array<{
+    questionId: string | number;
+    isCorrect: boolean;
+    userAnswer?: string | any;
+    correctAnswer?: string;
+  }>;
 }
 
 export interface QuizResultPreview {
@@ -227,4 +231,18 @@ export interface OpenEndedQuizData extends QuizData {
   type: 'openended';
   evaluationMethod?: 'similarity' | 'exact' | 'keywords' | 'ai';
   similarityThreshold?: number; // Default threshold
+}
+
+export interface ProcessedQuestion extends OpenEndedQuestion {
+  isProcessed: boolean;
+  processingTime: number;
+}
+
+export interface BlanksQuizResult {
+  questionId: string | number;
+  userAnswer: string | null;
+  correctAnswer: string;
+  isCorrect: boolean;
+  similarity: number;
+  similarityLabel: string;
 }

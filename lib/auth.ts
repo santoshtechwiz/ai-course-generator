@@ -55,6 +55,36 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt", // Using JWT for better performance
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  // Add proper cookie configuration for better security
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    },
+    csrfToken: {
+      name: 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
   callbacks: {
     async jwt({ token, user, account, trigger }) {
       // Initial sign in
@@ -269,7 +299,7 @@ export const authOptions: NextAuthOptions = {
 
 // Improved session caching with proper invalidation
 const SESSION_CACHE = new Map<string, { session: any; timestamp: number }>()
-const SESSION_CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes
+const SESSION_CACHE_MAX_AGE = 30 * 1000 // 30 seconds cache for sessions
 
 // Function to clear caches periodically
 const clearCaches = () => {
@@ -295,27 +325,37 @@ if (typeof window === "undefined") {
   setInterval(clearCaches, 5 * 60 * 1000) // Clean every 5 minutes
 }
 
-export const getAuthSession = async () => {
-  const cacheKey = "global"
+/**
+ * Enhanced getAuthSession with improved caching and error handling
+ * 
+ * @param options Optional configuration
+ * @returns The current session or null if not authenticated
+ */
+export const getAuthSession = async (options?: { 
+  skipCache?: boolean;   // Force fresh session fetch
+  cacheKey?: string;     // Custom cache key (e.g., for user-specific caching)
+}) => {
+  const cacheKey = options?.cacheKey || "global"
   const now = Date.now()
 
-  // Check cache
-  const cached = SESSION_CACHE.get(cacheKey)
-  if (cached && now - cached.timestamp < SESSION_CACHE_MAX_AGE) {
-    return cached.session
+  // Skip cache if requested or in development with debugSession=true query param
+  if (!options?.skipCache) {
+    // Check cache
+    const cached = SESSION_CACHE.get(cacheKey)
+    if (cached && now - cached.timestamp < SESSION_CACHE_MAX_AGE) {
+      return cached.session
+    }
   }
 
   // Fetch a new session if not cached or expired
   try {
     const session = await getServerSession(authOptions)
 
-    // Cache the result
-    if (session) {
-      SESSION_CACHE.set(cacheKey, {
-        session,
-        timestamp: now,
-      })
-    }
+    // Cache the result (even if null to prevent hammering the session API)
+    SESSION_CACHE.set(cacheKey, {
+      session,
+      timestamp: now,
+    })
 
     return session
   } catch (error) {
@@ -385,4 +425,6 @@ export async function updateUserData(userId: string, data: any) {
 // Invalidate session cache
 export function invalidateSessionCache() {
   SESSION_CACHE.clear()
+  // Also clear userCache if you want to be thorough
+  userCache.clear()
 }

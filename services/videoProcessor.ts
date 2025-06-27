@@ -1,5 +1,10 @@
 import pLimit from "p-limit"
-import type { MultipleChoiceQuestion } from "@/app/types/types"
+
+interface MultipleChoiceQuestion {
+  question: string
+  options: string[]
+  answer: string
+}
 
 import generateMultipleChoiceQuestions from "@/lib/chatgpt/videoQuiz"
 import YoutubeService from "./youtubeService"

@@ -2,45 +2,42 @@ import { getAuthSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { getCourses } from "@/app/actions/getCourses"
 
-import { getCourseData } from "@/app/actions/getCourseData"
-import { generatePageMetadata } from "@/lib/seo-utils"
-import type { Metadata } from "next"
 import CourseCreationVideo from "@/components/common/CourseCreationVideo"
 import ConfirmChapters from "../components/ConfirmChapters"
 
-export const fetchCache = "force-no-store"
+
 type Props = {
   params: {
     slug: string
   }
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params // Await the promise to extract slug
-  const course = await getCourseData(slug)
+// export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+//   const { slug } = await params
+//   const course = await getCourseData(slug)
 
-  if (!course) {
-    return {
-      title: "Course Creation | CourseAI",
-      description: "Create your own interactive programming course with our AI-powered tools.",
-    }
-  }
+//   if (!course) {
+//     return setSeo({
+//       title: "Course Creation | CourseAI",
+//       description: "Create your own interactive programming course with our AI-powered tools.",
+//     })
+//   }
 
-  return generatePageMetadata({
-    title: `Creating: ${course.title} | Course AI`,
-    description: `Design and build your ${course.title?.toLowerCase()} course with our intuitive course creation tools. Share your expertise and engage learners effectively.`,
-    path: `/dashboard/explore/${slug}`,
-    keywords: [
-      `${course.title?.toLowerCase()} course creation`,
-      "build online course",
-      "teaching platform",
-      "educational content",
-      "course design",
-      "AI course builder",
-    ],
-    ogType: "website",
-  })
-}
+//   return setSeo({
+//     title: `Creating: ${course.title} | Course AI`,
+//     description: `Design and build your ${course.title?.toLowerCase()} course with our intuitive course creation tools. Share your expertise and engage learners effectively.`,
+//     path: `/dashboard/explore/${slug}`,
+//     keywords: [
+//       `${course.title?.toLowerCase()} course creation`,
+//       "build online course",
+//       "teaching platform",
+//       "educational content",
+//       "course design",
+//       "AI course builder",
+//     ],
+//     ogType: "website",
+//   })
+// }
 
 export default async function CreateChapters({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params // Await the promise to extract slug

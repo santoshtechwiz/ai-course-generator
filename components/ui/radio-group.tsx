@@ -9,10 +9,19 @@ import { cn } from "@/lib/utils"
 const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
->(({ className, ...props }, ref) => {
+>(({ className, onValueChange, value, ...props }, ref) => {
+  // Handle value changes in a stable way to prevent infinite update loops
+  const handleValueChange = React.useCallback((newValue: string) => {
+    if (typeof onValueChange === 'function' && newValue !== value) {
+      onValueChange(newValue)
+    }
+  }, [onValueChange, value])
+  
   return (
     <RadioGroupPrimitive.Root
       className={cn("grid gap-2", className)}
+      onValueChange={handleValueChange}
+      value={value}
       {...props}
       ref={ref}
     />
@@ -23,19 +32,28 @@ RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
 const RadioGroupItem = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
+  // Using React.useMemo to prevent unnecessary re-renders and stabilize props
+  const stableProps = React.useMemo(
+    () => ({
+      className: cn(
+        "aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      ),
+      ...props
+    }),
+    [className, props]
+  )
+  
   return (
     <RadioGroupPrimitive.Item
       ref={ref}
-      className={cn(
-        "aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      {...props}
+      {...stableProps}
     >
       <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
         <Circle className="h-2.5 w-2.5 fill-current text-current" />
       </RadioGroupPrimitive.Indicator>
+      {children}
     </RadioGroupPrimitive.Item>
   )
 })

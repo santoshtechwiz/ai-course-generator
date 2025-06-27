@@ -7,15 +7,17 @@ import { ChevronDown, ArrowRight, Play } from "lucide-react"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useMobile } from "@/hooks/use-mobile"
 
+// Add the isHydrated prop to your component props
 interface HeroSectionProps {
   scrollToFeatures: () => void
   scrollToHowItWorks: () => void
+  isHydrated?: boolean
 }
 
 // Apple-style easing function
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
-const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps) => {
+const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false }: HeroSectionProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLDivElement>(null)
   const isMobile = useMobile()
@@ -79,54 +81,82 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks }: HeroSectionProps)
       }
     }
   }, [hasScrolled])
-
-  // Optimized floating particles component
+  // Optimized floating particles component with server-client consistency
   const AppleStyleParticles = () => {
+    // Use clientOnly state to prevent hydration mismatches
+    const [isClient, setIsClient] = useState(false)
+
+    useEffect(() => {
+      setIsClient(true)
+    }, [])
+    
+    // Fixed particle settings to ensure server-client consistency
     const particleCount = isMobile ? 5 : 8
+    const particleSettings = [
+      { x: 25, y: 40, scale: 0.4, size: 24, opacity: 0.16, zIndex: 3, blur: 2 },
+      { x: 50, y: 60, scale: 0.5, size: 30, opacity: 0.17, zIndex: 5, blur: 1 },
+      { x: 75, y: 20, scale: 0.6, size: 32, opacity: 0.14, zIndex: 6, blur: 1 },
+      { x: 40, y: 80, scale: 0.35, size: 26, opacity: 0.2, zIndex: 3, blur: 2 },
+      { x: 85, y: 60, scale: 0.45, size: 28, opacity: 0.15, zIndex: 4, blur: 1.5 },
+      { x: 15, y: 30, scale: 0.55, size: 29, opacity: 0.18, zIndex: 5, blur: 1.2 },
+      { x: 65, y: 75, scale: 0.38, size: 25, opacity: 0.19, zIndex: 4, blur: 1.8 },
+      { x: 90, y: 15, scale: 0.42, size: 27, opacity: 0.13, zIndex: 6, blur: 1.4 }
+    ]
+
+    const getParticles = () => {
+      const particles = []
+      const count = Math.min(particleCount, particleSettings.length)
+      
+      for (let i = 0; i < count; i++) {
+        const settings = particleSettings[i]
+        particles.push(
+          <motion.div
+            key={`particle-${i}`}
+            className="absolute rounded-full"
+            initial={{ 
+              x: `${settings.x}%`, 
+              y: `${settings.y}%`,
+              scale: settings.scale,
+              opacity: settings.opacity
+            }}
+            animate={{
+              x: [
+                `${settings.x}%`,
+                `${settings.x + 5}%`,
+                `${settings.x - 5}%`,
+                `${settings.x}%`,
+              ],
+              y: [
+                `${settings.y}%`,
+                `${settings.y - 10}%`,
+                `${settings.y + 5}%`,
+                `${settings.y}%`,
+              ],
+            }}
+            transition={{
+              duration: 10 + i * 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            style={{
+              width: settings.size,
+              height: settings.size,
+              zIndex: settings.zIndex,
+              filter: `blur(${settings.blur}px)`,
+              background: `radial-gradient(circle, rgba(var(--primary-rgb), ${settings.opacity}) 0%, rgba(var(--primary-rgb), 0) 70%)`,
+              willChange: "transform, opacity"
+            }}
+          />
+        )
+      }
+      
+      return particles
+    }
 
     return (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: particleCount }).map((_, i) => {
-          const size = Math.random() * 25 + 10
-          const depth = Math.random() * 0.4 + 0.3
-          const xPos = `${Math.random() * 100}%`
-          const yPos = `${Math.random() * 100}%`
-
-          return (
-            <motion.div
-              key={`particle-${i}`}
-              className="absolute rounded-full"
-              initial={{
-                x: xPos,
-                y: yPos,
-                scale: depth,
-                opacity: Math.random() * 0.2 + 0.1,
-                filter: `blur(${(1 - depth) * 3}px)`,
-              }}
-              animate={{
-                y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                rotate: [0, Math.random() * 90],
-                scale: [depth, depth * (1 + Math.random() * 0.1), depth],
-                opacity: [0.3, 0.5, 0.3],
-              }}
-              transition={{
-                duration: 5 + Math.random() * 3,
-                repeat: Number.POSITIVE_INFINITY,
-                repeatType: "mirror",
-                ease: "linear",
-                delay: i * 0.7,
-              }}
-              style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                zIndex: Math.floor(depth * 10),
-                willChange: "transform, opacity",
-                background: `radial-gradient(circle, rgba(var(--primary-rgb), ${0.1 + depth * 0.1}) 0%, rgba(var(--primary-rgb), 0) 70%)`,
-              }}
-            />
-          )
-        })}
+        {/* Only render particles on the client to avoid hydration mismatch */}
+        {isClient && getParticles()}
       </div>
     )
   }

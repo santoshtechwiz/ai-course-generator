@@ -58,3 +58,7 @@ export function useUserStats(userId: string | undefined) {
     retry: 1,
   })
 }
+
+// Export aliases for backward compatibility
+export const useUserDashboard = { useUserData, useUserStats }
+export default useUserDashboard

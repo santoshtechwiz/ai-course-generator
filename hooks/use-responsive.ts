@@ -1,95 +1,63 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { useMediaQuery } from "./use-media-query"
 
 /**
- * Window size interface
+ * Hook for managing responsive behavior
+ * @returns Object containing responsive states and current breakpoint
  */
-export interface WindowSize {
-  width: number | undefined
-  height: number | undefined
-  isMobile: boolean
-  isTablet: boolean
-  isDesktop: boolean
-}
+export function useResponsive() {
+  const isMobile = useMediaQuery("(max-width: 640px)")
+  const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)")
+  const isDesktop = useMediaQuery("(min-width: 1025px)")
 
-/**
- * Hook for responsive design using window size and media queries
- * @returns Window size and responsive breakpoints
- */
-export function useResponsive(): WindowSize {
-  // Default to undefined on the server
-  const [windowSize, setWindowSize] = useState<WindowSize>({
-    width: undefined,
-    height: undefined,
-    isMobile: false,
-    isTablet: false,
-    isDesktop: false,
+  // Get current breakpoint name
+  const getBreakpoint = useCallback(() => {
+    if (isMobile) return "mobile"
+    if (isTablet) return "tablet"
+    return "desktop"
+  }, [isMobile, isTablet])
+
+  // State to track current breakpoint
+  const [breakpoint, setBreakpoint] = useState(getBreakpoint())
+
+  // Update breakpoint when media queries change
+  useEffect(() => {
+    setBreakpoint(getBreakpoint())
+  }, [isMobile, isTablet, isDesktop, getBreakpoint])
+
+  // Also include window dimensions for convenient access
+  const [windowSize, setWindowSize] = useState({
+    width: undefined as number | undefined,
+    height: undefined as number | undefined,
   })
 
   useEffect(() => {
-    // Check if window is available (client-side)
     if (typeof window === "undefined") return
 
-    // Handler to call on window resize
     function handleResize() {
-      const width = window.innerWidth
-      const height = window.innerHeight
-
-      // Set window width/height and responsive breakpoints
       setWindowSize({
-        width,
-        height,
-        isMobile: width < 768,
-        isTablet: width >= 768 && width < 1024,
-        isDesktop: width >= 1024,
+        width: window.innerWidth,
+        height: window.innerHeight,
       })
     }
 
-    // Add event listener
     window.addEventListener("resize", handleResize)
-
-    // Call handler right away so state gets updated with initial window size
     handleResize()
 
-    // Remove event listener on cleanup
     return () => window.removeEventListener("resize", handleResize)
-  }, []) // Empty array ensures that effect is only run on mount and unmount
+  }, [])
 
-  return windowSize
+  return {
+    isMobile,
+    isTablet,
+    isDesktop,
+    breakpoint,
+    windowWidth: windowSize.width,
+    windowHeight: windowSize.height,
+  }
 }
 
-/**
- * Hook for checking if a specific media query matches
- * @param query Media query string
- * @returns Boolean indicating if the media query matches
- */
-export function useMediaQuery(query: string): boolean {
-  // Default to false on the server
-  const [matches, setMatches] = useState(false)
-
-  useEffect(() => {
-    // Check if window is available (client-side)
-    if (typeof window !== "undefined") {
-      const media = window.matchMedia(query)
-
-      // Set initial value
-      setMatches(media.matches)
-
-      // Define listener function
-      const listener = (event: MediaQueryListEvent) => {
-        setMatches(event.matches)
-      }
-
-      // Add listener
-      media.addEventListener("change", listener)
-
-      // Clean up
-      return () => {
-        media.removeEventListener("change", listener)
-      }
-    }
-  }, [query])
-
-  return matches
-}
+// Aliases for backward compatibility
+export const useMobile = useResponsive

@@ -15,14 +15,15 @@ export default function CourseAIState() {
   const subscription = useSelector((state: RootState) => state.subscription);
   const flashcard = useSelector((state: RootState) => state.flashcard);
   const textQuiz = useSelector((state: RootState) => state.textQuiz);
-
+  const course = useSelector((state: RootState) => state.course);
   // Add time tracking to see when states update
   const [lastUpdated, setLastUpdated] = useState(Date.now());
+  const [localStorageKeys, setLocalStorageKeys] = useState<string[]>([]);
 
   // Update timestamp when state changes
   useEffect(() => {
     setLastUpdated(Date.now());
-  }, [quiz, flashcard, textQuiz]);
+  }, [quiz, flashcard, textQuiz, course]);
 
   // Extract navigation details
   const navigationDetails = useMemo(() => {
@@ -37,6 +38,33 @@ export default function CourseAIState() {
       lastNavTime: lastNav?.timestamp ? new Date(lastNav.timestamp).toLocaleTimeString() : "N/A",
     };
   }, [quiz]);
+  
+  // Get relevant localStorage keys for video progress debugging
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Filter localStorage keys related to video progress
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('video-progress') || key.includes('course-completed'))) {
+        keys.push(key);
+      }
+    }
+    setLocalStorageKeys(keys);
+  }, [lastUpdated, open]);
+  
+  // Extract video progress debug info
+  const videoProgressDebug = useMemo(() => {
+    return {
+      currentVideoId: course?.currentVideoId,
+      currentCourseId: course?.currentCourseId,
+      hasProgressData: Object.keys(course?.videoProgress || {}).length > 0,
+      progressKeys: Object.keys(course?.videoProgress || {}),
+      bookmarkKeys: Object.keys(course?.bookmarks || {}),
+      autoplayEnabled: course?.autoplayEnabled,
+    };
+  }, [course]);
 
   return (
     <div
@@ -77,11 +105,40 @@ export default function CourseAIState() {
               {navigationDetails.lastNavTime})
             </p>
           </div>
+          
+          {/* Video Progress Debug Section */}
+          <div className="bg-orange-50 dark:bg-orange-900/20 mb-3 p-2 rounded text-xs border border-orange-200">
+            <p>
+              <strong>Video Progress Debug:</strong>{" "}
+              {new Date(lastUpdated).toLocaleTimeString()}
+            </p>
+            <p>Current Video ID: {videoProgressDebug.currentVideoId || "None"}</p>
+            <p>Current Course ID: {videoProgressDebug.currentCourseId || "None"}</p>
+            <p>Has Progress Data: {videoProgressDebug.hasProgressData ? "Yes" : "No"}</p>
+            <p>Progress Keys: {videoProgressDebug.progressKeys.join(', ') || "None"}</p>
+            <p>Bookmark Keys: {videoProgressDebug.bookmarkKeys.join(', ') || "None"}</p>
+            <p>Autoplay: {videoProgressDebug.autoplayEnabled ? "Enabled" : "Disabled"}</p>
+            <details>
+              <summary className="cursor-pointer">localStorage Keys</summary>
+              <ul className="ml-2 mt-1 list-disc list-inside">
+                {localStorageKeys.map((key, idx) => (
+                  <li key={idx} className="truncate">{key}</li>
+                ))}
+              </ul>
+            </details>
+          </div>
 
           <details open>
             <summary className="font-bold text-primary mb-1 cursor-pointer">quiz</summary>
             <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(quiz, null, 2)}</pre>
           </details>
+          
+          {/* Prioritize course state for debugging */}
+          <details open>
+            <summary className="font-bold text-primary mb-1 cursor-pointer">Course</summary>
+            <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(course, null, 2)}</pre>
+          </details>
+          
           <details>
             <summary className="font-bold text-primary mb-1 cursor-pointer">user</summary>
             <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(user, null, 2)}</pre>

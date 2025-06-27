@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db"
 import type { QuizType } from "../types/quiz-types"
 import NodeCache from "node-cache"
 
-// Add a simple cache to improve performance
 const quizCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
 
 interface GetQuizzesParams {
@@ -20,6 +19,30 @@ interface GetQuizzesParams {
   categories?: string[]
 }
 
+export interface QuizListItem {
+  id: string
+  title: string
+  quizType: QuizType
+  isPublic: boolean
+  isFavorite: boolean
+  timeStarted: string
+  slug: string
+  questionCount: number
+  bestScore: number | null
+}
+
+export interface GetQuizzesResult {
+  quizzes: QuizListItem[]
+  totalCount: number
+  nextCursor: number | null
+  error?: string
+}
+
+function getCacheKey(params: Partial<GetQuizzesParams>): string {
+  // Use JSON.stringify for a unique and typesafe cache key
+  return `quizzes_${Buffer.from(JSON.stringify(params)).toString("base64")}`
+}
+
 export async function getQuizzes({
   page = 1,
   limit = 10,
@@ -31,24 +54,37 @@ export async function getQuizzes({
   publicOnly = false,
   tab = "all",
   categories = [],
-}: GetQuizzesParams) {
-  try {
-    // Create a cache key based on the parameters
-    const cacheKey = `quizzes_${page}_${limit}_${searchTerm}_${userId || ""}_${quizTypes?.join(",") || ""}_${minQuestions}_${maxQuestions}_${publicOnly}_${tab}_${categories.join(",")}`
+}: GetQuizzesParams): Promise<GetQuizzesResult> {
+  try {    const cacheKey = getCacheKey({
+      page,
+      limit,
+      searchTerm,
+      userId,
+      quizTypes,
+      minQuestions,
+      maxQuestions,
+      publicOnly,
+      tab,
+      categories,
+    })
 
-    // Check if we have a cached result
-    const cachedResult = quizCache.get(cacheKey)
+    const cachedResult = quizCache.get<GetQuizzesResult>(cacheKey)
     if (cachedResult) {
       return cachedResult
-    }
-
-    // Build the where clause
-    const where: any = {}
+    }    // Build the where clause
+    const where: Record<string, unknown> = {}
 
     // Filter by user ID or public quizzes
     if (userId) {
-      where.OR = [{ userId }, { isPublic: true }]
+      if (publicOnly) {
+        // If both userId and publicOnly are provided, only show public quizzes
+        where.isPublic = true
+      } else {
+        // Otherwise show both user's quizzes and public quizzes
+        where.OR = [{ userId }, { isPublic: true }]
+      }
     } else if (publicOnly) {
+      // If only publicOnly is provided, only show public quizzes
       where.isPublic = true
     }
 
@@ -69,19 +105,10 @@ export async function getQuizzes({
       where.quizType = tab
     }
 
-    // Filter by question count
-    if (minQuestions > 0 || maxQuestions < 50) {
-      where.questions = {
-        some: {},
-      }
-
-      // We'll filter by count after fetching
-    }
-
     // Filter by categories
     if (categories && categories.length > 0) {
       where.OR = [
-        ...(where.OR || []),
+        ...(where.OR as any[] || []),
         {
           title: {
             in: categories.map((cat) => ({ contains: cat, mode: "insensitive" })),
@@ -90,7 +117,16 @@ export async function getQuizzes({
       ]
     }
 
-    // Get total count for pagination
+    // Use Prisma's _count for question count filtering (if supported)
+    // Otherwise, fallback to in-memory filtering
+    let useInMemoryQuestionCountFilter = false
+    let having: Record<string, unknown> | undefined = undefined
+    if (minQuestions > 0 || maxQuestions < 50) {
+      // Prisma does not support having on findMany, so we filter in-memory
+      useInMemoryQuestionCountFilter = true
+    }
+
+    // Get total count for pagination (without question count filter if in-memory)
     const totalCount = await prisma.userQuiz.count({ where })
 
     // Fetch quizzes with pagination
@@ -115,50 +151,50 @@ export async function getQuizzes({
     })
 
     // Transform the data
-    const transformedQuizzes = quizzes
-      .map((quiz) => ({
-        id: quiz.id.toString(),
-        title: quiz.title,
-        quizType: quiz.quizType,
-        isPublic: quiz.isPublic || false,
-        isFavorite: quiz.isFavorite || false,
-        timeStarted: quiz.timeStarted.toISOString(),
-        slug: quiz.slug,
-        questionCount: quiz._count.questions,
-        bestScore: quiz.bestScore,
-      }))
-      // Apply question count filter in memory
-      .filter((quiz) => quiz.questionCount >= minQuestions && quiz.questionCount <= maxQuestions)
+    let transformedQuizzes: QuizListItem[] = quizzes.map((quiz) => ({
+      id: quiz.id.toString(),
+      title: quiz.title,
+      quizType: quiz.quizType as QuizType,
+      isPublic: quiz.isPublic ?? false,
+      isFavorite: quiz.isFavorite ?? false,
+      timeStarted: quiz.timeStarted.toISOString(),
+      slug: quiz.slug,
+      questionCount: quiz._count.questions,
+      bestScore: quiz.bestScore,
+    }))
+
+    // Apply question count filter in memory if needed
+    if (useInMemoryQuestionCountFilter) {
+      transformedQuizzes = transformedQuizzes.filter(
+        (quiz) => quiz.questionCount >= minQuestions && quiz.questionCount <= maxQuestions,
+      )
+    }
 
     // Calculate next cursor for infinite loading
     const nextCursor = page < Math.ceil(totalCount / limit) ? page + 1 : null
 
-    const result = {
+    const result: GetQuizzesResult = {
       quizzes: transformedQuizzes,
       totalCount,
       nextCursor,
     }
 
-    // Cache the result
     quizCache.set(cacheKey, result)
 
     return result
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching quizzes:", error)
-    // Return empty data instead of throwing to allow graceful error handling
     return {
       quizzes: [],
       totalCount: 0,
       nextCursor: null,
-      error: "Failed to fetch quizzes",
+      error: error?.message || "Failed to fetch quizzes",
     }
   }
 }
 
-// Add a function to invalidate cache when quizzes are updated
 export const invalidateQuizCache = async (slug?: string) => {
   if (slug) {
-    // Invalidate all cache entries that might include the quiz with the given slug
     const keys = quizCache.keys()
     keys.forEach((key) => {
       if (key.includes(slug)) {
@@ -166,7 +202,6 @@ export const invalidateQuizCache = async (slug?: string) => {
       }
     })
   }
-  // Delete all quiz cache entries
   const keys = quizCache.keys()
   keys.forEach((key) => {
     if (key.startsWith("quizzes_")) {

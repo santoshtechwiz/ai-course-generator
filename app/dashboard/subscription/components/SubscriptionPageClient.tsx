@@ -240,9 +240,10 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
       <CancellationDialog
         isOpen={showCancellationDialog}
         onClose={() => setShowCancellationDialog(false)}
-        onConfirm={(reason) => {
+        onConfirm={async (reason) => {
           // Handle cancellation logic
           setShowCancellationDialog(false)
+          return Promise.resolve()
         }}
         expirationDate={subscription?.expirationDate || null}
         planName={subscription?.subscriptionPlan || ""}

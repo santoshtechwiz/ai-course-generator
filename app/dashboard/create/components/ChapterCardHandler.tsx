@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import VideoPlayer from "./VideoPlayer"
 
 type Props = {

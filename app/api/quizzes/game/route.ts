@@ -14,13 +14,23 @@ const cache = new NodeCache({ stdTTL: 600 }) // Cache for 10 minutes
 
 export const dynamic = "force-dynamic"
 
+// Create a server-side fetch wrapper
 async function fetchQuizQuestions(amount: number, title: string, type: QuizType, difficulty: string, userType: string) {
-  const { data } = await axios.post<MultipleChoiceQuestion[] | OpenEndedQuestion[]>(
+  // For server-side code, using fetch directly is fine as it doesn't need CSRF/auth handling
+  const response = await fetch(
     `${process.env.NEXT_PUBLIC_URL}/api/quiz`,
-    { amount, title, type, difficulty, userType },
-    { headers: { "Content-Type": "application/json" } },
-  )
-  return data
+    {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, title, type, difficulty, userType }),
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`Error fetching quiz questions: ${response.status}`);
+  }
+  
+  return response.json();
 }
 
 export async function POST(req: Request) {

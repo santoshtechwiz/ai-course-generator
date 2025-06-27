@@ -1,76 +1,64 @@
 /**
- * Logger Utility
- *
- * This file provides a centralized logging system for the application.
- * It supports different log levels and can be configured to output to
- * different destinations based on the environment.
+ * Simple logging utility for the application
+ * 
+ * This logger works on both client and server environments
  */
 
-// Log levels in order of severity
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
+// Define log levels
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+interface LoggerOptions {
+  // Control whether logging is enabled
+  enabled?: boolean;
+  // Minimum level to log
+  minLevel?: LogLevel;
 }
 
-// Current log level based on environment
-const currentLogLevel =
-  process.env.NODE_ENV === "production"
-    ? LogLevel.INFO
-    : process.env.LOG_LEVEL
-      ? Number.parseInt(process.env.LOG_LEVEL)
-      : LogLevel.DEBUG
+// Define log level hierarchy
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
 
-/**
- * Creates a logger instance with the specified name
- *
- * @param name - The name of the logger (typically the module name)
- * @returns A logger object with methods for each log level
- */
-export function createLogger(name: string) {
+// Default options
+const defaultOptions: LoggerOptions = {
+  enabled: process.env.NODE_ENV !== 'production',
+  minLevel: 'info',
+};
+
+// Create a logger that works in both browser and Node.js environments
+const createClientSafeLogger = (options: LoggerOptions = {}) => {
+  const mergedOptions = { ...defaultOptions, ...options };
+  const { enabled, minLevel } = mergedOptions;
+
   return {
     debug: (message: string, ...args: any[]) => {
-      if (currentLogLevel <= LogLevel.DEBUG) {
-        console.debug(`[${name}] ${message}`, ...args)
+      if (enabled && LOG_LEVELS[minLevel as LogLevel] <= LOG_LEVELS.debug) {
+        console.debug(`[DEBUG] ${message}`, ...args);
       }
     },
     info: (message: string, ...args: any[]) => {
-      if (currentLogLevel <= LogLevel.INFO) {
-        console.info(`[${name}] ${message}`, ...args)
+      if (enabled && LOG_LEVELS[minLevel as LogLevel] <= LOG_LEVELS.info) {
+        console.info(`[INFO] ${message}`, ...args);
       }
     },
     warn: (message: string, ...args: any[]) => {
-      if (currentLogLevel <= LogLevel.WARN) {
-        console.warn(`[${name}] ${message}`, ...args)
+      if (enabled && LOG_LEVELS[minLevel as LogLevel] <= LOG_LEVELS.warn) {
+        console.warn(`[WARN] ${message}`, ...args);
       }
     },
     error: (message: string, ...args: any[]) => {
-      if (currentLogLevel <= LogLevel.ERROR) {
-        console.error(`[${name}] ${message}`, ...args)
+      if (enabled && LOG_LEVELS[minLevel as LogLevel] <= LOG_LEVELS.error) {
+        console.error(`[ERROR] ${message}`, ...args);
       }
-    },
-  }
-}
-
-/**
- * Global application logger
- */
-export const logger = createLogger("app")
-
-/**
- * Formats an error for logging
- *
- * @param error - The error to format
- * @returns A formatted error object
- */
-export function formatError(error: unknown): Record<string, any> {
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-      name: error.name,
-      stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
     }
-  }
-  return { message: String(error) }
-}
+  };
+};
+
+// Export a pre-configured logger instance
+export const logger = createClientSafeLogger();
+
+// Also export the factory function for creating custom loggers
+export default createClientSafeLogger;

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -53,6 +53,13 @@ interface PricingPageProps {
   ) => void
   onManageSubscription?: () => void
   isMobile?: boolean
+}
+
+// Add this type for better plan subscription handling
+type SubscriptionPlanResult = {
+  success: boolean;
+  redirectUrl?: string;
+  message?: string;
 }
 
 export function PricingPage({
@@ -118,7 +125,7 @@ export function PricingPage({
 
   // Replace the validatePromoCode function with this improved version
   const validatePromoCode = useCallback(
-    async (code: string) => {
+    async (code: string): Promise<boolean> => {
       if (!code) {
         toast({
           title: "Promo Code Required",
@@ -210,7 +217,7 @@ export function PricingPage({
   } = useSubscription({
     allowPlanChanges: false,
     allowDowngrades: false,
-    onSubscriptionSuccess: (result) => {
+    onSubscriptionSuccess: (result: SubscriptionResult) => {
       if (result.redirectUrl) {
         // Redirect will happen automatically
         return
@@ -228,7 +235,7 @@ export function PricingPage({
         window.location.reload()
       }, 1500)
     },
-    onSubscriptionError: (error) => {
+    onSubscriptionError: (error: any) => {
       setSubscriptionError(error.message)
     },
   })

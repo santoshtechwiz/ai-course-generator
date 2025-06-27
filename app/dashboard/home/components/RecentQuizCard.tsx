@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +12,8 @@ interface RecentQuizCardProps {
   quiz: UserQuiz
 }
 
-export default function RecentQuizCard({ quiz }: RecentQuizCardProps) {
+// Memoize the component to prevent unnecessary re-renders
+const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProps) {
   const getQuizTypeLabel = (quizType: QuizType) => {
     switch (quizType) {
       case "mcq":
@@ -99,4 +101,6 @@ export default function RecentQuizCard({ quiz }: RecentQuizCardProps) {
       </Card>
     </Link>
   )
-}
+})
+
+export default RecentQuizCard
