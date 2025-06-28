@@ -12,32 +12,32 @@ export interface PaymentOptions {
   /**
    * Optional referral code for tracking referrals
    */
-  referralCode?: string
+  readonly referralCode?: string
 
   /**
    * Optional promo code for discounts
    */
-  promoCode?: string
+  readonly promoCode?: string
 
   /**
    * Percentage discount to apply (0-100)
    */
-  promoDiscount?: number
+  readonly promoDiscount?: number
 
   /**
    * Additional metadata to include with the payment
    */
-  metadata?: Record<string, string>
+  readonly metadata?: Record<string, string>
 
   /**
    * Customer email address
    */
-  customerEmail?: string
+  readonly customerEmail?: string
 
   /**
    * Customer name
    */
-  customerName?: string
+  readonly customerName?: string
 }
 
 /**
@@ -47,17 +47,17 @@ export interface CheckoutResult {
   /**
    * The ID of the created checkout session
    */
-  sessionId: string
+  readonly sessionId: string
 
   /**
    * The URL to redirect the user to for payment
    */
-  url: string
+  readonly url: string
 
   /**
    * Optional customer ID created or used for this checkout
    */
-  customerId?: string
+  readonly customerId?: string
 }
 
 /**
@@ -67,22 +67,22 @@ export interface PaymentStatusResult {
   /**
    * The status of the payment
    */
-  status: "succeeded" | "pending" | "failed" | "canceled"
+  readonly status: "succeeded" | "pending" | "failed" | "canceled"
 
   /**
    * The subscription object if available
    */
-  subscription?: any
+  readonly subscription?: any
 
   /**
    * The customer ID if available
    */
-  customerId?: string
+  readonly customerId?: string
 
   /**
    * The amount paid if available
    */
-  amountPaid?: number
+  readonly amountPaid?: number
 }
 
 /**
@@ -149,4 +149,10 @@ export interface PaymentGateway {
 
 
   getPaymentStatus?(sessionId: string): Promise<PaymentStatusResult>
+
+  getCustomerDetails?(userId: string): Promise<any>
+  getSubscriptionDetails?(userId: string): Promise<any>
+  getCheckoutSessionDetails?(sessionId: string): Promise<any>
+
+  getBillingHistory ?(userId: string): Promise<any[]>
 }

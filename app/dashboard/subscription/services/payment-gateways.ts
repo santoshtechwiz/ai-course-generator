@@ -32,3 +32,6 @@ export function getPaymentGateway(): PaymentGateway {
 
 // Re-export the types from the interface for convenience
 export type { PaymentOptions, CheckoutResult } from "./payment-gateway-interface"
+
+// If this file is not used, consider removing it to avoid confusion.
+// Otherwise, ensure it matches payment-gateway-factory.ts and is not duplicated.

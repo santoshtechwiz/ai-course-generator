@@ -21,6 +21,7 @@ import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
 import { VideoDebug } from "./video/components/VideoDebug"
 import { Card, CardContent } from "@/components/ui/card"
 import { AnimatePresence, motion } from "framer-motion"
+import { AuthUser } from "@/store/slices/auth-slice"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -45,7 +46,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const dispatch = useAppDispatch()
 
   // Fix: Use try/catch when accessing useAuth to prevent errors if the hook isn't available
-  let user = null
+  let user: AuthUser | null = null
   try {
     const { user: authUser } = useAuth()
     user = authUser
@@ -532,15 +533,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Simplify subscription status checking - determine it once
   const userSubscription = useMemo(() => {
     if (!user) return null
-    return user.subscription || null
+    return user.subscriptionPlan || null
   }, [user])
 
   // Determine access levels based on subscription
   const accessLevels = useMemo(() => {
     return {
-      isPremium: userSubscription?.planId === "premium",
-      isProUser: userSubscription?.planId === "premium" || userSubscription?.planId === "pro",
-      isBasicUser: !!userSubscription && ["basic", "pro", "premium"].includes(userSubscription.planId || ""),
+      isPremium: userSubscription=== "PRO",
+      isProUser: userSubscription === "PRO",
+      isBasicUser: !!userSubscription && ["BASIC", "PRO", "PREMIUM"].includes(userSubscription || ""),
       isAuthenticated: !!session,
     }
   }, [userSubscription, session])

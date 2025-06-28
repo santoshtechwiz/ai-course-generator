@@ -199,17 +199,18 @@ export class SubscriptionService {
       }
 
       // Get user subscription data and credits in parallel with timeout protection
-      const DB_TIMEOUT = 8000; // Increased timeout to 8 seconds
-      
-      const timeout = new Promise((_, reject) => 
+      const DB_TIMEOUT = 8000 // Increased timeout to 8 seconds
+
+      // Use a real Error object for timeout
+      const timeout = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Database query timed out")), DB_TIMEOUT)
-      );
-      
+      )
+
       try {
         // Use promise.race to implement timeout
         const [userSubscription, user] = await Promise.race([
           Promise.all([
-            prisma.userSubscription.findUnique({ 
+            prisma.userSubscription.findUnique({
               where: { userId }
             }),
             prisma.user.findUnique({
@@ -219,7 +220,7 @@ export class SubscriptionService {
           ]),
           timeout
         ]) as [any, any];
-        
+
         // Reset error counter on success
         subscriptionCache.delete(`error_count_${userId}`);
         
@@ -264,17 +265,17 @@ export class SubscriptionService {
         const currentErrors = subscriptionCache.get(errorKey);
         const errorCount = currentErrors ? currentErrors.data + 1 : 1;
         subscriptionCache.set(errorKey, { data: errorCount, timestamp: now });
-        
+
         // Enhanced error logging with more details
         if (dbError instanceof Error) {
-          logger.error(`Database error fetching subscription data: ${dbError.message}`, { 
-            userId, 
+          logger.error(`Database error fetching subscription data: ${dbError.message}`, {
+            userId,
             errorCount,
             errorName: dbError.name,
-            stack: dbError.stack?.slice(0, 200) // Log limited stack trace
+            stack: dbError.stack?.slice(0, 200)
           });
         } else {
-          logger.error(`Database error fetching subscription data: ${dbError}`, { userId, errorCount });
+          logger.error(`Database error fetching subscription data: ${typeof dbError === "string" ? dbError : JSON.stringify(dbError)}`, { userId, errorCount });
         }
         
         // Fall back to cached data even if expired, or default values
@@ -350,7 +351,7 @@ export class SubscriptionService {
       // Get user\'s current credits directly from the user table with improved error handling
       const user = await prisma.user
         .findUnique({
-          where: { userId },
+          where: { id: userId },
           select: { credits: true, creditsUsed: true },
         })
         .catch((error: any) => {
@@ -565,8 +566,12 @@ export class SubscriptionService {
       }
 
       // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway
-      const status = await paymentGateway?.getPaymentStatus(sessionId)
+      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway | undefined
+      if (!paymentGateway || typeof paymentGateway.getPaymentStatus !== "function") {
+        logger.error("Payment gateway is not available or does not support getPaymentStatus")
+        return { success: false, message: "Payment gateway unavailable." }
+      }
+      const status = await paymentGateway.getPaymentStatus(sessionId)
 
       if (status?.status === "succeeded") {
         logger.info(`Payment successful for user ${userId} and session ${sessionId}`)
@@ -643,6 +648,51 @@ export class SubscriptionService {
       return { success: false, message: "Failed to use tokens." }
     }
   }
+
+  /**
+   * Get the subscription plans available
+   *
+   * @returns Array of subscription plans
+   */
+
+  static getBillingHistory = async (customerId: string): Promise<any[]> => {
+    try {
+      if (!customerId) {
+        throw new Error("Customer ID is required")
+      }
+
+// For simplicity, assume Stripe as the payment gateway
+const paymentGateway = getPaymentGateway() as PaymentGateway | undefined;
+if (!paymentGateway || typeof paymentGateway.getBillingHistory !== "function") {
+  logger.error("Payment gateway is not available or does not support getBillingHistory");
+  return [];
 }
 
+const billingHistory = await paymentGateway.getBillingHistory(customerId);
+return billingHistory;
+    } catch (error: any) {
+      logger.error(`Error fetching billing history for customer ${customerId}:`, error)
+      return []
+    }
+  }
+  static getPaymentMethods = async (userId: string): Promise<any[]> => {
+    try {
+      if (!userId) {
+        throw new Error("User ID is required")
+      }
 
+      // For simplicity, assume Stripe as the payment gateway
+      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway | undefined
+      if (!paymentGateway || typeof paymentGateway.getPaymentMethods !== "function") {
+        logger.error("Payment gateway is not available or does not support getPaymentMethods")
+        return []
+      }
+
+      const paymentMethods = await paymentGateway.getPaymentMethods(userId)
+      return paymentMethods
+    } catch (error: any) {
+      logger.error(`Error fetching payment methods for user ${userId}:`, error)
+      return []
+    }
+  }
+}
