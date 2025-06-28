@@ -29,7 +29,7 @@ import PlanCards from "./subscription-status/PlanCard"
 import DevModeBanner from "./subscription-status/DevModeBanner"
 import FAQSection from "./subscription-status/FaqSection"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
-import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType, SubscriptionResult } from "@/app/dashboard/subscription/types/subscription"
 
 import { SUBSCRIPTION_PLANS } from "./subscription-plans"
 

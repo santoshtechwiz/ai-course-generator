@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, AlertCircle, Target } from "lucide-react"
+import { CheckCircle, AlertCircle, Target, Sparkles, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
@@ -32,6 +32,80 @@ interface BlanksQuizProps {
   timeSpent?: number
 }
 
+// Enhanced animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1,
+      duration: 0.6,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      when: "afterChildren",
+      staggerChildren: 0.05,
+      staggerDirection: -1,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.95,
+    transition: { duration: 0.2 },
+  },
+}
+
+const feedbackVariants = {
+  hidden: { opacity: 0, scale: 0.8, y: 10 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 25,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.8,
+    y: -10,
+    transition: { duration: 0.2 },
+  },
+}
+
+const inputFocusVariants = {
+  focused: {
+    scale: 1.02,
+    boxShadow: "0 0 0 3px rgba(var(--primary), 0.1)",
+    transition: { duration: 0.2 },
+  },
+  unfocused: {
+    scale: 1,
+    boxShadow: "0 0 0 0px rgba(var(--primary), 0)",
+    transition: { duration: 0.2 },
+  },
+}
+
 export default function BlanksQuiz({
   question,
   questionNumber,
@@ -51,6 +125,8 @@ export default function BlanksQuiz({
   const [isAnswered, setIsAnswered] = useState(!!existingAnswer)
   const [showValidation, setShowValidation] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(0)
+  const [isFocused, setIsFocused] = useState(false)
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
 
   // Extract question data with proper fallbacks
   const questionData = useMemo(() => {
@@ -85,12 +161,19 @@ export default function BlanksQuiz({
     if (answer.trim() && questionData.answer) {
       const result = calculateAnswerSimilarity(answer, questionData.answer, 0.7)
       setSimilarity(result.similarity)
+      const wasAnswered = isAnswered
       setIsAnswered(result.isAcceptable)
+
+      // Show success animation when answer becomes correct
+      if (!wasAnswered && result.isAcceptable) {
+        setShowSuccessAnimation(true)
+        setTimeout(() => setShowSuccessAnimation(false), 1000)
+      }
     } else {
       setSimilarity(0)
       setIsAnswered(false)
     }
-  }, [answer, questionData.answer])
+  }, [answer, questionData.answer, isAnswered])
 
   // Update answer from props
   useEffect(() => {
@@ -185,146 +268,223 @@ export default function BlanksQuiz({
   const minimumSimilarityThreshold = 0.7
 
   return (
-    <QuizContainer
-      questionNumber={questionNumber}
-      totalQuestions={totalQuestions}
-      quizType="blanks"
-      animationKey={question.id}
-      quizTitle="Fill in the Blank"
-      quizSubtitle="Complete the sentence with the correct word or phrase"
-      timeSpent={timeSpent}
-      difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
-    >
-      <div className="space-y-6">
-        {/* Question Metadata - Only show once */}
-        <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <DifficultyBadge difficulty={questionData.difficulty} />
-            {hintsUsed > 0 && (
-              <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
-                {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used (-{hintsUsed * 5}%)
-              </Badge>
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full">
+      <QuizContainer
+        questionNumber={questionNumber}
+        totalQuestions={totalQuestions}
+        quizType="blanks"
+        animationKey={question.id}
+        quizTitle="Fill in the Blank"
+        quizSubtitle="Complete the sentence with the correct word or phrase"
+        timeSpent={timeSpent}
+        difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
+      >
+        <div className="space-y-4 sm:space-y-6">
+          {/* Question Metadata */}
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-border/50"
+          >
+            <div className="flex items-center gap-3">
+              <DifficultyBadge difficulty={questionData.difficulty} />
+              {hintsUsed > 0 && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-orange-600 border-orange-300 bg-orange-50 dark:bg-orange-950/20"
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used (-{hintsUsed * 5}%)
+                  </Badge>
+                </motion.div>
+              )}
+              {showSuccessAnimation && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0, rotate: -180 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  exit={{ scale: 0, opacity: 0, rotate: 180 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                >
+                  <Badge className="bg-green-500 text-white border-green-400">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Correct!
+                  </Badge>
+                </motion.div>
+              )}
+            </div>
+
+            <TagsDisplay tags={questionData.tags} maxVisible={3} />
+          </motion.div>
+
+          {/* Question with Blank */}
+          <motion.div variants={itemVariants} className="text-center">
+            <div className="text-lg sm:text-xl font-medium leading-relaxed mb-6 p-4 sm:p-6 bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 rounded-xl border border-border/30 shadow-sm">
+              {questionParts.hasBlank ? (
+                <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                  <span className="text-foreground">{questionParts.before}</span>
+                  <motion.div
+                    variants={inputFocusVariants}
+                    animate={isFocused ? "focused" : "unfocused"}
+                    className="relative inline-block"
+                  >
+                    <Input
+                      value={answer}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      placeholder="Your answer"
+                      className={cn(
+                        "inline-block mx-2 px-4 py-2 text-center font-medium min-w-[180px] sm:min-w-[200px] border-2 border-dashed transition-all duration-300",
+                        isAnswered
+                          ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 shadow-green-200/50 shadow-lg"
+                          : showValidation
+                            ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 animate-pulse"
+                            : "border-muted-foreground/50 hover:border-primary focus:border-primary focus:shadow-primary/20 focus:shadow-lg",
+                      )}
+                      autoFocus
+                      aria-label="Fill in the blank"
+                    />
+                    {isAnswered && (
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+                      >
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </motion.div>
+                    )}
+                  </motion.div>
+                  <span className="text-foreground">{questionParts.after}</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-foreground">{questionData.text}</p>
+                  <motion.div
+                    variants={inputFocusVariants}
+                    animate={isFocused ? "focused" : "unfocused"}
+                    className="relative max-w-md mx-auto"
+                  >
+                    <Input
+                      value={answer}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      placeholder="Your answer"
+                      className={cn(
+                        "px-4 py-3 text-center font-medium border-2 transition-all duration-300 text-base",
+                        isAnswered
+                          ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 shadow-green-200/50 shadow-lg"
+                          : showValidation
+                            ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 animate-pulse"
+                            : "border-muted-foreground/50 hover:border-primary focus:border-primary focus:shadow-primary/20 focus:shadow-lg",
+                      )}
+                      autoFocus
+                      aria-label="Enter your answer"
+                    />
+                    {isAnswered && (
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+                      >
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </motion.div>
+                    )}
+                  </motion.div>
+                </div>
+              )}
+            </div>
+
+            {showValidation && !answer.trim() && (
+              <motion.div
+                variants={feedbackVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="flex items-center justify-center gap-2 text-sm text-red-600 mt-2"
+              >
+                <AlertCircle className="w-4 h-4 animate-bounce" />
+                <span className="font-medium">Please enter an answer before continuing</span>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
 
-          <TagsDisplay tags={questionData.tags} maxVisible={3} />
-        </div>
-
-        {/* Question with Blank */}
-        <div className="text-center">
-          <div className="text-xl font-medium leading-relaxed mb-6 p-6 bg-muted/30 rounded-lg border">
-            {questionParts.hasBlank ? (
-              <>
-                <span className="text-foreground">{questionParts.before}</span>
-                <Input
-                  value={answer}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Your answer"
-                  className={cn(
-                    "inline-block mx-3 px-4 py-2 text-center font-medium min-w-[200px] border-2 border-dashed transition-all",
-                    isAnswered
-                      ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
-                      : showValidation
-                        ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                        : "border-muted-foreground/50 hover:border-primary focus:border-primary",
-                  )}
-                  autoFocus
-                  aria-label="Fill in the blank"
-                />
-                <span className="text-foreground">{questionParts.after}</span>
-              </>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-foreground">{questionData.text}</p>
-                <Input
-                  value={answer}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Your answer"
-                  className={cn(
-                    "max-w-md mx-auto px-4 py-2 text-center font-medium border-2 transition-all",
-                    isAnswered
-                      ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
-                      : showValidation
-                        ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                        : "border-muted-foreground/50 hover:border-primary focus:border-primary",
-                  )}
-                  autoFocus
-                  aria-label="Enter your answer"
-                />
-              </div>
-            )}
-          </div>
-
-          {showValidation && !answer.trim() && (
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-sm text-red-600 mt-2 flex items-center justify-center gap-2"
-            >
-              <AlertCircle className="w-4 h-4" />
-              Please enter an answer before continuing
-            </motion.p>
-          )}
-        </div>
-
-        {/* Answer Feedback */}
-        <AnimatePresence>
-          {feedback && answer.trim() && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className={cn("border-2", feedback.borderColor, feedback.bgColor)}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <feedback.icon className={cn("w-5 h-5", feedback.color)} />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <Badge variant="outline" className={cn("text-xs font-medium", feedback.color)}>
-                          {feedback.label}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {Math.round(similarity * 100)}% match
-                        </Badge>
-                        {hintsUsed > 0 && (
-                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
-                            Score: {calculateHintPenalty(hintsUsed)}%
+          {/* Answer Feedback */}
+          <AnimatePresence mode="wait">
+            {feedback && answer.trim() && (
+              <motion.div variants={feedbackVariants} initial="hidden" animate="visible" exit="exit" layout>
+                <Card className={cn("border-2 shadow-lg", feedback.borderColor, feedback.bgColor)}>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-start gap-3">
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
+                      >
+                        <feedback.icon className={cn("w-6 h-6 flex-shrink-0", feedback.color)} />
+                      </motion.div>
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className={cn("text-xs font-medium", feedback.color)}>
+                            {feedback.label}
                           </Badge>
-                        )}
-                        {similarity < minimumSimilarityThreshold && (
-                          <Badge variant="outline" className="text-xs text-blue-600">
-                            Need {Math.round(minimumSimilarityThreshold * 100)}%+ to proceed
+                          <Badge variant="secondary" className="text-xs">
+                            <Zap className="w-3 h-3 mr-1" />
+                            {Math.round(similarity * 100)}% match
                           </Badge>
-                        )}
+                          {hintsUsed > 0 && (
+                            <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                              Score: {calculateHintPenalty(hintsUsed)}%
+                            </Badge>
+                          )}
+                          {similarity < minimumSimilarityThreshold && (
+                            <Badge variant="outline" className="text-xs text-blue-600 animate-pulse">
+                              Need {Math.round(minimumSimilarityThreshold * 100)}%+ to proceed
+                            </Badge>
+                          )}
+                        </div>
+                        <motion.p
+                          className={cn("text-sm leading-relaxed", feedback.color)}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          {feedback.message}
+                        </motion.p>
                       </div>
-                      <p className={cn("text-sm leading-relaxed", feedback.color)}>{feedback.message}</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Hint System */}
-        <HintSystem hints={hints} onHintUsed={handleHintUsed} maxHints={3} allowDirectAnswer={false} />
+          {/* Hint System */}
+          <motion.div variants={itemVariants}>
+            <HintSystem hints={hints} onHintUsed={handleHintUsed} maxHints={3} allowDirectAnswer={false} />
+          </motion.div>
 
-        {/* Footer */}
-        <QuizFooter
-          onNext={handleNext}
-          onPrevious={onPrevious}
-          onSubmit={handleSubmit}
-          canGoNext={canProceed}
-          canGoPrevious={canGoPrevious}
-          isLastQuestion={isLastQuestion}
-          nextLabel="Next Question"
-          submitLabel="Finish Quiz"
-        />
-      </div>
-    </QuizContainer>
+          {/* Footer */}
+          <motion.div variants={itemVariants}>
+            <QuizFooter
+              onNext={handleNext}
+              onPrevious={onPrevious}
+              onSubmit={handleSubmit}
+              canGoNext={canProceed}
+              canGoPrevious={canGoPrevious}
+              isLastQuestion={isLastQuestion}
+              nextLabel="Next Question"
+              submitLabel="Finish Quiz"
+            />
+          </motion.div>
+        </div>
+      </QuizContainer>
+    </motion.div>
   )
 }

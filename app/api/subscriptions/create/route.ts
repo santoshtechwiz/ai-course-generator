@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // Check if referral code is valid if provided
     if (validatedData.referralCode) {
-      const isValidReferral = await SubscriptionService.validateReferralCode(validatedData.referralCode)
+      const isValidReferral = await SubscriptionService.validatePromoCode(validatedData.referralCode)
       if (!isValidReferral) {
         return NextResponse.json(
           {
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     // Validate promo code if provided
     if (validatedData.promoCode) {
       const promoValidation = await SubscriptionService.validatePromoCode(validatedData.promoCode)
-      if (!promoValidation.valid) {
+      if (!promoValidation.isValid) {
         return NextResponse.json(
           {
             success: false,
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Use the validated discount percentage from the service
-      validatedData.promoDiscount = promoValidation.discountPercentage
+      validatedData.promoDiscount = promoValidation.discount||0;
     }
 
     // Create a pending subscription record before redirecting to payment
@@ -141,15 +141,12 @@ export async function POST(req: NextRequest) {
       const result = await SubscriptionService.createCheckoutSession(
         userId,
         validatedData.planName,
-        validatedData.duration,
-        validatedData.referralCode,
-        validatedData.promoCode,
-        validatedData.promoDiscount,
+
       )
 
       return NextResponse.json({
         success: true,
-        sessionId: result.sessionId,
+      
         url: result.url,
       })
     } catch (checkoutError: any) {

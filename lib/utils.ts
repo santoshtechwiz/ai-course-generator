@@ -45,3 +45,25 @@ export function saveToken(token: string) {
 export function getToken() {
   return localStorage.getItem("authToken")
 }
+
+export const fetchSubscriptionStatus = async (timeout = 15000) => {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeout)
+
+  try {
+    const res = await fetch("/api/subscriptions/status", {
+      method: "GET",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      signal: controller.signal,
+    })
+    if (res.status === 401) return { isFree: true }
+    if (!res.ok) throw new Error(await res.text())
+    return await res.json()
+  } finally {
+    clearTimeout(id)
+  }
+}

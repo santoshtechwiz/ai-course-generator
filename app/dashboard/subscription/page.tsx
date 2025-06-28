@@ -15,7 +15,7 @@ export const metadata: Metadata = generateMetadata({
     "course access",
     "educational plans",
   ],
-  ogImage: "/og-image-subscription.jpg",
+  ogImage: { url: "/og-image-subscription.jpg" },
 })
 
 const Page = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) => {

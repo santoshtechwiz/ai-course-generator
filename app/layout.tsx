@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "../globals.css"
-import "../fonts.css"  // Import our fallback font configuration
+// import "../fonts.css"  // Import our fallback font configuration
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
  import { fontInterSans, fontRobotoSans } from "./font"
@@ -66,10 +66,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerAuthSession()
 
-  const isProd = process.env.NODE_ENV === "development" ? false : true
-  const fontClasses = isProd
-    ? `${fontInterSans.variable} ${fontRobotoSans.variable}`
-    : ""
+  // const isProd = process.env.NODE_ENV === "development" ? false : true
+  // const fontClasses = isProd
+  //   ? `${fontInterSans.variable} ${fontRobotoSans.variable}`
+  //   : ""
 
   return (
     <html 
@@ -80,8 +80,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
       </head>
-
-      <body className={`${fontClasses} antialiased min-h-screen flex flex-col`}>
+    
+      <body className={` antialiased min-h-screen flex flex-col`}>
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -104,12 +104,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           data={{
             name: "Course AI",
             description: "AI-powered course and quiz generator for personalized learning",
-            url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.app",
+            url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
             potentialAction: {
               "@type": "SearchAction",
               target: {
                 "@type": "EntryPoint",
-                urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.app"}/search?q={search_term_string}`,
+                urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/search?q={search_term_string}`,
               },
               "query-input": "required name=search_term_string",
             },
