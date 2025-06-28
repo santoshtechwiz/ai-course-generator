@@ -11,7 +11,7 @@ import type {
   SubscriptionStatusType,
   TokenUsage,
   EnhancedSubscriptionData,
-} from "@/app/dashboard/subscription/types/subscription"
+} from "@/app/types/subscription"
 import { logger } from "@/lib/logger"
 
 // Default free subscription data to use when unauthenticated
