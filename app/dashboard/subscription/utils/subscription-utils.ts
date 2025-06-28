@@ -1,22 +1,10 @@
-import type { SubscriptionState, SubscriptionData } from "@/store/slices/subscription-slice"
-import type { SubscriptionPlanType as ImportedPlanType, SubscriptionStatusType } from "../types/subscription"
-
-// Fix enum declaration to match the string type from the types file
-export const enum SubscriptionPlanType {
-  FREE = "FREE",
-  BASIC = "BASIC",
-  PRO = "PRO",
-  PREMIUM = "PRO", // This should be "PRO" to match usage
-}
-
-// Make status values uppercase to match the SubscriptionStatusType
-export const enum SubscriptionStatus {
-  ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE", 
-  CANCELED = "CANCELED",
-  PAST_DUE = "PAST_DUE",
-  PENDING = "PENDING",
-}
+import type {
+  SubscriptionState,
+  SubscriptionData,
+  SubscriptionPlanType,
+  SubscriptionStatusType,
+  SubscriptionResult,
+} from "@/app/dashboard/subscription/types/subscription"
 
 /**
  * Safely parses subscription data from storage
@@ -46,21 +34,21 @@ export function parseSubscriptionData(data: string | null): Partial<Subscription
   }
 }
 
-export function calculateSavings(subscription: SubscriptionState | null): number {
-  if (!subscription || !subscription.data) return 0
+/**
+ * Calculate savings percentage between two prices
+ * @param monthlyPrice Monthly price
+ * @param discountedPrice Discounted price
+ * @param months Number of months
+ * @returns Savings percentage
+ */
+export function calculateSavings(monthlyPrice: number, discountedPrice: number, months: number): number {
+  if (monthlyPrice <= 0 || discountedPrice <= 0 || months <= 0) return 0
 
-  // Calculate savings based on subscription plan
-  switch (subscription.data.subscriptionPlan) {
-    case SubscriptionPlanType.PREMIUM:
-      return 100 // Example savings for premium plan
-    case SubscriptionPlanType.PRO:
-      return 50 // Example savings for pro plan
-    case SubscriptionPlanType.BASIC:
-      return 20 // Example savings for basic plan
-    case SubscriptionPlanType.FREE:
-    default:
-      return 0 // No savings for free plan
-  }
+  const totalMonthlyPrice = monthlyPrice * months
+  const savings = totalMonthlyPrice - discountedPrice
+  const savingsPercentage = (savings / totalMonthlyPrice) * 100
+
+  return Math.round(savingsPercentage)
 }
 
 /**
@@ -68,73 +56,208 @@ export function calculateSavings(subscription: SubscriptionState | null): number
  * @param subscription The subscription to check
  * @returns True if the subscription is active
  */
-export function isSubscriptionActive(subscription: SubscriptionState | null): boolean {
-  if (!subscription || !subscription.data) return false
+export function isSubscriptionActive(subscription: SubscriptionData | null): boolean {
+  if (!subscription) return false
 
-  // Check if subscription is active
-  if (subscription.data.status === SubscriptionStatus.ACTIVE) return true
-
-  // Check if subscription is on a paid plan
-  if (subscription.data.subscriptionPlan !== SubscriptionPlanType.FREE && subscription.data.isSubscribed) return true
-
-  return false
+  // Check if subscription is active and not cancelled
+  return subscription.status === "ACTIVE" && !subscription.cancelAtPeriodEnd
 }
 
 /**
- * Gets the number of credits available based on subscription plan
+ * Gets the number of credits available based on subscription data
  * @param subscription The subscription to check
  * @returns The number of credits available
  */
-export function getAvailableCredits(subscription: SubscriptionState | null): number {
-  if (!subscription || !subscription.data) return 0
+export function getAvailableCredits(subscription: SubscriptionData | null): number {
+  if (!subscription) return 0
 
-  // Return credits from subscription or calculate based on plan
-  if (typeof subscription.data.credits === "number") {
-    return Math.max(0, subscription.data.credits - (subscription.data.tokensUsed || 0))
-  }
-
-  // Default credits by plan if not explicitly set
-  switch (subscription.data.subscriptionPlan) {
-    case SubscriptionPlanType.PREMIUM:
-      return 500
-    case SubscriptionPlanType.PRO:
-      return 250
-    case SubscriptionPlanType.BASIC:
-      return 100
-    case SubscriptionPlanType.FREE:
-    default:
-      return 10
-  }
+  return Math.max(0, subscription.credits - subscription.tokensUsed)
 }
 
 /**
- * Checks if a feature is available for a subscription
- * @param subscription The subscription to check
+ * Checks if a feature is available for a subscription plan
+ * @param subscriptionPlan The subscription plan to check
  * @param feature The feature to check
  * @returns True if the feature is available
  */
 export function isFeatureAvailable(
-  subscription: SubscriptionState | null,
+  subscriptionPlan: SubscriptionPlanType,
   feature: "advanced_quizzes" | "unlimited_generation" | "api_access" | "priority_support",
 ): boolean {
-  if (!subscription || !subscription.data) return false
-
-  // Check if subscription is active
-  if (!isSubscriptionActive(subscription)) {
-    // Free users can only use basic features
-    return false
-  }
-
   // Feature availability by plan
-  switch (subscription.data.subscriptionPlan) {
-    case SubscriptionPlanType.PREMIUM:
+  switch (subscriptionPlan) {
+    case "ULTIMATE":
       return true // All features available
-    case SubscriptionPlanType.PRO:
+    case "PRO":
       return feature !== "api_access" // All except API access
-    case SubscriptionPlanType.BASIC:
+    case "BASIC":
       return feature === "advanced_quizzes" || feature === "unlimited_generation"
-    case SubscriptionPlanType.FREE:
+    case "FREE":
     default:
       return false
   }
+}
+
+/**
+ * Validates subscription plan type
+ * @param plan Plan to validate
+ * @returns Valid subscription plan type
+ */
+export function validateSubscriptionPlan(plan: any): SubscriptionPlanType {
+  const validPlans: SubscriptionPlanType[] = ["FREE", "BASIC", "PRO", "ULTIMATE"]
+
+  if (typeof plan === "string" && validPlans.includes(plan.toUpperCase() as SubscriptionPlanType)) {
+    return plan.toUpperCase() as SubscriptionPlanType
+  }
+
+  return "FREE"
+}
+
+/**
+ * Validates subscription status type
+ * @param status Status to validate
+ * @returns Valid subscription status type
+ */
+export function validateSubscriptionStatus(status: any): SubscriptionStatusType {
+  const validStatuses: SubscriptionStatusType[] = [
+    "ACTIVE",
+    "CANCELED",
+    "PAST_DUE",
+    "UNPAID",
+    "TRIAL",
+    "NONE",
+    "INACTIVE",
+    "EXPIRED",
+    "PENDING",
+  ]
+
+  if (typeof status === "string" && validStatuses.includes(status.toUpperCase() as SubscriptionStatusType)) {
+    return status.toUpperCase() as SubscriptionStatusType
+  }
+
+  return "INACTIVE"
+}
+
+/**
+ * Formats subscription expiration date
+ * @param expirationDate Expiration date string or Date
+ * @returns Formatted date string
+ */
+export function formatExpirationDate(expirationDate: string | Date | null | undefined): string | null {
+  if (!expirationDate) return null
+
+  try {
+    const date = new Date(expirationDate)
+    if (isNaN(date.getTime())) return null
+
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Calculates days until expiration
+ * @param expirationDate Expiration date
+ * @returns Number of days until expiration
+ */
+export function getDaysUntilExpiration(expirationDate: string | Date | null | undefined): number | null {
+  if (!expirationDate) return null
+
+  try {
+    const date = new Date(expirationDate)
+    if (isNaN(date.getTime())) return null
+
+    const now = new Date()
+    const diffTime = date.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    return diffDays
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Checks if subscription is expiring soon (within 7 days)
+ * @param expirationDate Expiration date
+ * @returns True if expiring soon
+ */
+export function isExpiringSoon(expirationDate: string | Date | null | undefined): boolean {
+  const days = getDaysUntilExpiration(expirationDate)
+  return days !== null && days <= 7 && days > 0
+}
+
+/**
+ * Creates a default subscription result for error cases
+ * @param message Error message
+ * @param error Error type
+ * @returns Subscription result
+ */
+export function createErrorResult(message: string, error?: string): SubscriptionResult {
+  return {
+    success: false,
+    message,
+    error,
+  }
+}
+
+/**
+ * Creates a success subscription result
+ * @param message Success message
+ * @param data Additional data
+ * @returns Subscription result
+ */
+export function createSuccessResult(message: string, data?: Partial<SubscriptionResult>): SubscriptionResult {
+  return {
+    success: true,
+    message,
+    ...data,
+  }
+}
+
+/**
+ * Determines if a user can change from one plan to another
+ * @param currentPlan Current subscription plan
+ * @param targetPlan Target subscription plan
+ * @param currentStatus Current subscription status
+ * @param allowDowngrades Whether downgrades are allowed
+ * @returns Object with canChange boolean and reason
+ */
+export function canChangePlan(
+  currentPlan: SubscriptionPlanType,
+  targetPlan: SubscriptionPlanType,
+  currentStatus: SubscriptionStatusType,
+  allowDowngrades = false,
+): { canChange: boolean; reason?: string } {
+  // Can't change to the same plan
+  if (currentPlan === targetPlan) {
+    return { canChange: false, reason: "You are already on this plan" }
+  }
+
+  // Can't change if current subscription is not active
+  if (currentStatus !== "ACTIVE") {
+    return { canChange: false, reason: "Current subscription is not active" }
+  }
+
+  // Check if it's a downgrade
+  const planHierarchy: Record<SubscriptionPlanType, number> = {
+    FREE: 0,
+    BASIC: 1,
+    PRO: 2,
+    ULTIMATE: 3,
+  }
+
+  const currentLevel = planHierarchy[currentPlan]
+  const targetLevel = planHierarchy[targetPlan]
+
+  if (targetLevel < currentLevel && !allowDowngrades) {
+    return { canChange: false, reason: "Downgrades are not allowed" }
+  }
+
+  return { canChange: true }
 }

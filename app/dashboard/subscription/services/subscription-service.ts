@@ -565,6 +565,7 @@ export class SubscriptionService {
       // For simplicity, assume Stripe as the payment gateway
       const paymentGateway = getPaymentGateway("stripe")
       const checkoutUrl = await paymentGateway.createCheckoutSession(userId, planId)
+      console.log(`Checkout URL created for user ${userId} and plan ${planId}: ${checkoutUrl}`);
       return { success: true, url: checkoutUrl }
     } catch (error: any) {
       logger.error(
