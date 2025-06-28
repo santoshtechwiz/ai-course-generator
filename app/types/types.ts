@@ -158,6 +158,12 @@ export  interface FlashCard{
 }
 export interface QueryParams {
   [key: string]: string | string[] | undefined;
+  title?: string;
+  amount?: string;
+  topic?: string;
+  difficulty:["easy" | "medium" | "hard"];
+  type?: "mcq" | "open_ended" | "fill_in_the_blanks";
+
 }
 
 export interface OpenAIMessage {

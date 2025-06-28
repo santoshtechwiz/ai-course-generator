@@ -79,7 +79,7 @@ const difficultyColors = {
 }
 
 const quizTypeRoutes = {
-  "fill-blanks": "dashboard/blanks",
+  blanks: "dashboard/blanks",
   mcq: "dashboard/mcq",
   flashcard: "dashboard/flashcard",
   openended: "dashboard/openended",
@@ -87,7 +87,7 @@ const quizTypeRoutes = {
 }
 
 const quizTypeIcons = {
-  "fill-blanks": PenTool,
+  blanks: PenTool,
   flashcard: StickyNote,
   openended: BookOpen,
   code: Code2,
@@ -531,7 +531,7 @@ const QuizCard: React.FC<{
 
         <CardFooter className="relative z-10 p-4 sm:p-6 pt-2">
           <Link
-            href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes] || "dashboard/quiz"}/${quiz.slug}`}
+            href={`/${quizTypeRoutes[quiz.quizType as keyof typeof quizTypeRoutes]}/${quiz.slug}`}
             className="w-full"
             prefetch={true}
           >

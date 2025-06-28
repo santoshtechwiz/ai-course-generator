@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { Search, PlusCircle, GraduationCap, Clock, CheckCircle, AlertCircle, BookOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import type { DashboardUser, UserQuiz, UserQuizAttempt, QuizType } from "@/app/types/types"
+import type { DashboardUser, UserQuiz, UserQuizAttempt } from "@/app/types/types"
 import QuizResultsDialog from "./QuizResultsDialog"
+import { QuizType } from "@/app/types/quiz-types"
 
 interface QuizzesTabProps {
   userData: DashboardUser
@@ -63,7 +64,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
         return "Multiple Choice"
       case "openended":
         return "Open Ended"
-      case "fill-blanks":
+      case "blanks":
         return "Fill in the Blanks"
       case "code":
         return "Code"
@@ -78,8 +79,8 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
       case "openended":
         return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-      case "fill-blanks":
-        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+      case "blanks":
+        return "Fill in the Blanks"
       case "code":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
       default:
@@ -112,7 +113,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
             />
           </div>
           <Button asChild>
-            <Link href="/dashboard/quiz/create">
+            <Link href={`/dashboard/${quiz.type}/create`}>
               <PlusCircle className="mr-2 h-4 w-4" />
               New Quiz
             </Link>
