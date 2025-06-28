@@ -1,9 +1,10 @@
 
 import { getAuthSession } from "@/lib/auth";
-import prisma, { createQuestions, createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
+import prisma, { createUserQuiz, updateTopicCount, updateUserCredits } from "@/lib/db"
 import { titleSubTopicToSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
 import { generateCodingMCQs } from "./quizGenerator";
+import createQuestions from "@/lib/create-questions";
 
 
 export async function POST(req: Request) {

@@ -84,6 +84,7 @@ export const blanksQuizSchema = z.object({
   type: z.enum(["fill_in_the_blanks"]).default("fill_in_the_blanks"),
   amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
   difficulty: z.enum(["easy", "medium", "hard"]),
+  topic: z.string().min(3).max(100),
 })
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>

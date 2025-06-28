@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
-import { signIn, useSession } from "next-auth/react"
+
 import { TextQuote, HelpCircle, Timer, Sparkles, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -29,10 +29,9 @@ import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
-import useSubscription from "@/hooks/use-subscription"
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {
-  userType?: string
+
 }
 
 interface BlankQuizFormProps {
@@ -42,32 +41,23 @@ interface BlankQuizFormProps {
   params?: QueryParams
 }
 
-// Define proper type for subscription data
-interface Subscription {
-  subscriptionPlan?: string;
-}
+
 
 export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, params }: BlankQuizFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-  const { data: session, status } = useSession()
 
-  // Type the status
-  const { data: subscriptionData } = useSubscription() as { 
-    data?: Subscription;
-    status?: string;
-  }
 
   const [formData, setFormData] = usePersistentState<BlankQuizFormData>("blankQuizFormData", {
     title: params?.title || "",
     amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
-    difficulty: (["easy", "medium", "hard"].includes(params?.difficulty || "") ? params?.difficulty : "easy") as
-      | "easy"
-      | "medium"
-      | "hard",
+    difficulty: (typeof params?.difficulty === "string" && ["easy", "medium", "hard"].includes(params.difficulty)
+      ? params.difficulty
+      : "easy") as "easy" | "medium" | "hard",
     topic: params?.topic || "",
+    type: "fill_in_the_blanks",
   })
 
   const {
@@ -93,7 +83,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         setValue("amount", Math.min(amount, maxQuestions))
       }
     }
-    if (params?.difficulty && ["easy", "medium", "hard"].includes(params.difficulty)) {
+    if (
+      typeof params?.difficulty === "string" &&
+      ["easy", "medium", "hard"].includes(params.difficulty)
+    ) {
       setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
     }
     if (params?.topic) {
@@ -108,8 +101,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   const { mutateAsync: createBlankQuizMutation } = useMutation({
     mutationFn: async (data: BlankQuizFormData) => {
-      data.userType = subscriptionData?.subscriptionPlan
-      const response = await axios.post("/api/blanks-quiz", data)
+      
+      const response = await axios.post("/api/blanks", data)
       return response.data
     },
     onError: (error) => {
@@ -128,16 +121,13 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
       if (!data.title || !data.amount || !data.difficulty || !data.topic) {
         toast({
+          title: "Validation Error",
           description: "Please fill in all required fields",
           variant: "destructive",
         })
         return
       }
 
-      if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: "/dashboard/blanks" })
-        return
-      }
 
       setIsLoading(true)
       setIsConfirmDialogOpen(true)
@@ -155,7 +145,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         topic: formValues.topic,
-        userType: subscriptionData?.subscriptionPlan,
+        type: "fill_in_the_blanks",
       })
       const userQuizId = response?.userQuizId
 
@@ -172,7 +162,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     } finally {
       setIsLoading(false)
     }
-  }, [createBlankQuizMutation, watch, toast, router, subscriptionData?.subscriptionPlan])
+  }, [createBlankQuizMutation, watch, toast, router])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -483,8 +473,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.7 }}
             >
               <PlanAwareButton
+                type="submit"
                 label="Generate Fill-in-the-Blanks Quiz"
-                onClick={handleSubmit(onSubmit)}
                 isLoggedIn={isLoggedIn}
                 isEnabled={!isDisabled}
                 isLoading={isLoading}

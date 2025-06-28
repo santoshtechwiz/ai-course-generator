@@ -5,6 +5,13 @@ import { generateSlug } from "@/lib/utils"
 import { generateOpenEndedFillIntheBlanks } from "@/lib/chatgpt/userMcqQuiz"
 import { getAuthSession } from "@/lib/auth"
 
+interface OpenEndedFillInTheBlanksQuestion {
+  question: string
+  correct_answer: string
+  hints: string[]
+  difficulty: string
+  tags: string[]
+}
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession()
@@ -20,8 +27,16 @@ export async function POST(req: Request) {
       return { error: "Insufficient credits", status: 403 }
     }
 
+    // Move quiz and slug generation outside the transaction
     const quiz = await generateOpenEndedFillIntheBlanks(title, questionCount)
-    const slug = generateSlug(title)
+    let baseSlug = generateSlug(title)
+    let slug = baseSlug
+    let suffix = 2
+
+    // Ensure unique slug
+    while (await prisma.userQuiz.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix++}`
+    }
 
     const userQuiz = await prisma.$transaction(async (tx) => {
       await tx.user.update({
@@ -29,6 +44,7 @@ export async function POST(req: Request) {
         data: { credits: { decrement: creditDeduction } },
       })
 
+      // Only DB operations inside transaction
       return await tx.userQuiz.create({
         data: {
           userId,
@@ -37,22 +53,16 @@ export async function POST(req: Request) {
           quizType: "fill-blanks",
           slug: slug,
           questions: {
-            create: quiz.questions.map(
-              (q: {
-                question: string
-                correct_answer: string
-                hints: string[]
-                difficulty: string
-                tags: string[]
-              }) => ({
+            create: (quiz.questions as unknown as OpenEndedFillInTheBlanksQuestion[]).map(
+              (q) => ({
                 question: q.question,
                 answer: q.correct_answer,
                 questionType: "fill-blanks",
                 openEndedQuestion: {
                   create: {
-                    hints: q.hints.join("|"),
-                    difficulty: q.difficulty,
-                    tags: q.tags.join("|"),
+                    hints: (q?.hints ?? []).join("|"),
+                    difficulty: q?.difficulty,
+                    tags: (q?.tags ?? []).join("|"),
                   },
                 },
               }),

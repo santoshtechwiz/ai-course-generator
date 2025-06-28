@@ -90,7 +90,7 @@ export default function QuizHistory({ quizzes }: QuizHistoryProps) {
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-3">
           {displayQuizzes.map((quiz) => (
             <motion.div key={quiz.id} variants={item}>
-              <Link href={`/dashboard/quiz/${quiz.slug}`}>
+              <Link href={`/dashboard/${quiz.type}/${quiz.slug}`}>
                 <div className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 transition-all duration-200">
                   <div className="flex items-center space-x-3">
                     <div
