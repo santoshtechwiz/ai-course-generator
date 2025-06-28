@@ -141,12 +141,16 @@ export async function POST(req: NextRequest) {
       const result = await SubscriptionService.createCheckoutSession(
         userId,
         validatedData.planId,
-
+        validatedData.duration,
+        {
+          referralCode: validatedData.referralCode,
+          promoCode: validatedData.promoCode,
+          promoDiscount: validatedData.promoDiscount,
+        }
       )
 
       return NextResponse.json({
         success: true,
-      
         url: result.url,
       })
     } catch (checkoutError: any) {

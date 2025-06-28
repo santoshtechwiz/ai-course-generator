@@ -5,7 +5,7 @@
  */
 
 import { PLAN_FEATURES, FEATURES, FeatureCategory } from "../components/subscription-plans"
-import type { SubscriptionPlanType } from "../types/subscription"
+import type { SubscriptionPlanType } from "../../../types/subscription"
 
 /**
  * Get all features for a specific plan

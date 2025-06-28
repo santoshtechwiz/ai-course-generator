@@ -10,7 +10,7 @@ import type {
   SubscriptionPlanType,
   SubscriptionStatusType,
   TokenUsageResponse,
-} from "../types/subscription"
+} from "../../../types/subscription"
 
 /**
  * Validates and transforms a raw subscription response into a properly typed SubscriptionData object

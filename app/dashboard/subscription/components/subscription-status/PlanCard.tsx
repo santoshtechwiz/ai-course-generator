@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import SavingsHighlight from "./SavingsHighlight"
 import { Badge } from "@/components/ui/badge"
 import { FeatureCategoryList } from "../FeatureComparison"
-import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription"
 import type { SUBSCRIPTION_PLANS as SubscriptionPlansType } from "../subscription-plans"
 import { motion } from "framer-motion"
 

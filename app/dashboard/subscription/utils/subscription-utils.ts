@@ -4,7 +4,7 @@ import type {
   SubscriptionPlanType,
   SubscriptionStatusType,
   SubscriptionResult,
-} from "@/app/dashboard/subscription/types/subscription"
+} from "@/app/types/subscription"
 
 /**
  * Safely parses subscription data from storage

@@ -5,7 +5,7 @@ import React from "react"
 import { Check, X, HelpCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FEATURES, PLAN_FEATURES, FeatureCategory } from "./subscription-plans"
-import type { SubscriptionPlanType } from "../types/subscription"
+import type { SubscriptionPlanType } from "../../../types/subscription"
 import { useMemo } from "react"
 import { useAppSelector } from "@/store"
 import { selectSubscription } from "@/store/slices/subscription-slice"
@@ -118,11 +118,13 @@ export function FeatureComparison() {
       const category = feature.category
 
       // Get availability for each plan
-      const availability = {
+      const availability: Record<SubscriptionPlanType, boolean> = {
         FREE: PLAN_FEATURES.FREE[feature.id]?.available || false,
         BASIC: PLAN_FEATURES.BASIC[feature.id]?.available || false,
         PRO: PLAN_FEATURES.PRO[feature.id]?.available || false,
         ULTIMATE: PLAN_FEATURES.ULTIMATE[feature.id]?.available || false,
+        PREMIUM: PLAN_FEATURES.PREMIUM?.[feature.id]?.available || false,
+        ENTERPRISE: PLAN_FEATURES.ENTERPRISE?.[feature.id]?.available || false,
       }
 
       const featureWithAvailability = {
