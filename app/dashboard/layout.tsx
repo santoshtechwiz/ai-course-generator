@@ -35,7 +35,7 @@ export default async function DashboardLayout({
 
           <Toaster />
           <Chatbot userId={session?.user?.id} />
-          {process.env.NODE_ENV !== "test" && <CourseAIState />}
+          {process.env.NODE_ENV !== "production" && <CourseAIState />}
         </DashboardShell>
       </div>
     </RootLayoutProvider>

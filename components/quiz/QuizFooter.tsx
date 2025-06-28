@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface QuizFooterProps {
@@ -14,6 +14,7 @@ interface QuizFooterProps {
   nextLabel?: string
   submitLabel?: string
   className?: string
+  isSubmitting?: boolean
 }
 
 export function QuizFooter({
@@ -23,46 +24,52 @@ export function QuizFooter({
   canGoNext = false,
   canGoPrevious = false,
   isLastQuestion = false,
-  nextLabel = "Next",
-  submitLabel = "Submit",
+  nextLabel = "Continue",
+  submitLabel = "Submit Quiz",
   className,
+  isSubmitting = false,
 }: QuizFooterProps) {
   const showSubmit = isLastQuestion && canGoNext
 
   return (
     <div
       className={cn(
-        "flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-5 border-t border-border bg-muted",
+        "flex flex-col sm:flex-row items-center gap-3 px-4 py-4 border-t bg-card shadow-sm",
         className
       )}
     >
-      {/* Previous */}
+      {/* Previous Button */}
       <Button
         variant="outline"
         onClick={onPrevious}
-        disabled={!canGoPrevious}
-        className="flex items-center gap-2 w-full sm:w-auto"
+        disabled={!canGoPrevious || isSubmitting}
+        className="flex items-center gap-2 w-full sm:w-auto min-w-[120px]"
       >
         <ChevronLeft className="w-4 h-4" />
         Previous
       </Button>
 
-      {/* Submit or Next */}
+      <div className="flex-1" />
+
+      {/* Action Button */}
       {showSubmit ? (
         <Button
           onClick={onSubmit}
-          variant="default"
-          className="flex items-center gap-2 w-full sm:w-auto"
+          disabled={isSubmitting}
+          className="flex items-center gap-2 w-full sm:w-auto min-w-[160px] bg-emerald-600 hover:bg-emerald-700"
         >
-          <CheckCircle className="w-4 h-4" />
-          {submitLabel}
+          {isSubmitting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <CheckCircle className="w-4 h-4" />
+          )}
+          {isSubmitting ? "Submitting..." : submitLabel}
         </Button>
       ) : (
         <Button
           onClick={onNext}
-          disabled={!canGoNext}
-          variant="secondary"
-          className="flex items-center gap-2 w-full sm:w-auto"
+          disabled={!canGoNext || isSubmitting}
+          className="flex items-center gap-2 w-full sm:w-auto min-w-[120px]"
         >
           {nextLabel}
           <ChevronRight className="w-4 h-4" />
