@@ -24,6 +24,7 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
+import { QuizActions } from "../../components/QuizActions"
 
 interface BlanksQuizWrapperProps {
   slug: string
@@ -44,6 +45,9 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const quizStatus = useSelector(selectQuizStatus)
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizType = useSelector(selectQuizType)
+  const quizId = useSelector(selectQuizId)
+  const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
+  const quizTitle = useSelector(selectQuizTitle)
 
   // Load quiz on mount
   useEffect(() => {
@@ -187,18 +191,29 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }
 
   return (
-    <BlanksQuiz
-      question={formattedQuestion}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-      existingAnswer={existingAnswer}
-      onAnswer={handleAnswer}
-      onNext={handleNextQuestion}
-      onPrevious={handlePrevQuestion}
-      onSubmit={handleSubmitQuiz}
-      canGoNext={canGoNext}
-      canGoPrevious={canGoPrevious}
-      isLastQuestion={isLastQuestion}
-    />
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
+      <QuizActions
+        initialIsFavorite={false}
+        quizSlug={slug}
+
+        userId={userId}
+        quizId={quizId}
+        initialIsPublic={false}
+        ownerId={userId}
+      ></QuizActions>
+      <BlanksQuiz
+        question={formattedQuestion}
+        questionNumber={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        existingAnswer={existingAnswer}
+        onAnswer={handleAnswer}
+        onNext={handleNextQuestion}
+        onPrevious={handlePrevQuestion}
+        onSubmit={handleSubmitQuiz}
+        canGoNext={canGoNext}
+        canGoPrevious={canGoPrevious}
+        isLastQuestion={isLastQuestion}
+      />
+    </div>
   )
 }

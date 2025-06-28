@@ -54,8 +54,9 @@ const McqQuiz = ({
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
 
   const options = useMemo(() => {
+    // Ensure unique keys by using both index and option text
     return (question?.options || []).map((option, index) => ({
-      id: option,
+      id: `${option}-${index}`,
       text: option,
       letter: String.fromCharCode(65 + index),
     }))

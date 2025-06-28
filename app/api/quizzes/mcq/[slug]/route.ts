@@ -23,6 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: true,
         userId: true,
         isFavorite: true,
+       
         isPublic: true,
         title: true,
         slug: true,

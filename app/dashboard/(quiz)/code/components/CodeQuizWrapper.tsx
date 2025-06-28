@@ -22,6 +22,7 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
+import { QuizActions } from "../../components/QuizActions"
 
 
 interface CodeQuizWrapperProps {
@@ -42,6 +43,10 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
+
+  const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
+  const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
+  
 
   // Load the quiz
   useEffect(() => {
@@ -100,47 +105,47 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     }
   }, [currentQuestionIndex, questions.length, dispatch])
 
-const handleSubmitQuiz = useCallback(async () => {
-  try {
-    toast.success("Quiz submitted successfully!")
-    enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
+  const handleSubmitQuiz = useCallback(async () => {
+    try {
+      toast.success("Quiz submitted successfully!")
+      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
 
-    await dispatch(submitQuiz()).unwrap()
+      await dispatch(submitQuiz()).unwrap()
 
-    setTimeout(() => {
-      router.push(`/dashboard/code/${slug}/results`)
-    }, 500)
-  } catch (err) {
-    console.error("Error submitting quiz:", err)
-    toast.error("Failed to submit quiz. Please try again.")
-  }
-}, [dispatch, router, slug, enhancedLoader])
+      setTimeout(() => {
+        router.push(`/dashboard/code/${slug}/results`)
+      }, 500)
+    } catch (err) {
+      console.error("Error submitting quiz:", err)
+      toast.error("Failed to submit quiz. Please try again.")
+    }
+  }, [dispatch, router, slug, enhancedLoader])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
   const hasError = quizStatus === "failed"
   const isSubmitting = quizStatus === "submitting"
 
-const formattedQuestion = useMemo(() => {
-  if (!currentQuestion) return null
+  const formattedQuestion = useMemo(() => {
+    if (!currentQuestion) return null
 
-  const questionText = currentQuestion.question || currentQuestion.text || ''
-  const options = Array.isArray(currentQuestion.options)
-    ? currentQuestion.options.map((opt: any) =>
+    const questionText = currentQuestion.question || currentQuestion.text || ''
+    const options = Array.isArray(currentQuestion.options)
+      ? currentQuestion.options.map((opt: any) =>
         typeof opt === "string" ? opt : opt.text || ''
       )
-    : []
+      : []
 
-  return {
-    id: String(currentQuestion.id),
-    text: questionText,
-    question: questionText,
-    options,
-    codeSnippet: currentQuestion.codeSnippet || '',
-    language: currentQuestion.language || 'javascript',
-    correctAnswer: currentQuestion.answer || '',
-  }
-}, [currentQuestion])
+    return {
+      id: String(currentQuestion.id),
+      text: questionText,
+      question: questionText,
+      options,
+      codeSnippet: currentQuestion.codeSnippet || '',
+      language: currentQuestion.language || 'javascript',
+      correctAnswer: currentQuestion.answer || '',
+    }
+  }, [currentQuestion])
 
 
 
@@ -174,18 +179,29 @@ const formattedQuestion = useMemo(() => {
     return <QuizLoader message="Preparing quiz..." />
   }
   return (
-    <CodeQuiz
-      question={formattedQuestion}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-      existingAnswer={existingAnswer}
-      onAnswer={handleAnswer}
-      onNext={handleNextQuestion}
-      onSubmit={handleSubmitQuiz}
-      isSubmitting={isSubmitting}
-      canGoNext={canGoNext}
-      isLastQuestion={isLastQuestion}
-      quizTitle={quizTitle || title || "Code Quiz"}
-    />
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
+      <QuizActions
+        initialIsFavorite={false}
+        quizSlug={slug}
+
+        userId={userId}
+        quizId={quizId}
+        initialIsPublic={false}
+        ownerId={userId}
+      ></QuizActions>
+      <CodeQuiz
+        question={formattedQuestion}
+        questionNumber={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        existingAnswer={existingAnswer}
+        onAnswer={handleAnswer}
+        onNext={handleNextQuestion}
+        onSubmit={handleSubmitQuiz}
+        isSubmitting={isSubmitting}
+        canGoNext={canGoNext}
+        isLastQuestion={isLastQuestion}
+        quizTitle={quizTitle || title || "Code Quiz"}
+      />
+    </div>
   )
 }

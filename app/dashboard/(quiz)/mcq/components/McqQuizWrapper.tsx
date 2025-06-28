@@ -22,13 +22,15 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
+import { QuizActions } from "../../components/QuizActions"
 
 interface McqQuizWrapperProps {
   slug: string
   title?: string
 }
 
-export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {  const router = useRouter()
+export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
+  const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const enhancedLoader = useLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -40,7 +42,8 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {  
   const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
-
+  const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
+  const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
   // Load the quiz
   useEffect(() => {
     const loadQuiz = async () => {
@@ -98,21 +101,21 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {  
     }
   }, [currentQuestionIndex, questions.length, dispatch])
 
-const handleSubmitQuiz = useCallback(async () => {
-  try {
-    toast.success("Quiz submitted successfully!")
-    enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
+  const handleSubmitQuiz = useCallback(async () => {
+    try {
+      toast.success("Quiz submitted successfully!")
+      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
 
-    await dispatch(submitQuiz()).unwrap()
+      await dispatch(submitQuiz()).unwrap()
 
-    setTimeout(() => {
-      router.push(`/dashboard/mcq/${slug}/results`)
-    }, 500)
-  } catch (err) {
-    console.error("Error submitting quiz:", err)
-    toast.error("Failed to submit quiz. Please try again.")
-  }
-}, [dispatch, router, slug, enhancedLoader])
+      setTimeout(() => {
+        router.push(`/dashboard/mcq/${slug}/results`)
+      }, 500)
+    } catch (err) {
+      console.error("Error submitting quiz:", err)
+      toast.error("Failed to submit quiz. Please try again.")
+    }
+  }, [dispatch, router, slug, enhancedLoader])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -166,18 +169,31 @@ const handleSubmitQuiz = useCallback(async () => {
   }
 
   return (
-    <McqQuiz
-      question={formattedQuestion}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-      existingAnswer={existingAnswer}
-      onAnswer={handleAnswer}
-      onNext={handleNextQuestion}
-      onSubmit={handleSubmitQuiz}
-      isSubmitting={isSubmitting}
-      canGoNext={canGoNext}
-      isLastQuestion={isLastQuestion}
-      quizTitle={quizTitle || title || "Multiple Choice Quiz"}
-    />
+    <>
+      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
+        <QuizActions
+          initialIsFavorite={false}
+          quizSlug={slug}
+         
+          userId={userId}
+          quizId={quizId}
+          initialIsPublic={false}
+          ownerId={userId}
+        ></QuizActions>
+        <McqQuiz
+          question={formattedQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer}
+          onAnswer={handleAnswer}
+          onNext={handleNextQuestion}
+          onSubmit={handleSubmitQuiz}
+          isSubmitting={isSubmitting}
+          canGoNext={canGoNext}
+          isLastQuestion={isLastQuestion}
+          quizTitle={quizTitle || title || "Multiple Choice Quiz"}
+        />
+      </div>
+    </>
   )
 }

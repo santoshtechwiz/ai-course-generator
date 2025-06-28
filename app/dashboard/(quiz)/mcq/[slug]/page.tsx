@@ -10,6 +10,7 @@ import McqQuizWrapper from "../components/McqQuizWrapper"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
 import { getQuizSlug } from "../../components/utils"
+import { useSession } from "next-auth/react"
 
 
 export default function McqQuizPage({
@@ -19,6 +20,7 @@ export default function McqQuizPage({
 }) {
   // Unwrap params for future compatibility
   const slug = getQuizSlug(params);
+  const userId = useSession()?.data?.user?.id || undefined;
 
   const router = useRouter()
 
@@ -42,6 +44,7 @@ export default function McqQuizPage({
       quizType="mcq"
       quizId={slug}
       isPublic={true} 
+      userId={userId}
       isFavorite={false}
     >
       <QuizSEO 
