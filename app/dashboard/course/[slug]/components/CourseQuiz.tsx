@@ -3,35 +3,28 @@
 import { useCallback, useMemo, useEffect, useReducer } from "react"
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
-import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, ChevronRight, AlertCircle, ChevronLeft, Lock } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks"
 import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
-
-import QuizBackground from "./QuizBackground"
+import { AlertCircle, CheckCircle } from "lucide-react"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 
-// Extend the original Props type with our new access control props
 interface QuizProps {
   chapter: FullChapterType
   course: FullCourseType
-  isPremium?: boolean // Keep original prop for backward compatibility
+  isPremium?: boolean
   isPublicCourse: boolean
   chapterId?: string
-  hasAccess?: boolean // New prop for access control
-  isAuthenticated?: boolean // New prop for authentication status
+  hasAccess?: boolean
+  isAuthenticated?: boolean
 }
 
-// Quiz state reducer for better state management
 interface QuizState {
   answers: Record<string, string>
   currentQuestionIndex: number
@@ -70,15 +63,9 @@ const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
         score: action.score,
       }
     case "SHOW_RESULTS":
-      return {
-        ...state,
-        showResults: true,
-      }
+      return { ...state, showResults: true }
     case "START_QUIZ":
-      return {
-        ...state,
-        quizStarted: true,
-      }
+      return { ...state, quizStarted: true }
     case "RESET_QUIZ":
       return {
         answers: {},
@@ -109,69 +96,35 @@ const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
   }
 }
 
-// Memoized skeleton component
 const QuizSkeleton = () => (
   <Card className="w-full max-w-4xl mx-auto">
-    <CardContent className="p-8">
-      <div className="flex items-center space-x-2 mb-4">
-        <Skeleton className="h-6 w-6 rounded-full" />
-        <Skeleton className="h-6 w-48" />
-      </div>
-      <Skeleton className="h-4 w-full mb-8" />
-      <div className="space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-md" />
-        ))}
-      </div>
-      <div className="flex justify-between mt-8">
-        <Skeleton className="h-10 w-24 rounded-md" />
+    <CardContent className="p-8 space-y-6">
+      <Skeleton className="h-6 w-48" />
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-10 w-full rounded-md" />
+      ))}
+      <div className="flex justify-end">
         <Skeleton className="h-10 w-24 rounded-md" />
       </div>
     </CardContent>
   </Card>
 )
 
-// Memoized option component
-const QuizOption = ({
-  option,
-  index,
-  questionId,
-  selectedAnswer,
-  onAnswerChange,
-}: {
-  option: string
-  index: number
-  questionId: string
-  selectedAnswer: string
-  onAnswerChange: (value: string) => void
-}) => (
-  <div
-    className={cn(
-      "flex items-center space-x-3 p-3 rounded-lg transition-colors",
-      selectedAnswer === option
-        ? "bg-primary/10 text-primary dark:bg-primary/20"
-        : "hover:bg-accent/50 dark:hover:bg-accent/20",
-    )}
-  >
-    <RadioGroupItem value={option} id={`option-${index}`} className="w-5 h-5" />
-    <Label htmlFor={`option-${index}`} className="text-base flex-grow cursor-pointer">
-      {option}
-    </Label>
-  </div>
-)
-
-export default function CourseDetailsQuiz({ 
-  chapter, 
-  course, 
-  isPremium, 
-  isPublicCourse, 
+export default function CourseDetailsQuiz({
+  chapter,
+  course,
+  isPremium,
+  isPublicCourse,
   chapterId,
-  hasAccess = false, // Default to false for safety
-  isAuthenticated = false // Default to false for safety
+  hasAccess = false,
+  isAuthenticated = false,
 }: QuizProps) {
-  // Use isPremium or hasAccess for backwards compatibility
-  const hasQuizAccess = hasAccess || isPremium || false;
-  
+  const hasQuizAccess = hasAccess || isPremium || false
+  const { toast } = useToast()
+  const { data: session } = useSession()
+  const isUserAuthenticated = isAuthenticated || !!session
+  const effectiveChapterId = chapterId || chapter?.id?.toString()
+
   const [quizState, dispatch] = useReducer(quizReducer, {
     answers: {},
     currentQuestionIndex: 0,
@@ -180,121 +133,55 @@ export default function CourseDetailsQuiz({
     showResults: false,
     quizStarted: false,
     quizProgress: {},
-  });
+  })
 
-  const { toast } = useToast();
-  
-  // Use provided isAuthenticated or session as fallback for backward compatibility
-  const { data: session } = useSession();
-  const isUserAuthenticated = isAuthenticated || !!session;
+  const demoQuestions = useMemo(() => [
+    {
+      id: "obs-1",
+      question: "How would you best describe an Observable in reactive programming?",
+      options: [
+        "stream of Click events",
+        "object function",
+        "data storage detail",
+        "sequence of Click events",
+      ],
+      answer: "stream of Click events",
+    },
+  ], [])
 
-  // Use the provided chapterId or fall back to chapter.id
-  const effectiveChapterId = chapterId || chapter?.id?.toString()
-
-  // Create a set of demo questions for unauthenticated users
-  const demoQuestions = useMemo(
-    () => [
-      {
-        id: "demo1",
-        question: "What is the primary purpose of this course?",
-        options: [
-          "To teach programming fundamentals",
-          "To explore advanced concepts",
-          "To provide practical examples",
-          "All of the above",
-        ],
-        answer: "All of the above",
-      },
-      {
-        id: "demo2",
-        question: "Which of the following is a key benefit of taking this course?",
-        options: [
-          "Hands-on coding exercises",
-          "Theoretical knowledge only",
-          "No practical applications",
-          "Limited examples",
-        ],
-        answer: "Hands-on coding exercises",
-      },
-      {
-        id: "demo3",
-        question: "What would you need to access the full quiz content?",
-        options: ["A premium subscription", "Nothing, it's all free", "A different browser", "Special software"],
-        answer: "A premium subscription",
-      },
-    ],
-    [],
-  )
-
-  // Load saved quiz progress from localStorage with error handling
   useEffect(() => {
     if (effectiveChapterId) {
       try {
-        const savedProgress = localStorage.getItem(`quiz-progress-${effectiveChapterId}`)
-        if (savedProgress) {
-          const progress = JSON.parse(savedProgress)
-          dispatch({ type: "LOAD_PROGRESS", progress })
-        }
+        const saved = localStorage.getItem(`quiz-progress-${effectiveChapterId}`)
+        if (saved) dispatch({ type: "LOAD_PROGRESS", progress: JSON.parse(saved) })
       } catch (e) {
-        console.error("Error parsing saved quiz progress:", e)
+        console.error("Failed to load quiz progress", e)
       }
     }
   }, [effectiveChapterId])
 
-  // Save quiz progress to localStorage with error handling
-  const saveProgress = useCallback(
-    (data: Record<string, any>) => {
-      if (effectiveChapterId) {
-        try {
-          localStorage.setItem(
-            `quiz-progress-${effectiveChapterId}`,
-            JSON.stringify({
-              ...quizState.quizProgress,
-              ...data,
-              lastUpdated: new Date().toISOString(),
-            }),
-          )
-        } catch (e) {
-          console.error("Error saving quiz progress:", e)
-        }
-      }
-    },
-    [effectiveChapterId, quizState.quizProgress],
-  )
+  const saveProgress = useCallback((data: Record<string, any>) => {
+    if (!effectiveChapterId) return
+    try {
+      localStorage.setItem(
+        `quiz-progress-${effectiveChapterId}`,
+        JSON.stringify({ ...quizState.quizProgress, ...data, lastUpdated: new Date().toISOString() }),
+      )
+    } catch (e) {
+      console.error("Failed to save quiz progress", e)
+    }
+  }, [quizState.quizProgress, effectiveChapterId])
 
-  // Optimized query with better error handling and retry logic
   const {
     data: questions,
+    isLoading,
     isError,
     error,
-    isLoading: isQuizLoading,
+    refetch,
   } = useQuery<CourseQuestion[]>({
-    queryKey: ["transcript", effectiveChapterId],
+    queryKey: ["chapter-quiz", effectiveChapterId],
     queryFn: async () => {
-      if (!chapter?.videoId || !effectiveChapterId) {
-        throw new Error("Required chapter data is missing.")
-      }
-
-      // If chapter.questions is present and non-empty, use it directly
-      if (Array.isArray(chapter.questions) && chapter.questions.length > 0) {
-        return chapter.questions.map((q: any) => ({
-          ...q,
-          id: q.id || `question-${Math.random().toString(36).substr(2, 9)}`,
-          options: Array.isArray(q.options)
-            ? q.options
-            : typeof q.options === "string"
-              ? (() => {
-                  try {
-                    return JSON.parse(q.options)
-                  } catch {
-                    return []
-                  }
-                })()
-              : q.options
-                ? [q.options]
-                : [],
-        }))
-      }
+      if (!chapter?.videoId || !effectiveChapterId) throw new Error("Missing chapter data")
 
       const response = await axios.post("/api/coursequiz", {
         videoId: chapter.videoId,
@@ -302,228 +189,120 @@ export default function CourseDetailsQuiz({
         chapterName: chapter.title || chapter.name,
       })
 
-      if (!response.data || !Array.isArray(response.data)) {
-        return []
-      }
-
-      return response.data.map((question: any) => ({
-        ...question,
-        id: question.id || `question-${Math.random().toString(36).substr(2, 9)}`,
-        options: Array.isArray(question.options)
-          ? question.options
-          : typeof question.options === "string"
-            ? (() => {
-                try {
-                  return JSON.parse(question.options)
-                } catch {
-                  return []
-                }
-              })()
-            : question.options
-              ? [question.options]
-              : [],
+      return response.data.map((q: any) => ({
+        ...q,
+        id: q.id || `q-${Math.random().toString(36).substr(2, 9)}`,
+        options: Array.isArray(q.options)
+          ? q.options
+          : typeof q.options === "string"
+            ? (() => { try { return JSON.parse(q.options) } catch { return [] } })()
+            : q.options ? [q.options] : [],
       }))
     },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 5 * 60 * 1000,
-    enabled: quizState.quizStarted && isAuthenticated,
-    onError: (err) => {
-      console.error("[CourseDetailsQuiz] Quiz data fetch error:", err)
+    enabled: !!effectiveChapterId && quizState.quizStarted && isUserAuthenticated,
+    retry: 2,
+    onError: () => {
       toast({
-        title: "Error loading quiz",
-        description: "We'll try again shortly. You can also manually retry.",
+        title: "Failed to load quiz",
+        description: "Please try again later.",
         variant: "destructive",
       })
     },
   })
 
-  // Use demo questions for unauthenticated users
   const effectiveQuestions = useMemo(() => {
-    if (!isAuthenticated) {
-      return demoQuestions
-    }
+    if (!isUserAuthenticated) return demoQuestions
+    return questions && questions.length > 0 ? questions : []
+  }, [isUserAuthenticated, questions, demoQuestions])
 
-    if (questions && questions.length > 0) {
-      return questions
-    }
-
-    if (!isQuizLoading && (!questions || questions.length === 0)) {
-      return demoQuestions
-    }
-
-    return []
-  }, [isAuthenticated, questions, demoQuestions, isQuizLoading])
-
-  const currentQuestion = useMemo(
-    () =>
-      effectiveQuestions && effectiveQuestions.length > 0 ? effectiveQuestions[quizState.currentQuestionIndex] : null,
-    [effectiveQuestions, quizState.currentQuestionIndex],
-  )
-
-  const handleAnswer = useCallback(
-    (value: string) => {
-      if (currentQuestion) {
-        dispatch({ type: "SET_ANSWER", questionId: currentQuestion.id, answer: value })
-        saveProgress({
-          answers: { ...quizState.answers, [currentQuestion.id]: value },
-          currentIndex: quizState.currentQuestionIndex,
-        })
-      }
-    },
-    [currentQuestion, quizState.answers, quizState.currentQuestionIndex, saveProgress],
-  )
-
-  const checkAnswer = useCallback(() => {
-    if (currentQuestion) {
-      const userAnswer = quizState.answers[currentQuestion.id]
-      const isCorrect = userAnswer?.trim() === currentQuestion.answer?.trim()
-
-      let newScore = quizState.score
-      if (isCorrect) {
-        newScore += 1
-      }
-
-      if (quizState.currentQuestionIndex < (effectiveQuestions?.length ?? 0) - 1) {
-        dispatch({ type: "NEXT_QUESTION" })
-        saveProgress({ currentIndex: quizState.currentQuestionIndex + 1 })
-      } else {
-        dispatch({ type: "COMPLETE_QUIZ", score: newScore })
-        saveProgress({
-          completed: true,
-          score: newScore,
-          completedAt: new Date().toISOString(),
-        })
-
-        toast({
-          title: "Quiz Completed!",
-          description: `You scored ${newScore} out of ${effectiveQuestions?.length}`,
-        })
-      }
-    }
-  }, [
-    currentQuestion,
-    quizState.answers,
-    quizState.currentQuestionIndex,
-    quizState.score,
-    effectiveQuestions?.length,
-    saveProgress,
-    toast,
-  ])
-
-  const retakeQuiz = useCallback(() => {
-    dispatch({ type: "RESET_QUIZ" })
-    saveProgress({
-      completed: false,
-      currentIndex: 0,
-      answers: {},
-      score: 0,
-    })
-  }, [saveProgress])
-
-  const handleShowResults = useCallback(() => {
-    dispatch({ type: "SHOW_RESULTS" })
-  }, [])
+  const currentQuestion = effectiveQuestions[quizState.currentQuestionIndex] || null
 
   const startQuiz = useCallback(() => {
     dispatch({ type: "START_QUIZ" })
     saveProgress({ started: true, startedAt: new Date().toISOString() })
-  }, [saveProgress])
+    refetch()
+  }, [saveProgress, refetch])
 
-  // Sample quiz preview content - can be enhanced as needed
-  const quizPreview = (
-    <div className="space-y-4 mb-6">
-      <h3 className="text-lg font-semibold">Sample Question Preview</h3>
-      <p>{chapter?.title ? `About ${chapter.title}` : 'What is the primary purpose of this course?'}</p>
-      <div className="space-y-2 opacity-60">
-        <div className="p-3 border rounded-md bg-card/50">
-          {chapter?.title ? `Understanding ${chapter.title}` : 'To teach programming fundamentals'}
-        </div>
-        <div className="p-3 border rounded-md bg-card/50">
-          {chapter?.title ? `Implementing ${chapter.title}` : 'To explore advanced concepts'}
-        </div>
-      </div>
-    </div>
-  );
-  
-  // Fix: Create the quizContent as separate JSX elements, not as a single conditional expression
-  const errorContent = (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardContent className="flex items-center justify-center h-40">
-        <div className="flex items-center space-x-2 text-destructive">
-          <AlertCircle className="w-6 h-6" />
-          <p className="text-lg">Error loading quiz: {(error as Error)?.message || "Please try again later."}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const handleAnswer = (value: string) => {
+    if (!currentQuestion) return
+    dispatch({ type: "SET_ANSWER", questionId: currentQuestion.id, answer: value })
+    saveProgress({ answers: { ...quizState.answers, [currentQuestion.id]: value } })
+  }
 
-  const loadingContent = <QuizSkeleton />;
+  const submitAnswer = () => {
+    const userAnswer = quizState.answers[currentQuestion.id]
+    const isCorrect = userAnswer?.trim() === currentQuestion.answer?.trim()
+    const newScore = isCorrect ? quizState.score + 1 : quizState.score
 
-  const emptyContent = (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardContent className="flex items-center justify-center h-40">
-        <p className="text-muted-foreground text-lg">No quiz available for this chapter.</p>
-      </CardContent>
-    </Card>
-  );
+    if (quizState.currentQuestionIndex < effectiveQuestions.length - 1) {
+      dispatch({ type: "NEXT_QUESTION" })
+      saveProgress({ currentIndex: quizState.currentQuestionIndex + 1 })
+    } else {
+      dispatch({ type: "COMPLETE_QUIZ", score: newScore })
+      saveProgress({ completed: true, score: newScore })
+      toast({ title: "Quiz Complete", description: `You scored ${newScore}/${effectiveQuestions.length}` })
+    }
+  }
 
   const startContent = (
     <Card className="w-full max-w-4xl mx-auto">
-      <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-        <CheckCircle className="w-12 h-12 text-primary mb-4" />
-        <h3 className="text-xl font-semibold mb-2">Chapter Quiz Available</h3>
-        <p className="text-muted-foreground mb-6">Test your knowledge of this chapter with our interactive quiz.</p>
-        <Button onClick={() => dispatch({ type: "START_QUIZ" })} size="lg">
-          Start Quiz
-        </Button>
+      <CardContent className="text-center py-12">
+        <CheckCircle className="w-10 h-10 text-primary mx-auto mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Ready to test your knowledge?</h2>
+        <Button onClick={startQuiz} size="lg">Start Quiz</Button>
       </CardContent>
     </Card>
-  );
+  )
 
-  const activeQuizContent = (
-    <div className="w-full">
-      <Card className="w-full max-w-4xl mx-auto relative overflow-hidden bg-card">
-        {/* Actual quiz content here - customize based on your quiz UI */}
-        <CardHeader>
-          <CardTitle>Quiz in Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Quiz question and options would go here */}
-          {currentQuestion && (
-            <div>
-              <h3 className="text-lg font-medium mb-4">{currentQuestion.question}</h3>
-              {/* Options would be rendered here */}
+  const activeQuizContent = currentQuestion && (
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>{currentQuestion.question}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <RadioGroup
+          value={quizState.answers[currentQuestion.id] || ""}
+          onValueChange={handleAnswer}
+        >
+          {currentQuestion.options.map((opt: string, idx: number) => (
+            <div
+              key={idx}
+              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent transition"
+            >
+              <RadioGroupItem value={opt} id={`option-${idx}`} />
+              <Label htmlFor={`option-${idx}`} className="cursor-pointer">{opt}</Label>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+          ))}
+        </RadioGroup>
+        <Button onClick={submitAnswer}>Submit & Continue</Button>
+      </CardContent>
+    </Card>
+  )
 
-  // Determine which content to show
-  let quizContent;
-  if (isError) {
-    quizContent = errorContent;
-  } else if (isQuizLoading) {
-    quizContent = loadingContent;
-  } else if (!effectiveQuestions || effectiveQuestions.length === 0) {
-    quizContent = emptyContent;
-  } else if (isUserAuthenticated && !quizState.quizStarted) {
-    quizContent = startContent;
-  } else {
-    quizContent = activeQuizContent;
-  }
-  
-  // Use AccessControl to handle access restrictions
+  const errorContent = (
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardContent className="text-red-500 flex items-center gap-2">
+        <AlertCircle className="w-5 h-5" />
+        <p>Error loading quiz: {(error as Error)?.message}</p>
+      </CardContent>
+    </Card>
+  )
+
+  const content = isError
+    ? errorContent
+    : isLoading
+      ? <QuizSkeleton />
+      : !quizState.quizStarted
+        ? startContent
+        : activeQuizContent
+
   return (
     <AccessControl
       hasAccess={hasQuizAccess}
       featureTitle="Premium Quiz Feature"
       showPreview={isPublicCourse}
-      previewContent={isPublicCourse ? quizPreview : undefined}
     >
-      {quizContent}
+      {content}
     </AccessControl>
   )
 }

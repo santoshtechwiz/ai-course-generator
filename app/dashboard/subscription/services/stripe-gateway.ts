@@ -26,10 +26,7 @@ const customerCache = new Map<string, string>()
  * Stripe Payment Gateway implementation
  */
 export class StripeGateway implements PaymentGateway {
-  /**
-   * Create a Stripe checkout session for subscription
-   */
-  async createCheckoutSession(
+  public async createCheckoutSession(
     userId: string,
     planName: string,
     duration: number,
@@ -164,10 +161,7 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Cancel a Stripe subscription
-   */
-  async cancelSubscription(userId: string): Promise<boolean> {
+  public async cancelSubscription(userId: string): Promise<boolean> {
     try {
       logger.info(`Cancelling subscription for user ${userId}`)
 
@@ -227,10 +221,7 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Resume a canceled Stripe subscription
-   */
-  async resumeSubscription(userId: string): Promise<boolean> {
+  public async resumeSubscription(userId: string): Promise<boolean> {
     try {
       logger.info(`Resuming subscription for user ${userId}`)
 
@@ -280,10 +271,7 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Verify the status of a Stripe payment
-   */
-  async verifyPaymentStatus(sessionId: string): Promise<PaymentStatusResult> {
+  public async verifyPaymentStatus(sessionId: string): Promise<PaymentStatusResult> {
     if (!sessionId) {
       return { status: "failed" }
     }
@@ -358,10 +346,7 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Get payment methods for a user
-   */
-  async getPaymentMethods(userId: string): Promise<any[]> {
+  public async getPaymentMethods(userId: string): Promise<any[]> {
     try {
       logger.info(`Fetching payment methods for user ${userId}`)
 
@@ -402,10 +387,7 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Update a subscription to a new plan
-   */
-  async updateSubscription(userId: string, planName: string): Promise<boolean> {
+  public async updateSubscription(userId: string, planName: string): Promise<boolean> {
     try {
       logger.info(`Updating subscription for user ${userId} to plan ${planName}`)
 
@@ -463,10 +445,6 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Process a successful payment
-   * @private
-   */
   private async processSuccessfulPayment(session: Stripe.Checkout.Session): Promise<void> {
     try {
       const userId = session.metadata?.userId
@@ -518,10 +496,6 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Process referral benefits for a successful checkout
-   * @private
-   */
   private async processReferralBenefits(session: any): Promise<void> {
     try {
       const userId = session.metadata?.userId
@@ -652,10 +626,6 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Process a referral code and create necessary records
-   * @private
-   */
   private async processReferralCode(
     userId: string,
     referralCode?: string,
@@ -704,10 +674,6 @@ export class StripeGateway implements PaymentGateway {
     return {}
   }
 
-  /**
-   * Get or create a Stripe customer for a user
-   * @private
-   */
   private async getOrCreateCustomer(user: any, options?: PaymentOptions): Promise<string> {
     // Check cache first
     if (customerCache.has(user.id)) {
@@ -754,10 +720,6 @@ export class StripeGateway implements PaymentGateway {
     }
   }
 
-  /**
-   * Get the subscription item ID for a subscription
-   * @private
-   */
   private async getSubscriptionItemId(subscriptionId: string): Promise<string> {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
       expand: ["items"],
@@ -770,20 +732,12 @@ export class StripeGateway implements PaymentGateway {
     return subscription.items.data[0].id
   }
 
-  /**
-   * Get the price ID for a plan
-   * @private
-   */
   private async getPriceIdForPlan(planName: string): Promise<string | null> {
     // In a real implementation, this would look up the price ID from a database or configuration
     // For now, we'll return a placeholder
     return `price_${planName.toLowerCase()}_monthly`
   }
 
-  /**
-   * Handle Stripe errors with proper logging and error translation
-   * @private
-   */
   private handleStripeError(error: any, operation: string): never {
     if (error.type === "StripeCardError") {
       // Handle card errors (e.g., declined card)
@@ -811,4 +765,92 @@ export class StripeGateway implements PaymentGateway {
       throw new Error("An unexpected error occurred. Please try again.")
     }
   }
+  public async verifyPaymentSuccess(paymentIntentId: string): Promise<boolean> {
+    try {
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId) 
+      if (paymentIntent.status === "succeeded") {
+        logger.info(`Payment succeeded for intent ${paymentIntentId}`)
+        return true
+      } else {
+        logger.warn(`Payment not successful for intent ${paymentIntentId}: ${paymentIntent.status}`)
+        return false
+      }
+    } catch (error) {
+      logger.error(`Error verifying payment success for intent ${paymentIntentId}: ${error instanceof Error ? error.message : String(error)}`)
+      return false
+    } 
+    return false
+  }
+
+  public async getBillingHistory(userId: string): Promise<any[]> {
+    try {
+      const customerId = await this.getCustomerId(userId);
+      if (!customerId) {
+        logger.warn(`No Stripe customer ID found for user ${userId} when fetching billing history`);
+        return [];
+      }
+      const invoices = await stripe.invoices.list({ customer: customerId });
+      return invoices.data;
+    } catch (error) {
+      logger.error(`Error fetching billing history for user ${userId}: ${error instanceof Error ? error.message : String(error)}`)
+      return []
+    }
+  }
+  public async getSubscriptionDetails(userId: string): Promise<any> {
+    try {
+      const subscription = await prisma.userSubscription.findUnique({
+        where: { userId },
+        include: { user: true },
+      })
+
+      if (!subscription) {
+        logger.warn(`No subscription found for user ${userId}`)
+        return null
+      }
+
+      // Fetch the Stripe subscription details
+      if (!subscription.stripeSubscriptionId) {
+        logger.warn(`No Stripe subscription ID found for user ${userId}`)
+        return {
+          ...subscription,
+          stripeSubscription: null,
+        }
+      }
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId, {
+        expand: ["items.data.price.product"],
+      })
+
+      return {
+        ...subscription,
+        stripeSubscription,
+      }
+    } catch (error) {
+      logger.error(`Error fetching subscription details for user ${userId}: ${error instanceof Error ? error.message : String(error)}`)
+      return null
+    }
+  }
+  public async getCustomerId(userId: string): Promise<string | null> {
+    try {
+      const userSubscription = await prisma.userSubscription.findUnique({
+        where: { userId },
+        select: { stripeCustomerId: true },
+      })
+
+      return userSubscription?.stripeCustomerId || null
+    } catch (error) {
+      logger.error(`Error fetching customer ID for user ${userId}: ${error instanceof Error ? error.message : String(error)}`)
+      return null
+    }
+  }
+  public async getCustomerDetails(customerId: string): Promise<any> {
+    try {
+      const customer = await stripe.customers.retrieve(customerId)
+      return customer
+    } catch (error) {
+      logger.error(`Error fetching customer details for ID ${customerId}: ${error instanceof Error ? error.message : String(error)}`)
+      return null
+    }
+  }
 }
+export default StripeGateway
+

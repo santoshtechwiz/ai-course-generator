@@ -13,12 +13,12 @@ import { useRouter } from "next/navigation"
 import type { Session } from "next-auth"
 import { useEffect } from "react"
 import { useAppDispatch } from "@/store/hooks"
-import { loginSuccess, logout as reduxLogout, loginStart, loginFailure } from "@/store/slices/auth-slice"
+import { loginSuccess, logout as reduxLogout, loginStart, loginFailure, AuthUser } from "@/store/slices/auth-slice"
 
 
 
 export interface AuthContextValue {
-  user: any
+  user: AuthUser | null
   token: string | null
   status: "authenticated" | "loading" | "unauthenticated"
   isAuthenticated: boolean

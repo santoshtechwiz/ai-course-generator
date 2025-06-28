@@ -15,10 +15,8 @@ import { logger } from "@/lib/logger"
  * @returns The payment gateway implementation
  */
 export function getPaymentGateway(): PaymentGateway {
-  // Read from environment variable to determine which gateway to use
-  const gatewayProvider = process.env.PAYMENT_GATEWAY_PROVIDER?.toLowerCase() || "stripe"
+  const gatewayProvider: string = process.env.PAYMENT_GATEWAY_PROVIDER?.toLowerCase() || "stripe"
 
-  // Select the appropriate gateway based on configuration
   switch (gatewayProvider) {
     case "stripe":
       return new StripeGateway()
