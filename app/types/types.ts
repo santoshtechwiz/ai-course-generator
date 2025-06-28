@@ -42,6 +42,7 @@ export type {
 // Core type definitions for the AI Learning platform
 
 import { Prisma } from "@prisma/client"
+import { QuizType } from "./quiz-types";
 
 // Simplified progress type for internal use
 export interface VideoProgressState {
@@ -157,4 +158,26 @@ export  interface FlashCard{
 }
 export interface QueryParams {
   [key: string]: string | string[] | undefined;
+}
+
+export interface OpenAIMessage {
+  role: "system" | "user" | "assistant" | "function";
+  content?: string;
+  name?: string;
+  function?: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  description?: string;
+  questions: Array<{
+    id: string;
+    question: string;
+    options: string[];
+    answer: string;
+  }>;
 }

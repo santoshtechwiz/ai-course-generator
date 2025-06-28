@@ -38,7 +38,7 @@ interface Subscription {
 }
 
 type QuizFormData = z.infer<typeof quizSchema> & {
-  userType?: string
+
 }
 
 interface CreateQuizFormProps {
@@ -64,6 +64,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
     title: params?.title || "",
     amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     difficulty: "medium",
+    type: "mcq",
   })
 
   const {
@@ -99,10 +100,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
 
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      // Set userType safely from subscriptionData
-      data.userType = subscriptionData?.subscriptionPlan || "free"
-      // Add quizType to the request payload
-      const response = await axios.post(`/api/quizzes/${quizType || 'game'}`, data)
+        const response = await axios.post(`/api/quizzes/mcq`, data)
       return response.data
     },
     onError: (error: any) => {
@@ -149,7 +147,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
       }
 
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: `/dashboard/${quizType || 'mcq'}` })
+        signIn("credentials", { callbackUrl: `/dashboard/mcq'}` })
         return
       }
 
@@ -175,7 +173,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
         description: "Your quiz has been created.",
       })
 
-      router.push(`/dashboard/${quizType || 'mcq'}/${slug}`)
+      router.push(`/dashboard/mcq/${slug}`)
     } catch (error) {
       // Error is handled in the mutation's onError callback
       setIsLoading(false)

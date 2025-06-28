@@ -2,13 +2,13 @@ import { createQuestions, createUserQuiz, prisma, updateTopicCount, updateUserCr
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import type { MultipleChoiceQuestion, OpenEndedQuestion, QuizType } from "@/app/types/types"
 
 import { getAuthSession } from "@/lib/auth"
 import { quizCreationSchema } from "@/schema/schema"
 import { generateSlug } from "@/lib/utils"
 import NodeCache from "node-cache"
 import axios from "axios"
+import { QuizType } from "@/types/quiz"
 
 const cache = new NodeCache({ stdTTL: 600 }) // Cache for 10 minutes
 
