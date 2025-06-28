@@ -23,8 +23,8 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import OpenEndedQuiz from "./OpenEndedQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
-import { useAuth } from "@/hooks"
-import { useSubscription } from "@/hooks/use-subscription"
+
+import { QuizActions } from "../../components/QuizActions"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -45,6 +45,9 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     const quizStatus = useSelector(selectQuizStatus)
     const isCompleted = useSelector(selectIsQuizComplete)
     const quizType = useSelector(selectQuizType)
+    const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
+    const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
+    const quizTitle = useSelector((state: any) => state.quiz.title) // Assuming title is stored in quiz slice
   
     // Load quiz on mount
     useEffect(() => {
@@ -189,6 +192,16 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     
 
   return (
+      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
+      <QuizActions
+        initialIsFavorite={false}
+        quizSlug={slug}
+
+        userId={userId}
+        quizId={quizId}
+        initialIsPublic={false}
+        ownerId={userId}
+      ></QuizActions>
     <OpenEndedQuiz
       question={formattedQuestion}
       questionNumber={currentQuestionIndex + 1}
@@ -202,5 +215,6 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
       canGoPrevious={canGoPrevious}
       isLastQuestion={isLastQuestion}
     />
+      </div>
   )
 }

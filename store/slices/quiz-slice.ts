@@ -20,6 +20,7 @@ const initialState: QuizState = {
   error: null,
   requiresAuth: false,
   redirectAfterLogin: null,
+  userId: null, // Optional: can be used to track quiz ownership
 }
 
 // -- Thunks --
@@ -231,7 +232,7 @@ const quizSlice = createSlice({
   name: 'quiz',
   initialState,
   reducers: {
-    setQuiz(state, action: PayloadAction<{ slug: string; quizType: QuizType; title: string; questions: QuizQuestion[] }>) {
+    setQuiz(state, action: PayloadAction<{ slug: string; quizType: QuizType; title: string; questions: QuizQuestion[]; userId?: string }>) {
       state.slug = action.payload.slug
       state.quizType = action.payload.quizType
       state.title = action.payload.title
@@ -242,6 +243,7 @@ const quizSlice = createSlice({
       state.isCompleted = false
       state.status = 'succeeded'
       state.error = null
+      state.userId = action.payload.userId ?? null // Set userId if provided
     },
 
     saveAnswer(state, action: PayloadAction<{
@@ -343,7 +345,8 @@ const quizSlice = createSlice({
       state.results = action.payload
       state.isCompleted = true
     }
-  }, extraReducers: (builder) => {
+  }, 
+  extraReducers: (builder) => {
     builder
       .addCase(submitQuiz.pending, (state) => {
         state.status = 'submitting'
@@ -374,6 +377,7 @@ const quizSlice = createSlice({
         state.currentQuestionIndex = 0
         state.isCompleted = false
         state.error = null
+        state.userId = action.payload.userId ?? null // Set userId if present in payload
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         state.status = 'failed'
@@ -423,6 +427,7 @@ export const selectCurrentQuestion = createSelector(
   [selectQuizQuestions, selectCurrentQuestionIndex],
   (questions, index) => questions[index]
 )
+export const selectQuizUserId = (state: RootState) => state.quiz.userId
 
 // -- Reducer Export --
 

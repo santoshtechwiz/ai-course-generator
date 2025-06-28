@@ -10,6 +10,7 @@ import subscriptionReducer from "./slices/subscription-slice"
 import flashcardReducer from "./slices/flashcard-slice"
 import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
+import userReducer from "./slices/user-slice"
 
 // Persist configs
 const authPersistConfig = {
@@ -77,6 +78,7 @@ const rootReducer = combineReducers({
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
+  user: userReducer,
 })
 
 export const store = configureStore({

@@ -54,6 +54,7 @@ export interface QuizState {
   error: string | null
   requiresAuth: boolean // ⇨ used to redirect unauthenticated users
   redirectAfterLogin: string | null // ⇨ where to redirect after auth
+  userId: string | null // ⇨ owner of the quiz, used for sharing
 }
 // Type aliases for better readability
 export type QuizStatus = "idle" | "loading" | "succeeded" | "failed" | "submitting"

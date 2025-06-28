@@ -2,9 +2,9 @@ import { prisma } from "@/lib/db"
 import { QuizType } from "@/types/quiz"
 
 export default async function createQuestions(
-  questions: any[], // we’ll validate inside
+  questions: any[],
   userQuizId: number,
-  type: QuizType, // "mcq" | "code" | "openended"
+  type: QuizType,
 ) {
   if (!Array.isArray(questions) || questions.length === 0) {
     throw new Error("No questions provided.")
@@ -16,7 +16,13 @@ export default async function createQuestions(
         const q = question as any
 
         // Combine correct answer with distractors, then shuffle
-        const allOptions = [q.option1,q.option2,q.option3, q.answer]
+        let allOptions = [q.option1, q.option2, q.option3, q.answer]
+        // Remove duplicates
+        allOptions = Array.from(new Set(allOptions))
+        // Add "None of the above" if not already present
+        if (allOptions.length < 3) {
+          allOptions.push("None of the above")
+        }
         const shuffledOptions = allOptions.sort(() => Math.random() - 0.5)
 
         return {
