@@ -145,4 +145,8 @@ export interface PaymentGateway {
    * @returns Promise resolving to boolean indicating success
    */
   updateSubscription?(userId: string, planName: string): Promise<boolean>
+
+
+
+  getPaymentStatus?(sessionId: string): Promise<PaymentStatusResult>
 }

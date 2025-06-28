@@ -456,26 +456,7 @@ export class SubscriptionService {
     }
   }
 
-  /**
-   * Handle webhook events from payment gateways
-   *
-   * @param provider - The payment gateway provider (e.g., "stripe")
-   * @param payload - The webhook payload
-   * @returns Object with success status
-   */
-  static async handleWebhook(
-    provider: string,
-    payload: any,
-  ): Promise<{ success: boolean }> {
-    try {
-      const paymentGateway = getPaymentGateway() as PaymentGateway
-      await paymentGateway.handleWebhook(payload)
-      return { success: true }
-    } catch (error: any) {
-      logger.error(`Error handling webhook for provider ${provider}:`, error)
-      return { success: false }
-    }
-  }
+ 
 
   /**
    * Create a checkout session for a subscription plan
@@ -527,7 +508,7 @@ export class SubscriptionService {
       }
 
       // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway("stripe")
+      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway
       const billingDetails = await paymentGateway.getBillingDetails(userId)
 
       // Cache the result
@@ -571,6 +552,32 @@ export class SubscriptionService {
     } catch (error: any) {
       logger.error(`Error canceling subscription for user ${userId}:`, error)
       return { success: false, message: "Failed to cancel subscription." }
+    }
+  }
+
+  static async verifyPaymentSuccess(
+    userId: string,
+    sessionId: string
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      if (!userId || !sessionId) {
+        throw new Error("User ID and Session ID are required")
+      }
+
+      // For simplicity, assume Stripe as the payment gateway
+      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway
+      const status = await paymentGateway?.getPaymentStatus(sessionId)
+
+      if (status?.status === "succeeded") {
+        logger.info(`Payment successful for user ${userId} and session ${sessionId}`)
+        return { success: true }
+      } else {
+        logger.warn(`Payment failed for user ${userId} and session ${sessionId}`)
+        return { success: false, message: "Payment failed." }
+      }
+    } catch (error: any) {
+      logger.error(`Error verifying payment status for user ${userId}:`, error)
+      return { success: false, message: "Failed to verify payment status." }
     }
   }
 

@@ -57,6 +57,7 @@ export function PricingPage({
   const [showPromotion, setShowPromotion] = useState(true)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
   const router = useRouter();
+  
   const {
     handleSubscribe: doSubscribe,
     canSubscribeToPlan,
@@ -66,14 +67,14 @@ export function PricingPage({
     onSubscriptionSuccess: (result) => {
       if (result.redirectUrl) {
         router.push(result.redirectUrl);
-        return
+        return;
       }
+      
       toast({
         title: "You're Subscribed!",
         description: result.message || "Plan updated successfully.",
         variant: "default",
       })
-
     },
     onSubscriptionError: (error) => {
       toast({
@@ -86,7 +87,7 @@ export function PricingPage({
   })
 
   const currentPlan = subscriptionData?.subscriptionPlan || "FREE"
-  const normalizedStatus = subscriptionData?.status?.toUpperCase() || "INACTIVE"
+  const normalizedStatus = subscriptionData?.status?.toUpperCase() as SubscriptionStatusType || "INACTIVE"
   const isSubscribed = currentPlan !== "FREE" && normalizedStatus === "ACTIVE"
   const expirationDate = subscriptionData?.expirationDate
     ? new Date(subscriptionData.expirationDate).toLocaleDateString()
@@ -101,21 +102,30 @@ export function PricingPage({
   const handleSubscribe = async (planName: SubscriptionPlanType, duration: number) => {
     setLoading(planName)
     setSubscriptionError(null)
+    
     try {
       const promoArgs = isPromoValid ? { promoCode, promoDiscount } : {}
+      
       if (!isAuthenticated) {
         onUnauthenticatedSubscribe?.(planName, duration, promoArgs.promoCode, promoArgs.promoDiscount)
         localStorage.setItem("pendingSubscription", JSON.stringify({ planName, duration, ...promoArgs }))
+        
         toast({
           title: "Sign In Required",
           description: "Please sign in to subscribe.",
           variant: "destructive",
         })
+        
         window.location.href = "/api/auth/signin"
         return
       }
 
-      const { canSubscribe, reason } = canSubscribeToPlan(currentPlan, planName, normalizedStatus as any)
+      const { canSubscribe, reason } = canSubscribeToPlan(
+        currentPlan, 
+        planName, 
+        normalizedStatus
+      )
+      
       if (!canSubscribe) {
         toast({
           title: "Plan Not Available",
@@ -126,6 +136,13 @@ export function PricingPage({
       }
 
       const result = await doSubscribe(planName, duration)
+      
+      // Handle redirects directly if not handled by callback
+      if (result?.redirectUrl) {
+        router.push(result.redirectUrl);
+        return;
+      }
+
       if (!result.success) {
         toast({
           title: "Subscription Failed",
@@ -148,12 +165,14 @@ export function PricingPage({
       toast({ title: "Missing Code", description: "Enter a promo code.", variant: "destructive" })
       return false
     }
+    
     if (code.toUpperCase() === "AILAUNCH20") {
       setPromoDiscount(20)
       setIsPromoValid(true)
       toast({ title: "Promo Applied", description: "20% discount activated.", variant: "default" })
       return true
     }
+    
     toast({ title: "Invalid Code", description: "Promo code is not valid.", variant: "destructive" })
     return false
   }, [toast])
@@ -171,15 +190,14 @@ export function PricingPage({
   const getDiscountedPrice = useCallback(
     (price: number) => (isPromoValid ? +(price * (1 - promoDiscount / 100)).toFixed(2) : price),
     [isPromoValid, promoDiscount],
-  )
+  );
 
   useEffect(() => {
     if (isAuthenticated && !subscriptionData) {
       dispatch(fetchSubscription())
     }
-  }, [isAuthenticated, subscriptionData, dispatch])
-
-  const tokenUsagePercentage = credits > 0 ? (tokensUsed / credits) * 100 : 0
+  }, [isAuthenticated, subscriptionData, dispatch]);
+    
   const daysUntilExpiration = expirationDate
     ? Math.ceil((new Date(subscriptionData!.expirationDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
@@ -187,6 +205,7 @@ export function PricingPage({
   return (
     <div className="container max-w-6xl space-y-10 px-4 sm:px-6 animate-in fade-in duration-500">
       {!isProd && <DevModeBanner />}
+      
       {subscriptionError && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -285,7 +304,7 @@ export function PricingPage({
         <PlanCards
           plans={SUBSCRIPTION_PLANS}
           currentPlan={currentPlan}
-          subscriptionStatus={normalizedStatus as SubscriptionStatusType}
+          subscriptionStatus={normalizedStatus}
           loading={loading}
           handleSubscribe={handleSubscribe}
           duration={selectedDuration}
@@ -305,14 +324,8 @@ export function PricingPage({
         />
       )}
 
-      <TokenUsageExplanation
-
-      />
-
-      <FeatureComparison
-
-      />
-
+      <TokenUsageExplanation />
+      <FeatureComparison />
       <FAQSection />
 
       <CancellationDialog

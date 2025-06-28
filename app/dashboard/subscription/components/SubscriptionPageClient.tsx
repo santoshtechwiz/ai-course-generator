@@ -26,7 +26,8 @@ import { LoginModal } from "@/app/auth/signin/components/LoginModal"
 import { CancellationDialog } from "./cancellation-dialog"
 import { useMediaQuery } from "@/hooks"
 import TrialModal from "@/components/features/subscription/TrialModal"
-import { SubscriptionPlanType } from "@/types/shared-types"
+import { SubscriptionPlanType } from "@/app/types/subscription"
+
 
 // Lazy load components
 const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: 
