@@ -39,14 +39,14 @@ export async function POST(req: Request) {
             quizType: "openended",
             slug: slug,
             questions: {
-              create: quiz.questions.map(
-                (q: {
-                  question: string
-                  correct_answer: string
-                  hints: string[]
-                  difficulty: string
-                  tags: string[]
-                }) => ({
+              create: (quiz.questions as unknown as {
+                question: string
+                correct_answer: string
+                hints: string[]
+                difficulty: string
+                tags: string[]
+              }[]).map(
+                (q) => ({
                   question: q.question,
                   answer: q.correct_answer,
                   questionType: "openended",

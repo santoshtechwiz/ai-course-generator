@@ -63,7 +63,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       setIsLoading(true)
 
       try {
-        const response = await fetch("/api/generate-quiz", {
+        const response = await fetch("/api/openended", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
