@@ -1,4 +1,4 @@
-import type { OpenEndedQuestion } from "@/app/types/quiz-types"
+import type { OpenEndedQuestion, QuizType } from "@/app/types/quiz-types"
 import { type Prisma, PrismaClient } from "@prisma/client"
 
 // Create a global object to store the Prisma client instance (for Next.js Fast Refresh)
@@ -328,46 +328,7 @@ export async function createUserQuiz(userId: string, title: string, type: string
   }
 }
 
-export async function createQuestions(
-  questions: MultipleChoiceQuestion[] | OpenEndedQuestion[] | CodeChallenge[],
-  userQuizId: number,
-  type: QuizType,
-) {
-  const data = questions.map((question) => {
-    if (type === "mcq") {
-      const mcqQuestion = question as MultipleChoiceQuestion
-      const options = [mcqQuestion.correctAnswer, mcqQuestion.options].sort(() => Math.random() - 0.5)
-      return {
-        question: mcqQuestion.question,
-        answer: mcqQuestion.correctAnswer,
-        options: JSON.stringify(options),
-        userQuizId,
-        questionType: "mcq" as const,
-      }
-    } else if (type === "code") {
-      const codingQuestion = question as CodeChallenge
 
-      return {
-        question: codingQuestion.question,
-        answer: codingQuestion.correctAnswer,
-        options: JSON.stringify(codingQuestion.options),
-        codeSnippet: codingQuestion.codeSnippet === undefined ? null : codingQuestion.codeSnippet,
-        userQuizId,
-        questionType: "code" as const,
-      }
-    } else {
-      const openEndedQuestion = question as OpenEndedQuestion
-      return {
-        question: openEndedQuestion.question,
-        answer: openEndedQuestion.answer,
-        userQuizId,
-        questionType: "openended" as const,
-      }
-    }
-  })
-
-  await prisma.userQuizQuestion.createMany({ data })
-}
 
 export async function updateTopicCount(title: string) {
   return prisma.topicCount.upsert({

@@ -181,3 +181,10 @@ export interface Quiz {
     answer: string;
   }>;
 }
+export interface CodeChallenge {
+  question: string;
+  codeSnippet: string;
+  options: string[];
+  language: string;
+  correctAnswer: string;
+}
