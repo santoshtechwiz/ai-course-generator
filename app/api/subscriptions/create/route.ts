@@ -8,7 +8,7 @@ import { SubscriptionService } from "@/app/dashboard/subscription/services/subsc
 
 // Define validation schema for request body with improved type checking
 const subscriptionSchema = z.object({
-  planName: z.enum(["FREE", "BASIC", "PRO", "ULTIMATE"]),
+  planId: z.enum(["FREE", "BASIC", "PRO", "ULTIMATE"]),
   duration: z.number().int().positive().lte(12),
   referralCode: z.string().optional(),
   promoCode: z.string().optional(),
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
           message: "You cannot change your subscription until your current plan expires",
           errorType: "PLAN_CHANGE_RESTRICTED",
         },
-        { status: 403 },
+        { status: 200 },
       )
     }
 
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       await prisma.pendingSubscription.create({
         data: {
           userId,
-          planId: validatedData.planName,
+          planId: validatedData.planId,
           duration: validatedData.duration,
           referralCode: validatedData.referralCode,
           promoCode: validatedData.promoCode,
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
     try {
       const result = await SubscriptionService.createCheckoutSession(
         userId,
-        validatedData.planName,
+        validatedData.planId,
 
       )
 
