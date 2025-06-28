@@ -67,3 +67,16 @@ export const fetchSubscriptionStatus = async (timeout = 15000) => {
     clearTimeout(id)
   }
 }
+
+export const getAIModel = (userType: string): string => {
+  switch (userType) {
+    case "FREE":
+    case "BASIC":
+      return "gpt-3.5-turbo-1106"
+    case "PRO":
+    case "ULTIMATE":
+      return "gpt-4-1106-preview"
+    default:
+      return "gpt-3.5-turbo-1106"
+  }
+}

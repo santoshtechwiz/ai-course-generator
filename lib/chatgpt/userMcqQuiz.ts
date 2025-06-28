@@ -1,9 +1,12 @@
 import type { OpenAIMessage, Quiz } from "@/app/types/types"
 
 import openai, { generateQuizFlexible } from "./openaiUtils"
+import { getAIModel } from "../utils";
+
+
 
 export const generateMcqForUserInput = async (title: string, amount: number, difficulty = "hard", userType: string) => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "gpt-3.5-turbo-1106"
+  const model = getAIModel(userType);
   const functions = [
     {
       name: "createMCQ",
@@ -59,7 +62,7 @@ export const generateOpenEndedQuiz = async (
   difficulty = "medium",
   userType = "FREE",
 ): Promise<Quiz> => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini"
+   const model = getAIModel(userType);
   const functions = [
     {
       name: "createOpenEndedQuiz",
@@ -133,7 +136,7 @@ export const generateOpenEndedFillIntheBlanks = async (
   amount: number,
   userType = "FREE",
 ): Promise<Quiz> => {
-  const model = userType === "FREE" || userType === "BASIC" ? "gpt-3.5-turbo-1106" : "GPT-4o mini o-mini"
+  const model = getAIModel(userType);
 
   const functions = [
     {
