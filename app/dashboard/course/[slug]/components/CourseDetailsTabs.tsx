@@ -12,19 +12,17 @@ import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsQuiz from "./CourseQuiz"
 import CourseAISummary from "./CourseSummary"
 
-interface AccessLevels {
-  isPremium: boolean
-  isProUser: boolean
-  isBasicUser: boolean
+export interface AccessLevels {
+  isSubscribed: boolean
+ 
   isAuthenticated: boolean
+  isAdmin: boolean
 }
 
 interface CourseDetailsTabsProps {
   course: FullCourseType
   currentChapter?: FullChapterType
-  isAuthenticated?: boolean // Keep for backward compatibility
-  isPremium?: boolean // Keep for backward compatibility
-  isAdmin?: boolean
+  
   accessLevels?: AccessLevels // New prop for standardized access control
   onSeekToBookmark?: (time: number, title?: string) => void
 }
@@ -32,9 +30,7 @@ interface CourseDetailsTabsProps {
 export default function CourseDetailsTabs({
   course,
   currentChapter,
-  isAuthenticated = true, // Default value for backward compatibility
-  isPremium = false, // Default value for backward compatibility
-  isAdmin = false,
+
   accessLevels,
   onSeekToBookmark,
 }: CourseDetailsTabsProps) {
@@ -101,13 +97,6 @@ export default function CourseDetailsTabs({
     [onSeekToBookmark],
   )
 
-  // Use new accessLevels or fall back to the legacy props
-  const finalAccessLevels = accessLevels || {
-    isPremium,
-    isProUser: isPremium, // Assuming premium users have pro access
-    isBasicUser: isAuthenticated, // Assuming authenticated users have basic access
-    isAuthenticated
-  };
 
   // Add a tab for bookmarks, if they don't exist already
   const tabs = [
@@ -148,8 +137,8 @@ export default function CourseDetailsTabs({
               chapterId={currentChapter.id}
               name={currentChapter.title || currentChapter.name || "Chapter Summary"}
               existingSummary={currentChapter.summary || null}
-              hasAccess={finalAccessLevels.isPremium}
-              isAdmin={isAdmin}
+              hasAccess={accessLevels?.isSubscribed}
+              isAdmin={accessLevels?.isAdmin}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -167,8 +156,7 @@ export default function CourseDetailsTabs({
             <CourseDetailsQuiz
               course={course}
               chapter={currentChapter}
-              hasAccess={finalAccessLevels.isPremium}
-              isAuthenticated={finalAccessLevels.isAuthenticated}
+              accessLevels={accessLevels!}
               isPublicCourse={course.isPublic || false}
               chapterId={currentChapter.id.toString()}
             />

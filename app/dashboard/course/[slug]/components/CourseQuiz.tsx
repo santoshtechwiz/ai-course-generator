@@ -12,17 +12,19 @@ import { useToast } from "@/hooks"
 import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
 import { AlertCircle, CheckCircle } from "lucide-react"
+import { cn } from "@/lib/tailwindUtils"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
+import { AccessLevels } from "./CourseDetailsTabs"
+
 
 interface QuizProps {
   chapter: FullChapterType
   course: FullCourseType
-  isPremium?: boolean
+ 
   isPublicCourse: boolean
   chapterId?: string
-  hasAccess?: boolean
-  isAuthenticated?: boolean
+  accessLevels: AccessLevels
 }
 
 interface QuizState {
@@ -113,16 +115,15 @@ const QuizSkeleton = () => (
 export default function CourseDetailsQuiz({
   chapter,
   course,
-  isPremium,
+ 
   isPublicCourse,
   chapterId,
-  hasAccess = false,
-  isAuthenticated = false,
+  accessLevels
 }: QuizProps) {
-  const hasQuizAccess = hasAccess || isPremium || false
+  const hasQuizAccess = accessLevels.isSubscribed||accessLevels.isAuthenticated || accessLevels.isPublic
   const { toast } = useToast()
   const { data: session } = useSession()
-  const isUserAuthenticated = isAuthenticated || !!session
+  const isUserAuthenticated = accessLevels.isAuthenticated || !!session
   const effectiveChapterId = chapterId || chapter?.id?.toString()
 
   const [quizState, dispatch] = useReducer(quizReducer, {
@@ -244,6 +245,11 @@ export default function CourseDetailsQuiz({
     }
   }
 
+  const retakeQuiz = () => {
+    dispatch({ type: "RESET_QUIZ" })
+    saveProgress({ completed: false, currentIndex: 0, answers: {}, score: 0 })
+  }
+
   const startContent = (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="text-center py-12">
@@ -279,6 +285,48 @@ export default function CourseDetailsQuiz({
     </Card>
   )
 
+  const resultsContent = (
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>🎉 Quiz Completed</CardTitle>
+        <p className="text-muted-foreground mt-1">
+          You scored <span className="font-bold">{quizState.score}</span> out of{" "}
+          {effectiveQuestions.length}
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {effectiveQuestions.map((q, index) => {
+          const userAnswer = quizState.answers[q.id]
+          const isCorrect = userAnswer?.trim() === q.answer?.trim()
+          return (
+            <div
+              key={q.id}
+              className={cn(
+                "p-4 rounded-md border",
+                isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/10" : "border-red-500 bg-red-50 dark:bg-red-900/10"
+              )}
+            >
+              <h4 className="font-medium">{index + 1}. {q.question}</h4>
+              <p className="mt-2">
+                <span className="font-semibold">Your answer: </span>
+                <span className={isCorrect ? "text-green-600" : "text-red-600"}>{userAnswer || "No answer"}</span>
+              </p>
+              {!isCorrect && (
+                <p>
+                  <span className="font-semibold">Correct answer: </span>
+                  <span className="text-green-700">{q.answer}</span>
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </CardContent>
+      <CardContent className="text-center">
+        <Button onClick={retakeQuiz}>Retake Quiz</Button>
+      </CardContent>
+    </Card>
+  )
+
   const errorContent = (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="text-red-500 flex items-center gap-2">
@@ -294,7 +342,9 @@ export default function CourseDetailsQuiz({
       ? <QuizSkeleton />
       : !quizState.quizStarted
         ? startContent
-        : activeQuizContent
+        : quizState.quizCompleted
+          ? resultsContent
+          : activeQuizContent
 
   return (
     <AccessControl

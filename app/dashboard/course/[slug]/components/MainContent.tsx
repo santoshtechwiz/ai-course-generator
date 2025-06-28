@@ -10,7 +10,7 @@ import { Play, Lock, User, Award, Badge, ChevronLeft, ChevronRight, Clock } from
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
-import CourseDetailsTabs from "./CourseDetailsTabs"
+import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
 import VideoPlayer from "./video/components/VideoPlayer"
 import VideoNavigationSidebar from "./video/components/VideoNavigationSidebar"
@@ -22,6 +22,7 @@ import { VideoDebug } from "./video/components/VideoDebug"
 import { Card, CardContent } from "@/components/ui/card"
 import { AnimatePresence, motion } from "framer-motion"
 import { AuthUser } from "@/store/slices/auth-slice"
+import { isAdmin } from "@/lib/auth"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -537,14 +538,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   }, [user])
 
   // Determine access levels based on subscription
-  const accessLevels = useMemo(() => {
+  const accessLevels: AccessLevels = useMemo(() => {
     return {
-      isPremium: userSubscription=== "PRO",
-      isProUser: userSubscription === "PRO",
-      isBasicUser: !!userSubscription && ["BASIC", "PRO", "PREMIUM"].includes(userSubscription || ""),
+      isSubscribed: !!userSubscription,
+      isAdmin: !!user?.isAdmin,
       isAuthenticated: !!session,
     }
-  }, [userSubscription, session])
+  }, [userSubscription, session, user])
 
   // Regular content
   const regularContent = (
@@ -662,7 +662,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                 course={course}
                 currentChapter={currentChapter}
                 accessLevels={accessLevels}
-                isAdmin={user?.isAdmin}
+         
                 onSeekToBookmark={handleSeekToBookmark}
               />
             </div>
