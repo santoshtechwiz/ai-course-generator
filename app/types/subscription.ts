@@ -7,7 +7,7 @@ import type { LucideIcon } from "lucide-react"
  */
 
 // Available plan IDs
-export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE" | "PREMIUM" | "ENTERPRISE"
+export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE" 
 
 // Possible subscription lifecycle statuses
 export type SubscriptionStatusType =

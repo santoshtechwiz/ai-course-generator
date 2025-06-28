@@ -1,87 +1,14 @@
-// @ts-nocheck
-/**
- * Subscription Service
- *
- * This service handles all subscription-related operations, including
- * creating subscriptions, managing subscription status, and handling
- * token usage.
- *
- * The service ensures synchronization between:
- * - UserSubscription records (subscription status and details)
- * - TokenTransaction records (history of token/credit changes)
- * - User credits (current balance of available tokens)
- */
+import prisma from "@/lib/db";
+import { logger } from "@/lib/logger";
+import { LRUCache } from "lru-cache";
+import { getPaymentGateway } from "./payment-gateway-factory";
+import { PaymentGateway } from "./payment-gateway-interface";
+import { PromoValidationResult, SubscriptionPlanType } from "@/app/types/subscription";
+import { VALID_PROMO_CODES } from "../components/subscription-plans";
 
-// import { VALID_PROMO_CODES } from "@/app/dashboard/subscription/components/subscription-plans"
-// import type { SubscriptionPlanType, PromoValidationResult } from "@/app/dashboard/subscription/types/subscription"
-// import { prisma } from "@/lib/db"
-// import { getPaymentGateway } from "./payment-gateway-factory"
-// import { logger } from "@/lib/logger" // Fix: use named import instead of default import
-
-// Placeholder imports for compilation
-const VALID_PROMO_CODES = [];
-type SubscriptionPlanType = string;
-type PromoValidationResult = { isValid: boolean; message?: string; planId?: string; discount?: number };
-const prisma = { $transaction: async (cb: any) => cb({ userSubscription: { findUnique: async () => null, update: async () => null, create: async () => null }, user: { findUnique: async () => null, update: async () => null }, tokenTransaction: { findFirst: async () => null, create: async () => null } }) };
-const getPaymentGateway = (provider: string) => ({ handleWebhook: async (payload: any) => {}, createCheckoutSession: async (userId: string, planId: string) => "", getBillingDetails: async (userId: string) => ({}), cancelSubscription: async (userId: string) => {} });
-const logger = { info: (...args: any[]) => console.log(...args), error: (...args: any[]) => console.error(...args), debug: (...args: any[]) => console.log(...args), warn: (...args: any[]) => console.warn(...args) };
-
-// Enhanced cache configuration with LRU (Least Recently Used) logic
-const CACHE_TTL = 10 * 60 * 1000 // 10 minutes cache TTL (increased to reduce database load)
-const MAX_CACHE_SIZE = 1000 // Limit cache size to prevent memory leaks
-
-// Simple LRU cache implementation
-class LRUCache<K, V> {  private cache: Map<K, V> = new Map();
-  private maxSize: number;
-
-  constructor(maxSize: number) {
-    this.maxSize = maxSize;
-  }
-
-  get(key: K): V | undefined {
-    if (!this.cache.has(key)) return undefined;
-    
-    // Access the item, which will refresh its position in the LRU
-    const value = this.cache.get(key);
-    this.cache.delete(key);
-    this.cache.set(key, value!);
-    return value;
-  }
-
-  set(key: K, value: V): void {
-    // Delete key if it already exists
-    if (this.cache.has(key)) {
-      this.cache.delete(key);
-    }
-    
-    // Evict oldest entry if cache is full
-    if (this.cache.size >= this.maxSize) {
-      // Type-safe approach to get the first key
-      const keys = Array.from(this.cache.keys());
-      if (keys.length > 0) {
-        const oldestKey = keys[0];
-        this.cache.delete(oldestKey);
-      }
-    }
-    
-    // Add new entry
-    this.cache.set(key, value);
-  }
-
-  has(key: K): boolean {
-    return this.cache.has(key);
-  }
-
-  delete(key: K): boolean {
-    return this.cache.delete(key);
-  }
-  
-  clear(): void {
-    this.cache.clear();
-  }
-}
-
-const subscriptionCache = new LRUCache<string, { data: any; timestamp: number }>(MAX_CACHE_SIZE);
+const MAX_CACHE_SIZE = 1000; // Set an appropriate cache size
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const subscriptionCache = new LRUCache<string, { data: any; timestamp: number }>({ max: MAX_CACHE_SIZE });
 export class SubscriptionService {
 
   /**
@@ -541,7 +468,7 @@ export class SubscriptionService {
     payload: any,
   ): Promise<{ success: boolean }> {
     try {
-      const paymentGateway = getPaymentGateway(provider)
+      const paymentGateway = getPaymentGateway() as PaymentGateway
       await paymentGateway.handleWebhook(payload)
       return { success: true }
     } catch (error: any) {
@@ -560,13 +487,15 @@ export class SubscriptionService {
   static async createCheckoutSession(
     userId: string,
     planId: string,
+    duration: number = 12, // Default to 12 months if not specified
+    options?: any // Accept options for promo/referral
   ): Promise<{ success: boolean; url?: string; message?: string }> {
     try {
       // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway("stripe")
-      const checkoutUrl = await paymentGateway.createCheckoutSession(userId, planId)
-      console.log(`Checkout URL created for user ${userId} and plan ${planId}: ${checkoutUrl}`);
-      return { success: true, url: checkoutUrl }
+      const paymentGateway = getPaymentGateway() as PaymentGateway
+      const checkoutResult = await paymentGateway.createCheckoutSession(userId, planId, duration, options)
+      console.log(`Checkout URL created for user ${userId} and plan ${planId}: ${checkoutResult.url}`);
+      return { success: true, url: checkoutResult.url }
     } catch (error: any) {
       logger.error(
         `Error creating checkout session for user ${userId} and plan ${planId}:`,

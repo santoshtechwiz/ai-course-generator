@@ -29,7 +29,8 @@ import TrialModal from "@/components/features/subscription/TrialModal"
 import { SubscriptionPlanType } from "@/types/shared-types"
 
 // Lazy load components
-const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: mod.PricingPage })))
+const PricingPage = lazy(() => import("./PricingPage").then((mod) => ({ default: 
+  mod.PricingPage })))
 const StripeSecureCheckout = lazy(() =>
   import("./StripeSecureCheckout").then((mod) => ({ default: mod.StripeSecureCheckout })),
 )

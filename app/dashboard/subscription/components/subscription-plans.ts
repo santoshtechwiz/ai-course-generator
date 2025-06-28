@@ -11,7 +11,7 @@ import type {
   FAQItem,
   SubscriptionPlan,
   FeatureAvailability,
-} from "@/app/dashboard/subscription/types/subscription"
+} from "@/app/types/subscription"
 import { CreditCard, Zap, Rocket, Crown } from "lucide-react"
 
 // First, let's examine the current structure of features in the subscription plans

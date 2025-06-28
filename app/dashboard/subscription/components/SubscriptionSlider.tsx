@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { Lock, Unlock } from "lucide-react"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
-import type { SubscriptionPlanType } from "@/app/dashboard/subscription/types/subscription"
+import type { SubscriptionPlanType } from "@/app/types/subscription"
 import { useAppSelector } from "@/store"
 import { selectSubscription } from "@/store/slices/subscription-slice"
 

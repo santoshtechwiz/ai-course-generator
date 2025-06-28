@@ -11,10 +11,11 @@ import {
   selectSubscriptionPlan,
   selectIsCancelled,
 } from "@/store/slices/subscription-slice"
-import type { SubscriptionStatusType, SubscriptionDetails } from "@/types/shared-types"
+
 import { useAuth } from "./use-auth"
 import { useSelector } from "react-redux"
 import { selectUser } from "@/store/slices/auth-slice"
+import { SubscriptionDetails, SubscriptionResult, SubscriptionStatusType } from "@/app/types/subscription"
 
 // Add missing UseSubscriptionOptions type
 export type UseSubscriptionOptions = {
@@ -28,10 +29,10 @@ export type UseSubscriptionOptions = {
 const REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes - increased to reduce API calls
 
 export function useSubscription(options: UseSubscriptionOptions = {}) {
-  const { 
-    allowPlanChanges = false, 
-    allowDowngrades = false, 
-    onSubscriptionSuccess, 
+  const {
+    allowPlanChanges = false,
+    allowDowngrades = false,
+    onSubscriptionSuccess,
     onSubscriptionError,
     skipInitialFetch = false
   } = options
@@ -62,9 +63,9 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
   }, [dispatch, onSubscriptionSuccess, onSubscriptionError])
   useEffect(() => {
     // Skip the initial fetch if requested or if we already have data
-    const shouldSkipInitialFetch = skipInitialFetch || 
-                                (subscriptionData !== null && !isInitialized);
-    
+    const shouldSkipInitialFetch = skipInitialFetch ||
+      (subscriptionData !== null && !isInitialized);
+
     if (!isInitialized && !shouldSkipInitialFetch) {
       refreshSubscription()
       setIsInitialized(true)
@@ -86,25 +87,51 @@ export function useSubscription(options: UseSubscriptionOptions = {}) {
 
   // Memoize callbacks to prevent unnecessary re-renders
   const handleSubscribe = useCallback(
-    async (planId?: string) => {
+    async (planId?: string, duration?: number): Promise<SubscriptionResult> => {
       try {
-        const response = await fetch("/api/subscribe", {
+        const response = await fetch("/api/subscriptions/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ planId }),
+          body: JSON.stringify({ planId, duration }),
         })
 
         const result = await response.json()
 
-        if (result.redirectUrl) {
-          window.location.href = result.redirectUrl
-        } else {
-          onSubscriptionSuccess?.(result)
+        if (!response.ok) {
+          const errorResult: SubscriptionResult = {
+            success: false,
+            message: result.message || "Subscription failed",
+            error: result.errorType || "UNKNOWN",
+          }
+          onSubscriptionError?.(errorResult)
+          return errorResult
         }
+
+        // Use result.url as redirectUrl for compatibility
+        if (result.url) {
+          return {
+            success: true,
+            redirectUrl: result.url,
+          }
+        }
+
+        const successResult: SubscriptionResult = {
+          success: true,
+          message: result.message || "Subscription successful",
+        }
+
+        onSubscriptionSuccess?.(successResult)
+        return successResult
       } catch (error: any) {
-        onSubscriptionError?.(error)
+        const errorResult: SubscriptionResult = {
+          success: false,
+          message: error?.message || "Network error",
+          error: "NETWORK",
+        }
+        onSubscriptionError?.(errorResult)
+        return errorResult
       }
     },
     [onSubscriptionSuccess, onSubscriptionError],
