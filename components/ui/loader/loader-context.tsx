@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
-import { CourseAILoader, type LoaderProps } from "./loader"
+import { CourseAILoader, type LoaderProps } from "./courseai-loader"
 
 interface LoaderContextType {
   showLoader: (options?: Partial<LoaderProps>) => void

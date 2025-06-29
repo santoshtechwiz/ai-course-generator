@@ -3,7 +3,7 @@
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Clock, Target, TrendingUp, Zap, Award, Flame } from "lucide-react"
-import { LoaderComponent } from "@/components/ui/loader/loader"
+import { LoaderComponent } from "@/components/ui/loader/courseai-loader"
 
 interface QuizProgressProps {
   currentQuestionIndex: number

@@ -33,7 +33,7 @@ import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import { useAuth } from "@/hooks/use-auth"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
-import { Loader } from "@/components/ui/loader/index"
+import { Loader, MinimalLoader } from "@/components/ui/loader/index"
 
 interface FlashcardQuizWrapperProps {
   slug: string
@@ -156,7 +156,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   // Loading Skeletons
   if (quizStatus === "loading" || !isInitialized) {
     return (
-      <Loader context="quiz" className="w-8 h-8 mx-auto mt-10" />
+        <MinimalLoader context="quiz" size="sm" />
     )
   }
 

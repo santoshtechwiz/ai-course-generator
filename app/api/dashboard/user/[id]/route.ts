@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
     const url = new URL(request.url)
@@ -13,15 +13,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
+    const { id } = await params
     // Fix: Allow users to access their own data OR admins to access any user data
-    if (session.user.id !== params.id && session.user.isAdmin !== true) {
-      return NextResponse.json({ 
-        error: "Forbidden: You can only access your own dashboard data" 
+    if (session.user.id !== id && session.user.isAdmin !== true) {
+      return NextResponse.json({
+        error: "Forbidden: You can only access your own dashboard data"
       }, { status: 403 })
     }
 
-    const userData = await getUserData(params.id)
+    const userData = await getUserData(id)
 
     if (!userData) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })

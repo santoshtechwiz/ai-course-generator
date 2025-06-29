@@ -20,7 +20,9 @@ import {
 } from '@/store/slices/quiz-slice'
 
 import type { AppDispatch } from '@/store'
-import type { QuizType } from '@/types/quiz'
+import { QuizType } from '@/app/types/quiz-types'
+import { FullPageLoader } from '@/components/ui/loader/index'
+
 
 interface Props {
   slug: string
@@ -96,7 +98,12 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   }, [quizResults, slug])
 
 const viewState = useMemo(() => {
-  if (isLoading || !isInitialized) return 'loading';
+  if (isLoading || !isInitialized) return    <FullPageLoader
+            context="generating"
+            message="AI is  generating your personalized quiz results"
+            subMessage="Crafting personalized content with advanced AI technology"
+            showSparkles={true}
+          />
 
   // If results exist but user is NOT authenticated, force sign-in
   if (hasResults && !isAuthenticated) return 'show_signin';
