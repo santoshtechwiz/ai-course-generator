@@ -8,20 +8,25 @@ import { generateOpenEndedQuiz } from "@/lib/chatgpt/userMcqQuiz"
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession()
-    const { topic: title, questionCount } = await req.json()
+    const { topic: title, amount } = await req.json()
     const userId = session?.user.id
 
     if (!userId) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
-    const creditDeduction = questionCount > 5 ? 2 : 1
+    const creditDeduction = amount > 5 ? 2 : 1
 
     if (session.user.credits < creditDeduction) {
       return { error: "Insufficient credits", status: 403 }
     }
 
-    const quiz = await generateOpenEndedQuiz(title, questionCount)
-    const slug = generateSlug(title)
+    const quiz = await generateOpenEndedQuiz(title, amount)
+    let slug = generateSlug(title)
+    let suffix = 1
+    // Ensure slug uniqueness
+    while (await prisma.userQuiz.findUnique({ where: { slug } })) {
+      slug = `${generateSlug(title)}-${suffix++}`
+    }
 
     // Increased transaction timeout to 60 seconds (60000ms)
     const userQuiz = await prisma.$transaction(
