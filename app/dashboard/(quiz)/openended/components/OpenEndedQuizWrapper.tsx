@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import OpenEndedQuiz from "./OpenEndedQuiz"
-import { useLoader } from "@/components/ui/loader/loader-context"
+
 
 import { QuizActions } from "../../components/QuizActions"
 import { Loader } from "@/components/ui/loader/index"
@@ -35,7 +35,7 @@ interface OpenEndedQuizWrapperProps {
 export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapperProps) {
     const router = useRouter()
     const dispatch = useDispatch<AppDispatch>()
-    const enhancedLoader = useLoader()
+
     const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const [error, setError] = useState<string | null>(null)
   
@@ -119,16 +119,14 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     // Submit quiz and navigate to results
     const handleSubmitQuiz = useCallback(async () => {
       try {
-        enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
-        await dispatch(submitQuiz()).unwrap()
+           await dispatch(submitQuiz()).unwrap()
         toast.success("Quiz submitted successfully!")
         router.push(`/dashboard/openended/${slug}/results`)
       } catch (err) {
         console.error("Error submitting quiz:", err)
         toast.error("Failed to submit quiz. Please try again.")
-        enhancedLoader.hideLoader()
-      }
-    }, [dispatch, enhancedLoader, slug, router])
+        }
+    }, [dispatch, slug, router])
   
     // Loading & error states
     const isLoading = quizStatus === "loading" || quizStatus === "idle"

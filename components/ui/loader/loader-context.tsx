@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
-import { Loader, type LoaderProps } from "./loader"
+import { CourseAILoader, type LoaderProps } from "./loader"
 
 interface LoaderContextType {
   showLoader: (options?: Partial<LoaderProps>) => void
@@ -115,7 +115,7 @@ export function LoaderProvider({ children, defaultOptions = {} }: LoaderProvider
   return (
     <LoaderContext.Provider value={{ showLoader, hideLoader, updateLoader, isLoading, loaderId }}>
       {children}
-      {isLoading && <Loader isLoading={isLoading} {...options} />}
+      {isLoading && <CourseAILoader isLoading={isLoading} {...options} />}
     </LoaderContext.Provider>
   )
 }
