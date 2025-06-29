@@ -25,7 +25,7 @@ const openEndedQuizSchema = z.object({
     .string()
     .min(3, "Topic must be at least 3 characters long")
     .max(100, "Topic must be at most 100 characters long"),
-  questionCount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
+  amount: z.number().min(1, "At least 1 question is required").max(15, "Maximum 20 questions allowed"),
 })
 
 type OpenEndedQuizFormData = z.infer<typeof openEndedQuizSchema>
@@ -52,7 +52,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
     resolver: zodResolver(openEndedQuizSchema),
     defaultValues: {
       topic: params?.topic || "",
-      questionCount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
+      amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
     },
     mode: "onChange",
   })
@@ -63,7 +63,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       setIsLoading(true)
 
       try {
-        const response = await fetch("/api/openended", {
+        const response = await fetch("/api/quizzes/openended", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -92,7 +92,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const onSubmit = handleSubmit(generateQuiz)
 
   const topic = watch("topic")
-  const questionCount = watch("questionCount")
+  const amount = watch("amount")
 
   const isDisabled = useMemo(() => isLoading || credits < 1 || !isValid, [isLoading, credits, isValid])
 
@@ -151,20 +151,20 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="questionCount" className="text-sm font-medium flex justify-between items-center">
+              <Label htmlFor="amount" className="text-sm font-medium flex justify-between items-center">
                 <span>Number of Questions</span>
                 <motion.span
                   className="text-xl font-bold text-primary tabular-nums"
-                  key={questionCount}
+                  key={amount}
                   initial={{ scale: 1.2, color: "#00ff00" }}
                   animate={{ scale: 1, color: "var(--primary)" }}
                   transition={{ type: "spring", stiffness: 300, damping: 10 }}
                 >
-                  {questionCount}
+                  {amount}
                 </motion.span>
               </Label>
               <Controller
-                name="questionCount"
+                name="amount"
                 control={control}
                 render={({ field }) => (
                   <SubscriptionSlider
@@ -174,7 +174,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                   />
                 )}
               />
-              {errors.questionCount && <p className="text-sm text-destructive">{errors.questionCount.message}</p>}
+              {errors.amount && <p className="text-sm text-destructive">{errors.amount.message}</p>}
             </motion.div>
 
             <motion.div
