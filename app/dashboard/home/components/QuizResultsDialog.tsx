@@ -32,7 +32,7 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
 
   const openEndedQuestions = attempt.attemptQuestions.filter((q) => attempt.userQuiz?.quizType === "openended")
 
-  const fillBlanksQuestions = attempt.attemptQuestions.filter((q) => attempt.userQuiz?.quizType === "fill-blanks")
+  const fillBlanksQuestions = attempt.attemptQuestions.filter((q) => attempt.userQuiz?.quizType === "blanks")
 
   const codeQuestions = attempt.attemptQuestions.filter((q) => attempt.userQuiz?.quizType === "code")
 
@@ -87,7 +87,7 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
             <TabsList className="mb-4">
               {mcqQuestions.length > 0 && <TabsTrigger value="mcq">Multiple Choice</TabsTrigger>}
               {openEndedQuestions.length > 0 && <TabsTrigger value="openended">Open Ended</TabsTrigger>}
-              {fillBlanksQuestions.length > 0 && <TabsTrigger value="fill-blanks">Fill in Blanks</TabsTrigger>}
+              {fillBlanksQuestions.length > 0 && <TabsTrigger value="blanks">Fill in Blanks</TabsTrigger>}
               {codeQuestions.length > 0 && <TabsTrigger value="code">Code</TabsTrigger>}
               {mcqQuestions.length === 0 &&
                 openEndedQuestions.length === 0 &&
@@ -110,8 +110,8 @@ export default function QuizResultsDialog({ attempt, open, onClose }: QuizResult
                 )}
 
                 {fillBlanksQuestions.length > 0 && (
-                  <TabsContent value="fill-blanks" className="mt-0">
-                    <QuestionList questions={fillBlanksQuestions} attempt={attempt} type="fill-blanks" />
+                  <TabsContent value="blanks" className="mt-0">
+                    <QuestionList questions={fillBlanksQuestions} attempt={attempt} type="blanks" />
                   </TabsContent>
                 )}
 

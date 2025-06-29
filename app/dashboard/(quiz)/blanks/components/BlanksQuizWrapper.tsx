@@ -202,6 +202,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         ownerId={userId}
       ></QuizActions>
       <BlanksQuiz
+        key={formattedQuestion.id} // ✅ forces component reset per question
         question={formattedQuestion}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
@@ -214,6 +215,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         canGoPrevious={canGoPrevious}
         isLastQuestion={isLastQuestion}
       />
+
     </div>
   )
 }

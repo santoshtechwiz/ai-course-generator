@@ -80,7 +80,7 @@ export function useRandomQuizzes(count: number = 5) {
 
   // Generate fallback quizzes for testing or when API fails
   const generateFallbackQuizzes = (count: number): RandomQuiz[] => {
-    const types = ["mcq", "fill-blanks", "code", "flashcard", "openended"]
+    const types = ["mcq", "blanks", "code", "flashcard", "openended"]
     const difficulties = ["Easy", "Medium", "Hard"]
     const topics = ["JavaScript Basics", "React Hooks", "CSS Grid Layout", "Python Functions", "TypeScript Interfaces"]
     

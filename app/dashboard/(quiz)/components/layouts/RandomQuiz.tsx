@@ -34,7 +34,7 @@ import type React from "react"
 
 // Enhanced color schemes for different quiz types
 const quizTypeColors = {
-  "fill-blanks": {
+  "blanks": {
     badge: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 shadow-lg shadow-blue-500/25",
     icon: "text-blue-500",
     pattern: "text-blue-400",
@@ -95,7 +95,7 @@ const quizTypeIcons = {
 }
 
 const quizTypeLabels = {
-  "fill-blanks": "Fill Blanks",
+  "blanks": "Fill Blanks",
   flashcard: "Flashcards",
   openended: "Open Ended",
   code: "Code Quiz",
@@ -107,7 +107,7 @@ const QuizBackgroundPattern: React.FC<{ quizType: string }> = ({ quizType }) => 
   const colorScheme = quizTypeColors[quizType as keyof typeof quizTypeColors] || quizTypeColors.mcq
 
   const patterns: Record<string, React.ReactNode> = {
-    "fill-blanks": (
+    "blanks": (
       <g>
         <defs>
           <linearGradient id="fillBlanksGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -633,7 +633,7 @@ export const RandomQuiz: React.FC = () => {
   const quizTypes = useMemo(
     () => [
       { key: "openended", label: "Open Ended", icon: BookOpen, shortLabel: "Open" },
-      { key: "fill-blanks", label: "Fill Blanks", icon: PenTool, shortLabel: "Blanks" },
+      { key: "blanks", label: "Fill Blanks", icon: PenTool, shortLabel: "Blanks" },
       { key: "flashcard", label: "Flashcards", icon: StickyNote, shortLabel: "Flash" },
       { key: "code", label: "Code Quiz", icon: Code2, shortLabel: "Code" },
       { key: "mcq", label: "Multiple Choice", icon: Brain, shortLabel: "MCQ" },

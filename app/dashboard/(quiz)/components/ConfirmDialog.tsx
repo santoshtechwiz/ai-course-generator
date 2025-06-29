@@ -1,34 +1,65 @@
 "use client"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 
-interface ConfirmDialogProps {
-  isOpen: boolean
-  onConfirm: () => void
-  onCancel: () => void
+import * as React from "react"
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+
+export interface ConfirmDialogProps {
+  trigger: React.ReactNode
+  onConfirm: () => void | Promise<void>
+  title?: string
+  description?: string
+  confirmText?: string
+  cancelText?: string
+  children?: React.ReactNode
 }
 
-export function ConfirmDialog({ isOpen, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  trigger,
+  onConfirm,
+  title = "Are you sure?",
+  description,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  children,
+}: ConfirmDialogProps) {
+  const [open, setOpen] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+
+  const handleConfirm = async () => {
+    setLoading(true)
+    try {
+      await onConfirm()
+      setOpen(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <AlertDialog open={isOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to create this quiz?</AlertDialogTitle>
-          <AlertDialogDescription>This action will use one of your credits.</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Create Quiz</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        {children || (description && <p className="text-sm text-muted-foreground">{description}</p>)}
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+            {cancelText}
+          </Button>
+          <Button variant="destructive" onClick={handleConfirm} disabled={loading}>
+            {loading ? "Processing..." : confirmText}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

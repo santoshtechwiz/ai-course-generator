@@ -217,7 +217,7 @@ function validateAnswersFormat(
 
 // Optimize the calculatePercentageScore function
 function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
-  // For open-ended and fill-blanks quizzes, the score is already a percentage
+  // For open-ended and blanks quizzes, the score is already a percentage
   if (type === "openended" || type === "blanks") {
     // Ensure the score is within 0-100 range
     return Math.min(100, Math.max(0, score))

@@ -34,7 +34,7 @@ function getQuizTypeDescription(quizType: QuizType): string {
   const descriptions = {
     mcq: "multiple-choice questions",
     openended: "open-ended questions",
-    "fill-blanks": "fill-in-the-blank exercises",
+    "blanks": "fill-in-the-blank exercises",
     code: "coding challenges",
   }
   return descriptions[quizType] || "interactive questions"

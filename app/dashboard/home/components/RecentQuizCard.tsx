@@ -20,7 +20,7 @@ const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProp
         return "Multiple Choice"
       case "openended":
         return "Open Ended"
-      case "fill-blanks":
+      case "blanks":
         return "Fill in the Blanks"
       case "code":
         return "Code"
@@ -35,7 +35,7 @@ const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProp
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
       case "openended":
         return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-      case "fill-blanks":
+      case "blanks":
         return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
       case "code":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
@@ -50,7 +50,7 @@ const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProp
         return "mcq"
       case "openended":
         return "openended"
-      case "fill-blanks":
+      case "blanks":
         return "blanks"
       case "code":
         return "code"
