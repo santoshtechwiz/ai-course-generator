@@ -97,23 +97,23 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     return quizResults?.slug === slug && typeof quizResults?.percentage === 'number'
   }, [quizResults, slug])
 
-const viewState = useMemo(() => {
-  if (isLoading || !isInitialized) return    <FullPageLoader
-            context="generating"
-            message="AI is  generating your personalized quiz results"
-            subMessage="Crafting personalized content with advanced AI technology"
-            showSparkles={true}
-          />
+  const viewState = useMemo(() => {
+    if (isLoading || !isInitialized) return <FullPageLoader
+      context="generating"
+      message="AI is  generating your personalized quiz results"
+      subMessage="Crafting personalized content with advanced AI technology"
+      showSparkles={true}
+    />
 
-  // If results exist but user is NOT authenticated, force sign-in
-  if (hasResults && !isAuthenticated) return 'show_signin';
+    // If results exist but user is NOT authenticated, force sign-in
+    if (hasResults && !isAuthenticated) return 'show_signin';
 
-  // Only show results when both are true
-  if (hasResults && isAuthenticated) return 'show_results';
+    // Only show results when both are true
+    if (hasResults && isAuthenticated) return 'show_results';
 
-  if (error) return 'error';
-  return 'no_results';
-}, [isLoading, isInitialized, hasResults, isAuthenticated, error]);
+    if (error) return 'error';
+    return 'no_results';
+  }, [isLoading, isInitialized, hasResults, isAuthenticated, error]);
 
 
   const handleRetake = () => {
@@ -166,10 +166,10 @@ const viewState = useMemo(() => {
             previewData={
               quizResults
                 ? {
-                    percentage: quizResults.percentage || 0,
-                    score: quizResults.score || 0,
-                    maxScore: quizResults.maxScore || 0,
-                  }
+                  percentage: quizResults.percentage || 0,
+                  score: quizResults.score || 0,
+                  maxScore: quizResults.maxScore || 0,
+                }
                 : undefined
             }
           />
