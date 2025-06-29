@@ -2,11 +2,23 @@
 
 import React, { useMemo } from "react"
 import { useMediaQuery } from "@/hooks"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { RandomQuiz } from "./layouts/RandomQuiz"
-import { HelpCircle } from "lucide-react"
+import { HelpCircle, TextQuote } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { motion } from "framer-motion"
 
 interface QuizCreateLayoutProps {
   children: React.ReactNode
@@ -42,23 +54,29 @@ export function QuizCreateLayout({
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Main content */}
         <div className="flex-1 border-r">
-          <div className="container py-6 space-y-6 max-w-4xl">
-            {/* Page title and description */}
-            <div className="flex flex-col space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-              <p className="text-muted-foreground">{description}</p>
-            </div>
+          <div className="container py-6 max-w-4xl space-y-6">
+            {/* Quiz Card */}
+            <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300">
+              {/* Hero Header */}
+              <CardHeader className="bg-primary/5 border-b border-border/60 pb-6 relative">
+                <div className="flex justify-center mb-4">
+                  <motion.div
+                    className="p-3 bg-primary/10 rounded-xl"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <TextQuote className="w-8 h-8 text-primary" />
+                  </motion.div>
+                </div>
+                <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
+                  {title} Quiz
+                </CardTitle>
+                <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
+                  {description}
+                </p>
 
-            {/* Quiz Form */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Create {title}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
-                  </div>
-
-                  {helpText && (
+                {helpText && (
+                  <div className="absolute top-6 right-6">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -72,13 +90,14 @@ export function QuizCreateLayout({
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  )}
-                </div>
+                  </div>
+                )}
               </CardHeader>
 
-              <CardContent>
-                {children}
-              </CardContent>
+           
+
+              {/* Form Content */}
+              <CardContent>{children}</CardContent>
             </Card>
           </div>
         </div>

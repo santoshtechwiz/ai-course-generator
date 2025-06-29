@@ -2,13 +2,12 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks"
 import { useMutation } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 
-import { TextQuote, HelpCircle, Timer, Sparkles, Check } from "lucide-react"
+import { TextQuote, HelpCircle, Timer, Sparkles, Check, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -23,6 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 import { blanksQuizSchema } from "@/schema/schema"
+import CourseAILoader from "@/components/ui/loader"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -41,14 +41,11 @@ interface BlankQuizFormProps {
   params?: QueryParams
 }
 
-
-
 export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, params }: BlankQuizFormProps) {
   const router = useRouter()
-  const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
 
   const [formData, setFormData] = usePersistentState<BlankQuizFormData>("blankQuizFormData", {
     title: params?.title || "",
@@ -70,7 +67,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   } = useForm<BlankQuizFormData>({
     resolver: zodResolver(blanksQuizSchema),
     defaultValues: formData,
-    mode: "all", // Changed from "onChange" to "all" for better validation
+    mode: "all",
   })
 
   React.useEffect(() => {
@@ -101,17 +98,12 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   const { mutateAsync: createBlankQuizMutation } = useMutation({
     mutationFn: async (data: BlankQuizFormData) => {
-      
       const response = await axios.post("/api/blanks", data)
       return response.data
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating blanks quiz:", error)
-      toast({
-        title: "Error",
-        description: "Failed to create fill-in-the-blanks quiz. Please try again.",
-        variant: "destructive",
-      })
+      setSubmitError(error?.response?.data?.message || "Failed to create fill-in-the-blanks quiz. Please try again.")
     },
   })
 
@@ -120,19 +112,15 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       if (isLoading) return
 
       if (!data.title || !data.amount || !data.difficulty || !data.topic) {
-        toast({
-          title: "Validation Error",
-          description: "Please fill in all required fields",
-          variant: "destructive",
-        })
+        setSubmitError("Please fill in all required fields")
         return
       }
 
-
+      setSubmitError(null)
       setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn, toast],
+    [isLoading],
   )
 
   const handleConfirm = React.useCallback(async () => {
@@ -151,18 +139,13 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
       if (!userQuizId) throw new Error("Blanks Quiz ID not found")
 
-      toast({
-        title: "Success!",
-        description: "Your fill-in-the-blanks quiz has been created.",
-      })
-
       router.push(`/dashboard/blanks/${response?.slug}`)
     } catch (error) {
       // Error is handled in the mutation's onError callback
     } finally {
       setIsLoading(false)
     }
-  }, [createBlankQuizMutation, watch, toast, router])
+  }, [createBlankQuizMutation, watch, router])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -205,6 +188,17 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
     return Math.min((credits / maxCreditDisplay) * 100, 100);
   }, [credits]);
 
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6">
+        <CourseAILoader 
+          isLoading={true} 
+          message="Creating your fill-in-the-blanks quiz..." 
+        />
+      </div>
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -213,25 +207,17 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       className="w-full max-w-4xl mx-auto p-6 space-y-8"
     >
       <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300">
-        <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
-          <div className="flex justify-center mb-4">
-            <motion.div
-              className="p-3 bg-primary/10 rounded-xl"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <TextQuote className="w-8 h-8 text-primary" />
-            </motion.div>
-          </div>
-          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
-            Create Fill-in-the-Blanks Quiz
-          </CardTitle>
-          <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
-            Test your knowledge by filling in the missing words or phrases
-          </p>
-        </CardHeader>
+  
 
         <CardContent className="space-y-6 pt-6">
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <motion.div
               className="space-y-4"
@@ -240,7 +226,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.2 }}
             >
               <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
-                Title
+                Title *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -256,9 +242,14 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 <Input
                   id="title"
                   placeholder="Enter the quiz title"
-                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all pr-10"
+                  className={cn(
+                    "w-full p-3 h-12 border border-input rounded-md transition-all pr-10",
+                    "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
+                    errors.title ? "border-red-300 focus-visible:ring-red-300" : ""
+                  )}
                   {...register("title")}
                   aria-describedby="title-description"
+                  aria-invalid={errors.title ? "true" : "false"}
                 />
                 <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               </div>
@@ -269,6 +260,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   exit={{ opacity: 0, height: 0 }}
                   className="text-sm text-destructive mt-1"
                   id="title-error"
+                  role="alert"
                 >
                   {errors.title.message}
                 </motion.p>
@@ -285,7 +277,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.3 }}
             >
               <Label htmlFor="topic" className="text-base font-medium text-foreground flex items-center gap-2">
-                Topic
+                Topic *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -304,7 +296,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                     <Badge
                       key={suggestedTopic}
                       variant={topic === suggestedTopic ? "default" : "outline"}
-                      className="cursor-pointer"
+                      className="cursor-pointer transition-all duration-200 hover:shadow-sm"
                       onClick={() => setValue("topic", suggestedTopic)}
                     >
                       {suggestedTopic}
@@ -315,8 +307,13 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 <Input
                   id="topic"
                   placeholder="Enter a topic or choose from above"
-                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
+                  className={cn(
+                    "w-full p-3 h-12 border border-input rounded-md transition-all",
+                    "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
+                    errors.topic ? "border-red-300 focus-visible:ring-red-300" : ""
+                  )}
                   {...register("topic")}
+                  aria-invalid={errors.topic ? "true" : "false"}
                 />
               </div>
 
@@ -326,6 +323,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className="text-sm text-destructive mt-1"
+                  role="alert"
                 >
                   {errors.topic.message}
                 </motion.p>
@@ -385,6 +383,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className="text-sm text-destructive mt-1"
+                  role="alert"
                 >
                   {errors.amount.message}
                 </motion.p>
@@ -403,7 +402,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.5 }}
             >
               <Label className="text-base font-medium text-foreground flex items-center gap-2">
-                Difficulty
+                Difficulty *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -422,8 +421,9 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                     type="button"
                     variant={difficulty === level.value ? "default" : "outline"}
                     className={cn(
-                      "capitalize w-full h-12 font-medium transition-all",
+                      "capitalize w-full h-12 font-medium transition-all duration-200",
                       difficulty === level.value ? "border-primary shadow-sm" : "hover:border-primary/50",
+                      "focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     )}
                     onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
                     aria-pressed={difficulty === level.value}
@@ -480,7 +480,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 isLoading={isLoading}
                 hasCredits={credits > 0}
                 loadingLabel="Generating Quiz..."
-                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg"
+                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your fill-in-the-blanks quiz",
@@ -503,7 +503,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       <ConfirmDialog
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
-        onCancel={() => setIsConfirmDialogOpen(false)}
+        onCancel={() => {
+          setIsConfirmDialogOpen(false)
+          setIsLoading(false)
+        }}
       />
     </motion.div>
   )
