@@ -210,23 +210,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
       className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
     >
       <Card className="bg-background border border-border shadow-sm">
-        <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
-          <div className="flex justify-center mb-4">
-            <motion.div
-              className="p-3 bg-primary/10 rounded-xl"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Brain className="w-8 h-8 text-primary" />
-            </motion.div>
-          </div>
-          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
-            Create Your {quizType?.charAt(0).toUpperCase() + quizType?.slice(1) || 'Quiz'}
-          </CardTitle>
-          <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
-            Customize your quiz settings and challenge yourself!
-          </p>
-        </CardHeader>
+       
 
         <CardContent className="space-y-6 pt-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

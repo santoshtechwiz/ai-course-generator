@@ -104,23 +104,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       className="w-full max-w-2xl mx-auto"
     >
       <Card className="bg-background border border-border/60 shadow-md overflow-hidden">
-        <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
-          <div className="flex justify-center mb-4">
-            <motion.div
-              className="p-3 bg-primary/10 rounded-xl"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Brain className="w-8 h-8 text-primary" />
-            </motion.div>
-          </div>
-          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
-            Open-Ended Quiz Generator
-          </CardTitle>
-          <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
-            Choose a topic and customize your quiz settings below.
-          </p>
-        </CardHeader>
+       
 
         <CardContent className="space-y-6 pt-6">
           <form onSubmit={onSubmit} className="space-y-6">

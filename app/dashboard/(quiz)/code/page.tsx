@@ -3,7 +3,9 @@
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import QuizLoader from "@/components/ui/quiz-loader"
+import { MinimalLoader } from "@/components"
+import { CourseAILoader } from "@/components/ui/loader/courseai-loader"
+
 
 
 const CodePage = () => {
@@ -19,7 +21,7 @@ const CodePage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <QuizLoader context="loading" />
+        <CourseAILoader context="loading" />
       ) : (
         <CodeQuizForm 
           credits={quizPlan.credits} 

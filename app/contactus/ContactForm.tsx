@@ -1,29 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
+import CourseAILoader from "@/components/ui/loader"
 
 import { createContactSubmission } from "@/app/actions/actions"
-import {
-  Loader2,
-  Bug,
-  CreditCard,
-  Lightbulb,
-  HelpCircle,
-  MessageSquare,
-  ChevronRight,
-  CheckCircle,
-  Send,
-} from "lucide-react"
+import { Bug, CreditCard, Lightbulb, HelpCircle, MessageSquare, ChevronRight, CheckCircle, Send, AlertCircle } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/tailwindUtils"
 import Logo from "@/components/Navbar/Logo"
 
@@ -61,7 +52,7 @@ export default function ImprovedContactForm() {
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ContactFormData>({
     defaultValues: {
       issueType: "",
@@ -71,23 +62,27 @@ export default function ImprovedContactForm() {
 
   const [success, setSuccess] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
   const selectedIssueType = watch("issueType")
 
   const onSubmit = async (data: ContactFormData) => {
-    try {
-      // Save to database using server action
-      const result = await createContactSubmission(data)
+    setSubmitError(null)
+    
+    startTransition(async () => {
+      try {
+        const result = await createContactSubmission(data)
 
-      if (result.success) {
-        setSuccess(true)
-        reset()
-        toast({ title: "Success!", description: "Your message has been sent. We'll get back to you soon." })
-      } else {
-        throw new Error(result.error || "Something went wrong")
+        if (result.success) {
+          setSuccess(true)
+          reset()
+        } else {
+          throw new Error(result.error || "Something went wrong")
+        }
+      } catch (error: any) {
+        setSubmitError(error.message || "Failed to submit the form. Please try again.")
       }
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to submit the form. Please try again.", variant: "destructive" })
-    }
+    })
   }
 
   const handleIssueSelect = (value: string) => {
@@ -121,7 +116,19 @@ export default function ImprovedContactForm() {
   const resetForm = () => {
     setSuccess(false)
     setCurrentStep(1)
+    setSubmitError(null)
     reset()
+  }
+
+  if (isPending) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10">
+        <CourseAILoader 
+          isLoading={true} 
+          message="Submitting your message..." 
+        />
+      </div>
+    )
   }
 
   return (
@@ -137,6 +144,7 @@ export default function ImprovedContactForm() {
           Have questions or need help? We're here for you. Select an issue type below to get started.
         </CardDescription>
       </CardHeader>
+      
       <CardContent className="pt-6">
         {success ? (
           <div className="text-center p-8 space-y-4 animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
@@ -172,6 +180,13 @@ export default function ImprovedContactForm() {
               </TabsTrigger>
             </TabsList>
 
+            {submitError && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
+            )}
+
             <TabsContent value="guided">
               <div className="space-y-6">
                 {currentStep === 1 && (
@@ -193,6 +208,7 @@ export default function ImprovedContactForm() {
                               selectedIssueType === issue.value ? "border-primary bg-primary/5" : "border-muted",
                               "group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
                             )}
+                            aria-pressed={selectedIssueType === issue.value}
                           >
                             <div className="mr-4 mt-0.5">
                               <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
@@ -213,13 +229,13 @@ export default function ImprovedContactForm() {
                 {currentStep === 2 && (
                   <form
                     onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-5 animate-in fade-in-50 slide-in-from-bottom-5 duration-300"
+                    className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-5 duration-300"
                   >
                     <div className="flex items-center mb-6 bg-muted/30 p-3 rounded-lg">
                       <button
                         type="button"
                         onClick={() => setCurrentStep(1)}
-                        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
                       >
                         <ChevronRight className="h-4 w-4 rotate-180 mr-1" />
                         Back to issue types
@@ -232,23 +248,32 @@ export default function ImprovedContactForm() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
                         <Label htmlFor="name" className="text-sm font-medium">
-                          Your Name
+                          Your Name *
                         </Label>
                         <Input
                           id="name"
                           {...register("name", { required: "Name is required" })}
                           placeholder="Full Name"
-                          className={`${errors.name ? "border-red-300 focus-visible:ring-red-300" : ""}`}
+                          className={cn(
+                            "transition-all duration-200",
+                            errors.name ? "border-red-300 focus-visible:ring-red-300" : "focus-visible:ring-primary"
+                          )}
+                          aria-invalid={errors.name ? "true" : "false"}
+                          aria-describedby={errors.name ? "name-error" : undefined}
                         />
-                        {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                        {errors.name && (
+                          <p className="text-sm text-red-500" id="name-error" role="alert">
+                            {errors.name.message}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <Label htmlFor="email" className="text-sm font-medium">
-                          Email Address
+                          Email Address *
                         </Label>
                         <Input
                           id="email"
@@ -261,17 +286,26 @@ export default function ImprovedContactForm() {
                             },
                           })}
                           placeholder="you@example.com"
-                          className={`${errors.email ? "border-red-300 focus-visible:ring-red-300" : ""}`}
+                          className={cn(
+                            "transition-all duration-200",
+                            errors.email ? "border-red-300 focus-visible:ring-red-300" : "focus-visible:ring-primary"
+                          )}
+                          aria-invalid={errors.email ? "true" : "false"}
+                          aria-describedby={errors.email ? "email-error" : undefined}
                         />
-                        {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+                        {errors.email && (
+                          <p className="text-sm text-red-500" id="email-error" role="alert">
+                            {errors.email.message}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-3">
                       <Label className="text-sm font-medium">Priority Level</Label>
                       <RadioGroup
                         defaultValue="medium"
-                        className="grid grid-cols-3 gap-4 mt-1.5"
+                        className="grid grid-cols-3 gap-4 mt-2"
                         onValueChange={(value) => setValue("priority", value)}
                       >
                         {priorityLevels.map((priority) => (
@@ -284,17 +318,16 @@ export default function ImprovedContactForm() {
                             <Label
                               htmlFor={`priority-${priority.value}`}
                               className={cn(
-                                "flex flex-col items-center justify-between rounded-md border-2 border-muted p-3 hover:bg-primary/5 hover:border-primary/50 [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5",
+                                "flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 hover:bg-primary/5 hover:border-primary/50 [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5",
                                 priority.value === "high" &&
                                   "[&:has([data-state=checked])]:border-red-500 [&:has([data-state=checked])]:bg-red-50 dark:[&:has([data-state=checked])]:bg-red-950/10",
-                                "transition-all cursor-pointer",
+                                "transition-all cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
                               )}
                             >
                               <span
                                 className={cn(
-                                  "text-sm font-medium",
+                                  "text-sm font-medium text-center",
                                   priority.value === "high" && "text-red-600 dark:text-red-400",
-                                  "peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2",
                                 )}
                               >
                                 {priority.label}
@@ -305,35 +338,35 @@ export default function ImprovedContactForm() {
                       </RadioGroup>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <Label htmlFor="message" className="text-sm font-medium">
-                        Message
+                        Message *
                       </Label>
                       <Textarea
                         id="message"
                         {...register("message", { required: "Message is required" })}
                         placeholder={getPlaceholderByIssueType(selectedIssueType)}
-                        className={`min-h-[160px] resize-y ${errors.message ? "border-red-300 focus-visible:ring-red-300" : ""}`}
+                        className={cn(
+                          "min-h-[160px] resize-y transition-all duration-200",
+                          errors.message ? "border-red-300 focus-visible:ring-red-300" : "focus-visible:ring-primary"
+                        )}
+                        aria-invalid={errors.message ? "true" : "false"}
+                        aria-describedby={errors.message ? "message-error" : undefined}
                       />
-                      {errors.message && <p className="text-sm text-red-500">{errors.message.message}</p>}
+                      {errors.message && (
+                        <p className="text-sm text-red-500" id="message-error" role="alert">
+                          {errors.message.message}
+                        </p>
+                      )}
                     </div>
 
                     <Button
                       type="submit"
-                      disabled={isSubmitting}
-                      className="w-full h-11 text-base font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98]"
+                      disabled={isPending}
+                      className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Submit
-                        </>
-                      )}
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit Message
                     </Button>
                   </form>
                 )}
@@ -343,25 +376,33 @@ export default function ImprovedContactForm() {
             <TabsContent value="direct">
               <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="space-y-5 animate-in fade-in-50 slide-in-from-bottom-5 duration-300"
+                className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-5 duration-300"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
                     <Label htmlFor="direct-name" className="text-sm font-medium">
-                      Your Name
+                      Your Name *
                     </Label>
                     <Input
                       id="direct-name"
                       {...register("name", { required: "Name is required" })}
                       placeholder="Full Name"
-                      className={`${errors.name ? "border-red-300 focus-visible:ring-red-300" : ""}`}
+                      className={cn(
+                        "transition-all duration-200",
+                        errors.name ? "border-red-300 focus-visible:ring-red-300" : "focus-visible:ring-primary"
+                      )}
+                      aria-invalid={errors.name ? "true" : "false"}
                     />
-                    {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                    {errors.name && (
+                      <p className="text-sm text-red-500" role="alert">
+                        {errors.name.message}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label htmlFor="direct-email" className="text-sm font-medium">
-                      Email Address
+                      Email Address *
                     </Label>
                     <Input
                       id="direct-email"
@@ -374,18 +415,33 @@ export default function ImprovedContactForm() {
                         },
                       })}
                       placeholder="you@example.com"
-                      className={`${errors.email ? "border-red-300 focus-visible:ring-red-300" : ""}`}
+                      className={cn(
+                        "transition-all duration-200",
+                        errors.email ? "border-red-300 focus-visible:ring-red-300" : "focus-visible:ring-primary"
+                      )}
+                      aria-invalid={errors.email ? "true" : "false"}
                     />
-                    {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+                    {errors.email && (
+                      <p className="text-sm text-red-500" role="alert">
+                        {errors.email.message}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="direct-issue" className="text-sm font-medium">
-                    Issue Type
+                    Issue Type *
                   </Label>
                   <Select onValueChange={(value) => setValue("issueType", value)}>
-                    <SelectTrigger id="direct-issue" className={`${!selectedIssueType ? "text-muted-foreground" : ""}`}>
+                    <SelectTrigger 
+                      id="direct-issue" 
+                      className={cn(
+                        "transition-all duration-200",
+                        !selectedIssueType ? "text-muted-foreground" : "",
+                        "focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      )}
+                    >
                       <SelectValue placeholder="Select an issue type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -404,31 +460,34 @@ export default function ImprovedContactForm() {
                   </Select>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="direct-message" className="text-sm font-medium">
-                    Message
+                    Message *
                   </Label>
                   <Textarea
                     id="direct-message"
                     {...register("message", { required: "Message is required" })}
                     placeholder="How can we help you today?"
-                    className={`min-h-[160px] resize-y ${errors.message ? "border-red-300 focus-visible:ring-red-300" : ""}`}
+                    className={cn(
+                      "min-h-[160px] resize-y transition-all duration-200",
+                      errors.message ? "border-red-300 focus-visible:ring-red-300" : "focus-visible:ring-primary"
+                    )}
+                    aria-invalid={errors.message ? "true" : "false"}
                   />
-                  {errors.message && <p className="text-sm text-red-500">{errors.message.message}</p>}
+                  {errors.message && (
+                    <p className="text-sm text-red-500" role="alert">
+                      {errors.message.message}
+                    </p>
+                  )}
                 </div>
 
-                <Button type="submit" disabled={isSubmitting} className="w-full h-11 text-base font-medium">
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Message
-                    </>
-                  )}
+                <Button 
+                  type="submit" 
+                  disabled={isPending} 
+                  className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Message
                 </Button>
               </form>
             </TabsContent>
