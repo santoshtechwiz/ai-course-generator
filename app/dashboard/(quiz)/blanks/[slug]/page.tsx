@@ -22,10 +22,7 @@ export default function BlanksQuizPage({
   const { status: authStatus } = useSession()
   const router = useRouter()
 
-  // Check for loading state
-  if (authStatus === "loading") {
-    return <QuizLoader full message="Initializing quiz..." subMessage="Loading user session" />
-  }
+
 
   if (!slug) {
     return (

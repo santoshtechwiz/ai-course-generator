@@ -3,8 +3,8 @@
 import type React from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useCallback } from "react"
-import { useLoader } from "./loader-context"
-import type { LoaderContext } from "./loader"
+
+import { useLoader, type LoaderContext } from "./loader"
 
 interface AsyncNavLinkProps {
   href: string
