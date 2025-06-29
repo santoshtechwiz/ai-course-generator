@@ -1,18 +1,22 @@
 "use client"
 
-import { Loader2 } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import { CardLoader } from "@/components/ui/loader"
+import { cn } from "@/lib/utils"
 
 interface LoadingCardProps {
   message?: string
+  subMessage?: string
   className?: string
 }
 
-export function LoadingCard({ message = "Loading...", className }: LoadingCardProps) {
+export function LoadingCard({
+  message = "Loading quiz...",
+  subMessage = "Please wait while we prepare your content",
+  className,
+}: LoadingCardProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center p-8 h-full", className)}>
-      <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-      <p className="text-muted-foreground text-sm font-medium">{message}</p>
-    </div>
+    <CardLoader message={message} subMessage={subMessage} context="quiz" className={cn("animate-fade-in", className)} />
   )
 }
+
+export default LoadingCard

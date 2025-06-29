@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Search, Menu, X, CreditCard, Sparkles, Home, BookOpen, BrainCircuit, Compass, PlusCircle } from "lucide-react"
+import { Search, Menu, X, CreditCard, Sparkles } from "lucide-react"
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
 import { UserMenu } from "@/components/layout/navigation/UserMenu"
@@ -20,7 +20,8 @@ import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { AsyncNavLink } from "@/components/ui/loader/async-nav-link"
+import { AsyncNavLink } from "@/components/ui"
+
 
 
 export default function MainNavbar() {

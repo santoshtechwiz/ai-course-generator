@@ -1,33 +1,40 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
 import Image, { type StaticImageData } from "next/image"
 import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useToast } from "@/hooks"
 import { useAuth } from "@/hooks/use-auth"
+import { cn } from "@/lib/utils"
 
-export interface AuthButtonProps {
+export interface AuthButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   provider: string
   logo: string | StaticImageData
   text: string
   callbackUrl: string
   onClick?: (e: React.MouseEvent) => Promise<void>
+  className?: string
 }
 
-export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthButtonProps) {
+export function AuthButton({
+  provider,
+  logo,
+  text,
+  callbackUrl,
+  onClick,
+  className,
+  ...props
+}: AuthButtonProps) {
   const [isButtonLoading, setIsButtonLoading] = useState(false)
   const { toast } = useToast()
   const { login } = useAuth()
   const isClickInProgress = useRef(false)
 
   const handleClick = async (e: React.MouseEvent) => {
-    // Prevent duplicate clicks
     if (isButtonLoading || isClickInProgress.current) return
 
-    // If custom onClick handler is provided, use it
     if (onClick) {
       return onClick(e)
     }
@@ -39,16 +46,13 @@ export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthB
     setIsButtonLoading(true)
 
     try {
-      // Validate the provider string
       if (!provider || typeof provider !== "string") {
         throw new Error("Invalid authentication provider")
       }
 
-      // Validate callbackUrl before using it
       const safeCallbackUrl =
         callbackUrl && typeof callbackUrl === "string" ? callbackUrl : "/dashboard"
 
-      // Use centralized login function
       await login(provider.toLowerCase(), { callbackUrl: safeCallbackUrl })
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error)
@@ -60,7 +64,6 @@ export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthB
       setIsButtonLoading(false)
       isClickInProgress.current = false
     }
-    // Note: We don't set isButtonLoading to false here because we're redirecting
   }
 
   return (
@@ -69,17 +72,26 @@ export function AuthButton({ provider, logo, text, callbackUrl, onClick }: AuthB
       disabled={isButtonLoading}
       whileHover={{ scale: isButtonLoading ? 1 : 1.02 }}
       whileTap={{ scale: isButtonLoading ? 1 : 0.98 }}
-      className="w-full flex items-center justify-center h-12 px-4 sm:px-6 text-base sm:text-lg font-medium transition-all duration-300 bg-white border-2 border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-70 disabled:cursor-not-allowed"
+      className={cn(
+        "w-full flex items-center justify-center gap-4 h-12 px-6",
+        "text-base font-medium transition-all duration-300",
+        "bg-background border border-input text-foreground rounded-md",
+        "hover:bg-accent hover:text-accent-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        className
+      )}
+      {...props}
     >
       {isButtonLoading ? (
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+        <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
         <Image
           src={logo || "/placeholder.svg"}
           alt={`${provider} Logo`}
-          width={20}
-          height={20}
-          className="mr-3"
+          width={24}
+          height={24}
+          className="size-6 object-contain"
           unoptimized={typeof logo === "string" && logo.startsWith("/")}
         />
       )}

@@ -3,7 +3,7 @@
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Clock, Target, TrendingUp, Zap, Award, Flame } from "lucide-react"
-import { UnifiedLoader } from "./ui/unified-loader"
+import { LoaderComponent } from "@/components/ui/loader/loader"
 
 interface QuizProgressProps {
   currentQuestionIndex: number
@@ -82,7 +82,7 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 }) => {
   // Show loader if loading
   if (isLoading) {
-    return <UnifiedLoader variant="skeleton" message="Loading quiz progress..." className="max-w-4xl mx-auto" />
+    return <LoaderComponent isLoading={true} variant="grid" fullscreen={false} message="Loading quiz progress..." className="max-w-4xl mx-auto" />
   }
 
   // Ensure values are valid

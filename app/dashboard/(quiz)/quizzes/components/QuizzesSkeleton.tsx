@@ -1,9 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-
-import { LoadingCard } from "./LoadingCard"
-import { UnifiedLoader } from "@/components/ui/unified-loader"
+import { CardLoader } from "@/components/ui/loader"
 
 interface QuizzesSkeletonProps {
   itemCount?: number
@@ -15,13 +13,13 @@ export function QuizzesSkeleton({ itemCount = 6 }: QuizzesSkeletonProps) {
       {/* Filter skeleton */}
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          <UnifiedLoader variant="skeleton" className="h-10 w-20" />
-          <UnifiedLoader variant="skeleton" className="h-10 w-20" />
-          <UnifiedLoader variant="skeleton" className="h-10 w-20" />
+          <div className="h-10 w-20 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-20 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-20 bg-muted rounded animate-pulse" />
         </div>
         <div className="flex gap-2">
-          <UnifiedLoader variant="skeleton" className="h-10 w-32" />
-          <UnifiedLoader variant="skeleton" className="h-10 w-32" />
+          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
         </div>
       </div>
 
@@ -34,10 +32,16 @@ export function QuizzesSkeleton({ itemCount = 6 }: QuizzesSkeletonProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
           >
-            <LoadingCard message={`Loading quiz ${i + 1}...`} />
+            <CardLoader message={`Loading quiz ${i + 1}...`} context="quiz" />
           </motion.div>
         ))}
       </div>
     </div>
   )
 }
+
+export function QuizLoadingCard() {
+  return <CardLoader message="Loading quizzes..." subMessage="Fetching your quiz collection" context="quiz" />
+}
+
+export default QuizzesSkeleton
