@@ -23,7 +23,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { Loader } from "@/components/ui/loader/index"
+import { InlineLoader, Loader, MinimalLoader } from "@/components/ui/loader/index"
 
 
 interface CodeQuizWrapperProps {
@@ -155,7 +155,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-    return <Loader context="quiz" />    
+    return <MinimalLoader context="quiz" size="sm" />
   }
 
   if (hasError) {
@@ -173,7 +173,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
 
   if (!formattedQuestion) {
-    return <Loader context="quiz"  message="Preparing quiz..." />
+    return <MinimalLoader context="loading" />
   }
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">

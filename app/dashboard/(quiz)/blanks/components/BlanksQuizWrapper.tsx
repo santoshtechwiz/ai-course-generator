@@ -26,7 +26,7 @@ import BlanksQuiz from "./BlanksQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
 import { useLoader } from "@/components/ui/loader/loader-context"
-import { Loader } from "@/components/ui/loader/index"
+import { Loader, MinimalLoader } from "@/components/ui/loader/index"
 
 interface BlanksQuizWrapperProps {
   slug: string
@@ -162,9 +162,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }, [currentQuestion])
 
   if (isLoading) {
-     return (
-      <Loader context="quiz" message="Loading Quiz..." subMessage="Fetching your personalized content" />
-    )
+   return <MinimalLoader context="quiz" size="sm" />
   }
 
   if (hasError) {

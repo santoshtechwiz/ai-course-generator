@@ -29,7 +29,8 @@ export function QuizFooter({
   className,
   isSubmitting = false,
 }: QuizFooterProps) {
-  const showSubmit = isLastQuestion && canGoNext
+  // ✅ FIX: Always show submit button on last question
+  const showSubmit = isLastQuestion
 
   return (
     <div

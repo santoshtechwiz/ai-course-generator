@@ -50,15 +50,17 @@ export default function CodeResultsPage({ params }: ResultsPageProps) {
   }
 
   return (
-    <div className="container max-w-4xl py-10">      <GenericQuizResultHandler 
-        slug={slugString}  
+    <div className="container max-w-4xl py-10">
+
+      <GenericQuizResultHandler
+        slug={slugString}
         quizType="code"
       >
         {({ result }) => (
-          <QuizResult 
-            result={result} 
-            slug={slugString} 
-            quizType="code" 
+          <QuizResult
+            result={result}
+            slug={slugString}
+            quizType="code"
             onRetake={handleRetakeQuiz}
           />
         )}

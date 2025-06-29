@@ -23,7 +23,7 @@ import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
 import { QuizActions } from "../../components/QuizActions"
-import { Loader } from "@/components/ui/loader/index"
+import { Loader, MinimalLoader } from "@/components/ui/loader/index"
 
 
 interface McqQuizWrapperProps {
@@ -149,7 +149,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-    return <Loader context="quiz" className="w-8 h-8 mx-auto mt-10" />
+     return <MinimalLoader context="quiz" size="sm" />
   }
 
   if (hasError) {
@@ -167,7 +167,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   }
 
   if (!formattedQuestion) {
-      return <Loader context="quiz" className="w-8 h-8 mx-auto mt-10" />
+      return <MinimalLoader context="quiz" size="sm" />
   }
 
   return (
