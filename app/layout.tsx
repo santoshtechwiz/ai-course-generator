@@ -4,7 +4,7 @@ import "../globals.css"
 
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
-import { fontInterSans, fontRobotoSans } from "./font"
+
 
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
@@ -12,12 +12,7 @@ import { getServerAuthSession } from "@/lib/server-auth"
 import ClientLayoutWrapper from "./client-layout-wrapper"
 import { Suspense } from "react"
 import { Loader2 } from "lucide-react"
-import { Poppins } from "next/font/google";
-const poppins = Poppins({
- weight: ['400', '600'],
- subsets: ['latin'],
- display: 'swap',
-});
+import { font } from './font'
 export const metadata: Metadata = {
   ...defaultMetadata,
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
@@ -86,7 +81,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
       </head>
 
-      <body className={`${fontRobotoSans.variable} antialiased min-h-screen flex flex-col`}>
+      <body className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""}  antialiased min-h-screen flex flex-col`}>
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">

@@ -1,23 +1,22 @@
-import { Inter, Roboto } from 'next/font/google'
-
-// Configure Inter font with better fallbacks and optimization
-export const fontInterSans = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-  fallback: ['system-ui', 'Arial', 'sans-serif'],
-  preload: true,
-  adjustFontFallback: true, // Ensures text doesn't shift
+import { Roboto, Poppins, Open_Sans } from 'next/font/google'
+const roboto = Roboto({
+ weight: ['400', '700'],
+ subsets: ['latin'],
+ display: 'swap',
+})
+const poppins = Poppins({
+ weight: ['400', '600'],
+ subsets: ['latin'],
+ display: 'swap',
+})
+const openSans = Open_Sans({
+ subsets: ['latin'],
+ display: 'swap',
 })
 
-// Configure Roboto font with better fallbacks and optimization
-export const fontRobotoSans = Roboto({
 
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
-  variable: '--font-roboto',
-  display: 'swap',
-  fallback: ['system-ui', 'Arial', 'sans-serif'],
-  preload: true,
-  adjustFontFallback: true, // Ensures text doesn't shift
-})
+export const font = {
+  roboto,
+  poppins,
+  openSans,
+}
