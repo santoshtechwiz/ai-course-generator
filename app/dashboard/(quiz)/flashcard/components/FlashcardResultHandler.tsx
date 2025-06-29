@@ -37,22 +37,14 @@ export default function FlashcardResultHandler({
   const dispatch = useAppDispatch()
   const { isAuthenticated, isInitialized, isLoading: isAuthLoading } = useAuth()
 
-  const {
-    shouldRedirectToResults,
-    isLoading,
-    error: stateError,
-  } = useAppSelector(selectFlashcardState)
-
+  const { shouldRedirectToResults, error: stateError } = useAppSelector(selectFlashcardState)
   const isCompleted = useAppSelector(selectIsQuizComplete)
   const processedResults = useAppSelector(selectProcessedResults)
 
-  const isOnResultsPage = pathname?.endsWith('/results')
-
-  // ✅ Only load results on results page
   useEffect(() => {
-    if (!slug || !isInitialized || !isOnResultsPage) return
+    if (!slug || !isInitialized || processedResults) return
     dispatch(checkAuthAndLoadResults())
-  }, [dispatch, slug, isInitialized, isOnResultsPage])
+  }, [slug, isInitialized, processedResults, dispatch])
 
   const handleRestart = useCallback(() => {
     dispatch(clearQuizState())
@@ -60,30 +52,38 @@ export default function FlashcardResultHandler({
   }, [dispatch, onRestart])
 
   const handleReview = useCallback(() => {
-    if (!processedResults?.reviewCards) return
-    onReview?.(processedResults.reviewCards)
-  }, [processedResults?.reviewCards, onReview])
+    if (processedResults?.reviewCards) {
+      onReview?.(processedResults.reviewCards)
+    }
+  }, [processedResults, onReview])
 
   const handleReviewStillLearning = useCallback(() => {
-    if (!processedResults?.stillLearningCards) return 
-    onReviewStillLearning?.(processedResults.stillLearningCards)
-  }, [processedResults?.stillLearningCards, onReviewStillLearning])
+    if (processedResults?.stillLearningCards) {
+      onReviewStillLearning?.(processedResults.stillLearningCards)
+    }
+  }, [processedResults, onReviewStillLearning])
 
-  // ✅ No localStorage – just redirect with state
   const signIn = useCallback(() => {
-    router.push(`/auth/signin?redirect=${window.location.pathname}`)
-  }, [router])
+    router.push(`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`)
+  }, [router, pathname])
 
-  // Loading state
-  if (isAuthLoading || (isLoading && isOnResultsPage) || !isInitialized) {
+  if (
+    isInitialized &&
+    !isCompleted &&
+    shouldRedirectToResults
+  ) {
+    router.replace(`/dashboard/flashcard/${slug}`)
+    return null
+  }
+
+  if (isAuthLoading || !isInitialized) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <QuizLoader />
+        <QuizLoader message="Loading your results..." />
       </div>
     )
   }
 
-  // Not signed in
   if (!isAuthenticated) {
     return (
       <SignInPrompt
@@ -100,28 +100,11 @@ export default function FlashcardResultHandler({
     )
   }
 
-  // Error state
   if (stateError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
         <div className="text-xl text-red-500">{stateError}</div>
         <Button onClick={() => window.location.reload()}>Try Again</Button>
-      </div>
-    )
-  }
-
-  // ✅ Only redirect to play if not completed, not on results
-  const shouldAutoRedirect = !isCompleted && !isOnResultsPage && shouldRedirectToResults
-  if (shouldAutoRedirect) {
-    router.replace(`/dashboard/flashcard/${slug}`)
-    return null
-  }
-
-  if (!processedResults && isOnResultsPage) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
-        <p>No results found</p>
-        <Button onClick={handleRestart}>Start Quiz</Button>
       </div>
     )
   }
@@ -144,11 +127,10 @@ export default function FlashcardResultHandler({
           stillLearningAnswers={processedResults?.stillLearningAnswers}
           incorrectAnswers={processedResults?.incorrectAnswers}
           totalTime={processedResults?.totalTime}
-       
-        
           onRestart={handleRestart}
-        
-        
+          onReview={handleReview}
+          onReviewStillLearning={handleReviewStillLearning}
+          result={processedResults}
         />
       </motion.div>
     </AnimatePresence>

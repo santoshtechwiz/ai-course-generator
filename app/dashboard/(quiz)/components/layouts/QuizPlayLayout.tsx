@@ -7,6 +7,7 @@ import { Suspense, useMemo, useEffect, useState } from "react"
 import { JsonLD } from "@/app/schema/components"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
+import { QuizLoader } from "@/components/ui/quiz-loader"
 export const dynamic = 'force-dynamic'
 interface QuizPlayLayoutProps {
   children: React.ReactNode
@@ -88,11 +89,14 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
         })
       })
 
-      observer.observe(document.querySelector("head"), {
-        subtree: true,
-        childList: true,
-        characterData: true,
-      })
+      const head = document.querySelector("head")
+      if (head) {
+        observer.observe(head, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+        })
+      }
 
       // Set loaded after a short delay to avoid layout flicker
       const timer = setTimeout(() => setIsLoaded(true), 100)
@@ -177,6 +181,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
+            <QuizLoader message={`Loading ${quizMeta.title}...`} />
             {children}
           </motion.div>
         </motion.div>

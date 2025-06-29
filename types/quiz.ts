@@ -2,6 +2,8 @@
  * Comprehensive type definitions for quiz entities
  */
 
+import { QuizType } from "@/app/types/quiz-types";
+
 // Quiz question types
 export interface BaseQuestion {
   id: string;
@@ -78,8 +80,7 @@ export type QuizAnswer =
   | BlankAnswer 
   | OpenEndedAnswer;
 
-// Quiz types
-export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended' | 'flashcard';
+
 
 // Quiz state for Redux
 export interface QuizState {

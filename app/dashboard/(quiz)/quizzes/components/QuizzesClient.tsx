@@ -9,9 +9,9 @@ import { ErrorBoundary } from "react-error-boundary"
 import { motion } from "framer-motion"
 import { AlertCircle, RefreshCw } from "lucide-react"
 
-import type { QuizListItem } from "@/app/types/types"
+
 import type { QuizType } from "@/app/types/quiz-types"
-import type { GetQuizzesResult } from "@/app/actions/getQuizes"
+import type { GetQuizzesResult, QuizListItem } from "@/app/actions/getQuizes"
 
 import { getQuizzes } from "@/app/actions/getQuizes"
 import { QuizSidebar } from "./QuizSidebar"

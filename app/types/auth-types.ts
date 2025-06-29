@@ -1,7 +1,8 @@
 // Authentication types for consistent auth handling across quiz types
 
+import { QuizType } from "./quiz-types";
+
 export type AuthStatus = 'idle' | 'loading' | 'error';
-export type QuizType = 'mcq' | 'code' | 'blanks' | 'openended' | 'flashcard';
 
 export interface UserSubscription {
   id: string;

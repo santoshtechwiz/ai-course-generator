@@ -147,17 +147,15 @@ export const saveFlashCardResults = createAsyncThunk(
 export const checkAuthAndLoadResults = createAsyncThunk(
   'flashcard/checkAuthAndLoadResults',
   async (_, { getState }) => {
-    const state = getState() as RootState;
-    const { isCompleted } = selectFlashcardState(state);
-    const results = selectQuizResults(state);
+    const state = getState() as RootState
+    const { isCompleted, results } = state.flashcard
 
-    if (isCompleted && results) {
-      return results;
-    }
+    if (!isCompleted || !results) return null
 
-    return null;
+    return results
   }
 )
+
 
 const flashcardSlice = createSlice({
   name: "flashcard",
@@ -325,64 +323,56 @@ clearQuizState: (state) => {
       state.shouldRedirectToResults = false
     },
   },
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchFlashCardQuiz.pending, (state) => {
-        state.status = "loading"
-        state.error = null
-        state.questions = []
-      })
-      .addCase(fetchFlashCardQuiz.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.quizId = action.payload.id
-        state.slug = action.payload.slug
-        state.title = action.payload.title
-        state.questions = action.payload.questions
-      })
-      .addCase(fetchFlashCardQuiz.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = (action.payload as string) || action.error.message || "An unknown error occurred."
-      })
-      .addCase(saveFlashCardResults.pending, (state) => {
-        state.status = "submitting"
-      })
-      .addCase(saveFlashCardResults.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        if (action.payload) {
-          state.results = {
-            ...state.results,
-            ...action.payload,
-          } as QuizResultsState
-        }
-      })
-      .addCase(saveFlashCardResults.rejected, (state, action) => {
-        const payload = action.payload as any
-        state.status = "completed_with_errors"
-        if (payload) {
-          state.results = {
-            ...state.results,
-            ...payload,
-            error: payload.error,
-          } as QuizResultsState
-        } else {
-          state.error = action.error.message || "Failed to save results."
-        }
-      })
-      .addCase(checkAuthAndLoadResults.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(checkAuthAndLoadResults.fulfilled, (state, action) => {
-        state.isLoading = false;
-        if (action.payload) {
-          state.results = action.payload;
-        }
-      })
-      .addCase(checkAuthAndLoadResults.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.error.message || 'Failed to load results';
-      });
-  }
+ extraReducers: (builder) => {
+  builder
+    .addCase(fetchFlashCardQuiz.pending, (state) => {
+      state.status = "loading"
+      state.error = null
+      state.questions = []
+    })
+    .addCase(fetchFlashCardQuiz.fulfilled, (state, action) => {
+      state.status = "succeeded"
+      state.quizId = action.payload.id
+      state.slug = action.payload.slug
+      state.title = action.payload.title
+      state.questions = action.payload.questions
+    })
+    .addCase(fetchFlashCardQuiz.rejected, (state, action) => {
+      state.status = "failed"
+      state.error = (action.payload as string) || action.error.message || "An unknown error occurred."
+    })
+    .addCase(saveFlashCardResults.pending, (state) => {
+      state.status = "submitting"
+    })
+    .addCase(saveFlashCardResults.fulfilled, (state, action) => {
+      state.status = "succeeded"
+      if (action.payload) {
+        state.results = {
+          ...state.results,
+          ...action.payload,
+        } as QuizResultsState
+      }
+    })
+    .addCase(saveFlashCardResults.rejected, (state, action) => {
+      const payload = action.payload as any
+      state.status = "completed_with_errors"
+      if (payload) {
+        state.results = {
+          ...state.results,
+          ...payload,
+          error: payload.error,
+        } as QuizResultsState
+      } else {
+        state.error = action.error.message || "Failed to save results."
+      }
+    })
+    .addCase(checkAuthAndLoadResults.fulfilled, (state, action) => {
+      if (action.payload) {
+        state.results = action.payload
+      }
+    })
+}
+
 })
 
 export const {
