@@ -25,6 +25,7 @@ import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
+import { useLoader } from "@/components/ui/loader/loader-context"
 
 interface BlanksQuizWrapperProps {
   slug: string

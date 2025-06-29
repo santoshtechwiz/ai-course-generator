@@ -1,15 +1,14 @@
 "use client";
 
+import { GlobalLoadingHandler } from "@/components/ui/loader/global-loading-handler";
 
-import ProgressBarProvider from "@/components/ui/loader/ProgressBarProvider";
-
-
+import { LoaderProvider, useLoader } from '@/components/ui/loader/loader-context';
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
-   <ProgressBarProvider>
-    
+    <LoaderProvider defaultOptions={{ variant: "pulse", fullscreen: true }}>
+      <GlobalLoadingHandler />
       {children}
-    </ProgressBarProvider>
+    </LoaderProvider>
   );
 }
 

@@ -6,7 +6,8 @@ import { redirect } from "next/navigation"
 import { AuthButtonGroup } from "./components/AuthButtonGroup"
 import { BenefitsCarousel } from "./components/BenefitsCarousel"
 import { Suspense } from "react"
-import { EnhancedLoader } from "@/components/ui/loader/index"
+import { EnhancedLoader } from "@/components/ui/loader/enhanced-loader"
+
 
 
 
