@@ -32,7 +32,9 @@ export function LoaderProvider({ children, defaultOptions = {} }: LoaderProvider
   const [options, setOptions] = useState<Partial<LoaderProps>>({
     message: "Loading...",
     variant: "fullscreen",
+    context: "loading",
     showIcon: true,
+    animated: true,
     ...defaultOptions,
   })
 
@@ -42,21 +44,24 @@ export function LoaderProvider({ children, defaultOptions = {} }: LoaderProvider
   }, [])
 
   const hideLoader = useCallback(() => {
-    setTimeout(() => setIsLoading(false), 200)
+    // Graceful exit with animation
+    setTimeout(() => setIsLoading(false), 150)
   }, [])
 
   const updateLoader = useCallback((newOptions: Partial<LoaderProps>) => {
     setOptions((prev) => ({ ...prev, ...newOptions }))
   }, [])
 
+  // Auto-hide loader on route changes
   const pathname = usePathname()
   const [prevPathname, setPrevPathname] = useState(pathname)
 
   useEffect(() => {
-    if (prevPathname !== pathname) {
+    if (prevPathname !== pathname && isLoading) {
+      hideLoader()
       setPrevPathname(pathname)
     }
-  }, [pathname, prevPathname])
+  }, [pathname, prevPathname, isLoading, hideLoader])
 
   return (
     <LoaderContext.Provider value={{ showLoader, hideLoader, updateLoader, isLoading }}>

@@ -8,7 +8,8 @@ import CourseAIState from "@/components/development/CourseAIState"
 import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
-import { LoadingSkeleton, LoadingSpinner } from "@/components"
+import { LoaderProvider } from "@/components/ui/loader/loader-context"
+
 
 
 
@@ -29,10 +30,10 @@ export default async function DashboardLayout({
     <RootLayoutProvider session={session}>
       <div className="min-h-screen flex flex-col font-body">
         <DashboardShell>
-         
-          
+
+
           <main className="flex-1 pt-16 ">
-            <Suspense fallback={<LoadingSkeleton/>}>{children}</Suspense>
+            {children}
           </main>
 
           <Toaster />

@@ -1,20 +1,27 @@
-export type LoaderVariant = "clip" | "beat" | "pulse" | "bar" | "scale" | "ring" | "hash" | "grid" | "sync";
-
-export type LoaderSpeed = "slow" | "normal" | "fast";
-
-export type LoaderContext = "quiz" | "result" | "loading" | "submitting" | "processing";
+import type React from "react"
+export type LoaderSize = "xs" | "sm" | "md" | "lg" | "xl"
+export type LoaderVariant = "inline" | "fullscreen" | "card" | "overlay" | "skeleton" | "minimal"
+export type LoaderContext =
+  | "loading"
+  | "quiz"
+  | "result"
+  | "submitting"
+  | "processing"
+  | "saving"
+  | "course"
+  | "generating"
 
 export interface LoaderProps {
-  isLoading: boolean;
-  message?: string;
-  subMessage?: string;
-  fullscreen?: boolean;
-  variant?: LoaderVariant;
-  showProgress?: boolean;
-  progress?: number;
-  speed?: LoaderSpeed;
-  className?: string;
-  showLogo?: boolean;
-  children?: React.ReactNode;
-  context?: LoaderContext;
+  size?: LoaderSize
+  variant?: LoaderVariant
+  context?: LoaderContext
+  className?: string
+  message?: string
+  subMessage?: string
+  showIcon?: boolean
+  children?: React.ReactNode
+  isLoading?: boolean
+  progress?: number
+  showProgress?: boolean
+  animated?: boolean
 }
