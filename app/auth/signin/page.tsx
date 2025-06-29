@@ -6,8 +6,7 @@ import { redirect } from "next/navigation"
 import { AuthButtonGroup } from "./components/AuthButtonGroup"
 import { BenefitsCarousel } from "./components/BenefitsCarousel"
 import { Suspense } from "react"
-import { EnhancedLoader } from "@/components/ui/loader/enhanced-loader"
-
+import CourseAILoader from "@/components/ui/loader"
 
 
 
@@ -43,7 +42,7 @@ export default async function LoginPage({
           <div className="text-4xl font-bold text-center mb-10 text-gray-800">Log in to Course AI</div>
 
           <div className="flex flex-col space-y-6 items-center">
-            <Suspense fallback={<EnhancedLoader isLoading={true} message="Loading providers..." fullscreen />}>
+            <Suspense fallback={<CourseAILoader isLoading={true} message="Loading providers..."  />}>
               {providers && <AuthButtonGroup providers={providers} callbackUrl={callbackUrl || "/"} />}
             </Suspense>
           </div>
