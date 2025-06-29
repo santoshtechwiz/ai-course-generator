@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 import { useToast } from "@/hooks"
-import { EnhancedLoader } from "@/components/ui/loader/enhanced-loader"
+import CourseAILoader from "@/components/ui/loader"
 
 interface LoginModalProps {
   isOpen: boolean
@@ -274,7 +274,7 @@ export function LoginModal({
         <form onSubmit={handleLogin} className="space-y-5 p-6">
           {/* Auth Providers */}
           {!providers ? (
-            <EnhancedLoader isLoading={true} message="Loading authentication options..." fullscreen />
+            <CourseAILoader isLoading={true} message="Loading authentication options..."  />
           ) : (
             <ModalAuthButtonGroup />
           )}
