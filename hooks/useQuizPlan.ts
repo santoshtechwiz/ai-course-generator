@@ -50,7 +50,7 @@ export interface QuizPlanData {
 // Map of feature ID to required plan
 const FEATURE_PLAN_REQUIREMENTS: Record<string, PlanType> = {
   'mcq-generator': 'FREE',
-  'fill-blanks': 'FREE',
+  'blanks': 'FREE',
   'open-ended': 'BASIC',
   'code-quiz': 'BASIC',
   'video-quiz': 'PRO',

@@ -28,12 +28,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import QuizPDFDownload from "@/app/dashboard/create/components/QuizPDFDownload"
 import useSubscription from "@/hooks/use-subscription"
-import { ConfirmDialog } from "./ConfirmDialog"
+
 import { useSession } from "next-auth/react"
+import { ConfirmDialog } from "./ConfirmDialog"
 
 interface QuizActionsProps {
   quizId: string
@@ -152,7 +152,7 @@ export function QuizActions({
   const buttonBase =
     "group transition-all duration-200 ease-in-out flex flex-col items-center justify-center min-w-[90px] h-[80px] sm:min-w-[56px] sm:h-[56px] sm:rounded-md relative hover:scale-[1.02] active:scale-[0.98]"
 
-  const textStyle = "text-xs font-medium sm:hidden"
+  const textStyle = "text-xs font-medium sm:hidden text-muted-foreground"
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -165,7 +165,7 @@ export function QuizActions({
             </h2>
           </div>
 
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 bg-muted/10">
             <div className="flex flex-wrap gap-2">
               {/* Favorite */}
               <Tooltip>
@@ -284,7 +284,7 @@ export function QuizActions({
                       >
                         <div>
                           <div className="font-semibold text-lg mb-2">Delete Quiz</div>
-                          <div>Are you sure? This action cannot be undone.</div>
+                          <div>This action is irreversible. Do you want to proceed?</div>
                         </div>
                       </ConfirmDialog>
                     </span>

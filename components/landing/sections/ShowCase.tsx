@@ -31,7 +31,7 @@ interface CourseQuizCard {
   description: string
   tagline: string
   type: "course" | "quiz"
-  quizType?: "mcq" | "openended" | "fill-blanks" | "code"
+  quizType?: "mcq" | "openended" | "blanks" | "code"
 }
 
 interface CourseQuizCardProps {
@@ -605,7 +605,7 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
       if (product.type === "course") {
         router.push(`/dashboard/create/course`)
       } else if (product.type === "quiz" && product.quizType) {
-        router.push(`/dashboard/create/${product.quizType == "fill-blanks" ? "blanks" : product.quizType}`)
+        router.push(`/dashboard/create/${product.quizType == "blanks" ? "blanks" : product.quizType}`)
       }
 
       return true
@@ -634,7 +634,7 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
                   ? "Multiple Choice"
                   : product.quizType === "openended"
                     ? "Open-Ended"
-                    : product.quizType === "fill-blanks"
+                    : product.quizType === "blanks"
                       ? "Fill-in-Blanks"
                       : "Coding Challenges"}
               </Badge>

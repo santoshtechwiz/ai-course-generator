@@ -371,7 +371,7 @@ function getQuizTypeLabel(quizType?: string): string {
       return "Multiple Choice";
     case "openended":
       return "Open-Ended";
-    case "fill-blanks":
+    case "blanks":
       return "Fill-in-the-Blanks";
     case "code":
       return "Coding";

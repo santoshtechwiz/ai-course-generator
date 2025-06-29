@@ -50,14 +50,14 @@ export async function POST(req: Request) {
           userId,
           title,
           timeStarted: new Date(),
-          quizType: "fill-blanks",
+          quizType: "blanks",
           slug: slug,
           questions: {
             create: (quiz.questions as unknown as OpenEndedFillInTheBlanksQuestion[]).map(
               (q) => ({
                 question: q.question,
                 answer: q.correct_answer,
-                questionType: "fill-blanks",
+                questionType: "blanks",
                 openEndedQuestion: {
                   create: {
                     hints: (q?.hints ?? []).join("|"),

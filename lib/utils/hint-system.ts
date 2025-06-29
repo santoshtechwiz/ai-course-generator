@@ -165,7 +165,7 @@ export function getNextHint(
   if (currentLevel >= config.maxHints) return null
 
   const nextLevel = currentLevel + 1
-  const hint = hints.find((h) => h.level === nextLevel)
+  const hint = hints[nextLevel]
 
   if (!hint) return null
 
@@ -177,10 +177,23 @@ export function getNextHint(
 
 // Calculate hint penalty for scoring
 export function calculateHintPenalty(hintsUsed: number[]): number {
+  // Ensure hintsUsed is an array before attempting to reduce it.
+  // If it's not an array, treat it as an empty array to prevent errors.
+  if (!Array.isArray(hintsUsed)) {
+    console.warn("calculateHintPenalty received non-array hintsUsed:", hintsUsed);
+    return 0; // Return 0 penalty if the input is invalid
+  }
+
+  if (!Array.isArray(hintsUsed)) {
+    console.warn("calculateHintPenalty received non-array hintsUsed:", hintsUsed);
+    return 0; // Return 0 penalty if the input is invalid
+  }
+
   return hintsUsed.reduce((total, hintIndex) => {
-    const level = HINT_LEVELS[hintIndex] || HINT_LEVELS[2]
-    return total + level.penalty
-  }, 0)
+    // Fallback to HINT_LEVELS[2] if hintIndex is out of bounds or undefined
+    const level = HINT_LEVELS[hintIndex] || HINT_LEVELS[2];
+    return total + (level?.penalty || 0); // Ensure penalty is a number, default to 0 if undefined
+  }, 0);
 }
 
 // Analyze user input to provide contextual hints

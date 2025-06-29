@@ -467,7 +467,7 @@ export default function BlanksQuiz({
 
           {/* Hint System */}
           <motion.div variants={itemVariants}>
-            <HintSystem hints={hints} onHintUsed={handleHintUsed} maxHints={3} allowDirectAnswer={false} />
+            <HintSystem hints={hints} onHintUsed={handleHintUsed} />
           </motion.div>
 
           {/* Footer */}

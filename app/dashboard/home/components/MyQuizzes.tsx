@@ -21,8 +21,8 @@ const buildQuizSlug = (quizType: QuizType) => {
       return "mcq";
     case "openended":
       return "open-ended"; // Fixed slug for open-ended quizzes
-    case "fill-blanks":
-      return "fill-blanks";
+    case "blanks":
+      return "blanks";
     case "code":
       return "code";
     default:
@@ -36,7 +36,7 @@ const getQuizTypeLabel = (quizType: QuizType) => {
       return "Multiple Choice"
     case "openended":
       return "Open Ended"
-    case "fill-blanks":
+    case "blanks":
       return "Fill in the Blanks"
     case "code":
       return "Code"

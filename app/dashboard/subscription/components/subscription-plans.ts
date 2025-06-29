@@ -59,7 +59,7 @@ export const FEATURES: Record<
     icon: "ListChecks",
   },
   FILL_BLANKS: {
-    id: "fill-blanks",
+    id: "blanks",
     name: "Fill in the Blanks",
     description: "Create fill-in-the-blank exercises",
     category: FeatureCategory.CONTENT,
