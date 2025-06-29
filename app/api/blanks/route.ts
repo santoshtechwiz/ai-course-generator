@@ -15,21 +15,21 @@ interface OpenEndedFillInTheBlanksQuestion {
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession()
-    const { title, questionCount } = await req.json()
+    const { title, amount, topic, difficulty } = await req.json()
     const userId = session?.user.id
 
     if (!userId) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
-    const creditDeduction = questionCount > 5 ? 2 : 1
+    const creditDeduction = amount > 5 ? 2 : 1
 
     if (session.user.credits < creditDeduction) {
       return { error: "Insufficient credits", status: 403 }
     }
 
     // Move quiz and slug generation outside the transaction
-    const quiz = await generateOpenEndedFillIntheBlanks(title, questionCount)
-    let baseSlug = generateSlug(title)
+    const quiz = await generateOpenEndedFillIntheBlanks(topic, amount, "")
+    let baseSlug = generateSlug(topic)
     let slug = baseSlug
     let suffix = 2
 
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
           },
         },
       })
-    })
+    }, { timeout: 15000 }) // Increased transaction timeout to 15 seconds
 
     return NextResponse.json({ quizId: userQuiz.id, slug: userQuiz.slug })
   } catch (error) {
