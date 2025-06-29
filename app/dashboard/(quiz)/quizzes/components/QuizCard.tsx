@@ -15,7 +15,8 @@ import {
   Circle,
 } from "lucide-react"
 import { motion } from "framer-motion"
-import { AsyncNavLink } from "@/components/ui/loader/index"
+import { AsyncNavLink } from "@/components/ui"
+
 
 interface QuizCardProps {
   title: string

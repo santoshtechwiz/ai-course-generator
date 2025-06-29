@@ -379,10 +379,16 @@ export default function VideoNavigationSidebar({
                   const isLocked = !isAuthenticated && !chapter.isFree
                   const isNextVideo = chapter.videoId === nextVideoId
 
+                  // Ensure description is undefined if null
+                  const chapterWithDescriptionFix = {
+                    ...chapter,
+                    description: chapter.description === null ? undefined : chapter.description,
+                  }
+
                   return (
                     <ChapterItem
                       key={chapter.id}
-                      chapter={chapter}
+                      chapter={chapterWithDescriptionFix}
                       isActive={isActive}
                       isCompleted={isCompleted}
                       isLocked={isLocked}

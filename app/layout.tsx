@@ -4,7 +4,7 @@ import "../globals.css"
 import "../fonts.css"  // Import our fallback font configuration
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
- import { fontInterSans, fontRobotoSans } from "./font"
+import { fontInterSans, fontRobotoSans } from "./font"
 
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
@@ -72,15 +72,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : ""
 
   return (
-    <html 
-      lang="en" 
-      suppressHydrationWarning 
+    <html
+      lang="en"
+      suppressHydrationWarning
       className={`scroll-smooth`}
     >
       <head>
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
+
+
       </head>
-    
+
       <body className={`${fontClasses} antialiased min-h-screen flex flex-col`}>
         <Suspense
           fallback={

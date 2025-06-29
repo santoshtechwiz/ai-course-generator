@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronDown, ChevronUp } from "lucide-react"
+import { InlineLoader } from "@/components/ui/loader"
 
 interface DebugPanelProps {
   editingChapterId: string | null
@@ -23,6 +24,22 @@ const DebugPanel = ({
   totalChaptersCount,
 }: DebugPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleLogToConsole = () => {
+    setIsLoading(true)
+    setTimeout(() => {
+      console.log({
+        editingChapterId,
+        showVideoDialog,
+        currentVideoId,
+        addingToUnitId,
+        completedChapters: Array.from(completedChapters),
+        totalChaptersCount,
+      })
+      setIsLoading(false)
+    }, 500)
+  }
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -73,19 +90,11 @@ const DebugPanel = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 text-xs"
-                onClick={() =>
-                  console.log({
-                    editingChapterId,
-                    showVideoDialog,
-                    currentVideoId,
-                    addingToUnitId,
-                    completedChapters: Array.from(completedChapters),
-                    totalChaptersCount,
-                  })
-                }
+                className="h-6 text-xs bg-transparent"
+                onClick={handleLogToConsole}
+                disabled={isLoading}
               >
-                Log to Console
+                {isLoading ? <InlineLoader size="xs" /> : "Log to Console"}
               </Button>
             </div>
           </CardContent>

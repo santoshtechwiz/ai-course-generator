@@ -4,12 +4,23 @@ import * as React from "react"
 import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookIcon, UsersIcon, FileQuestionIcon, StarIcon, EyeIcon, Clock, BookOpen, Loader2 } from "lucide-react"
-import { Code, Globe, Database, Cloud, Paintbrush, Smartphone, Shield, Brain } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import {
+  BookOpen, Users, FileQuestion, Star, Eye, Clock,
+  Code, Globe, Database, Cloud, Paintbrush,
+  Smartphone, Shield, BrainCircuit, Loader2
+} from "lucide-react"
+import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
+
+// Array of placeholder course images (replace with your actual image paths)
+const COURSE_IMAGES = [
+  "/course.png",
+  "/course_2.png",
+  "/course_3.png",
+  "/course_4.png",
+]
 
 export interface CourseCardProps {
   title: string
@@ -25,263 +36,217 @@ export interface CourseCardProps {
   className?: string
   loading?: boolean
   image?: string
-  difficulty?: string
+  difficulty?: "Beginner" | "Intermediate" | "Advanced"
 }
 
-// Level configuration with enhanced styling
 const LEVEL_CONFIG = {
   Beginner: {
-    badge:
-      "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
-    icon: "text-emerald-500 dark:text-emerald-400",
-    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    badge: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    icon: "text-emerald-500",
+    bg: "bg-emerald-500/5"
   },
   Intermediate: {
-    badge:
-      "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
-    icon: "text-amber-500 dark:text-amber-400",
-    bg: "bg-amber-50 dark:bg-amber-900/20",
+    badge: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    icon: "text-amber-500",
+    bg: "bg-amber-500/5"
   },
   Advanced: {
-    badge: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800",
-    icon: "text-rose-500 dark:text-rose-400",
-    bg: "bg-rose-50 dark:bg-rose-900/20",
-  },
-}
-
-// Enhanced category icons with more options
-const getCategoryIcon = (category: string) => {
-  if (!category) return <BookOpen className="h-full w-full" />
-
-  const categoryLower = category.toLowerCase()
-
-  // Map category names to appropriate icons
-  if (categoryLower.includes("programming") || categoryLower.includes("coding")) {
-    return <Code className="h-full w-full" />
-  } else if (categoryLower.includes("web") || categoryLower.includes("development")) {
-    return <Globe className="h-full w-full" />
-  } else if (categoryLower.includes("data") || categoryLower.includes("science")) {
-    return <Database className="h-full w-full" />
-  } else if (categoryLower.includes("cloud") || categoryLower.includes("devops")) {
-    return <Cloud className="h-full w-full" />
-  } else if (categoryLower.includes("design") || categoryLower.includes("ui") || categoryLower.includes("ux")) {
-    return <Paintbrush className="h-full w-full" />
-  } else if (categoryLower.includes("mobile") || categoryLower.includes("app")) {
-    return <Smartphone className="h-full w-full" />
-  } else if (categoryLower.includes("security") || categoryLower.includes("cyber")) {
-    return <Shield className="h-full w-full" />
-  } else if (categoryLower.includes("ai") || categoryLower.includes("machine")) {
-    return <Brain className="h-full w-full" />
-  } else {
-    return <BookOpen className="h-full w-full" />
+    badge: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+    icon: "text-rose-500",
+    bg: "bg-rose-500/5"
   }
 }
 
-// Improved CourseCard with enhanced animations, accessibility, and responsive design
-export const CourseCard = React.memo(
-  ({
-    title,
-    description,
-    rating,
-    slug,
-    unitCount,
-    lessonCount,
-    quizCount,
-    viewCount,
-    category,
-    duration = "4-6 weeks",
-    className,
-    loading = false,
-    image,
-    difficulty,
-  }: CourseCardProps) => {
-    const [isNavigating, setIsNavigating] = useState(false)
-    const [imageError, setImageError] = useState(false)
-    const router = useRouter()
-    const courseLevel = difficulty || determineCourseLevel(unitCount, lessonCount, quizCount)
-    const config = LEVEL_CONFIG[courseLevel as keyof typeof LEVEL_CONFIG] || LEVEL_CONFIG.Intermediate
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  programming: Code,
+  web: Globe,
+  data: Database,
+  cloud: Cloud,
+  design: Paintbrush,
+  mobile: Smartphone,
+  security: Shield,
+  ai: BrainCircuit,
+  default: BookOpen
+}
 
-    // Handle card click with loading state
-    const handleCardClick = (e: React.MouseEvent) => {
-      e.preventDefault()
-      setIsNavigating(true)
-      router.push(`/dashboard/course/${slug}`)
-    }
+export const CourseCard = React.memo(({
+  title,
+  description,
+  rating,
+  slug,
+  unitCount,
+  lessonCount,
+  quizCount,
+  viewCount,
+  category = "General",
+  duration = "4-6 weeks",
+  className,
+  loading = false,
+  image,
+  difficulty
+}: CourseCardProps) => {
+  const [isNavigating, setIsNavigating] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const router = useRouter()
 
-    // Loading skeleton with improved animation
-    if (loading) {
-      return (
-        <Card className={cn("h-full overflow-hidden border border-border/50", className)}>
-          <div className="w-full h-40 bg-muted/60 animate-pulse rounded-t-lg" />
-          <CardContent className="p-4 space-y-4">
-            <div className="h-6 w-3/4 bg-muted/60 rounded-md animate-pulse" />
-            <div className="h-4 w-full bg-muted/60 rounded-md animate-pulse" />
-            <div className="grid grid-cols-3 gap-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 bg-muted/60 rounded-md animate-pulse" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )
-    }
+  // Select a random image if none provided
+  const selectedImage = COURSE_IMAGES[Math.floor(Math.random() * COURSE_IMAGES.length)]
+  const courseLevel = difficulty || determineCourseLevel(unitCount, lessonCount, quizCount)
+  const levelConfig = LEVEL_CONFIG[courseLevel] || LEVEL_CONFIG.Intermediate
 
+  // Get appropriate icon for category
+  const getCategoryIcon = () => {
+    const normalizedCategory = category.toLowerCase()
+    const Icon =
+      CATEGORY_ICONS[normalizedCategory] ||
+        Object.keys(CATEGORY_ICONS).find(key => normalizedCategory.includes(key)) ?
+        CATEGORY_ICONS[Object.keys(CATEGORY_ICONS).find(key => normalizedCategory.includes(key))!] :
+        CATEGORY_ICONS.default
+    return <Icon className="h-5 w-5" />
+  }
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsNavigating(true)
+    router.push(`/dashboard/course/${slug}`)
+  }
+
+  if (loading) {
     return (
-      <motion.div
-        whileHover={{ y: -8, transition: { type: "spring", stiffness: 300, damping: 20 } }}
+      <Card className={cn("h-full overflow-hidden border border-border/50 animate-pulse", className)}>
+        <div className="w-full aspect-video bg-muted rounded-t-lg" />
+        <CardContent className="p-6 space-y-4">
+          <div className="h-6 w-3/4 bg-muted rounded" />
+          <div className="h-4 w-full bg-muted rounded" />
+          <div className="grid grid-cols-3 gap-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-muted rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <motion.div
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      className={cn("h-full outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
+    >
+      <Card
+        onClick={handleCardClick}
         className={cn(
-          "h-full outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg transition-all duration-300",
-          className,
+          "h-full overflow-hidden border-border/50 hover:border-primary/30 transition-colors cursor-pointer",
+          "flex flex-col group relative"
         )}
       >
-        <a
-          href={`/dashboard/course/${slug}`}
-          onClick={handleCardClick}
-          className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
-          aria-label={`View ${title} course`}
-        >
-          <motion.div
-            initial={{ boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
-            whileHover={{
-              boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)",
-              borderColor: "rgba(var(--primary), 0.3)",
-            }}
-            transition={{ duration: 0.3 }}
-            className="h-full"
-          >
-            <Card className="h-full overflow-hidden border-muted hover:border-primary/20 transition-colors duration-300 bg-card relative">
-              {isNavigating && (
-                <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20 backdrop-blur-sm">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              )}
+        {isNavigating && (
+          <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
 
-              {/* Course Image with Icon */}
+        {/* Image Section */}
+        <div className={cn("relative w-full aspect-video overflow-hidden", levelConfig.bg)}>
+          {!imageError ? (
+            <Image
+              src={selectedImage}
+              alt={title}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              priority
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+              <div className="w-16 h-16 text-primary/80">{getCategoryIcon()}</div>
+            </div>
+          )}
+
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex gap-2">
+            <Badge className={cn("px-3 py-1 rounded-full", levelConfig.badge)}>
+              {courseLevel}
+            </Badge>
+            {category && (
+              <Badge variant="secondary" className="px-3 py-1 rounded-full">
+                {category}
+              </Badge>
+            )}
+          </div>
+
+          {/* Rating and Views */}
+          <div className="absolute bottom-3 left-3 right-3 flex justify-between">
+            <div className="flex items-center gap-1.5 bg-background/90 px-3 py-1 rounded-full backdrop-blur-sm">
+              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500/20" />
+              <span className="text-sm font-medium">
+                {typeof rating === "number" ? rating.toFixed(1) : "0.0"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-background/90 px-3 py-1 rounded-full backdrop-blur-sm">
+              <Eye className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {viewCount > 999 ? `${(viewCount / 1000).toFixed(1)}k` : viewCount}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <CardHeader className="pb-3">
+          <h3 className="text-lg font-semibold leading-tight line-clamp-2">
+            {title}
+          </h3>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {description}
+          </p>
+        </CardHeader>
+
+        {/* Stats Section */}
+        <CardContent className="py-0 px-6">
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { icon: BookOpen, label: "Units", value: unitCount },
+              { icon: Users, label: "Lessons", value: lessonCount },
+              { icon: FileQuestion, label: "Quizzes", value: quizCount }
+            ].map((stat, index) => (
               <motion.div
-                className={cn("relative w-full h-52", config.bg)}
-                initial={{ opacity: 0.9 }}
-                whileHover={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
+                key={index}
+                whileHover={{ scale: 1.05 }}
+                className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50"
               >
-                {image && !imageError ? (
-                  <Image
-                    src={image}
-                    alt={title}
-                    fill
-                    className="object-cover opacity-90 hover:opacity-100 transition-opacity"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    priority
-                    quality={75}
-                    onError={() => setImageError(true)}
-                  />
-                ) : (
-                  <motion.div
-                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <div className="w-16 h-16 text-primary/80">{getCategoryIcon(category)}</div>
-                  </motion.div>
-                )}
-
-                {/* Level Badge */}
-                <Badge
-                  variant="secondary"
-                  className={cn("absolute top-3 left-3 rounded-full px-2.5 py-0.5 z-10", config.badge)}
-                >
-                  {courseLevel}
-                </Badge>
-
-                {/* Rating and Views */}
-                <div className="absolute bottom-3 left-3 right-3 flex justify-between z-10">
-                  <motion.div
-                    className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 backdrop-blur-sm"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  >
-                    <StarIcon className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
-                    <span className="text-xs font-medium text-white">
-                      {typeof rating === "number" ? rating.toFixed(1) : "0.0"}
-                    </span>
-                  </motion.div>
-                  <motion.div
-                    className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full text-white text-xs backdrop-blur-sm"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  >
-                    <EyeIcon className="h-3 w-3" />
-                    <span>{viewCount > 999 ? `${(viewCount / 1000).toFixed(1)}k` : viewCount}</span>
-                  </motion.div>
-                </div>
+                <stat.icon className={cn("h-5 w-5", levelConfig.icon)} />
+                <span className="text-sm font-medium">{stat.value}</span>
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
               </motion.div>
+            ))}
+          </div>
+        </CardContent>
 
-              <CardContent className="p-5 space-y-4">
-                {/* Title and Description */}
-                <div>
-                  <motion.h3
-                    className="text-lg font-bold tracking-tight line-clamp-1 mb-1 group-hover:text-primary transition-colors"
-                    whileHover={{ x: 2 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  >
-                    {title}
-                  </motion.h3>
-                  <p className="text-muted-foreground line-clamp-2 text-sm">{description}</p>
-                </div>
-
-                {/* Category and Duration */}
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <motion.div
-                    className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full"
-                    whileHover={{ scale: 1.05, backgroundColor: "rgba(var(--primary), 0.1)" }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  >
-                    <BookIcon className="h-3 w-3 text-primary" />
-                    <span>{category}</span>
-                  </motion.div>
-                  <motion.div
-                    className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full"
-                    whileHover={{ scale: 1.05, backgroundColor: "rgba(var(--primary), 0.1)" }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  >
-                    <Clock className="h-3 w-3 text-muted-foreground" />
-                    <span>{duration}</span>
-                  </motion.div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { icon: BookIcon, label: "Units", value: unitCount },
-                    { icon: UsersIcon, label: "Lessons", value: lessonCount },
-                    { icon: FileQuestionIcon, label: "Quizzes", value: quizCount },
-                  ].map((stat) => (
-                    <motion.div
-                      key={stat.label}
-                      className="flex flex-col items-center p-2 rounded-lg bg-muted/50"
-                      whileHover={{
-                        scale: 1.05,
-                        backgroundColor: "rgba(var(--primary), 0.1)",
-                      }}
-                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    >
-                      <stat.icon className={cn("h-4 w-4 mb-1", config.icon)} />
-                      <span className="font-semibold text-base">{stat.value}</span>
-                      <span className="text-xs text-muted-foreground">{stat.label}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </a>
-      </motion.div>
-    )
-  },
-)
+        {/* Footer */}
+        <CardFooter className="pt-4 pb-6 px-6 flex justify-between items-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>{duration}</span>
+          </div>
+          <Badge variant="outline" className="text-sm">
+            Enroll Now
+          </Badge>
+        </CardFooter>
+      </Card>
+    </motion.div>
+  )
+})
 
 CourseCard.displayName = "CourseCard"
 
-const determineCourseLevel = (unitCount: number, lessonCount: number, quizCount: number): keyof typeof LEVEL_CONFIG => {
+const determineCourseLevel = (
+  unitCount: number,
+  lessonCount: number,
+  quizCount: number
+): keyof typeof LEVEL_CONFIG => {
   const totalItems = unitCount + lessonCount + quizCount
   if (totalItems < 15) return "Beginner"
   if (totalItems < 30) return "Intermediate"

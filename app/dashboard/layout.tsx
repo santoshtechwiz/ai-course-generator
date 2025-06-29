@@ -1,13 +1,15 @@
 import type React from "react"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
-import { FullPageLoader } from "@/components/ui/loader"
+
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 import CourseAIState from "@/components/development/CourseAIState"
 
 import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
+import { LoadingSkeleton, LoadingSpinner } from "@/components"
+
 
 
 export const viewport = {
@@ -30,7 +32,7 @@ export default async function DashboardLayout({
          
           
           <main className="flex-1 pt-16 ">
-            <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
+            <Suspense fallback={<LoadingSkeleton/>}>{children}</Suspense>
           </main>
 
           <Toaster />
