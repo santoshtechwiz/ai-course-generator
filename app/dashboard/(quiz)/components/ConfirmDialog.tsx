@@ -12,32 +12,40 @@ import {
 import { Button } from "@/components/ui/button"
 
 export interface ConfirmDialogProps {
-  trigger: React.ReactNode
+  trigger?: React.ReactNode
   onConfirm: () => void | Promise<void>
+  onCancel?: () => void
   title?: string
   description?: string
   confirmText?: string
   cancelText?: string
   children?: React.ReactNode
+  isOpen?: boolean
 }
 
 export function ConfirmDialog({
   trigger,
   onConfirm,
+  onCancel,
   title = "Are you sure?",
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
   children,
+  isOpen,
 }: ConfirmDialogProps) {
-  const [open, setOpen] = React.useState(false)
+  const [internalOpen, setInternalOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
+
+  const isControlled = typeof isOpen === "boolean"
+  const open = isControlled ? isOpen : internalOpen
+  const setOpen = isControlled ? (v: boolean) => (v ? undefined : onCancel?.()) : setInternalOpen
 
   const handleConfirm = async () => {
     setLoading(true)
     try {
       await onConfirm()
-      setOpen(false)
+      if (!isControlled) setInternalOpen(false)
     } finally {
       setLoading(false)
     }
@@ -45,7 +53,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

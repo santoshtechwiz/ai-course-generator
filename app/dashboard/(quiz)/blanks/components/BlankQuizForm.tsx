@@ -57,7 +57,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       ? params.difficulty
       : "easy") as "easy" | "medium" | "hard",
     topic: params?.topic || "",
-    type: "fill_in_the_blanks",
+    type: "blanks",
   })
 
   const {
@@ -70,7 +70,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   } = useForm<BlankQuizFormData>({
     resolver: zodResolver(blanksQuizSchema),
     defaultValues: formData,
-    mode: "onChange",
+    mode: "all", // Changed from "onChange" to "all" for better validation
   })
 
   React.useEffect(() => {
@@ -145,9 +145,9 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         amount: formValues.amount,
         difficulty: formValues.difficulty,
         topic: formValues.topic,
-        type: "fill_in_the_blanks",
+        type: "blanks",
       })
-      const userQuizId = response?.userQuizId
+      const userQuizId = response?.quizId
 
       if (!userQuizId) throw new Error("Blanks Quiz ID not found")
 
