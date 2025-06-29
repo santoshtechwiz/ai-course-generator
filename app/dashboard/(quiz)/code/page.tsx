@@ -3,7 +3,8 @@
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { EnhancedLoader } from "@/components/ui/loader/enhanced-loader"
+import QuizLoader from "@/components/ui/quiz-loader"
+
 
 const CodePage = () => {
   // Use our standardized hook for all quiz pages
@@ -18,7 +19,7 @@ const CodePage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <EnhancedLoader isLoading={true} message="Loading subscription details..." subMessage="Getting your plan information" />
+        <QuizLoader context="loading" />
       ) : (
         <CodeQuizForm 
           credits={quizPlan.credits} 

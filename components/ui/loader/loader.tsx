@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils"
 import { Loader2, Brain, CheckCircle2, Clock, BookOpen, Zap, Target, Trophy } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { ReactNode } from "react"
+import { memo } from "react"
 
 export type LoaderSize = "xs" | "sm" | "md" | "lg" | "xl"
 export type LoaderVariant = "inline" | "fullscreen" | "card" | "overlay" | "skeleton" | "minimal"
@@ -46,60 +47,60 @@ const contextConfig = {
     defaultMessage: "Loading...",
     defaultSubMessage: "Please wait while we prepare your content",
     color: "text-blue-500",
-    bgColor: "bg-blue-50",
+    bgColor: "bg-blue-50 dark:bg-blue-950/20",
   },
   quiz: {
     icon: Brain,
-    defaultMessage: "Generating Quiz...",
-    defaultSubMessage: "Creating personalized questions for you",
+    defaultMessage: "Loading Quiz...",
+    defaultSubMessage: "Preparing your personalized questions",
     color: "text-purple-500",
-    bgColor: "bg-purple-50",
+    bgColor: "bg-purple-50 dark:bg-purple-950/20",
   },
   result: {
     icon: Trophy,
     defaultMessage: "Processing Results...",
     defaultSubMessage: "Calculating your performance metrics",
     color: "text-green-500",
-    bgColor: "bg-green-50",
+    bgColor: "bg-green-50 dark:bg-green-950/20",
   },
   submitting: {
     icon: Clock,
     defaultMessage: "Submitting...",
     defaultSubMessage: "Processing your responses",
     color: "text-orange-500",
-    bgColor: "bg-orange-50",
+    bgColor: "bg-orange-50 dark:bg-orange-950/20",
   },
   processing: {
     icon: Zap,
     defaultMessage: "Processing...",
     defaultSubMessage: "Analyzing your data",
     color: "text-indigo-500",
-    bgColor: "bg-indigo-50",
+    bgColor: "bg-indigo-50 dark:bg-indigo-950/20",
   },
   saving: {
     icon: CheckCircle2,
     defaultMessage: "Saving...",
     defaultSubMessage: "Securing your progress",
     color: "text-emerald-500",
-    bgColor: "bg-emerald-50",
+    bgColor: "bg-emerald-50 dark:bg-emerald-950/20",
   },
   course: {
     icon: BookOpen,
     defaultMessage: "Loading Course...",
     defaultSubMessage: "Preparing your learning experience",
     color: "text-cyan-500",
-    bgColor: "bg-cyan-50",
+    bgColor: "bg-cyan-50 dark:bg-cyan-950/20",
   },
   generating: {
     icon: Target,
     defaultMessage: "Generating Content...",
     defaultSubMessage: "AI is creating your personalized content",
     color: "text-pink-500",
-    bgColor: "bg-pink-50",
+    bgColor: "bg-pink-50 dark:bg-pink-950/20",
   },
 }
 
-export function Loader({
+const LoaderComponent = memo(function LoaderComponent({
   size = "md",
   variant = "inline",
   context = "loading",
@@ -165,35 +166,6 @@ export function Loader({
       </motion.div>
     )
 
-  const renderSkeleton = () => (
-    <div className="space-y-4 animate-pulse">
-      <div className="flex items-center justify-between">
-        <div className="space-x-2 flex">
-          <div className="h-10 w-[100px] bg-muted rounded-lg"></div>
-          <div className="h-10 w-[100px] bg-muted rounded-lg"></div>
-          <div className="h-10 w-[100px] bg-muted rounded-lg"></div>
-        </div>
-        <div className="hidden md:flex gap-4">
-          <div className="h-[74px] w-[120px] bg-muted rounded-lg"></div>
-          <div className="h-[74px] w-[120px] bg-muted rounded-lg"></div>
-          <div className="h-[74px] w-[120px] bg-muted rounded-lg"></div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
-        <div className="space-y-4">
-          <div className="h-10 w-full bg-muted rounded-lg"></div>
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-[72px] w-full bg-muted rounded-lg"></div>
-            ))}
-          </div>
-        </div>
-        <div className="h-[500px] w-full bg-muted rounded-lg"></div>
-      </div>
-    </div>
-  )
-
   const renderContent = () => (
     <motion.div
       initial={animated ? { opacity: 0, y: 20 } : {}}
@@ -227,34 +199,38 @@ export function Loader({
     </motion.div>
   )
 
+  const renderSkeleton = () => <div className="w-full h-full bg-muted animate-pulse"></div>
+
   switch (variant) {
     case "skeleton":
       return <div className={cn("w-full", className)}>{renderSkeleton()}</div>
 
     case "fullscreen":
       return (
-        <AnimatePresence>
-          <motion.div
-            initial={animated ? { opacity: 0 } : {}}
-            animate={animated ? { opacity: 1 } : {}}
-            exit={animated ? { opacity: 0 } : {}}
-            transition={{ duration: 0.3 }}
-            className={cn(
-              "fixed inset-0 z-50 bg-background/95 backdrop-blur-sm",
-              "flex flex-col items-center justify-center",
-              className,
-            )}
-          >
-            <div
+        <AnimatePresence mode="wait">
+          {isLoading && (
+            <motion.div
+              initial={animated ? { opacity: 0 } : {}}
+              animate={animated ? { opacity: 1 } : {}}
+              exit={animated ? { opacity: 0 } : {}}
+              transition={{ duration: 0.3 }}
               className={cn(
-                "flex flex-col items-center gap-6 p-8 rounded-2xl max-w-md mx-4",
-                "bg-card border shadow-2xl",
-                config.bgColor,
+                "fixed inset-0 z-[9999] bg-background/95 backdrop-blur-sm",
+                "flex flex-col items-center justify-center",
+                className,
               )}
             >
-              {renderContent()}
-            </div>
-          </motion.div>
+              <div
+                className={cn(
+                  "flex flex-col items-center gap-6 p-8 rounded-2xl max-w-md mx-4",
+                  "bg-card border shadow-2xl",
+                  config.bgColor,
+                )}
+              >
+                {renderContent()}
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       )
 
@@ -311,7 +287,9 @@ export function Loader({
     default:
       return <div className={cn("flex flex-col items-center gap-4 text-center", className)}>{renderContent()}</div>
   }
-}
+})
+
+export const Loader = LoaderComponent
 
 // Convenience components for common use cases
 export function FullPageLoader({

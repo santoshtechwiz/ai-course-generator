@@ -17,12 +17,14 @@ import {
   submitQuiz,
   fetchQuiz,
 } from "@/store/slices/quiz-slice"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
 import { QuizActions } from "../../components/QuizActions"
+import { Loader } from "@/components/ui/loader/index"
+
 
 interface McqQuizWrapperProps {
   slug: string
@@ -147,7 +149,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-    return <QuizLoader message="Loading quiz..." />
+    return <Loader context="quiz" className="w-8 h-8 mx-auto mt-10" />
   }
 
   if (hasError) {
@@ -165,7 +167,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   }
 
   if (!formattedQuestion) {
-    return <QuizLoader message="Preparing quiz..." />
+      return <Loader context="quiz" className="w-8 h-8 mx-auto mt-10" />
   }
 
   return (

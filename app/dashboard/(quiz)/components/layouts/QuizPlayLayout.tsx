@@ -7,8 +7,10 @@ import { Suspense, useMemo, useEffect, useState } from "react"
 import { JsonLD } from "@/app/schema/components"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { QuizLoader } from "@/components/ui/quiz-loader"
-export const dynamic = 'force-dynamic'
+import { useLoader } from "@/components/ui/loader/loader-context"
+
+export const dynamic = "force-dynamic"
+
 interface QuizPlayLayoutProps {
   children: React.ReactNode
   quizSlug?: string
@@ -18,14 +20,12 @@ interface QuizPlayLayoutProps {
   isFavorite?: boolean
 }
 
-/**
- * Layout component for all quiz play pages (mcq/[slug], code/[slug], blanks/[slug], openended/[slug])
- * Displays the quiz content on the left and a sidebar on the right
- */
 const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = "", quizType = "quiz" }) => {
   const isMobile = useMediaQuery("(max-width: 768px)")
   const pathname = usePathname()
   const [isLoaded, setIsLoaded] = useState(false)
+  const { isLoading } = useLoader()
+
   const [quizMeta, setQuizMeta] = useState({
     title:
       typeof document !== "undefined"
@@ -40,28 +40,22 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
     try {
       if (typeof document === "undefined") return
 
-      // Get document title with better fallback
       const pageTitle = document?.title || "Interactive Programming Quiz"
-
-      // Get description from meta tag with better error handling
       const metaDescription =
         document?.querySelector('meta[name="description"]')?.getAttribute("content") ||
         document?.querySelector('meta[property="og:description"]')?.getAttribute("content") ||
         "Test your programming knowledge with this interactive quiz"
 
-      // Extract quiz type from URL if not provided in props
       const urlSegments = pathname?.split("/").filter(Boolean) || []
       const typeFromUrl = urlSegments[1] || quizType
       const slugFromUrl = urlSegments[2] || quizSlug
 
-      // Update quiz metadata state
       setQuizMeta({
         title: pageTitle,
         description: metaDescription,
         type: typeFromUrl as any,
       })
 
-      // Improve title formatting with better fallbacks
       if (slugFromUrl && !pageTitle.toLowerCase().includes("quiz")) {
         const formattedTitle = `${slugFromUrl
           .split("-")
@@ -77,7 +71,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
         }
       }
 
-      // Setup observer for title changes
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.target.nodeName === "TITLE") {
@@ -98,7 +91,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
         })
       }
 
-      // Set loaded after a short delay to avoid layout flicker
       const timer = setTimeout(() => setIsLoaded(true), 100)
       return () => {
         observer.disconnect()
@@ -106,7 +98,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
       }
     } catch (error) {
       console.warn("Failed to update quiz metadata:", error)
-      // Still set loaded state even if there's an error
       setIsLoaded(true)
     }
   }, [pathname, quizType, quizSlug])
@@ -135,8 +126,12 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
     )
   }, [isMobile])
 
-  // Quiz structured data for SEO
   const quizTypeLabel = getQuizTypeLabel(quizMeta.type)
+
+  // Don't render layout content if global loader is active
+  if (isLoading) {
+    return null
+  }
 
   return (
     <div className="container mx-auto py-4 px-3 md:px-4 lg:px-6">
@@ -165,7 +160,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
         transition={{ duration: 0.4, delay: 0.2 }}
         layout
       >
-        {/* Main quiz content area */}
         <motion.div
           className="flex-1 min-w-0 max-w-none min-h-[60vh] lg:min-h-[70vh]"
           layout
@@ -181,12 +175,10 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <QuizLoader message={`Loading ${quizMeta.title}...`} />
             {children}
           </motion.div>
         </motion.div>
 
-        {/* Sidebar - hidden on mobile, shown as a column on desktop */}
         {!isMobile && (
           <motion.div
             className="lg:w-80 xl:w-96 shrink-0"
@@ -219,7 +211,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
   )
 }
 
-// Helper function to get user-friendly quiz type labels
 function getQuizTypeLabel(quizType: string): string {
   switch (quizType) {
     case "mcq":

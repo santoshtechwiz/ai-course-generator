@@ -18,13 +18,14 @@ import {
   resetSubmissionState,
   selectQuizType,
 } from "@/store/slices/quiz-slice"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import OpenEndedQuiz from "./OpenEndedQuiz"
 import { useLoader } from "@/components/ui/loader/loader-context"
 
 import { QuizActions } from "../../components/QuizActions"
+import { Loader } from "@/components/ui/loader/index"
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -160,7 +161,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     }, [currentQuestion])
   
     if (isLoading) {
-      return <QuizLoader message="Loading quiz..." />
+      return <Loader context="quiz" className="w-8 h-8 mx-auto mt-10" />
     }
   
     if (hasError) {
