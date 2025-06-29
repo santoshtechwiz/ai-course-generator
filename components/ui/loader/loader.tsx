@@ -289,7 +289,7 @@ const LoaderComponent = memo(function LoaderComponent({
   }
 })
 
-export const Loader = LoaderComponent
+export const CourseAILoader = LoaderComponent
 
 // Convenience components for common use cases
 export function FullPageLoader({
@@ -306,7 +306,7 @@ export function FullPageLoader({
   showProgress?: boolean
 }) {
   return (
-    <Loader
+    <CourseAILoader
       variant="fullscreen"
       size="lg"
       message={message}
@@ -330,7 +330,7 @@ export function InlineLoader({
   className?: string
   context?: LoaderContext
 }) {
-  return <Loader variant="inline" size={size} message={message} className={className} context={context} />
+  return <CourseAILoader variant="inline" size={size} message={message} className={className} context={context} />
 }
 
 export function MinimalLoader({
@@ -342,7 +342,7 @@ export function MinimalLoader({
   message?: string
   context?: LoaderContext
 }) {
-  return <Loader variant="minimal" size={size} message={message} context={context} />
+  return <CourseAILoader variant="minimal" size={size} message={message} context={context} />
 }
 
 export function CardLoader({
@@ -361,7 +361,7 @@ export function CardLoader({
   showProgress?: boolean
 }) {
   return (
-    <Loader
+    <CourseAILoader
       variant="card"
       size="lg"
       message={message}
@@ -375,7 +375,7 @@ export function CardLoader({
 }
 
 export function SkeletonLoader({ className }: { className?: string }) {
-  return <Loader variant="skeleton" className={className} />
+  return <CourseAILoader variant="skeleton" className={className} />
 }
 
-export default Loader
+export default CourseAILoader

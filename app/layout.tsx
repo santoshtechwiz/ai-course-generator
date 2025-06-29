@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "../globals.css"
-import "../fonts.css"  // Import our fallback font configuration
+
 import { JsonLD } from "@/app/schema/components"
 import { defaultMetadata } from "@/lib/seo"
 import { fontInterSans, fontRobotoSans } from "./font"
@@ -71,10 +71,6 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerAuthSession()
 
-  const isProd = process.env.NODE_ENV === "development" ? false : true
-  const fontClasses = isProd
-    ? `${fontInterSans.variable} ${fontRobotoSans.variable}`
-    : ""
 
   return (
     <html
@@ -90,7 +86,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
       </head>
 
-      <body className={`${fontClasses} antialiased min-h-screen flex flex-col`}>
+      <body className={`${fontRobotoSans.variable} antialiased min-h-screen flex flex-col`}>
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
