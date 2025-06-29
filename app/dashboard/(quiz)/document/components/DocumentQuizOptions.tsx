@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
 interface DocumentQuizOptionsProps {
@@ -38,12 +37,12 @@ export function DocumentQuizOptions({ onOptionsChange }: DocumentQuizOptionsProp
 
       <div>
         <Label>Difficulty</Label>
-        <Slider
-          min={0}
-          max={100}
-          step={1}
-          value={[options.difficulty]}
-          onValueChange={(value) => handleChange("difficulty", value[0])}
+        <SubscriptionSlider
+         
+        
+       
+          value={options.difficulty}
+          onValueChange={(value) => handleChange("difficulty", value)}
         />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Easy</span>

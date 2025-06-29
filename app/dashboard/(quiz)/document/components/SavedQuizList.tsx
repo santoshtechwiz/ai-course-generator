@@ -42,7 +42,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Quiz } from "@/hooks/useRandomQuizzes"
+import { quizStore, type Quiz } from "@/lib/quiz-store"
 
 interface SavedQuizListProps {
   quizzes: Quiz[]
@@ -116,9 +116,9 @@ export function SavedQuizList({ quizzes, onRefresh, onEditQuiz }: SavedQuizListP
     setShowDeleteDialog(true)
   }
 
-  const confirmDeleteQuiz = () => {
+  const confirmDeleteQuiz = async () => {
     if (selectedQuizId) {
-      quizStore.deleteQuiz(selectedQuizId)
+      await quizStore.deleteQuiz(selectedQuizId)
       onRefresh()
       toast({
         title: "Quiz Deleted",

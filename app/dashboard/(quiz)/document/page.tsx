@@ -14,7 +14,7 @@ import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
 import PlanAwareButton from "../components/PlanAwareButton"
 import { quizStore, type Question as QuizStoreQuestion, type Quiz } from "@/lib/quiz-store"
-import { DocumentQuizDisplay } from "./components/DocumentQuizDisplay"
+import  DocumentQuizDisplay  from "./components/DocumentQuizDisplay"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
 
 interface QuizOptionsType {
@@ -59,29 +59,22 @@ export default function DocumentQuizPage() {
   // Use our standardized hook for all quiz pages
   const quizPlan = useQuizPlan()
 
-  // Load saved quizzes on component mount
-  const loadSavedQuizzes = () => {
-    try {
-      const loadedQuizzes = quizStore.getAllQuizzes()
-      setSavedQuizzes(loadedQuizzes)
-    } catch (error) {
-      console.error("Error loading quizzes:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load saved quizzes. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
+  // Async load quizzes from IndexedDB
   useEffect(() => {
-    loadSavedQuizzes()
+    ;(async () => {
+      const loaded = await quizStore.getAllQuizzes()
+      setSavedQuizzes(Array.isArray(loaded) ? loaded : [])
+    })()
   }, [])
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile)
   }
 
+  const loadSavedQuizzes = async () => {
+    const loadedQuizzes = await quizStore.getAllQuizzes()
+    setSavedQuizzes(Array.isArray(loadedQuizzes) ? loadedQuizzes : [])
+  }
   const handleOptionsChange = (options: QuizOptionsType) => {
     setQuizOptions(options)
     // If the title is passed from DocumentQuizOptions, update it
@@ -133,6 +126,10 @@ export default function DocumentQuizPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+  const playQuiz = (quizId: string) => {
+    // Redirect to the quiz play page
+    window.location.href = `/dashboard/quiz/play/${quizId}`
   }
 
   const handleSaveQuiz = async (quizToSave?: Question[]) => {
@@ -404,33 +401,11 @@ export default function DocumentQuizPage() {
         </TabsContent>
 
         <TabsContent value="saved">
-          {savedQuizzes.length === 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>No Quizzes Found</CardTitle>
-                <CardDescription>
-                  You haven't created any quizzes yet. Generate and save a quiz to get started.
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button onClick={handleCreateNewQuiz}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Quiz
-                </Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Your Saved Quizzes</h2>
-                <Button onClick={handleCreateNewQuiz}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create New Quiz
-                </Button>
-              </div>
-              <SavedQuizList quizzes={savedQuizzes} onRefresh={loadSavedQuizzes} onEditQuiz={handleEditQuiz} />
-            </>
-          )}
+          <SavedQuizList
+            quizzes={Array.isArray(savedQuizzes) ? savedQuizzes : []}
+            onRefresh={loadSavedQuizzes}
+            onEditQuiz={handleEditQuiz}
+          />
         </TabsContent>
       </Tabs>
 
@@ -468,4 +443,3 @@ export default function DocumentQuizPage() {
   )
 }
 
-// No changes needed; ensure all quiz types use similar answer/feedback props and UI patterns.
