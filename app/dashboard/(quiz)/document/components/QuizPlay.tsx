@@ -1,231 +1,196 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-
-import { useRouter } from "next/navigation"
-import { ArrowLeft, ArrowRight, Home, RotateCcw } from "lucide-react"
-
+import { useEffect, useState } from "react"
 import { quizStore } from "@/lib/quiz-store"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  CardTitle,
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react"
+import { useRouter } from "next/navigation"
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
 import type { Quiz } from "@/lib/quiz-store"
+import { motion, AnimatePresence } from "framer-motion"
 
-interface QuizPlayerProps {
-  quizId: string
-}
-
-export function QuizPlayer({ quizId }: QuizPlayerProps) {
+export function QuizPlayer({ quizId }: { quizId: string }) {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([])
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [score, setScore] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [attemptId, setAttemptId] = useState<string | null>(null)
+  const [score, setScore] = useState(0)
+  const [finished, setFinished] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    // Load quiz data
-    const quizData = quizStore.getQuiz(quizId)
-    if (quizData) {
-      setQuiz(quizData)
-
-      // Start a new attempt
-      const newAttemptId = quizStore.startQuizAttempt(quizId)
-      setAttemptId(newAttemptId)
-
-      // Initialize selected answers array
-      setSelectedAnswers(new Array(quizData.questions.length).fill(-1))
+    async function loadQuiz() {
+      const q = await quizStore.getQuiz(quizId)
+      if (!q) return
+      setQuiz(q)
+      setSelectedAnswers(new Array(q.questions.length).fill(-1))
+      const aid = await quizStore.startQuizAttempt(q.id)
+      setAttemptId(aid)
     }
-    setLoading(false)
+
+    loadQuiz()
   }, [quizId])
 
-  const handleAnswerSelect = (answerIndex: number) => {
-    const newAnswers = [...selectedAnswers]
-    newAnswers[currentQuestionIndex] = answerIndex
-    setSelectedAnswers(newAnswers)
-
-    // Save answer to the attempt
-    if (attemptId) {
-      quizStore.saveQuizAnswer(attemptId, currentQuestionIndex, answerIndex)
-    }
+  const answer = (index: number) => {
+    const a = [...selectedAnswers]
+    a[currentIndex] = index
+    setSelectedAnswers(a)
+    if (attemptId) quizStore.saveQuizAnswer(attemptId, currentIndex, index)
   }
 
-  const goToNextQuestion = () => {
-    if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
+  const next = () => {
+    if (currentIndex < (quiz?.questions.length ?? 0) - 1) {
+      setCurrentIndex((prev) => prev + 1)
     } else {
-      completeQuiz()
+      complete()
     }
   }
 
-  const goToPreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1)
+  const back = () => {
+    if (currentIndex > 0) setCurrentIndex((prev) => prev - 1)
+  }
+
+  const complete = async () => {
+    if (!attemptId) return
+    const result = await quizStore.completeQuizAttempt(attemptId)
+    if (result) {
+      setScore(result.score)
+      setFinished(true)
     }
   }
 
-  const completeQuiz = () => {
-    if (!quiz || !attemptId) return
+  if (!quiz)
+    return <div className="text-center p-10 text-muted-foreground">Loading quiz...</div>
 
-    // Complete the attempt and get the score
-    const completedAttempt = quizStore.completeQuizAttempt(attemptId)
-    if (completedAttempt) {
-      setScore(completedAttempt.score)
-      setQuizCompleted(true)
-    }
-  }
+  if (finished) {
+    const percentage = (score / quiz.questions.length) * 100
+    const isPassed = percentage >= 60
 
-  const restartQuiz = () => {
-    if (!quiz) return
-
-    // Start a new attempt
-    const newAttemptId = quizStore.startQuizAttempt(quiz.id)
-    setAttemptId(newAttemptId)
-
-    // Reset state
-    setSelectedAnswers(new Array(quiz.questions.length).fill(-1))
-    setCurrentQuestionIndex(0)
-    setQuizCompleted(false)
-  }
-
-  const goToHome = () => {
-    router.push("/")
-  }
-
-  if (loading) {
     return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="animate-pulse bg-muted h-8 w-3/4 rounded"></CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="animate-pulse bg-muted h-6 w-full rounded"></div>
-          <div className="space-y-3">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="animate-pulse bg-muted h-12 w-full rounded"></div>
-            ))}
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <div className="animate-pulse bg-muted h-10 w-24 rounded"></div>
-          <div className="animate-pulse bg-muted h-10 w-24 rounded"></div>
-        </CardFooter>
-      </Card>
-    )
-  }
+      <motion.div
+        className="max-w-xl mx-auto my-10 p-6 text-center"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Card className="p-6 rounded-2xl shadow-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">
+              {isPassed ? "🎉 Great job!" : "😢 Better luck next time"}
+            </CardTitle>
+          </CardHeader>
 
-  if (!quiz) {
-    return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Quiz Not Found</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Sorry, the quiz you're looking for doesn't exist or has been removed.</p>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={goToHome}>
-            <Home className="mr-2 h-4 w-4" />
-            Go Home
-          </Button>
-        </CardFooter>
-      </Card>
-    )
-  }
-
-  if (quizCompleted) {
-    return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Quiz Completed!</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold">
-              Your Score: {score} / {quiz.questions.length}
+          <CardContent className="space-y-4">
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="text-4xl font-extrabold text-primary"
+            >
+              {score} / {quiz.questions.length}
+            </motion.div>
+            <p className="text-muted-foreground text-sm">
+              Your Score
             </p>
-            <p className="text-muted-foreground">({Math.round((score / quiz.questions.length) * 100)}%)</p>
-          </div>
 
-          <Progress value={(score / quiz.questions.length) * 100} className="h-2" />
+            <Progress
+              value={percentage}
+              className="h-3 rounded-full"
+            />
+            <p className="text-sm mt-2">
+              You got <span className="font-medium">{score}</span> correct out of{" "}
+              <span className="font-medium">{quiz.questions.length}</span> questions.
+            </p>
+          </CardContent>
 
-          <div className="pt-4">
-            <h3 className="font-medium mb-2">Summary:</h3>
-            {quiz.questions.map((question, index) => (
-              <div key={question.id} className="mb-2">
-                <p className="text-sm">
-                  <span
-                    className={selectedAnswers[index] === question.correctAnswer ? "text-green-600" : "text-red-600"}
-                  >
-                    {index + 1}. {question.question.substring(0, 50)}
-                    {question.question.length > 50 ? "..." : ""}
-                  </span>
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={goToHome}>
-            <Home className="mr-2 h-4 w-4" />
-            Home
-          </Button>
-          <Button onClick={restartQuiz}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Restart Quiz
-          </Button>
-        </CardFooter>
-      </Card>
+          <CardFooter className="justify-center mt-6">
+            <Button onClick={() => router.push("/dashboard/document")}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Try Another Quiz
+            </Button>
+          </CardFooter>
+        </Card>
+      </motion.div>
     )
   }
 
-  const currentQuestion = quiz.questions[currentQuestionIndex]
+  const q = quiz.questions[currentIndex]
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>{quiz.title}</CardTitle>
-          <span className="text-sm text-muted-foreground">
-            Question {currentQuestionIndex + 1} of {quiz.questions.length}
-          </span>
-        </div>
-        <Progress value={((currentQuestionIndex + 1) / quiz.questions.length) * 100} className="h-2 mt-2" />
+    <Card className="max-w-xl w-full mx-auto my-10 p-4 sm:p-6 shadow-md rounded-2xl transition-all">
+      <CardHeader className="text-center space-y-2">
+        <CardTitle className="text-xl sm:text-2xl">{quiz.title}</CardTitle>
+        <Progress value={((currentIndex + 1) / quiz.questions.length) * 100} />
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <h3 className="text-lg font-medium">{currentQuestion.question}</h3>
 
-          <RadioGroup
-            value={selectedAnswers[currentQuestionIndex]?.toString() || ""}
-            onValueChange={(value) => handleAnswerSelect(Number.parseInt(value))}
-          >
-            {currentQuestion.options.map((option, index) => (
-              <div
-                key={index}
-                className="flex items-center space-x-2 rounded-md border p-3 hover:bg-muted/50 transition-colors"
-              >
-                <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={goToPreviousQuestion} disabled={currentQuestionIndex === 0}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -40 }}
+          transition={{ duration: 0.3 }}
+        >
+          <CardContent className="space-y-4">
+            <p className="text-base sm:text-lg font-medium">
+              {q.question}
+            </p>
+            <RadioGroup
+              value={selectedAnswers[currentIndex]?.toString()}
+              onValueChange={(v) => answer(parseInt(v))}
+              className="space-y-2"
+            >
+              {q.options.map((o, i) => (
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  key={i}
+                  className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer ${
+                    selectedAnswers[currentIndex] === i
+                      ? "border-primary bg-primary/10"
+                      : "hover:border-muted"
+                  }`}
+                >
+                  <RadioGroupItem id={`opt-${i}`} value={i.toString()} />
+                  <Label htmlFor={`opt-${i}`} className="w-full">
+                    {o}
+                  </Label>
+                </motion.div>
+              ))}
+            </RadioGroup>
+          </CardContent>
+        </motion.div>
+      </AnimatePresence>
+
+      <CardFooter className="flex justify-between mt-6 gap-4 flex-wrap">
+        <Button
+          variant="outline"
+          onClick={back}
+          disabled={currentIndex === 0}
+          className="w-full sm:w-auto"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
+          Back
         </Button>
-        <Button onClick={goToNextQuestion} disabled={selectedAnswers[currentQuestionIndex] === -1}>
-          {currentQuestionIndex === quiz.questions.length - 1 ? "Finish" : "Next"}
-          {currentQuestionIndex < quiz.questions.length - 1 && <ArrowRight className="ml-2 h-4 w-4" />}
+        <Button
+          onClick={next}
+          disabled={selectedAnswers[currentIndex] === -1}
+          className="w-full sm:w-auto"
+        >
+          {currentIndex === quiz.questions.length - 1 ? "Finish" : "Next"}
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>
