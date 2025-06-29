@@ -1,8 +1,9 @@
 "use client";
 
+import CourseAILoader from "@/components/ui/loader";
 import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
-import { EnhancedLoader } from "@/components/ui/loader/enhanced-loader";
+
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 import { useAuth } from "@/hooks/use-auth"; // Updated import
 
@@ -20,7 +21,7 @@ const OpenEndedPage = () => {
       helpText={`You can create quizzes with up to ${quizPlan.maxQuestions} questions based on your ${quizPlan.currentPlan} plan.`}
       isLoggedIn={isAuthenticated} // Use isAuthenticated from useAuth
     >      {quizPlan.isLoading ? (
-        <EnhancedLoader isLoading={true} message="Loading subscription details..." subMessage="Getting your plan information" />
+        <CourseAILoader isLoading={true} message="Loading subscription details..." subMessage="Getting your plan information" />
       ) : (
         <OpenEndedQuizForm
           credits={quizPlan.credits}
