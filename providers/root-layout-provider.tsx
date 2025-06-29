@@ -17,6 +17,7 @@ import { store, persistor } from "@/store"
 import { useDispatch } from "react-redux"
 import { initializeAuth } from "@/store/slices/auth-slice"
 import { AuthProvider } from "@/context/auth-context"
+import { Loader } from "../components/ui/loader"
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -53,7 +54,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <AuthProvider session={session}>
-          
+
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
@@ -65,15 +66,15 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
             >
               <SEOTrackingProvider>
                 <QueryClientProvider client={queryClient}>                  <TooltipProvider>
-                    <SubscriptionProvider>
-                      <AnimationProvider>
-                        <Suspense fallback={<div>Loading...</div>}>
-                          <Toaster position="top-right" closeButton richColors />
-                          {mounted && children}
-                        </Suspense>
-                      </AnimationProvider>
-                    </SubscriptionProvider>
-                  </TooltipProvider>
+                  <SubscriptionProvider>
+                    <AnimationProvider>
+                      <Suspense fallback={<Loader context="loading" className="w-8 h-8 mx-auto mt-10" />}>
+                        <Toaster position="top-right" closeButton richColors />
+                        {mounted && children}
+                      </Suspense>
+                    </AnimationProvider>
+                  </SubscriptionProvider>
+                </TooltipProvider>
                 </QueryClientProvider>
               </SEOTrackingProvider>
             </ThemeProvider>
