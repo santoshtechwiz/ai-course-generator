@@ -17,12 +17,13 @@ import {
   submitQuiz,
   fetchQuiz,
 } from "@/store/slices/quiz-slice"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
+import { Loader } from "@/components/ui/loader/index"
 
 
 interface CodeQuizWrapperProps {
@@ -154,7 +155,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-    return <QuizLoader message="Loading quiz..." />
+    return <Loader context="quiz" />    
   }
 
   if (hasError) {
@@ -172,7 +173,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
 
   if (!formattedQuestion) {
-    return <QuizLoader message="Preparing quiz..." />
+    return <Loader context="quiz"  message="Preparing quiz..." />
   }
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">

@@ -33,6 +33,7 @@ import { motion } from "framer-motion"
 import { NoResults } from "@/components/ui/no-results"
 import { useAuth } from "@/hooks/use-auth"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
+import { Loader } from "@/components/ui/loader/index"
 
 interface FlashcardQuizWrapperProps {
   slug: string
@@ -155,14 +156,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
   // Loading Skeletons
   if (quizStatus === "loading" || !isInitialized) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-        <div className="space-y-4 w-full max-w-md">
-          <div className="animate-pulse h-6 bg-gray-200 rounded" />
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto animate-spin" />
-          <div className="animate-pulse h-4 bg-gray-200 rounded" />
-        </div>
-        <p className="mt-4 text-center text-muted-foreground">Loading your flashcards...</p>
-      </div>
+      <Loader context="quiz" className="w-8 h-8 mx-auto mt-10" />
     )
   }
 

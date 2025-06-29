@@ -12,7 +12,12 @@ import { getServerAuthSession } from "@/lib/server-auth"
 import ClientLayoutWrapper from "./client-layout-wrapper"
 import { Suspense } from "react"
 import { Loader2 } from "lucide-react"
-
+import { Poppins } from "next/font/google";
+const poppins = Poppins({
+ weight: ['400', '600'],
+ subsets: ['latin'],
+ display: 'swap',
+});
 export const metadata: Metadata = {
   ...defaultMetadata,
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
