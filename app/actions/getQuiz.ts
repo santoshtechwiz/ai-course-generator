@@ -1,8 +1,7 @@
 "use server"
 
-import { prisma } from "@/lib/db"
-import type { OpenEndedQuizData } from "@/types/quiz"
-import { OpenEndedQuestion, QuizType } from "../types/quiz-types"
+
+import { OpenEndedQuestion, OpenEndedQuizData, QuizType } from "../types/quiz-types"
 
 // Define a proper interface that represents the quiz data returned by this action
 interface QuizResult {

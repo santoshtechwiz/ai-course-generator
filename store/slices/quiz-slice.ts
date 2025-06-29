@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit'
 import type { RootState } from '@/store'
-import type { QuizType } from '@/types/quiz'
+
 import { API_ENDPOINTS } from './quiz-slice-helper'
 import { QuizResults, QuizState } from './quiz-slice-types'
+import { QuizType } from '@/app/types/quiz-types'
 
 
 // -- Initial State --

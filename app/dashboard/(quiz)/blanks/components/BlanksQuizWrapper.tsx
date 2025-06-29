@@ -197,7 +197,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
         quizSlug={slug}
 
         userId={userId}
-        quizId={quizId}
+        quizId={quizId || ""}
         initialIsPublic={false}
         ownerId={userId}
       ></QuizActions>

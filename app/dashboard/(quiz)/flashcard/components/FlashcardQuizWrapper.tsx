@@ -152,48 +152,43 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
     dispatch(completeFlashCardQuiz(results))
   }
 
-  // Loading
+  // Loading Skeletons
   if (quizStatus === "loading" || !isInitialized) {
     return (
-      <motion.div
-        className="flex flex-col items-center justify-center min-h-[60vh]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="text-center space-y-4">
-          <div className="animate-pulse text-xl font-medium">Loading flashcards...</div>
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Please wait while we prepare your study session</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+        <div className="space-y-4 w-full max-w-md">
+          <div className="animate-pulse h-6 bg-gray-200 rounded" />
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto animate-spin" />
+          <div className="animate-pulse h-4 bg-gray-200 rounded" />
         </div>
-      </motion.div>
+        <p className="mt-4 text-center text-muted-foreground">Loading your flashcards...</p>
+      </div>
     )
   }
 
-  // Error state
+  // Error State with Retry
   if (quizStatus === "failed" || error) {
     return (
       <NoResults
         variant="error"
-        title="Error Loading Flashcards"
-        description={error || "We couldn't load the flashcards. Please try again."}
+        title="Oops! Something went wrong."
+        description={error || "Unable to load flashcards at this moment."}
         action={{
-          label: "Try Again",
+          label: "Retry",
           onClick: () => {
             dispatch(clearQuizState())
-            router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)
+            dispatch(fetchFlashCardQuiz(slug))
           },
         }}
         secondaryAction={{
           label: "Browse Topics",
           onClick: () => router.push("/dashboard/quizzes"),
-          variant: "outline",
         }}
       />
     )
   }
 
-  // Sign-in prompt
+  // Sign-in prompt for auth-required quizzes
   if (requiresAuth && !isAuthenticated && isInitialized) {
     return (
       <SignInPrompt
@@ -207,12 +202,13 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
     )
   }
 
+  // Empty Review State
   if (isReviewMode && reviewQuestions.length === 0) {
     return (
       <NoResults
         variant="empty"
-        title="No Cards to Review"
-        description="You marked all cards as known. Great job!"
+        title="All Clear!"
+        description="You've reviewed all cards. Great job!"
         action={{
           label: "Retake Quiz",
           onClick: () => router.push(`/dashboard/flashcard/${slug}?reset=true`),
@@ -225,11 +221,12 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
     )
   }
 
+  // No questions found
   if (!currentQuestions || currentQuestions.length === 0) {
     return (
       <NoResults
         variant="error"
-        title="No Flashcards Found"
+        title="No Flashcards Available"
         description="We couldn't find any flashcards for this topic."
         action={{
           label: "Try Again",
@@ -246,9 +243,10 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
     )
   }
 
+  // Main Quiz Component
   return (
     <motion.div
-      className="space-y-6"
+      className="space-y-6 px-4"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
