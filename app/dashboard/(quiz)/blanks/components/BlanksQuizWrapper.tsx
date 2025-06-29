@@ -23,7 +23,7 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
-import { useLoader } from "@/components/ui/loader/loader-context"
+
 import { QuizActions } from "../../components/QuizActions"
 
 interface BlanksQuizWrapperProps {

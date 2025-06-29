@@ -21,7 +21,7 @@ import { QuizLoader } from "@/components/ui/quiz-loader"
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
-import { useLoader } from "@/components/ui/loader/loader-context"
+
 import { QuizActions } from "../../components/QuizActions"
 
 
@@ -33,7 +33,7 @@ interface CodeQuizWrapperProps {
 export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter();
-  const enhancedLoader = useLoader()
+
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
 
@@ -71,9 +71,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     // To prevent infinite loop, we track if we've already shown the loader for this completion    
     if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current) {
       hasShownLoaderRef.current = true;
-      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
-
-      submissionTimeoutRef.current = setTimeout(() => {
+        submissionTimeoutRef.current = setTimeout(() => {
         router.push(`/dashboard/code/${slug}/results`)
       }, 500)
     }
@@ -81,7 +79,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     return () => {
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
-  }, [isCompleted, quizStatus, router, slug, enhancedLoader])
+  }, [isCompleted, quizStatus, router, slug])
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex] || null
@@ -108,9 +106,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const handleSubmitQuiz = useCallback(async () => {
     try {
       toast.success("Quiz submitted successfully!")
-      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
-
-      await dispatch(submitQuiz()).unwrap()
+       await dispatch(submitQuiz()).unwrap()
 
       setTimeout(() => {
         router.push(`/dashboard/code/${slug}/results`)
@@ -119,7 +115,7 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     }
-  }, [dispatch, router, slug, enhancedLoader])
+  }, [dispatch, router, slug])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"

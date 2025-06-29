@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
+import { CoursesListSkeleton } from "@/components/ui/loading/loading-skeleton"
+
 
 // Dynamically import the CourseList component to avoid hydration issues
 const CourseList = dynamic(() => import("@/components/features/home/CourseLists"), {
@@ -9,9 +11,7 @@ const CourseList = dynamic(() => import("@/components/features/home/CourseLists"
   loading: () => <CoursesListSkeleton />,
 })
 
-// Import the skeleton component
-import { CoursesListSkeleton } from "@/components/ui/loading/loading-skeleton"
-import { hydrateQuiz } from "@/store/slices/quiz-slice"
+
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
   ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/explore`

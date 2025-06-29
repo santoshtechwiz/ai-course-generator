@@ -7,7 +7,7 @@ import { getProviders, signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { EnhancedLoader } from "@/components/ui/enhanced-loader"
+import { EnhancedLoader } from "@/components/ui/loader/index"
 import { useToast } from "@/hooks"
 
 interface LoginModalProps {

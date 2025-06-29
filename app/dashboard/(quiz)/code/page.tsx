@@ -3,7 +3,7 @@
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { EnhancedLoader } from "@/components/ui/enhanced-loader"
+import { EnhancedLoader } from "@/components/ui/loader/index"
 
 const CodePage = () => {
   // Use our standardized hook for all quiz pages

@@ -19,4 +19,4 @@ export * from "./toast"
 export * from "./tooltip"
 
 // Enhanced Components
-export * from "./enhanced-loader"
+export * from "./loader"
