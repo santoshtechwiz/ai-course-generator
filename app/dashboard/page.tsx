@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { CoursesListSkeleton } from "@/components/ui/loading/loading-skeleton"
+import { CoursesListSkeleton } from "@/components/ui/loaders/loading-skeleton"
 
 
 // Dynamically import the CourseList component to avoid hydration issues

@@ -18,8 +18,10 @@ import useSubscription from "@/hooks/use-subscription"
 import { useAuth } from "@/hooks/use-auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
-import { AsyncNavLink } from "@/components/ui/loader/index"
+
 import { motion, AnimatePresence } from "framer-motion"
+import { AsyncNavLink } from "@/components/ui/loader/async-nav-link"
+
 
 export default function MainNavbar() {
   const pathname = usePathname()

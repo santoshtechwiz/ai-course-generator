@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
-import { EnhancedLoader } from "@/components/ui/loader/index"
+import { EnhancedLoader } from "@/components/ui/loader/enhanced-loader"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
 

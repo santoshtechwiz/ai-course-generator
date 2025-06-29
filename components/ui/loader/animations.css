@@ -1,0 +1,25 @@
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background-size: 400% 100%;
+}
+
+.animate-delay-0 {
+  animation-delay: 0s;
+}
+
+.animate-delay-150 {
+  animation-delay: 0.15s;
+}
+
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

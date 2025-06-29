@@ -1,4 +1,4 @@
-import { createQuestions, createUserQuiz, prisma, updateTopicCount, updateUserCredits } from "@/lib/db"
+import {  createUserQuiz, prisma, updateTopicCount, updateUserCredits } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -7,8 +7,9 @@ import { getAuthSession } from "@/lib/auth"
 import { quizCreationSchema } from "@/schema/schema"
 import { generateSlug } from "@/lib/utils"
 import NodeCache from "node-cache"
-import axios from "axios"
-import { QuizType } from "@/types/quiz"
+
+import createQuestions from "@/lib/create-questions"
+import { QuizType } from "@/app/types/quiz-types"
 
 const cache = new NodeCache({ stdTTL: 600 }) // Cache for 10 minutes
 

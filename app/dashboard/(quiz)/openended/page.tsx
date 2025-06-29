@@ -2,7 +2,7 @@
 
 import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
-import { EnhancedLoader } from "@/components/ui/loader/index";
+import { EnhancedLoader } from "@/components/ui/loader/enhanced-loader";
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
 import { useAuth } from "@/hooks/use-auth"; // Updated import
 
