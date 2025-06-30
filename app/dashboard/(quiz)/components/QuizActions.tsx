@@ -18,16 +18,14 @@ import {
   Users,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
-import QuizPDFDownload from "@/app/dashboard/create/components/QuizPDFDownload"
+import QuizPDFDownload from "@/app/dashboard/create/components/QuizPdfButton"
 import useSubscription from "@/hooks/use-subscription"
 import { useSession } from "next-auth/react"
 import { ConfirmDialog } from "./ConfirmDialog"
-import ConfigurableQuizPDF from "../../create/components/ConfigurableQuizPDF"
-import PdfButton from "@/components/ui/pdf-download"
+
 
 interface QuizActionsProps {
   quizId: string
@@ -58,11 +56,11 @@ export function QuizActions({
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
 
   const router = useRouter()
-  const { isSubscribedToAnyPaidPlan } = useSubscription()
+  const { canDownloadPdf: canDownloadPDF } = useSubscription()
+  console.log("Can download PDF:", canDownloadPDF);
   const currentUserId = useSession().data?.user?.id || null
   const isOwner = currentUserId === ownerId
-  const canDownloadPDF = isSubscribedToAnyPaidPlan
-
+ 
   const promptLogin = () => {
     toast({
       title: "Authentication required",
@@ -284,9 +282,36 @@ export function QuizActions({
 
               if (action.id === "download") {
                 return (
-                  <div key={action.id}>
-                    <QuizPDFDownload quizData={quizData} config={{ showOptions: true, showAnswers: true }} />
-                  </div>
+                  <Tooltip key={action.id}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          "relative p-2 rounded-lg border group cursor-pointer min-h-[56px] flex flex-col items-center justify-center text-center space-y-1 transition hover:shadow-sm",
+                          canDownloadPDF
+                            ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
+                            : "bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700",
+                          !canDownloadPDF && "opacity-60 cursor-not-allowed",
+                        )}
+                      >
+                        {!canDownloadPDF && (
+                          <span className="absolute -top-1.5 -right-1 px-1.5 py-0.5 text-[10px] rounded-full font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            Locked
+                          </span>
+                        )}
+                        <QuizPDFDownload
+                          quizData={quizData}
+                          config={{ showOptions: true, showAnswers: true }}
+                          variant="ghost"
+                          size="icon"
+                          className="!m-0 p-0" // shrink padding inside
+                        />
+                        <span className="text-xs font-medium text-gray-800 dark:text-gray-200">PDF</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{canDownloadPDF ? "Download this quiz" : "Upgrade to download PDF"}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )
               }
 

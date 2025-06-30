@@ -99,12 +99,23 @@ const styles = StyleSheet.create({
     right: 40,
     color: "#9CA3AF",
   },
+  codeBlock: {
+    fontFamily: "Courier",
+    fontSize: 12,
+    backgroundColor: "#F3F4F6",
+    padding: 10,
+    borderRadius: 4,
+    marginTop: 10,
+    marginBottom: 10,
+    color: "#1F2937",
+  },
 })
 
 interface Question {
   question: string
   options?: string[] | null
   answer?: string
+  codeSnippet?: string
 }
 
 export interface QuizPDFProps {
@@ -143,6 +154,10 @@ const ConfigurableQuizPDF: React.FC<QuizPDFProps> = ({ quizData, config = {} }) 
           <View key={i} style={styles.questionSection}>
             <Text style={styles.questionNumber}>{`Question ${i + 1}`}</Text>
             <Text style={styles.question}>{q.question}</Text>
+
+             {q.codeSnippet && (
+              <Text style={styles.codeBlock}>{q.codeSnippet}</Text>
+            )}
             {showOptions && q.options && (
               <View style={styles.optionsContainer}>
                 {q.options.map((option: any, j: number) => (
