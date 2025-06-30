@@ -6,10 +6,10 @@ import type {
   Course,
   CourseProgress,
   UserQuiz,
-  UserSubscription,
+
   Favorite,
   UserQuizAttempt,
-  TopicPerformance,
+
 } from "../types/types"
 
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
@@ -31,6 +31,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             progress: true,
             course: {
               select: {
+                slug: true,
                 id: true,
                 title: true,
               },
@@ -55,9 +56,15 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
     return {
       id: user.id,
       name: user.name,
-      courses: user.courses as Course[],
-      courseProgress: user.courseProgress as CourseProgress[],
-      userQuizzes: user.userQuizzes as UserQuiz[],
+      email: user.email ?? "",
+      image: user.image ?? "",
+      credits: user.credits ?? 0,
+      courses: user.courses as unknown as Course[],
+      courseProgress: user.courseProgress as unknown as CourseProgress[],
+      userQuizzes: user.userQuizzes as unknown as UserQuiz[],
+      streakDays: user.streakDays ?? 0,
+ 
+    
     }
   } catch (error) {
     console.error("Error fetching user data:", error)
