@@ -1,15 +1,13 @@
 import type { Config } from "tailwindcss"
 import defaultTheme from "tailwindcss/defaultTheme"
 
-
 const config = {
-  darkMode: ["class", "dark"],
+  darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./pages/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
-    "*.{js,ts,jsx,tsx,mdx}",
   ],
   future: {
     hoverOnlyWhenSupported: true,
@@ -31,12 +29,28 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: [
+          "var(--font-inter)",
+          ...defaultTheme.fontFamily.sans,
+        ],
+        roboto: [
+          "var(--font-roboto)",
+          "Roboto",
+          ...defaultTheme.fontFamily.sans,
+        ],
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
       colors: {
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -75,24 +89,7 @@ const config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
-        },      },      fontFamily: {
-        sans: [
-          "var(--font-inter)",
-          "Inter",
-          "Inter Fallback",
-          ...defaultTheme.fontFamily.sans
-        ],
-        roboto: [
-          "var(--font-roboto)",
-          "Roboto", 
-          "Roboto Fallback",
-          ...defaultTheme.fontFamily.sans
-        ],
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        },
       },
       keyframes: {
         "accordion-down": {
@@ -115,30 +112,6 @@ const config = {
           from: { transform: "translateY(-20px)", opacity: "0" },
           to: { transform: "translateY(0)", opacity: "1" },
         },
-        slideLeft: {
-          from: { transform: "translateX(20px)", opacity: "0" },
-          to: { transform: "translateX(0)", opacity: "1" },
-        },
-        slideRight: {
-          from: { transform: "translateX(-20px)", opacity: "0" },
-          to: { transform: "translateX(0)", opacity: "1" },
-        },
-        pulse: {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.7" },
-        },
-        bounce: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-5px)" },
-        },
-        scale: {
-          "0%, 100%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.05)" },
-        },
-        glow: {
-          "0%, 100%": { boxShadow: "0 0 5px rgba(var(--primary-rgb), 0.5)" },
-          "50%": { boxShadow: "0 0 20px rgba(var(--primary-rgb), 0.7)" },
-        },
         spin: {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
@@ -150,12 +123,6 @@ const config = {
         "fade-in": "fadeIn 0.5s ease-in-out",
         "slide-up": "slideUp 0.5s ease-in-out",
         "slide-down": "slideDown 0.5s ease-in-out",
-        "slide-left": "slideLeft 0.5s ease-in-out",
-        "slide-right": "slideRight 0.5s ease-in-out",
-        "pulse-subtle": "pulse 2s infinite",
-        "bounce-subtle": "bounce 2s infinite",
-        "scale-subtle": "scale 2s infinite",
-        glow: "glow 2s infinite",
         "spin-slow": "spin 3s linear infinite",
       },
       transitionProperty: {
@@ -168,7 +135,10 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography"), ],
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
+  ],
 } satisfies Config
 
 export default config
