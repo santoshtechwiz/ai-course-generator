@@ -28,8 +28,7 @@ export async function GET(req: NextRequest) {
         },
       },
     })
-    console.log("Fetched user subscription data:", user);
-
+  
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
