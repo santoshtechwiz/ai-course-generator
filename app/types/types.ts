@@ -85,6 +85,7 @@ export interface Course {
 // Course progress interface
 export interface CourseProgress {
   id: string;
+  slug: string;
   course: Course;
   progress: number;
   isCompleted: boolean;

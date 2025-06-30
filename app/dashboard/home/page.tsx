@@ -16,6 +16,7 @@ import type { DashboardUser, UserStats } from "@/app/types/types"
 
 // Import components dynamically to prevent navigation during render
 import dynamic from "next/dynamic"
+import { CourseAILoader } from "@/components/ui/loader/courseai-loader"
 
 const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,
@@ -65,12 +66,11 @@ export default function DashboardPage() {
     }
   }, [session])
 
-  // Use router.push in an effect, not during render
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (status === "unauthenticated" && !session) {
       router.push("/auth/signin")
     }
-  }, [status, router])
+  }, [status, session, router])
 
   const {
     data: userData,
@@ -100,9 +100,8 @@ export default function DashboardPage() {
   // Create memoized type-safe data
   const safeUserData: DashboardUser = userData as DashboardUser
   const safeUserStats: UserStats = userStats as UserStats
-
-  if (status === "loading" || (userId && (isLoadingUserData || isLoadingUserStats))) {
-    return <LoadingState />
+  if (status === "loading") {
+    return <CourseAILoader context="processing" />
   }
 
   // Return early without router navigation during render
