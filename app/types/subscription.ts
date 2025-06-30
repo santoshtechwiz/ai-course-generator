@@ -131,7 +131,7 @@ export interface SubscriptionDetails {
  */
 
 export interface TokenUsage {
-  used: number
+  tokensUsed: number
   total: number
   remaining?: number
   percentage?: number

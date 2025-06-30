@@ -82,19 +82,19 @@ export function PricingPage({
         description: error.message,
         variant: "destructive",
       })
-      setSubscriptionError(error.message)
+      setSubscriptionError(error?.message ?? null)
     },
   })
 
-  const currentPlan = subscriptionData?.subscriptionPlan || "FREE"
-  const normalizedStatus = subscriptionData?.status?.toUpperCase() as SubscriptionStatusType || "INACTIVE"
+  const currentPlan = subscriptionData?.data?.subscriptionPlan || "FREE"
+  const normalizedStatus = subscriptionData?.data?.status?.toUpperCase() as SubscriptionStatusType || "INACTIVE"
   const isSubscribed = currentPlan !== "FREE" && normalizedStatus === "ACTIVE"
-  const expirationDate = subscriptionData?.expirationDate
-    ? new Date(subscriptionData.expirationDate).toLocaleDateString()
+  const expirationDate = subscriptionData?.data?.expirationDate
+    ? new Date(subscriptionData.data.expirationDate).toLocaleDateString()
     : null
-  const cancelAtPeriodEnd = subscriptionData?.cancelAtPeriodEnd ?? false
-  const tokensUsed = subscriptionData?.tokensUsed ?? 0
-  const credits = subscriptionData?.credits ?? 0
+  const cancelAtPeriodEnd = subscriptionData?.data?.cancelAtPeriodEnd ?? false
+  const tokensUsed = subscriptionData?.data?.tokensUsed ?? 0
+  const credits = subscriptionData?.data?.credits ?? 0
 
   const hasAnyPaidPlan = isSubscribedToAnyPaidPlan
   const hasAllPlans = isSubscribedToAllPlans
@@ -199,7 +199,7 @@ export function PricingPage({
   }, [isAuthenticated, subscriptionData, dispatch]);
     
   const daysUntilExpiration = expirationDate
-    ? Math.ceil((new Date(subscriptionData!.expirationDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(subscriptionData!.data?.expirationDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
   return (

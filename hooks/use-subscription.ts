@@ -13,8 +13,6 @@ import {
   canDownloadPdfSelector,
 } from "@/store/slices/subscription-slice"
 
-import { useSelector } from "react-redux"
-import { selectUser } from "@/store/slices/auth-slice"
 import { SubscriptionResult, SubscriptionStatusType } from "@/app/types/subscription"
 
 export type UseSubscriptionOptions = {
@@ -109,6 +107,15 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
           onSubscriptionError?.(errorResult)
           return errorResult
         }
+        if(result.errorType==="PLAN_CHANGE_RESTRICTED"){
+          const errorResult: SubscriptionResult = {
+            success: false,
+            message: result.message || "Plan change not allowed",
+            error: "PLAN_CHANGE_RESTRICTED",
+          }
+          onSubscriptionError?.(errorResult)
+          return errorResult
+        }
 
         if (result.url) {
           const successResult: SubscriptionResult = {
@@ -187,4 +194,3 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   }
 }
 
-// ... rest of the file remains the same ...
