@@ -16,7 +16,7 @@
 
 import { hydrateFromStorage } from "../middleware/persistMiddleware"
 import { STORAGE_KEYS } from "@/constants/global"
-import type { QuizState, QuizAnswer, QuizQuestion, QuizResults, QuestionResult } from "./quiz-slice-types"
+import type { QuizState, QuizAnswer, QuizQuestion, QuizResults } from "./quiz-slice-types"
 import { API_PATHS } from "@/constants/global"
 
 /**
