@@ -25,11 +25,14 @@ export interface OpenEndedQuestion extends BaseQuestion {
 
 // Fill in the blanks questions
 export interface BlankQuizQuestion extends BaseQuestion {
-  id: number;
+   id: number;
   question: string;
-  answer?: string;
-  modelAnswer?: string;
-  type?: 'blanks';
+  answer: string;
+  hints?: string[];
+  type: 'blanks';
+  tags?: string[]; // Keywords for similarity matching
+  similarityThreshold?: number; // Threshold to consider answer correct (0.0-1.0)
+  difficulty?: 'easy' | 'medium' | 'hard'; // Difficulty level
 }
 
 // Multiple choice questions
@@ -122,10 +125,6 @@ export interface QuizState {
   sessionId?: string;
 }
 
-// Import AuthState from auth-types instead of duplicating
-import { AuthState } from './auth-types';
-// Re-export for backward compatibility
-export { AuthState };
 
 // Quiz result types
 export interface QuizResult {

@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@r
 import type { RootState } from '@/store'
 
 import { API_ENDPOINTS } from './quiz-slice-helper'
-import { QuizResults, QuizState } from './quiz-slice-types'
+import { QuizQuestion, QuizResults, QuizState } from './quiz-slice-types'
 import { QuizType } from '@/app/types/quiz-types'
 
 
@@ -31,92 +31,111 @@ const initialState: QuizState = {
  */
 export const fetchQuiz = createAsyncThunk(
   "quiz/fetch",
-  async (payload: {
-    slug?: string
-    quizType?: QuizType
-    data?: any
-  }, { rejectWithValue }) => {
+  async (
+    payload: {
+      slug?: string
+      quizType?: QuizType
+      data?: any
+    },
+    { rejectWithValue }
+  ) => {
     try {
-      // Validate payload
       if (!payload) {
-        return rejectWithValue({
-          error: "Invalid quiz request: No payload provided"
-        })
+        return rejectWithValue({ error: "No payload provided" })
       }
 
-      const slug = payload.slug?.trim() || '';
-      const type = payload.quizType as QuizType;
-      // If we already have the data, use it directly
+      const slug = payload.slug?.trim() || ""
+      const type = payload.quizType as QuizType
+
       if (payload.data && Array.isArray(payload.data.questions)) {
         return {
           ...payload.data,
-          slug: slug,
+          slug,
           quizType: type,
-          id: slug
+          id: slug,
         }
       }
 
-      // Validate required parameters for API call
       if (!slug || !type) {
-        return rejectWithValue({
-          error: "Invalid quiz request: Missing slug or quizType"
-        })
+        return rejectWithValue({ error: "Missing slug or quizType" })
       }
 
-      // Fetch from API
       const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS]
       if (!endpoint) {
-        return rejectWithValue({
-          error: `Invalid quiz type: ${type}`
-        })
+        return rejectWithValue({ error: `Invalid quiz type: ${type}` })
       }
 
       const response = await fetch(`${endpoint}/${slug}`)
-
       if (!response.ok) {
         const errorText = await response.text()
         return rejectWithValue({
-          error: `Error loading quiz: ${response.status} ${response.statusText}`,
-          details: errorText
+          error: `Error loading quiz: ${response.status}`,
+          details: errorText,
         })
       }
 
       const data = await response.json()
 
-      // Validate response data
       if (!data || !Array.isArray(data.questions)) {
-        return rejectWithValue({
-          error: "Invalid quiz data received from server"
-        })
+        return rejectWithValue({ error: "Invalid quiz data" })
       }
-      const responseResult={
+
+      const questions = data.questions.map((q: any) => {
+        const base: QuizQuestion = {
+          id: q.id || crypto.randomUUID(),
+          question: q.question,
+          type: type,
+          answer: q.answer,
+          codeSnippet: q.codeSnippet,
+          language: q.language,
+          tags: q.tags || [],
+          hints: q.hints || [],
+          difficulty: q.difficulty,
+          keywords: q.keywords,
+        }
+
+        if (type === "mcq") {
+          return {
+            ...base,
+            options: q.options,
+            correctOptionId: q.correctOptionId,
+          }
+        }
+
+        if (type === "code") {
+          return {
+            ...base,
+            codeSnippet: q.codeSnippet,
+            language: q.language || "javascript",
+          }
+        }
+
+        if (type === "blanks" || type === "openended") {
+          const open = q.openEndedQuestion || {}
+          return {
+            ...base,
+            tags: open.tags || [],
+            hints: open.hints || [],
+          }
+        }
+
+        return base
+      })
+
+      const normalized = {
         ...data,
-        slug: slug,
+        questions,
+        slug,
         quizType: type,
-        id: slug // For backward compatibility
-      };
-      if((type==="blanks" || type==="openended") && !data.questions.every((q: any) => q.openEndedQuestion)) {
-
-        //add tags and hints to each question
-        responseResult.questions = responseResult.questions.map((q: any) => ({
-          ...q,
-          tags: q.openEndedQuestion.tags || [],
-          hints: q.openEndedQuestion.hints || [],
-        }));
+        id: slug,
       }
-    
-      console.log("Quiz fetched successfully:", responseResult);
 
-      return {
-        ...responseResult,
-        slug: slug,
-        quizType: type,
-        id: slug // For backward compatibility
-      }
+      console.log("Quiz fetched successfully:", normalized)
+      return normalized
     } catch (error: any) {
       console.error("Quiz fetch error:", error)
       return rejectWithValue({
-        error: error.message || "Failed to load quiz"
+        error: error.message || "Failed to load quiz",
       })
     }
   }
@@ -363,14 +382,14 @@ const quizSlice = createSlice({
       state.results = action.payload
       state.isCompleted = true
     }
-  }, 
+  },
   extraReducers: (builder) => {
     builder
       .addCase(submitQuiz.pending, (state) => {
         state.status = 'submitting'
         state.error = null
       })
-      
+
       .addCase(submitQuiz.fulfilled, (state, action) => {
         state.status = 'succeeded'
         state.results = action.payload
