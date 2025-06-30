@@ -1,20 +1,46 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
+import {
+  CheckCircle2,
+  XCircle,
+  Trophy,
+  Share2,
+  RefreshCw,
+  Home,
+  TrendingUp,
+  Brain,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Lightbulb,
+  BookOpen,
+  BarChart3,
+} from "lucide-react"
+
 import { Confetti } from "@/components/ui/confetti"
 import { Button } from "@/components/ui/button"
-import { CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, XCircle, Trophy, Target, Share2, RefreshCw, Home } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { NoResults } from "@/components/ui/no-results"
 import { BestGuess } from "@/components/ui/best-guess"
+
 import { useDispatch } from "react-redux"
 import { clearQuizState } from "@/store/slices/quiz-slice"
-import { getPerformanceLevel, getSimilarityLabel, calculateAnswerSimilarity, getSimilarityFeedback } from "@/lib/utils/text-similarity"
-
+import {
+  getPerformanceLevel,
+  getSimilarityLabel,
+  calculateAnswerSimilarity,
+  getSimilarityFeedback,
+} from "@/lib/utils/text-similarity"
+import { cn } from "@/lib/utils"
 
 interface QuestionResult {
   questionId: string | number
@@ -49,45 +75,46 @@ interface QuizResultsProps {
   onRetake?: () => void
   isAuthenticated?: boolean
   slug: string
-  quizType: 'open-ended' | 'blanks'
+  quizType: "open-ended" | "blanks"
 }
-
-
-
-
 
 export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug, quizType }: QuizResultsProps) {
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set())
   const hasShownConfettiRef = useRef(false)
   const dispatch = useDispatch()
 
   // Enhanced results calculation
   const enhancedResults = useMemo(() => {
     if (!result?.questionResults) return []
-    
+
     return result.questionResults.map((q) => {
       const questionId = String(q.questionId || q.id || "")
       const actualAnswer = result.answers?.find((a: any) => String(a.questionId || a.id || "") === questionId)
-      const questionData = result.questions?.find((quest: any) => String(quest.id || quest.questionId || "") === questionId)
-      
-      const questionText = q.question || q.text || questionData?.question || questionData?.text || `Question ${questionId}`
-      const userAnswer = actualAnswer?.userAnswer || actualAnswer?.text || actualAnswer?.answer || q.userAnswer || q.answer || ""
+      const questionData = result.questions?.find(
+        (quest: any) => String(quest.id || quest.questionId || "") === questionId,
+      )
+
+      const questionText =
+        q.question || q.text || questionData?.question || questionData?.text || `Question ${questionId}`
+      const userAnswer =
+        actualAnswer?.userAnswer || actualAnswer?.text || actualAnswer?.answer || q.userAnswer || q.answer || ""
       const correctAnswer = q.correctAnswer || questionData?.correctAnswer || questionData?.answer || ""
-        // Calculate similarity using existing value or compute a new one
-      const simResult = typeof q.similarity === "number"
-        ? q.similarity
-        : calculateAnswerSimilarity(userAnswer, correctAnswer).similarity;
-      
-      // Ensure we have a valid number
-      const sim = typeof simResult === 'number' && !isNaN(simResult) ? simResult : 0;
-      
-      const similarityLabel = q.similarityLabel || getSimilarityLabel(sim);
-      const isCorrect = typeof actualAnswer?.isCorrect === "boolean"
-        ? actualAnswer.isCorrect
-        : typeof q.isCorrect === "boolean"
-          ? q.isCorrect
-          : sim >= 0.7
+
+      const simResult =
+        typeof q.similarity === "number"
+          ? q.similarity
+          : calculateAnswerSimilarity(userAnswer, correctAnswer).similarity
+
+      const sim = typeof simResult === "number" && !isNaN(simResult) ? simResult : 0
+      const similarityLabel = q.similarityLabel || getSimilarityLabel(sim)
+      const isCorrect =
+        typeof actualAnswer?.isCorrect === "boolean"
+          ? actualAnswer.isCorrect
+          : typeof q.isCorrect === "boolean"
+            ? q.isCorrect
+            : sim >= 0.7
 
       return {
         ...q,
@@ -102,14 +129,14 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
           questionResult: q,
           answerData: actualAnswer,
           questionData: questionData,
-        }
+        },
       }
     })
   }, [result])
 
   // Score calculation
   const { correctCount, totalQuestions, percentage } = useMemo(() => {
-    const correct = enhancedResults.filter(q => q.isCorrect).length
+    const correct = enhancedResults.filter((q) => q.isCorrect).length
     const total = enhancedResults.length || 1
     let finalPercentage = result?.percentage
 
@@ -124,18 +151,34 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
     return {
       correctCount: correct,
       totalQuestions: total,
-      percentage: Math.max(0, Math.min(finalPercentage, 100))
+      percentage: Math.max(0, Math.min(finalPercentage, 100)),
     }
   }, [enhancedResults, result])
 
   const performance = useMemo(() => getPerformanceLevel(percentage), [percentage])
+
+  // Statistics
+  const stats = useMemo(() => {
+    const avgSimilarity = enhancedResults.reduce((sum, q) => sum + (q.similarity || 0), 0) / enhancedResults.length
+    const perfectMatches = enhancedResults.filter((q) => (q.similarity || 0) >= 0.95).length
+    const closeMatches = enhancedResults.filter((q) => (q.similarity || 0) >= 0.7 && (q.similarity || 0) < 0.95).length
+    const partialMatches = enhancedResults.filter((q) => (q.similarity || 0) >= 0.4 && (q.similarity || 0) < 0.7).length
+
+    return {
+      avgSimilarity,
+      perfectMatches,
+      closeMatches,
+      partialMatches,
+      totalQuestions: enhancedResults.length,
+    }
+  }, [enhancedResults])
 
   // Confetti effect
   useEffect(() => {
     if (result?.completedAt && !hasShownConfettiRef.current && percentage >= 70) {
       hasShownConfettiRef.current = true
       setShowConfetti(true)
-      const timer = setTimeout(() => setShowConfetti(false), 3000)
+      const timer = setTimeout(() => setShowConfetti(false), 4000)
       return () => clearTimeout(timer)
     }
   }, [result, percentage])
@@ -155,9 +198,10 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
     try {
       const shareData = {
         title: `${result?.title || "Quiz"} - Results`,
-        text: `I scored ${percentage}% (${performance.level}) on the ${result?.title || "Quiz"} ${quizType} quiz! ${performance.emoji}`,
+        text: `I scored ${percentage}% (${performance}) on the ${result?.title || "Quiz"} ${quizType} quiz! ${performance.emoji}`,
         url: window.location.href,
       }
+
       if (navigator.share) {
         await navigator.share(shareData)
       } else if (navigator.clipboard) {
@@ -167,6 +211,18 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
       console.error("Sharing failed:", error)
     }
   }, [result, percentage, performance, quizType])
+
+  const toggleQuestionExpansion = (questionId: string) => {
+    setExpandedQuestions((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(questionId)) {
+        newSet.delete(questionId)
+      } else {
+        newSet.add(questionId)
+      }
+      return newSet
+    })
+  }
 
   // Error states
   if (!result) {
@@ -205,212 +261,212 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
     )
   }
 
-  // Main render
   return (
-    <>
-      <motion.div
-        className="space-y-8 max-w-4xl mx-auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-      >
-        {/* Header Section */}
-        <QuizHeader 
-          title={result.title || `${quizType === 'open-ended' ? 'Open-Ended' : 'Fill in the Blanks'} Quiz Results`}
-          completedAt={result.completedAt}
-          performance={performance}
-        />
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <motion.div
+            className="space-y-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            {/* Header */}
+            <QuizHeader
+              title={result.title || `${quizType === "open-ended" ? "Open-Ended" : "Fill in the Blanks"} Quiz Results`}
+              completedAt={result.completedAt}
+              performance={performance}
+              quizType={quizType}
+            />
 
-        {/* Score Overview */}
-        <ScoreOverview 
-          percentage={percentage}
-          correctCount={correctCount}
-          totalQuestions={totalQuestions}
-          performance={performance}
-          quizType={quizType}
-        />
+            {/* Score Overview */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <ScoreOverview
+                  percentage={percentage}
+                  correctCount={correctCount}
+                  totalQuestions={totalQuestions}
+                  performance={performance}
+                  stats={stats}
+                />
+              </div>
+              <div className="space-y-6">
+                <SimilarityInsights stats={stats} />
+                <QuizActions onRetake={handleRetake} onViewAll={handleViewAllQuizzes} onShare={handleShare} />
+              </div>
+            </div>
 
-        {/* Actions */}
-        <QuizActions 
-          onRetake={handleRetake}
-          onViewAll={handleViewAllQuizzes}
-          onShare={handleShare}
-        />
+            {/* Question Review */}
+            <QuestionReview
+              results={enhancedResults}
+              quizType={quizType}
+              expandedQuestions={expandedQuestions}
+              onToggleExpansion={toggleQuestionExpansion}
+            />
+          </motion.div>
+        </div>
 
-        {/* Question Results */}
-        <QuestionReview 
-          results={enhancedResults}
-          quizType={quizType}
-        />
-      </motion.div>
-
-      {showConfetti && <Confetti isActive={showConfetti} />}
-    </>
+        {showConfetti && <Confetti isActive={showConfetti} />}
+      </div>
+    </TooltipProvider>
   )
 }
 
-// Sub-components for better organization
-
-function QuizHeader({ title, completedAt, performance }: { 
-  title: string, 
-  completedAt?: string, 
-  performance: ReturnType<typeof getPerformanceLevel> 
+// Enhanced Header Component
+function QuizHeader({
+  title,
+  completedAt,
+  performance,
+  quizType,
+}: {
+  title: string
+  completedAt?: string
+  performance: ReturnType<typeof getPerformanceLevel>
+  quizType: "open-ended" | "blanks"
 }) {
+  const getPerformanceGradient = () => {
+    switch (performance.level) {
+      case "Excellent":
+        return "from-emerald-500/20 via-green-500/20 to-teal-500/20"
+      case "Good":
+        return "from-blue-500/20 via-indigo-500/20 to-purple-500/20"
+      case "Average":
+        return "from-amber-500/20 via-orange-500/20 to-yellow-500/20"
+      default:
+        return "from-rose-500/20 via-red-500/20 to-pink-500/20"
+    }
+  }
+
+  const getPerformanceBorder = () => {
+    switch (performance.level) {
+      case "Excellent":
+        return "border-emerald-200 dark:border-emerald-800"
+      case "Good":
+        return "border-blue-200 dark:border-blue-800"
+      case "Average":
+        return "border-amber-200 dark:border-amber-800"
+      default:
+        return "border-rose-200 dark:border-rose-800"
+    }
+  }
+
   return (
-    <motion.div
-      className="text-center space-y-6 relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 shadow-lg"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-    >
-      <div className="flex items-center justify-center gap-4">
-        <motion.div
-          className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg"
-          whileHover={{ scale: 1.05, rotate: 5 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        >
-          <Target className="w-8 h-8 text-primary" />
-        </motion.div>
-        <div className="text-left">
-          <motion.h1
-            className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            {title}
-          </motion.h1>
-          <motion.div
-            className="h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent rounded-full mt-2"
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-          />
-        </div>
-      </div>
+    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+      <Card className={cn("relative overflow-hidden border-2 shadow-xl", getPerformanceBorder())}>
+        <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", getPerformanceGradient())} />
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-      >
-        <Badge
-          variant="secondary"
-          className={`mt-3 px-4 py-2 text-sm font-semibold shadow-md ${performance.color} ${performance.bgColor} ${performance.borderColor} border-2`}
-        >
-          <motion.span
-            className="mr-2 text-lg"
-            animate={{
-              rotate: [0, 10, -10, 0],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Number.POSITIVE_INFINITY,
-              repeatDelay: 3,
-            }}
-          >
-            {performance.emoji}
-          </motion.span>
-          {performance.level}
-        </Badge>
-      </motion.div>
+        <CardHeader className="relative z-10 text-center pb-8 pt-8">
+          <div className="flex items-center justify-center mb-6">
+            <motion.div
+              className="p-4 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg border"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Trophy className="w-8 h-8 text-primary" />
+            </motion.div>
+          </div>
 
-      {completedAt && (
-        <motion.p
-          className="text-muted-foreground text-lg"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-        >
-          Completed on {new Date(completedAt).toLocaleDateString()} at{" "}
-          {new Date(completedAt).toLocaleTimeString()}
-        </motion.p>
-      )}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <CardTitle className="text-4xl font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              {title}
+            </CardTitle>
+
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Badge variant="secondary" className="text-sm px-3 py-1">
+                {quizType === "open-ended" ? "Open-Ended" : "Fill in the Blanks"}
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-sm px-3 py-1 font-semibold",
+                  performance.color,
+                  performance.bgColor,
+                  performance.borderColor,
+                )}
+              >
+                <motion.span
+                  className="mr-2"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, repeatDelay: 3 }}
+                >
+                  {performance.emoji}
+                </motion.span>
+                {performance.level}
+              </Badge>
+            </div>
+
+            {completedAt && (
+              <p className="text-muted-foreground">
+                Completed on {new Date(completedAt).toLocaleDateString()} at{" "}
+                {new Date(completedAt).toLocaleTimeString()}
+              </p>
+            )}
+          </motion.div>
+        </CardHeader>
+      </Card>
     </motion.div>
   )
 }
 
-function ScoreOverview({ 
-  percentage, 
-  correctCount, 
-  totalQuestions, 
+// Enhanced Score Overview
+function ScoreOverview({
+  percentage,
+  correctCount,
+  totalQuestions,
   performance,
-  quizType
-}: { 
-  percentage: number, 
-  correctCount: number, 
-  totalQuestions: number, 
-  performance: ReturnType<typeof getPerformanceLevel>,
-  quizType: 'open-ended' | 'blanks'
+  stats,
+}: {
+  percentage: number
+  correctCount: number
+  totalQuestions: number
+  performance: ReturnType<typeof getPerformanceLevel>
+  stats: any
 }) {
   return (
     <motion.div
-      className="overflow-hidden rounded-3xl shadow-2xl border-2 border-primary/10"
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      whileHover={{
-        scale: 1.02,
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-      }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6, delay: 0.1 }}
     >
-      <CardHeader className="bg-gradient-to-br from-primary/8 via-primary/5 to-primary/10 border-b-2 border-primary/10 p-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6, ease: "easeInOut" }}>
-              <Trophy className="w-12 h-12 text-primary drop-shadow-lg" />
-            </motion.div>
-            <div>
-              <CardTitle className="text-3xl font-bold text-foreground">Your Score</CardTitle>
-              <p className="text-muted-foreground text-lg">
-                {quizType === 'open-ended' ? 'Open-ended answers' : 'Fill-in-the-blanks'} performance summary
-              </p>
+      <Card className="shadow-xl border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Performance Overview</CardTitle>
+                <p className="text-muted-foreground">Your quiz performance breakdown</p>
+              </div>
             </div>
-          </div>
-          <div className="text-right">
+
             <motion.div
-              className="text-6xl font-black text-primary drop-shadow-lg"
+              className="text-right"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{
-                delay: 0.3,
-                type: "spring",
-                stiffness: 200,
-                damping: 15,
-              }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
             >
-              {percentage}%
+              <div className="text-4xl font-bold text-primary">{percentage}%</div>
+              <div className="text-sm text-muted-foreground">Overall Score</div>
             </motion.div>
-            <div className="text-lg text-muted-foreground font-medium">
-              {correctCount} of {totalQuestions}
-            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
-      <CardContent className="p-8">
-        <div className="space-y-8">
-          <div className="space-y-3">
-            <div className="flex justify-between text-lg font-medium">
+        <CardContent className="space-y-6">
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
               <span>Progress</span>
-              <motion.span
-                key={percentage}
-                initial={{ scale: 1.2, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
+              <span className="font-medium">
                 {correctCount}/{totalQuestions} correct
-              </motion.span>
+              </span>
             </div>
             <div className="relative">
-              <Progress value={percentage} className="h-4 rounded-full bg-muted/50" />
+              <Progress value={percentage} className="h-3" />
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
-                animate={{
-                  x: ["-100%", "100%"],
-                }}
+                animate={{ x: ["-100%", "100%"] }}
                 transition={{
                   duration: 2,
                   repeat: Number.POSITIVE_INFINITY,
@@ -422,261 +478,417 @@ function ScoreOverview({
             </div>
           </div>
 
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <StatCard icon={CheckCircle2} label="Correct" value={correctCount} color="green" delay={0.2} />
+            <StatCard icon={XCircle} label="Incorrect" value={totalQuestions - correctCount} color="red" delay={0.3} />
+          </div>
+
+          {/* Performance Message */}
           <motion.div
-            className={`p-6 rounded-2xl border-3 ${performance.bgColor} ${performance.borderColor} shadow-lg`}
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className={cn("p-4 rounded-xl border-2", performance.bgColor, performance.borderColor)}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <motion.span
-                className="text-4xl"
-                animate={{
-                  rotate: [0, 10, -10, 0],
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Number.POSITIVE_INFINITY,
-                  repeatDelay: 2,
-                }}
+                className="text-2xl"
+                animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, repeatDelay: 2 }}
               >
                 {performance.emoji}
               </motion.span>
-              <p className={`font-bold text-xl ${performance.color}`}>{performance.message}</p>
+              <p className={cn("font-semibold", performance.color)}>{performance.message}</p>
             </div>
           </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <ScoreCard 
-              value={correctCount} 
-              label="Correct" 
-              color="green" 
-              delay={0.2}
-            />
-            <ScoreCard 
-              value={totalQuestions - correctCount} 
-              label="Incorrect" 
-              color="red" 
-              delay={0.3}
-            />
-            <ScoreCard 
-              value={totalQuestions} 
-              label="Total" 
-              color="slate" 
-              delay={0.4}
-            />
-          </div>
-        </div>
-      </CardContent>
+        </CardContent>
+      </Card>
     </motion.div>
   )
 }
 
-function ScoreCard({ value, label, color, delay }: { 
-  value: number, 
-  label: string, 
-  color: 'green' | 'red' | 'slate',
-  delay: number
+// Similarity Insights Component
+function SimilarityInsights({ stats }: { stats: any }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.6, delay: 0.2 }}
+    >
+      <Card className="shadow-lg">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" />
+            <CardTitle className="text-lg">Text Similarity Analysis</CardTitle>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Average Similarity</span>
+              <Badge variant="outline" className="font-mono">
+                {Math.round(stats.avgSimilarity * 100)}%
+              </Badge>
+            </div>
+
+            <Progress value={stats.avgSimilarity * 100} className="h-2" />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <SimilarityBreakdown
+              label="Perfect Matches"
+              count={stats.perfectMatches}
+              total={stats.totalQuestions}
+              color="emerald"
+              icon="🎯"
+            />
+            <SimilarityBreakdown
+              label="Close Matches"
+              count={stats.closeMatches}
+              total={stats.totalQuestions}
+              color="blue"
+              icon="✅"
+            />
+            <SimilarityBreakdown
+              label="Partial Matches"
+              count={stats.partialMatches}
+              total={stats.totalQuestions}
+              color="amber"
+              icon="⚡"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
+function SimilarityBreakdown({
+  label,
+  count,
+  total,
+  color,
+  icon,
+}: {
+  label: string
+  count: number
+  total: number
+  color: string
+  icon: string
 }) {
-  const colorClasses = {
-    green: {
-      bg: "from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30",
-      border: "border-green-200 dark:border-green-800",
-      text: "text-green-500",
-      labelText: "text-green-700 dark:text-green-300"
-    },
-    red: {
-      bg: "from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30",
-      border: "border-red-200 dark:border-red-800",
-      text: "text-red-500",
-      labelText: "text-red-700 dark:text-red-300"
-    },
-    slate: {
-      bg: "from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30",
-      border: "border-slate-200 dark:border-slate-800",
-      text: "text-slate-600 dark:text-slate-400",
-      labelText: "text-slate-700 dark:text-slate-300"
-    }
+  const percentage = total > 0 ? (count / total) * 100 : 0
+
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center gap-2">
+        <span>{icon}</span>
+        <span className="text-muted-foreground">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="font-medium">{count}</span>
+        <Badge variant="secondary" className="text-xs">
+          {Math.round(percentage)}%
+        </Badge>
+      </div>
+    </div>
+  )
+}
+
+// Enhanced Actions Component
+function QuizActions({
+  onRetake,
+  onViewAll,
+  onShare,
+}: {
+  onRetake: () => void
+  onViewAll: () => void
+  onShare: () => void
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.3 }}
+    >
+      <Card className="shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Quick Actions
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          <Button onClick={onRetake} className="w-full justify-start gap-2" size="lg">
+            <RefreshCw className="w-4 h-4" />
+            Retake Quiz
+          </Button>
+
+          <Button onClick={onViewAll} variant="outline" className="w-full justify-start gap-2 bg-transparent" size="lg">
+            <Home className="w-4 h-4" />
+            Browse Quizzes
+          </Button>
+
+          <Button onClick={onShare} variant="ghost" className="w-full justify-start gap-2" size="lg">
+            <Share2 className="w-4 h-4" />
+            Share Results
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
+// Enhanced Question Review
+function QuestionReview({
+  results,
+  quizType,
+  expandedQuestions,
+  onToggleExpansion,
+}: {
+  results: QuestionResult[]
+  quizType: "open-ended" | "blanks"
+  expandedQuestions: Set<string>
+  onToggleExpansion: (id: string) => void
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.4 }}
+    >
+      <Card className="shadow-xl border-2">
+        <CardHeader className="border-b bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BookOpen className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Answer Review</CardTitle>
+                <p className="text-muted-foreground">Detailed analysis of your {results.length} answers</p>
+              </div>
+            </div>
+
+            <Badge variant="secondary" className="text-sm">
+              {results.filter((r) => r.isCorrect).length}/{results.length} Correct
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <div className="divide-y">
+            <AnimatePresence>
+              {results.map((question, index) => (
+                <QuestionItem
+                  key={question.questionId}
+                  question={question}
+                  index={index}
+                  quizType={quizType}
+                  isExpanded={expandedQuestions.has(String(question.questionId))}
+                  onToggleExpansion={() => onToggleExpansion(String(question.questionId))}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
+// Enhanced Question Item
+function QuestionItem({
+  question,
+  index,
+  quizType,
+  isExpanded,
+  onToggleExpansion,
+}: {
+  question: QuestionResult
+  index: number
+  quizType: "open-ended" | "blanks"
+  isExpanded: boolean
+  onToggleExpansion: () => void
+}) {
+  const similarityPercentage = Math.round((question.similarity || 0) * 100)
+
+  const getSimilarityColor = (similarity: number) => {
+    if (similarity >= 0.9) return "text-emerald-600 dark:text-emerald-400"
+    if (similarity >= 0.7) return "text-blue-600 dark:text-blue-400"
+    if (similarity >= 0.5) return "text-amber-600 dark:text-amber-400"
+    return "text-red-600 dark:text-red-400"
+  }
+
+  const getSimilarityBg = (similarity: number) => {
+    if (similarity >= 0.9) return "bg-emerald-50 dark:bg-emerald-950/20"
+    if (similarity >= 0.7) return "bg-blue-50 dark:bg-blue-950/20"
+    if (similarity >= 0.5) return "bg-amber-50 dark:bg-amber-950/20"
+    return "bg-red-50 dark:bg-red-950/20"
   }
 
   return (
     <motion.div
-      className={`bg-gradient-to-br ${colorClasses[color].bg} border-2 ${colorClasses[color].border} rounded-2xl p-6 text-center shadow-lg`}
-      whileHover={{ scale: 1.05, y: -5 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-    >
-      <motion.div
-        className={`text-4xl font-black ${colorClasses[color].text}`}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay, type: "spring", stiffness: 200 }}
-      >
-        {value}
-      </motion.div>
-      <div className={`text-sm ${colorClasses[color].labelText} font-semibold`}>{label}</div>
-    </motion.div>
-  )
-}
-
-function QuizActions({ onRetake, onViewAll, onShare }: { 
-  onRetake: () => void, 
-  onViewAll: () => void, 
-  onShare: () => void 
-}) {
-  return (
-    <motion.div
-      className="rounded-3xl shadow-2xl border-2 border-muted/20"
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ delay: index * 0.05, duration: 0.4 }}
+      className="p-6 hover:bg-muted/30 transition-colors"
     >
-      <CardFooter className="bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20 border-t-2 border-muted/20 flex flex-wrap gap-4 justify-between p-8">
-        <div className="flex gap-3">
-          <ActionButton 
-            onClick={onRetake}
-            icon={<RefreshCw className="w-5 h-5" />}
-            label="Retake Quiz"
-            animateIcon={{ rotate: 180 }}
-          />
-          <ActionButton 
-            onClick={onViewAll}
-            icon={<Home className="w-5 h-5" />}
-            label="All Quizzes"
-            variant="outline"
-          />
-        </div>
-        <ActionButton 
-          onClick={onShare}
-          icon={<Share2 className="w-5 h-5" />}
-          label="Share Results"
-          variant="outline"
-          animateIcon={{ rotate: 15, scale: 1.1 }}
-        />
-      </CardFooter>
-    </motion.div>
-  )
-}
+      <div className="space-y-4">
+        {/* Question Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1">
+            <div
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                question.isCorrect
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                  : "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300",
+              )}
+            >
+              {index + 1}
+            </div>
 
-function ActionButton({ 
-  onClick, 
-  icon, 
-  label, 
-  variant = 'default',
-  animateIcon = {}
-}: { 
-  onClick: () => void, 
-  icon: React.ReactNode, 
-  label: string, 
-  variant?: 'default' | 'outline',
-  animateIcon?: any
-}) {
-  return (
-    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-      <Button
-        onClick={onClick}
-        className={`gap-3 px-6 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ${variant === 'outline' ? 'border-2 hover:bg-muted/50' : ''}`}
-        variant={variant}
-      >
-        <motion.div whileHover={animateIcon} transition={{ duration: 0.3 }}>
-          {icon}
-        </motion.div>
-        {label}
-      </Button>
-    </motion.div>
-  )
-}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-lg mb-2 leading-relaxed">{question.question}</h3>
 
-function QuestionReview({ results, quizType }: { results: QuestionResult[], quizType: 'open-ended' | 'blanks' }) {
-  return (
-    <motion.div
-      className="rounded-3xl shadow-2xl border-2 border-muted/20"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-    >
-      <CardHeader className="p-8 bg-gradient-to-r from-muted/10 to-muted/20 border-b-2 border-muted/20">
-        <CardTitle className="flex items-center gap-4 text-2xl font-bold">
-          <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6 }}>
-            <Target className="w-7 h-7 text-primary" />
-          </motion.div>
-          Answer Review ({results.length} Questions)
-        </CardTitle>
-        <p className="text-muted-foreground text-lg">Review your answers and learn from mistakes</p>
-      </CardHeader>
+              {/* Quick Preview */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {question.isCorrect ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-600" />
+                  )}
+                  <Badge variant={question.isCorrect ? "default" : "destructive"} className="text-xs">
+                    {question.isCorrect ? "Correct" : "Incorrect"}
+                  </Badge>
 
-      <CardContent className="space-y-6 p-8">
-        {results.map((q, index) => (
-          <QuestionItem 
-            key={q.questionId} 
-            question={q} 
-            index={index} 
-            quizType={quizType}
-          />
-        ))}
-      </CardContent>
-    </motion.div>
-  )
-}
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge
+                        variant="outline"
+                        className={cn("text-xs font-mono", getSimilarityColor(question.similarity || 0))}
+                      >
+                        {similarityPercentage}% match
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Text similarity score: {question.similarityLabel}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
 
-function QuestionItem({ question, index, quizType }: { 
-  question: QuestionResult, 
-  index: number,
-  quizType: 'open-ended' | 'blanks'
-}) {
-  return (
-    <motion.div
-      className="p-6 rounded-2xl border-2 border-muted/30 bg-gradient-to-r from-background to-muted/5 shadow-lg hover:shadow-xl transition-all duration-300"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.5 }}
-      whileHover={{ scale: 1.01, y: -2 }}
-    >
-      <div className="flex items-start gap-4 mb-4">
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md ${
-            question.isCorrect ? "bg-green-100 text-green-500" : "bg-red-100 text-red-500"
-          }`}
-        >
-          {question.isCorrect ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-        </div>
-        <div className="flex-1">
-          <div className="font-bold mb-3 text-lg text-foreground">
-            Question {index + 1}: {question.question}
-          </div>
-
-          <div className="space-y-4">
-            <BestGuess 
-              userAnswer={question.userAnswer || ""} 
-              correctAnswer={question.correctAnswer || ""} 
-              similarity={question.similarity || 0}
-              explanation={getSimilarityFeedback(question.similarity || 0)}
-              showDetailedInfo={true}
-            />
-          </div>
-
-          <motion.div
-            className="text-sm text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg border border-muted/30"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <strong>Similarity:</strong> {Math.round((question.similarity || 0) * 100)}% ({question.similarityLabel})
-            {process.env.NODE_ENV !== 'production' && question.userAnswer !== question.correctAnswer && (
-              <div className="mt-1 text-xs text-muted-foreground italic">
-                <details>
-                  <summary>Debug Info</summary>
-                  <div className="pl-2 mt-1">
-                    <div>User: "{question.userAnswer}"</div>
-                    <div>Expected: "{question.correctAnswer}"</div>
-                    <div>Raw similarity score: {(question.similarity || 0).toFixed(4)}</div>
-                  </div>
-                </details>
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium">Your answer:</span> {question.userAnswer || "No answer provided"}
+                </div>
               </div>
-            )}
-          </motion.div>
+            </div>
+          </div>
+
+          <Button variant="ghost" size="sm" onClick={onToggleExpansion} className="shrink-0">
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
         </div>
+
+        {/* Expanded Content */}
+        <Collapsible open={isExpanded}>
+          <CollapsibleContent className="space-y-4">
+            <Separator />
+
+            {/* Detailed Analysis */}
+            <div className="space-y-4">
+              <BestGuess
+                userAnswer={question.userAnswer || ""}
+                correctAnswer={question.correctAnswer || ""}
+                similarity={question.similarity || 0}
+                explanation={getSimilarityFeedback(question.similarity || 0)}
+                showDetailedInfo={true}
+              />
+
+              {/* Similarity Visualization */}
+              <div className={cn("p-4 rounded-lg border", getSimilarityBg(question.similarity || 0))}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="font-medium text-sm">Similarity Analysis</span>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {similarityPercentage}%
+                  </Badge>
+                </div>
+
+                <Progress value={similarityPercentage} className="h-2 mb-2" />
+
+                <p className={cn("text-xs", getSimilarityColor(question.similarity || 0))}>
+                  {getSimilarityFeedback(question.similarity || 0)}
+                </p>
+              </div>
+
+              {/* Learning Tip */}
+              {!question.isCorrect && (
+                <Alert>
+                  <Lightbulb className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <strong>Learning Tip:</strong> Review the correct answer and try to understand the key concepts.
+                    Focus on the main ideas and terminology used.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </motion.div>
   )
 }
 
+// Utility Components
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  color,
+  delay,
+}: {
+  icon: any
+  label: string
+  value: number
+  color: "green" | "red"
+  delay: number
+}) {
+  const colorClasses = {
+    green: {
+      bg: "bg-emerald-50 dark:bg-emerald-950/20",
+      border: "border-emerald-200 dark:border-emerald-800",
+      text: "text-emerald-600 dark:text-emerald-400",
+      icon: "text-emerald-500",
+    },
+    red: {
+      bg: "bg-red-50 dark:bg-red-950/20",
+      border: "border-red-200 dark:border-red-800",
+      text: "text-red-600 dark:text-red-400",
+      icon: "text-red-500",
+    },
+  }
+
+  return (
+    <motion.div
+      className={cn("p-4 rounded-xl border-2 text-center", colorClasses[color].bg, colorClasses[color].border)}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, type: "spring", stiffness: 200 }}
+      whileHover={{ scale: 1.05, y: -2 }}
+    >
+      <div className="flex items-center justify-center mb-2">
+        <Icon className={cn("w-5 h-5", colorClasses[color].icon)} />
+      </div>
+      <div className={cn("text-2xl font-bold", colorClasses[color].text)}>{value}</div>
+      <div className="text-sm text-muted-foreground font-medium">{label}</div>
+    </motion.div>
+  )
+}

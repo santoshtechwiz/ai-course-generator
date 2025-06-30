@@ -8,7 +8,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { signIn, useSession } from "next-auth/react"
-import { Brain, HelpCircle, Timer } from "lucide-react"
+import { HelpCircle, Timer } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { ConfirmDialog } from "../../components/ConfirmDialog"
@@ -34,12 +34,10 @@ import useSubscription from "@/hooks/use-subscription"
 
 // Define proper TypeScript interfaces for better type safety
 interface Subscription {
-  subscriptionPlan?: string;
+  subscriptionPlan?: string
 }
 
-type QuizFormData = z.infer<typeof quizSchema> & {
-
-}
+type QuizFormData = z.infer<typeof quizSchema> & {}
 
 interface CreateQuizFormProps {
   credits: number
@@ -49,15 +47,21 @@ interface CreateQuizFormProps {
   quizType?: string
 }
 
-export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, params, quizType = "mcq" }: CreateQuizFormProps) {
+export default function CreateQuizForm({
+  isLoggedIn,
+  maxQuestions,
+  credits,
+  params,
+  quizType = "mcq",
+}: CreateQuizFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const { data: session } = useSession()
-  const { data: subscriptionData } = useSubscription() as { 
-    data?: Subscription;
-    status?: string;
+  const { data: subscriptionData } = useSubscription() as {
+    data?: Subscription
+    status?: string
   }
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
@@ -100,7 +104,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
 
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-        const response = await axios.post(`/api/quizzes/mcq`, data)
+      const response = await axios.post(`/api/quizzes/mcq`, data)
       return response.data
     },
     onError: (error: any) => {
@@ -114,21 +118,24 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
   })
 
   // Improved validation with better type safety
-  const validateQuizData = React.useCallback((data: QuizFormData): string | null => {
-    if (!data.title || data.title.trim().length < 3) {
-      return "Quiz title must be at least 3 characters"
-    }
+  const validateQuizData = React.useCallback(
+    (data: QuizFormData): string | null => {
+      if (!data.title || data.title.trim().length < 3) {
+        return "Quiz title must be at least 3 characters"
+      }
 
-    if (!data.amount || typeof data.amount !== 'number' || data.amount < 1 || data.amount > maxQuestions) {
-      return `Number of questions must be between 1 and ${maxQuestions}`
-    }
+      if (!data.amount || typeof data.amount !== "number" || data.amount < 1 || data.amount > maxQuestions) {
+        return `Number of questions must be between 1 and ${maxQuestions}`
+      }
 
-    if (!data.difficulty || !['easy', 'medium', 'hard'].includes(data.difficulty)) {
-      return "Please select a valid difficulty level"
-    }
+      if (!data.difficulty || !["easy", "medium", "hard"].includes(data.difficulty)) {
+        return "Please select a valid difficulty level"
+      }
 
-    return null // No validation errors
-  }, [maxQuestions])
+      return null // No validation errors
+    },
+    [maxQuestions],
+  )
 
   // Fix onSubmit dependency array to include validateQuizData
   const onSubmit = React.useCallback(
@@ -161,7 +168,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
     setIsConfirmDialogOpen(false)
 
     try {
-      const formValues = watch();
+      const formValues = watch()
       const response = await createQuizMutation(formValues)
       const userQuizId = response?.userQuizId
       const slug = response?.slug
@@ -194,26 +201,24 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
 
   // Fix credit percentage calculation to be type-safe and display actual credits
   const creditPercentage = React.useMemo(() => {
-    if (typeof credits !== 'number' || isNaN(credits) || credits <= 0) {
-      return 0;
+    if (typeof credits !== "number" || isNaN(credits) || credits <= 0) {
+      return 0
     }
     // Use max value as 100 to create better visual scale for progress bar
-    const maxCreditDisplay = 100;
-    return Math.min((credits / maxCreditDisplay) * 100, 100);
-  }, [credits]);
+    const maxCreditDisplay = 100
+    return Math.min((credits / maxCreditDisplay) * 100, 100)
+  }, [credits])
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
+      className="w-full max-w-4xl mx-auto space-y-6 lg:space-y-8"
     >
-      <Card className="bg-background border border-border shadow-sm">
-       
-
-        <CardContent className="space-y-6 pt-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+        <CardContent className="space-y-8 lg:space-y-10 p-6 lg:p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-10">
             <motion.div
               className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
@@ -237,7 +242,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
                 <Input
                   id="title"
                   placeholder="Enter the quiz topic"
-                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
+                  className="w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg border border-input rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
                   {...register("title")}
                   aria-describedby="topic-description"
                 />
@@ -271,11 +276,11 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <div className="space-y-3 px-2">
-                <div className="flex items-center justify-between px-2">
-                  <Timer className="w-5 h-5 text-muted-foreground" />
+              <div className="space-y-4 lg:space-y-5 px-2 lg:px-4">
+                <div className="flex items-center justify-between px-2 lg:px-4">
+                  <Timer className="w-5 h-5 lg:w-6 lg:h-6 text-muted-foreground" />
                   <motion.span
-                    className="text-2xl font-bold text-primary"
+                    className="text-2xl lg:text-3xl font-bold text-primary tabular-nums"
                     key={amount}
                     initial={{ scale: 1.2, color: "#00ff00" }}
                     animate={{ scale: 1, color: "var(--primary)" }}
@@ -326,14 +331,14 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
                 {["easy", "medium", "hard"].map((level) => (
                   <Button
                     key={level}
                     type="button"
                     variant={difficulty === level ? "default" : "outline"}
                     className={cn(
-                      "capitalize w-full h-12 font-medium transition-all",
+                      "capitalize w-full h-12 lg:h-14 font-medium transition-all text-base lg:text-lg",
                       difficulty === level ? "border-primary shadow-sm" : "hover:border-primary/50",
                     )}
                     onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
@@ -346,15 +351,16 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
             </motion.div>
 
             <motion.div
-              className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2"
+              className="bg-primary/5 border border-primary/20 rounded-lg p-4 lg:p-6 space-y-3 lg:space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <h3 className="text-base font-semibold mb-2">Available Credits</h3>
-              <Progress value={creditPercentage} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? 's' : ''} remaining.
+              <h3 className="text-base lg:text-lg font-semibold mb-2">Available Credits</h3>
+              <Progress value={creditPercentage} className="h-2 lg:h-3" />
+              <p className="text-xs lg:text-sm text-muted-foreground">
+                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? "s" : ""}{" "}
+                remaining.
               </p>
             </motion.div>
 
@@ -374,7 +380,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
             </AnimatePresence>
 
             <motion.div
-              className="pt-4 border-t border-border/60"
+              className="pt-6 lg:pt-8 border-t border-border/60"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
@@ -387,7 +393,7 @@ export default function CreateQuizForm({ isLoggedIn, maxQuestions, credits, para
                 isLoading={isLoading}
                 hasCredits={credits > 0}
                 loadingLabel="Generating Quiz..."
-                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg"
+                className="w-full h-12 lg:h-14 text-base lg:text-lg font-medium transition-all duration-300 hover:shadow-lg"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",
