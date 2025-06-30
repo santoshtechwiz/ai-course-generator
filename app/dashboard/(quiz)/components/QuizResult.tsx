@@ -135,7 +135,7 @@ function getEnhancedTitle(result: any, slug: string, quizType: QuizType): string
       openended: "Open Ended Quiz",
       flashcard: "Flashcard Quiz",
     }
-    return typeMap[quizType] || "Quiz"
+    return typeMap[quizType as keyof typeof typeMap] || "Quiz"
   }
 
   // Priority 3: Use identifier if it looks like a proper title

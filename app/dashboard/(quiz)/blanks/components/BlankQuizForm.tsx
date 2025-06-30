@@ -7,7 +7,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 
-import { TextQuote, HelpCircle, Timer, Sparkles, Check, AlertCircle } from 'lucide-react'
+import { HelpCircle, Timer, Sparkles, Check, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 
@@ -30,9 +30,7 @@ import { SubscriptionSlider } from "@/app/dashboard/subscription/components/Subs
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
 
-type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {
-
-}
+type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
 
 interface BlankQuizFormProps {
   credits: number
@@ -80,10 +78,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         setValue("amount", Math.min(amount, maxQuestions))
       }
     }
-    if (
-      typeof params?.difficulty === "string" &&
-      ["easy", "medium", "hard"].includes(params.difficulty)
-    ) {
+    if (typeof params?.difficulty === "string" && ["easy", "medium", "hard"].includes(params.difficulty)) {
       setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
     }
     if (params?.topic) {
@@ -180,21 +175,18 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   // Fix credit percentage calculation to be type-safe and display actual credits
   const creditPercentage = React.useMemo(() => {
-    if (typeof credits !== 'number' || isNaN(credits) || credits <= 0) {
-      return 0;
+    if (typeof credits !== "number" || isNaN(credits) || credits <= 0) {
+      return 0
     }
     // Use max value as 100 to create better visual scale for progress bar
-    const maxCreditDisplay = 100;
-    return Math.min((credits / maxCreditDisplay) * 100, 100);
-  }, [credits]);
+    const maxCreditDisplay = 100
+    return Math.min((credits / maxCreditDisplay) * 100, 100)
+  }, [credits])
 
   if (isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto p-6">
-        <CourseAILoader 
-          isLoading={true} 
-          message="Creating your fill-in-the-blanks quiz..." 
-        />
+        <CourseAILoader isLoading={true} message="Creating your fill-in-the-blanks quiz..." />
       </div>
     )
   }
@@ -204,12 +196,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-4xl mx-auto p-6 space-y-8"
+      className="w-full max-w-4xl mx-auto space-y-6 lg:space-y-8"
     >
-      <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300">
-  
-
-        <CardContent className="space-y-6 pt-6">
+      <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+        <CardContent className="space-y-8 lg:space-y-10 p-6 lg:p-8">
           {submitError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -218,9 +208,9 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-10">
             <motion.div
-              className="space-y-4"
+              className="space-y-4 lg:space-y-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -243,9 +233,9 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   id="title"
                   placeholder="Enter the quiz title"
                   className={cn(
-                    "w-full p-3 h-12 border border-input rounded-md transition-all pr-10",
+                    "w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg border border-input rounded-lg transition-all pr-12",
                     "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-                    errors.title ? "border-red-300 focus-visible:ring-red-300" : ""
+                    errors.title ? "border-red-300 focus-visible:ring-red-300" : "",
                   )}
                   {...register("title")}
                   aria-describedby="title-description"
@@ -271,7 +261,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </motion.div>
 
             <motion.div
-              className="space-y-4"
+              className="space-y-4 lg:space-y-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -291,12 +281,12 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               </Label>
 
               <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex flex-wrap gap-2 lg:gap-3 mb-3 lg:mb-4">
                   {suggestedTopics.map((suggestedTopic) => (
                     <Badge
                       key={suggestedTopic}
                       variant={topic === suggestedTopic ? "default" : "outline"}
-                      className="cursor-pointer transition-all duration-200 hover:shadow-sm"
+                      className="cursor-pointer transition-all duration-200 hover:shadow-sm text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
                       onClick={() => setValue("topic", suggestedTopic)}
                     >
                       {suggestedTopic}
@@ -310,7 +300,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   className={cn(
                     "w-full p-3 h-12 border border-input rounded-md transition-all",
                     "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-                    errors.topic ? "border-red-300 focus-visible:ring-red-300" : ""
+                    errors.topic ? "border-red-300 focus-visible:ring-red-300" : "",
                   )}
                   {...register("topic")}
                   aria-invalid={errors.topic ? "true" : "false"}
@@ -331,7 +321,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </motion.div>
 
             <motion.div
-              className="space-y-4"
+              className="space-y-4 lg:space-y-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -349,11 +339,11 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <div className="space-y-3 px-2">
-                <div className="flex items-center justify-between px-2">
-                  <Timer className="w-5 h-5 text-muted-foreground" />
+              <div className="space-y-4 lg:space-y-5 px-2 lg:px-4">
+                <div className="flex items-center justify-between px-2 lg:px-4">
+                  <Timer className="w-5 h-5 lg:w-6 lg:h-6 text-muted-foreground" />
                   <motion.span
-                    className="text-2xl font-bold text-primary"
+                    className="text-2xl lg:text-3xl font-bold text-primary tabular-nums"
                     key={amount}
                     initial={{ scale: 1.2, color: "#00ff00" }}
                     animate={{ scale: 1, color: "var(--primary)" }}
@@ -396,7 +386,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </motion.div>
 
             <motion.div
-              className="space-y-4"
+              className="space-y-4 lg:space-y-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -414,40 +404,41 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
                 {difficultyOptions.map((level) => (
                   <Button
                     key={level.value}
                     type="button"
                     variant={difficulty === level.value ? "default" : "outline"}
                     className={cn(
-                      "capitalize w-full h-12 font-medium transition-all duration-200",
+                      "capitalize w-full h-12 lg:h-14 font-medium transition-all duration-200 text-base lg:text-lg",
                       difficulty === level.value ? "border-primary shadow-sm" : "hover:border-primary/50",
-                      "focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      "focus:ring-2 focus:ring-primary focus:ring-offset-2",
                     )}
                     onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
                     aria-pressed={difficulty === level.value}
                   >
                     {level.label}
-                    {difficulty === level.value && <Check className="ml-2 h-4 w-4" />}
+                    {difficulty === level.value && <Check className="ml-2 h-4 w-4 lg:h-5 lg:w-5" />}
                   </Button>
                 ))}
               </div>
             </motion.div>
 
             <motion.div
-              className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2"
+              className="bg-primary/5 border border-primary/20 rounded-lg p-4 lg:p-6 space-y-3 lg:space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
+              <h3 className="text-base lg:text-lg font-semibold mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
                 Available Credits
               </h3>
-              <Progress value={creditPercentage} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? 's' : ''} remaining.
+              <Progress value={creditPercentage} className="h-2 lg:h-3" />
+              <p className="text-xs lg:text-sm text-muted-foreground">
+                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? "s" : ""}{" "}
+                remaining.
               </p>
             </motion.div>
 
@@ -467,7 +458,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </AnimatePresence>
 
             <motion.div
-              className="pt-4 border-t border-border/60"
+              className="pt-6 lg:pt-8 border-t border-border/60"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
@@ -480,7 +471,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
                 isLoading={isLoading}
                 hasCredits={credits > 0}
                 loadingLabel="Generating Quiz..."
-                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="w-full h-12 lg:h-14 text-base lg:text-lg font-medium transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your fill-in-the-blanks quiz",

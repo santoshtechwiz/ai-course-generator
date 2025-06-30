@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Brain, ChevronDown, Info, AlertCircle } from "lucide-react"
+import { ChevronDown, Info, AlertCircle } from "lucide-react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 
@@ -84,7 +84,9 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       } finally {
         if (isMounted) setIsLoading(false)
       }
-      return () => { isMounted = false }
+      return () => {
+        isMounted = false
+      }
     },
     [router],
   )
@@ -101,13 +103,11 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-2xl mx-auto"
+      className="w-full max-w-4xl mx-auto space-y-6 lg:space-y-8"
     >
-      <Card className="bg-background border border-border/60 shadow-md overflow-hidden">
-       
-
-        <CardContent className="space-y-6 pt-6">
-          <form onSubmit={onSubmit} className="space-y-6">
+      <Card className="bg-background border border-border/60 shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+        <CardContent className="space-y-8 lg:space-y-10 p-6 lg:p-8">
+          <form onSubmit={onSubmit} className="space-y-8 lg:space-y-10">
             <motion.div
               className="space-y-3"
               initial={{ opacity: 0, y: 20 }}
@@ -122,7 +122,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                 id="topic"
                 {...register("topic")}
                 placeholder="E.g., Climate Change, AI in Education..."
-                className="w-full h-12 text-lg transition-all duration-300 focus:ring-2 focus:ring-primary"
+                className="w-full h-12 lg:h-14 text-base lg:text-lg p-3 lg:p-4 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-primary border border-input"
                 aria-label="Quiz topic"
                 autoFocus
               />
@@ -135,10 +135,10 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="amount" className="text-sm font-medium flex justify-between items-center">
+              <Label htmlFor="amount" className="text-sm lg:text-base font-medium flex justify-between items-center">
                 <span>Number of Questions</span>
                 <motion.span
-                  className="text-xl font-bold text-primary tabular-nums"
+                  className="text-xl lg:text-2xl font-bold text-primary tabular-nums"
                   key={amount}
                   initial={{ scale: 1.2, color: "#00ff00" }}
                   animate={{ scale: 1, color: "var(--primary)" }}
@@ -167,26 +167,26 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <div className="p-4 space-y-2">
-                <h3 className="text-base font-semibold mb-2">Available Credits</h3>
-                <Progress value={(credits / 10) * 100} className="h-2" />
-                <p className="text-xs text-muted-foreground">
+              <div className="p-4 lg:p-6 space-y-3 lg:space-y-4">
+                <h3 className="text-base lg:text-lg font-semibold mb-2">Available Credits</h3>
+                <Progress value={(credits / 10) * 100} className="h-2 lg:h-3" />
+                <p className="text-xs lg:text-sm text-muted-foreground">
                   You have <span className="font-bold text-primary">{credits}</span> credits remaining.
                 </p>
               </div>
             </motion.div>
 
             <motion.div
-              className="bg-muted cursor-pointer transition-colors hover:bg-muted/80 rounded-lg"
+              className="bg-muted cursor-pointer transition-colors hover:bg-muted/80 rounded-lg overflow-hidden"
               onClick={() => setOpenInfo(!openInfo)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className="flex flex-row items-center justify-between py-2 px-4">
-                <h3 className="text-sm font-semibold">About Open-ended Questions</h3>
+              <div className="flex flex-row items-center justify-between py-3 lg:py-4 px-4 lg:px-6">
+                <h3 className="text-sm lg:text-base font-semibold">About Open-ended Questions</h3>
                 <motion.div animate={{ rotate: openInfo ? 180 : 0 }} transition={{ duration: 0.3 }}>
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5" />
                 </motion.div>
               </div>
               <AnimatePresence>
@@ -197,11 +197,11 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <div className="text-sm px-4 pb-4 space-y-2">
+                    <div className="text-sm lg:text-base px-4 lg:px-6 pb-4 lg:pb-6 space-y-2 lg:space-y-3">
                       <p>
                         Open-ended questions encourage critical thinking and detailed responses. They are perfect for:
                       </p>
-                      <ul className="list-disc list-inside space-y-1">
+                      <ul className="list-disc list-inside space-y-1 lg:space-y-2 ml-2">
                         <li>Assessing deep understanding</li>
                         <li>Promoting thoughtful discussion</li>
                         <li>Developing analytical skills</li>
@@ -230,7 +230,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
             </AnimatePresence>
 
             <motion.div
-              className="pt-4 border-t border-border/60"
+              className="pt-6 lg:pt-8 border-t border-border/60"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -243,7 +243,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
                 isEnabled={!isDisabled}
                 hasCredits={credits > 0}
                 loadingLabel="Generating..."
-                className="w-full h-12 transition-all duration-300 hover:shadow-lg"
+                className="w-full h-12 lg:h-14 text-base lg:text-lg transition-all duration-300 hover:shadow-lg"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",
