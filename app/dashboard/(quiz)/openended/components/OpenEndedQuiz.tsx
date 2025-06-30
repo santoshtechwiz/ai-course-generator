@@ -329,6 +329,7 @@ export default function OpenEndedQuiz({
         difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
       >
         <div className="space-y-4 sm:space-y-6">
+        
           {/* Enhanced Header */}
           <motion.div
             variants={itemVariants}
@@ -349,6 +350,7 @@ export default function OpenEndedQuiz({
                       <Brain className="w-3 h-3 mr-1" />
                       Critical Thinking
                     </Badge>
+                    <TagsDisplay tags={questionData.tags} maxVisible={3} />
                     {hintsUsed > 0 && (
                       <Badge
                         variant="outline"
@@ -381,7 +383,7 @@ export default function OpenEndedQuiz({
               </div>
 
               <div className="flex items-center gap-3 flex-wrap">
-                <TagsDisplay tags={questionData.tags} maxVisible={2} />
+               
                 <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   High Demand Skill
@@ -409,7 +411,7 @@ export default function OpenEndedQuiz({
                     <p className="text-foreground leading-relaxed text-base mb-4">{questionData.text}</p>
 
                     {/* Business Context */}
-                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    {/* <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                       <div className="flex items-center gap-2 mb-2">
                         <Briefcase className="w-4 h-4 text-blue-600" />
                         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Industry Relevance</span>
@@ -418,7 +420,7 @@ export default function OpenEndedQuiz({
                         This type of question is commonly asked in technical interviews and professional assessments.
                         Mastering this concept can increase your market value by 15-25%.
                       </p>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </CardContent>

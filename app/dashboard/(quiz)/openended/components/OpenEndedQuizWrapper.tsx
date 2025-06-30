@@ -161,6 +161,8 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
       correctAnswers: cq.correctAnswers || {},
       answer: cq.answer || "",
       hints: cq.hints || [],
+      tags: cq.openEndedQuestion.tags || [],
+      type: cq.type || "openended",
     }
   }, [currentQuestion])
 

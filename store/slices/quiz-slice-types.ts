@@ -1,4 +1,5 @@
-import { QuizType } from "@/types/quiz";
+import { QuizType } from "@/app/types/quiz-types";
+
 
 export interface QuizQuestion {
   id: string | number
@@ -9,6 +10,10 @@ export interface QuizQuestion {
   codeSnippet?: string
   language?: string
   answer?: string
+  tags?: string[]
+  hints?: string[]
+  difficulty?: string
+  keywords?: string[]
 }
 
 export interface QuizAnswer {
