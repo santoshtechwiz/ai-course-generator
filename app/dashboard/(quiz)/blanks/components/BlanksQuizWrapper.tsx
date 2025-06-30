@@ -50,7 +50,12 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const quizId = useSelector(selectQuizId)
   const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
   const quizTitle = useSelector(selectQuizTitle)
+  const pdfData={
+    title: quizTitle || title,
+    description: "This is a blanks quiz. Fill in the missing words to complete the sentences.",
+    questions: questions
 
+  }
   // Load quiz on mount
   useEffect(() => {
     const loadQuiz = async () => {
@@ -197,7 +202,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       <QuizActions
         initialIsFavorite={false}
         quizSlug={slug}
-
+        quizData={pdfData}
         userId={userId}
         quizId={quizId || ""}
         initialIsPublic={false}

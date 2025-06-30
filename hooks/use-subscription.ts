@@ -10,12 +10,12 @@ import {
   selectIsSubscribed,
   selectSubscriptionPlan,
   selectIsCancelled,
+  canDownloadPdfSelector,
 } from "@/store/slices/subscription-slice"
 
-import { useAuth } from "./use-auth"
 import { useSelector } from "react-redux"
 import { selectUser } from "@/store/slices/auth-slice"
-import { SubscriptionDetails, SubscriptionResult, SubscriptionStatusType } from "@/app/types/subscription"
+import { SubscriptionResult, SubscriptionStatusType } from "@/app/types/subscription"
 
 export type UseSubscriptionOptions = {
   allowPlanChanges?: boolean;
@@ -23,6 +23,7 @@ export type UseSubscriptionOptions = {
   onSubscriptionSuccess?: (result: SubscriptionResult) => void;
   onSubscriptionError?: (error: SubscriptionResult) => void;
   skipInitialFetch?: boolean;
+  canDownloadPdf?: boolean;
 };
 
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
@@ -43,6 +44,7 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   const isSubscribed = useAppSelector(selectIsSubscribed)
   const subscriptionPlan = useAppSelector(selectSubscriptionPlan)
   const isCancelled = useAppSelector(selectIsCancelled)
+  const canDownloadPdf = useAppSelector(canDownloadPdfSelector)
 
   const [isInitialized, setIsInitialized] = useState(false)
   
@@ -181,6 +183,7 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
     canSubscribeToPlan,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
+    canDownloadPdf
   }
 }
 

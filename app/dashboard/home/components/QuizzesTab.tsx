@@ -112,12 +112,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button asChild>
-            <Link href={`/dashboard/${quiz.type}/create`}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Quiz
-            </Link>
-          </Button>
+         
         </div>
       </div>
 
@@ -208,65 +203,68 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, loadingQuizId, 
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {quizzes.map((quiz) => (
-        <Card
-          key={quiz.id}
-          className={`overflow-hidden transition-all duration-300 ${
-            loadingQuizId === quiz.id ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
-          }`}
-          onClick={() => onQuizClick(quiz.id, quiz.quizType as string, quiz.slug as string)}
-        >
-          <CardContent className="p-4 relative cursor-pointer">
-            {loadingQuizId === quiz.id && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mb-2">
-              <Badge className={getQuizTypeColor(quiz.quizType as QuizType)}>
-                {getQuizTypeLabel(quiz.quizType as QuizType)}
-              </Badge>
-              {quiz.timeEnded ? (
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                >
-                  <CheckCircle className="mr-1 h-3 w-3" />
-                  Completed
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                >
-                  <Clock className="mr-1 h-3 w-3" />
-                  In Progress
-                </Badge>
+      {quizzes.map((quiz) => {
+        if (!quiz) return null
+        return (
+          <Card
+            key={quiz.id}
+            className={`overflow-hidden transition-all duration-300 ${
+              loadingQuizId === quiz.id ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
+            }`}
+            onClick={() => quiz && quiz.id && quiz.quizType && quiz.slug && onQuizClick(quiz.id, quiz.quizType as string, quiz.slug as string)}
+          >
+            <CardContent className="p-4 relative cursor-pointer">
+              {loadingQuizId === quiz.id && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
               )}
-            </div>
 
-            <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 mt-2">
-              {quiz.title}
-            </h3>
-
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <BookOpen className="mr-1 h-4 w-4" />
-                <span>{quiz.questions?.length || 0} questions</span>
+              <div className="flex items-center justify-between mb-2">
+                <Badge className={getQuizTypeColor(quiz.quizType as QuizType)}>
+                  {getQuizTypeLabel(quiz.quizType as QuizType)}
+                </Badge>
+                {quiz.timeEnded ? (
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  >
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                    Completed
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                  >
+                    <Clock className="mr-1 h-3 w-3" />
+                    In Progress
+                  </Badge>
+                )}
               </div>
 
-              {quiz.timeEnded && (
-                <div className="text-lg font-bold text-green-600 dark:text-green-400">{quiz.bestScore || 0}%</div>
-              )}
-            </div>
+              <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 mt-2">
+                {quiz.title || "Untitled Quiz"}
+              </h3>
 
-            <div className="mt-4 flex justify-end">
-              <Button>{quiz.timeEnded ? "Review Quiz" : "Continue Quiz"}</Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <BookOpen className="mr-1 h-4 w-4" />
+                  <span>{quiz.questions?.length || 0} questions</span>
+                </div>
+
+                {quiz.timeEnded && (
+                  <div className="text-lg font-bold text-green-600 dark:text-green-400">{quiz.bestScore || 0}%</div>
+                )}
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <Button>{quiz.timeEnded ? "Review Quiz" : "Continue Quiz"}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

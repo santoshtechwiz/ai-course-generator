@@ -1,5 +1,4 @@
 import type React from "react"
-import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
 
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
@@ -8,7 +7,6 @@ import CourseAIState from "@/components/development/CourseAIState"
 import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
-import { LoaderProvider } from "@/components/ui/loader/loader-context"
 
 
 

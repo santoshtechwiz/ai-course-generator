@@ -46,6 +46,11 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
   const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
+  const pdfData = {
+    title: quizTitle || title,
+    description: "This is a multiple choice quiz. Select the correct answers for each question.",
+    questions: questions
+  }
   // Load the quiz
   useEffect(() => {
     const loadQuiz = async () => {
@@ -176,7 +181,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         <QuizActions
           initialIsFavorite={false}
           quizSlug={slug}
-         
+          quizData={pdfData}
           userId={userId}
           quizId={quizId}
           initialIsPublic={false}
