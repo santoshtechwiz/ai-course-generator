@@ -823,31 +823,51 @@ export const RandomQuiz: React.FC = () => {
             {viewMode === "grid" ? (
               <>
                 <div className="relative w-full max-w-sm sm:max-w-lg lg:max-w-2xl mx-auto h-80 sm:h-96 lg:h-[420px] perspective-1000">
-                  <AnimatePresence mode="wait">
+                  {/* Render all cards, only active is visible, others are hidden but mounted */}
+                  <div className="absolute inset-0 w-full h-full">
                     {displayQuizzes.slice(0, 6).map((quiz, index) => (
-                      <QuizCard
-                        key={`${quiz.id}-${index}`}
-                        quiz={quiz}
-                        index={index}
-                        isVisible={index === activeCardIndex}
-                        isPrefetching={index === activeCardIndex}
-                        viewMode={viewMode}
-                      />
+                      <motion.div
+                        key={`${quiz.id}-grid`}
+                        layoutId={`quiz-card-${quiz.id}`}
+                        initial={false}
+                        animate={index === activeCardIndex ? { opacity: 1, scale: 1, zIndex: 2 } : { opacity: 0, scale: 0.95, zIndex: 1 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          pointerEvents: index === activeCardIndex ? 'auto' : 'none',
+                        }}
+                        onAnimationComplete={() => setIsTransitioning(false)}
+                      >
+                        <QuizCard
+                          quiz={quiz}
+                          index={index}
+                          isVisible={index === activeCardIndex}
+                          isPrefetching={index === activeCardIndex}
+                          viewMode={viewMode}
+                        />
+                      </motion.div>
                     ))}
-                  </AnimatePresence>
-
+                  </div>
                   {displayQuizzes.length > 1 && (
                     <div className="absolute -bottom-12 sm:-bottom-16 left-0 right-0 flex justify-center items-center gap-3 sm:gap-4">
                       <Button
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
-                        onClick={prevCard}
+                        onClick={() => {
+                          if (!isTransitioning) {
+                            setIsTransitioning(true);
+                            setActiveCardIndex((prev) => (prev === 0 ? displayQuizzes.length - 1 : prev - 1));
+                          }
+                        }}
                         disabled={isTransitioning}
                       >
                         <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
-
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         {displayQuizzes.slice(0, 6).map((_, idx) => (
                           <motion.div
@@ -861,12 +881,16 @@ export const RandomQuiz: React.FC = () => {
                           />
                         ))}
                       </div>
-
                       <Button
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
-                        onClick={nextCard}
+                        onClick={() => {
+                          if (!isTransitioning) {
+                            setIsTransitioning(true);
+                            setActiveCardIndex((prev) => (prev + 1) % displayQuizzes.length);
+                          }
+                        }}
                         disabled={isTransitioning}
                       >
                         <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
