@@ -23,7 +23,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { InlineLoader, Loader, MinimalLoader } from "@/components/ui/loader/index"
+import { FullPageLoader, InlineLoader, Loader, MinimalLoader } from "@/components/ui/loader/index"
 
 
 interface CodeQuizWrapperProps {
@@ -159,7 +159,24 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-    return <MinimalLoader context="quiz" size="sm" />
+      return (
+      <FullPageLoader
+        context="generating"
+        message="AI is generating your personalized quiz results"
+        subMessage="Crafting personalized content with advanced AI technology"
+        showSparkles={true}
+      />
+    )
+  }
+
+  if (hasError) {
+    return (
+      <NoResults
+        variant="error"
+        title="Error Loading Quiz"
+        description="We couldn't load this quiz. Please try again later or contact support if the problem persists."
+      />
+    )
   }
 
   if (hasError) {
@@ -177,7 +194,14 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
 
   if (!formattedQuestion) {
-    return <MinimalLoader context="loading" />
+    return (
+      <FullPageLoader
+        context="generating"
+        message="AI is generating your personalized quiz results"
+        subMessage="Crafting personalized content with advanced AI technology"
+        showSparkles={true}
+      />
+    )
   }
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">

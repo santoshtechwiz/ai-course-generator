@@ -26,7 +26,8 @@ import BlanksQuiz from "./BlanksQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
 import { useLoader } from "@/components/ui/loader/loader-context"
-import { Loader, MinimalLoader } from "@/components/ui/loader/index"
+import { FullPageLoader, Loader, MinimalLoader } from "@/components/ui/loader/index"
+import { BlankQuizQuestion } from "@/app/types/quiz-types"
 
 
 interface BlanksQuizWrapperProps {
@@ -42,7 +43,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const [error, setError] = useState<string | null>(null)
 
   // Redux selectors
-  const questions = useSelector(selectQuizQuestions)
+  const questions = useSelector(selectQuizQuestions) as BlankQuizQuestion[]
   const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
@@ -154,24 +155,28 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
 
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
-    const cq = currentQuestion as any
+    const cq = currentQuestion as BlankQuizQuestion
     return {
       id: String(cq.id),
       text: cq.text || cq.question || "",
       question: cq.question || cq.text || "",
-      blanks: cq.blanks || [],
-      promptText: cq.promptText || cq.text || "",
-      correctAnswers: cq.correctAnswers || {},
       answer: cq.answer || "",
       hints: cq.hints || [],
       tags: cq.tags || [],
-      openEndedQuestion: cq.openEndedQuestion ?? false, // Provide a default value if missing
+      type: cq.type, // Ensure 'type' is included
     }
   }, [currentQuestion])
 
-  if (isLoading) {
-   return <MinimalLoader context="quiz" size="sm" />
-  }
+    if (isLoading) {
+        return (
+        <FullPageLoader
+          context="generating"
+          message="AI is generating your personalized quiz results"
+          subMessage="Crafting personalized content with advanced AI technology"
+          showSparkles={true}
+        />
+      )
+    } 
 
   if (hasError) {
     return (

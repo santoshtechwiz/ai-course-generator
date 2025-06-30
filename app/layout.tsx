@@ -1,4 +1,3 @@
-import type React from "react"
 import type { Metadata } from "next"
 import "../globals.css"
 
@@ -79,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body
-        className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased min-h-screen flex flex-col bg-background text-foreground`}
+        className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
       >
         <Suspense
           fallback={
@@ -89,9 +88,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }
         >
           <Providers session={session}>
-            <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+            <ClientLayoutWrapper>
+              <main className="flex-1 w-full">{children}</main>
+              <Footer />
+            </ClientLayoutWrapper>
           </Providers>
-          <Footer />
         </Suspense>
 
         <JsonLD

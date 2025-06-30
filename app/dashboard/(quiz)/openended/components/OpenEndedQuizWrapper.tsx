@@ -26,6 +26,10 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
 import { Loader, MinimalLoader } from "@/components/ui/loader/index"
+import { OpenEndedQuestion } from "@/app/types/quiz-types"
+
+
+
 
 interface OpenEndedQuizWrapperProps {
   slug: string
@@ -40,7 +44,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const [error, setError] = useState<string | null>(null)
 
   // Redux selectors
-  const questions = useSelector(selectQuizQuestions)
+  const questions = useSelector(selectQuizQuestions) as unknown as OpenEndedQuestion[];
   const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
   const quizStatus = useSelector(selectQuizStatus)
@@ -151,17 +155,15 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
-    const cq = currentQuestion as any
+    const cq = currentQuestion as OpenEndedQuestion
     return {
       id: String(cq.id),
       text: cq.text || cq.question || "",
       question: cq.question || cq.text || "",
-      openended: cq.openended || [],
-      promptText: cq.promptText || cq.text || "",
-      correctAnswers: cq.correctAnswers || {},
+     
       answer: cq.answer || "",
       hints: cq.hints || [],
-      tags: cq.openEndedQuestion.tags || [],
+      tags: cq.tags || [],
       type: cq.type || "openended",
     }
   }, [currentQuestion])
