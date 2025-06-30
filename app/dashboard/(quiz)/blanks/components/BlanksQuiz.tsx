@@ -148,11 +148,11 @@ export default function BlanksQuiz({
   const questionData = useMemo(() => {
     const openEndedData = question.openEndedQuestion || {}
     return {
-      text: question.question || question.text || "",
-      answer: question.answer || openEndedData.correctAnswer || "",
-      hints: openEndedData.hints || question.hints || [],
-      difficulty: openEndedData.difficulty || question.difficulty || "Medium",
-      tags: openEndedData.tags || question.tags || [],
+      text: question.question,
+      answer: question.answer,
+      hints: openEndedData.hints,
+      difficulty: openEndedData.difficulty || "Medium",
+      tags: openEndedData.tags || [],
     }
   }, [question])
 
@@ -330,6 +330,7 @@ export default function BlanksQuiz({
                 <div>
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <DifficultyBadge difficulty={questionData.difficulty} />
+                      <TagsDisplay tags={questionData.tags} maxVisible={3} />
                     <Badge
                       variant="secondary"
                       className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0"
@@ -337,6 +338,7 @@ export default function BlanksQuiz({
                       <Brain className="w-3 h-3 mr-1" />
                       Precision Learning
                     </Badge>
+                  
                     {hintsUsed > 0 && (
                       <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 dark:bg-blue-950/20">
                         <Lightbulb className="w-3 h-3 mr-1" />
@@ -351,7 +353,7 @@ export default function BlanksQuiz({
               </div>
 
               <div className="flex items-center gap-3 flex-wrap">
-                <TagsDisplay tags={questionData.tags} maxVisible={3} />
+               
                 <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0">
                   <BarChart3 className="w-3 h-3 mr-1" />
                   Knowledge Check
@@ -458,7 +460,7 @@ export default function BlanksQuiz({
                     </div>
 
                     {/* Learning Tips */}
-                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-4">
+                    {/* <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-4">
                       <div className="flex items-center gap-2 mb-2">
                         <PenTool className="w-4 h-4 text-blue-600" />
                         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Learning Tip</span>
@@ -467,7 +469,7 @@ export default function BlanksQuiz({
                         Take your time to think through the answer. Use the hints below if you need guidance - they're
                         designed to help you learn step by step.
                       </p>
-                    </div>
+                    </div> */}
 
                     {/* Stats */}
                     {answer.trim() && (

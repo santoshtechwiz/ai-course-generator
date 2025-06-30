@@ -52,7 +52,7 @@ export const fetchQuiz = createAsyncThunk(
           ...payload.data,
           slug: slug,
           quizType: type,
-          id: slug // For backward compatibility
+          id: slug
         }
       }
 
@@ -89,9 +89,26 @@ export const fetchQuiz = createAsyncThunk(
           error: "Invalid quiz data received from server"
         })
       }
+      const responseResult={
+        ...data,
+        slug: slug,
+        quizType: type,
+        id: slug // For backward compatibility
+      };
+      if((type==="blanks" || type==="openended") && !data.questions.every((q: any) => q.openEndedQuestion)) {
+
+        //add tags and hints to each question
+        responseResult.questions = responseResult.questions.map((q: any) => ({
+          ...q,
+          tags: q.openEndedQuestion.tags || [],
+          hints: q.openEndedQuestion.hints || [],
+        }));
+      }
+    
+      console.log("Quiz fetched successfully:", responseResult);
 
       return {
-        ...data,
+        ...responseResult,
         slug: slug,
         quizType: type,
         id: slug // For backward compatibility

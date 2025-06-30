@@ -19,7 +19,7 @@ import {
   selectQuizType,
   fetchQuiz,
 } from "@/store/slices/quiz-slice"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
@@ -27,6 +27,7 @@ import BlanksQuiz from "./BlanksQuiz"
 import { QuizActions } from "../../components/QuizActions"
 import { useLoader } from "@/components/ui/loader/loader-context"
 import { Loader, MinimalLoader } from "@/components/ui/loader/index"
+
 
 interface BlanksQuizWrapperProps {
   slug: string
@@ -163,6 +164,8 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       correctAnswers: cq.correctAnswers || {},
       answer: cq.answer || "",
       hints: cq.hints || [],
+      tags: cq.tags || [],
+      openEndedQuestion: cq.openEndedQuestion ?? false, // Provide a default value if missing
     }
   }, [currentQuestion])
 

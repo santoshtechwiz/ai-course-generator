@@ -1,10 +1,16 @@
 // Types for Blanks quiz component
 
 export interface BlankQuestion {
-  id: string;
-  question: string;
-  answer: string;
-  hints?: string[];
+  id: number
+  question: string
+  answer: string
+  openEndedQuestion: OpenEndedQuestion
+}
+
+export interface OpenEndedQuestion {
+  hints: string[]
+  difficulty: string
+  tags: string[]
 }
 
 export interface BlankQuizResult {
