@@ -17,6 +17,8 @@ export type LoaderContext =
   | "saving"
   | "course"
   | "generating"
+  | "init"
+  | "redirecting"
 
 export interface LoaderProps {
   size?: LoaderSize
@@ -116,6 +118,24 @@ const contextConfig = {
     bgGradient: "from-pink-50/50 to-rose-50/50 dark:from-pink-950/10 dark:to-rose-950/10",
     accentColor: "text-pink-600 dark:text-pink-400",
     ringColor: "ring-pink-500/20",
+  },
+  init: {
+    icon: Loader2,
+    defaultMessage: "Initializing...",
+    defaultSubMessage: "Setting up your experience",
+    gradient: "from-gray-500 to-gray-600",
+    bgGradient: "from-gray-50/50 to-gray-50/50 dark:from-gray-950/10 dark:to-gray-950/10",
+    accentColor: "text-gray-600 dark:text-gray-400",
+    ringColor: "ring-gray-500/20",
+  },
+  redirecting: {
+    icon: Loader2,
+    defaultMessage: "Redirecting...",
+    defaultSubMessage: "Please wait while we redirect you",
+    gradient: "from-blue-500 to-cyan-500",
+    bgGradient: "from-blue-50/50 to-cyan-50/50 dark:from-blue-950/10 dark:to-cyan-950/10",
+    accentColor: "text-blue-600 dark:text-blue-400",
+    ringColor: "ring-blue-500/20",
   },
 } as const
 
