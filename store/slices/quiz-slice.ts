@@ -105,6 +105,7 @@ export const fetchQuiz = createAsyncThunk(
         if (type === "code") {
           return {
             ...base,
+             options: q.options,
             codeSnippet: q.codeSnippet,
             language: q.language || "javascript",
           }
