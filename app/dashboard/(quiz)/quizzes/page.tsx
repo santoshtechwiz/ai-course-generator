@@ -2,14 +2,14 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 
-import { getQuizzes } from "@/app/actions/getQuizes"
+import { getQuizzes, QuizListItem } from "@/app/actions/getQuizes"
 import { JsonLD } from "@/app/schema/components"
 import { generateMetadata } from "@/lib/seo"
 import { QuizzesClient } from "./components/QuizzesClient"
 import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
 import { Loader } from "@/components/ui/loader"
 import ClientOnly from "@/components/ClientOnly"
-import type { QuizListItem } from "@/app/types/types"
+
 
 export const metadata: Metadata = generateMetadata({
   title: "Free Quizzes – MCQs, Open-ended and Code Challenges",
@@ -68,7 +68,7 @@ const QuizPage = async () => {
         <Suspense
           fallback={
             <div className="space-y-4">
-              <Loader variant="skeleton" text="Loading quizzes..." />
+              <Loader variant="skeleton"/>
               <QuizzesSkeleton />
             </div>
           }
