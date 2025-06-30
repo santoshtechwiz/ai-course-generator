@@ -31,10 +31,12 @@ import { TagsDisplay } from "@/components/quiz/TagsDisplay"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { calculateAnswerSimilarity, getSimilarityLabel, getSimilarityFeedback } from "@/lib/utils/text-similarity"
 import { generateBlanksHints } from "@/lib/utils/hint-system"
-import type { BlankQuestion } from "./types"
+import { BlankQuizQuestion } from "@/app/types/quiz-types"
+
+
 
 interface BlanksQuizProps {
-  question: BlankQuestion
+  question: BlankQuizQuestion
   questionNumber: number
   totalQuestions: number
   existingAnswer?: string
@@ -146,13 +148,13 @@ export default function BlanksQuiz({
 
   // Extract question data with proper fallbacks
   const questionData = useMemo(() => {
-    const openEndedData = question.openEndedQuestion || {}
+    const openEndedData = question || {}
     return {
       text: question.question,
       answer: question.answer,
-      hints: openEndedData.hints,
-      difficulty: openEndedData.difficulty || "Medium",
-      tags: openEndedData.tags || [],
+      hints: question.hints,
+      difficulty: question.difficulty || "Medium",
+      tags: question.tags || [],
     }
   }, [question])
 
