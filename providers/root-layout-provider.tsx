@@ -13,7 +13,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import React from "react"
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
-import { store, persistor } from "@/store"
+import { store, persistor, AppDispatch } from "@/store"
 import { useDispatch } from "react-redux"
 import { initializeAuth } from "@/store/slices/auth-slice"
 import { AuthProvider } from "@/context/auth-context"
@@ -37,6 +37,16 @@ interface RootLayoutProviderProps {
   session: any
 }
 
+function AuthInitializer() {
+  const dispatch = useDispatch<AppDispatch>()
+
+  useEffect(() => {
+    // Initialize auth state when the app loads
+    dispatch(initializeAuth())
+  }, [dispatch])
+
+  return null
+}
 
 
 export function RootLayoutProvider({ children, session }: RootLayoutProviderProps) {
@@ -53,6 +63,7 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
     <React.StrictMode>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
+          <AuthInitializer />
           <AuthProvider session={session}>
 
             <ThemeProvider

@@ -12,7 +12,7 @@ import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
 import userReducer from "./slices/user-slice"
 
-// Persist configs
+// 🔐 Persist configs
 const authPersistConfig = {
   key: "auth",
   storage,
@@ -66,21 +66,29 @@ const quizPersistConfig = {
     "answers",
     "status",
     "isCompleted",
-    "results", // ✅ Added
-    "shouldRedirectToResults", // ✅ Added (if applicable)
+    "results",
+    "shouldRedirectToResults",
   ],
 }
 
+const subscriptionPersistConfig = {
+  key: "subscription",
+  storage,
+  whitelist: ["data"], // ✅ Only persist the subscription data
+}
+
+// ✅ Root reducer with persisted slices
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   quiz: persistReducer(quizPersistConfig, quizReducer),
-  subscription: subscriptionReducer,
+  subscription: persistReducer(subscriptionPersistConfig, subscriptionReducer), // ✅
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
   user: userReducer,
 })
 
+// ✅ Store setup
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
@@ -91,11 +99,11 @@ export const store = configureStore({
     }),
 })
 
+// ✅ Persistor for <PersistGate />
 export const persistor = persistStore(store)
 
-// ✅ Type definitions AFTER store is created
+// ✅ Typed hooks
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
-
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector

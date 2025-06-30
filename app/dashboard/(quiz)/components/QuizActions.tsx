@@ -26,9 +26,12 @@ import QuizPDFDownload from "@/app/dashboard/create/components/QuizPDFDownload"
 import useSubscription from "@/hooks/use-subscription"
 import { useSession } from "next-auth/react"
 import { ConfirmDialog } from "./ConfirmDialog"
+import ConfigurableQuizPDF from "../../create/components/ConfigurableQuizPDF"
+import PdfButton from "@/components/ui/pdf-download"
 
 interface QuizActionsProps {
   quizId: string
+  quizData?: any // Adjust type as needed
   quizSlug: string
   initialIsPublic: boolean
   initialIsFavorite: boolean
@@ -40,6 +43,7 @@ interface QuizActionsProps {
 
 export function QuizActions({
   quizId,
+  quizData,
   quizSlug,
   initialIsPublic,
   initialIsFavorite,
@@ -162,7 +166,7 @@ export function QuizActions({
       id: "download",
       icon: Download,
       label: "PDF",
-      onClick: null,
+      onClick: undefined,
       loading: false,
       disabled: !canDownloadPDF,
       active: false,
@@ -172,31 +176,31 @@ export function QuizActions({
     },
     ...(isOwner
       ? [
-          {
-            id: "visibility",
-            icon: isPublic ? Eye : EyeOff,
-            label: isPublic ? "Public" : "Private",
-            onClick: () => updateQuiz("isPublic", !isPublic),
-            loading: isPublicLoading,
-            disabled: false,
-            active: isPublic,
-            badge: isPublic ? "Live" : "Draft",
-            badgeColor: isPublic
-              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-          },
-          {
-            id: "delete",
-            icon: Trash2,
-            label: "Delete",
-            onClick: null,
-            loading: false,
-            disabled: false,
-            active: false,
-            badge: "Danger",
-            badgeColor: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-          },
-        ]
+        {
+          id: "visibility",
+          icon: isPublic ? Eye : EyeOff,
+          label: isPublic ? "Public" : "Private",
+          onClick: () => updateQuiz("isPublic", !isPublic),
+          loading: isPublicLoading,
+          disabled: false,
+          active: isPublic,
+          badge: isPublic ? "Live" : "Draft",
+          badgeColor: isPublic
+            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+        },
+        {
+          id: "delete",
+          icon: Trash2,
+          label: "Delete",
+          onClick: null,
+          loading: false,
+          disabled: false,
+          active: false,
+          badge: "Danger",
+          badgeColor: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+        },
+      ]
       : []),
   ]
 
@@ -280,24 +284,9 @@ export function QuizActions({
 
               if (action.id === "download") {
                 return (
-                  <Dialog key={action.id}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DialogTrigger asChild disabled={action.disabled}>
-                          {buttonBase}
-                        </DialogTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{canDownloadPDF ? "Download quiz as PDF" : "Upgrade to unlock PDF downloads"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Download Quiz PDF</DialogTitle>
-                      </DialogHeader>
-                      <QuizPDFDownload quizId={quizId} />
-                    </DialogContent>
-                  </Dialog>
+                  <div key={action.id}>
+                    <QuizPDFDownload quizData={quizData} config={{ showOptions: true, showAnswers: true }} />
+                  </div>
                 )
               }
 
@@ -353,6 +342,6 @@ export function QuizActions({
           {children && <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">{children}</div>}
         </div>
       </div>
-    </TooltipProvider>
+    </TooltipProvider >
   )
 }

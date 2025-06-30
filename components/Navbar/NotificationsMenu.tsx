@@ -50,12 +50,12 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
     }
   }
 
-  const creditCount = subscription?.credits || 0
-  const tokensUsed = subscription?.tokensUsed || 0
-  const subscriptionPlan = subscription?.subscriptionPlan || "FREE"
-  const isSubscribed = subscription?.isSubscribed || false
-  const isExpired = subscription?.status === "EXPIRED"
-  const subscriptionStatus = isExpired ? "Expired" : subscription?.status || "Inactive"
+  const creditCount = subscription?.data?.credits || 0
+  const tokensUsed = subscription?.data?.tokensUsed || 0
+  const subscriptionPlan = subscription?.data?.subscriptionPlan || "FREE"
+  const isSubscribed = subscription?.data?.isSubscribed || false
+  const isExpired = subscription?.data?.status === "EXPIRED"
+  const subscriptionStatus = isExpired ? "Expired" : subscription?.data?.status || "Inactive"
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpen}>

@@ -19,7 +19,6 @@ import { useEffect, useState, useRef, useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { logout, selectUser } from "@/store/slices/auth-slice"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -85,7 +84,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     }
 
     // Default to FREE if there are fetch errors or no subscription data
-    const plan = fetchErrors >= 3 ? "FREE" : (subscriptionData?.subscriptionPlan || "FREE")
+    const plan = fetchErrors >= 3 ? "FREE" : (subscriptionData?.data?.subscriptionPlan || "FREE")
 
     const variants = {
       PRO: "default",
@@ -110,7 +109,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     }
 
     // Default to 0 credits if there are fetch errors
-    const credits = fetchErrors >= 3 ? 0 : (subscriptionData?.credits ?? 0)
+    const credits = fetchErrors >= 3 ? 0 : (subscriptionData?.data?.credits ?? 0)
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 

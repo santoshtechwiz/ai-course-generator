@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
 import { RootState } from "@/store"
 import { logger } from "@/lib/logger"
+import { fetchSubscription } from "./subscription-slice"
 
 // Define types
 export interface AuthUser {
@@ -34,76 +35,51 @@ const initialState: AuthState = {
   isAdmin: undefined,
 }
 
-// Async thunk to initialize auth from server session
+import type { AppDispatch } from "@/store"
+
 export const initializeAuth = createAsyncThunk(
   "auth/initialize",
   async (_, { dispatch, rejectWithValue }) => {
+    const typedDispatch = dispatch as AppDispatch;
     try {
-      // Check if we're on client side to avoid calling headers outside request scope
       if (typeof window !== "undefined") {
-        // Try to get auth status from API
-        try {
-          const response = await fetch('/api/auth/session', {
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0',
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            
-            // If we have session data, return it
-            if (data && data.user) {
-              logger.info("Auth initialized with user data:", data.user);
-              
-              // Also fetch subscription data for the user
-              try {
-                // Use Redux thunk to fetch subscription data (prevents duplicate calls)
-                const subData = await dispatch<any>(
-                  // @ts-ignore
-                  require("@/store/slices/subscription-slice").fetchSubscription()
-                ).unwrap();
-                // Enhance user object with subscription information
-                data.user.subscriptionPlan = subData.subscriptionPlan;
-                data.user.subscriptionStatus = subData.status;
-                data.user.credits = subData.credits;
-                logger.info("Enhanced user with subscription data:", subData);
-              } catch (subError) {
-                logger.error("Failed to fetch subscription data:", subError);
-              }
-              
-              return { user: data.user, token: data.token || null };
-            }
-          }
-        } catch (apiError) {
-          logger.warn("Error fetching auth session:", apiError);
-          // Continue to check local storage if API fails
-        }
-        
-        // On client side, we can't use getAuthSession() directly
-        // Instead, check if we have session data in localStorage or return empty
-        const localSession =
-          localStorage.getItem("next-auth.session-token") ||
-          sessionStorage.getItem("next-auth.session-token");
+        const res = await fetch("/api/auth/session", {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          credentials: "include", // 🔐 required for auth session cookie
+        })
 
-        // If there's a token but we can't access the session data yet,
-        // return a loading state which will be resolved by the AuthContext
-        if (localSession) {
-          return { pending: true, message: "Waiting for session data" };
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.user) {
+           
+            try {
+              const subData = await typedDispatch(fetchSubscription({ forceRefresh: true })).unwrap()
+
+              data.user.credits = subData.credits
+              data.user.subscriptionPlan = subData.subscriptionPlan
+              data.user.subscriptionStatus = subData.status
+
+              logger.info("Enhanced user with subscription data:", subData)
+            } catch (err) {
+              logger.warn("Failed to fetch subscription data")
+            }
+
+            return { user: data.user, token: data.token || null }
+          }
         }
       }
 
-      // No session found
-      return { user: null, token: null };
+      return { user: null, token: null }
     } catch (error) {
-      logger.error("Failed to initialize auth:", error);
-      return rejectWithValue("Failed to initialize authentication");
+      logger.error("Failed to initialize auth:", error)
+      return rejectWithValue("Failed to initialize authentication")
     }
   }
 )
-
 // Create slice
 export const authSlice = createSlice({
   name: "auth",

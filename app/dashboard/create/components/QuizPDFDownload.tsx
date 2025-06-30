@@ -33,7 +33,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
 }) => {
   const [isClient, setIsClient] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
-  const { data:status, canDownloadPDF, isLoading } = useSubscription()
+  const { canDownloadPdf } = useSubscription()
   const shadowPulse = "shadow-md hover:shadow-lg transition-shadow duration-200"
 
   useEffect(() => {
@@ -41,16 +41,13 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
   }, [])
 
   const isDataReady = useMemo(() => quizData && Object.keys(quizData).length > 0, [quizData])
-
+  console.log("QuizPDFDownload - isDataReady:", quizData, isDataReady);
   const quizSlug = useMemo(
     () => (isDataReady ? `${quizData?.title || "quiz"}.pdf` : "quiz.pdf"),
     [isDataReady, quizData],
   )
 
-  const isDisabled = useMemo(
-    () => !isClient || !isDataReady || isLoading || !canDownloadPDF,
-    [isClient, isDataReady, isLoading, canDownloadPDF],
-  )
+  const isDisabled = canDownloadPdf;
 
   const handleDownload = async () => {
     if (isDownloading || isDisabled) return
@@ -94,7 +91,7 @@ const QuizPDFDownload: React.FC<QuizPDFDownloadProps> = ({
               "dark:from-blue-900/30 dark:to-blue-800/40 dark:text-blue-300 dark:hover:from-blue-800/40 dark:hover:to-blue-700/50",
               shadowPulse,
               "focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
-              !canDownloadPDF && "opacity-60 cursor-not-allowed",
+              !canDownloadPdf && "opacity-60 cursor-not-allowed",
               className,
             )}
             aria-label="Download PDF"
