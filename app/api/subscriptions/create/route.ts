@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     // Validate promo code if provided
     if (validatedData.promoCode) {
       const promoValidation = await SubscriptionService.validatePromoCode(validatedData.promoCode)
-      if (!promoValidation.isValid) {
+      if (!promoValidation.valid) {
         return NextResponse.json(
           {
             success: false,

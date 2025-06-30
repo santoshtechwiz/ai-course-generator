@@ -154,7 +154,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-     return <MinimalLoader context="quiz" size="sm" />
+    return <MinimalLoader context="quiz" size="sm" />
   }
 
   if (hasError) {
@@ -172,7 +172,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   }
 
   if (!formattedQuestion) {
-      return <MinimalLoader context="quiz" size="sm" />
+    return <MinimalLoader context="quiz" size="sm" />
   }
 
   return (
