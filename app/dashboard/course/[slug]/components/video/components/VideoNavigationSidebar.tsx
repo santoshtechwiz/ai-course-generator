@@ -346,20 +346,7 @@ export default function VideoNavigationSidebar({
   // Sidebar content component - extract to improve render performance
   const SidebarContent = React.memo(() => (
     <>
-      {/* Authentication prompt for non-authenticated users */}
-      {!isAuthenticated && (
-        <div className="p-4 border-b bg-muted/30">
-          <p className="text-sm text-muted-foreground mb-2">Sign in to save your progress</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => signIn(undefined, { callbackUrl: window.location.href })}
-            className="w-full"
-          >
-            Sign In
-          </Button>
-        </div>
-      )}
+
 
       {/* Course Content Navigation */}
       <ScrollArea className="flex-1">

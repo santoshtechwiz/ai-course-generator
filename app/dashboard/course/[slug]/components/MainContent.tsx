@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useAuth, useProgress, useToast } from "@/hooks" // Fix: Changed from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -42,18 +41,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Always define all hooks at the top level - no early returns or conditions before hooks
   console.log(course);
   const router = useRouter()
-  const { data: session } = useSession()
+  // Remove useSession
+  // const { data: session } = useSession()
   const { toast } = useToast() // Fix: Properly destructure toast from useToast hook
   const dispatch = useAppDispatch()
 
-  // Fix: Use try/catch when accessing useAuth to prevent errors if the hook isn't available
-  let user: AuthUser | null = null
-  try {
-    const { user: authUser } = useAuth()
-    user = authUser
-  } catch (error) {
-    console.error("Error accessing useAuth:", error)
-  }
+  // Use Redux auth-slice for user
+  const user: AuthUser | null = useAppSelector((state) => state.auth.user)
 
   // Local state
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -168,8 +162,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   // Check if user can play video
   const canPlayVideo = useMemo(() => {
-    return !!session || !hasPlayedFreeVideo
-  }, [session, hasPlayedFreeVideo])
+    return !!user || !hasPlayedFreeVideo
+  }, [user, hasPlayedFreeVideo])
 
   // Get direct access to the Zustand video state store
   const videoStateStore = useVideoState
@@ -218,7 +212,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   // Resume prompt
   useEffect(() => {
-    if (progress && !resumePromptShown && progress.currentChapterId && !currentVideoId && session) {
+    if (progress && !resumePromptShown && progress.currentChapterId && !currentVideoId && user) {
       const resumeChapter = videoPlaylist.find(
         (entry) => entry.chapter.id.toString() === progress.currentChapterId?.toString(),
       )
@@ -227,21 +221,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         setResumePromptShown(true)
         toast({
           title: "Resume Learning",
-          description: `Continue from "${resumeChapter.chapter.title}"?`,
-          action: (
-            <Button
-              size="sm"
-              onClick={() => {
-                dispatch(setCurrentVideoApi(resumeChapter.videoId))
-              }}
-            >
-              Resume
-            </Button>
-          ),
+          description: `Continue from \"${resumeChapter.chapter.title}\"? (Resume feature available in your dashboard)`
         })
       }
     }
-  }, [progress, resumePromptShown, currentVideoId, videoPlaylist, dispatch, toast, session])
+  }, [progress, resumePromptShown, currentVideoId, videoPlaylist, dispatch, toast, user])
 
   // Update the handleVideoLoad callback to properly mark loading as complete
   const handleVideoLoad = useCallback(
@@ -268,18 +252,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   const handleSeekToBookmark = useCallback(
     (time: number, title?: string) => {
       if (playerRef?.current) {
-        playerRef.current.seekTo(time)
+        playerRef.current.seekTo(time);
         if (title) {
           toast({
             title: "Seeking to Bookmark",
-            description: `Jumping to "${title}" at ${formatDuration(time)}`,
-          })
+            description: `Jumping to "${title}" at ${formatDuration(time)}`
+          });
         }
       }
     },
     [playerRef, toast, formatDuration],
   )
 
+  // Update progress with string date
   const handleVideoProgress = useCallback(
     (progressState: { played: number; playedSeconds: number }) => {
       // Show logo animation when video is about to end (last 10-15 seconds)
@@ -303,10 +288,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       // Update progress periodically
       if (currentChapter && progressState.played > 0.1) {
         updateProgress({
-          currentChapterId: String(currentChapter.id),
+          // currentChapterId: String(currentChapter.id), // Remove invalid property
           progress: progressState.played,
-          lastAccessedAt: new Date(),
-        })
+          lastAccessedAt: new Date().toISOString(),
+        });
       }
     },
     [currentChapter, videoEnding, updateProgress, videoDurations, currentVideoId],
@@ -320,14 +305,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       // Update progress
       updateProgress({
-        currentChapterId: String(currentChapter.id),
-        completedChapters: [...(progress?.completedChapters || []), Number(currentChapter.id)],
+        // completedChapters: [...(progress?.completedChapters || []), Number(currentChapter.id)], // Remove invalid property
         isCompleted: isLastVideo,
-        lastAccessedAt: new Date(),
+        lastAccessedAt: new Date().toISOString(),
       })
 
       // Mark free video as played if not authenticated
-      if (!session && !hasPlayedFreeVideo) {
+      if (!user && !hasPlayedFreeVideo) {
         localStorage.setItem("hasPlayedFreeVideo", "true")
         setHasPlayedFreeVideo(true)
       }
@@ -348,7 +332,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     progress,
     isLastVideo,
     nextChapter,
-    session,
+    user,
     hasPlayedFreeVideo,
   ])
 
@@ -361,9 +345,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
     // Update progress
     updateProgress({
-      currentChapterId: String(chapterId),
-      completedChapters: [...(progress?.completedChapters || []), Number(chapterId)],
-      lastAccessedAt: new Date(),
+      // completedChapters: [...(progress?.completedChapters || []), Number(chapterId)], // Remove invalid property
+      lastAccessedAt: new Date().toISOString(),
     })
 
     console.log(`Chapter completed: ${chapterId}`)
@@ -542,15 +525,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     return {
       isSubscribed: !!userSubscription,
       isAdmin: !!user?.isAdmin,
-      isAuthenticated: !!session,
+      isAuthenticated: !!user,
     }
-  }, [userSubscription, session, user])
+  }, [userSubscription, user])
 
   // Regular content
   const regularContent = (
     <div className="min-h-screen bg-background">
       {/* Mobile header */}
-    
       <div className="flex">
         {/* Main content */}
         <main className="flex-1 min-w-0">
@@ -571,8 +553,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       onVideoLoad={handleVideoLoad}
                       onPlayerReady={handlePlayerReady}
                       onBookmark={handleSeekToBookmark}
-                      bookmarks={bookmarks || []}
-                      isAuthenticated={!!session}
+                      bookmarks={Array.isArray(bookmarks) && typeof bookmarks[0] === 'object' ? bookmarks : []}
+                      isAuthenticated={!!user}
                       autoPlay={false}
                       showControls={true}
                       onCertificateClick={handleCertificateClick}
@@ -586,14 +568,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       hasPrevVideo={!!prevChapter}
                       className="h-full w-full"
                     />
-
                     {/* CourseAI Logo Overlay */}
                     <AnimatedCourseAILogo
                       show={showLogoOverlay}
                       videoEnding={videoEnding}
                       onAnimationComplete={() => setShowLogoOverlay(false)}
                     />
-
                     {/* Autoplay Overlay */}
                     {showAutoplayOverlay && nextChapter && (
                       <AutoplayOverlay
@@ -610,12 +590,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
                       <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
                       <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
-                     
                     </div>
                   </div>
                 )}
               </div>
-
               {/* Chapter navigation */}
               <div className="flex items-center justify-between">
                 <Button
@@ -627,25 +605,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-
                 <div className="text-center">
                   {currentChapter && (
                     <div>
                       <h2 className="text-xl font-semibold mb-1">{currentChapter.title}</h2>
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span>{isVideoLoading ? "Loading..." : formatDuration(currentVideoId)}</span>
-                        {currentChapter.isFree && <Badge variant="secondary">Free</Badge>}
-                        {!session && !hasPlayedFreeVideo && (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            Preview
-                          </Badge>
+                        <span>{isVideoLoading ? "Loading..." : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
+                        {currentChapter.isFree && (<span className="px-2 py-1 rounded bg-gray-200 text-gray-800 text-xs">Free</span>)}
+                        {!user && !hasPlayedFreeVideo && (
+                          <span className="px-2 py-1 rounded border border-green-600 text-green-600 text-xs">Preview</span>
                         )}
                       </div>
                     </div>
                   )}
                 </div>
-
                 <Button
                   variant="outline"
                   onClick={handleNextVideo}
@@ -656,19 +630,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-
               {/* Course tabs */}
               <CourseDetailsTabs
                 course={course}
                 currentChapter={currentChapter}
                 accessLevels={accessLevels}
-         
                 onSeekToBookmark={handleSeekToBookmark}
               />
             </div>
           </div>
         </main>
-
         {/* Desktop sidebar - Using VideoNavigationSidebar */}
         <aside className="hidden lg:block w-96 border-l bg-background/50 backdrop-blur-sm">
           <VideoNavigationSidebar
@@ -677,13 +648,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
             courseId={course.id.toString()}
             onChapterSelect={handleChapterSelect}
             progress={progress}
-            isAuthenticated={!!session}
+            isAuthenticated={!!user}
             completedChapters={completedChapters}
             videoDurations={videoDurations}
             formatDuration={formatDuration}
             nextVideoId={nextChapter?.videoId}
-            currentVideoId={currentVideoId}
-            courseStats={courseStats}
+            currentVideoId={currentVideoId || ''}
+            courseStats={{
+              completedCount: progress?.completedChapters?.length || 0,
+              totalChapters: videoPlaylist.length,
+              progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+            }}
           />
         </aside>
       </div>
@@ -728,9 +703,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       {process.env.NODE_ENV !== "production" && (
         <>
           <VideoDebug
-            videoId={currentVideoId}
+            videoId={typeof currentVideoId === 'string' ? currentVideoId : ''}
             courseId={course.id}
-            chapterId={currentChapter?.id?.toString()}
+            chapterId={currentChapter?.id ? String(currentChapter.id) : ''}
           />
          
         </>
@@ -766,18 +741,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   return (
     <>
       {showAuthPrompt ? authPromptContent : regularContent}
-
-      {/* Development tools - only show in non-production */}
-      {process.env.NODE_ENV !== "production" && (
-        <div className="fixed bottom-4 left-4 z-50 flex space-x-2">
-         
-          <VideoDebug
-            videoId={currentVideoId}
-            courseId={course.id}
-            chapterId={currentChapter?.id?.toString()}
-          />
-        </div>
-      )}
     </>
   )
 }
