@@ -21,7 +21,7 @@ export type UseSubscriptionOptions = {
   onSubscriptionSuccess?: (result: SubscriptionResult) => void;
   onSubscriptionError?: (error: SubscriptionResult) => void;
   skipInitialFetch?: boolean;
-  canDownloadPdf?: boolean;
+ 
 };
 
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes

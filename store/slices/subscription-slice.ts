@@ -220,7 +220,7 @@ export const selectSubscriptionLoading = (state: RootState) => state.subscriptio
 export const selectIsSubscriptionLoading = selectSubscriptionLoading
 export const canDownloadPdfSelector = (state: RootState) => {
   const user = state.auth.user
-  return user?.userType === "PRO" || user?.userType === "ENTERPRISE"
+  return user?.subscriptionPlan === "PRO" || user?.subscriptionPlan === "ENTERPRISE"
 }
 
 export const selectSubscriptionStatus = createSelector(
