@@ -9,6 +9,7 @@ interface QuizFooterProps {
   onNext?: () => void
   onPrevious?: () => void
   onSubmit?: () => void
+  onRetake?: () => void  // Add onRetake prop
   canGoNext?: boolean
   canGoPrevious?: boolean
   isLastQuestion?: boolean
@@ -16,6 +17,8 @@ interface QuizFooterProps {
   submitLabel?: string
   className?: string
   isSubmitting?: boolean
+  showRetake?: boolean  // Add showRetake prop
+  hasAnswer?: boolean   // Add hasAnswer prop
 }
 
 export function QuizFooter({

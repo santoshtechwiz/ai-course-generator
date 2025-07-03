@@ -198,26 +198,25 @@ const ChapterCard = React.memo(
       useEffect(() => {
         setVideoId(chapter.videoId || "")
       }, [chapter.videoId])
-
+      
       React.useImperativeHandle(ref, () => ({
         triggerLoad: async () => {
           if (!isCompleted && state.videoStatus !== "processing") {
-            if (onGenerateVideo) {
-              await onGenerateVideo(chapter)
+            if (props.onGenerateVideo) {
+              await props.onGenerateVideo(chapter)
             } else {
               await triggerProcessing()
             }
-          }
-        },
+          }        },
       }))
-
+      
       const { isProcessing, isSuccess, isError } = useMemo(() => {
         // If we have a specific generation status, use it
-        if (generationStatus) {
+        if (props.generationStatus) {
           return {
-            isProcessing: generationStatus.status === "processing",
-            isSuccess: generationStatus.status === "success" || !!chapter.videoId,
-            isError: generationStatus.status === "error",
+            isProcessing: props.generationStatus.status === "processing",
+            isSuccess: props.generationStatus.status === "success" || !!chapter.videoId,
+            isError: props.generationStatus.status === "error",
           }
         }
 
@@ -227,7 +226,7 @@ const ChapterCard = React.memo(
           isSuccess: state.videoStatus === "success" || !!chapter.videoId,
           isError: state.videoStatus === "error",
         }
-      }, [state.videoStatus, isLoading, isGenerating, generationStatus, chapter.videoId])
+      }, [state.videoStatus, isLoading, isGenerating, props.generationStatus, chapter.videoId])
 
       const cardClassName = cn("transition-all duration-300", {
         "border-primary": isProcessing,
@@ -346,10 +345,10 @@ const ChapterCard = React.memo(
           })
         }
       }
-
+      
       const handleGenerateVideo = async () => {
-        if (onGenerateVideo) {
-          await onGenerateVideo(chapter)
+        if (props.onGenerateVideo) {
+          await props.onGenerateVideo(chapter)
         } else {
           await triggerProcessing()
         }
@@ -410,12 +409,11 @@ const ChapterCard = React.memo(
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <StatusIndicator
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">              <StatusIndicator
                 icon={PlayCircle}
                 label="Video"
-                status={generationStatus?.status || state.videoStatus}
-                message={generationStatus?.message}
+                status={props.generationStatus?.status || state.videoStatus}
+                message={props.generationStatus?.message}
               />
 
               {!isEditingVideo ? (
@@ -483,9 +481,8 @@ const ChapterCard = React.memo(
             <ActionButton
               isSuccess={isSuccess}
               isProcessing={isProcessing}
-              isGenerating={isGenerating}
-              triggerProcessing={handleGenerateVideo}
-              generationStatus={generationStatus}
+              isGenerating={isGenerating}              triggerProcessing={handleGenerateVideo}
+              generationStatus={props.generationStatus}
             />
           </CardFooter>
         </Card>

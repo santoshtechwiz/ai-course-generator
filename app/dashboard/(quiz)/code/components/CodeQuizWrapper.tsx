@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useCallback, useRef, useState } from "react"
+import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch } from "@/store"
@@ -31,7 +31,7 @@ interface CodeQuizWrapperProps {
   title?: string
 }
 
-export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
+function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter();
 
@@ -52,36 +52,58 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     title: quizTitle || title,
     description: "This is a code quiz. Solve the coding problems to complete the quiz.",
     questions: questions
-  }
+  }  // Track initialization to prevent duplicate loads
+  const isInitializedRef = useRef(false);
+  
   // Load the quiz
   useEffect(() => {
+    // Store in variable to handle potential cleanup scenarios
+    let isComponentMounted = true;
+    
     const loadQuiz = async () => {
+      // Prevent double initialization
+      if (isInitializedRef.current) return;
+      isInitializedRef.current = true;
+      
       try {
-        dispatch(resetQuiz())
-
-        await dispatch(fetchQuiz({ slug, quizType: "code" })).unwrap()
+        dispatch(resetQuiz());
+        
+        // Only proceed if component is still mounted
+        if (isComponentMounted) {
+          await dispatch(fetchQuiz({ slug, quizType: "code" })).unwrap();
+        }
       } catch (err) {
-        console.error("Failed to load quiz:", err)
-        toast.error("Failed to load quiz. Please try again.")
+        if (isComponentMounted) {
+          console.error("Failed to load quiz:", err);
+          toast.error("Failed to load quiz. Please try again.");
+        }
       }
     }
 
-    loadQuiz()
+    loadQuiz();
 
     return () => {
-      if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
+      isComponentMounted = false;
+      if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current);
     }
-  }, [slug, dispatch])  // Navigate to result
+  }, [slug, dispatch])// Navigate to result
   useEffect(() => {
+    let isMounted = true;
+    
     // To prevent infinite loop, we track if we've already shown the loader for this completion    
-    if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current) {
+    if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current && isMounted) {
       hasShownLoaderRef.current = true;
-        submissionTimeoutRef.current = setTimeout(() => {
-        router.push(`/dashboard/code/${slug}/results`)
+      
+      // Prevent navigation if component gets unmounted
+      submissionTimeoutRef.current = setTimeout(() => {
+        if (isMounted) {
+          router.push(`/dashboard/code/${slug}/results`)
+        }
       }, 500)
     }
 
     return () => {
+      isMounted = false;
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
   }, [isCompleted, quizStatus, router, slug])
@@ -126,13 +148,14 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
   const hasError = quizStatus === "failed"
   const isSubmitting = quizStatus === "submitting"
-
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
 
-    const questionText = currentQuestion.question || currentQuestion.text || ''
-    const options = Array.isArray(currentQuestion.options)
-      ? currentQuestion.options.map((opt: any) =>
+    // Use type assertion to handle potential shape differences
+    const currentQuestionAny = currentQuestion as any;
+    const questionText = currentQuestionAny.question || ''
+    const options = Array.isArray(currentQuestionAny.options)
+      ? currentQuestionAny.options.map((opt: any) =>
         typeof opt === "string" ? opt : opt.text || ''
       )
       : []
@@ -168,17 +191,6 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       />
     )
   }
-
-  if (hasError) {
-    return (
-      <NoResults
-        variant="error"
-        title="Error Loading Quiz"
-        description="We couldn't load this quiz. Please try again later or contact support if the problem persists."
-      />
-    )
-  }
-
   if (hasError) {
     return (
       <NoResults
@@ -229,3 +241,6 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     </div>
   )
 }
+
+// Export memoized version to prevent unnecessary re-renders
+export default memo(CodeQuizWrapper);

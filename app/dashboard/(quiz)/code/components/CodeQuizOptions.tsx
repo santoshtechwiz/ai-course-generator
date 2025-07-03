@@ -12,6 +12,8 @@ interface CodeQuizOptionsProps {
   selectedOption: string | null
   onSelect: (option: string) => void
   disabled?: boolean
+  correctAnswer?: string
+  showCorrectAnswer?: boolean
 }
 
 const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }: CodeQuizOptionsProps) => {
