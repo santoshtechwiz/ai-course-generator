@@ -109,12 +109,7 @@ export function PricingPage({
       if (!isAuthenticated) {
         onUnauthenticatedSubscribe?.(planName, duration, promoArgs.promoCode, promoArgs.promoDiscount)
         localStorage.setItem("pendingSubscription", JSON.stringify({ planName, duration, ...promoArgs }))
-        
-        toast({
-          title: "Sign In Required",
-          description: "Please sign in to subscribe.",
-          variant: "destructive",
-        })
+          // Removed sign in message toast
         
         window.location.href = "/api/auth/signin"
         return

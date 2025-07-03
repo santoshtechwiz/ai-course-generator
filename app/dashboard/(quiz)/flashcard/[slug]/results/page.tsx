@@ -30,16 +30,16 @@ export default function FlashCardPage({ params }: FlashCardPageProps) {
       </QuizPlayLayout>
     )
   }
-
   return (
     <QuizPlayLayout>
-      <div className="container max-w-4xl py-6">
+      <div className="container max-w-4xl py-6">        
         <FlashcardResultHandler
-          slug={slug}
-          title="Flashcard Results"
-          onRestart={() => router.push(`/dashboard/flashcard/${slug}`)}
-          onReview={(cards) => router.push(`/dashboard/flashcard/${slug}/review?cards=${cards.join(",")}`)}
-        />
+        slug={slug}
+        title="Flashcard Results"
+        onRestart={() => router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)}
+        onReview={(cards) => router.push(`/dashboard/flashcard/${slug}?review=true&cards=${cards.join(",")}`)}
+        onReviewStillLearning={(cards) => router.push(`/dashboard/flashcard/${slug}?review=true&cards=${cards.join(",")}&type=stillLearning`)}
+      />
       </div>
     </QuizPlayLayout>
   )

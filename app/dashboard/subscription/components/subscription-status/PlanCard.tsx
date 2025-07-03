@@ -309,17 +309,7 @@ export default function PlanCards({
                     )}
                   </div>
                 </div>
-              )}
-
-              {/* Add a note for unauthenticated users */}
-              {!userId && plan.id !== "FREE" && (
-                <div className="px-6 pb-4 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-blue-600 dark:text-blue-400 mt-2">
-                    <Info className="h-4 w-4" />
-                    <p>Sign in to subscribe</p>
-                  </div>
-                </div>
-              )}
+              )}              {/* Removed sign in to subscribe message */}
             </Card>
           </motion.div>
         )
