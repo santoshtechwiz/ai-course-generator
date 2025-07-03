@@ -269,3 +269,9 @@ export interface FlashCard {
   createdAt?: string
   lastReviewed?: string
 }
+export interface MultipleChoiceQuestion {
+  id: string
+  question: string
+  options: string[]
+  correctAnswer: string
+}
