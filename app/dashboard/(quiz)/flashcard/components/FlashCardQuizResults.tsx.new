@@ -27,34 +27,10 @@ import {
   Share2,
 } from 'lucide-react'
 
-interface FlashCardQuestion {
-  id: number
-  question: string
-  answer: string
-}
-
-interface FlashCardAnswer {
-  questionId: number
-  answer: string
-}
-
-interface FlashCardResult {
-  correctAnswers: number
-  incorrectAnswers: number
-  stillLearningAnswers: number
-  totalQuestions: number
-  percentage: number
-  totalTime: number
-  questions: FlashCardQuestion[]
-  answers: FlashCardAnswer[]
-  reviewCards?: number[]
-  stillLearningCards?: number[]
-}
-
 interface FlashCardResultsProps {
   slug: string
   title?: string
-  result: FlashCardResult
+  result: any
   onRestart?: () => void
   onReview?: (ids: number[]) => void
   onReviewStillLearning?: (ids: number[]) => void
@@ -117,13 +93,12 @@ export default function FlashCardResults({
     setReviewCardsCount(newReviewCards.length);
     setStillLearningCardsCount(newStillLearningCards.length);
   }, [result]);
-    // Add confetti effect when all cards are known
+  
+  // Add confetti effect when all cards are known
   useEffect(() => {
     // Show confetti if there are no cards left to review and there were some before
     if ((reviewCardsState.length === 0 && stillLearningCardsState.length === 0) && 
-        (result && 
-         ((result.reviewCards && result.reviewCards.length > 0) || 
-          (result.stillLearningCards && result.stillLearningCards.length > 0)))) {
+        (result && (result.reviewCards?.length > 0 || result.stillLearningCards?.length > 0))) {
       setShowConfetti(true)
       
       // Hide confetti after a few seconds
@@ -225,7 +200,8 @@ export default function FlashCardResults({
             <CardTitle className="flex gap-2 items-center text-primary">
               <Flame className="w-5 h-5" />
               Score
-            </CardTitle>          </CardHeader>
+            </CardTitle>
+          </CardHeader>
           <CardContent className="text-center">
             <motion.div 
               key={`percentage-${percentage}`}
@@ -322,7 +298,7 @@ export default function FlashCardResults({
             {grouped[t.key as keyof typeof grouped].length === 0 ? (
               <p className="text-center text-muted-foreground">No questions here yet.</p>
             ) : (
-              grouped[t.key as keyof typeof grouped].map((q: FlashCardQuestion) => (
+              grouped[t.key as keyof typeof grouped].map(q => (
                 <Card key={q.id}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">{q.question}</CardTitle>
@@ -333,7 +309,7 @@ export default function FlashCardResults({
             )}
           </TabsContent>
         ))}
-      </Tabs>
+      </Tabs>      
       
       {/* 🧩 CTA Actions */}
       <div className="space-y-6 pt-10">

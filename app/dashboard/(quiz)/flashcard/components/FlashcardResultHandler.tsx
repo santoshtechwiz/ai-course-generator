@@ -50,16 +50,19 @@ export default function FlashcardResultHandler({
     dispatch(clearQuizState())
     onRestart?.()
   }, [dispatch, onRestart])
-
   const handleReview = useCallback(() => {
     if (processedResults?.reviewCards) {
-      onReview?.(processedResults.reviewCards)
+      // Ensure we're using the most up-to-date review cards
+      const currentReviewCards = [...processedResults.reviewCards];
+      onReview?.(currentReviewCards)
     }
   }, [processedResults, onReview])
 
   const handleReviewStillLearning = useCallback(() => {
     if (processedResults?.stillLearningCards) {
-      onReviewStillLearning?.(processedResults.stillLearningCards)
+      // Ensure we're using the most up-to-date still learning cards
+      const currentStillLearningCards = [...processedResults.stillLearningCards];
+      onReviewStillLearning?.(currentStillLearningCards)
     }
   }, [processedResults, onReviewStillLearning])
 

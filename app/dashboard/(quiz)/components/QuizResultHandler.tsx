@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
+import { createMachine } from 'xstate'
+import { useMachine } from '@xstate/react'
 
 import { Skeleton } from '@/components/ui/skeleton'
 import { NoResults } from '@/components/ui/no-results'
@@ -23,12 +25,50 @@ import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
 import { GlobalLoader } from '@/components/ui/loader'
 
-
 interface Props {
   slug: string
   quizType: QuizType
   children: (props: { result: any }) => React.ReactNode
 }
+
+// Define the quiz result state machine with simplified events
+const quizResultMachine = createMachine({
+  id: 'quizResultMachine',
+  initial: 'loading',
+  states: {
+    loading: {
+      on: {
+        RESULTS_LOADED_WITH_AUTH: 'showResults',
+        RESULTS_LOADED_NO_AUTH: 'showSignin',
+        NO_RESULTS: 'noResults',
+        ERROR: 'error'
+      }
+    },
+    showResults: {
+      on: {
+        REFRESH: 'loading'
+      }
+    },
+    showSignin: {
+      on: {
+        SIGN_IN: 'loading',
+        RETAKE: 'loading',
+        RESULTS_LOADED_WITH_AUTH: 'showResults' // Add direct transition when authenticated
+      }
+    },
+    error: {
+      on: {
+        RETRY: 'loading',
+        RETAKE: 'loading'
+      }
+    },
+    noResults: {
+      on: {
+        RETAKE: 'loading'
+      }
+    }
+  }
+});
 
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
   const dispatch = useDispatch<AppDispatch>()
@@ -38,20 +78,48 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
   const quizQuestions = useSelector(selectQuizQuestions)
-
-  const [error, setError] = useState<string | null>(null)
-
-  // Load results after auth is initialized
+  
+  // For storing error message
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  
+  // Initialize the state machine
+  const [state, send] = useMachine(quizResultMachine);
+  
+  // Check if we have results
+  const hasResults = useMemo(() => {
+    return quizResults?.slug === slug && typeof quizResults?.percentage === 'number'
+  }, [quizResults, slug])
+  // Load results after auth is initialized and determine state
   useEffect(() => {
     if (!slug || !isInitialized) return
 
+    // If we already have results and user is authenticated, immediately show results
+    // This handles the case when user returns from sign-in page
+    if (hasResults && isAuthenticated) {
+      send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+      return;
+    }
+
     dispatch(checkAuthAndLoadResults())
       .unwrap()
+      .then(() => {
+        // Determine the appropriate state based on results and authentication
+        if (hasResults) {
+          if (isAuthenticated) {
+            send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+          } else {
+            send({ type: 'RESULTS_LOADED_NO_AUTH' });
+          }
+        } else {
+          send({ type: 'NO_RESULTS' });
+        }
+      })
       .catch((err: any) => {
         const message = err instanceof Error ? err.message : 'Failed to load results'
-        setError(message)
+        setErrorMessage(message);
+        send({ type: 'ERROR' });
       })
-  }, [slug, isInitialized, dispatch])
+  }, [slug, isInitialized, dispatch, send, hasResults, isAuthenticated])
 
   const processedResults = useMemo(() => {
     if (!quizResults) return null
@@ -93,71 +161,60 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
   const isLoading = quizStatus === 'loading' || isAuthLoading || !isInitialized
 
-  const hasResults = useMemo(() => {
-    return quizResults?.slug === slug && typeof quizResults?.percentage === 'number'
-  }, [quizResults, slug])
-
-  const viewState = useMemo(() => {    if (isLoading || !isInitialized) return <GlobalLoader 
-      fullScreen={true}
-      size="lg"
-      text="AI is generating your personalized quiz results"
-      subText="Crafting personalized content with advanced AI technology"
-      theme="primary"
-    />
-
-    // If results exist but user is NOT authenticated, force sign-in
-    if (hasResults && !isAuthenticated) return 'show_signin';
-
-    // Only show results when both are true
-    if (hasResults && isAuthenticated) return 'show_results';
-
-    if (error) return 'error';
-    return 'no_results';
-  }, [isLoading, isInitialized, hasResults, isAuthenticated, error]);
-
-
+  // Handle retake quiz action
   const handleRetake = () => {
     dispatch(clearQuizState())
+    send({ type: 'RETAKE' })
     router.push(`/dashboard/${quizType}/${slug}`)
   }
 
+  // Handle retry loading action
   const handleRetry = () => {
-    setError(null)
+    setErrorMessage(null)
+    send({ type: 'RETRY' })
     router.refresh()
   }
-
+  // Handle sign in action
   const handleSignIn = () => {
+    send({ type: 'SIGN_IN' })
     login('credentials', {
       callbackUrl: `/dashboard/${quizType}/${slug}/results`,
     })
   }
+  
+  // Effect to handle authentication changes
+  useEffect(() => {
+    // When authentication state changes to authenticated and we have results,
+    // transition to results state regardless of current state
+    if (isAuthenticated && hasResults && isInitialized) {
+      send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+    }
+  }, [isAuthenticated, hasResults, isInitialized, send]);
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <GlobalLoader 
+        fullScreen={true}
+        size="lg"
+        text="AI is generating your personalized quiz results"
+        subText="Crafting personalized content with advanced AI technology"
+        theme="primary"
+      />
+    )
+  }
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      {viewState === 'loading' && (
-        <motion.div
-          key="loading"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-6 max-w-lg mx-auto mt-6 px-4"
-        >
-          <div className="flex flex-col items-center justify-center">
-            <div className="p-3 bg-muted/30 rounded-full mb-4">
-              <div className="h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            </div>
-            <div className="text-sm font-medium">Loading your quiz results...</div>
-          </div>
-          <Skeleton className="h-24 w-full rounded-lg" />
-        </motion.div>
-      )}
-
-      {viewState === 'show_results' && (
+      {/* Show results state */}
+      {state.matches('showResults') && (
         <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           {children({ result: processedResults })}
         </motion.div>
       )}
 
-      {viewState === 'show_signin' && (
+      {/* Show sign in prompt state */}
+      {state.matches('showSignin') && (
         <motion.div key="signin" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <SignInPrompt
             onSignIn={handleSignIn}
@@ -176,12 +233,13 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         </motion.div>
       )}
 
-      {viewState === 'error' && (
+      {/* Error state */}
+      {state.matches('error') && (
         <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <NoResults
             variant="quiz"
             title="Error Loading Quiz"
-            description={`${error}. Please try again.`}
+            description={`${errorMessage || 'Unknown error'}. Please try again.`}
             action={{
               label: 'Retry',
               onClick: handleRetry,
@@ -197,7 +255,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         </motion.div>
       )}
 
-      {viewState === 'no_results' && (
+      {/* No results state */}
+      {state.matches('noResults') && (
         <motion.div key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <NoResults
             variant="quiz"

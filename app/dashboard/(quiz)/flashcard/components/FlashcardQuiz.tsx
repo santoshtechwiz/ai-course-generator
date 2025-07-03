@@ -3,16 +3,19 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
 import { useSession } from "next-auth/react"
-import { QuizLoader } from "@/components/ui/quiz-loader"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { toast } from "sonner"
 import { Confetti } from "@/components/ui/confetti"
+import { GlobalLoader } from "@/components/ui/loader"
 import { cn } from "@/lib/utils"
 import {
   initFlashCardQuiz,
   submitFlashCardAnswer,
   resetFlashCards,
   nextFlashCard,
+  type AnswerEntry,
+  type RatingAnswer,
+  ANSWER_TYPES
 } from "@/store/slices/flashcard-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
 
@@ -20,6 +23,8 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { FlashcardFront } from "./FlashcardFront"
 import { FlashcardBack } from "./FlashcardBack"
 import { FlashcardController } from "./FlashcardController"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, RefreshCw } from "lucide-react"
 
 interface FlashCard {
   id: string
@@ -97,6 +102,8 @@ export default function FlashCardQuiz({
     }
     return []
   })
+  const [showCompletionFeedback, setShowCompletionFeedback] = useState(false)
+  const [completionFeedbackType, setCompletionFeedbackType] = useState<"success" | "info">("success")
 
   // Animation controls
   const cardControls = useAnimation()
@@ -149,9 +156,8 @@ export default function FlashCardQuiz({
     let correctCount = 0
     let stillLearningCount = 0
     let incorrectCount = 0
-
-    answers.forEach((answer) => {
-      if (answer && typeof answer.answer === "string") {
+      answers.forEach((answer: AnswerEntry) => {
+      if (answer && 'answer' in answer && typeof answer.answer === "string") {
         switch (answer.answer) {
           case "correct":
             correctCount++
@@ -256,15 +262,21 @@ export default function FlashCardQuiz({
     } else if (onComplete) {
       onComplete(processedResults)
     }
-  }, [currentQuestionIndex, cards, dispatch, cardControls, onComplete, processedResults, animationsEnabled, swipeDisabled])
-
-  // Handle self rating
+  }, [currentQuestionIndex, cards, dispatch, cardControls, onComplete, processedResults, animationsEnabled, swipeDisabled])  // Handle self rating
   const handleSelfRating = useCallback(
     (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
       if (!cardId || swipeDisabled) return
       setSwipeDisabled(true)
       const endTime = Date.now()
       const timeSpent = Math.floor((endTime - startTime) / 1000)
+      
+      // Check if this is a change from previous rating
+      const previousAnswer = answers.find(
+        (a): a is RatingAnswer => 'answer' in a && a.questionId === cardId
+      );
+      
+      const isStatusChange = previousAnswer && previousAnswer.answer !== rating;
+      
       // Update streak
       let newStreak = streak
       if (rating === "correct") {
@@ -279,7 +291,10 @@ export default function FlashCardQuiz({
         ...prev,
         [cardId]: (prev[cardId] || 0) + timeSpent,
       }))
-      // Submit answer
+      
+      // Submit answer with adaptive learning priority
+      // Cards that are "still_learning" or "incorrect" get higher priority for future review
+      const priority = rating === "correct" ? 1 : rating === "still_learning" ? 2 : 3;
       const answerData = {
         answer: rating,
         userAnswer: rating,
@@ -287,24 +302,67 @@ export default function FlashCardQuiz({
         isCorrect: rating === "correct",
         questionId: cardId,
         streak: rating === "correct" ? newStreak : 0,
+        priority: priority // Add adaptive learning priority
       }
       dispatch(submitFlashCardAnswer(answerData))
+      
+      // Show appropriate toast for status changes in review mode
+      if (isReviewMode && isStatusChange) {
+        if (previousAnswer?.answer === "incorrect" && rating === "correct") {
+          toast.success("Great job! You've learned this card!", {
+            duration: 2000,
+            icon: "🎉"
+          });
+        } else if (previousAnswer?.answer === "still_learning" && rating === "correct") {
+          toast.success("You've mastered this card!", {
+            duration: 2000,
+            icon: "⭐"
+          });
+        } else if (previousAnswer?.answer === "correct" && rating !== "correct") {
+          toast.info("We'll help you review this card more.", {
+            duration: 2000
+          });
+        }
+      }
       // Haptic feedback
       if (window.navigator?.vibrate) {
         window.navigator.vibrate(
           rating === "correct" ? [50, 30, 50] : rating === "still_learning" ? [30, 20, 30] : [100],
         )
-      }
-      // Confetti for milestones
+      }        // Confetti for milestones
       if (rating === "correct" && (newStreak) % 5 === 0 && newStreak > 0) {
         setShowConfetti(true)
         setTimeout(() => setShowConfetti(false), 2500)
       }
+      
+      // Check if this was the last card in review mode
+      const isLastCard = currentQuestionIndex === cards.length - 1;
+      
+      // Show completion feedback for review mode
+      if (isReviewMode && isLastCard) {
+        // Calculate how many cards were marked as known
+        const correctAnswersCount = answers.filter(
+          (a): a is RatingAnswer => 'answer' in a && a.answer === ANSWER_TYPES.CORRECT
+        ).length;
+        
+        // If all or most cards were marked as known, show success feedback
+        const successThreshold = Math.floor(cards.length * 0.7); // 70% of cards
+        const feedbackType = correctAnswersCount >= successThreshold ? 'success' : 'info';
+        
+        // Show completion feedback after a slight delay
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setCompletionFeedbackType(feedbackType);
+            setShowCompletionFeedback(true);
+          }
+        }, 1200);
+      }
+      
       // Auto-advance or reset animation
       setTimeout(() => {
         if (isMountedRef.current) {
           setRatingAnimation(null)
-          if (autoAdvance) {
+          if (autoAdvance && !isLastCard) {
             moveToNextCard()
           }
           setSwipeDisabled(false)
@@ -313,7 +371,6 @@ export default function FlashCardQuiz({
     },
     [dispatch, autoAdvance, moveToNextCard, startTime, streak, swipeDisabled],
   )
-
   // Restart quiz
   const handleRestartQuiz = useCallback(() => {
     dispatch(resetFlashCards())
@@ -322,6 +379,31 @@ export default function FlashCardQuiz({
     setStreak(0)
     toast("Quiz has been reset")
   }, [dispatch])
+  
+  // Finish quiz early
+  const handleFinishQuiz = useCallback(() => {
+    // Check if user has gone through enough cards to finish
+    const completedCardCount = Object.keys(cardTimes).length;
+    const progressPercent = (completedCardCount / cards.length) * 100;
+    
+    if (completedCardCount === 0) {
+      toast.warning("Please rate at least one card before finishing");
+      return;
+    }
+    
+    if (progressPercent < 50 && !isReviewMode) {
+      const confirmFinish = window.confirm(
+        `You've only completed ${Math.round(progressPercent)}% of the cards. Are you sure you want to finish?`
+      );
+      if (!confirmFinish) return;
+    }
+    
+    if (onComplete) {
+      toast.success("Quiz completed!");
+      onComplete(processedResults);
+    }
+  }, [cardTimes, cards.length, isReviewMode, onComplete, processedResults])
+
 
   // Handle swipe gestures
   const handleDragEnd = useCallback(
@@ -387,9 +469,12 @@ export default function FlashCardQuiz({
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isLoading, isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating, showHint, ratingAnimation, swipeDisabled])
-
   if (isLoading) {
-    return <QuizLoader message="Loading flashcards..." subMessage="Preparing your study materials" />
+    return <GlobalLoader 
+      text="Loading flashcards..." 
+      subText="Preparing your study materials"
+      theme="primary"
+    />
   }
   if (!cards || cards.length === 0) {
     return (
@@ -412,13 +497,12 @@ export default function FlashCardQuiz({
         animationKey={`card-${currentQuestionIndex}`}
       >
         <div className="space-y-4 sm:space-y-6">
-          {/* Controller */}
-          <FlashcardController
+          {/* Controller */}          <FlashcardController
             title={title}
             currentIndex={currentQuestionIndex}
             totalCards={cards?.length || 0}
             streak={streak}
-            isReviewMode={false}
+            isReviewMode={isReviewMode}
             flipped={flipped}
             autoAdvance={autoAdvance}
             showSettings={showSettings}
@@ -427,6 +511,7 @@ export default function FlashCardQuiz({
             onSetAutoAdvance={setAutoAdvance}
             onSetShowSettings={setShowSettings}
             onRestartQuiz={handleRestartQuiz}
+            onFinishQuiz={handleFinishQuiz}
           />
           {/* Flashcard Content */}
           <div className="relative min-h-[300px] sm:min-h-[350px] w-full perspective-1000">
@@ -501,9 +586,63 @@ export default function FlashCardQuiz({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
-      {showConfetti && <Confetti isActive={true} />}
+      </AnimatePresence>      {showConfetti && <Confetti isActive={showConfetti} />}
+      
+      {/* Completion feedback modal */}
+      {showCompletionFeedback && (
+        <motion.div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-white dark:bg-slate-900 rounded-lg shadow-lg p-8 max-w-md text-center"
+            initial={{ scale: 0.8, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.8, y: 20 }}
+            transition={{ type: "spring", damping: 15 }}
+          >
+            {completionFeedbackType === 'success' ? (
+              <>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", damping: 10 }}
+                >
+                  <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                </motion.div>
+                <h2 className="text-2xl font-bold mb-2">Great progress!</h2>
+                <p className="text-muted-foreground mb-6">
+                  You've improved your knowledge of these cards. Keep up the good work!
+                </p>
+              </>
+            ) : (
+              <>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", damping: 10 }}
+                >
+                  <RefreshCw className="h-16 w-16 mx-auto text-blue-500 mb-4" />
+                </motion.div>
+                <h2 className="text-2xl font-bold mb-2">Review Complete</h2>
+                <p className="text-muted-foreground mb-6">
+                  You've gone through all the review cards. Want to see your progress?
+                </p>
+              </>
+            )}
+            <div className="flex justify-center gap-4">
+              <Button onClick={() => {
+                setShowCompletionFeedback(false);
+                handleFinishQuiz();
+              }}>
+                See Results
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </>
   )
 }
-  

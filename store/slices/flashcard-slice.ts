@@ -179,14 +179,14 @@ const flashcardSlice = createSlice({
 
     resetRedirectFlag: (state) => {
       state.shouldRedirectToResults = false
-    },
-
-    submitFlashCardAnswer: (state, action: PayloadAction<{
+    },    submitFlashCardAnswer: (state, action: PayloadAction<{
       questionId: string | number
       answer: "correct" | "incorrect" | "still_learning"
       timeSpent?: number
+      streak?: number
+      priority?: number
     }>) => {
-      const { questionId, answer, timeSpent } = action.payload
+      const { questionId, answer, timeSpent, streak, priority } = action.payload
       const questionIdStr = String(questionId)
 
       const existingIndex = state.answers.findIndex(
@@ -198,13 +198,52 @@ const flashcardSlice = createSlice({
         answer,
         userAnswer: answer,
         isCorrect: answer === ANSWER_TYPES.CORRECT,
-        timeSpent: timeSpent || 0
+        timeSpent: timeSpent || 0,
+        streak: streak
       }
 
       if (existingIndex >= 0) {
         state.answers[existingIndex] = newAnswer
       } else {
         state.answers.push(newAnswer)
+      }
+      
+      // If we have results already calculated, update them
+      if (state.results) {
+        // Recalculate the counts for the different answer types
+        const ratingAnswers = state.answers.filter((a): a is RatingAnswer => 'answer' in a);
+        const correctCount = ratingAnswers.filter(a => a.answer === ANSWER_TYPES.CORRECT).length;
+        const stillLearningCount = ratingAnswers.filter(a => a.answer === ANSWER_TYPES.STILL_LEARNING).length;
+        const incorrectCount = ratingAnswers.filter(a => a.answer === ANSWER_TYPES.INCORRECT).length;
+        const totalQuestions = state.questions.length;
+        const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+        
+        // Update the review cards lists
+        const reviewCards = ratingAnswers
+          .filter(a => a.answer === ANSWER_TYPES.INCORRECT)
+          .map(a => parseInt(a.questionId))
+          .filter(id => !isNaN(id));
+          
+        const stillLearningCards = ratingAnswers
+          .filter(a => a.answer === ANSWER_TYPES.STILL_LEARNING)
+          .map(a => parseInt(a.questionId))
+          .filter(id => !isNaN(id));
+        
+        // Update the results
+        state.results = {
+          ...state.results,
+          correctCount,
+          incorrectCount,
+          stillLearningCount,
+          reviewCards,
+          stillLearningCards,
+          percentage,
+          correctAnswers: correctCount,
+          incorrectAnswers: incorrectCount,
+          stillLearningAnswers: stillLearningCount,
+          score: correctCount,
+          answers: state.answers
+        };
       }
     },
 
@@ -417,13 +456,20 @@ export const selectProcessedResults = createSelector(
 
     const correct = answers.filter(a => 'isCorrect' in a && a.isCorrect).length;
     const stillLearning = answers.filter(a => 'answer' in a && a.answer === ANSWER_TYPES.STILL_LEARNING).length;
-    const incorrect = answers.filter(a => 'isCorrect' in a && !a.isCorrect).length;
+    const incorrect = answers.filter(a => 'isCorrect' in a && !a.isCorrect && ('answer' in a && a.answer !== ANSWER_TYPES.STILL_LEARNING)).length;
 
     const totalQuestions = answers.length;
     const percentage = Math.round((correct / totalQuestions) * 100);
+    
+    // Separate incorrect and still learning cards
     const reviewCards = answers
-      .filter((a): a is RatingAnswer => 'questionId' in a && ('isCorrect' in a || 'answer' in a))
-      .filter(a => !a.isCorrect || a.answer === ANSWER_TYPES.STILL_LEARNING)
+      .filter((a): a is RatingAnswer => 'questionId' in a && 'answer' in a)
+      .filter(a => a.answer === ANSWER_TYPES.INCORRECT)
+      .map(a => parseInt(a.questionId));
+    
+    const stillLearningCards = answers
+      .filter((a): a is RatingAnswer => 'questionId' in a && 'answer' in a)
+      .filter(a => a.answer === ANSWER_TYPES.STILL_LEARNING)
       .map(a => parseInt(a.questionId));
 
     return {
@@ -433,6 +479,10 @@ export const selectProcessedResults = createSelector(
       totalQuestions,
       percentage,
       reviewCards,
+      stillLearningCards,
+      correctAnswers: correct,
+      incorrectAnswers: incorrect,
+      stillLearningAnswers: stillLearning,
       ...results,
     };
   }
