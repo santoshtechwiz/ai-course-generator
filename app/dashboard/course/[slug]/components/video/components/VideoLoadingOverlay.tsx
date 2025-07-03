@@ -2,7 +2,7 @@
 
 import React from "react"
 import { motion } from "framer-motion"
-import { Loader2 } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 
 interface VideoLoadingOverlayProps {
   isVisible: boolean
@@ -25,15 +25,12 @@ const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ isVisible, me
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.4 }}
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-        >
-          <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-        </motion.div>
-
-        <p className="text-white text-sm sm:text-base font-medium">{message}</p>
+      >        <GlobalLoader 
+          size="lg"
+          text={message}
+          theme="primary" 
+          className="text-white"
+        />
       </motion.div>
     </motion.div>
   )

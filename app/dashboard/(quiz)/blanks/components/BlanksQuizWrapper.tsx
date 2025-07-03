@@ -26,7 +26,7 @@ import BlanksQuiz from "./BlanksQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
 import { useLoader } from "@/components/ui/loader/loader-context"
-import { FullPageLoader, Loader, MinimalLoader } from "@/components/ui/loader/index"
+import { GlobalLoader } from "@/components/ui/loader"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
 
 
@@ -168,12 +168,12 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }, [currentQuestion])
 
     if (isLoading) {
-        return (
-        <FullPageLoader
-          context="generating"
-          message="AI is generating your personalized quiz results"
-          subMessage="Crafting personalized content with advanced AI technology"
-          showSparkles={true}
+        return (        <GlobalLoader 
+          fullScreen={true}
+          size="lg"
+          text="AI is generating your personalized quiz results"
+          subText="Crafting personalized content with advanced AI technology"
+          theme="primary"
         />
       )
     } 

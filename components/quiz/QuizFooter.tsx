@@ -1,7 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, CheckCircle, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { cn } from "@/lib/utils"
 
 interface QuizFooterProps {
@@ -58,9 +59,8 @@ export function QuizFooter({
           onClick={onSubmit}
           disabled={isSubmitting}
           className="flex items-center gap-2 w-full sm:w-auto min-w-[160px] bg-emerald-600 hover:bg-emerald-700"
-        >
-          {isSubmitting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+        >          {isSubmitting ? (
+            <GlobalLoader size="xs" className="w-4 h-4" />
           ) : (
             <CheckCircle className="w-4 h-4" />
           )}

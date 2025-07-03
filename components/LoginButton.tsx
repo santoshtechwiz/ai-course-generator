@@ -1,6 +1,7 @@
 "use client"
 
-import { LogIn, Loader2 } from "lucide-react"
+import { LogIn } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
@@ -59,9 +60,8 @@ export function LoginButton({
       onClick={handleLogin}
       disabled={isLoading}
       className={`${className}`}
-    >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+    >      {isLoading ? (
+        <GlobalLoader size="xs" className="h-4 w-4" />
       ) : (
         <>
           {!iconOnly && <span className="mr-2">{text}</span>}

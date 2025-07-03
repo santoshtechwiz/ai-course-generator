@@ -22,12 +22,12 @@ import {
   Smartphone,
   Shield,
   BrainCircuit,
-  Loader2,
   Play,
   ArrowRight,
   TrendingUp,
   Heart,
 } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -242,11 +242,11 @@ export const CourseCard = React.memo(
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20"
-              >
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm font-medium text-muted-foreground">Loading course...</p>
-                </div>
+              >                <GlobalLoader 
+                  size="md"
+                  text="Loading course..."
+                  theme="primary"
+                />
               </motion.div>
             )}
           </AnimatePresence>

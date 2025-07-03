@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { CardLoader } from "@/components/ui/loader"
+import { GlobalLoader } from "@/components/ui/loader"
 
 interface QuizzesSkeletonProps {
   itemCount?: number
@@ -32,7 +32,7 @@ export function QuizzesSkeleton({ itemCount = 6 }: QuizzesSkeletonProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
           >
-            <CardLoader message={`Loading quiz ${i + 1}...`} context="quiz" />
+            <GlobalLoader text={`Loading quiz ${i + 1}...`} theme="primary" />
           </motion.div>
         ))}
       </div>
@@ -41,7 +41,7 @@ export function QuizzesSkeleton({ itemCount = 6 }: QuizzesSkeletonProps) {
 }
 
 export function QuizLoadingCard() {
-  return <CardLoader message="Loading quizzes..." subMessage="Fetching your quiz collection" context="quiz" />
+  return <GlobalLoader text="Loading quizzes..." subText="Fetching your quiz collection" theme="primary" />
 }
 
 export default QuizzesSkeleton

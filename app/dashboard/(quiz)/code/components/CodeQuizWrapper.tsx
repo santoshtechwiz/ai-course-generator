@@ -23,7 +23,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { FullPageLoader, InlineLoader, Loader, MinimalLoader } from "@/components/ui/loader/index"
+import { GlobalLoader } from "@/components/ui/loader"
 
 
 interface CodeQuizWrapperProps {
@@ -157,14 +157,14 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
   const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
-
   if (isLoading) {
       return (
-      <FullPageLoader
-        context="generating"
-        message="AI is generating your personalized quiz results"
-        subMessage="Crafting personalized content with advanced AI technology"
-        showSparkles={true}
+      <GlobalLoader
+        fullScreen={true}
+        size="lg"
+        text="AI is generating your personalized quiz results"
+        subText="Crafting personalized content with advanced AI technology"
+        theme="primary"
       />
     )
   }
@@ -192,14 +192,13 @@ export default function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       />
     )
   }
-
   if (!formattedQuestion) {
     return (
-      <FullPageLoader
-        context="generating"
-        message="AI is generating your personalized quiz results"
-        subMessage="Crafting personalized content with advanced AI technology"
-        showSparkles={true}
+      <GlobalLoader
+        fullScreen={true}
+        size="lg"        text="AI is generating your personalized quiz results"
+        subText="Crafting personalized content with advanced AI technology"
+        theme="primary"
       />
     )
   }

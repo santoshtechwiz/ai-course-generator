@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { LogOut, Loader2 } from "lucide-react"
+import { LogOut } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks"
@@ -78,9 +79,8 @@ export function LogoutButton({
         onClick={handleLogout}
         disabled={isLoading}
         className={className}
-      >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+      >        {isLoading ? (
+          <GlobalLoader size="xs" className="h-4 w-4" />
         ) : (
           <>
             {!iconOnly && <span className="mr-2">Sign out</span>}
@@ -89,8 +89,7 @@ export function LogoutButton({
         )}
       </Button>
       <Dialog open={isLoading} onOpenChange={() => {}}>
-        <DialogContent className="flex flex-col items-center gap-4 py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <DialogContent className="flex flex-col items-center gap-4 py-8">          <GlobalLoader size="md" className="text-primary" />
           <div className="text-lg font-semibold">Logging out...</div>
         </DialogContent>
       </Dialog>

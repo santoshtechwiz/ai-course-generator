@@ -1,7 +1,7 @@
-import { CardLoader, SkeletonLoader } from "@/components/ui/loader"
+import { GlobalLoader } from "@/components/ui/loader"
 
 export function SubscriptionSkeleton() {
-  return <SkeletonLoader className="space-y-8" />
+  return <GlobalLoader variant="skeleton" className="space-y-8" />
 }
 
 export function LoadingCard({
@@ -11,8 +11,11 @@ export function LoadingCard({
   message?: string
   className?: string
 }) {
-  return <CardLoader message={message} context="loading" className={className} />
+  return <GlobalLoader text={message} className={className} />
 }
 
-export { SkeletonLoader as LoadingSkeleton }
+export function LoadingSkeleton({ className }: { className?: string }) {
+  return <GlobalLoader variant="skeleton" className={className} />
+}
+
 export default SubscriptionSkeleton

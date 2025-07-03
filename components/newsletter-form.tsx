@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Mail, ArrowRight, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { Mail, ArrowRight, CheckCircle, AlertCircle } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { subscribeToNewsletter } from "@/app/actions/newsletter"
@@ -58,8 +59,7 @@ export function NewsletterForm() {
 
       <Button type="submit" className="w-full group" disabled={status === "loading" || status === "success"}>
         {status === "loading" ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <>            <GlobalLoader size="xs" className="mr-2 h-4 w-4" />
             Subscribing...
           </>
         ) : status === "success" ? (
