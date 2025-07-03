@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronDown, ChevronUp } from "lucide-react"
-import { InlineLoader } from "@/components/ui/loader"
+import { GlobalLoader } from "@/components/ui/loader"
 
 interface DebugPanelProps {
   editingChapterId: string | null
@@ -94,7 +94,7 @@ const DebugPanel = ({
                 onClick={handleLogToConsole}
                 disabled={isLoading}
               >
-                {isLoading ? <InlineLoader size="xs" /> : "Log to Console"}
+                {isLoading ? <GlobalLoader size="xs" /> : "Log to Console"}
               </Button>
             </div>
           </CardContent>

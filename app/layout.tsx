@@ -8,7 +8,7 @@ import { Providers } from "@/store/provider"
 import { getServerAuthSession } from "@/lib/server-auth"
 import ClientLayoutWrapper from "./client-layout-wrapper"
 import { Suspense } from "react"
-import { Loader2 } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { font } from "./font"
 
 export const metadata: Metadata = {
@@ -79,11 +79,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
       <body
         className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
-      >
-        <Suspense
+      >        <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <GlobalLoader size="xl" text="Loading application..." />
             </div>
           }
         >

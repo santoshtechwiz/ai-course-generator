@@ -3,7 +3,7 @@
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { MinimalLoader } from "@/components"
+import { GlobalLoader } from "@/components/ui/loader"
 import { CourseAILoader } from "@/components/ui/loader/courseai-loader"
 
 

@@ -25,7 +25,7 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 
 
 import { QuizActions } from "../../components/QuizActions"
-import { Loader, MinimalLoader } from "@/components/ui/loader/index"
+import { GlobalLoader } from "@/components/ui/loader"
 import { OpenEndedQuestion } from "@/app/types/quiz-types"
 
 
@@ -169,7 +169,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }, [currentQuestion])
 
   if (isLoading) {
-    return <MinimalLoader context="quiz" size="sm" />
+    return <GlobalLoader size="sm" />
   }
 
   if (hasError) {

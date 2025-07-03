@@ -21,7 +21,7 @@ import {
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
-import { FullPageLoader } from '@/components/ui/loader/index'
+import { GlobalLoader } from '@/components/ui/loader'
 
 
 interface Props {
@@ -97,12 +97,12 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     return quizResults?.slug === slug && typeof quizResults?.percentage === 'number'
   }, [quizResults, slug])
 
-  const viewState = useMemo(() => {
-    if (isLoading || !isInitialized) return <FullPageLoader
-      context="generating"
-      message="AI is  generating your personalized quiz results"
-      subMessage="Crafting personalized content with advanced AI technology"
-      showSparkles={true}
+  const viewState = useMemo(() => {    if (isLoading || !isInitialized) return <GlobalLoader 
+      fullScreen={true}
+      size="lg"
+      text="AI is generating your personalized quiz results"
+      subText="Crafting personalized content with advanced AI technology"
+      theme="primary"
     />
 
     // If results exist but user is NOT authenticated, force sign-in

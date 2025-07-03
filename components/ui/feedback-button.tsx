@@ -5,7 +5,8 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 
-import { Loader2, CheckCircle, XCircle, MessageSquarePlus } from "lucide-react"
+import { CheckCircle, XCircle, MessageSquarePlus } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { cn } from "@/lib/tailwindUtils"
 
 export type FeedbackState = "idle" | "loading" | "success" | "error"
@@ -123,7 +124,7 @@ export function FeedbackButton({
 
     switch (feedbackState) {
       case "loading":
-        return <Loader2 className="h-4 w-4 animate-spin" />
+        return <GlobalLoader size="xs" className="h-4 w-4" />
       case "success":
         return <CheckCircle className="h-4 w-4" />
       case "error":

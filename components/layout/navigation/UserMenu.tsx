@@ -1,6 +1,7 @@
 "use client"
 
-import { LogOut, User, Crown, CreditCard, Loader2, LogIn } from "lucide-react"
+import { LogOut, User, Crown, CreditCard, LogIn } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -123,7 +124,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       <Avatar className="h-8 w-8 ring-2 ring-transparent hover:ring-primary/20 transition-all duration-200">
         <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
         <AvatarFallback className="bg-primary/5 text-primary">
-          {isLoadingSubscription ? <Loader2 className="h-4 w-4 animate-spin" /> : user?.name?.[0] ?? "U"}
+          {isLoadingSubscription ? <GlobalLoader size="xs" /> : user?.name?.[0] ?? "U"}
         </AvatarFallback>
       </Avatar>
     </Button>
@@ -133,7 +134,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
   if (isAuthLoading) {
     return (
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-        <Loader2 className="h-5 w-5 animate-spin text-primary/70" />
+        <GlobalLoader size="sm" theme="primary" />
       </Button>
     )
   }
@@ -222,10 +223,9 @@ export function UserMenu({ children }: { children?: ReactNode }) {
             }}
             disabled={isLoading}
             className="cursor-pointer hover:text-red-500 transition-colors"
-          >
-            {isLoading ? (
+          >            {isLoading ? (
               <div className="flex items-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <GlobalLoader size="xs" className="mr-2" />
                 Logging out...
               </div>
             ) : (
@@ -240,8 +240,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       {/* Modal dialog for logout spinner */}
       <Dialog open={isLoading}>
         <DialogContent className="flex flex-col items-center gap-4 py-8">
-          <DialogTitle className="sr-only">Logging out</DialogTitle>
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <DialogTitle className="sr-only">Logging out</DialogTitle>          <GlobalLoader size="md" className="text-primary" />
           <div className="text-lg font-semibold">Logging out...</div>
         </DialogContent>
       </Dialog>

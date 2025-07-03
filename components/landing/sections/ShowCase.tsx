@@ -8,7 +8,6 @@ import {
   BookOpen,
   HelpCircle,
   Filter,
-  Loader2,
   AlertCircle,
   Pause,
   Play,
@@ -21,7 +20,7 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useMobile } from "@/hooks/use-mobile"
-
+import { GlobalLoader } from "@/components/ui/loader"
 
 // Types based on the API response
 interface CourseQuizCard {
@@ -406,7 +405,7 @@ const ProductGallery = () => {
 const LoadingState = () => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-      <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+      <GlobalLoader className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
       <p className="text-muted-foreground">Loading AI learning tools...</p>
     </motion.div>
   </div>

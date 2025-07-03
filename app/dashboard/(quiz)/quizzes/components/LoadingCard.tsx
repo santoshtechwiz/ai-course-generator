@@ -1,6 +1,6 @@
 "use client"
 
-import { CardLoader } from "@/components/ui/loader"
+import { GlobalLoader } from "@/components/ui/loader"
 import { cn } from "@/lib/utils"
 
 interface LoadingCardProps {
@@ -15,7 +15,7 @@ export function LoadingCard({
   className,
 }: LoadingCardProps) {
   return (
-    <CardLoader message={message} subMessage={subMessage} context="quiz" className={cn("animate-fade-in", className)} />
+    <GlobalLoader text={message} subText={subMessage} className={cn("animate-fade-in", className)} theme="primary" />
   )
 }
 

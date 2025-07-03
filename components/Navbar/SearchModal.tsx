@@ -3,7 +3,8 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import axios from "axios"
-import { Loader2, Search, X, Book, FileQuestion } from "lucide-react"
+import { Search, X, Book, FileQuestion } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { motion, AnimatePresence } from "framer-motion"
 import debounce from "lodash/debounce"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -253,7 +254,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5, ease: "linear" }}
                   >
-                    <Loader2 className="h-8 w-8 text-primary" />
+                    <GlobalLoader size="md" className="text-primary" />
                   </motion.div>
                   <motion.p
                     className="text-sm text-muted-foreground"

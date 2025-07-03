@@ -6,7 +6,8 @@ import { useEffect } from "react"
 
 import { useRef, useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence, useInView } from "framer-motion"
-import { Plus, Minus, Search, Loader2 } from "lucide-react"
+import { Plus, Minus, Search } from "lucide-react"
+import { GlobalLoader } from "@/components/ui/loader"
 import { Input } from "@/components/ui/input"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 
@@ -184,9 +185,8 @@ const FaqAccordion = () => {
             onChange={handleSearch}
             className="pl-10 py-6 rounded-full bg-card/30 backdrop-blur-sm border-border/10"
           />
-          {isSearching && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          {isSearching && (            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <GlobalLoader size="xs" theme="primary" />
             </div>
           )}
         </div>
