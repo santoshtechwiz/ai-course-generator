@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, memo } from "react"
 import { motion } from "framer-motion"
 import { useAppDispatch } from "@/store"
 import { saveAnswer } from "@/store/slices/quiz-slice"
@@ -84,33 +84,34 @@ const CodeQuiz = ({
       // Return the most appropriate variation
       return optionVariations[0]
     }) || []
-
-  const handleAnswerSelection = (option: string) => {
+  const handleAnswerSelection = useCallback((option: string) => {
     if (isSubmitting) return
 
     if (!enhancedOptions.includes(option)) return
 
-    setSelectedAnswer(option)
-    onAnswer(option)
+    // Only update state if different from current selection
+    if (selectedAnswer !== option) {
+      setSelectedAnswer(option)
+      onAnswer(option)
 
-    try {
-      dispatch(
-        saveAnswer({
-          questionId: String(question.id),
-          answer: {
-            questionId: question.id,
-            selectedOptionId: option,
-            timestamp: Date.now(),
-            type: "code",
-          },
-        }),
-      )
-    } catch (error) {
-      console.error("Redux dispatch failed:", error)
+      try {
+        dispatch(
+          saveAnswer({
+            questionId: String(question.id),
+            answer: {
+              questionId: question.id,
+              selectedOptionId: option,
+              timestamp: Date.now(),
+              type: "code",
+            },
+          }),
+        )
+      } catch (error) {
+        console.error("Redux dispatch failed:", error)
+      }
     }
-  }
-
-  const handleCopyCode = async () => {
+  }, [isSubmitting, enhancedOptions, selectedAnswer, onAnswer, dispatch, question.id])
+  const handleCopyCode = useCallback(async () => {
     if (question.codeSnippet) {
       try {
         await navigator.clipboard.writeText(question.codeSnippet)
@@ -120,7 +121,7 @@ const CodeQuiz = ({
         console.error("Failed to copy code:", err)
       }
     }
-  }
+  }, [question.codeSnippet])
 
   const progressPercentage = Math.round((questionNumber / totalQuestions) * 100)
   const hasAnswer = !!selectedAnswer
@@ -128,11 +129,11 @@ const CodeQuiz = ({
     <QuizContainer
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
-      quizType="Code Challenge"
+      quizType="code"
       animationKey={question.id}
       quizTitle={quizTitle}
       quizSubtitle={quizSubtitle}
-      difficulty={difficulty}
+      difficulty={difficulty === 'Medium' ? 'medium' : difficulty === 'Hard' ? 'hard' : 'easy'}
       category={category}
       timeLimit={timeLimit}
     >
@@ -312,4 +313,5 @@ const CodeQuiz = ({
   )
 }
 
-export default CodeQuiz
+// Use memo to prevent unnecessary re-renders
+export default memo(CodeQuiz)
