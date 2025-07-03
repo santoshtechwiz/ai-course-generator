@@ -1,4 +1,5 @@
-import type { MultipleChoiceQuestion } from "@/app/types/types"
+
+import { MultipleChoiceQuestion } from "@/app/types/quiz-types"
 import openai from "./openaiUtils"
 
 interface FunctionDefinition {
@@ -66,19 +67,30 @@ export default async function generateMultipleChoiceQuestions(
       },
     },
   ]
-
   try {
     const response = await openai.chat.completions.create({
       model: model,
       messages: [
-        { role: "system", content: "You are an expert in creating multiple-choice questions." },
+        { 
+          role: "system", 
+          content: "You are an expert in creating educational multiple-choice questions. Focus only on important concepts, key facts, and core knowledge presented in the content. Ignore introductions, speaker information, greetings, conclusions, and any meta-content about the video or course itself."
+        },
         {
           role: "user",
-          content: `Generate a maximum of ${numQuestions} multiple-choice questions based on the course titled "${courseTitle}" using the following transcript: ${transcript}. Each question must have one correct answer and three incorrect options. Please avoid generating questions on the author's introduction or irrelevant content and stick strictly to the main topic of the course.`,
+          content: `Generate a maximum of ${numQuestions} multiple-choice questions based on the course titled "${courseTitle}" using the following transcript: ${transcript}. 
+
+Requirements:
+- Focus ONLY on substantive educational content and core concepts
+- Each question must have one correct answer and three plausible but incorrect options
+- Avoid any questions about who created the content, introductions, or video metadata
+- Questions should test understanding of key concepts, not trivial details
+- Ensure questions cover different aspects of the main topic
+- Make options distinct and unambiguous (avoid "all of the above" type options)`,
         },
       ],
       functions,
       function_call: { name: "formatMCQs" },
+      temperature: 0.5, // Lower temperature for more focused content
     })
 
     const result = response?.choices[0]?.message?.function_call?.arguments

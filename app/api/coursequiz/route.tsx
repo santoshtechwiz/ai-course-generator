@@ -107,12 +107,11 @@ async function generateAndSaveQuestions(
   chapterName: string,
 ): Promise<any[]> {
   try {
-    // Limit text length to avoid token limits
-    const maxLength = 500
-    const truncatedText = transcriptOrSummary.split(" ").slice(0, maxLength).join(" ")
+    // We don't need to truncate here as the videoProcessor service now handles
+    // preprocessing and extracting relevant content more intelligently
 
     console.log("Generating questions for text")
-    const questions = await getQuestionsFromTranscript(truncatedText, chapterName)
+    const questions = await getQuestionsFromTranscript(transcriptOrSummary, chapterName)
 
     if (questions.length > 0) {
       console.log("Saving questions to database")
@@ -123,7 +122,7 @@ async function generateAndSaveQuestions(
         const batch = questions.slice(i, i + batchSize)
 
         await prisma.courseQuiz.createMany({
-          data: batch.map((question: QuizQuestion) => {
+          data: batch.map((question: any) => {
             // Ensure options is an array before processing
             const questionOptions = Array.isArray(question.options)
               ? question.options
@@ -131,16 +130,20 @@ async function generateAndSaveQuestions(
               ? JSON.parse(question.options)
               : []
 
+            // For MultipleChoiceQuestion, the correct answer is not directly available.
+            // Assume the first option is the correct answer, or adapt as needed.
+            const answer = questionOptions[0] ?? "";
+
             // Make sure answer is included in options
-            const uniqueOptions = questionOptions.includes(question.answer)
+            const uniqueOptions = questionOptions.includes(answer)
               ? questionOptions
-              : [...questionOptions, question.answer]
+              : [answer, ...questionOptions]
 
             const sortedOptions = uniqueOptions.sort(() => Math.random() - 0.5)
 
             return {
               question: question.question,
-              answer: question.answer,
+              answer: answer,
               options: JSON.stringify(sortedOptions),
               chapterId: chapterId,
             }
