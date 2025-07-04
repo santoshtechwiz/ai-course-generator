@@ -75,7 +75,7 @@ function AutoRedirect({ onRedirect, delay }: AutoRedirectProps) {
   );
 }
 
-// Define a simplified quiz result state machine with fewer intermediate states
+// Define the quiz result state machine with improved event handling and transitions
 const quizResultMachine = createMachine({
   id: 'quizResultMachine',
   initial: 'loading',
@@ -86,33 +86,53 @@ const quizResultMachine = createMachine({
         RESULTS_LOADED_NO_AUTH: 'showSignin',
         NO_RESULTS: 'noResults',
         ERROR: 'error',
-        // Direct transition to quiz without intermediate states
-        RETAKE: 'loading'
+        RETAKE: { 
+          target: 'redirecting',
+          // Add an action to be executed on this transition
+          actions: ['clearQuizState'] 
+        }
       }
     },
     showResults: {
       on: {
         REFRESH: 'loading',
-        RETAKE: 'loading'
+        RETAKE: { 
+          target: 'redirecting',
+          actions: ['clearQuizState'] 
+        }
       }
     },
     showSignin: {
       on: {
         SIGN_IN: 'loading',
-        RETAKE: 'loading',
+        RETAKE: { 
+          target: 'redirecting',
+          actions: ['clearQuizState'] 
+        },
         RESULTS_LOADED_WITH_AUTH: 'showResults'
       }
     },
     error: {
       on: {
         RETRY: 'loading',
-        RETAKE: 'loading'
+        RETAKE: { 
+          target: 'redirecting',
+          actions: ['clearQuizState'] 
+        }
       }
     },
     noResults: {
       on: {
-        RETAKE: 'loading'
+        RETAKE: { 
+          target: 'redirecting',
+          actions: ['clearQuizState'] 
+        }
       }
+    },
+    // Add a dedicated redirecting state for better UX
+    redirecting: {
+      // This state can be used to show transition animations
+      // before navigating away
     }
   }
 });
@@ -128,7 +148,6 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   
   // For storing error message
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isRedirecting, setIsRedirecting] = useState<boolean>(false)
   
   // Initialize the state machine
   const [state, send] = useMachine(quizResultMachine);
@@ -144,81 +163,54 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
        Array.isArray(quizResults.answers) && quizResults.answers.length > 0)
     )
   }, [quizResults, slug])
-    // Clear any existing results from different quiz types on component mount
-  useEffect(() => {
-    if (quizResults && quizResults.slug !== slug) {
-      // If current stored results are for a different quiz, clear them
-      dispatch(clearQuizState());
-    }
-  }, [dispatch, quizResults, slug]);
-  // Optimized effect for loading results
+  
+  // Load results after auth is initialized and determine state
   useEffect(() => {
     if (!slug || !isInitialized) return
 
-    // Check for direct URL access first
-    try {
-      // Modern approach to detect direct URL access
-      const isDirect = document.referrer === '';
-      const isFromExternalDomain = document.referrer !== '' && 
-        !document.referrer.includes(window.location.hostname);
-        
-      if (isDirect || isFromExternalDomain) {
-        // For direct access with no results, redirect immediately
-        if (!hasResults) {
-          handleRetake();
-          return;
-        }
-      }
-    } catch (e) {
-      // Continue with normal flow if detection fails
-    }
-
-    // Clear any results that don't match the current slug
-    if (quizResults && quizResults.slug !== slug) {
-      dispatch(clearQuizState());
-    }
-
-    // If we already have matching results and user is authenticated, immediately show results
+    // If we already have results and user is authenticated, immediately show results
+    // This handles the case when user returns from sign-in page
     if (hasResults && isAuthenticated) {
       send({ type: 'RESULTS_LOADED_WITH_AUTH' });
       return;
     }
 
-    // Attempt to load results directly
-    dispatch(checkAuthAndLoadResults())
-      .unwrap()
-      .then(() => {
-        // Get fresh results after loading
-        const freshQuizResults = selectQuizResults({ quiz: { results: quizResults } } as any);
-        
-        // Strict validation for results
-        const validResults = Boolean(
-          freshQuizResults &&
-          freshQuizResults.slug === slug && 
-          (typeof freshQuizResults.percentage === 'number' || 
-           typeof freshQuizResults.score === 'number' ||
-           Array.isArray(freshQuizResults.results) && freshQuizResults.results.length > 0)
-        );
-        
-        // Show results or redirect based on what we found
-        if (validResults) {
-          if (isAuthenticated) {
-            send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+    // Add a timeout to ensure we have time to load results
+    const timeoutId = setTimeout(() => {
+      dispatch(checkAuthAndLoadResults())
+        .unwrap()
+        .then(() => {
+          // Re-check if we have results after loading
+          const currentQuizResults = selectQuizResults({ quiz: { results: quizResults } } as any);
+          const currentHasResults = Boolean(
+            currentQuizResults &&
+            currentQuizResults.slug === slug && 
+            (typeof currentQuizResults.percentage === 'number' || 
+             typeof currentQuizResults.score === 'number' ||
+             Array.isArray(currentQuizResults.results) && currentQuizResults.results.length > 0 || 
+             Array.isArray(currentQuizResults.answers) && currentQuizResults.answers.length > 0)
+          );
+          
+          // Determine the appropriate state based on results and authentication
+          if (currentHasResults) {
+            if (isAuthenticated) {
+              send({ type: 'RESULTS_LOADED_WITH_AUTH' });
+            } else {
+              send({ type: 'RESULTS_LOADED_NO_AUTH' });
+            }
           } else {
-            send({ type: 'RESULTS_LOADED_NO_AUTH' });
+            send({ type: 'NO_RESULTS' });
           }
-        } else {
-          // Immediately redirect to quiz page if no results
-          handleRetake();
-        }
-      })
-      .catch((err: any) => {
-        const message = err instanceof Error ? err.message : 'Failed to load results';
-        setErrorMessage(message);
-        send({ type: 'ERROR' });
-      });
-      
-  }, [slug, isInitialized, dispatch, send, hasResults, isAuthenticated, quizResults]); // eslint-disable-line react-hooks/exhaustive-deps
+        })
+        .catch((err: any) => {
+          const message = err instanceof Error ? err.message : 'Failed to load results'
+          setErrorMessage(message);
+          send({ type: 'ERROR' });
+        })
+    }, 500); // Small delay to ensure state is properly initialized
+    
+    return () => clearTimeout(timeoutId);
+  }, [slug, isInitialized, dispatch, send, hasResults, isAuthenticated, quizResults])
 
   const processedResults = useMemo(() => {
     if (!quizResults) return null
@@ -258,41 +250,35 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     }
   }, [quizResults, quizQuestions, slug])
 
-  const isLoading = quizStatus === 'loading' || isAuthLoading || !isInitialized  // Simplified retake function with immediate redirect
+  const isLoading = quizStatus === 'loading' || isAuthLoading || !isInitialized
+
+  // Handle retake quiz action with enhanced UX
   const handleRetake = () => {
-    // Flag that we're redirecting to prevent other state changes
-    setIsRedirecting(true);
+    // Clear quiz state first to ensure clean state
+    dispatch(clearQuizState())
     
-    // Clear quiz state immediately to prevent issues with shared state
-    dispatch(clearQuizState());
+    // Show loading state before navigation
+    send({ type: 'RETAKE' })
     
-    // Tell state machine we're taking action
-    send({ type: 'RETAKE' });
-    
-    // Always navigate to the quiz page directly
-    router.push(`/dashboard/${quizType}/${slug}`);
-  }// Simplified retry function with cleaner feedback
+    // Short delay to show loading state before redirecting
+    setTimeout(() => {
+      // Navigate back to the quiz page
+      router.push(`/dashboard/${quizType}/${slug}`)
+    }, 300)
+  }
+
+  // Handle retry loading action with improved feedback
   const handleRetry = () => {
-    // Reset error state
-    setErrorMessage(null);
+    setErrorMessage(null)
+    send({ type: 'RETRY' })
     
-    // Clear quiz state to start fresh
-    dispatch(clearQuizState());
+    // Clear state and try loading again
+    dispatch(clearQuizState())
     
-    // Set loading state
-    send({ type: 'RETRY' });
-    
-    // Just refresh the page - simple and effective
+    // Short delay to ensure redux state is cleared
     setTimeout(() => {
-      router.refresh();
-    }, 100);
-    
-    // Set a backup timeout to redirect to quiz if refresh doesn't help
-    setTimeout(() => {
-      if (state.matches('loading') || state.matches('error')) {
-        handleRetake(); // Redirect to quiz if still loading or error
-      }
-    }, 4000);
+      router.refresh()
+    }, 300)
   }
   
   // Handle sign in action
@@ -302,7 +288,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       callbackUrl: `/dashboard/${quizType}/${slug}/results`,
     })
   }
-    // Effect to handle authentication changes
+  
+  // Effect to handle authentication changes
   useEffect(() => {
     // When authentication state changes to authenticated and we have results,
     // transition to results state regardless of current state
@@ -310,43 +297,34 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       send({ type: 'RESULTS_LOADED_WITH_AUTH' });
     }
   }, [isAuthenticated, hasResults, isInitialized, send]);
-    // Simplified loading timeout effect that redirects if results can't be loaded
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    // If in loading state, set a reasonable timeout to prevent infinite loading
-    if (state.matches('loading')) {
-      timeoutId = setTimeout(() => {
-        // If we're still loading after timeout, show error and give option to retry
-        if (!isRedirecting) {
-          send({ type: 'ERROR' });
-          setErrorMessage('Results could not be loaded. Please try again or return to the quiz.');
-        }
-      }, 5000); // 5-second timeout for loading is more reasonable
-    }
-    
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps  // Automatic redirection for no results
-  useEffect(() => {
-    // If we're in the noResults state, redirect immediately
-    if (state.matches('noResults') && !isRedirecting) {
-      handleRetake();
-    }
-  }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps// Render loading or redirecting states with a single consistent loader
-  if (isLoading || state.matches('loading') || isRedirecting) {
-    const isRedirectingToQuiz = isRedirecting;
-    
+
+  // Render loading state
+  if (isLoading || state.matches('loading')) {
     return (
       <GlobalLoader 
         fullScreen={true}
         size="lg"
-        text={isRedirectingToQuiz ? "Preparing your quiz" : "Loading your quiz results"}
-        subText={isRedirectingToQuiz ? "Redirecting you to the quiz page..." : "Please wait while we retrieve your results"}
+        text="Loading your quiz results"
+        subText="Please wait while we retrieve your results"
         theme="primary"
         className="!z-50" // Ensure loader is on top
       />
+    )
+  }
+  
+  // Render redirecting state
+  if (state.matches('redirecting')) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-8 max-w-lg mx-auto">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <h2 className="text-2xl font-bold tracking-tight">Preparing Your Quiz</h2>
+          <p className="text-muted-foreground">
+            Redirecting to your quiz page. Please wait...
+          </p>
+          <Progress value={100} className="h-1 animate-pulse" />
+        </div>
+      </div>
     )
   }
 
@@ -377,31 +355,52 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
             }
           />
         </motion.div>
-      )}      {/* Error state - simplified with auto-redirect */}
+      )}
+
+      {/* Error state */}
       {state.matches('error') && (
         <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <NoResults
             variant="quiz"
             title="Error Loading Quiz"
-            description={`${errorMessage || 'Failed to load quiz results'}. Automatically redirecting to quiz.`}
+            description={`${errorMessage || 'Unknown error'}. Please try again.`}
             action={{
-              label: 'Go to Quiz Now',
+              label: 'Retry',
+              onClick: handleRetry,
+              icon: <RefreshCw className="h-4 w-4" />,
+              variant: 'default',
+            }}
+            secondaryAction={{
+              label: 'Back to Dashboard',
+              onClick: () => router.push('/dashboard'),
+              variant: 'outline',
+            }}
+          />
+        </motion.div>
+      )}
+
+      {/* No results state - with auto-redirect effect */}
+      {state.matches('noResults') && (
+        <motion.div key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <NoResults
+            variant="quiz"
+            title="No Results Found"
+            description="We couldn't find your quiz results. Redirecting to quiz..."
+            action={{
+              label: 'Retake Quiz Now',
               onClick: handleRetake,
               icon: <RefreshCw className="h-4 w-4" />,
               variant: 'default',
             }}
             secondaryAction={{
-              label: 'Try Again',
-              onClick: handleRetry,
+              label: 'Back to Dashboard',
+              onClick: () => router.push('/dashboard'),
               variant: 'outline',
             }}
           />
-          <AutoRedirect onRedirect={handleRetake} delay={2000} />
+          {/* Auto-redirect effect */}
+          <AutoRedirect onRedirect={handleRetake} delay={3000} />
         </motion.div>
-      )}
-        {/* No results state - immediate redirect */}
-      {state.matches('noResults') && (
-        <>{handleRetake()}</>
       )}
     </AnimatePresence>
   )

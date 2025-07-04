@@ -62,11 +62,11 @@ export const generateOpenEndedQuiz = async (
   difficulty = "medium",
   userType = "FREE",
 ): Promise<Quiz> => {
-   const model = getAIModel(userType);
+  const model = getAIModel(userType);
   const functions = [
     {
       name: "createOpenEndedQuiz",
-      description: "Create a concise open-ended quiz based on a given topic",
+      description: "Create comprehensive open-ended quiz questions that require detailed answers",
       parameters: {
         type: "object",
         properties: {
@@ -78,19 +78,19 @@ export const generateOpenEndedQuiz = async (
               properties: {
                 question: {
                   type: "string",
-                  description: "A brief, clear question (max 15 words)",
+                  description: "A thoughtful, detailed question that requires comprehensive explanation (50-100 words)",
                 },
                 correct_answer: {
                   type: "string",
-                  description: "A concise answer (max 5 words)",
+                  description: "A comprehensive model answer that demonstrates depth of knowledge (100-300 words)",
                 },
                 hints: {
                   type: "array",
                   items: {
                     type: "string",
-                    description: "Short hint (max 8 words)",
+                    description: "Substantive hints that guide thinking without giving away the answer (15-25 words each)",
                   },
-                  description: "Two brief hints for the question",
+                  description: "Two detailed hints for the question",
                 },
                 difficulty: {
                   type: "string",
@@ -99,7 +99,7 @@ export const generateOpenEndedQuiz = async (
                 tags: {
                   type: "array",
                   items: { type: "string" },
-                  description: "Two relevant tags for the question",
+                  description: "3-4 relevant tags that categorize the knowledge domains of the question",
                 },
               },
               required: ["question", "correct_answer", "hints", "difficulty", "tags"],
@@ -115,20 +115,43 @@ export const generateOpenEndedQuiz = async (
     {
       role: "system",
       content:
-        "You are an AI that generates concise, engaging open-ended quizzes. Create short questions with brief, easy-to-type answers. Focus on key concepts and avoid overly complex language. Aim for questions that can be answered in a few words.",
+        "You are an expert educator who creates thought-provoking, in-depth open-ended quiz questions. Craft comprehensive questions that require critical thinking, analysis, and detailed explanations. Design questions that encourage learners to demonstrate their understanding through thorough responses rather than simple one-word answers.",
     },
     {
       role: "user",
-      content: `Generate a concise open-ended quiz about ${title} with ${amount} questions. The quiz should have a short title. Each question should be brief (max 150 words) with a concise answer (max 200 words), two short hints (max 8 words each), a difficulty level (Easy, Medium, or Hard), and two relevant tags. Ensure a mix of difficulties across the questions. Prioritize questions that can be answered with a single word or a very short phrase.`,
-    },
-  ]
+      content: `Generate an in-depth open-ended quiz about "${title}" with ${amount} questions. 
 
-  return generateQuizFlexible({
+The quiz should have a descriptive title. For each question:
+1. Create a substantive question (50-100 words) that requires critical thinking and detailed explanation
+2. Provide a comprehensive model answer (100-300 words) that demonstrates depth of knowledge and proper reasoning
+3. Include two meaningful hints (15-25 words each) that guide thinking without giving away the answer
+4. Assign an appropriate difficulty level (Easy, Medium, or Hard)
+5. Add 3-4 relevant tags that categorize the knowledge domains covered by the question
+
+Ensure a balanced mix of difficulties based on the requested level (${difficulty}). Questions should encourage analytical thinking, explanations of concepts, comparisons, evaluations, or applications of knowledge.`,
+    },
+  ]  // Process the response to standardize field names
+  const rawQuiz = await generateQuizFlexible({
     model,
     messages,
     functions,
     functionCall: { name: "createOpenEndedQuiz" },
   })
+
+  // Transform the response to ensure consistency with expected schema
+  if (rawQuiz && Array.isArray(rawQuiz.questions)) {
+    // Map correct_answer to answer if needed
+    rawQuiz.questions = rawQuiz.questions.map(question => {
+      const q = question as any; // Use any to handle potential field name variations
+      return {
+        ...q,
+        // Ensure the answer field is populated, preferring answer but falling back to correct_answer
+        answer: q.answer || q.correct_answer || "",
+      };
+    });
+  }
+
+  return rawQuiz
 }
 
 export const generateOpenEndedFillIntheBlanks = async (
