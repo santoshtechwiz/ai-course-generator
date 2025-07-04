@@ -101,7 +101,6 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       setSubmitError(error?.response?.data?.message || "Failed to create fill-in-the-blanks quiz. Please try again.")
     },
   })
-
   const onSubmit = React.useCallback(
     (data: BlankQuizFormData) => {
       if (isLoading) return
@@ -112,14 +111,13 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       }
 
       setSubmitError(null)
-      setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
     [isLoading],
   )
-
   const handleConfirm = React.useCallback(async () => {
     setIsConfirmDialogOpen(false)
+    setIsLoading(true)
 
     try {
       const formValues = watch()
@@ -489,14 +487,11 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </motion.div>
           </form>
         </CardContent>
-      </Card>
-
-      <ConfirmDialog
+      </Card>      <ConfirmDialog
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
         onCancel={() => {
           setIsConfirmDialogOpen(false)
-          setIsLoading(false)
         }}
       />
     </motion.div>

@@ -110,7 +110,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { mutateAsync: createFlashCardsMutation } = useMutation({
     mutationFn: async (data: FlashCardFormData) => {
       data.userType = subscriptionStatus?.subscriptionPlan
-      const response = await axios.post("/api/flashcard", data)
+      const response = await axios.post("/api/quizzes/flashcard", data)
       return response.data
     },
     onError: (error) => {
