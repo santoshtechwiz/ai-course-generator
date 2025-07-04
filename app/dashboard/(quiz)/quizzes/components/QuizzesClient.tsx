@@ -27,9 +27,9 @@ interface QuizzesClientProps {
   userId?: string
 }
 
-function extractQuizzes(data: { pages?: { quizzes: QuizListItem[] }[] } | undefined): QuizListItem[] {
+function extractQuizzes(data: any): QuizListItem[] {
   if (!data?.pages) return []
-  return data.pages.flatMap((page) => page?.quizzes || [])
+  return data.pages.flatMap((page: any) => page?.quizzes || [])
 }
 
 function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientProps) {
@@ -53,7 +53,6 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     showPublicOnly,
     activeTab,
   ], [debouncedSearch, selectedTypes, userId, questionCountRange, showPublicOnly, activeTab])
-
   const {
     data,
     isLoading,
@@ -63,14 +62,15 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     isFetchingNextPage,
     refetch,
     isRefetching,
-  } = useInfiniteQuery<GetQuizzesResult, Error, { quizzes: QuizListItem[]; nextCursor: number | null }>({
+  } = useInfiniteQuery({
     queryKey,
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam = 1 }) => {
       const result = await getQuizzes({
         page: pageParam as number,
         limit: 10,
         searchTerm: debouncedSearch,
-        userId,        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+        userId,
+        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
         minQuestions: questionCountRange[0],
         maxQuestions: questionCountRange[1],
         publicOnly: showPublicOnly,
