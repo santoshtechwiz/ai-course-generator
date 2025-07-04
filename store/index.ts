@@ -12,6 +12,9 @@ import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
 import userReducer from "./slices/user-slice"
 
+// Middleware
+import subscriptionListenerMiddleware from "./middleware/subscriptionMiddleware"
+
 // 🔐 Persist configs
 const authPersistConfig = {
   key: "auth",
@@ -96,7 +99,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }),
+    }).prepend(subscriptionListenerMiddleware.middleware),
 })
 
 // ✅ Persistor for <PersistGate />

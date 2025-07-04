@@ -18,11 +18,12 @@ import { Badge } from "@/components/ui/badge"
 import type { ReactNode } from "react"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { selectSubscription, selectSubscriptionLoading, fetchSubscription } from "@/store/slices/subscription-slice"
+import { selectSubscription, selectSubscriptionLoading, selectSubscriptionData, fetchSubscription } from "@/store/slices/subscription-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { syncSubscriptionData } from "@/store/slices/auth-slice"
 
 export function UserMenu({ children }: { children?: ReactNode }) {
   const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth()
@@ -44,7 +45,6 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       fetchSubscriptionData()
     }
   }
-
   // Create a wrapper function for fetching subscription data with error handling
   const fetchSubscriptionData = useCallback(() => {
     if (!isAuthenticated || isLoggingOut) return;
@@ -53,6 +53,10 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     try {
       dispatch(fetchSubscription())
         .unwrap()
+        .then(data => {
+          // Sync the subscription data to auth state to ensure consistency
+          dispatch(syncSubscriptionData(data));
+        })
         .catch(error => {
           console.log("Subscription fetch error handled:", error?.message || "Unknown error");
           setFetchErrors(prev => prev + 1);

@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { LoaderProvider } from "@/components/ui/loader/loader-context";
 import { ThemeProvider } from "next-themes";
+import { GlobalSubscriptionSynchronizer } from "@/components/GlobalSubscriptionSynchronizer";
 
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   // This effect ensures that the DOM is fully loaded before animations run
@@ -16,8 +17,7 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
       document.documentElement.classList.remove('page-loaded');
     };
   }, []);
-  
-  return (
+    return (
     <div className="client-layout-wrapper">
       <ThemeProvider
         attribute="class"
@@ -26,6 +26,7 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
         disableTransitionOnChange={false} // Enable smooth transitions between themes
       >
         <LoaderProvider>
+          <GlobalSubscriptionSynchronizer />
           {children}
         </LoaderProvider>
       </ThemeProvider>

@@ -25,15 +25,15 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
 }) => {
   // Use Redux selector to get subscription data
   const subscription = useAppSelector(selectSubscription)
-
   const currentPlan =
-    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscription?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
+    SUBSCRIPTION_PLANS.find((plan) => plan.id === subscription?.data?.subscriptionPlan) || SUBSCRIPTION_PLANS[0]
   const maxQuestions = currentPlan?.limits?.maxQuestionsPerQuiz || 0 // Added null checks
   const isMaxPlan = currentPlan.name === "ULTIMATE"
-
-  const getNextPlan = (): string => {  // Changed return type from SubscriptionPlanType to string
+  
+  const getNextPlan = (): string => {
     const currentIndex = SUBSCRIPTION_PLANS.findIndex((plan) => plan.name === currentPlan.name)
-    return SUBSCRIPTION_PLANS[currentIndex + 1]?.id || currentPlan.id
+    // Return the name of the next plan for display purposes
+    return SUBSCRIPTION_PLANS[currentIndex + 1]?.name || currentPlan.name
   }
 
   const nextPlan = getNextPlan()
