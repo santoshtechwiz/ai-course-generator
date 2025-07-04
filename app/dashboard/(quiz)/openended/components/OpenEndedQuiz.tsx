@@ -53,24 +53,26 @@ export default function OpenEndedQuiz({
   const [showValidation, setShowValidation] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(0)
   const [keywordsCovered, setKeywordsCovered] = useState<string[]>([])
-
   // Extract question data with proper fallbacks
   const questionData = useMemo(() => {
-    const openEndedData = question|| {}
+    const openEndedData = question || {}
     return {
       text: question.question || question.text || "",
       answer: question.answer || openEndedData.correctAnswer || "",
-      keywords: question.tags || [],
-      hints: openEndedData.hints || question.hints || [],
+      keywords: Array.isArray(question.tags) ? question.tags : [],
+      hints: Array.isArray(question.hints) ? question.hints : [],
       difficulty: openEndedData.difficulty || question.difficulty || "Medium",
-      tags: openEndedData.tags || question.tags || [],
-     
+      tags: Array.isArray(openEndedData.tags) ? openEndedData.tags : 
+            Array.isArray(question.tags) ? question.tags : [],
     }
   }, [question])
-
   // Generate hints for this question using actual question hints
   const hints = useMemo(() => {
-    return generateOpenEndedHints(questionData.keywords, questionData.text, questionData.hints)
+    // Make sure we have valid arrays for keywords and hints
+    const validKeywords = Array.isArray(questionData.keywords) ? questionData.keywords : []
+    const validHints = Array.isArray(questionData.hints) ? questionData.hints : []
+    
+    return generateOpenEndedHints(validKeywords, questionData.text || "", validHints)
   }, [questionData.keywords, questionData.text, questionData.hints])
 
   // Calculate similarity and keyword coverage when answer changes
@@ -128,9 +130,11 @@ export default function OpenEndedQuiz({
       onSubmit()
     }
   }, [handleAnswerSubmit, onSubmit])
-
   const handleHintUsed = useCallback((hintLevel: number) => {
-    setHintsUsed((prev) => Math.max(prev, hintLevel))
+    // Ensure the hintLevel is properly tracked
+    if (hintLevel > 0) {
+      setHintsUsed((prev) => Math.max(prev, hintLevel))
+    }
   }, [])
 
   const handleKeyDown = useCallback(
@@ -350,10 +354,12 @@ export default function OpenEndedQuiz({
               </Card>
             </motion.div>
           )}
-        </AnimatePresence>
-
-        {/* Hint System */}
-        <HintSystem hints={hints.map((h) => h.content)} onHintUsed={handleHintUsed}   />
+        </AnimatePresence>        {/* Hint System */}
+        <HintSystem 
+          hints={hints || []}
+          onHintUsed={(hintIndex) => handleHintUsed(hintIndex + 1)}
+          questionText={questionData.text}
+        />
 
         {/* Footer */}
         <QuizFooter
