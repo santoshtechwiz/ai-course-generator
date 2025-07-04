@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAppSelector, useAppDispatch } from "@/store"
 import { selectSubscription, fetchSubscription } from "@/store/slices/subscription-slice"
+import { syncSubscriptionData } from "@/store/slices/auth-slice"
 import { logger } from "@/lib/logger"
 
 interface NotificationsMenuProps {
@@ -26,10 +27,17 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
   const [isRefreshing, setIsRefreshing] = useState(false)
   const subscription = useAppSelector(selectSubscription)
   const dispatch = useAppDispatch()
-
   useEffect(() => {
-    // Fetch subscription data on mount
+    // Fetch subscription data on mount and sync with auth state
     dispatch(fetchSubscription())
+      .unwrap()
+      .then(data => {
+        // Sync the subscription data to auth state
+        dispatch(syncSubscriptionData(data))
+      })
+      .catch(error => {
+        logger.error("Failed to fetch subscription on mount:", error)
+      })
   }, [dispatch])
 
   const handleOpen = (open: boolean) => {
@@ -38,11 +46,12 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
       refreshCredits()
     }
   }
-
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      await dispatch(fetchSubscription()).unwrap()
+      const data = await dispatch(fetchSubscription()).unwrap()
+      // Sync the subscription data to auth state to ensure consistency
+      dispatch(syncSubscriptionData(data))
     } catch (error) {
       logger.error("Failed to refresh subscription:", error)
     } finally {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { fetchSubscription } from "@/store/slices/subscription-slice"
+import { syncSubscriptionData } from "@/store/slices/auth-slice"
 import { logger } from "@/lib/logger"
 
 const REFRESH_INTERVAL = 180000
@@ -10,11 +11,12 @@ const MIN_REFRESH_INTERVAL = 30000
 const MAX_RETRY_COUNT = 3
 const RETRY_DELAY_BASE = 5000
 
-export function SubscriptionRefresher() {
-  const dispatch = useAppDispatch()
+export function SubscriptionRefresher() {  const dispatch = useAppDispatch()
   const lastFetched = useAppSelector((state) => state.subscription.lastFetched)
   const isLoading = useAppSelector((state) => state.subscription.isLoading)
   const error = useAppSelector((state) => state.subscription.error)
+  const isAuthenticated = useAppSelector((state) => state.auth.status === "authenticated")
+  const userId = useAppSelector((state) => state.auth.user?.id)
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const initialRefreshDoneRef = useRef(false)
@@ -27,9 +29,14 @@ export function SubscriptionRefresher() {
   const checkNetworkConnectivity = useCallback(() => {
     return navigator.onLine
   }, [])
-
   const debouncedFetchWithRetry = useCallback(
     async (force = false) => {
+      // Skip if user is not authenticated
+      if (!isAuthenticated || !userId) {
+        logger.debug("Subscription fetch skipped - user not authenticated")
+        return
+      }
+      
       if (!checkNetworkConnectivity()) {
         logger.warn("Network appears to be offline, skipping subscription fetch")
         return
@@ -52,18 +59,18 @@ export function SubscriptionRefresher() {
           `Subscription fetch retry skipped - attempted too recently (${(now - lastAttemptRef.current) / 1000}s ago)`,
         )
         return
-      }
-
-      if (fetchTimeoutRef.current) {
+      }      if (fetchTimeoutRef.current) {
         clearTimeout(fetchTimeoutRef.current)
         fetchTimeoutRef.current = null
       }
-
+      
       lastAttemptRef.current = now
-
+      
       try {
         logger.info("Fetching subscription data...")
-        await dispatch(fetchSubscription()).unwrap()
+        const subscriptionData = await dispatch(fetchSubscription()).unwrap()
+        // Sync with auth state to ensure consistency across the app
+        dispatch(syncSubscriptionData(subscriptionData))
         retryCountRef.current = 0
         setShowNetworkError(false)
       } catch (err) {
@@ -95,20 +102,20 @@ export function SubscriptionRefresher() {
           retryCountRef.current = 0
         }
       }
-    },
-    [dispatch, isLoading, lastFetched],
+    },    [dispatch, isLoading, lastFetched, isAuthenticated, userId, checkNetworkConnectivity],
   )
-
   useEffect(() => {
-    if (!initialRefreshDoneRef.current) {
+    // Only attempt to fetch if the user is authenticated
+    if (!initialRefreshDoneRef.current && isAuthenticated && userId) {
       logger.info("Initial subscription data fetch")
       debouncedFetchWithRetry(true)
       initialRefreshDoneRef.current = true
+    }    // Only set up refresh interval if user is authenticated
+    if (isAuthenticated && userId) {
+      refreshIntervalRef.current = setInterval(() => {
+        debouncedFetchWithRetry()
+      }, REFRESH_INTERVAL)
     }
-
-    refreshIntervalRef.current = setInterval(() => {
-      debouncedFetchWithRetry()
-    }, REFRESH_INTERVAL)
 
     return () => {
       if (refreshIntervalRef.current) {
@@ -161,6 +168,31 @@ export function SubscriptionRefresher() {
       window.removeEventListener("offline", handleOffline)
     }
   }, [debouncedFetchWithRetry])
+
+  // Reset and refetch when auth state changes
+  useEffect(() => {
+    // If the user becomes authenticated, fetch subscription data
+    if (isAuthenticated && userId) {
+      // Small delay to ensure auth is fully established
+      const timer = setTimeout(() => {
+        logger.info("Auth state changed, refreshing subscription data")
+        initialRefreshDoneRef.current = false // Reset initial fetch flag
+        debouncedFetchWithRetry(true) // Force fetch
+      }, 500)
+      
+      return () => clearTimeout(timer)
+    } else if (!isAuthenticated) {
+      // Clear the interval when user logs out
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+        refreshIntervalRef.current = null
+      }
+      
+      // Reset the retry state
+      retryCountRef.current = 0
+      initialRefreshDoneRef.current = false
+    }
+  }, [isAuthenticated, userId, debouncedFetchWithRetry])
 
   if (!showNetworkError) {
     return null

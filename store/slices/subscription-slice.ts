@@ -58,12 +58,24 @@ export const fetchSubscription = createAsyncThunk<
     logger.debug("Subscription fetch skipped (in-flight or recent)")
     return data ?? DEFAULT_FREE_SUBSCRIPTION
   }
-
   try {
+    // Check if user is authenticated first by checking the auth state
+    const authState = getState().auth;
+    if (!authState.user?.id) {
+      logger.warn("User not authenticated, skipping subscription fetch")
+      return DEFAULT_FREE_SUBSCRIPTION
+    }
+    
+    // Add cache buster to prevent browser caching
+    const cacheBuster = `nocache=${Date.now()}`;
+    
     const res = await withTimeout(
-      fetch("/api/subscriptions/status", {
+      fetch(`/api/subscriptions/status?${cacheBuster}`, {
         headers: {
           Accept: "application/json",
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
         credentials: "include", // ✅ necessary to forward session cookies
       }),
@@ -77,6 +89,11 @@ export const fetchSubscription = createAsyncThunk<
 
     if (!res.ok) {
       logger.warn(`Subscription API error: ${res.status}`)
+      // Don't return default if we already have data - prevents reset to free on temporary errors
+      if (data && data.subscriptionPlan !== "FREE") {
+        logger.info("Keeping existing subscription data instead of resetting to FREE due to API error")
+        return data
+      }
       return DEFAULT_FREE_SUBSCRIPTION
     }
 

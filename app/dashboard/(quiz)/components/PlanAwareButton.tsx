@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
 import { type PlanType } from "../../../../hooks/useQuizPlan"
+import { useAppSelector } from "@/store"
+import { selectSubscriptionPlan } from "@/store/slices/subscription-slice"
 
 interface CustomButtonStates {
   default?: {
@@ -58,7 +60,7 @@ export default function PlanAwareButton({
   hasCredits = true,
   loadingLabel = "Processing...",
   requiredPlan = "FREE",
-  currentPlan = "FREE",
+  currentPlan,
   fallbackHref = "/dashboard/subscription",
   onPlanRequired,
   onInsufficientCredits,
@@ -69,7 +71,10 @@ export default function PlanAwareButton({
   const [isLoadingState, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
-
+  const reduxSubscriptionPlan = useAppSelector(selectSubscriptionPlan)
+  
+  // Use provided plan or get from Redux state if not provided
+  const effectivePlan = currentPlan || reduxSubscriptionPlan || "FREE"
   // Check if the user's plan meets requirements
   const meetsRequirement = (): boolean => {
     // Plan hierarchy for comparison
@@ -80,8 +85,8 @@ export default function PlanAwareButton({
       ULTIMATE: 3,
     }
 
-    // Check if current plan is sufficient
-    return planHierarchy[currentPlan] >= planHierarchy[requiredPlan]
+    // Check if current plan is sufficient, using the effective plan
+    return planHierarchy[effectivePlan as PlanType] >= planHierarchy[requiredPlan]
   }
 
   // Extract the button states based on conditions
