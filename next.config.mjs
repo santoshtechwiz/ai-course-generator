@@ -2,10 +2,7 @@ const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
   poweredByHeader: false, // Remove X-Powered-By header for security
-  experimental: {
-    turbopack: false, // Désactive Turbopack
-  },
-  // Optimize image loading
+ 
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [320, 420, 640, 768, 1024, 1280, 1440, 1920],

@@ -3,11 +3,12 @@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Share2, Facebook, Twitter, Check, LinkIcon, Linkedin } from "lucide-react"
 import { useState } from "react"
-import { Button } from "./ui/button"
+
 
 import { buildQuizUrl } from "@/lib/utils"
 import { useToast } from "@/hooks"
 import type { QuizType } from "@/app/types/quiz-types"
+import { Button } from "../ui/button"
 
 export function ShareButton({ slug, title, type }: { slug: string; title: string; type: QuizType }) {
   const [isLinkCopied, setIsLinkCopied] = useState(false)

@@ -16,3 +16,6 @@ export {
   QuizzesSkeleton,
   SearchBar
 };
+
+// Also export default exports for named imports
+export default QuizDashboardWrapper;

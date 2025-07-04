@@ -73,9 +73,8 @@ export default function Footer() {
       },
     },
   }
-
   return (
-    <footer className="w-full border-t border-border bg-background mt-auto">
+    <footer className="w-full border-t border-border bg-background mt-auto relative print:hidden">
       <motion.div
         className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10"
         variants={containerAnimation}
