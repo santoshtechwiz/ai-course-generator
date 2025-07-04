@@ -30,6 +30,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { AsyncNavLink } from "@/components/ui"
 import { cn } from "@/lib/utils"
+import type { QuizType } from "@/app/types/quiz-types"
 
 interface QuizCardProps {
   title: string
@@ -37,7 +38,7 @@ interface QuizCardProps {
   questionCount: number
   isPublic?: boolean
   slug: string
-  quizType: "mcq" | "openended" | "blanks" | "code" | "flashcard"
+  quizType: QuizType
   estimatedTime: string
   completionRate?: number
   difficulty?: "Easy" | "Medium" | "Hard"
@@ -66,6 +67,7 @@ function QuizCardComponent({
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
+  const [isButtonHovered, setIsButtonHovered] = useState(false)
 
   // Enhanced quiz type information with gradients and modern styling
   const quizTypeInfo = {

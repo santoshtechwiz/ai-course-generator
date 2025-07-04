@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useMemo } from "react"
+import React, { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -32,7 +32,7 @@ function extractQuizzes(data: { pages?: { quizzes: QuizListItem[] }[] } | undefi
   return data.pages.flatMap((page) => page?.quizzes || [])
 }
 
-export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps) {
+function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientProps) {
   const router = useRouter()
 
   // ----- Filters -----
@@ -172,9 +172,14 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
     
     return counts;
   }, [quizzes])
-
   // Error fallback component
-  const ErrorFallback = ({ error, resetErrorBoundary }) => (
+  const ErrorFallback = ({ 
+    error, 
+    resetErrorBoundary 
+  }: { 
+    error: Error; 
+    resetErrorBoundary: () => void 
+  }) => (
     <motion.div 
       className="rounded-lg border bg-card p-6 shadow-sm flex flex-col items-center"
       initial={{ opacity: 0, y: 10 }}
@@ -271,8 +276,10 @@ export function QuizzesClient({ initialQuizzesData, userId }: QuizzesClientProps
               </div>
             </>
           )}
-        </ErrorBoundary>
-      </motion.div>
+        </ErrorBoundary>      </motion.div>
     </div>
   )
 }
+
+// Export the component with the correct name
+export const QuizzesClient = QuizzesClientComponent;
