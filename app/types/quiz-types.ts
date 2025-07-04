@@ -275,3 +275,15 @@ export interface MultipleChoiceQuestion {
   options: string[]
   correctAnswer: string
 }
+export interface QuizListItem{
+  quizType: string;
+  id: string
+  title: string
+  type: QuizType
+  createdAt: string
+  updatedAt: string
+  totalQuestions: number
+  averageScore?: number // Optional for quizzes that have been taken multiple times
+  difficulty?: DifficultyLevel // Optional for quizzes with varying difficulty
+  category?: string // Optional category for better organization
+}
