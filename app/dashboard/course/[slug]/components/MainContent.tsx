@@ -3,9 +3,9 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth, useProgress, useToast } from "@/hooks" // Fix: Changed from "@/hooks/use-toast"
+import { useProgress, useToast } from "@/hooks" // Fix: Changed from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import { Play, Lock, User, Award, Badge, ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
@@ -20,7 +20,8 @@ import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
 import { VideoDebug } from "./video/components/VideoDebug"
 import { Card, CardContent } from "@/components/ui/card"
 import { AnimatePresence, motion } from "framer-motion"
-import { AuthUser } from "@/store/slices/auth-slice"
+import { User } from "@/modules/auth"
+import { useAuth } from "@/modules/auth"
 import { isAdmin } from "@/lib/auth"
 
 interface ModernCoursePageProps {
@@ -41,13 +42,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Always define all hooks at the top level - no early returns or conditions before hooks
   console.log(course);
   const router = useRouter()
-  // Remove useSession
-  // const { data: session } = useSession()
+  // Remove useSession  // const { data: session } = useSession()
   const { toast } = useToast() // Fix: Properly destructure toast from useToast hook
   const dispatch = useAppDispatch()
-
-  // Use Redux auth-slice for user
-  const user: AuthUser | null = useAppSelector((state) => state.auth.user)
+  // Use new auth system
+  const { user, subscription } = useAuth()
 
   // Local state
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -502,7 +501,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
           </p>
           <div className="space-y-3">
             <Button onClick={() => (window.location.href = "/api/auth/signin")} className="w-full" size="lg">
-              <User className="h-4 w-4 mr-2" />
+              <UserIcon className="h-4 w-4 mr-2" />
               Sign In
             </Button>
             <Button variant="outline" onClick={() => setShowAuthPrompt(false)} className="w-full">
@@ -513,12 +512,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       </Card>
     </div>
   )
-
   // Simplify subscription status checking - determine it once
   const userSubscription = useMemo(() => {
-    if (!user) return null
-    return user.subscriptionPlan || null
-  }, [user])
+    if (!subscription) return null
+    return subscription.plan || null
+  }, [subscription])
 
   // Determine access levels based on subscription
   const accessLevels: AccessLevels = useMemo(() => {

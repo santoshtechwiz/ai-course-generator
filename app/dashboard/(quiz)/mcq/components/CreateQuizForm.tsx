@@ -25,14 +25,12 @@ import { quizSchema } from "@/schema/schema"
 
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
-import { useAppSelector } from "@/store"
-import { selectTokenUsage } from "@/store/slices/subscription-slice"
+import { useSubscription } from "@/modules/auth"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { SubscriptionSlider } from "../../../subscription/components/SubscriptionSlider"
-import useSubscription from "@/hooks/use-subscription"
 
 // Define proper TypeScript interfaces for better type safety
 interface Subscription {
@@ -59,14 +57,11 @@ export default function CreateQuizForm({
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-  const [submissionError, setSubmissionError] = React.useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = React.useState(false)
+  const [submissionError, setSubmissionError] = React.useState<string | null>(null);
+   const [isSuccess, setIsSuccess] = React.useState(false)
   const { data: session } = useSession()
-  const { data: subscriptionData } = useSubscription() as {
-    data?: Subscription
-    status?: string
-  }
-  const tokenUsageData = useAppSelector(selectTokenUsage)
+  const subscription = useSubscription()
+  const subscriptionData = subscription
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title || "",

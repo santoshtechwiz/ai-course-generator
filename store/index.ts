@@ -3,8 +3,7 @@ import { persistReducer, persistStore } from "redux-persist"
 import storage from "redux-persist/lib/storage"
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux"
 
-// Reducers
-import authReducer from "./slices/auth-slice"
+// Core reducers (no auth slices since we use session-based auth)
 import quizReducer from "./slices/quiz-slice"
 import subscriptionReducer from "./slices/subscription-slice"
 import flashcardReducer from "./slices/flashcard-slice"
@@ -12,16 +11,7 @@ import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
 import userReducer from "./slices/user-slice"
 
-// Middleware
-import subscriptionListenerMiddleware from "./middleware/subscriptionMiddleware"
-
-// 🔐 Persist configs
-const authPersistConfig = {
-  key: "auth",
-  storage,
-  whitelist: ["token", "user"],
-}
-
+// Persist configs for non-auth slices
 const coursePersistConfig = {
   key: "course",
   storage,
@@ -80,26 +70,31 @@ const subscriptionPersistConfig = {
   whitelist: ["data"], // ✅ Only persist the subscription data
 }
 
-// ✅ Root reducer with persisted slices
+// Root reducer with only non-auth slices (auth is now session-based)
 const rootReducer = combineReducers({
-  auth: persistReducer(authPersistConfig, authReducer),
+  // Core slices
+  subscription: persistReducer(subscriptionPersistConfig, subscriptionReducer),
+  user: userReducer,
+  
+  // Other slices
   quiz: persistReducer(quizPersistConfig, quizReducer),
-  subscription: persistReducer(subscriptionPersistConfig, subscriptionReducer), // ✅
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
-  user: userReducer,
 })
 
-// ✅ Store setup
+// ✅ Clean store setup without auth middleware (session-based auth)
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredActions: [
+          "persist/PERSIST", 
+          "persist/REHYDRATE",
+        ],
       },
-    }).prepend(subscriptionListenerMiddleware.middleware),
+    }),
 })
 
 // ✅ Persistor for <PersistGate />

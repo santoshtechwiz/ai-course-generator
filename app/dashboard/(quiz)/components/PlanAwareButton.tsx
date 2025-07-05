@@ -9,8 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import { Loader2, Check, Lock, AlertCircle } from "lucide-react"
 import { type PlanType } from "../../../../hooks/useQuizPlan"
-import { useAppSelector } from "@/store"
-import { selectSubscriptionPlan, selectIsSubscribed } from "@/store/slices/subscription-slice"
+// ✅ UNIFIED: Using unified auth system
+import { useAuth, useSubscription } from "@/modules/auth"
 
 interface CustomButtonStates {
   default?: {
@@ -66,8 +66,7 @@ export default function PlanAwareButton({
   loadingLabel = "Processing...",
   requiredPlan = "FREE",
   currentPlan,
-  fallbackHref = "/dashboard/subscription",
-  onPlanRequired,
+  fallbackHref = "/dashboard/subscription",  onPlanRequired,
   onInsufficientCredits,
   customStates,
   className = "",
@@ -78,12 +77,12 @@ export default function PlanAwareButton({
   const { toast } = useToast()
   const router = useRouter()
   
-  // Get subscription details from Redux
-  const reduxSubscriptionPlan = useAppSelector(selectSubscriptionPlan)
-  const isAlreadySubscribed = useAppSelector(selectIsSubscribed)
-  
-  // Use provided plan or get from Redux state if not provided
-  const effectivePlan = currentPlan || reduxSubscriptionPlan || "FREE"
+  // ✅ UNIFIED: Get subscription details from unified auth system
+  const { isAuthenticated } = useAuth()
+  const subscription = useSubscription()
+    // Use provided plan or get from unified auth state if not provided
+  const effectivePlan = currentPlan || subscription?.plan || "FREE"
+  const isAlreadySubscribed = subscription?.status === 'active' || false
   
   // Check if the user's plan meets requirements
   const meetsRequirement = (): boolean => {

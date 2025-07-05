@@ -5,7 +5,6 @@ import { signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, CheckCircle } from 'lucide-react'
 import { useAppDispatch } from '@/store'
-import { logout } from '@/store/slices/auth-slice'
 import { resetSubscriptionState } from '@/store/slices/subscription-slice'
 
 /**
@@ -84,11 +83,11 @@ export default function SignOutPage() {  const [isLoading, setIsLoading] = useSt
       console.error("Error clearing storage:", error)
     }
   }
+  
   useEffect(() => {
     const completeSignOut = async () => {
       try {
-        // 1. First clear Redux state
-        dispatch(logout())
+        // 1. Clear Redux state (subscription only, auth is session-based now)
         dispatch(resetSubscriptionState())
         
         // 2. Clear all client-side storage

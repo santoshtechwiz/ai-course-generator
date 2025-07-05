@@ -7,8 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { FEATURES, PLAN_FEATURES, FeatureCategory } from "./subscription-plans"
 import type { SubscriptionPlanType } from "../../../types/subscription"
 import { useMemo } from "react"
-import { useAppSelector } from "@/store"
-import { selectSubscription } from "@/store/slices/subscription-slice"
+import { useSubscription } from "@/modules/auth"
 
 /**
  * FeatureCategoryList Component

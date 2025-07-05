@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/toaster"
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 import CourseAIState from "@/components/development/CourseAIState"
 
-import RootLayoutProvider from "@/providers/root-layout-provider"
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
 
@@ -25,20 +24,16 @@ export default async function DashboardLayout({
   const session = await getAuthSession()
 
   return (
-    <RootLayoutProvider session={session}>
-      <div className="min-h-screen flex flex-col font-body">
-        <DashboardShell>
+    <div className="min-h-screen flex flex-col font-body">
+      <DashboardShell>
 
 
           <main className="flex-1 pt-16 ">
             {children}
-          </main>
-
-          <Toaster />
+          </main>          <Toaster />
           <Chatbot userId={session?.user?.id} />
           {process.env.NODE_ENV !== "production" && <CourseAIState />}
         </DashboardShell>
       </div>
-    </RootLayoutProvider>
   )
 }

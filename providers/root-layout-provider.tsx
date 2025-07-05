@@ -8,15 +8,13 @@ import { Suspense, useState, useEffect } from "react"
 import { AnimationProvider } from "./animation-provider"
 import { SEOTrackingProvider } from "@/providers/seo-tracking-provider"
 import SubscriptionProvider from "./SubscriptionProvider"
+import { AppProviders } from "./AppProviders"
 // Removed duplicate loader imports
 import { TooltipProvider } from "@/components/ui/tooltip"
 import React from "react"
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
-import { store, persistor, AppDispatch } from "@/store"
-import { useDispatch } from "react-redux"
-import { initializeAuth } from "@/store/slices/auth-slice"
-import { AuthProvider } from "@/context/auth-context"
+import { store, persistor } from "@/store"
 import { Loader } from "../components/ui/loader"
 
 // Create a query client with optimized settings
@@ -37,18 +35,6 @@ interface RootLayoutProviderProps {
   session: any
 }
 
-function AuthInitializer() {
-  const dispatch = useDispatch<AppDispatch>()
-
-  useEffect(() => {
-    // Initialize auth state when the app loads
-    dispatch(initializeAuth())
-  }, [dispatch])
-
-  return null
-}
-
-
 export function RootLayoutProvider({ children, session }: RootLayoutProviderProps) {
   // Create QueryClient with proper initialization
   const [queryClient] = useState(() => createQueryClient())
@@ -61,11 +47,8 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
 
   return (
     <React.StrictMode>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <AuthInitializer />
-          <AuthProvider session={session}>
-
+      <Provider store={store}>        <PersistGate loading={null} persistor={persistor}>
+          <AppProviders session={session}>
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
@@ -76,20 +59,21 @@ export function RootLayoutProvider({ children, session }: RootLayoutProviderProp
               enableColorScheme={true}
             >
               <SEOTrackingProvider>
-                <QueryClientProvider client={queryClient}>                  <TooltipProvider>
-                  <SubscriptionProvider>
-                    <AnimationProvider>
-                      <Suspense fallback={<Loader context="loading" className="w-8 h-8 mx-auto mt-10" />}>
-                        <Toaster position="top-right" closeButton richColors />
-                        {mounted && children}
-                      </Suspense>
-                    </AnimationProvider>
-                  </SubscriptionProvider>
-                </TooltipProvider>
+                <QueryClientProvider client={queryClient}>
+                  <TooltipProvider>
+                    <SubscriptionProvider>
+                      <AnimationProvider>
+                        <Suspense fallback={<Loader context="loading" className="w-8 h-8 mx-auto mt-10" />}>
+                          <Toaster position="top-right" closeButton richColors />
+                          {mounted && children}
+                        </Suspense>
+                      </AnimationProvider>
+                    </SubscriptionProvider>
+                  </TooltipProvider>
                 </QueryClientProvider>
               </SEOTrackingProvider>
             </ThemeProvider>
-          </AuthProvider>
+          </AppProviders>
         </PersistGate>
       </Provider>
     </React.StrictMode>

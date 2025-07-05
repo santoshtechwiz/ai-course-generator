@@ -6,7 +6,7 @@ import githubLogo from "../public/github.png"
 import googleLogo from "../public/google.png"
 import facebookLogo from "../public/facebook.png"
 import { Loader2 } from "lucide-react"
-import { useAuth } from "@/providers/unified-auth-provider"
+import { useAuth } from "@/modules/auth"
 
 const buttonVariants = {
   hidden: { opacity: 0, y: 20 },

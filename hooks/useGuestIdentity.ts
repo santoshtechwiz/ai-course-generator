@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/context/auth-context';
+import { useAuth } from '@/modules/auth';
 
 /**
  * Hook for managing user identity, handling both authenticated and guest users

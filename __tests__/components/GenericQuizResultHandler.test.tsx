@@ -2,12 +2,12 @@ import React from 'react'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import { configureStore } from '@reduxjs/toolkit'
 import { Provider } from 'react-redux'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/modules/auth'
 import { useRouter } from 'next/navigation'
 import GenericQuizResultHandler from '@/app/dashboard/(quiz)/components/QuizResultHandler'
 
 // Mocks
-jest.mock('@/hooks/use-auth', () => ({
+jest.mock('@/modules/auth', () => ({
   useAuth: jest.fn(),
 }))
 jest.mock('next/navigation', () => ({

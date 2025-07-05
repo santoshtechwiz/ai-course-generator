@@ -17,7 +17,7 @@ import { useMediaQuery, useToast } from "@/hooks"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { useAppSelector, useAppDispatch } from "@/store"
-import { selectSubscription, fetchSubscription } from "@/store/slices/subscription-slice"
+import { useSubscription as useUnifiedSubscription } from "@/modules/auth"
 import useSubscription from "@/hooks/use-subscription"
 import {
   PricingPageProps,

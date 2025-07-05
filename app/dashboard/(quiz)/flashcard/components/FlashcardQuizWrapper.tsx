@@ -31,7 +31,7 @@ import FlashcardQuiz from "./FlashcardQuiz";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { NoResults } from "@/components/ui/no-results";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 import { GlobalLoader } from "@/components/ui/loader";
 import { QuizSchema } from "@/lib/seo-manager-new";
@@ -49,8 +49,7 @@ export default function FlashcardQuizWrapper({
   const initRef = useRef(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { isAuthenticated, isInitialized, login } = useAuth();
+  const searchParams = useSearchParams();  const { isAuthenticated, user, isLoading } = useAuth();
 
   const isReviewMode = searchParams?.get("review") === "true";
   const isResetMode = searchParams?.get("reset") === "true";
@@ -64,7 +63,7 @@ export default function FlashcardQuizWrapper({
   const shouldRedirectToResults = useSelector(selectShouldRedirectToResults);
   const error = useSelector(selectQuizError);
   const requiresAuth = useSelector(selectRequiresAuth);
-  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  const userId = user?.id;
   const quizId = useSelector((state: RootState) => state.flashcard.quizId);
   const quizData = useSelector((state: RootState) => state.flashcard.results);
   const quizOwnerId = useSelector(
@@ -72,7 +71,7 @@ export default function FlashcardQuizWrapper({
   );
   // Initial load: clear state if needed and fetch quiz
   useEffect(() => {
-    if (!slug || !isInitialized) return;
+    if (!slug || isLoading) return;
 
     // In review mode, only clear state if we don't have questions yet
     if (isResetMode || (isReviewMode && questions.length === 0)) {
@@ -106,17 +105,17 @@ export default function FlashcardQuizWrapper({
     isReviewMode,
     questions.length,
     slug,
-    isInitialized,
+    !isLoading,
     searchParams,
   ]);
 
   // Redirect if auth required
   useEffect(() => {
-    if (requiresAuth && !isAuthenticated && isInitialized) {
+    if (requiresAuth && !isAuthenticated && !isLoading) {
       dispatch(setPendingFlashCardAuth(true));
       router.push(`/auth/signin?callbackUrl=/dashboard/flashcard/${slug}`);
     }
-  }, [requiresAuth, isAuthenticated, isInitialized, dispatch, router, slug]); // Redirect to results
+  }, [requiresAuth, isAuthenticated, isLoading, dispatch, router, slug]); // Redirect to results
   useEffect(() => {
     // Only redirect to results if we're not in review mode
     if (
@@ -279,7 +278,7 @@ export default function FlashcardQuizWrapper({
     dispatch(completeFlashCardQuiz(results));
   };
   // Loading Skeletons
-  if (quizStatus === "loading" || !isInitialized) {
+  if (quizStatus === "loading" || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <GlobalLoader size="sm" />
@@ -315,11 +314,11 @@ export default function FlashcardQuizWrapper({
   }
 
   // Sign-in prompt for auth-required quizzes
-  if (requiresAuth && !isAuthenticated && isInitialized) {
+  if (requiresAuth && !isAuthenticated && !isLoading) {
     return (
       <SignInPrompt
         onSignIn={() =>
-          login("credentials", { callbackUrl: `/dashboard/flashcard/${slug}` })
+          router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/flashcard/${slug}`)}`)
         }
         onRetake={() => {
           dispatch(clearQuizState());
@@ -386,13 +385,11 @@ export default function FlashcardQuizWrapper({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-    >
-      <QuizSchema
+    >      <QuizSchema
         name={quizTitle || title || "Flashcard Quiz"}
-        quizUrl={`https://courseai.io/dashboard/flashcard/${slug}`}
+        url={`https://courseai.io/dashboard/flashcard/${slug}`}
         description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
         numberOfQuestions={currentQuestions?.length}
-        timeRequired="PT15M"
       />
       <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
         <QuizActions

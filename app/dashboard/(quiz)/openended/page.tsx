@@ -5,7 +5,7 @@ import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 
 import OpenEndedQuizForm from "./components/OpenEndedQuizForm";
-import { useAuth } from "@/hooks/use-auth"; // Updated import
+import { useAuth } from "@/modules/auth";
 
 const OpenEndedPage = () => {
   const { isAuthenticated } = useAuth(); // Use consolidated hook

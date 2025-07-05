@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { useAuth } from "@/modules/auth"
+import { useAuth } from "../providers/AuthProvider"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 
 export type PlanType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE"
@@ -57,10 +57,11 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
     ...DEFAULT_CONFIG,
     ...config,
   }), [config])
+
   return useMemo(() => {
     const currentPlan = subscription?.plan || "FREE"
-    const isSubscribed = subscription?.status === 'active' || false
-    const credits = user?.credits || 0
+    const isSubscribed = subscription?.isSubscribed || false
+    const credits = user?.credits || subscription?.credits || 0
     const hasCredits = credits >= requiredCredits
 
     const maxQuestions = mergedConfig.maxQuestions[currentPlan] || DEFAULT_CONFIG.maxQuestions.FREE

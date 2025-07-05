@@ -11,23 +11,18 @@ import { ReferralSystem } from "./ReferralSystem"
 import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
-import { useAppDispatch, useAppSelector } from "@/store"
-import { fetchSubscription, selectSubscription, selectTokenUsage } from "@/store/slices/subscription-slice"
+import { useSubscription, useAuth } from "@/modules/auth"
 
-export function AccountOverview({ userId }: { userId: string }) {
-  const { data: session, status } = useSession()
-  const dispatch = useAppDispatch()
-  const subscription = useAppSelector(selectSubscription)
-  const tokenUsage = useAppSelector(selectTokenUsage)
-  const isLoading = useAppSelector((state) => state.subscription.isLoading)
-  const error = useAppSelector((state) => state.subscription.error)
+export function AccountOverview({ userId }: { userId: string }) {  const { data: session, status } = useSession()
+  const subscription = useSubscription()
+  const { user, refreshUserData, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (userId) {
-      dispatch(fetchSubscription())
+      refreshUserData().catch(console.error)
     }
-  }, [dispatch, userId])
+  }, [refreshUserData, userId])
 
   const handleManageSubscription = () => {
     router.push("/dashboard/subscription")
@@ -35,12 +30,12 @@ export function AccountOverview({ userId }: { userId: string }) {
 
   if (isLoading) {
     return <AccountOverviewSkeleton />
-  }
+  }  const tokenUsage = 0 // TODO: Track token usage
+  const tokenLimit = user?.credits || 0
+  const tokenUsagePercentage = tokenLimit > 0 ? Math.round((tokenUsage / tokenLimit) * 100) : 0
 
-  const tokenUsagePercentage = tokenUsage?.percentage || 0
-
-  const formattedExpirationDate = subscription?.expirationDate
-    ? new Date(subscription.expirationDate).toLocaleDateString("en-US", {
+  const formattedExpirationDate = subscription?.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -76,21 +71,18 @@ export function AccountOverview({ userId }: { userId: string }) {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Subscription Summary */}
+            </div>            {/* Subscription Summary */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Subscription</h3>
-                <PlanBadge plan={subscription?.subscriptionPlan || "FREE"} />
+                <PlanBadge plan={subscription?.plan || "FREE"} />
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center">
-                    <StatusBadge status={subscription?.status || "INACTIVE"} />
-                    <span className="ml-2">
-                      {subscription?.isSubscribed ? "Active Subscription" : "No Active Subscription"}
+                    <StatusBadge status={subscription?.status || "INACTIVE"} />                    <span className="ml-2">
+                      {subscription?.status === 'active' ? "Active Subscription" : "No Active Subscription"}
                     </span>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleManageSubscription}>
@@ -108,7 +100,7 @@ export function AccountOverview({ userId }: { userId: string }) {
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">Available Credits</span>
                   <span className="font-medium">
-                    {tokenUsage?.tokensUsed || 0} / {tokenUsage?.total || 0}
+                    {tokenUsage} / {tokenLimit}
                   </span>
                 </div>
                 <Progress value={tokenUsagePercentage} className="h-2" />

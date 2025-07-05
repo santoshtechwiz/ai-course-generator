@@ -16,71 +16,41 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import type { ReactNode } from "react"
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { selectSubscription, selectSubscriptionLoading, selectSubscriptionData, fetchSubscription } from "@/store/slices/subscription-slice"
-import { useAppDispatch, useAppSelector } from "@/store"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { syncSubscriptionData } from "@/store/slices/auth-slice"
+// ✅ UNIFIED: Using unified auth system only
+import { useAuth } from "@/modules/auth"
 
 export function UserMenu({ children }: { children?: ReactNode }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth()
-  const dispatch = useAppDispatch()
-  const subscriptionData = useAppSelector(selectSubscription)
-  const isLoadingSubscription = useAppSelector(selectSubscriptionLoading)
+  // ✅ UNIFIED: Using unified auth system - single source of truth
+  const { isAuthenticated, isLoading: isAuthLoading, user, subscription, signOut } = useAuth()
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const router = useRouter()
-  const hasInitializedRef = useRef(false)
-  // Add fetch error tracking
-  const [fetchErrors, setFetchErrors] = useState(0)
 
   const handleMenuOpen = (open: boolean) => {
     setIsMenuOpen(open)
-    // Only fetch subscription if authenticated and not too many errors
-    if (open && isAuthenticated && !isLoadingSubscription && fetchErrors < 3) {
-      fetchSubscriptionData()
-    }
   }
-  // Create a wrapper function for fetching subscription data with error handling
-  const fetchSubscriptionData = useCallback(() => {
-    if (!isAuthenticated || isLoggingOut) return;
-    
-    // Use a try-catch to prevent unhandled promise rejections
-    try {
-      dispatch(fetchSubscription())
-        .unwrap()
-        .then(data => {
-          // Sync the subscription data to auth state to ensure consistency
-          dispatch(syncSubscriptionData(data));
-        })
-        .catch(error => {
-          console.log("Subscription fetch error handled:", error?.message || "Unknown error");
-          setFetchErrors(prev => prev + 1);
-        });
-    } catch (err) {
-      console.warn("Error initiating subscription fetch:", err);
-    }
-  }, [dispatch, isAuthenticated, isLoggingOut]);
-
-  useEffect(() => {
-    // Only fetch subscription on initial load if user is authenticated, not logging out, and error count is low
-    if (isAuthenticated && !isLoggingOut && !hasInitializedRef.current && fetchErrors < 3) {
-      hasInitializedRef.current = true;
-      fetchSubscriptionData();
-    }
-  }, [isAuthenticated, isLoggingOut, fetchSubscriptionData, fetchErrors])
-
 
   const handleSignIn = () => {
     router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
   }
 
+  const handleSignOut = async () => {
+    setIsLoggingOut(true)
+    try {
+      await signOut()
+      router.push('/')
+    } catch (error) {
+      console.error("Sign out error:", error)
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
   const getSubscriptionBadge = () => {
-    if (isLoadingSubscription) {
+    if (isAuthLoading) {
       return (
         <Badge variant="outline" className="ml-auto">
           <Skeleton className="h-4 w-16" />
@@ -88,33 +58,38 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       )
     }
 
-    // Default to FREE if there are fetch errors or no subscription data
-    const plan = fetchErrors >= 3 ? "FREE" : (subscriptionData?.data?.subscriptionPlan || "FREE")
+    const plan = subscription?.plan || "FREE"
+    const status = subscription?.status || "inactive"
+    
+    // Show plan with status if not active (except for FREE plan)
+    const displayText = plan !== "FREE" && status !== "active" 
+      ? `${plan} ${status.charAt(0).toUpperCase() + status.slice(1)}` 
+      : plan
 
     const variants = {
-      PRO: "default",
-      BASIC: "secondary",
-      ULTIMATE: "success",
+      PREMIUM: status === "active" ? "default" : "outline",
+      PRO: status === "active" ? "default" : "outline", 
+      BASIC: status === "active" ? "secondary" : "outline",
       FREE: "outline",
     } as const
 
     return (
       <Badge
-        variant={variants[plan as keyof typeof variants] === "success" ? "default" : variants[plan as keyof typeof variants] || "outline"}
+        variant={variants[plan as keyof typeof variants] || "outline"}
         className="ml-auto"
       >
-        {plan}
+        {displayText}
       </Badge>
     )
   }
 
   const getCreditsDisplay = () => {
-    if (isLoadingSubscription) {
+    if (isAuthLoading) {
       return <Skeleton className="h-4 w-12 ml-1" />
     }
 
-    // Default to 0 credits if there are fetch errors
-    const credits = fetchErrors >= 3 ? 0 : (subscriptionData?.data?.credits ?? 0)
+    // Credits come from the user object 
+    const credits = user?.credits ?? 0
     return <span className="text-xs text-muted-foreground ml-1">({credits} credits)</span>
   }
 
@@ -124,17 +99,16 @@ export function UserMenu({ children }: { children?: ReactNode }) {
       variant="ghost" 
       className="relative h-8 w-8 rounded-full hover:bg-primary/10 transition-all duration-200"
       aria-label="User menu"
-    >
-      <Avatar className="h-8 w-8 ring-2 ring-transparent hover:ring-primary/20 transition-all duration-200">
-        <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
+    >      <Avatar className="h-8 w-8 ring-2 ring-transparent hover:ring-primary/20 transition-all duration-200">
+        <AvatarImage src={user?.avatarUrl ?? undefined} alt={user?.name ?? "User"} />
         <AvatarFallback className="bg-primary/5 text-primary">
-          {isLoadingSubscription ? <GlobalLoader size="xs" /> : user?.name?.[0] ?? "U"}
+          {isAuthLoading ? <GlobalLoader size="xs" /> : user?.name?.[0] ?? "U"}
         </AvatarFallback>
       </Avatar>
     </Button>
   )
 
-  // Show nothing until auth state is resolved to prevent flicker
+  // Show loading state
   if (isAuthLoading) {
     return (
       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -143,111 +117,103 @@ export function UserMenu({ children }: { children?: ReactNode }) {
     )
   }
 
-  // For non-authenticated users, show sign-in button
+  // Show sign in button for non-authenticated users
   if (!isAuthenticated) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
+      <Button 
         onClick={handleSignIn}
-        className="transition-all duration-200 hover:bg-primary/10 hover:text-primary flex gap-1.5 items-center h-9 px-3"
+        size="sm" 
+        className="bg-primary hover:bg-primary/90 text-white font-medium"
       >
-        <LogIn className="h-4 w-4" />
+        <LogIn className="mr-2 h-4 w-4" />
         Sign In
       </Button>
     )
   }
 
-  // For authenticated users, show dropdown menu
   return (
-    <>
-      <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
-        <DropdownMenuTrigger asChild>
-          {menuTrigger}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          className="w-56 animate-in fade-in-50 duration-100" 
-          align="end" 
-          forceMount
-        >
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              {user?.name ? 
-                <p className="font-medium text-sm text-primary/90">{user.name}</p> : 
-                <Skeleton className="h-4 w-24" />
-              }
-              {user?.email ? (
-                <p className="w-full truncate text-xs text-muted-foreground">{user.email}</p>
-              ) : (
-                <Skeleton className="h-3 w-32" />
-              )}
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/profile" className="cursor-pointer hover:text-primary transition-colors">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/account" className="cursor-pointer hover:text-primary transition-colors flex items-center">
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Account</span>
+    <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpen}>
+      <DropdownMenuTrigger asChild>
+        {menuTrigger}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent 
+        className="w-72 p-0" 
+        align="end" 
+        forceMount 
+        side="bottom"
+        sideOffset={8}
+      >
+        {/* User Info Header */}
+        <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-secondary/5">
+          <div className="flex items-center space-x-3">            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+              <AvatarImage src={user?.avatarUrl ?? undefined} alt={user?.name ?? "User"} />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+                {user?.name?.[0] ?? "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {user?.name ?? "User"}
+                </p>
+                {user?.isAdmin && (
+                  <Crown className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </p>
+              <div className="flex items-center mt-2">
                 {getSubscriptionBadge()}
                 {getCreditsDisplay()}
-              </Link>
-            </DropdownMenuItem>
-
-            {user?.isAdmin && (
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/admin" className="cursor-pointer hover:text-primary transition-colors">
-                  <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                  <span>Admin</span>
-                </Link>
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={async () => {
-              setIsLoading(true)
-              setIsLoggingOut(true)
-              try {
-                await logout()
-              
-              } catch (error) {
-                console.error("Logout failed:", error)
-              } finally {
-                setIsLoading(false)
-                setIsLoggingOut(false)
-              }
-            }}
-            disabled={isLoading}
-            className="cursor-pointer hover:text-red-500 transition-colors"
-          >            {isLoading ? (
-              <div className="flex items-center">
-                <GlobalLoader size="xs" className="mr-2" />
-                Logging out...
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Menu Items */}
+        <div className="p-2">
+          <DropdownMenuGroup>
+            <Link href="/dashboard/account">
+              <DropdownMenuItem className="cursor-pointer p-3 hover:bg-primary/5">
+                <User className="mr-3 h-4 w-4 text-primary" />
+                <span className="font-medium">Account Settings</span>
+              </DropdownMenuItem>
+            </Link>
+            
+            <Link href="/dashboard/subscription">
+              <DropdownMenuItem className="cursor-pointer p-3 hover:bg-primary/5">
+                <CreditCard className="mr-3 h-4 w-4 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Subscription</span>
+                  <span className="text-xs text-muted-foreground">
+                    Manage your plan
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            </Link>
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator className="my-2" />
+
+          <DropdownMenuItem 
+            className="cursor-pointer p-3 hover:bg-destructive/5 text-destructive"
+            onClick={handleSignOut}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? (
+              <GlobalLoader size="xs" className="mr-3" />
             ) : (
-              <>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </>
+              <LogOut className="mr-3 h-4 w-4" />
             )}
+            <span className="font-medium">
+              {isLoggingOut ? "Signing out..." : "Sign Out"}
+            </span>
           </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {/* Modal dialog for logout spinner */}
-      <Dialog open={isLoading}>
-        <DialogContent className="flex flex-col items-center gap-4 py-8">
-          <DialogTitle className="sr-only">Logging out</DialogTitle>          <GlobalLoader size="md" className="text-primary" />
-          <div className="text-lg font-semibold">Logging out...</div>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
+
+export default UserMenu

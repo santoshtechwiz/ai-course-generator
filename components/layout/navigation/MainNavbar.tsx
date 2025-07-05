@@ -14,8 +14,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import Logo from "./Logo"
-import useSubscription from "@/hooks/use-subscription"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth, useSubscription } from "@/modules/auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
 
@@ -27,10 +26,13 @@ import { AsyncNavLink } from "@/components/ui"
 export default function MainNavbar() {
   const pathname = usePathname()
   const router = useRouter()
-
-  const { user, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth()
-  const { totalTokens, tokenUsage, subscriptionPlan, isLoading: isSubscriptionLoading } = useSubscription()
-
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const subscription = useSubscription()
+    // Extract subscription details
+  const totalTokens = user?.credits || 0
+  const tokenUsage = 0 // TODO: Track token usage
+  const subscriptionPlan = subscription?.plan || 'FREE'
+  const isSubscriptionLoading = authLoading
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -102,14 +104,13 @@ export default function MainNavbar() {
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-
   // Ready state for smooth animations
   useEffect(() => {
-    if (authStatus !== "loading") {
+    if (!authLoading) {
       const timer = setTimeout(() => setReady(true), 100)
       return () => clearTimeout(timer)
     }
-  }, [authStatus])
+  }, [authLoading])
 
   // Memoized calculations
   const availableCredits = useMemo(() => {
@@ -119,13 +120,12 @@ export default function MainNavbar() {
     }
     return null
   }, [totalTokens, user?.credits, tokenUsage])
-
   const userInitials = useMemo(() => {
     const name = user?.name || ""
     return (
       name
         .split(" ")
-        .map((n) => n[0])
+        .map((n: string) => n[0])
         .join("")
         .toUpperCase()
         .slice(0, 2) || "U"
@@ -262,11 +262,11 @@ export default function MainNavbar() {
   const UserAvatar = useMemo(
     () => (
       <Avatar className="h-8 w-8 border-2 border-border/50 hover:border-primary/50 transition-all duration-200">
-        <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
+        <AvatarImage src={user?.avatarUrl || ""} alt={user?.name || "User"} />
         <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{userInitials}</AvatarFallback>
       </Avatar>
     ),
-    [user?.image, user?.name, userInitials],  )
+    [user?.avatarUrl, user?.name, userInitials],  )
   
   return (
     <>      <header

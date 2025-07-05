@@ -396,3 +396,84 @@ export const VALID_PROMO_CODES: Record<string, number> = {
   WELCOME10: 10,
   SPRING2025: 15,
 }
+
+/**
+ * ===========================================
+ * CENTRALIZED MAPPING UTILITIES FOR AUTHENTICATION
+ * ===========================================
+ *
+ * These utilities are used by AuthProvider and other components
+ * to maintain consistent plan/status mapping across the app.
+ */
+
+import type { SubscriptionPlanType } from '@/app/types/subscription'
+
+/**
+ * Maps various subscription plan string values to standardized SubscriptionPlanType
+ */
+export function mapSubscriptionPlan(sessionPlan: string | null | undefined): SubscriptionPlanType {
+  if (!sessionPlan) return 'FREE'
+  
+  const plan = sessionPlan.toLowerCase().trim()
+  
+  // Handle various plan name formats
+  if (plan.includes('premium') || plan.includes('pro')) return 'PREMIUM'
+  if (plan.includes('ultimate') || plan.includes('enterprise')) return 'ULTIMATE'
+  if (plan.includes('basic') || plan.includes('starter')) return 'BASIC'
+  
+  // Handle plan IDs
+  if (plan === 'premium_monthly' || plan === 'premium_yearly') return 'PREMIUM'
+  if (plan === 'ultimate_monthly' || plan === 'ultimate_yearly') return 'ULTIMATE'
+  if (plan === 'basic_monthly' || plan === 'basic_yearly') return 'BASIC'
+  
+  // Default fallback
+  return 'FREE'
+}
+
+/**
+ * Maps various subscription status values to standardized format
+ */
+export function mapSubscriptionStatus(sessionStatus: string | null | undefined): 'active' | 'inactive' | 'canceled' | 'past_due' | 'trialing' {
+  if (!sessionStatus) return 'inactive'
+  
+  const status = sessionStatus.toLowerCase().trim()
+  
+  if (status === 'active' || status === 'paid') return 'active'
+  if (status === 'canceled' || status === 'cancelled') return 'canceled'
+  if (status === 'past_due' || status === 'pastdue') return 'past_due'
+  if (status === 'trialing' || status === 'trial') return 'trialing'
+  
+  return 'inactive'
+}
+
+/**
+ * Get feature limits for a specific plan (for AuthProvider usage)
+ */
+export function getFeaturesByPlanForAuth(plan: SubscriptionPlanType) {
+  const planConfig = SUBSCRIPTION_PLANS.find(p => p.id === plan)
+  
+  if (!planConfig) {
+    // Default FREE plan features
+    return {
+      maxQuizzes: 3,
+      maxFlashcards: 10,
+      maxStudySessions: 5,
+      advancedAnalytics: false,
+      prioritySupport: false,
+      customization: false
+    }
+  }
+  
+  // Map the plan's features to our AuthProvider format
+  const hasFeature = (featureId: string) => 
+    planConfig.features.some(f => f.id === featureId && f.available)
+  
+  return {
+    maxQuizzes: plan === 'FREE' ? 3 : plan === 'BASIC' ? 10 : plan === 'PREMIUM' ? 50 : 100,
+    maxFlashcards: plan === 'FREE' ? 10 : plan === 'BASIC' ? 50 : plan === 'PREMIUM' ? 200 : 500,
+    maxStudySessions: plan === 'FREE' ? 5 : plan === 'BASIC' ? 20 : plan === 'PREMIUM' ? 100 : 300,
+    advancedAnalytics: hasFeature('analytics') || plan !== 'FREE',
+    prioritySupport: hasFeature('priority-support') || (plan === 'PREMIUM' || plan === 'ULTIMATE'),
+    customization: hasFeature('custom-themes') || (plan === 'PREMIUM' || plan === 'ULTIMATE')
+  }
+}

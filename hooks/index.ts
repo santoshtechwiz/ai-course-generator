@@ -15,7 +15,7 @@ export * from "./use-persistent-state"
 
 // Auth & User Hooks
 // Import useAuth directly from auth-context
-export { useAuth } from "@/context/auth-context"
+export { useAuth } from "@/modules/auth"
 export * from "./use-subscription"
 // export * from "./use-session-service"; // File not found, commented out to avoid errors
 export * from "./use-notifications"

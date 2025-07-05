@@ -24,13 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
 import { PaymentMethodForm } from "./PaymentMethod"
 import { StatusBadge } from "./status-badge"
-import { useAppDispatch, useAppSelector } from "@/store"
-import {
-  cancelSubscription,
-  resumeSubscription,
-  selectSubscription,
-  selectTokenUsage,
-} from "@/store/slices/subscription-slice"
+import { useSubscription } from "@/modules/auth"
 
 interface ManageSubscriptionProps {
   userId: string
@@ -52,11 +46,17 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
   const router = useRouter()
   const session = useSession()
   const { currentPlan, subscriptionStatus, endDate, tokensUsed, paymentMethods = [], totalTokens } = subscriptionData
-
-  // Use Redux for subscription actions
-  const dispatch = useAppDispatch()
-  const subscription = useAppSelector(selectSubscription)
-  const tokenUsage = useAppSelector(selectTokenUsage)
+  // Use unified auth for subscription data
+  const subscription = useSubscription()
+  
+  // Extract token usage information from subscription
+  const tokenUsage = {
+    tokensUsed: subscription?.tokensUsed || 0,
+    total: subscription?.credits || 0,
+    remaining: Math.max((subscription?.credits || 0) - (subscription?.tokensUsed || 0), 0),
+    percentage: subscription?.credits ? Math.min((subscription.tokensUsed || 0) / subscription.credits * 100, 100) : 0,
+    hasExceededLimit: (subscription?.tokensUsed || 0) > (subscription?.credits || 0)
+  }
 
   // Memoize plan details to avoid recalculation on every render
   const planDetails = useMemo(() => {
@@ -85,12 +85,20 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
 
       return { tokenUsagePercentage, isActive, isCancelled, isPastDue, isInactive, isFree, hasExceededLimit }
     }, [subscriptionStatus, currentPlan, tokensUsed, totalTokens])
-
   // Use useCallback for event handlers to prevent unnecessary re-renders
   const handleResumeSubscription = useCallback(async () => {
     setIsLoading(true)
     try {
-      await dispatch(resumeSubscription()).unwrap()
+      // Call resume subscription API
+      const response = await fetch('/api/subscriptions/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to resume subscription')
+      }
 
       toast({
         title: "Subscription Resumed",
@@ -106,21 +114,30 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
       window.dispatchEvent(event)
     } catch (error) {
       console.error("Error resuming subscription:", error)
-      toast({
-        title: "Error",
+      toast({title: "Error",
         description: "Failed to resume your subscription. Please try again or contact support.",
         variant: "destructive",
       })
     } finally {
       setIsLoading(false)
     }
-  }, [toast, router, dispatch])
+  }, [toast, router])
 
   const handleCancelSubscription = useCallback(
     async (reason: string) => {
       setIsLoading(true)
       try {
-        await dispatch(cancelSubscription(reason)).unwrap()
+        // Call cancel subscription API
+        const response = await fetch('/api/subscriptions/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason }),
+          credentials: 'include'
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to cancel subscription')
+        }
 
         toast({
           title: "Subscription Cancelled",
@@ -143,7 +160,7 @@ export function ManageSubscription({ userId, subscriptionData }: ManageSubscript
         setIsLoading(false)
       }
     },
-    [toast, router, dispatch],
+    [toast, router],
   )
 
   const handleUpgradeSubscription = useCallback(() => {
