@@ -303,9 +303,9 @@ export const authOptions: NextAuthOptions = {
         name: profile.name,
         email: profile.email,
         image: profile.picture,
-        credits: 0, // Default value, will be updated after sign-in
-        isAdmin: false, // Default value, will be updated after sign-in
-        userType: "FREE", // Default value, will be updated after sign-in
+        credits: 0, 
+        isAdmin: false, 
+        userType: "FREE", 
       }),
       wellKnown:
         "https://www.linkedin.com/oauth/.well-known/openid-configuration",

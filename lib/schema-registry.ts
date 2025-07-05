@@ -1,4 +1,4 @@
-import { SchemaRegistry as BaseSchemaRegistry, type Schema } from "@/lib/schema"
+import { SchemaRegistry as BaseSchemaRegistry, type Schema } from "@/lib/seo-manager-new"
 
 // Schema Registry Service for better organization and extensibility
 export class SchemaRegistryService {

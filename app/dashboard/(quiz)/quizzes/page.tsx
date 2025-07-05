@@ -4,8 +4,7 @@ import { getAuthSession } from "@/lib/auth"
 import { motion } from "framer-motion"
 
 import { getQuizzes, QuizListItem } from "@/app/actions/getQuizes"
-import { JsonLD } from "@/app/schema/components"
-import { generateMetadata } from "@/lib/seo"
+import { JsonLD, generateMetadata } from "@/lib/seo-manager-new"
 // Import components directly to avoid any issues with the barrel file
 import { QuizzesClient } from "./components/QuizzesClient"
 import { QuizzesSkeleton } from "./components/QuizzesSkeleton"

@@ -1,19 +1,20 @@
-import type { Metadata } from "next"
-import "../globals.css"
+import type { Metadata } from "next";
+import "../globals.css";
 
-import SEOSchema from "@/app/schema/SEOSchema"
-import { defaultMetadata } from "@/lib/seo"
-import Footer from "@/components/shared/Footer"
-import { Providers } from "@/store/provider"
-import { getServerAuthSession } from "@/lib/server-auth"
-import ClientLayoutWrapper from "./client-layout-wrapper"
-import { Suspense } from "react"
-import { GlobalLoader } from "@/components/ui/loader"
-import { font } from "./font"
+import { DefaultSEO, defaultMetadata, defaultFAQItems } from "@/lib/seo-manager-new";
+import Footer from "@/components/shared/Footer";
+import { Providers } from "@/store/provider";
+import { getServerAuthSession } from "@/lib/server-auth";
+import ClientLayoutWrapper from "./client-layout-wrapper";
+import { Suspense } from "react";
+import { GlobalLoader } from "@/components/ui/loader";
+import { font } from "./font";
 
 export const metadata: Metadata = {
   ...defaultMetadata,
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
+  ),
   title: {
     default: "CourseAI - Interactive Programming Quizzes and Learning",
     template: "%s | CourseAI",
@@ -60,10 +61,14 @@ export const metadata: Metadata = {
     creator: "@courseai",
     images: ["/images/og/courseai-og.png"],
   },
-}
+};
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerAuthSession()
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await getServerAuthSession();
 
   return (
     <html
@@ -72,14 +77,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className="scroll-smooth overflow-x-hidden"
     >
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=5"
+        />
         <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
-        <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
+        <meta
+          name="google-site-verification"
+          content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
+        />
       </head>
 
       <body
         className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
-      >        <Suspense
+      >
+        {" "}
+        <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
               <GlobalLoader size="xl" text="Loading application..." />
@@ -92,19 +105,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Footer />
             </ClientLayoutWrapper>
           </Providers>
-        </Suspense>        <SEOSchema 
-          siteName="CourseAI"
-          siteUrl={process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}
-          logoUrl={`${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/logo.png`}
-          socialProfiles={[
-            // Add your social profiles here
-            // "https://twitter.com/courseai",
-            // "https://facebook.com/courseai",
-            // "https://linkedin.com/company/courseai",
-            // "https://github.com/courseai",
-          ]}
+        </Suspense>        <DefaultSEO
+          currentPath="/"
+          includeFAQ={true}
         />
       </body>
     </html>
-  )
+  );
 }

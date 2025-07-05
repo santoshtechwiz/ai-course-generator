@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
-import { generateMetadata } from "@/lib/seo"
-import { JsonLD } from "@/app/schema/components"
+import { generateMetadata, JsonLD } from "@/lib/seo-manager-new"
 import ImprovedContactForm from "./ContactForm"
 
 export const metadata: Metadata = generateMetadata({
