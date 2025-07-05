@@ -52,6 +52,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
           course={course} 
           initialChapterId={initialChapterId} 
         />
+      
       </div>
     </div>
   )

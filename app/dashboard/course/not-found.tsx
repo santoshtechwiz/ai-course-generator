@@ -3,7 +3,7 @@ import { FileQuestion } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Metadata } from "next"
 import { notFoundMetadata } from "@/app/metadata/not-found-metadata"
-import { JsonLD } from "@/app/schema/components"
+import { JsonLD } from "@/lib/seo-manager-new"
 
 // Use the app's standard not-found metadata with course-specific adjustments
 export const metadata: Metadata = {

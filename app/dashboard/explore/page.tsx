@@ -1,5 +1,4 @@
-import { JsonLD } from "@/app/schema/components"
-import { generateMetadata } from "@/lib/seo"
+import { JsonLD, generateMetadata } from "@/lib/seo-manager-new"
 import { CreateComponent } from "@/components/features/explore/CreateComponent"
 import type { Metadata } from "next"
 

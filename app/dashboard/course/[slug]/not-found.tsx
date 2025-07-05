@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Metadata } from "next"
 import { notFoundMetadata } from "@/app/metadata/not-found-metadata"
 import { notFoundStructuredData } from "@/app/utils/not-found-utils"
-import { JsonLD } from "@/app/schema/components"
+import { JsonLD } from "@/lib/seo-manager-new"
 
 // Use the app's standard not-found metadata
 export const metadata: Metadata = {

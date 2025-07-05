@@ -34,7 +34,7 @@ import { NoResults } from "@/components/ui/no-results"
 import { useAuth } from "@/hooks/use-auth"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 import { GlobalLoader } from "@/components/ui/loader"
-import { QuizSchema } from "@/app/schema/components/CourseSchema"
+import { QuizSchema } from "@/lib/seo-manager-new"
 
 interface FlashcardQuizWrapperProps {
   slug: string
