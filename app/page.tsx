@@ -1,6 +1,5 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
-import { generateMetadata } from '@/lib/seo'
-import { JsonLD } from "@/app/schema/components"
+import { generateMetadata, JsonLD } from '@/lib/seo-manager-new'
 
 export const metadata = generateMetadata({
   title: 'Home',
