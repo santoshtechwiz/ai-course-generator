@@ -10,7 +10,7 @@ import { motion } from "framer-motion"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import ClientOnly from "@/components/ClientOnly"
 import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-found-utils"
-import { JsonLD } from "@/app/schema/components"
+import { JsonLD } from "@/lib/seo-manager-new"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = notFoundMetadata
