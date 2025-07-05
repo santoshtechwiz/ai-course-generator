@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
-import { generateCourseMetadata } from "@/lib/seo"
+import { generateCourseMetadata, JsonLD } from "@/lib/seo-manager-new"
 import { getCourseData } from "@/app/actions/getCourseData"
-import { JsonLD } from "@/app/schema/components"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
@@ -35,7 +34,7 @@ export default async function Page({ params }: CoursePageParams) {
           provider: {
             "@type": "Organization",
             name: "AI Learning Platform",
-            sameAs: process.env.NEXT_PUBLIC_BASE_URL || "https://example.com"
+            sameAs: process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"
           },
           audience: {
             "@type": "Audience",
@@ -53,11 +52,12 @@ export default async function Page({ params }: CoursePageParams) {
           courseCode: course.slug
         }}
       />
+    
 
       <EnhancedCourseLayout 
         course={course} 
         breadcrumbs={[
-          { label: course.category?.name || "Category", href: `/dashboard/category/${course.category?.slug || ""}` }
+          { label: course.category?.name || "Category", href: `/dashboard/category/${course.category || ""}` }
         ]}
       />
     </>

@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { optimizeImageAlt } from "@/lib/seo"
+import { optimizeImageAlt } from "@/lib/seo-manager-new"
 
 interface OptimizedImageProps {
   src: string
@@ -19,9 +19,9 @@ export function OptimizedImage({
   priority = false,
   className = "",
   keywords = [],
-}: OptimizedImageProps) {
-  // Optimize alt text for SEO
-  const optimizedAlt = optimizeImageAlt(alt, keywords)
+}: OptimizedImageProps) {  // Optimize alt text for SEO
+  const keywordString = keywords.length > 0 ? keywords.join(' ') : alt
+  const optimizedAlt = optimizeImageAlt(alt, keywordString)
 
   return (
     <Image
