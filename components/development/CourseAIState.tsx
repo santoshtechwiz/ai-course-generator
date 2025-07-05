@@ -4,18 +4,20 @@ import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { ChevronDown, ChevronUp, Bug } from "lucide-react";
+import { useAuth } from "@/modules/auth";
+import { useSession } from "next-auth/react";
 
 export default function CourseAIState() {
-  const [open, setOpen] = useState(false);
-
-  // Select all major slices you want to debug
+  const [open, setOpen] = useState(false);  
+    // Select all major slices you want to debug
   const quiz = useSelector((state: RootState) => state.quiz);
-  const user = useSelector((state: RootState) => state.user);
-  const auth = useSelector((state: RootState) => state.auth);
-  const subscription = useSelector((state: RootState) => state.subscription);
   const flashcard = useSelector((state: RootState) => state.flashcard);
-  const textQuiz = useSelector((state: RootState) => state.textQuiz);
   const course = useSelector((state: RootState) => state.course);
+  
+  // New session-based auth
+  const { user: authUser, subscription: authSubscription, isAuthenticated, isLoading } = useAuth();
+  const { data: session, status } = useSession();
+  
   // Add time tracking to see when states update
   const [lastUpdated, setLastUpdated] = useState(Date.now());
   const [localStorageKeys, setLocalStorageKeys] = useState<string[]>([]);
@@ -23,12 +25,12 @@ export default function CourseAIState() {
   // Update timestamp when state changes
   useEffect(() => {
     setLastUpdated(Date.now());
-  }, [quiz, flashcard, textQuiz, course]);
-
+  }, [quiz, flashcard, course]);
   // Extract navigation details
   const navigationDetails = useMemo(() => {
     const currentIndex = quiz?.currentQuestionIndex;
-    const navHistory = quiz?.navigationHistory || [];
+    // navigationHistory property doesn't exist in current quiz state
+    const navHistory: any[] = [];
     const lastNav = navHistory[0];
 
     return {
@@ -131,33 +133,39 @@ export default function CourseAIState() {
           <details open>
             <summary className="font-bold text-primary mb-1 cursor-pointer">quiz</summary>
             <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(quiz, null, 2)}</pre>
-          </details>
-          
+          </details>          
           {/* Prioritize course state for debugging */}
           <details open>
             <summary className="font-bold text-primary mb-1 cursor-pointer">Course</summary>
             <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(course, null, 2)}</pre>
           </details>
           
-          <details>
-            <summary className="font-bold text-primary mb-1 cursor-pointer">user</summary>
-            <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(user, null, 2)}</pre>
-          </details>
-          <details>
-            <summary className="font-bold text-primary mb-1 cursor-pointer">auth</summary>
-            <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(auth, null, 2)}</pre>
-          </details>
-          <details>
-            <summary className="font-bold text-primary mb-1 cursor-pointer">subscription</summary>
-            <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(subscription, null, 2)}</pre>
-          </details>
+          {/* Session-based Auth Info */}
+          <details open>
+            <summary className="font-bold text-green-600 mb-1 cursor-pointer">Session Auth (NEW)</summary>
+            <div className="space-y-2">
+              <div>
+                <div className="font-semibold text-sm">Session Status: {status}</div>
+                <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(session, null, 2)}</pre>
+              </div>
+              <div>
+                <div className="font-semibold text-sm">Auth User:</div>
+                <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(authUser, null, 2)}</pre>
+              </div>
+              <div>
+                <div className="font-semibold text-sm">Auth Subscription:</div>
+                <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(authSubscription, null, 2)}</pre>
+              </div>
+              <div>
+                <div className="font-semibold text-sm">Is Authenticated: {isAuthenticated.toString()}</div>
+                <div className="font-semibold text-sm">Is Loading: {isLoading.toString()}</div>
+              </div>
+            </div>
+          </details>          
+          {/* Redux State (Remaining non-auth slices) */}
           <details>
             <summary className="font-bold text-primary mb-1 cursor-pointer">flashcard</summary>
             <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(flashcard, null, 2)}</pre>
-          </details>
-          <details>
-            <summary className="font-bold text-primary mb-1 cursor-pointer">textQuiz</summary>
-            <pre className="overflow-x-auto bg-muted p-2 rounded text-xs">{JSON.stringify(textQuiz, null, 2)}</pre>
           </details>
         </div>
       )}

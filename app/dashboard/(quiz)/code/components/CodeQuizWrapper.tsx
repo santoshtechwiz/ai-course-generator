@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
+import { useAuth } from "@/modules/auth"
 import type { AppDispatch } from "@/store"
 import {
   selectQuizQuestions,
@@ -11,6 +12,7 @@ import {
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
+  selectQuizUserId,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -33,11 +35,11 @@ interface CodeQuizWrapperProps {
 
 function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const dispatch = useDispatch<AppDispatch>()
-  const router = useRouter();
+  const router = useRouter()
+  const { user } = useAuth()
 
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
-
   const questions = useSelector(selectQuizQuestions)
   const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
@@ -46,7 +48,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isCompleted = useSelector(selectIsQuizComplete)
 
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
-  const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
+  const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
+  const userId = user?.id // Get user ID from session-based auth
   
   const pdfData = {
     title: quizTitle || title,
@@ -213,17 +216,15 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
         theme="primary"
       />
     )
-  }
-  return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
-      <QuizActions
+  }  return (
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      <QuizActions
         initialIsFavorite={false}
         quizSlug={slug}
         quizData={pdfData}
-        userId={userId}
+        userId={userId || ''}
         quizId={quizId}
         initialIsPublic={false}
-        ownerId={userId}
+        ownerId={quizOwnerId || ''}
       ></QuizActions>
       <CodeQuiz
         question={formattedQuestion}

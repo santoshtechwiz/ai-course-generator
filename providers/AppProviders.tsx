@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/modules/auth'
+import { AnimationProvider } from './animation-provider'
+import { GlobalLoaderProvider } from '@/components/ui/loader'
 
 interface AppProvidersProps {
   children: ReactNode
@@ -19,8 +21,7 @@ export function AppProviders({ children, session }: AppProvidersProps) {
       defaultOptions: {
         queries: {
           staleTime: 5 * 60 * 1000, // 5 minutes
-          gcTime: 10 * 60 * 1000,   // 10 minutes (formerly cacheTime)
-          retry: 1,
+          gcTime: 10 * 60 * 1000,   // 10 minutes (formerly cacheTime)          retry: 1,
           refetchOnWindowFocus: false,
         },
         mutations: {
@@ -34,10 +35,14 @@ export function AppProviders({ children, session }: AppProvidersProps) {
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
-            <Toaster />
-          </ThemeProvider>
+          <AnimationProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <GlobalLoaderProvider>
+                {children}
+                <Toaster />
+              </GlobalLoaderProvider>
+            </ThemeProvider>
+          </AnimationProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SessionProvider>

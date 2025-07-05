@@ -28,7 +28,8 @@ export default function MainNavbar() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const subscription = useSubscription()
-    // Extract subscription details
+  
+  // Extract subscription details
   const totalTokens = user?.credits || 0
   const tokenUsage = 0 // TODO: Track token usage
   const subscriptionPlan = subscription?.plan || 'FREE'
@@ -347,37 +348,13 @@ export default function MainNavbar() {
               >
                 <NotificationsMenu />
               </motion.div>
-            )}
-
-            {/* User Menu or Sign In Button */}
+            )}            {/* User Menu or Sign In Button */}
             <motion.div 
               className={cn("transition-all duration-300", ready ? "opacity-100 scale-100" : "opacity-0 scale-95")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <UserMenu>
-                {isAuthenticated ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 hover:bg-accent/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
-                    aria-label="User menu"
-                  >
-                    {UserAvatar}
-                  </Button>
-                ) : authLoading ? (
-                  <Skeleton className="h-9 w-9 rounded-full" />
-                ) : (
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={handleSignIn} 
-                    className="hidden sm:inline-flex shadow-sm hover:shadow-md transition-all duration-200"
-                  >
-                    Sign In
-                  </Button>
-                )}
-              </UserMenu>
+              <UserMenu />
             </motion.div>
 
             {/* Mobile Menu Trigger */}

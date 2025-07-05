@@ -112,15 +112,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const createSubscriptionFromSession = (session: any): Subscription | null => {
     if (!session?.user) return null
 
+    // SECURITY: Only use verified database data from session
+    // Never infer subscription plans client-side - this is a security vulnerability
     const plan = mapSubscriptionPlan(session.user.subscriptionPlan)
-    const status = mapSubscriptionStatus(session.user.subscriptionStatus)
+    const subscriptionStatus = mapSubscriptionStatus(session.user.subscriptionStatus)
     const features = getFeaturesByPlanForAuth(plan)
 
     return {
       id: `session-${session.user.id}`,
       userId: session.user.id || 'session-user',
       plan,
-      status,
+      status: subscriptionStatus,
       currentPeriodStart: new Date().toISOString(),
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       cancelAtPeriodEnd: false,
@@ -150,7 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Create user and subscription from session data
     const user = createUserFromSession(session)
     const subscription = createSubscriptionFromSession(session)
-
+    
     setState({
       isLoading: false,
       isAuthenticated: true,

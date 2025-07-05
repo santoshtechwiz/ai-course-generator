@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
+import { useAuth } from "@/modules/auth"
 import type { AppDispatch } from "@/store"
 import {
   selectQuizQuestions,
@@ -10,6 +11,7 @@ import {
   selectCurrentQuestionIndex,
   selectQuizStatus,
   selectIsQuizComplete,
+  selectQuizUserId,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -39,10 +41,10 @@ interface OpenEndedQuizWrapperProps {
 export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
+  const { user } = useAuth()
 
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [error, setError] = useState<string | null>(null)
-
   // Redux selectors
   const questions = useSelector(selectQuizQuestions) as unknown as OpenEndedQuestion[];
   const answers = useSelector(selectQuizAnswers)
@@ -51,7 +53,8 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizType = useSelector(selectQuizType)
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
-  const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
+  const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
+  const userId = user?.id // Get user ID from session-based auth
   const quizTitle = useSelector((state: any) => state.quiz.title) // Assuming title is stored in quiz slice
 
   const pdfData = {
@@ -201,15 +204,14 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
-      <QuizActions
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      <QuizActions
         initialIsFavorite={false}
         quizSlug={slug}
         quizData={pdfData}
-        userId={userId}
+        userId={userId || ''}
         quizId={quizId}
         initialIsPublic={false}
-        ownerId={userId}
+        ownerId={quizOwnerId || ''}
       ></QuizActions>
       <OpenEndedQuiz
         question={formattedQuestion}

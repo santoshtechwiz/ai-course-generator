@@ -467,12 +467,11 @@ export function getFeaturesByPlanForAuth(plan: SubscriptionPlanType) {
   // Map the plan's features to our AuthProvider format
   const hasFeature = (featureId: string) => 
     planConfig.features.some(f => f.id === featureId && f.available)
-  
-  return {
+    return {
     maxQuizzes: plan === 'FREE' ? 3 : plan === 'BASIC' ? 10 : plan === 'PREMIUM' ? 50 : 100,
     maxFlashcards: plan === 'FREE' ? 10 : plan === 'BASIC' ? 50 : plan === 'PREMIUM' ? 200 : 500,
     maxStudySessions: plan === 'FREE' ? 5 : plan === 'BASIC' ? 20 : plan === 'PREMIUM' ? 100 : 300,
-    advancedAnalytics: hasFeature('analytics') || plan !== 'FREE',
+    advancedAnalytics: hasFeature('pdf-downloads') && plan !== 'FREE', // Use PDF downloads as proxy for premium features
     prioritySupport: hasFeature('priority-support') || (plan === 'PREMIUM' || plan === 'ULTIMATE'),
     customization: hasFeature('custom-themes') || (plan === 'PREMIUM' || plan === 'ULTIMATE')
   }

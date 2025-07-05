@@ -8,6 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
@@ -20,7 +21,7 @@ interface NotificationsMenuProps {
 
 export default function NotificationsMenu({ refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { subscription } = useAuth()
+  const { user, subscription } = useAuth()
 
   const handleOpen = (open: boolean) => {
     setIsOpen(open)
@@ -28,13 +29,12 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
       refreshCredits()
     }
   }
-
-  const creditCount = subscription?.credits || 0
-  const tokensUsed = subscription?.tokensUsed || 0
+  const creditCount = user?.credits || 0
+  const tokensUsed = 0 // Not available in session data, would need separate API call
   const subscriptionPlan = subscription?.plan || "FREE"
-  const isSubscribed = subscription?.isSubscribed || false
-  const isExpired = subscription?.status === "CANCELED"
-  const subscriptionStatus = isExpired ? "Expired" : subscription?.status || "INACTIVE"
+  const isSubscribed = subscription?.status === "active" || false
+  const isExpired = subscription?.status === "canceled"
+  const subscriptionStatus = isExpired ? "Expired" : subscription?.status || "inactive"
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpen}>

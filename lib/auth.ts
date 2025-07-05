@@ -182,8 +182,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       return token
-    },
-    async session({ session, token }) {
+    },    async session({ session, token }) {
       if (token && session.user) {
         // Only update session if necessary
         if (
@@ -202,6 +201,7 @@ export const authOptions: NextAuthOptions = {
           session.user.subscriptionStatus = token.subscriptionStatus || null
         }
       }
+      
       return session
     },
     async redirect({ url, baseUrl }) {

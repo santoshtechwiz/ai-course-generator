@@ -13,7 +13,7 @@ import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
 import { Progress } from '@/components/ui/progress'
 
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/modules/auth'
 import {
   selectQuizResults,
   selectQuizStatus,
@@ -140,7 +140,7 @@ const quizResultMachine = createMachine({
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { isAuthenticated, isInitialized, isLoading: isAuthLoading, login } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, login } = useAuth()
 
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
@@ -166,7 +166,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   
   // Load results after auth is initialized and determine state
   useEffect(() => {
-    if (!slug || !isInitialized) return
+    if (!slug || isAuthLoading) return
 
     // If we already have results and user is authenticated, immediately show results
     // This handles the case when user returns from sign-in page
@@ -210,7 +210,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     }, 500); // Small delay to ensure state is properly initialized
     
     return () => clearTimeout(timeoutId);
-  }, [slug, isInitialized, dispatch, send, hasResults, isAuthenticated, quizResults])
+  }, [slug, isAuthLoading, dispatch, send, hasResults, isAuthenticated, quizResults])
 
   const processedResults = useMemo(() => {
     if (!quizResults) return null
@@ -250,7 +250,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     }
   }, [quizResults, quizQuestions, slug])
 
-  const isLoading = quizStatus === 'loading' || isAuthLoading || !isInitialized
+  const isLoading = quizStatus === 'loading' || isAuthLoading
 
   // Handle retake quiz action with enhanced UX
   const handleRetake = () => {
@@ -293,10 +293,10 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   useEffect(() => {
     // When authentication state changes to authenticated and we have results,
     // transition to results state regardless of current state
-    if (isAuthenticated && hasResults && isInitialized) {
+    if (isAuthenticated && hasResults && !isAuthLoading) {
       send({ type: 'RESULTS_LOADED_WITH_AUTH' });
     }
-  }, [isAuthenticated, hasResults, isInitialized, send]);
+  }, [isAuthenticated, hasResults, isAuthLoading, send]);
 
   // Render loading state
   if (isLoading || state.matches('loading')) {

@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
+import { useAuth } from "@/modules/auth"
 import type { AppDispatch } from "@/store"
 import {
   selectQuizQuestions,
@@ -11,6 +12,7 @@ import {
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
+  selectQuizUserId,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -21,9 +23,8 @@ import {
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
-import { useLoader } from "@/components/ui/loader/loader-context"
+import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 import { QuizActions } from "../../components/QuizActions"
-import { GlobalLoader } from "@/components/ui/loader"
 
 
 interface McqQuizWrapperProps {
@@ -34,10 +35,10 @@ interface McqQuizWrapperProps {
 export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const enhancedLoader = useLoader()
+  const { user } = useAuth()
+  const { showLoading, hideLoading } = useGlobalLoading()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
-
   const questions = useSelector(selectQuizQuestions)
   const answers = useSelector(selectQuizAnswers)
   const currentQuestionIndex = useSelector(selectCurrentQuestionIndex)
@@ -45,8 +46,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
-  const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
-  const pdfData = {
+  const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
+  const userId = user?.id // Get user ID from session-based auth// Assuming quizId is stored in quiz slice
+   const pdfData = {
     title: quizTitle || title,
     description: "This is a multiple choice quiz. Select the correct answers for each question.",
     questions: questions
@@ -70,11 +72,16 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
   }, [slug, dispatch])  // Navigate to result
-  useEffect(() => {
-    // To prevent infinite loop, we track if we've already shown the loader for this completion    
+  useEffect(() => {    // To prevent infinite loop, we track if we've already shown the loader for this completion    
     if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current) {
       hasShownLoaderRef.current = true;
-      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
+      showLoading({
+        message: "🎉 Quiz completed! Calculating your results...",
+        variant: 'spinner',
+        theme: 'primary',
+        isBlocking: true,
+        priority: 8
+      })
 
       submissionTimeoutRef.current = setTimeout(() => {
         router.push(`/dashboard/mcq/${slug}/results`)
@@ -84,7 +91,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     return () => {
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
-  }, [isCompleted, quizStatus, router, slug, enhancedLoader])
+  }, [isCompleted, quizStatus, router, slug, showLoading])
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex] || null
@@ -107,11 +114,16 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       dispatch(setCurrentQuestionIndex(currentQuestionIndex + 1))
     }
   }, [currentQuestionIndex, questions.length, dispatch])
-
   const handleSubmitQuiz = useCallback(async () => {
     try {
       toast.success("Quiz submitted successfully!")
-      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
+      showLoading({
+        message: "🎉 Quiz completed! Calculating your results...",
+        variant: 'spinner',
+        theme: 'primary',
+        isBlocking: true,
+        priority: 8
+      })
 
       await dispatch(submitQuiz()).unwrap()
 
@@ -122,7 +134,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     }
-  }, [dispatch, router, slug, enhancedLoader])
+  }, [dispatch, router, slug, showLoading])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -149,11 +161,17 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     if (!currentQuestion) return undefined
     return answers[String(currentQuestion.id)]?.selectedOptionId || undefined
   }, [currentQuestion, answers])
-
   const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
+  
   if (isLoading) {
-    return <GlobalLoader size="sm" />
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-sm text-gray-600">Loading quiz...</p>
+        </div>
+      </div>
+    )
   }
 
   if (hasError) {
@@ -168,11 +186,15 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         }}
       />
     )
+  }  if (!formattedQuestion) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-sm text-gray-600">Loading question...</p>
+        </div>
+      </div>
+    )
   }
-  if (!formattedQuestion) {
-    return <GlobalLoader size="sm" />
-  }
-
   return (
     <>
       <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
@@ -180,10 +202,10 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
           initialIsFavorite={false}
           quizSlug={slug}
           quizData={pdfData}
-          userId={userId}
+          userId={userId || ""}
           quizId={quizId}
           initialIsPublic={false}
-          ownerId={userId}
+          ownerId={quizOwnerId || ""}
         ></QuizActions>
         <McqQuiz
           question={formattedQuestion}
@@ -194,8 +216,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
           onNext={handleNextQuestion}
           onSubmit={handleSubmitQuiz}
           isSubmitting={isSubmitting}
-          canGoNext={canGoNext}
-          isLastQuestion={isLastQuestion}
+          canGoNext={canGoNext}          isLastQuestion={isLastQuestion}
           quizTitle={quizTitle || title || "Multiple Choice Quiz"}
         />
       </div>

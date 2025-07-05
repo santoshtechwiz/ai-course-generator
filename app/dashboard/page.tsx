@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { CoursesListSkeleton } from "@/components/ui/loader/loading-skeleton"
+import { LoadingSkeleton } from "@/components/ui/SkeletonLoader"
 
 // Dynamically import the CourseList component to avoid hydration issues
 const CourseList = dynamic(() => import("@/components/features/home/CourseLists"), {
   ssr: false,
-  loading: () => <CoursesListSkeleton />,
+  loading: () => <LoadingSkeleton />,
 })
 
 

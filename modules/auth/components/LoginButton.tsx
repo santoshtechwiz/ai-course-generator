@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { LogIn } from "lucide-react"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "../providers/AuthProvider"
 
 interface LoginButtonProps {
   className?: string
@@ -19,15 +19,11 @@ export function LoginButton({
   iconOnly = false
 }: LoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const { signIn } = useAuth()
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
     setIsLoading(true)
-    try {
-      await signIn()
-    } finally {
-      setIsLoading(false)
-    }
+    // Direct redirect to NextAuth sign-in page
+    window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`
   }
 
   return (

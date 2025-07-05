@@ -1,18 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
-import { useAppSelector, useAppDispatch } from "@/store"
-import {
-  fetchSubscription,
-  selectSubscriptionData,
-  selectSubscriptionLoading,
-  selectTokenUsage,
-  selectIsSubscribed,
-  selectSubscriptionPlan,
-  selectIsCancelled,
-  canDownloadPdfSelector,
-} from "@/store/slices/subscription-slice"
-
+import { useAuth } from "@/modules/auth"
 import { SubscriptionResult, SubscriptionStatusType } from "@/app/types/subscription"
 
 export type UseSubscriptionOptions = {
@@ -21,7 +10,6 @@ export type UseSubscriptionOptions = {
   onSubscriptionSuccess?: (result: SubscriptionResult) => void;
   onSubscriptionError?: (error: SubscriptionResult) => void;
   skipInitialFetch?: boolean;
- 
 };
 
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
@@ -35,57 +23,62 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
     skipInitialFetch = false
   } = options
 
-  const dispatch = useAppDispatch()
-  const subscriptionData = useAppSelector(selectSubscriptionData)
-  const isLoading = useAppSelector(selectSubscriptionLoading)
-  const tokenUsageData = useAppSelector(selectTokenUsage)
-  const isSubscribed = useAppSelector(selectIsSubscribed)
-  const subscriptionPlan = useAppSelector(selectSubscriptionPlan)
-  const isCancelled = useAppSelector(selectIsCancelled)
-  const canDownloadPdf = useAppSelector(canDownloadPdfSelector)
-
+  const { subscription, user, isLoading: authLoading, refreshSubscriptionData } = useAuth()
+  const [lastFetched, setLastFetched] = useState<Date | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
-  
-  const refreshSubscription = useCallback(() => {
-    dispatch(fetchSubscription())
-      .unwrap()
-      .then((result) => {
-        if (result && typeof result === "object") {
-          onSubscriptionSuccess?.({
-            success: true,
-            message: "Subscription refreshed"
-          })
-        }
-      })
-      .catch((error) => {
-        onSubscriptionError?.({
-          success: false,
-          message: error,
-          error: "REFRESH_ERROR"
+    // Derived values from session-based subscription
+  const subscriptionData = subscription
+  const isLoading = authLoading
+  const isSubscribed = subscription?.plan !== "FREE" && subscription?.status === "active"
+  const subscriptionPlan = subscription?.plan || "FREE"
+  const isCancelled = subscription?.cancelAtPeriodEnd || false
+  const canDownloadPdf = subscription?.features?.advancedAnalytics || false // Using advancedAnalytics as proxy for premium features
+
+  const refreshSubscription = useCallback(async () => {
+    try {
+      if (refreshSubscriptionData) {
+        await refreshSubscriptionData()
+        setLastFetched(new Date())
+        onSubscriptionSuccess?.({
+          success: true,
+          message: "Subscription refreshed"
         })
+      }
+    } catch (error) {
+      onSubscriptionError?.({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to refresh subscription"
       })
-  }, [dispatch, onSubscriptionSuccess, onSubscriptionError])
-  
-  useEffect(() => {
-    const shouldSkipInitialFetch = skipInitialFetch || 
-      (subscriptionData !== null && !isInitialized);
-
-    if (!isInitialized && !shouldSkipInitialFetch) {
-      refreshSubscription()
-      setIsInitialized(true)
     }
+  }, [refreshSubscriptionData, onSubscriptionSuccess, onSubscriptionError])
 
-    const interval = setInterval(refreshSubscription, REFRESH_INTERVAL)
-    return () => clearInterval(interval)
-  }, [refreshSubscription, isInitialized, skipInitialFetch, subscriptionData])
+  // Initialize subscription data
+  useEffect(() => {
+    if (!skipInitialFetch && !isInitialized && !authLoading) {
+      setIsInitialized(true)
+      if (subscription) {
+        setLastFetched(new Date())
+      }
+    }
+  }, [skipInitialFetch, isInitialized, authLoading, subscription])
 
-  const {
-    tokensUsed = 0,
-    total: totalTokens = 0,
-    remaining: remainingTokens = 0,
-    percentage: usagePercentage = 0,
-    hasExceededLimit = false,
-  } = tokenUsageData || {}
+  // Auto-refresh subscription data
+  useEffect(() => {
+    if (isInitialized && !skipInitialFetch) {
+      const interval = setInterval(() => {
+        refreshSubscription()
+      }, REFRESH_INTERVAL)
+
+      return () => clearInterval(interval)
+    }
+  }, [isInitialized, skipInitialFetch, refreshSubscription])
+  // Credits and token management (derived from user/subscription)
+  const credits = user?.credits || 0
+  const tokensUsed = 0 // Not tracking tokens in current user model
+  const maxTokens = subscription?.features?.maxStudySessions || 10 // Using maxStudySessions as proxy
+  const remainingTokens = Math.max(0, maxTokens - tokensUsed)
+  const usagePercentage = maxTokens > 0 ? (tokensUsed / maxTokens) * 100 : 0
+  const hasExceededLimit = tokensUsed >= maxTokens
 
   const handleSubscribe = useCallback(
     async (planId?: string, duration?: number): Promise<SubscriptionResult> => {
@@ -103,15 +96,6 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
             success: false,
             message: result.message || "Subscription failed",
             error: result.errorType || "UNKNOWN",
-          }
-          onSubscriptionError?.(errorResult)
-          return errorResult
-        }
-        if(result.errorType==="PLAN_CHANGE_RESTRICTED"){
-          const errorResult: SubscriptionResult = {
-            success: false,
-            message: result.message || "Plan change not allowed",
-            error: "PLAN_CHANGE_RESTRICTED",
           }
           onSubscriptionError?.(errorResult)
           return errorResult
@@ -155,7 +139,6 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
         return { canSubscribe: false, reason: "You are already subscribed to this plan" }
       }
       
-      // Add more business rules as needed
       return { canSubscribe: true }
     },
     [],
@@ -167,30 +150,44 @@ export default function useSubscription(options: UseSubscriptionOptions = {}) {
   )
   
   const isSubscribedToAllPlans = useMemo(
-    () => String(subscriptionPlan) === "ENTERPRISE",
+    () => String(subscriptionPlan) === "PREMIUM",
     [subscriptionPlan],
   )
 
   return {
+    // Main data
     data: subscriptionData,
+    subscription: subscriptionData,
+    subscriptionPlan,
     isSubscribed,
+    isCancelled,
+    
+    // Token/Credit usage
     tokenUsage: tokensUsed,
-    totalTokens,
+    tokensUsed,
+    totalTokens: maxTokens,
     remainingTokens,
     usagePercentage,
     hasExceededLimit,
+    credits,
+    
+    // Loading states
     isLoading,
+    lastFetched,
+    
+    // Actions
     refreshSubscription,
-    onSubscriptionSuccess,
-    subscriptionPlan,
-    isCancelled,
-    allowPlanChanges,
-    allowDowngrades,
     handleSubscribe,
     canSubscribeToPlan,
+    
+    // Feature flags
+    canDownloadPdf,
+    allowPlanChanges,
+    allowDowngrades,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
-    canDownloadPdf
+      // Legacy compatibility
+    tokenUsageData: { tokensUsed: 0, maxTokens, remainingTokens },
   }
 }
 

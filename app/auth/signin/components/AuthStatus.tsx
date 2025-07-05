@@ -3,7 +3,7 @@
 import type React from "react"
 import { useEffect, useState, useRef } from "react"
 import { Loader2 } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/modules/auth"
 
 
 interface AuthStatusProps {

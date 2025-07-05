@@ -22,8 +22,7 @@ import { useRouter } from "next/navigation"
 // ✅ UNIFIED: Using unified auth system only
 import { useAuth } from "@/modules/auth"
 
-export function UserMenu({ children }: { children?: ReactNode }) {
-  // ✅ UNIFIED: Using unified auth system - single source of truth
+export function UserMenu({ children }: { children?: ReactNode }) {  // ✅ UNIFIED: Using unified auth system - single source of truth
   const { isAuthenticated, isLoading: isAuthLoading, user, subscription, signOut } = useAuth()
   
   const [isMenuOpen, setIsMenuOpen] = useState(false)

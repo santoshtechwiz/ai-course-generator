@@ -1,12 +1,12 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { signIn } from "next-auth/react"
 import { AuthButton } from "./authButton"
 import githubLogo from "../public/github.png"
 import googleLogo from "../public/google.png"
 import facebookLogo from "../public/facebook.png"
 import { Loader2 } from "lucide-react"
-import { useAuth } from "@/modules/auth"
 
 const buttonVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -33,11 +33,9 @@ function AuthButtonSkeleton() {
 }
 
 export function GoogleSignInButton({ callbackUrl }: AuthButtonProps) {
-  const { signInWithProvider, isLoading } = useAuth()
-
-  if (isLoading) return <AuthButtonSkeleton />
-
-  const handleGoogleSignIn = () => signInWithProvider("google", callbackUrl)
+  const handleGoogleSignIn = async () => {
+    await signIn("google", { callbackUrl })
+  }
 
   return (
     <motion.div variants={buttonVariants} custom={0} initial="hidden" animate="visible">
@@ -53,11 +51,9 @@ export function GoogleSignInButton({ callbackUrl }: AuthButtonProps) {
 }
 
 export function GithubSignInButton({ callbackUrl }: AuthButtonProps) {
-  const { signInWithProvider, isLoading } = useAuth()
-
-  if (isLoading) return <AuthButtonSkeleton />
-
-  const handleGithubSignIn = () => signInWithProvider("github", callbackUrl)
+  const handleGithubSignIn = async () => {
+    await signIn("github", { callbackUrl })
+  }
 
   return (
     <motion.div variants={buttonVariants} custom={1} initial="hidden" animate="visible">
@@ -73,11 +69,9 @@ export function GithubSignInButton({ callbackUrl }: AuthButtonProps) {
 }
 
 export function FacebookSignInButton({ callbackUrl }: AuthButtonProps) {
-  const { signInWithProvider, isLoading } = useAuth()
-
-  if (isLoading) return <AuthButtonSkeleton />
-
-  const handleFacebookSignIn = () => signInWithProvider("facebook", callbackUrl)
+  const handleFacebookSignIn = async () => {
+    await signIn("facebook", { callbackUrl })
+  }
 
   return (
     <motion.div variants={buttonVariants} custom={2} initial="hidden" animate="visible">
@@ -93,10 +87,6 @@ export function FacebookSignInButton({ callbackUrl }: AuthButtonProps) {
 }
 
 export function CredentialsSignInButton({ callbackUrl }: AuthButtonProps) {
-  const { isLoading } = useAuth()
-
-  if (isLoading) return <AuthButtonSkeleton />
-
   return (
     <motion.div variants={buttonVariants} custom={3} initial="hidden" animate="visible">
       <AuthButton provider="credentials" logo="/email-icon.png" text="Continue with Email" callbackUrl={callbackUrl} />

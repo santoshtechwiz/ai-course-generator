@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
+import { useAuth } from "@/modules/auth"
 import type { AppDispatch } from "@/store"
 import {
   selectQuizQuestions,
@@ -11,6 +12,7 @@ import {
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
+  selectQuizUserId,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -25,7 +27,7 @@ import { NoResults } from "@/components/ui/no-results"
 import BlanksQuiz from "./BlanksQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { useLoader } from "@/components/ui/loader/loader-context"
+import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 import { GlobalLoader } from "@/components/ui/loader"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
 
@@ -38,10 +40,10 @@ interface BlanksQuizWrapperProps {
 export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const enhancedLoader = useLoader()
+  const { user } = useAuth()
+  const { showLoading, hideLoading } = useGlobalLoading()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [error, setError] = useState<string | null>(null)
-
   // Redux selectors
   const questions = useSelector(selectQuizQuestions) as BlankQuizQuestion[]
   const answers = useSelector(selectQuizAnswers)
@@ -50,7 +52,8 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const isCompleted = useSelector(selectIsQuizComplete)
   const quizType = useSelector(selectQuizType)
   const quizId = useSelector(selectQuizId)
-  const userId = useSelector((state: any) => state.auth.user?.id) // Assuming user ID is stored in auth slice
+  const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
+  const userId = user?.id // Get user ID from session-based auth
   const quizTitle = useSelector(selectQuizTitle)
   const pdfData={
     title: quizTitle || title,
@@ -123,20 +126,27 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       dispatch(setCurrentQuestionIndex(currentQuestionIndex - 1))
     }
   }, [currentQuestionIndex, dispatch])
-
   // Submit quiz and navigate to results
   const handleSubmitQuiz = useCallback(async () => {
+    const loaderId = showLoading({
+      message: "🎉 Quiz completed! Calculating your results...",
+      variant: 'spinner',
+      theme: 'primary',
+      isBlocking: true,
+      priority: 8
+    })
+    
     try {
-      enhancedLoader.showLoader({ message: "🎉 Quiz completed! Calculating your results..." })
       await dispatch(submitQuiz()).unwrap()
       toast.success("Quiz submitted successfully!")
       router.push(`/dashboard/blanks/${slug}/results`)
     } catch (err) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
-      enhancedLoader.hideLoader()
+    } finally {
+      hideLoading(loaderId)
     }
-  }, [dispatch, enhancedLoader, slug, router])
+  }, [dispatch, showLoading, hideLoading, slug, router])
 
   // Loading & error states
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -164,19 +174,17 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
       hints: cq.hints || [],
       tags: cq.tags || [],
       type: cq.type, // Ensure 'type' is included
-    }
-  }, [currentQuestion])
-
-    if (isLoading) {
-        return (        <GlobalLoader 
-          fullScreen={true}
-          size="lg"
-          text="AI is generating your personalized quiz results"
-          subText="Crafting personalized content with advanced AI technology"
-          theme="primary"
-        />
-      )
-    } 
+    }  }, [currentQuestion])
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-sm text-gray-600">Loading quiz...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (hasError) {
     return (
@@ -206,15 +214,14 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
-      <QuizActions
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      <QuizActions
         initialIsFavorite={false}
         quizSlug={slug}
         quizData={pdfData}
-        userId={userId}
+        userId={userId || ""}
         quizId={quizId || ""}
         initialIsPublic={false}
-        ownerId={userId}
+        ownerId={quizOwnerId || ""}
       ></QuizActions>
       <BlanksQuiz
         key={formattedQuestion.id} // ✅ forces component reset per question

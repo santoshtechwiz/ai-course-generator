@@ -25,6 +25,14 @@ export interface QuizAnswer {
   timestamp: number
 }
 
+export interface QuestionResult {
+  questionId: string
+  userAnswer: string | null
+  correctAnswer: string
+  isCorrect: boolean
+  skipped: boolean
+}
+
 export interface QuizResults {
   slug: string
   quizType: QuizType
@@ -34,13 +42,7 @@ export interface QuizResults {
   submittedAt: string
   completedAt: string
   answers: QuizAnswer[]
-  results: {
-    questionId: string
-    userAnswer: string | null
-    correctAnswer: string
-    isCorrect: boolean
-    skipped: boolean
-  }[]
+  results: QuestionResult[]
 }
 
 

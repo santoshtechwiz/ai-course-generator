@@ -4,7 +4,7 @@ import type React from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useCallback } from "react"
 
-import { useLoader, type LoaderContext } from "./loader"
+import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 
 interface AsyncNavLinkProps {
   href: string
@@ -13,15 +13,18 @@ interface AsyncNavLinkProps {
   onClick?: () => void
   loaderOptions?: {
     message?: string
-    context?: LoaderContext
-    variant?: "inline" | "fullscreen" | "button" | "card" | "overlay"
+    subMessage?: string
+    variant?: "spinner" | "dots" | "pulse" | "skeleton"
+    theme?: "primary" | "secondary" | "accent" | "neutral"
+    isBlocking?: boolean
+    priority?: number
   }
 }
 
 export function AsyncNavLink({ href, children, className, onClick, loaderOptions = {} }: AsyncNavLinkProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { showLoader } = useLoader()
+  const { showLoading } = useGlobalLoading()
   const isActive = pathname === href
 
   const handleClick = useCallback(
@@ -29,22 +32,25 @@ export function AsyncNavLink({ href, children, className, onClick, loaderOptions
       e.preventDefault()
 
       const options = {
-        variant: "fullscreen" as const,
         message: "Loading...",
-        context: "loading" as const,
-        showProgress: false,
+        variant: "spinner" as const,
+        theme: "primary" as const,
+        isBlocking: true,
+        priority: 5,
         ...loaderOptions,
       }
 
-      showLoader(options)
+      const loaderId = showLoading(options)
 
       if (onClick) onClick()
 
+      // Small delay to show loader before navigation
       setTimeout(() => {
         router.push(href)
+        // Note: loader will be automatically hidden by navigation hook
       }, 50)
     },
-    [href, router, showLoader, onClick, loaderOptions],
+    [href, router, showLoading, onClick, loaderOptions],
   )
 
   return (

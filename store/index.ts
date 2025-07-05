@@ -4,8 +4,7 @@ import storage from "redux-persist/lib/storage"
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux"
 
 // Core reducers (no auth slices since we use session-based auth)
-import quizReducer from "./slices/quiz-slice"
-import subscriptionReducer from "./slices/subscription-slice"
+import { quizReducer } from "./slices/quiz"
 import flashcardReducer from "./slices/flashcard-slice"
 import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
@@ -64,18 +63,8 @@ const quizPersistConfig = {
   ],
 }
 
-const subscriptionPersistConfig = {
-  key: "subscription",
-  storage,
-  whitelist: ["data"], // ✅ Only persist the subscription data
-}
-
 // Root reducer with only non-auth slices (auth is now session-based)
 const rootReducer = combineReducers({
-  // Core slices
-  subscription: persistReducer(subscriptionPersistConfig, subscriptionReducer),
-  user: userReducer,
-  
   // Other slices
   quiz: persistReducer(quizPersistConfig, quizReducer),
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),

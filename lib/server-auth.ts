@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next"
-import { authOptions, getAuthSession } from "./auth"
+import { authOptions } from "./auth"
 
 // Cache timing for server-side auth functions
 const CACHE_TTL = 30 * 1000; // 30 seconds
@@ -12,8 +12,8 @@ const functionCache = new Map<string, {result: any, timestamp: number}>();
  * @returns The current session or null if not authenticated
  */
 export async function getServerAuthSession(options?: { skipCache?: boolean }) {
-  // Use our optimized getAuthSession function which already has caching
-  return await getAuthSession(options)
+  // Use the standard getServerSession for now
+  return await getServerSession(authOptions)
 }
 
 /**
@@ -31,16 +31,17 @@ export async function isAuthenticated(options?: { skipCache?: boolean }) {
     
     if (cached && (now - cached.timestamp < CACHE_TTL)) {
       return cached.result;
-    }
-    
+    }    
     // Not in cache or expired, get fresh result
-    const result = !!(await getServerAuthSession()).user;
+    const session = await getServerAuthSession()
+    const result = !!session?.user;
     functionCache.set(cacheKey, { result, timestamp: now });
     return result;
   }
   
   // Skip cache
-  return !!(await getServerAuthSession({ skipCache: true }))?.user
+  const session = await getServerAuthSession({ skipCache: true })
+  return !!session?.user
 }
 
 /**
@@ -59,15 +60,16 @@ export async function isAdmin(options?: { skipCache?: boolean }) {
     if (cached && (now - cached.timestamp < CACHE_TTL)) {
       return cached.result;
     }
-    
-    // Not in cache or expired, get fresh result
-    const result = !!(await getServerAuthSession()).user?.isAdmin;
+      // Not in cache or expired, get fresh result
+    const session = await getServerAuthSession()
+    const result = !!session?.user?.isAdmin;
     functionCache.set(cacheKey, { result, timestamp: now });
     return result;
   }
   
   // Skip cache
-  return !!(await getServerAuthSession({ skipCache: true }))?.user?.isAdmin
+  const session = await getServerAuthSession({ skipCache: true })
+  return !!session?.user?.isAdmin
 }
 
 /**
@@ -86,13 +88,14 @@ export async function getUserId(options?: { skipCache?: boolean }) {
     if (cached && (now - cached.timestamp < CACHE_TTL / 2)) { // Half the normal cache time
       return cached.result;
     }
-    
-    // Not in cache or expired, get fresh result
-    const result = (await getServerAuthSession()).user?.id;
+      // Not in cache or expired, get fresh result
+    const session = await getServerAuthSession()
+    const result = session?.user?.id;
     functionCache.set(cacheKey, { result, timestamp: now });
     return result;
   }
   
   // Skip cache
-  return (await getServerAuthSession({ skipCache: true }))?.user?.id
+  const session = await getServerAuthSession({ skipCache: true })
+  return session?.user?.id
 }

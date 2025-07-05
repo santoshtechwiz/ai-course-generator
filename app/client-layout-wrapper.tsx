@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { LoaderProvider } from "@/components/ui/loader/loader-context";
 import { ThemeProvider } from "next-themes";
 import { GlobalSubscriptionSynchronizer } from "@/components/GlobalSubscriptionSynchronizer";
 
@@ -17,18 +16,15 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
       document.documentElement.classList.remove('page-loaded');
     };
   }, []);
-    return (
-    <div className="client-layout-wrapper">
+    return (    <div className="client-layout-wrapper">
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
         enableSystem
         disableTransitionOnChange={false} // Enable smooth transitions between themes
       >
-        <LoaderProvider>
-          <GlobalSubscriptionSynchronizer />
-          {children}
-        </LoaderProvider>
+        <GlobalSubscriptionSynchronizer />
+        {children}
       </ThemeProvider>
     </div>
   );

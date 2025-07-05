@@ -16,7 +16,8 @@
 
 import { hydrateFromStorage } from "../middleware/persistMiddleware"
 import { STORAGE_KEYS } from "@/constants/global"
-import type { QuizState, QuizAnswer, QuizQuestion, QuizResults } from "./quiz-slice-types"
+import type { QuizState, QuizAnswer, QuizQuestion, QuizResults, QuestionResult } from "./quiz-slice-types"
+import type { QuizType } from "@/app/types/quiz-types"
 import { API_PATHS } from "@/constants/global"
 
 /**
@@ -126,51 +127,44 @@ export class QuizSliceHelper {
    * @param title - Quiz title
    * @param quizType - Quiz type
    * @returns Complete quiz results object
-   */
-  static generateQuizResults(
+   */  static generateQuizResults(
     questions: QuizQuestion[],
     answers: Record<string, QuizAnswer>,
     slug: string,
     quizId: string | null,
     title: string,
-    quizType: string
+    quizType: QuizType
   ): QuizResults {
     // Calculate score metrics
     const scoreData = this.calculateQuizScore(answers, questions)
-    
-    // Generate question results
+      // Generate question results
     const questionResults = this.generateQuestionResults(questions, answers)
 
     return {
-      quizId: quizId || slug,
       slug: slug,
-      title: title || "Quiz Results",
-      quizType: quizType || "mcq",
+      quizType: quizType || "mcq" as QuizType,
       score: scoreData.score,
       maxScore: scoreData.totalQuestions,
-      totalAnswered: scoreData.totalQuestions,
       percentage: scoreData.percentage,
       completedAt: new Date().toISOString(),
       submittedAt: new Date().toISOString(),
-      questions,
       answers: Object.values(answers),
-      questionResults,
+      results: questionResults,
     }
   }
-  
-  /**
+    /**
    * Generate simplified quiz results for selectors
    * @param questions - Quiz questions array
    * @param answers - User answers record
-   * @param title - Quiz title
-   * @param quizId - Quiz ID
+   * @param slug - Quiz slug
+   * @param quizType - Quiz type
    * @returns Simple quiz results object
    */
   static generateSimpleQuizResults(
     questions: QuizQuestion[],
     answers: Record<string, QuizAnswer>,
-    title: string,
-    quizId: string
+    slug: string,
+    quizType: QuizType
   ) {
     // Protect against null/undefined values
     if (!answers || !questions || Object.keys(answers).length === 0 || questions.length === 0) {
@@ -184,15 +178,15 @@ export class QuizSliceHelper {
     const questionResults = this.generateQuestionResults(questions, answers)
     
     return {
-      quizId,
-      slug: quizId,
-      title: title || `Quiz ${quizId}`,
-      completedAt: new Date().toISOString(),
-      maxScore: scoreData.totalQuestions,
+      slug: slug,
+      quizType: quizType,
       score: scoreData.score,
+      maxScore: scoreData.totalQuestions,
       percentage: scoreData.percentage,
-      questionResults,
-      questions,
+      completedAt: new Date().toISOString(),
+      submittedAt: new Date().toISOString(),
+      answers: Object.values(answers),
+      results: questionResults,
     }
   }
 

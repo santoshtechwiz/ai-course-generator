@@ -1,39 +1,40 @@
 "use client"
 
-import React from "react"
-import { motion } from "framer-motion"
-import { GlobalLoader } from "@/components/ui/loader"
+import React, { useEffect } from "react"
+import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 
 interface VideoLoadingOverlayProps {
   isVisible: boolean
   message?: string
 }
 
-const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ isVisible, message = "Loading video..." }) => {
-  if (!isVisible) return null
+const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ 
+  isVisible, 
+  message = "Loading video..." 
+}) => {
+  const { showLoading, hideLoading } = useGlobalLoading()
 
-  return (
-    <motion.div
-      className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <motion.div
-        className="flex flex-col items-center space-y-4"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.4 }}
-      >        <GlobalLoader 
-          size="lg"
-          text={message}
-          theme="primary" 
-          className="text-white"
-        />
-      </motion.div>
-    </motion.div>
-  )
+  useEffect(() => {
+    let loaderId: string | null = null
+
+    if (isVisible) {
+      loaderId = showLoading({
+        message,
+        variant: 'spinner',
+        theme: 'primary',
+        isBlocking: true,
+        priority: 5
+      })
+    }
+
+    return () => {
+      if (loaderId) {
+        hideLoading(loaderId)
+      }
+    }
+  }, [isVisible, message, showLoading, hideLoading])
+
+  return null // Loading handled by GlobalLoader
 }
 
 export default React.memo(VideoLoadingOverlay)

@@ -10,7 +10,7 @@ import {
   selectProcessedResults,
   checkAuthAndLoadResults,
 } from "@/store/slices/flashcard-slice"
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/modules/auth'
 import { AnimatePresence, motion } from "framer-motion"
 import { QuizLoader } from "@/components/ui/quiz-loader"
 import FlashCardResults from "./FlashCardQuizResults"
@@ -35,14 +35,14 @@ export default function FlashcardResultHandler({
   const router = useRouter()
   const pathname = usePathname()
   const dispatch = useAppDispatch()
-  const { isAuthenticated, isInitialized, isLoading: isAuthLoading } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
 
   const { shouldRedirectToResults, error: stateError } = useAppSelector(selectFlashcardState)
   const isCompleted = useAppSelector(selectIsQuizComplete)
   const processedResults = useAppSelector(selectProcessedResults)
 
   useEffect(() => {
-    if (!slug || !isInitialized) return
+    if (!slug || isAuthLoading) return
     
     if (!processedResults) {
       dispatch(checkAuthAndLoadResults())
@@ -58,7 +58,7 @@ export default function FlashcardResultHandler({
           router.replace(`/dashboard/flashcard/${slug}`)
         })
     }
-  }, [slug, isInitialized, processedResults, dispatch, router])
+  }, [slug, isAuthLoading, processedResults, dispatch, router])
 
   const handleRestart = useCallback(() => {
     dispatch(clearQuizState())
@@ -85,7 +85,7 @@ export default function FlashcardResultHandler({
   }, [router, pathname])
 
   if (
-    isInitialized &&
+    !isAuthLoading &&
     !isCompleted &&
     shouldRedirectToResults
   ) {
@@ -93,7 +93,7 @@ export default function FlashcardResultHandler({
     return null
   }
 
-  if (isAuthLoading || !isInitialized) {
+  if (isAuthLoading) {
     return (      <div className="flex items-center justify-center min-h-[400px]">
         <QuizLoader />
       </div>

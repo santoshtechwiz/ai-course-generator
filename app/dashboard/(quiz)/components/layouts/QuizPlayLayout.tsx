@@ -7,7 +7,7 @@ import { Suspense, useMemo, useEffect, useState } from "react"
 import { JsonLD } from "@/lib/seo-manager-new"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { useLoader } from "@/components/ui/loader/loader-context"
+import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 
 export const dynamic = "force-dynamic"
 
@@ -24,7 +24,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
   const isMobile = useMediaQuery("(max-width: 768px)")
   const pathname = usePathname()
   const [isLoaded, setIsLoaded] = useState(false)
-  const { isLoading } = useLoader()
+  const { isLoading } = useGlobalLoading()
 
   const [quizMeta, setQuizMeta] = useState({
     title:

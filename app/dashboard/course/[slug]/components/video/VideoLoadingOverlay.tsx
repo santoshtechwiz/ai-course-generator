@@ -1,24 +1,35 @@
-import React from "react";
-import { GlobalLoader } from "@/components/ui/loader";
+import React, { useEffect } from "react";
+import { useGlobalLoading } from "@/store/slices/global-loading-slice";
 
 interface VideoLoadingOverlayProps {
   isVisible: boolean;
 }
 
 const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ isVisible }) => {
-  if (!isVisible) return null;
+  const { showLoading, hideLoading } = useGlobalLoading()
 
-  return (
-    <div className="absolute inset-0 flex items-center justify-center w-full h-full bg-black/80 z-10">
-      <GlobalLoader 
-        size="lg" 
-        text="Loading video player..." 
-        subText="Please wait while we prepare your content"
-        theme="primary"
-        className="text-white"
-      />
-    </div>
-  );
+  useEffect(() => {
+    let loaderId: string | null = null
+
+    if (isVisible) {
+      loaderId = showLoading({
+        message: "Loading video player...",
+        subMessage: "Please wait while we prepare your content",
+        variant: 'spinner',
+        theme: 'primary',
+        isBlocking: true,
+        priority: 5
+      })
+    }
+
+    return () => {
+      if (loaderId) {
+        hideLoading(loaderId)
+      }
+    }
+  }, [isVisible, showLoading, hideLoading])
+
+  return null; // Loading handled by GlobalLoader
 };
 
 export default React.memo(VideoLoadingOverlay);

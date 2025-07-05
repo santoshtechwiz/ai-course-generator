@@ -1,3 +1,3 @@
-// Re-export from the new unified loader system
+// Re-export from the unified global loader system
 export * from "./loader/index"
-export { default } from "./loader/courseai-loader"
+export { GlobalLoader as default } from "./loader/global-loader"

@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import quizReducer, {
+import {
+  quizReducer,
   setCurrentQuestionIndex,
   saveAnswer,
   setQuizCompleted,
@@ -7,10 +8,10 @@ import quizReducer, {
   setQuizResults,
   fetchQuiz,
   submitQuiz,
-  API_ENDPOINTS,
-  normalizeSlug,
-  type QuizState
-} from './quiz-slice';
+  QuizState
+} from './quiz';
+import { API_ENDPOINTS } from './quiz/quiz-helpers';
+import { QuizHelpers } from './quiz/quiz-helpers';
 
 // Mock fetch
 global.fetch = jest.fn() as jest.Mock;
@@ -359,12 +360,11 @@ describe('Quiz Slice', () => {  // Test initial state
       }
     });
 
-    it('should normalize slugs correctly', () => {
-      expect(normalizeSlug('test-slug')).toBe('test-slug');
-      expect(normalizeSlug({ slug: 'object-slug' })).toBe('object-slug');
-      expect(normalizeSlug({ id: 'object-id' })).toBe('object-id');
-      expect(normalizeSlug(123)).toBe('123');
-      expect(normalizeSlug(null)).toBe('null');
+    it('should normalize slugs correctly', () => {      expect(QuizHelpers.normalizeSlug('test-slug')).toBe('test-slug');
+      expect(QuizHelpers.normalizeSlug({ slug: 'object-slug' })).toBe('object-slug');
+      expect(QuizHelpers.normalizeSlug({ id: 'object-id' })).toBe('object-id');
+      expect(QuizHelpers.normalizeSlug(123)).toBe('123');
+      expect(QuizHelpers.normalizeSlug(null)).toBe('null');
     });
   });
 });

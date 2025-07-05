@@ -1,15 +1,12 @@
-export { GlobalLoader } from "./global-loader"
-export { useGlobalLoading } from "./use-global-loading"
-export type { GlobalLoaderProps } from "./global-loader"
+// Unified Global Loader System
+export { GlobalLoader } from './global-loader'
+export { default } from './global-loader'
+export { useNavigationLoader } from './use-navigation-loader'
+export { GlobalLoaderProvider } from './global-loader-provider'
+export { useGlobalLoading } from '@/store/slices/global-loading-slice'
 
-// Legacy exports - these will now use GlobalLoader under the hood for backward compatibility
-export { 
-  CourseAILoader as Loader,
-  FullPageLoader, 
-  InlineLoader, 
-  MinimalLoader, 
-  CardLoader, 
-  SkeletonLoader 
-} from "./courseai-loader-compat"
-export { LoaderProvider, useLoader } from "./loader-context"
-export type { LoaderProps, LoaderSize, LoaderVariant, LoaderContext } from "./types"
+// Type exports
+export type { GlobalLoaderProps } from './global-loader'
+
+// Backwards compatibility - these will be removed in future versions
+export { GlobalLoader as CourseAILoader } from './global-loader'

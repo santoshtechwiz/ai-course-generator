@@ -6,7 +6,7 @@ import Image, { type StaticImageData } from "next/image"
 import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useToast } from "@/hooks"
-import { useAuth } from "@/hooks/use-auth"
+import { signIn } from "next-auth/react"
 import { cn } from "@/lib/utils"
 
 export interface AuthButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -26,10 +26,8 @@ export function AuthButton({
   onClick,
   className,
   ...props
-}: AuthButtonProps) {
-  const [isButtonLoading, setIsButtonLoading] = useState(false)
+}: AuthButtonProps) {  const [isButtonLoading, setIsButtonLoading] = useState(false)
   const { toast } = useToast()
-  const { login } = useAuth()
   const isClickInProgress = useRef(false)
 
   const handleClick = async (e: React.MouseEvent) => {
@@ -48,12 +46,13 @@ export function AuthButton({
     try {
       if (!provider || typeof provider !== "string") {
         throw new Error("Invalid authentication provider")
-      }
-
-      const safeCallbackUrl =
+      }      const safeCallbackUrl =
         callbackUrl && typeof callbackUrl === "string" ? callbackUrl : "/dashboard"
 
-      await login(provider.toLowerCase(), { callbackUrl: safeCallbackUrl })
+      await signIn(provider.toLowerCase(), { 
+        callbackUrl: safeCallbackUrl,
+        redirect: true
+      })
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error)
       toast({
@@ -65,7 +64,6 @@ export function AuthButton({
       isClickInProgress.current = false
     }
   }
-
   return (
     <motion.button
       onClick={handleClick}
@@ -81,7 +79,7 @@ export function AuthButton({
         "disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
-      {...props}
+      type="button"
     >
       {isButtonLoading ? (
         <Loader2 className="h-5 w-5 animate-spin" />

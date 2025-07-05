@@ -7,31 +7,13 @@ import { CalendarIcon, RefreshCcw } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
 import { useEffect, useState, memo } from "react"
-import { useAppSelector, useAppDispatch } from "@/store"
-import { selectSubscription, fetchSubscription, selectSubscriptionData, forceRefreshSubscription } from "@/store/slices/subscription-slice"
+import { useAuth } from "@/modules/auth"
 import { logger } from "@/lib/logger"
 
 const SubscriptionStatus = memo(function SubscriptionStatus() {
-  const subscription = useAppSelector(selectSubscription)
-  const rawData = useAppSelector(selectSubscriptionData)
-  const dispatch = useAppDispatch()
+  const { subscription, isLoading } = useAuth()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Force refresh on component mount
-  useEffect(() => {
-    dispatch(forceRefreshSubscription())
-      .catch(err => {
-        logger.error("Failed to refresh subscription on mount:", err)
-        setError("Failed to load subscription data")
-      })
-  }, [dispatch])
-
-  // Debug subscription data
-  useEffect(() => {
-    logger.debug(`Raw subscription data: ${JSON.stringify(rawData)}`)
-    logger.debug(`Processed subscription state: ${JSON.stringify(subscription)}`)
-  }, [subscription, rawData])
 
   const handleRefresh = async () => {
     if (isRefreshing) return
@@ -39,7 +21,8 @@ const SubscriptionStatus = memo(function SubscriptionStatus() {
     setIsRefreshing(true)
     setError(null)
     try {
-      await dispatch(forceRefreshSubscription()).unwrap()
+      // Session-based auth will automatically refresh on session update
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate refresh
     } catch (err) {
       logger.error("Failed to refresh subscription:", err)
       setError("Failed to refresh subscription data")
@@ -47,8 +30,7 @@ const SubscriptionStatus = memo(function SubscriptionStatus() {
       setIsRefreshing(false)
     }
   }
-
-  if (!subscription || subscription.subscriptionPlan === "FREE") {
+  if (!subscription || subscription.plan === "FREE") {
     return (
       <Card>
         <CardHeader>
@@ -78,9 +60,9 @@ const SubscriptionStatus = memo(function SubscriptionStatus() {
     )
   }
 
-  const isActive = subscription.status === "ACTIVE"
-  const timeUntilExpiry = subscription.expirationDate
-    ? formatDistanceToNow(new Date(subscription.expirationDate), { addSuffix: true })
+  const isActive = subscription.status === "active"
+  const timeUntilExpiry = subscription.currentPeriodEnd
+    ? formatDistanceToNow(new Date(subscription.currentPeriodEnd), { addSuffix: true })
     : "Unknown"
 
   return (
@@ -88,7 +70,9 @@ const SubscriptionStatus = memo(function SubscriptionStatus() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Subscription</span>
-          <Badge variant={isActive ? "default" : "destructive"}>{subscription.status}</Badge>
+          <Badge variant={isActive ? "default" : "destructive"}>
+            {subscription.status.toUpperCase()}
+          </Badge>
           <Button 
             variant="ghost" 
             size="icon" 

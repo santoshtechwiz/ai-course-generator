@@ -60,14 +60,7 @@ export const fetchSubscription = createAsyncThunk<
     logger.debug("Subscription fetch skipped (in-flight or recent)")
     return data ?? DEFAULT_FREE_SUBSCRIPTION
   }
-
   try {
-    const authState = getState().auth
-    if (!authState.user?.id) {
-      logger.warn("User not authenticated, skipping subscription fetch")
-      return DEFAULT_FREE_SUBSCRIPTION
-    }
-
     const cacheBuster = `nocache=${Date.now()}`
 
     const res = await withTimeout(
@@ -103,16 +96,14 @@ export const fetchSubscription = createAsyncThunk<
     } catch (err) {
       logger.error("Failed to parse subscription response", err)
       return DEFAULT_FREE_SUBSCRIPTION
-    }
-
-    const transformed: SubscriptionData = {
+    }    const transformed: SubscriptionData = {
       credits: Math.max(0, result.credits || 0),
       tokensUsed: Math.max(0, result.tokensUsed || 0),
       subscriptionPlan: result.subscriptionPlan || "FREE",
       cancelAtPeriodEnd: Boolean(result.cancelAtPeriodEnd),
       expirationDate: result.expirationDate,
       status: (result.status as SubscriptionStatusType) || "INACTIVE",
-      subscriptionId: result.subscriptionId ?? "",
+      subscriptionId: "", // Not provided by API response
       isSubscribed: false, // will be updated next
     }
 
@@ -259,9 +250,11 @@ export const selectSubscriptionLoading = (state: RootState) =>
 export const selectIsSubscriptionLoading = selectSubscriptionLoading
 
 export const canDownloadPdfSelector = (state: RootState) => {
-  const user = state.auth.user
+  const subscriptionData = state.subscription.data
+  if (!subscriptionData) return false
   return (
-    user?.subscriptionPlan === "PREMIUM" || user?.subscriptionPlan === "ENTERPRISE"
+    subscriptionData.subscriptionPlan === "PREMIUM" || 
+    subscriptionData.subscriptionPlan === "ULTIMATE"
   )
 }
 

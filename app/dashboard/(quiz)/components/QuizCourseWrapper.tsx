@@ -14,7 +14,7 @@ import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/Bla
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
 import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
 import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
-import useSubscription from "@/hooks/use-subscription"
+import { useAuth } from "@/modules/auth"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard"
 
@@ -24,7 +24,7 @@ interface QuizCourseWrapperProps {
 }
 
 export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
-  const { data: subscriptionStatus } = useSubscription()
+  const { user } = useAuth()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
 
@@ -34,16 +34,15 @@ export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps)
     ...queryParams,
   }
 
-  const subscriptionPlan = subscriptionStatus ? subscriptionStatus.subscriptionPlan : "FREE"
+  const subscriptionPlan = user?.subscriptionPlan || "FREE"
   const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)
 
   const getMaxQuestions = () => {
     return plan?.limits.maxQuestionsPerQuiz || 0
   }
-
   const isLoggedIn = !!session?.user
   const maxQuestions = getMaxQuestions()
-  const credits = subscriptionStatus?.credits || 0
+  const credits = user?.credits || 0
 
   const commonProps = {
     maxQuestions,

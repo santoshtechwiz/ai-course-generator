@@ -1,7 +1,8 @@
 "use client"
 
-import { GlobalLoader } from "@/components/ui/loader"
+import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 import { cn } from "@/lib/utils"
+import { useEffect } from "react"
 
 interface LoadingCardProps {
   message?: string
@@ -14,8 +15,27 @@ export function LoadingCard({
   subMessage = "Please wait while we prepare your content",
   className,
 }: LoadingCardProps) {
+  const { showLoading, hideLoading } = useGlobalLoading()
+
+  useEffect(() => {
+    const loaderId = showLoading({
+      message,
+      subMessage,
+      variant: 'spinner',
+      theme: 'primary',
+      isBlocking: false,
+      priority: 1
+    })
+
+    return () => {
+      hideLoading(loaderId)
+    }
+  }, [message, subMessage, showLoading, hideLoading])
+
   return (
-    <GlobalLoader text={message} subText={subMessage} className={cn("animate-fade-in", className)} theme="primary" />
+    <div className={cn("animate-fade-in", className)}>
+      {/* Loading handled by GlobalLoader */}
+    </div>
   )
 }
 

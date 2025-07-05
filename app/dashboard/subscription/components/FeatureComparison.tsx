@@ -1,13 +1,13 @@
 "use client"
 
 import React from "react"
+import { useMemo } from "react"
 
 import { Check, X, HelpCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FEATURES, PLAN_FEATURES, FeatureCategory } from "./subscription-plans"
 import type { SubscriptionPlanType } from "../../../types/subscription"
-import { useMemo } from "react"
-import { useSubscription } from "@/modules/auth"
+import { useAuth } from "@/modules/auth"
 
 /**
  * FeatureCategoryList Component
@@ -89,8 +89,8 @@ export function FeatureCategoryList({ planId }: { planId: SubscriptionPlanType }
  * Displays a comparison table of features across all subscription plans
  */
 export function FeatureComparison() {
-  // Get current subscription from Redux
-  const subscription = useAppSelector(selectSubscription)
+  // Get current subscription from session-based auth
+  const { subscription } = useAuth()
 
   // Get all unique categories
   const categories = Object.values(FeatureCategory)

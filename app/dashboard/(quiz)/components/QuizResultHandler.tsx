@@ -13,7 +13,7 @@ import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
 import { Progress } from '@/components/ui/progress'
 
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/modules/auth'
 import {
   selectQuizResults,
   selectQuizStatus,
@@ -120,7 +120,7 @@ const quizResultMachine = createMachine({
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { isAuthenticated, isInitialized, isLoading: isAuthLoading, login } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, login } = useAuth()
 
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
@@ -153,7 +153,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   }, [dispatch, quizResults, slug]);
   // Optimized effect for loading results
   useEffect(() => {
-    if (!slug || !isInitialized) return
+    if (!slug || isAuthLoading) return
 
     // Check for direct URL access first
     try {
@@ -218,7 +218,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
         send({ type: 'ERROR' });
       });
       
-  }, [slug, isInitialized, dispatch, send, hasResults, isAuthenticated, quizResults]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [slug, isAuthLoading, dispatch, send, hasResults, isAuthenticated, quizResults]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const processedResults = useMemo(() => {
     if (!quizResults) return null
@@ -258,7 +258,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     }
   }, [quizResults, quizQuestions, slug])
 
-  const isLoading = quizStatus === 'loading' || isAuthLoading || !isInitialized  // Simplified retake function with immediate redirect
+  const isLoading = quizStatus === 'loading' || isAuthLoading  // Simplified retake function with immediate redirect
   const handleRetake = () => {
     // Flag that we're redirecting to prevent other state changes
     setIsRedirecting(true);
@@ -306,10 +306,10 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   useEffect(() => {
     // When authentication state changes to authenticated and we have results,
     // transition to results state regardless of current state
-    if (isAuthenticated && hasResults && isInitialized) {
+    if (isAuthenticated && hasResults && !isAuthLoading) {
       send({ type: 'RESULTS_LOADED_WITH_AUTH' });
     }
-  }, [isAuthenticated, hasResults, isInitialized, send]);
+  }, [isAuthenticated, hasResults, isAuthLoading, send]);
     // Simplified loading timeout effect that redirects if results can't be loaded
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
