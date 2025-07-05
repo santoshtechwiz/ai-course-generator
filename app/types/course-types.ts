@@ -96,6 +96,10 @@ export interface FullCourseType {
   students?: number;
   level?: string;
   viewCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  difficulty?: string;
+  estimatedTime?: string;
 }
 
 // Course API response types
