@@ -19,3 +19,13 @@ export type JsonLdType =
   | "organization"
   | "breadcrumbList"
   | "learningResource";
+
+/**
+ * Props for SEO schema components
+ */
+export interface SchemaProps {
+  siteUrl?: string;
+  siteName?: string;
+  logoUrl?: string;
+  socialProfiles?: string[];
+}

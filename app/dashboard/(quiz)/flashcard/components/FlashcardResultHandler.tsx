@@ -42,9 +42,23 @@ export default function FlashcardResultHandler({
   const processedResults = useAppSelector(selectProcessedResults)
 
   useEffect(() => {
-    if (!slug || !isInitialized || processedResults) return
-    dispatch(checkAuthAndLoadResults())
-  }, [slug, isInitialized, processedResults, dispatch])
+    if (!slug || !isInitialized) return
+    
+    if (!processedResults) {
+      dispatch(checkAuthAndLoadResults())
+        .unwrap()
+        .then((result) => {
+          // If there are still no results after loading, redirect to quiz
+          if (!result || !result.totalQuestions) {
+            router.replace(`/dashboard/flashcard/${slug}`)
+          }
+        })
+        .catch(() => {
+          // On error, redirect to the quiz
+          router.replace(`/dashboard/flashcard/${slug}`)
+        })
+    }
+  }, [slug, isInitialized, processedResults, dispatch, router])
 
   const handleRestart = useCallback(() => {
     dispatch(clearQuizState())
@@ -80,9 +94,8 @@ export default function FlashcardResultHandler({
   }
 
   if (isAuthLoading || !isInitialized) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <QuizLoader message="Loading your results..." />
+    return (      <div className="flex items-center justify-center min-h-[400px]">
+        <QuizLoader />
       </div>
     )
   }
@@ -119,22 +132,39 @@ export default function FlashcardResultHandler({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.2 }}
-      >
-        <FlashCardResults
-          slug={slug}
-          title={title}
-          quizId={processedResults?.quizId}
-          score={processedResults?.percentage}
-          totalQuestions={processedResults?.totalQuestions}
-          correctAnswers={processedResults?.correctAnswers}
-          stillLearningAnswers={processedResults?.stillLearningAnswers}
-          incorrectAnswers={processedResults?.incorrectAnswers}
-          totalTime={processedResults?.totalTime}
-          onRestart={handleRestart}
-          onReview={handleReview}
-          onReviewStillLearning={handleReviewStillLearning}
-          result={processedResults}
-        />
+      >        {processedResults ? (
+          <FlashCardResults
+            slug={slug}
+            title={title}
+            onRestart={handleRestart}
+            onReview={handleReview}
+            onReviewStillLearning={handleReviewStillLearning}
+            result={{
+              correctAnswers: processedResults.correctAnswers || 0,
+              incorrectAnswers: processedResults.incorrectAnswers || 0,
+              stillLearningAnswers: processedResults.stillLearningAnswers || 0,
+              totalQuestions: processedResults.totalQuestions || 0,
+              percentage: processedResults.percentage || 0,
+              totalTime: processedResults.totalTime || 0,              questions: (processedResults.questions || []).map(q => ({
+                id: typeof q.id === 'string' ? parseInt(q.id) || 0 : (q.id || 0),
+                question: q.question || '',
+                answer: q.answer || ''
+              })),
+              answers: (processedResults.answers || [])
+                .filter(a => 'answer' in a && a.questionId) 
+                .map(a => ({
+                  questionId: typeof a.questionId === 'string' ? parseInt(a.questionId) || 0 : (a.questionId || 0),
+                  answer: 'answer' in a ? a.answer : ''
+                })),
+              reviewCards: processedResults.reviewCards || [],
+              stillLearningCards: processedResults.stillLearningCards || []
+            }}
+          />
+        ) : (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <QuizLoader />
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   )

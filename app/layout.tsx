@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import "../globals.css"
 
-import { JsonLD } from "@/app/schema/components"
+import SEOSchema from "@/app/schema/SEOSchema"
 import { defaultMetadata } from "@/lib/seo"
 import Footer from "@/components/shared/Footer"
 import { Providers } from "@/store/provider"
@@ -92,23 +92,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Footer />
             </ClientLayoutWrapper>
           </Providers>
-        </Suspense>
-
-        <JsonLD
-          type="website"
-          data={{
-            name: "Course AI",
-            description: "AI-powered course and quiz generator for personalized learning",
-            url: process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io",
-            potentialAction: {
-              "@type": "SearchAction",
-              target: {
-                "@type": "EntryPoint",
-                urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/search?q={search_term_string}`,
-              },
-              "query-input": "required name=search_term_string",
-            },
-          }}
+        </Suspense>        <SEOSchema 
+          siteName="CourseAI"
+          siteUrl={process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}
+          logoUrl={`${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/logo.png`}
+          socialProfiles={[
+            // Add your social profiles here
+            // "https://twitter.com/courseai",
+            // "https://facebook.com/courseai",
+            // "https://linkedin.com/company/courseai",
+            // "https://github.com/courseai",
+          ]}
         />
       </body>
     </html>
