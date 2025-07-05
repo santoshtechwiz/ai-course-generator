@@ -25,6 +25,8 @@ import { quizSchema } from "@/schema/schema"
 
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
+import { useAppSelector } from "@/store"
+import { selectTokenUsage } from "@/store/slices/subscription-slice"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -53,16 +55,18 @@ export default function CreateQuizForm({
   credits,
   params,
   quizType = "mcq",
-}: CreateQuizFormProps) {
-  const router = useRouter()
+}: CreateQuizFormProps) {  const router = useRouter()
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [submissionError, setSubmissionError] = React.useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = React.useState(false)
   const { data: session } = useSession()
   const { data: subscriptionData } = useSubscription() as {
     data?: Subscription
     status?: string
   }
+  const tokenUsageData = useAppSelector(selectTokenUsage)
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title || "",
@@ -155,18 +159,15 @@ export default function CreateQuizForm({
 
       if (!isLoggedIn) {
         signIn("credentials", { callbackUrl: `/dashboard/mcq'}` })
-        return
-      }
+        return      }
 
-      setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
     [isLoading, isLoggedIn, validateQuizData, toast, quizType],
   )
-
   const handleConfirm = React.useCallback(async () => {
-    setIsConfirmDialogOpen(false)
-
+    setIsLoading(true)
+    
     try {
       const formValues = watch()
       const response = await createQuizMutation(formValues)
@@ -416,8 +417,38 @@ export default function CreateQuizForm({
       <ConfirmDialog
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
-        onCancel={() => setIsConfirmDialogOpen(false)}
-      />
+        onCancel={() => {
+          setIsConfirmDialogOpen(false)
+          setIsLoading(false)
+        }}
+        title="Generate MCQ Quiz"
+        description="You are about to use AI to generate a multiple-choice quiz. This will use credits from your account."        confirmText="Generate Now"
+        cancelText="Cancel"
+        showTokenUsage={true}
+        status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : "idle"}
+        errorMessage={submissionError}
+        tokenUsage={{
+          used: Math.max(0, maxQuestions - credits),
+          available: maxQuestions,
+          remaining: credits,
+          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
+        }}
+        quizInfo={{
+          type: "Multiple Choice Questions",
+          topic: watch("title"),
+          count: watch("amount"),
+          difficulty: watch("difficulty"),
+          estimatedTokens: Math.min(watch("amount") || 1, 5) * 120, // Rough estimate
+        }}
+      >
+        <div className="py-2">
+          <p className="text-sm">
+            Generating {watch("amount")} multiple-choice questions at{" "}
+            <span className="font-medium capitalize">{watch("difficulty")}</span> difficulty level for topic:{" "}
+            <span className="font-medium">{watch("title")}</span>
+          </p>
+        </div>
+      </ConfirmDialog>
     </motion.div>
   )
 }

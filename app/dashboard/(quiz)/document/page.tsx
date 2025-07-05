@@ -13,6 +13,7 @@ import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
 import PlanAwareButton from "../components/PlanAwareButton"
+import { ConfirmDialog } from "../components/ConfirmDialog"
 import { quizStore, type Question as QuizStoreQuestion, type Quiz } from "@/lib/quiz-store"
 import  DocumentQuizDisplay  from "./components/DocumentQuizDisplay"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
@@ -53,6 +54,8 @@ export default function DocumentQuizPage() {
   const [savedQuizId, setSavedQuizId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null)
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const { data: session } = useSession()
   
@@ -85,8 +88,14 @@ export default function DocumentQuizPage() {
 
   const handleGenerateQuiz = async () => {
     if (!file) return
+    setIsConfirmDialogOpen(true)
+  }
+
+  const handleConfirm = async () => {
+    if (!file) return
 
     setIsLoading(true)
+    setSubmitError(null)
 
     const formData = new FormData()
     formData.append("file", file)
@@ -103,10 +112,10 @@ export default function DocumentQuizPage() {
         throw new Error("Failed to generate quiz")
       }
 
-      const quizData: Question[] = (await response.json()).map((q: any, index: number) => ({
+      const quizData: LocalQuestion[] = (await response.json()).map((q: any, index: number) => ({
         id: q.id ?? `generated-${index}`,
         question: String(q.question ?? ""),
-        options: Array.isArray(q.options) ? q.options.map((o: any) => String(o)) : [],
+        options: Array.isArray(q.options) ? q.options.map((o: string) => String(o)) : [],
         correctAnswer: typeof q.correctAnswer === "number" ? q.correctAnswer : 0,
       }))
       setQuiz(quizData)
@@ -118,6 +127,7 @@ export default function DocumentQuizPage() {
       setActiveTab("quiz")
     } catch (error) {
       console.error("Error generating quiz:", error)
+      setSubmitError(error instanceof Error ? error.message : "Failed to generate quiz")
       toast({
         title: "Error",
         description: "Failed to generate quiz. Please try again.",
@@ -439,6 +449,48 @@ export default function DocumentQuizPage() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Confirm Quiz Generation Dialog */}
+      <ConfirmDialog
+        isOpen={isConfirmDialogOpen}
+        onConfirm={handleConfirm}
+        onCancel={() => {
+          setIsConfirmDialogOpen(false)
+          setIsLoading(false)
+        }}
+        title="Generate Document Quiz"
+        description="You are about to use AI to generate a quiz from your document. This will use credits from your account."
+        confirmText="Generate Now"
+        cancelText="Cancel"
+        showTokenUsage={true}
+        status={isLoading ? "loading" : submitError ? "error" : null}
+        errorMessage={submitError || undefined}
+        tokenUsage={{
+          used: Math.max(0, quizPlan.maxQuestions - quizPlan.credits),
+          available: quizPlan.maxQuestions,
+          remaining: quizPlan.credits,
+          percentage: (Math.max(0, quizPlan.maxQuestions - quizPlan.credits) / quizPlan.maxQuestions) * 100
+        }}
+        quizInfo={{
+          type: "Document Quiz",
+          count: quizOptions.numberOfQuestions,
+          topic: file?.name || "Uploaded document",
+          difficulty: quizOptions.difficulty <= 33 ? "easy" : quizOptions.difficulty <= 66 ? "medium" : "hard",
+          estimatedTokens: Math.min(quizOptions.numberOfQuestions || 1, 5) * 100 + (file?.size || 0) / 100
+        }}
+      >
+        <div className="py-2">
+          <p className="text-sm">
+            Generating {quizOptions.numberOfQuestions} questions at{" "}
+            {quizOptions.difficulty <= 33 
+              ? "easy" 
+              : quizOptions.difficulty <= 66 
+                ? "medium" 
+                : "hard"} difficulty level 
+            from document: <span className="font-medium">{file?.name || "Uploaded file"}</span>
+          </p>
+        </div>
+      </ConfirmDialog>
     </main>
   )
 }

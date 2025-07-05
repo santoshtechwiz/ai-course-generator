@@ -29,7 +29,7 @@ export function PlanBadge({ plan, className = "" }: PlanBadgeProps) {
           Basic
         </Badge>
       )
-    case "PRO":
+    case "PREMIUM":
       return (
         <Badge variant="default" className={`bg-purple-500 hover:bg-purple-600 ${className}`}>
           Pro

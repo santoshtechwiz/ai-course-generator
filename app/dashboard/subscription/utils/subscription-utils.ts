@@ -88,7 +88,7 @@ export function isFeatureAvailable(
   switch (subscriptionPlan) {
     case "ULTIMATE":
       return true // All features available
-    case "PRO":
+    case "PREMIUM":
       return feature !== "api_access" // All except API access
     case "BASIC":
       return feature === "advanced_quizzes" || feature === "unlimited_generation"
@@ -104,7 +104,7 @@ export function isFeatureAvailable(
  * @returns Valid subscription plan type
  */
 export function validateSubscriptionPlan(plan: any): SubscriptionPlanType {
-  const validPlans: SubscriptionPlanType[] = ["FREE", "BASIC", "PRO", "ULTIMATE"]
+  const validPlans: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"]
 
   if (typeof plan === "string" && validPlans.includes(plan.toUpperCase() as SubscriptionPlanType)) {
     return plan.toUpperCase() as SubscriptionPlanType

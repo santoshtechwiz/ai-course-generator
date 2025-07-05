@@ -144,7 +144,6 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
       setSubmitError(error?.response?.data?.message || "Failed to create code quiz. Please try again.")
     },
   })
-
   const onSubmit = React.useCallback(
     (data: CodeQuizFormData) => {
       if (isLoading) return
@@ -160,15 +159,13 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
       }
 
       setSubmitError(null)
-      setIsLoading(true)
       setIsConfirmDialogOpen(true)
     },
     [isLoading, isLoggedIn],
   )
-
   const handleConfirm = React.useCallback(async () => {
-    setIsConfirmDialogOpen(false)
-
+    setIsLoading(true)
+    
     try {
       const formValues = watch()
       const response = await createCodeQuizMutation({
@@ -562,7 +559,36 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
           setIsConfirmDialogOpen(false)
           setIsLoading(false)
         }}
-      />
+        title="Generate Code Quiz"
+        description="You are about to use AI to generate a code quiz. This will use credits from your account."
+        confirmText="Generate Now"
+        cancelText="Cancel"
+        showTokenUsage={true}
+        status={isLoading ? "loading" : submitError ? "error" : undefined}
+        errorMessage={submitError ?? undefined}
+        tokenUsage={{
+          used: Math.max(0, maxQuestions - credits),
+          available: maxQuestions,
+          remaining: credits,
+          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
+        }}
+        quizInfo={{
+          type: "Code Quiz",
+          topic: watch("title"),
+          count: watch("amount"),
+          difficulty: watch("difficulty"),
+          estimatedTokens: Math.min(watch("amount") || 1, 5) * 150, // Code quizzes use more tokens
+        }}
+      >
+        <div className="py-2">
+          <p className="text-sm">
+            Generating {watch("amount")} code questions at{" "}
+            <span className="font-medium capitalize">{watch("difficulty")}</span> difficulty level for{" "}
+            <span className="font-medium">{watch("language")}</span> programming on topic:{" "}
+            <span className="font-medium">{watch("title")}</span>
+          </p>
+        </div>
+      </ConfirmDialog>
     </motion.div>
   )
 }

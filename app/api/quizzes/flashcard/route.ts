@@ -6,6 +6,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import type { User } from "@prisma/client"
 import { titleToSlug } from "@/lib/slug"
+import { generateUniqueSlug } from "@/lib/utils/utils"
 
 // Input validation schema
 const createFlashcardSchema = z.object({
@@ -19,23 +20,7 @@ interface FlashCardData {
   answer: string
 }
 
-// Optimize the generateUniqueSlug function
-async function generateUniqueSlug(title: string): Promise<string> {
-  const baseSlug = titleToSlug(title)
 
-  // First try with the base slug
-  const existingCount = await prisma.userQuiz.count({
-    where: { slug: baseSlug },
-  })
-
-  if (existingCount === 0) return baseSlug
-
-  // Try with a timestamp suffix for uniqueness
-  const timestamp = Date.now().toString().slice(-6)
-  const newSlug = `${baseSlug}-${timestamp}`
-
-  return newSlug
-}
 
 // Optimize the error handling function
 function handleError(error: unknown, defaultMessage = "Internal server error") {
@@ -111,18 +96,9 @@ export async function POST(req: Request) {
     // Generate unique slug
     const slug = await generateUniqueSlug(title)
 
-    // Generate flashcards first, before starting the transaction
-    // This ensures we don't start a transaction that might timeout during AI generation
-    //Simulate dummy flashcard data for testing
-    // Use environment variable to determine whether to use dummy flashcards or AI service
-    const useDummyData = process.env.NODE_ENV === "development"
+    
 
-    const flashcards = useDummyData
-      ? ([
-          { question: "What is AI?", answer: "Artificial Intelligence" },
-          { question: "What is ML?", answer: "Machine Learning" },
-        ] as FlashCardData[])
-      : ((await generateFlashCards(title, count)) as FlashCardData[])
+    const flashcards = ((await generateFlashCards(title, count)) as FlashCardData[]);
 
     if (!flashcards || flashcards.length === 0) {
       throw new Error("Failed to generate flashcards")
@@ -181,73 +157,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
-  try {
-    // Get slug parameter
-    const { searchParams } = new URL(req.url)
-    const slug = searchParams.get("slug")
 
-    if (slug) {
-      // Get specific quiz by slug
-      const quiz = await prisma.userQuiz.findUnique({
-        where: {
-          slug,
-        },
-        include: {
-          flashCards: {
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      })
-
-      if (!quiz) {
-        throw new Error("Flashcard set not found")
-      }
-
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            quiz,
-            flashCards: quiz.flashCards,
-          },
-        },
-        { status: 200 },
-      )
-    } else {
-      // Authenticate user to get session
-      const { session } = await authenticateUser()
-
-      // Get all user's quizzes
-      const quizzes = await prisma.userQuiz.findMany({
-        where: {
-          userId: session.user.id,
-          quizType: "flashcard",
-        },
-        include: {
-          flashCards: {
-            orderBy: { createdAt: "desc" },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      })
-
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            quizzes,
-          },
-        },
-        { status: 200 },
-      )
-    }
-  } catch (error) {
-    return handleError(error, "Failed to fetch flashcards")
-  }
-}
 
 export async function PATCH(req: Request) {
   try {

@@ -43,16 +43,16 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
                   <TableHead
                     key={plan.name}
                     className={`text-center bg-slate-50 dark:bg-slate-800 font-semibold ${
-                      plan.id === "PRO" ? "bg-purple-50 dark:bg-purple-900/20" : ""
+                      plan.id === "PREMIUM" ? "bg-purple-50 dark:bg-purple-900/20" : ""
                     }`}
                   >
                     <div className="flex flex-col items-center">
                       {plan.id === "FREE" && <CreditCard className="h-5 w-5 mb-1 text-slate-500" />}
                       {plan.id === "BASIC" && <Zap className="h-5 w-5 mb-1 text-blue-500" />}
-                      {plan.id === "PRO" && <Rocket className="h-5 w-5 mb-1 text-purple-500" />}
+                      {plan.id === "PREMIUM" && <Rocket className="h-5 w-5 mb-1 text-purple-500" />}
                       {plan.id === "ULTIMATE" && <Crown className="h-5 w-5 mb-1 text-amber-500" />}
                       {plan.name}
-                      {plan.id === "PRO" && (
+                      {plan.id === "PREMIUM" && (
                         <Badge className="mt-1 bg-purple-500 text-white text-xs">Recommended</Badge>
                       )}
                     </div>
@@ -67,7 +67,7 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
                   <TableCell
                     key={plan.name}
                     className={`text-center font-semibold ${
-                      plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""
+                      plan.id === "PREMIUM" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""
                     }`}
                   >
                     ${plan.options[0].price}/mo
@@ -79,7 +79,7 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
                 {plans.map((plan) => (
                   <TableCell
                     key={plan.name}
-                    className={`text-center ${plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
+                    className={`text-center ${plan.id === "PREMIUM" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
                   >
                     <span className="font-semibold">{plan.tokens}</span>
                   </TableCell>
@@ -90,7 +90,7 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
                 {plans.map((plan) => (
                   <TableCell
                     key={plan.name}
-                    className={`text-center ${plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
+                    className={`text-center ${plan.id === "PREMIUM" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
                   >
                     {plan.limits.maxQuestionsPerQuiz || "N/A"}
                   </TableCell>
@@ -118,7 +118,7 @@ export default function ComparisonTable({ plans }: { plans: typeof SUBSCRIPTION_
                     return (
                       <TableCell
                         key={plan.name}
-                        className={`text-center ${plan.id === "PRO" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
+                        className={`text-center ${plan.id === "PREMIUM" ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}
                       >
                         {featureInfo?.available ? (
                           <div className="flex justify-center">

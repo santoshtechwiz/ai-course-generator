@@ -18,6 +18,7 @@ import { SubscriptionSlider } from "@/app/dashboard/subscription/components/Subs
 
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
+import { ConfirmDialog } from "../../components/ConfirmDialog"
 
 // Define schema with zod for consistent validation
 const openEndedQuizSchema = z.object({
@@ -41,6 +42,9 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   const router = useRouter()
   const [openInfo, setOpenInfo] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const {
     control,
@@ -56,11 +60,10 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
     },
     mode: "onChange",
   })
-
   const generateQuiz = useCallback(
     async (data: OpenEndedQuizFormData) => {
       let isMounted = true
-      setIsLoading(true)
+      setSubmitError(null)
 
       try {
         const response = await fetch("/api/quizzes/openended", {
@@ -76,10 +79,20 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
         }
 
         const { slug } = await response.json()
-        if (isMounted) router.push(`/dashboard/openended/${slug}`)
+
+        // Set success state
+        if (isMounted) {
+          setIsSuccess(true)
+
+          // Add a slight delay to ensure the success message is shown before redirecting
+          setTimeout(() => {
+            if (isMounted) router.push(`/dashboard/openended/${slug}`)
+          }, 1000)
+        }
       } catch (err) {
         if (isMounted) {
           console.error("Error generating quiz:", err)
+          setSubmitError(err instanceof Error ? err.message : "Failed to generate quiz")
         }
       } finally {
         if (isMounted) setIsLoading(false)
@@ -90,8 +103,31 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
     },
     [router],
   )
+  const handleConfirm = useCallback(async () => {
+    setIsLoading(true)
+    const data = {
+      topic: watch("topic"),
+      amount: watch("amount"),
+    }
+    await generateQuiz(data)
+  }, [generateQuiz, watch])
 
-  const onSubmit = handleSubmit(generateQuiz)
+  const onSubmit = useCallback(() => {
+    if (isLoading) return
+
+    if (!isLoggedIn) {
+      // Redirect to sign in if not logged in
+      return
+    }
+
+    // Validate token balance
+    if (credits <= 0) {
+      return
+    }
+
+    // Show confirmation dialog
+    setIsConfirmDialogOpen(true)
+  }, [isLoading, isLoggedIn, credits])
 
   const topic = watch("topic")
   const amount = watch("amount")
@@ -262,6 +298,75 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
           </form>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        isOpen={isConfirmDialogOpen}
+        onConfirm={handleConfirm}
+        onCancel={() => {
+          setIsConfirmDialogOpen(false)
+          setIsLoading(false)
+        }}
+        title="Generate Open-Ended Quiz"
+        description="You are about to use AI to generate an open-ended quiz. This will use credits from your account."
+        confirmText="Generate Now"
+        cancelText="Cancel"
+        showTokenUsage={true}
+        status={isLoading ? "loading" : submitError ? "error" : isSuccess ? "success" : "idle"}
+        errorMessage={submitError}
+        tokenUsage={{
+          used: Math.max(0, maxQuestions - credits),
+          available: maxQuestions,
+          remaining: credits,
+          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
+        }}
+        quizInfo={{
+          type: "Open-Ended Quiz",
+          topic: watch("topic"),
+          count: watch("amount"),
+          estimatedTokens: Math.min(watch("amount") || 1, 5) * 150, // Open-ended questions use more tokens
+        }}
+      >
+        <div className="py-2">
+          <p className="text-sm">
+            Generating {watch("amount")} open-ended questions for topic:{" "}
+            <span className="font-medium">{watch("topic")}</span>
+          </p>
+        </div>
+      </ConfirmDialog>
+
+      <AnimatePresence>
+        {submitError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-0 right-0 mt-4 mr-4"
+          >
+            <Alert variant="destructive" className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-0 right-0 mt-4 mr-4"
+          >
+            <Alert variant="success" className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>Your quiz has been generated successfully!</AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

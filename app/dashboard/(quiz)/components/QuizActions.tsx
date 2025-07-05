@@ -59,7 +59,7 @@ export function QuizActions({
   const { canDownloadPdf: canDownloadPDF } = useSubscription()
   console.log("Can download PDF:", canDownloadPDF);
   const currentUserId = useSession().data?.user?.id || null
-  const isOwner = currentUserId === ownerId
+  const isOwner = currentUserId === userId
  
   const promptLogin = () => {
     toast({

@@ -61,7 +61,7 @@ export default function PlanCards({
   cancelAtPeriodEnd?: boolean
   userId?: string | null
 }) {
-  const bestPlan = plans.find((plan) => plan.name === "PRO")
+  const bestPlan = plans.find((plan) => plan.name === "PREMIUM")
   const normalizedStatus = subscriptionStatus?.toUpperCase() || null
 
   // Animation variants for cards
@@ -205,7 +205,7 @@ export default function PlanCards({
                           ? "bg-slate-400"
                           : plan.id === "BASIC"
                             ? "bg-blue-500"
-                            : plan.id === "PRO"
+                            : plan.id === "PREMIUM"
                               ? "bg-purple-500"
                               : "bg-gradient-to-r from-amber-500 to-orange-500"
                       }`}
@@ -234,7 +234,7 @@ export default function PlanCards({
                                 ? "bg-slate-500 hover:bg-slate-600"
                                 : plan.id === "BASIC"
                                   ? "bg-blue-500 hover:bg-blue-600"
-                                  : plan.id === "PRO"
+                                  : plan.id === "PREMIUM"
                                     ? "bg-purple-500 hover:bg-purple-600"
                                     : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                             } shadow-md transition-all duration-300 ${

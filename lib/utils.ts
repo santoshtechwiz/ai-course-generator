@@ -73,7 +73,7 @@ export const getAIModel = (userType: string): string => {
     case "FREE":
     case "BASIC":
       return "gpt-3.5-turbo-1106"
-    case "PRO":
+    case "PREMIUM":
     case "ULTIMATE":
       return "gpt-4-1106-preview"
     default:

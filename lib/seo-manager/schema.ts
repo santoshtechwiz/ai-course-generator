@@ -451,7 +451,7 @@ export function generatePricingSchema(plans: PricingPlan[] = []): Schema {
             },
             {
               "@type": "Offer",
-              name: "Pro",
+              name: "PREMIUM",
               price: "9.99",
               priceCurrency: "USD",
               description: "Full access to all courses and quizzes",

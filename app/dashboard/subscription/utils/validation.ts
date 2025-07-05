@@ -94,14 +94,14 @@ export function validateSubscriptionPlan(plan: any): SubscriptionPlanType {
   const normalizedPlan = String(plan).toUpperCase()
 
   // Check if the plan is one of the valid plan types
-  const validPlans: SubscriptionPlanType[] = ["FREE", "BASIC", "PRO", "ULTIMATE"]
+  const validPlans: SubscriptionPlanType[] = ["FREE", "BASIC", "PREMIUM", "ULTIMATE"]
 
   if (validPlans.includes(normalizedPlan as SubscriptionPlanType)) {
     return normalizedPlan as SubscriptionPlanType
   }
 
   // Map common alternative plan values
-  if (normalizedPlan === "PREMIUM") return "PRO"
+  if (normalizedPlan === "PREMIUM") return "PREMIUM"
   if (normalizedPlan === "ENTERPRISE") return "ULTIMATE"
 
   // Default to FREE for unrecognized plan values

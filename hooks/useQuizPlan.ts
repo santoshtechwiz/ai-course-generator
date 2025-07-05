@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation" // Fixed: next/router to next/naviga
 import { useAuth, useToast } from "@/hooks" // Fixed: import toast properly
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
 
-export type PlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE"
+export type PlanType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE"
 
 interface QuizPlanConfig {
   maxQuestions: Record<PlanType, number>
@@ -19,13 +19,13 @@ const DEFAULT_CONFIG: QuizPlanConfig = {
   maxQuestions: {
     FREE: SUBSCRIPTION_PLANS.find(plan => plan.id === "FREE")?.limits.maxQuestionsPerQuiz || 10,
     BASIC: SUBSCRIPTION_PLANS.find(plan => plan.id === "BASIC")?.limits.maxQuestionsPerQuiz || 15,
-    PRO: SUBSCRIPTION_PLANS.find(plan => plan.id === "PRO")?.limits.maxQuestionsPerQuiz || 30,
+    PRO: SUBSCRIPTION_PLANS.find(plan => plan.id === "PREMIUM")?.limits.maxQuestionsPerQuiz || 30,
     ULTIMATE: SUBSCRIPTION_PLANS.find(plan => plan.id === "ULTIMATE")?.limits.maxQuestionsPerQuiz || 50,
   },
   maxQuizzes: {
     FREE: SUBSCRIPTION_PLANS.find(plan => plan.id === "FREE")?.limits.maxCoursesPerMonth || 2,
     BASIC: SUBSCRIPTION_PLANS.find(plan => plan.id === "BASIC")?.limits.maxCoursesPerMonth || 10,
-    PRO: SUBSCRIPTION_PLANS.find(plan => plan.id === "PRO")?.limits.maxCoursesPerMonth || 30,
+    PRO: SUBSCRIPTION_PLANS.find(plan => plan.id === "PREMIUM")?.limits.maxCoursesPerMonth || 30,
     ULTIMATE: SUBSCRIPTION_PLANS.find(plan => plan.id === "ULTIMATE")?.limits.maxCoursesPerMonth || 100,
   },
 }
@@ -73,7 +73,7 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
     return {
       FREE: SUBSCRIPTION_PLANS.find(plan => plan.id === "FREE")?.tokens || 5,
       BASIC: SUBSCRIPTION_PLANS.find(plan => plan.id === "BASIC")?.tokens || 60,
-      PRO: SUBSCRIPTION_PLANS.find(plan => plan.id === "PRO")?.tokens || 250,
+      PRO: SUBSCRIPTION_PLANS.find(plan => plan.id === "PREMIUM")?.tokens || 250,
       ULTIMATE: SUBSCRIPTION_PLANS.find(plan => plan.id === "ULTIMATE")?.tokens || 600,
     }
   }, [])

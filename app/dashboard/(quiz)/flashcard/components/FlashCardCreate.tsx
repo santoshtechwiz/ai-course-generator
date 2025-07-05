@@ -21,6 +21,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
+import { useAppSelector } from "@/store"
+import { selectTokenUsage } from "@/store/slices/subscription-slice"
 
 import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -51,8 +53,12 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const { toast } = useToast()
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [submissionError, setSubmissionError] = React.useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = React.useState(false)
 
+  // Get subscription data including token usage
   const { data: subscriptionStatus } = useSubscription()
+  const tokenUsageData = useAppSelector(selectTokenUsage)
 
   // Use a ref to track if component is mounted
   const isMounted = React.useRef(false)
@@ -127,50 +133,86 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     (data: FlashCardFormData) => {
       if (isLoading) return
 
+      // Reset states when starting a new submission
+      setSubmissionError(null)
+      setIsSuccess(false)
+
       if (!isLoggedIn) {
         signIn("credentials", { callbackUrl: "/dashboard/flashcard" })
         return
       }
 
-      setIsLoading(true)
+      // Validate token balance
+      if (credits <= 0) {
+        toast({
+          title: "Insufficient Credits",
+          description: "You don't have enough credits to generate flashcards. Please upgrade your plan.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Update form data in persistent state
+      setFormData({
+        ...data,
+        userType: 'student'
+      })
+
+      // Only open the dialog, don't set loading state yet
       setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn],
+    [isLoading, isLoggedIn, credits, toast, setFormData]
   )
 
   const handleConfirm = React.useCallback(async () => {
-    setIsConfirmDialogOpen(false)
+    // Set loading state when confirmation is explicitly confirmed
+    setIsLoading(true)
+    
+    // Reset states
+    setSubmissionError(null)
+    setIsSuccess(false)
 
     try {
-      const response = await createFlashCardsMutation(watch())
+      const formData = watch();
+      const response = await createFlashCardsMutation(formData);
 
       if (response?.success) {
+        // Set success state
+        setIsSuccess(true);
+        
         toast({
           title: "Success!",
           description: response.message || "Your flashcards have been created.",
-        })
+        });
 
         // Make sure to extract the slug from the response
-        const slug = response.slug
+        const slug = response.slug;
 
         if (slug && isMounted.current) {
           // Add a slight delay to ensure the toast is shown before redirecting
           setTimeout(() => {
-            router.push(`/dashboard/flashcard/${slug}`)
-          }, 300)
+            router.push(`/dashboard/flashcard/${slug}`);
+          }, 1000); // Increased delay for better UX
         } else {
-          console.error("Missing slug in response:", response)
-          throw new Error("Missing slug in response")
+          console.error("Missing slug in response:", response);
+          setSubmissionError("Missing quiz ID in response. Please try again.");
         }
       } else {
-        throw new Error("Failed to create flashcards")
+        setSubmissionError(response?.message || "Failed to create flashcards. Please try again.");
       }
-    } catch (error) {
-      // Error handling is managed in the mutation's onError callback
-      console.error("Error in handleConfirm:", error)
+    } catch (error: any) {
+      // Error handling with user-friendly message
+      console.error("Error in handleConfirm:", error);
+      setSubmissionError(error?.message || "An unexpected error occurred. Please try again.");
+      
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create flashcards. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       if (isMounted.current) {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
   }, [createFlashCardsMutation, watch, toast, router])
@@ -404,7 +446,8 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                 isLoading={isLoading}
                 hasCredits={credits > 0}
                 loadingLabel="Generating Flashcards..."
-                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg"
+                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg rounded-md"
+                showIcon={true}
                 customStates={{
                   default: {
                     tooltip: "Click to generate your flashcards",
@@ -417,6 +460,14 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                     label: "Out of credits",
                     tooltip: "You need credits to generate flashcards. Consider upgrading your plan.",
                   },
+                  notLoggedIn: {
+                    label: "Sign in to generate",
+                    tooltip: "Please sign in to create flashcards",
+                  },
+                  alreadySubscribed: {
+                    label: "Processing subscription",
+                    tooltip: "Your subscription is being processed. Please wait a moment.",
+                  },
                 }}
               />
             </motion.div>
@@ -428,10 +479,50 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
         onCancel={() => {
+          // Reset both dialog and loading states when cancelling
           setIsConfirmDialogOpen(false)
           setIsLoading(false)
+          setSubmissionError(null)
         }}
-      />
+        title="Generate Flashcards"
+        description="You are about to use AI to generate flashcards. This will use credits from your account."
+        confirmText="Generate Now"
+        cancelText="Cancel"
+        showTokenUsage={true}
+        status={isLoading ? "loading" : submissionError ? "error" : isSuccess ? "success" : "idle"}
+        errorMessage={submissionError || undefined}
+        tokenUsage={{
+          used: Math.max(0, maxCards - credits),
+          available: maxCards,
+          remaining: credits,
+          percentage: (Math.max(0, maxCards - credits) / maxCards) * 100
+        }}
+        quizInfo={{
+          type: "Flashcards",
+          topic: watch("title"),
+          count: watch("count"),
+          difficulty: watch("difficulty"),
+          estimatedTokens: Math.min(watch("count") || 1, 5) * 100 // Rough estimate
+        }}
+      >
+        <div className="py-2">
+          <p className="text-sm">
+            Generating{" "}
+            <span className="font-medium capitalize">{watch("count")}</span> flashcards at{" "}
+            <span className="font-medium capitalize">{watch("difficulty")}</span> difficulty level for topic:{" "}
+            <span className="font-medium">{watch("title")}</span>
+          </p>
+          
+          {tokenUsageData?.hasExceededLimit && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Token limit exceeded</AlertTitle>
+              <AlertDescription>
+                You have used all your available tokens. Consider upgrading your plan for more credits.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </ConfirmDialog>
     </motion.div>
   )
 }

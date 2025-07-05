@@ -242,7 +242,7 @@ export default function Chatbot({ userId }: ChatbotProps) {
                           variant={remainingQuestions > 0 ? "outline" : "destructive"}
                           className="ml-2 text-xs font-normal cursor-help"
                         >
-                          {data?.isSubscribed ? "Pro" : `${remainingQuestions} left`}
+                          {data?.isSubscribed ? "PREMIUM" : `${remainingQuestions} left`}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent side="left">

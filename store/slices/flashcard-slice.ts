@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit'
 import type { RootState } from '@/store'
-import type { QuizType } from '@/types/quiz'
+
 
 export const ANSWER_TYPES = {
   CORRECT: 'correct',
@@ -29,6 +29,7 @@ export interface FlashCard {
   id: string
   question: string
   answer: string
+  userId?: string
   options?: string[]
   keywords?: string[]
   imageUrl?: string
@@ -39,6 +40,7 @@ export interface QuizResultsState {
   quizId: string
   slug: string
   title: string
+  userId?: string
   correctCount: number
   incorrectCount: number
   stillLearningCount: number
@@ -65,6 +67,7 @@ interface FlashcardQuizState {
   slug: string | null
   title: string
   questions: FlashCard[]
+  userId?: string | null
   currentQuestion: number
   answers: AnswerEntry[]
   status: "idle" | "loading" | "succeeded" | "failed" | "submitting" | "completed" | "completed_with_errors"
@@ -108,6 +111,7 @@ export const fetchFlashCardQuiz = createAsyncThunk(
         slug,
         id: data.id || slug,
         title: data.title || "Flashcard Quiz",
+        userId: data.userId || null,
         questions: data.flashCards || [],
       }
     } catch (error: any) {
@@ -163,10 +167,11 @@ const flashcardSlice = createSlice({
   reducers: {
     initFlashCardQuiz: (
       state,
-      action: PayloadAction<{ id: string; slug: string; title: string; questions: FlashCard[] }>
+      action: PayloadAction<{ id: string; userId:string, slug: string; title: string; questions: FlashCard[] }>
     ) => {
       state.quizId = action.payload.id
       state.slug = action.payload.slug
+      state.userId = action.payload.userId || null
       state.title = action.payload.title
       state.questions = action.payload.questions
       state.currentQuestion = 0
@@ -448,7 +453,7 @@ export const selectQuizTotalTime = (state: RootState) => state.flashcard.results
 export const selectCurrentQuestionIndex = (state: RootState) => state.flashcard.currentQuestion
 export const selectQuizAnswers = (state: RootState) => state.flashcard.answers
 export const selectShouldRedirectToResults = (state: RootState) => state.flashcard.shouldRedirectToResults
-
+export const selectQuizOwnerId = (state: RootState) => state.flashcard.userId
 export const selectProcessedResults = createSelector(
   [selectQuizAnswers, selectQuizResults],
   (answers, results) => {

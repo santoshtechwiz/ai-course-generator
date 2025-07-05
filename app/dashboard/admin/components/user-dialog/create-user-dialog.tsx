@@ -25,7 +25,7 @@ import { useToast } from "@/hooks"
 const USER_TYPES = [
   { value: "FREE", label: "Free" },
   { value: "BASIC", label: "Basic" },
-  { value: "PRO", label: "Pro" },
+  { value: "PREMIUM", label: "PREMIUM" },
   { value: "PREMIUM", label: "Premium" },
   { value: "ULTIMATE", label: "Ultimate" },
 ] as const

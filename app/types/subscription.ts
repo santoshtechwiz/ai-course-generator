@@ -7,7 +7,7 @@ import type { LucideIcon } from "lucide-react"
  */
 
 // Available plan IDs
-export type SubscriptionPlanType = "FREE" | "BASIC" | "PRO" | "ULTIMATE" 
+export type SubscriptionPlanType = "FREE" | "BASIC" | "PREMIUM" | "ULTIMATE" 
 
 // Possible subscription lifecycle statuses
 export type SubscriptionStatusType =
@@ -79,6 +79,7 @@ export interface SubscriptionData {
   cancelAtPeriodEnd?: boolean
   status?: SubscriptionStatusType | string
   features?: string[]
+  subscriptionId?: string
 }
 
 export interface EnhancedSubscriptionData extends SubscriptionData {

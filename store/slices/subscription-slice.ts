@@ -22,6 +22,7 @@ const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
   subscriptionPlan: "FREE",
   status: "INACTIVE",
   cancelAtPeriodEnd: false,
+  subscriptionId: "",
 }
 
 const initialState: SubscriptionState = {
@@ -50,34 +51,34 @@ export const fetchSubscription = createAsyncThunk<
 >("subscription/fetch", async (options = {}, { getState }) => {
   const { lastFetched, isFetching, data } = getState().subscription
   const { forceRefresh = false } = options || {}
-
   const now = Date.now()
-  const isRecent = lastFetched && now - lastFetched < MIN_FETCH_INTERVAL
+
+  const isRecent =
+    typeof lastFetched === "number" && now - lastFetched < MIN_FETCH_INTERVAL
 
   if ((isFetching || isRecent) && !forceRefresh) {
     logger.debug("Subscription fetch skipped (in-flight or recent)")
     return data ?? DEFAULT_FREE_SUBSCRIPTION
   }
+
   try {
-    // Check if user is authenticated first by checking the auth state
-    const authState = getState().auth;
+    const authState = getState().auth
     if (!authState.user?.id) {
       logger.warn("User not authenticated, skipping subscription fetch")
       return DEFAULT_FREE_SUBSCRIPTION
     }
-    
-    // Add cache buster to prevent browser caching
-    const cacheBuster = `nocache=${Date.now()}`;
-    
+
+    const cacheBuster = `nocache=${Date.now()}`
+
     const res = await withTimeout(
       fetch(`/api/subscriptions/status?${cacheBuster}`, {
         headers: {
           Accept: "application/json",
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
-        credentials: "include", // ✅ necessary to forward session cookies
+        credentials: "include",
       }),
       10000
     )
@@ -89,33 +90,41 @@ export const fetchSubscription = createAsyncThunk<
 
     if (!res.ok) {
       logger.warn(`Subscription API error: ${res.status}`)
-      // Don't return default if we already have data - prevents reset to free on temporary errors
       if (data && data.subscriptionPlan !== "FREE") {
-        logger.info("Keeping existing subscription data instead of resetting to FREE due to API error")
+        logger.info("Preserving existing subscription data despite API error")
         return data
       }
       return DEFAULT_FREE_SUBSCRIPTION
     }
 
-    const result: SubscriptionStatusResponse = await res.json()
+    let result: SubscriptionStatusResponse
+    try {
+      result = await res.json()
+    } catch (err) {
+      logger.error("Failed to parse subscription response", err)
+      return DEFAULT_FREE_SUBSCRIPTION
+    }
 
     const transformed: SubscriptionData = {
       credits: Math.max(0, result.credits || 0),
       tokensUsed: Math.max(0, result.tokensUsed || 0),
-      isSubscribed: Boolean(result.isSubscribed),
       subscriptionPlan: result.subscriptionPlan || "FREE",
-      expirationDate: result.expirationDate,
       cancelAtPeriodEnd: Boolean(result.cancelAtPeriodEnd),
+      expirationDate: result.expirationDate,
       status: (result.status as SubscriptionStatusType) || "INACTIVE",
+      subscriptionId: result.subscriptionId ?? "",
+      isSubscribed: false, // will be updated next
     }
 
     const isExpired =
-      transformed.expirationDate && new Date(transformed.expirationDate) < new Date()
+      transformed.expirationDate &&
+      new Date(transformed.expirationDate) < new Date()
 
     if (transformed.status === "INACTIVE" || isExpired) {
       transformed.status = "EXPIRED"
-      transformed.isSubscribed = false
     }
+
+    transformed.isSubscribed = transformed.status === "ACTIVE"
 
     return transformed
   } catch (error) {
@@ -123,6 +132,7 @@ export const fetchSubscription = createAsyncThunk<
     return DEFAULT_FREE_SUBSCRIPTION
   }
 })
+
 export const cancelSubscription = createAsyncThunk<
   SubscriptionData,
   void,
@@ -130,18 +140,16 @@ export const cancelSubscription = createAsyncThunk<
 >("subscription/cancel", async (_, { getState, rejectWithValue }) => {
   const { data } = getState().subscription
 
-  if (!data || !data.isSubscribed) {
+  if (!data?.isSubscribed || !data.subscriptionId) {
     return rejectWithValue("No active subscription to cancel")
   }
 
   try {
     const res = await fetch("/api/subscriptions/cancel", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ subscriptionId: data.currentPlan }),
-      credentials: "include", // ✅ necessary to forward session cookies
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ subscriptionId: data.subscriptionId }),
     })
 
     if (!res.ok) {
@@ -160,37 +168,33 @@ export const resumeSubscription = createAsyncThunk<
   SubscriptionData,
   void,
   { state: RootState; rejectValue: string }
->(
-  "subscription/resume",
-  async (_, { getState, rejectWithValue }) => {
-    const { data } = getState().subscription
+>("subscription/resume", async (_, { getState, rejectWithValue }) => {
+  const { data } = getState().subscription
 
-    if (!data || !data.isSubscribed) {
-      return rejectWithValue("No active subscription to resume")
-    }
-
-    try {
-      const res = await fetch("/api/subscriptions/resume", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ subscriptionId: data.currentPlan }),
-        credentials: "include", // ✅ necessary to forward session cookies
-      })
-
-      if (!res.ok) {
-        throw new Error(`Failed to resume subscription: ${res.statusText}`)
-      }
-
-      const result: SubscriptionData = await res.json()
-      return result
-    } catch (error: any) {
-      logger.error("Subscription resume failed", error)
-      return rejectWithValue(error.message || "Failed to resume subscription")
-    }
+  if (!data || !data.cancelAtPeriodEnd || !data.subscriptionId) {
+    return rejectWithValue("No paused subscription to resume")
   }
-)
+
+  try {
+    const res = await fetch("/api/subscriptions/resume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ subscriptionId: data.subscriptionId }),
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to resume subscription: ${res.statusText}`)
+    }
+
+    const result: SubscriptionData = await res.json()
+    return result
+  } catch (error: any) {
+    logger.error("Subscription resume failed", error)
+    return rejectWithValue(error.message || "Failed to resume subscription")
+  }
+})
+
 export const subscriptionSlice = createSlice({
   name: "subscription",
   initialState,
@@ -223,21 +227,42 @@ export const subscriptionSlice = createSlice({
         state.isLoading = false
         state.error = action.error.message || "Failed to fetch subscription"
       })
+      .addCase(cancelSubscription.fulfilled, (state, action) => {
+        state.data = action.payload
+        state.lastFetched = Date.now()
+      })
+      .addCase(resumeSubscription.fulfilled, (state, action) => {
+        state.data = action.payload
+        state.lastFetched = Date.now()
+      })
   },
 })
 
-// Actions
-export const { resetSubscriptionState, setSubscriptionData } = subscriptionSlice.actions
+export const {
+  resetSubscriptionState,
+  setSubscriptionData,
+} = subscriptionSlice.actions
 
 // Selectors
-export const selectSubscription = (state: RootState): SubscriptionState => state.subscription
-export const selectSubscriptionData = (state: RootState) => state.subscription.data
-export const selectSubscriptionError = (state: RootState) => state.subscription.error
-export const selectSubscriptionLoading = (state: RootState) => state.subscription.isLoading
+export const selectSubscription = (state: RootState): SubscriptionState =>
+  state.subscription
+
+export const selectSubscriptionData = (state: RootState) =>
+  state.subscription.data
+
+export const selectSubscriptionError = (state: RootState) =>
+  state.subscription.error
+
+export const selectSubscriptionLoading = (state: RootState) =>
+  state.subscription.isLoading
+
 export const selectIsSubscriptionLoading = selectSubscriptionLoading
+
 export const canDownloadPdfSelector = (state: RootState) => {
   const user = state.auth.user
-  return user?.subscriptionPlan === "PRO" || user?.subscriptionPlan === "ENTERPRISE"
+  return (
+    user?.subscriptionPlan === "PREMIUM" || user?.subscriptionPlan === "ENTERPRISE"
+  )
 }
 
 export const selectSubscriptionStatus = createSelector(
@@ -281,11 +306,16 @@ export const selectEnhancedSubscription = createSelector(
   (data): EnhancedSubscriptionData | null => {
     if (!data) return null
     const now = new Date()
-    const expirationDate = data.expirationDate ? new Date(data.expirationDate) : null
+    const expirationDate = data.expirationDate
+      ? new Date(data.expirationDate)
+      : null
     const isExpired = expirationDate ? expirationDate < now : false
     return {
       ...data,
-      isActive: data.status === "ACTIVE" && !data.cancelAtPeriodEnd && !isExpired,
+      isActive:
+        data.status === "ACTIVE" &&
+        !data.cancelAtPeriodEnd &&
+        !isExpired,
       isExpired,
       formattedCredits: `${data.credits} credits`,
       hasCreditsRemaining: (data.credits || 0) > (data.tokensUsed || 0),
@@ -293,5 +323,4 @@ export const selectEnhancedSubscription = createSelector(
   }
 )
 
-// Reducer
 export default subscriptionSlice.reducer

@@ -249,8 +249,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: getPlanFeatures("BASIC"),
   },
   {
-    id: "PRO",
-    name: "PRO",
+    id: "PREMIUM",
+    name: "PREMIUM",
     description: "Advanced features for power users",
     icon: Rocket,
     tokens: 250,
@@ -279,7 +279,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       maxCoursesPerMonth: 20,
       apiCallsPerDay: 200,
     },
-    features: getPlanFeatures("PRO"),
+    features: getPlanFeatures("PREMIUM"),
   },
   {
     id: "ULTIMATE",

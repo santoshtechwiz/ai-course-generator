@@ -8,7 +8,7 @@ import { SubscriptionService } from "@/app/dashboard/subscription/services/subsc
 
 // Define validation schema for request body with improved type checking
 const subscriptionSchema = z.object({
-  planId: z.enum(["FREE", "BASIC", "PRO", "ULTIMATE"]),
+  planId: z.enum(["FREE", "BASIC", "PREMIUM", "ULTIMATE"]),
   duration: z.number().int().positive().lte(12),
   referralCode: z.string().optional(),
   promoCode: z.string().optional(),
