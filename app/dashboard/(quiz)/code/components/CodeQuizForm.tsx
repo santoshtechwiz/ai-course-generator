@@ -7,7 +7,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { signIn, useSession } from "next-auth/react"
-import { HelpCircle, Timer, Sparkles, Check, AlertCircle } from "lucide-react"
+import { HelpCircle, Timer, Sparkles, Check, AlertCircle, Star, Globe, Smartphone, Cpu, Database, Zap, Terminal, Code, Hash, Plus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -56,20 +56,112 @@ const PROGRAMMING_LANGUAGES = [
   "Kotlin",
   "PHP",
   "Ruby",
+  "HTML/CSS",
+  "SQL",
+  "Bash/Shell",
+  "PowerShell",
+  "R",
+  "Scala",
+  "Dart",
+  "Lua",
+  "Perl",
+  "Haskell",
+  "Clojure",
+  "F#",
+  "VB.NET",
+  "Objective-C",
+  "Assembly",
+  "MATLAB",
+  "Groovy",
+  "Elixir",
+  "Erlang",
+  "Crystal",
+  "Nim",
+  "Zig",
+  "Other/Custom",
 ]
 
 // Group languages by popularity/category for better UX
 const LANGUAGE_GROUPS = {
-  Popular: ["JavaScript", "Python", "Java"],
-  Web: ["TypeScript", "JavaScript", "PHP"],
-  Mobile: ["Swift", "Kotlin", "Java"],
-  Systems: ["C++", "Rust", "Go", "C#"],
-  Other: ["Ruby", "PHP"],
+  Popular: ["JavaScript", "Python", "Java", "TypeScript"],
+  Web: ["JavaScript", "TypeScript", "HTML/CSS", "PHP", "Go"],
+  Mobile: ["Swift", "Kotlin", "Java", "Dart", "Objective-C"],
+  Systems: ["C++", "Rust", "Go", "C#", "Assembly"],
+  Data: ["Python", "R", "SQL", "MATLAB", "Scala"],
+  Functional: ["Haskell", "Clojure", "F#", "Elixir", "Erlang"],
+  Scripts: ["Bash/Shell", "PowerShell", "Perl", "Lua"],
+  Other: ["Ruby", "Crystal", "Nim", "Zig", "Groovy"],
+}
+
+// Define icons and colors for each language group
+const LANGUAGE_GROUP_CONFIG = {
+  Popular: { 
+    icon: Star, 
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200", 
+    activeColor: "bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600" 
+  },
+  Web: { 
+    icon: Globe, 
+    color: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
+    activeColor: "bg-blue-500 text-white border-blue-600 hover:bg-blue-600" 
+  },
+  Mobile: { 
+    icon: Smartphone, 
+    color: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
+    activeColor: "bg-green-500 text-white border-green-600 hover:bg-green-600" 
+  },
+  Systems: { 
+    icon: Cpu, 
+    color: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
+    activeColor: "bg-red-500 text-white border-red-600 hover:bg-red-600" 
+  },
+  Data: { 
+    icon: Database, 
+    color: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200", 
+    activeColor: "bg-purple-500 text-white border-purple-600 hover:bg-purple-600" 
+  },
+  Functional: { 
+    icon: Zap, 
+    color: "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200", 
+    activeColor: "bg-orange-500 text-white border-orange-600 hover:bg-orange-600" 
+  },
+  Scripts: { 
+    icon: Terminal, 
+    color: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
+    activeColor: "bg-gray-500 text-white border-gray-600 hover:bg-gray-600" 
+  },
+  Other: { 
+    icon: Code, 
+    color: "bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200", 
+    activeColor: "bg-pink-500 text-white border-pink-600 hover:bg-pink-600" 
+  },
 }
 
 // Define proper type for subscription data
 interface Subscription {
   subscriptionPlan?: string
+}
+
+// Function to get popular topics for each language
+const getPopularTopics = (language: string): string[] => {
+  const topicMap: Record<string, string[]> = {
+    JavaScript: ["Async/Await", "Promises", "Closures", "ES6 Features", "DOM Manipulation", "Event Handling"],
+    TypeScript: ["Types", "Interfaces", "Generics", "Decorators", "Modules", "Type Guards"],
+    Python: ["Data Structures", "List Comprehensions", "OOP", "Pandas", "NumPy", "Machine Learning"],
+    Java: ["OOP Concepts", "Collections", "Streams", "Exception Handling", "Multithreading", "Design Patterns"],
+    "C#": ["LINQ", "Async/Await", "Properties", "Delegates", "Events", "Generics"],
+    "C++": ["Pointers", "Memory Management", "STL", "Templates", "OOP", "Smart Pointers"],
+    Go: ["Goroutines", "Channels", "Interfaces", "Error Handling", "Packages", "Concurrency"],
+    Rust: ["Ownership", "Borrowing", "Lifetimes", "Pattern Matching", "Traits", "Error Handling"],
+    Swift: ["Optionals", "Closures", "Properties", "Protocols", "Memory Management", "Concurrency"],
+    Kotlin: ["Coroutines", "Extension Functions", "Data Classes", "Null Safety", "Higher-Order Functions"],
+    PHP: ["Arrays", "Classes", "Namespaces", "Traits", "Error Handling", "Database Connections"],
+    Ruby: ["Blocks", "Modules", "Metaprogramming", "Classes", "Gems", "Exception Handling"],
+    SQL: ["Joins", "Subqueries", "Indexes", "Stored Procedures", "Triggers", "Window Functions"],
+    "HTML/CSS": ["Flexbox", "Grid", "Responsive Design", "Animations", "Semantic HTML", "CSS Variables"],
+  }
+  
+  return topicMap[language] || ["Basic Concepts", "Syntax", "Functions", "Data Types", "Control Flow", "Best Practices"]
 }
 
 export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params }: CodeQuizFormProps) {
@@ -86,15 +178,17 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   }
 
   const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
-
+  const [showCustomLanguage, setShowCustomLanguage] = React.useState(false)
+  const [customLanguage, setCustomLanguage] = React.useState("")
+  const [showCustomTitle, setShowCustomTitle] = React.useState(false)
   const [formData, setFormData] = usePersistentState<CodeQuizFormData>("codeQuizFormData", {
-    title: params?.title || "",
-    amount: params?.amount ? Number.parseInt(params.amount, 10) : maxQuestions,
-    difficulty: (["easy", "medium", "hard"].includes(params?.difficulty || "") ? params?.difficulty : "easy") as
+    title: (typeof params?.title === 'string' ? params.title : "") || "",
+    amount: (typeof params?.amount === 'string' ? Number.parseInt(params.amount, 10) : maxQuestions) || maxQuestions,
+    difficulty: (typeof params?.difficulty === 'string' && ["easy", "medium", "hard"].includes(params.difficulty) ? params.difficulty : "easy") as
       | "easy"
       | "medium"
       | "hard",
-    language: params?.language || "JavaScript",
+    language: (typeof params?.language === 'string' ? params.language : "JavaScript") || "JavaScript",
   })
 
   const {
@@ -109,21 +203,20 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
     defaultValues: formData,
     mode: "onChange",
   })
-
   React.useEffect(() => {
-    if (params?.title) {
+    if (typeof params?.title === 'string') {
       setValue("title", params.title)
     }
-    if (params?.amount) {
+    if (typeof params?.amount === 'string') {
       const amount = Number.parseInt(params.amount, 10)
       if (amount !== maxQuestions) {
         setValue("amount", Math.min(amount, maxQuestions))
       }
     }
-    if (params?.difficulty && ["easy", "medium", "hard"].includes(params.difficulty)) {
+    if (typeof params?.difficulty === 'string' && ["easy", "medium", "hard"].includes(params.difficulty)) {
       setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
     }
-    if (params?.language && PROGRAMMING_LANGUAGES.includes(params.language)) {
+    if (typeof params?.language === 'string' && PROGRAMMING_LANGUAGES.includes(params.language)) {
       setValue("language", params.language)
     }
   }, [params?.title, params?.amount, params?.difficulty, params?.language, maxQuestions, setValue])
@@ -248,32 +341,219 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{submitError}</AlertDescription>
             </Alert>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-10">
+          )}          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-10">
+            {/* Programming Language Selection - First */}
             <motion.div
               className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
-                Title *
+              <Label htmlFor="language" className="text-base font-medium text-foreground flex items-center gap-2">
+                Programming Language *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                      <p className="w-[200px]">Enter any programming title you'd like to be quizzed on</p>
+                      <p className="w-[200px]">Select the programming language for your quiz</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>              <div className="space-y-3">
+                <div className="mb-3">
+                  <Label className="text-sm text-muted-foreground mb-2 block">Choose a category:</Label>
+                </div>
+                <div className="flex flex-wrap gap-2 lg:gap-3 mb-4 lg:mb-5">
+                  {Object.keys(LANGUAGE_GROUPS).map((group) => {
+                    const config = LANGUAGE_GROUP_CONFIG[group as keyof typeof LANGUAGE_GROUP_CONFIG]
+                    const IconComponent = config.icon
+                    const isSelected = selectedLanguageGroup === group
+                    
+                    return (
+                      <motion.div
+                        key={group}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      >
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "cursor-pointer transition-all duration-200 hover:shadow-lg text-sm lg:text-base px-3 py-2 lg:px-4 lg:py-2.5 border-2",
+                            "flex items-center gap-1.5 font-medium",
+                            isSelected ? config.activeColor : config.color
+                          )}
+                          onClick={() => setSelectedLanguageGroup(group)}
+                        >
+                          <IconComponent className="w-4 h-4 lg:w-4.5 lg:h-4.5" />
+                          {group}
+                        </Badge>
+                      </motion.div>
+                    )
+                  })}
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "cursor-pointer transition-all duration-200 hover:shadow-lg text-sm lg:text-base px-3 py-2 lg:px-4 lg:py-2.5 border-2",
+                        "flex items-center gap-1.5 font-medium",
+                        selectedLanguageGroup === "All" 
+                          ? "bg-indigo-500 text-white border-indigo-600 hover:bg-indigo-600" 
+                          : "bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200"
+                      )}
+                      onClick={() => setSelectedLanguageGroup("All")}
+                    >
+                      <Code className="w-4 h-4 lg:w-4.5 lg:h-4.5" />
+                      All Languages
+                    </Badge>
+                  </motion.div>
+                </div>
+
+                {!showCustomLanguage ? (
+                  <div className="space-y-3">
+                    <Controller
+                      name="language"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={(value) => {
+                          if (value === "Other/Custom") {
+                            setShowCustomLanguage(true)
+                            field.onChange("")
+                          } else {
+                            field.onChange(value)
+                          }
+                        }}>
+                          <SelectTrigger
+                            className={cn(
+                              "w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg border border-input rounded-lg transition-all",
+                              "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
+                            )}
+                          >
+                            <SelectValue placeholder="Select a language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredLanguages.map((lang) => (
+                              <SelectItem key={lang} value={lang}>
+                                {lang}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCustomLanguage(true)}
+                      className="text-sm border-dashed border-2 hover:border-solid transition-all duration-200 hover:bg-slate-50 flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Enter custom language
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter custom programming language"
+                        value={customLanguage}
+                        onChange={(e) => {
+                          setCustomLanguage(e.target.value)
+                          setValue("language", e.target.value)
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowCustomLanguage(false)
+                          setValue("language", "JavaScript")
+                          setCustomLanguage("")
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {errors.language && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-sm text-destructive mt-1"
+                  role="alert"
+                >
+                  {errors.language.message}
+                </motion.p>
+              )}
+            </motion.div>
+
+            {/* Topic/Title Selection - Second */}
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
+                Topic/Title *
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="w-[200px]">Enter any programming topic you'd like to be quizzed on</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Label>
+                {!showCustomTitle && (
+                <div className="mb-3">
+                  <Label className="text-sm text-muted-foreground flex items-center gap-1.5 mb-2">
+                    <Hash className="w-3.5 h-3.5" />
+                    Popular topics for {language || 'JavaScript'}:
+                  </Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {getPopularTopics(language || 'JavaScript').map((topic, index) => (
+                      <Badge
+                        key={topic}
+                        variant="outline"
+                        className={cn(
+                          "cursor-pointer transition-all duration-200 text-xs lg:text-sm px-2.5 py-1 lg:px-3 lg:py-1.5",
+                          "hover:scale-105 hover:shadow-md border-2",
+                          // Add different colors based on index for visual variety
+                          index % 6 === 0 && "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-500 hover:text-white",
+                          index % 6 === 1 && "bg-green-50 text-green-700 border-green-200 hover:bg-green-500 hover:text-white",
+                          index % 6 === 2 && "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-500 hover:text-white",
+                          index % 6 === 3 && "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-500 hover:text-white",
+                          index % 6 === 4 && "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-500 hover:text-white",
+                          index % 6 === 5 && "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-500 hover:text-white"
+                        )}
+                        onClick={() => setValue("title", topic)}
+                      >
+                        {topic}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="relative">
                 <Input
                   id="title"
-                  placeholder="Enter the programming title"
+                  placeholder="Enter the programming topic (e.g., React Hooks, Data Structures, Async/Await)"
                   className={cn(
                     "w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg border border-input rounded-lg transition-all pr-12",
                     "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
@@ -298,90 +578,9 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
                 </motion.p>
               )}
               <p className="text-sm text-muted-foreground" id="title-description">
-                Examples: React Hooks, Data Structures, Async/Await, etc.
+                Examples: React Hooks, Data Structures, Async/Await, OOP Concepts, etc.
               </p>
-            </motion.div>
-
-            <motion.div
-              className="space-y-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Label htmlFor="language" className="text-base font-medium text-foreground flex items-center gap-2">
-                Programming Language *
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="w-[200px]">Select the programming language for your quiz</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 lg:gap-3 mb-3 lg:mb-4">
-                  {Object.keys(LANGUAGE_GROUPS).map((group) => (
-                    <Badge
-                      key={group}
-                      variant={selectedLanguageGroup === group ? "default" : "outline"}
-                      className="cursor-pointer transition-all duration-200 hover:shadow-sm text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
-                      onClick={() => setSelectedLanguageGroup(group)}
-                    >
-                      {group}
-                    </Badge>
-                  ))}
-                  <Badge
-                    variant={selectedLanguageGroup === "All" ? "default" : "outline"}
-                    className="cursor-pointer transition-all duration-200 hover:shadow-sm text-sm lg:text-base px-3 py-1.5 lg:px-4 lg:py-2"
-                    onClick={() => setSelectedLanguageGroup("All")}
-                  >
-                    All
-                  </Badge>
-                </div>
-
-                <Controller
-                  name="language"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        className={cn(
-                          "w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg border border-input rounded-lg transition-all",
-                          "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-                        )}
-                      >
-                        <SelectValue placeholder="Select a language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredLanguages.map((lang) => (
-                          <SelectItem key={lang} value={lang}>
-                            {lang}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-
-              {errors.language && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-destructive mt-1"
-                  role="alert"
-                >
-                  {errors.language.message}
-                </motion.p>
-              )}
-            </motion.div>
-
-            <motion.div
+            </motion.div>            <motion.div
               className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
