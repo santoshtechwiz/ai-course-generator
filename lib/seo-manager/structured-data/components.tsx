@@ -107,7 +107,6 @@ export function BreadcrumbListSchema({
   ];
 
   const breadcrumbItems = items || defaultItems;
-
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -115,7 +114,11 @@ export function BreadcrumbListSchema({
       '@type': 'ListItem',
       position: item.position,
       name: item.name,
-      item: item.url.startsWith('http') ? item.url : `${siteUrl}${item.url}`,
+      item: {
+        '@type': 'Thing',
+        '@id': item.url.startsWith('http') ? item.url : `${siteUrl}${item.url}`,
+        name: item.name
+      },
     })),
   };
 
