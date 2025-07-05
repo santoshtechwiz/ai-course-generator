@@ -35,8 +35,7 @@ export default function FlashCardPage({ params }: FlashCardPageProps) {
       <div className="container max-w-4xl py-6">        
         <FlashcardResultHandler
         slug={slug}
-        title="Flashcard Results"
-        onRestart={() => router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)}
+        title="Flashcard Results"        onRestart={() => router.push(`/dashboard/flashcard/${slug}?reset=true`)}
         onReview={(cards) => router.push(`/dashboard/flashcard/${slug}?review=true&cards=${cards.join(",")}`)}
         onReviewStillLearning={(cards) => router.push(`/dashboard/flashcard/${slug}?review=true&cards=${cards.join(",")}&type=stillLearning`)}
       />

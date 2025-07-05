@@ -34,11 +34,14 @@ import { NoResults } from "@/components/ui/no-results"
 import { useAuth } from "@/hooks/use-auth"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
 import { GlobalLoader } from "@/components/ui/loader"
+import { QuizSchema } from "@/app/schema/components/CourseSchema"
 
 interface FlashcardQuizWrapperProps {
   slug: string
   title?: string
 }
+
+
 
 export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapperProps) {
   const initRef = useRef(false)
@@ -292,8 +295,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
         action={{
           label: "Take Full Quiz",
           onClick: () => {
-            dispatch(clearQuizState());
-            router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`);
+            dispatch(clearQuizState());            router.push(`/dashboard/flashcard/${slug}?reset=true`);
           },
         }}
         secondaryAction={{
@@ -315,7 +317,7 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
           label: "Try Again",
           onClick: () => {
             dispatch(clearQuizState())
-            router.push(`/dashboard/flashcard/${slug}?reset=true&t=${Date.now()}`)
+            router.push(`/dashboard/flashcard/${slug}?reset=true`)
           },
         }}
         secondaryAction={{
@@ -325,7 +327,6 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
       />
     )
   }
-
   // Main Quiz Component
   return (
     <motion.div
@@ -334,6 +335,13 @@ export default function FlashcardQuizWrapper({ slug, title }: FlashcardQuizWrapp
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      <QuizSchema 
+        quizName={quizTitle || title || "Flashcard Quiz"}
+        quizUrl={`https://courseai.io/dashboard/flashcard/${slug}`}
+        description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
+        numberOfQuestions={currentQuestions?.length}
+        timeRequired="PT15M"
+      />
       <FlashcardQuiz
         key={`${slug}-${isReviewMode ? "review" : "full"}`}
         cards={currentQuestions}

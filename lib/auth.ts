@@ -5,6 +5,7 @@ import GoogleProvider from "next-auth/providers/google"
 import GithubProvider from "next-auth/providers/github"
 import FacebookProvider from "next-auth/providers/facebook"
 import { NextResponse } from "next/server"
+import LinkedinProvider, { LinkedInProfile } from "next-auth/providers/linkedin"
 import type { DefaultJWT } from "next-auth/jwt"
 import { prisma } from "./db"
 import { sendEmail } from "@/lib/email"
@@ -290,6 +291,29 @@ export const authOptions: NextAuthOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_SECRET!,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    LinkedinProvider({
+      clientId: process.env.LINKEDIN_CLIENT_ID || "",
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET || "",
+      client: { token_endpoint_auth_method: "client_secret_post" },
+      issuer: "https://www.linkedin.com",
+      profile: (profile: LinkedInProfile) => ({
+        id: profile.sub,
+        name: profile.name,
+        email: profile.email,
+        image: profile.picture,
+        credits: 0, // Default value, will be updated after sign-in
+        isAdmin: false, // Default value, will be updated after sign-in
+        userType: "FREE", // Default value, will be updated after sign-in
+      }),
+      wellKnown:
+        "https://www.linkedin.com/oauth/.well-known/openid-configuration",
+      authorization: {
+        params: {
+          scope: "openid profile email",
+        },
+      },
       allowDangerousEmailAccountLinking: true,
     }),
   ],
