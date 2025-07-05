@@ -128,7 +128,11 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]): Schema {
       "@type": "ListItem",
       position: item.position,
       name: item.name,
-      item: item.url,
+      item: {
+        "@type": "Thing",
+        "@id": item.url,
+        name: item.name
+      },
     })),
   };
 }
