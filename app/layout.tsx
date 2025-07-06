@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "../globals.css";
 
-import { DefaultSEO, defaultMetadata, defaultFAQItems } from "@/lib/seo-manager-new";
+import { DefaultSEO, defaultMetadata } from "@/lib/seo-manager-new";
 import Footer from "@/components/shared/Footer";
 import { Providers } from "@/store/provider";
 import { getServerAuthSession } from "@/lib/server-auth";
@@ -90,26 +90,29 @@ export default async function RootLayout({
       <body
         className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
       >
-        {" "}        <Suspense
-          fallback={
-            <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">Loading application...</p>
-              </div>
-            </div>
-          }
-        >
-          <Providers session={session}>
-            <ClientLayoutWrapper>
-              <main className="flex-1 w-full">{children}</main>
-              <Footer />
-            </ClientLayoutWrapper>
-          </Providers>
-        </Suspense>        <DefaultSEO
-          currentPath="/"
-          includeFAQ={true}
-        />
+        <Providers session={session}>
+          <ClientLayoutWrapper>
+            <main className="flex-1 w-full">
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center min-h-[60vh] w-full">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                      <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                        Loading...
+                      </p>
+                    </div>
+                  </div>
+                }
+              >
+                {children}
+              </Suspense>
+            </main>
+            <Footer />
+          </ClientLayoutWrapper>
+        </Providers>
+
+        <DefaultSEO currentPath="/" includeFAQ={true} />
       </body>
     </html>
   );

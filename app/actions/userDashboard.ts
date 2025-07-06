@@ -14,6 +14,8 @@ import type {
 
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
   try {
+    console.log('getUserData: Fetching data for userId:', userId)
+    
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -51,7 +53,12 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       },
     })
 
-    if (!user) return null
+    if (!user) {
+      console.log('getUserData: No user found in database for userId:', userId)
+      return null
+    }
+
+    console.log('getUserData: Found user:', user.name, 'with id:', user.id)
 
     return {
       id: user.id,
@@ -63,8 +70,6 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       courseProgress: user.courseProgress as unknown as CourseProgress[],
       userQuizzes: user.userQuizzes as unknown as UserQuiz[],
       streakDays: user.streakDays ?? 0,
- 
-    
     }
   } catch (error) {
     console.error("Error fetching user data:", error)
