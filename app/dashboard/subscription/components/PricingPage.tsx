@@ -16,7 +16,6 @@ import { Label } from "@/components/ui/label"
 import { useMediaQuery, useToast } from "@/hooks"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
-import { useSubscription } from "@/modules/auth"
 import useSubscriptionHook from "@/hooks/use-subscription"
 import {
   PricingPageProps,
@@ -32,6 +31,8 @@ import FAQSection from "./subscription-status/FaqSection"
 import PlanCards from "./subscription-status/PlanCard"
 import TokenUsageExplanation from "./subscription-status/TokenUsageExplanation"
 import { useRouter } from "next/navigation"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { selectSubscription, fetchSubscription } from "@/store/slices/subscription-slice"
 
 export function PricingPage({
   userId,
@@ -56,14 +57,13 @@ export function PricingPage({
   const [showPromotion, setShowPromotion] = useState(true)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
   const router = useRouter();
-  
-  const {
+    const {
     handleSubscribe: doSubscribe,
     canSubscribeToPlan,
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
-  } = useSubscription({
-    onSubscriptionSuccess: (result) => {
+  } = useSubscriptionHook({
+    onSubscriptionSuccess: (result: any) => {
       if (result.redirectUrl) {
         router.push(result.redirectUrl);
         return;
@@ -75,7 +75,7 @@ export function PricingPage({
         variant: "default",
       })
     },
-    onSubscriptionError: (error) => {
+    onSubscriptionError: (error: any) => {
       toast({
         title: "Subscription Error",
         description: error.message,
@@ -320,23 +320,22 @@ export function PricingPage({
 
       <TokenUsageExplanation />
       <FeatureComparison />
-      <FAQSection />
-
-      <CancellationDialog
+      <FAQSection />      <CancellationDialog
         isOpen={showCancellationDialog}
         onClose={() => setShowCancellationDialog(false)}
-        subscriptionStatus={normalizedStatus}
-        onManageSubscription={onManageSubscription}
-        onSubscriptionUpdated={() => {
-          dispatch(fetchSubscription())
-          setShowCancellationDialog(false)
+        onConfirm={async (reason: string) => {
+          // Handle cancellation logic here
+          try {
+            // Call your cancellation API
+            console.log('Cancelling subscription with reason:', reason)
+            dispatch(fetchSubscription())
+            setShowCancellationDialog(false)
+          } catch (error) {
+            console.error('Failed to cancel subscription:', error)
+          }
         }}
-        isAuthenticated={isAuthenticated}
-        cancelAtPeriodEnd={cancelAtPeriodEnd}
-        isSubscribed={isSubscribed}
-        hasAnyPaidPlan={hasAnyPaidPlan}
-        hasAllPlans={hasAllPlans}
-        daysUntilExpiration={daysUntilExpiration}
+        expirationDate={subscriptionData?.data?.currentPeriodEnd || null}
+        planName={subscriptionData?.data?.subscriptionPlan || 'FREE'}
       />
     </div>
   )
