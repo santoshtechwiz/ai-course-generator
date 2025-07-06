@@ -3,8 +3,9 @@
 import BlankQuizForm from "./components/BlankQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
+import Loader from "@/components/ui/loader"
 
-import { Loader } from "@/components/ui/loader/index"
+
 
 const BlankPage = () => {
   // Use our standardized hook for all quiz pages
@@ -19,7 +20,7 @@ const BlankPage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <Loader context="quiz" />
+        <Loader />
       ) : (
         <BlankQuizForm 
           credits={quizPlan.credits} 
