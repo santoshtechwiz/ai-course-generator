@@ -29,7 +29,11 @@ const config: Config = {
         "2xl": "1400px",
       },
     },
-    extend: {      fontFamily: {
+    extend: {
+      screens: {
+        'xs': '475px',
+      },
+      fontFamily: {
         // Enhanced font stack with better system fonts
         sans: [
           "var(--font-inter)",

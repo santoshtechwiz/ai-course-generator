@@ -16,10 +16,7 @@ import {
   Lightbulb,
   Trophy,
   Brain,
-  Users,
   Clock,
-  BarChart3,
-  PenTool,
   Eye,
   Focus,
 } from "lucide-react"
@@ -303,7 +300,7 @@ export default function BlanksQuiz({
     return { label, message, color, bgColor, borderColor, icon, level, emoji }
   }, [answer, similarity])
 
-  const canProceed = answer.trim() && similarity >= 0.7
+  const canProceed = Boolean(answer.trim() && similarity >= 0.7)
   const minimumSimilarityThreshold = 0.7
 
   return (
@@ -318,48 +315,35 @@ export default function BlanksQuiz({
         timeSpent={timeSpent}
         difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
       >
-        <div className="space-y-4 sm:space-y-6">
-          {/* Clean Header - No Streaks */}
+        <div className="space-y-4 sm:space-y-6">          {/* Clean Header - No Streaks */}
           <motion.div
             variants={itemVariants}
             className="bg-gradient-to-r from-blue-50/60 to-indigo-50/60 rounded-2xl p-4 sm:p-6 border border-blue-200/50 dark:from-blue-950/30 dark:to-indigo-950/30 dark:border-blue-700/50"
           >
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Focus className="w-6 h-6 text-white" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <div className="flex-1 min-w-0">                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <DifficultyBadge difficulty={questionData.difficulty} />
-                      <TagsDisplay tags={questionData.tags} maxVisible={3} />
-                    <Badge
-                      variant="secondary"
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0"
-                    >
-                      <Brain className="w-3 h-3 mr-1" />
-                      Precision Learning
-                    </Badge>
-                  
+                    <TagsDisplay tags={questionData.tags} maxVisible={3} />
+                  </div>                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     {hintsUsed > 0 && (
-                      <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 dark:bg-blue-950/20">
-                        <Lightbulb className="w-3 h-3 mr-1" />
-                        {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used
+                      <Badge 
+                        variant="outline" 
+                        className="text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 text-xs sm:text-sm whitespace-nowrap shadow-sm"
+                      >
+                        <Lightbulb className="w-3 h-3 mr-1 flex-shrink-0" />
+                        <span className="hidden xs:inline">{hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used</span>
+                        <span className="xs:hidden">{hintsUsed} hint{hintsUsed > 1 ? "s" : ""}</span>
                       </Badge>
                     )}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Focus on accuracy • Learn step by step • Master key concepts
+                  </div><div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    <span className="hidden sm:inline">Focus on accuracy • Think step by step • Use hints if needed</span>
+                    <span className="sm:hidden">Focus on accuracy • Use hints if needed</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3 flex-wrap">
-               
-                <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0">
-                  <BarChart3 className="w-3 h-3 mr-1" />
-                  Knowledge Check
-                </Badge>
               </div>
             </div>
           </motion.div>
@@ -367,29 +351,29 @@ export default function BlanksQuiz({
           {/* Enhanced Question Display */}
           <motion.div variants={itemVariants}>
             <Card className="border-l-4 border-l-blue-500 bg-gradient-to-r from-background to-blue-50/30 shadow-lg dark:to-blue-950/20">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <BookOpen className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="font-semibold text-lg text-foreground">Complete the Statement</h3>
-                      <Badge variant="outline" className="text-xs">
-                        <Users className="w-3 h-3 mr-1" />
-                        Learning focused
-                      </Badge>
-                    </div>
-
-                    {/* Question with Blank Input */}
-                    <div className="text-lg sm:text-xl font-medium leading-relaxed mb-4">
+              <CardContent className="p-4 sm:p-6">                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+                          <h3 className="font-semibold text-base sm:text-lg text-foreground">Complete the Statement</h3>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs w-fit bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-sm"
+                          >
+                            <Brain className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="hidden sm:inline">Learning Focused</span>
+                            <span className="sm:hidden">Learning</span>
+                          </Badge>
+                        </div>{/* Question with Blank Input */}
+                    <div className="text-base sm:text-lg md:text-xl font-medium leading-relaxed mb-4">
                       {questionParts.hasBlank ? (
-                        <div className="flex flex-wrap items-center gap-2 text-center justify-center">
-                          <span className="text-foreground">{questionParts.before}</span>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap items-center gap-2 text-center justify-center">
+                          <span className="text-foreground break-words">{questionParts.before}</span>
                           <motion.div
                             variants={inputFocusVariants}
                             animate={isFocused ? "focused" : "unfocused"}
-                            className="relative inline-block"
+                            className="relative inline-block w-full sm:w-auto"
                           >
                             <Input
                               value={answer}
@@ -399,7 +383,7 @@ export default function BlanksQuiz({
                               onBlur={() => setIsFocused(false)}
                               placeholder="Your answer"
                               className={cn(
-                                "inline-block mx-2 px-4 py-2 text-center font-medium min-w-[180px] sm:min-w-[200px] border-2 border-dashed transition-all duration-300",
+                                "mx-2 px-4 py-2 text-center font-medium min-w-[180px] sm:min-w-[200px] w-full sm:w-auto border-2 border-dashed transition-all duration-300",
                                 isAnswered
                                   ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 shadow-green-200/50 shadow-lg"
                                   : showValidation
@@ -419,15 +403,15 @@ export default function BlanksQuiz({
                               </motion.div>
                             )}
                           </motion.div>
-                          <span className="text-foreground">{questionParts.after}</span>
+                          <span className="text-foreground break-words">{questionParts.after}</span>
                         </div>
                       ) : (
                         <div className="space-y-4 text-center">
-                          <p className="text-foreground">{questionData.text}</p>
+                          <p className="text-foreground break-words px-2">{questionData.text}</p>
                           <motion.div
                             variants={inputFocusVariants}
                             animate={isFocused ? "focused" : "unfocused"}
-                            className="relative max-w-md mx-auto"
+                            className="relative max-w-md mx-auto w-full px-4 sm:px-0"
                           >
                             <Input
                               value={answer}
@@ -437,7 +421,7 @@ export default function BlanksQuiz({
                               onBlur={() => setIsFocused(false)}
                               placeholder="Your answer"
                               className={cn(
-                                "px-4 py-3 text-center font-medium border-2 transition-all duration-300 text-base",
+                                "px-4 py-3 text-center font-medium border-2 transition-all duration-300 text-base w-full",
                                 isAnswered
                                   ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 shadow-green-200/50 shadow-lg"
                                   : showValidation
@@ -471,38 +455,36 @@ export default function BlanksQuiz({
                         Take your time to think through the answer. Use the hints below if you need guidance - they're
                         designed to help you learn step by step.
                       </p>
-                    </div> */}
-
-                    {/* Stats */}
+                    </div> */}                    {/* Stats */}
                     {answer.trim() && (
-                      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mt-4">
+                      <div className="flex items-center justify-center gap-3 sm:gap-4 text-xs text-muted-foreground mt-4 flex-wrap">
                         <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>
+                          <Clock className="w-3 h-3 flex-shrink-0" />
+                          <span className="whitespace-nowrap">
                             {Math.floor(typingTime / 60)}:{(typingTime % 60).toString().padStart(2, "0")}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          <span>{answer.length} chars</span>
+                          <Eye className="w-3 h-3 flex-shrink-0" />
+                          <span className="whitespace-nowrap">{answer.length} chars</span>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               </CardContent>
-            </Card>
-
-            {showValidation && !answer.trim() && (
+            </Card>            {showValidation && !answer.trim() && (
               <motion.div
                 variants={feedbackVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="flex items-center justify-center gap-2 text-sm text-red-600 mt-2"
+                className="flex items-center justify-center gap-2 text-sm text-red-600 mt-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                role="alert"
+                aria-live="polite"
               >
-                <AlertCircle className="w-4 h-4 animate-bounce" />
-                <span className="font-medium">Please enter an answer before continuing</span>
+                <AlertCircle className="w-4 h-4 animate-bounce flex-shrink-0" />
+                <span className="font-medium text-center">Please enter an answer before continuing</span>
               </motion.div>
             )}
           </motion.div>
@@ -510,42 +492,44 @@ export default function BlanksQuiz({
           {/* Answer Feedback */}
           <AnimatePresence mode="wait">
             {feedback && answer.trim() && (
-              <motion.div variants={feedbackVariants} initial="hidden" animate="visible" exit="exit" layout>
-                <Card className={cn("border-2 shadow-lg", feedback.borderColor, feedback.bgColor)}>
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-start gap-4">
+              <motion.div variants={feedbackVariants} initial="hidden" animate="visible" exit="exit" layout>                <Card className={cn("border-2 shadow-lg", feedback.borderColor, feedback.bgColor)}>
+                  <CardContent className="p-3 sm:p-4 md:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                       <motion.div
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
                         className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg",
+                          "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0",
                           feedback.color.replace("text-", "bg-").replace("-600", "-500"),
                           "text-white",
                         )}
                       >
-                        <feedback.icon className="w-6 h-6" />
+                        <feedback.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </motion.div>
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className={cn("text-lg font-bold", feedback.color)}>
+                      <div className="flex-1 space-y-3 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-wrap">
+                          <h4 className={cn("text-base sm:text-lg font-bold", feedback.color)}>
                             {feedback.emoji} {feedback.level}
                           </h4>
-                          <Badge variant="outline" className={cn("text-xs font-medium", feedback.color)}>
-                            {feedback.label}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            <Zap className="w-3 h-3 mr-1" />
-                            {Math.round(similarity * 100)}% match
-                          </Badge>
-                          {similarity < minimumSimilarityThreshold && (
-                            <Badge variant="outline" className="text-xs text-blue-600 animate-pulse">
-                              Need {Math.round(minimumSimilarityThreshold * 100)}%+ to proceed
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className={cn("text-xs font-medium whitespace-nowrap", feedback.color)}>
+                              {feedback.label}
                             </Badge>
-                          )}
+                            <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                              <Zap className="w-3 h-3 mr-1 flex-shrink-0" />
+                              {Math.round(similarity * 100)}% match
+                            </Badge>
+                            {similarity < minimumSimilarityThreshold && (
+                              <Badge variant="outline" className="text-xs text-blue-600 animate-pulse whitespace-nowrap">
+                                <span className="hidden sm:inline">Need {Math.round(minimumSimilarityThreshold * 100)}%+ to proceed</span>
+                                <span className="sm:hidden">{Math.round(minimumSimilarityThreshold * 100)}%+ needed</span>
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <motion.p
-                          className={cn("text-sm leading-relaxed", feedback.color)}
+                          className={cn("text-xs sm:text-sm leading-relaxed break-words", feedback.color)}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.2 }}

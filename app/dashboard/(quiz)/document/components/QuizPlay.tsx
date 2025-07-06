@@ -20,6 +20,7 @@ import {
 import { Label } from "@/components/ui/label"
 import type { Quiz } from "@/lib/quiz-store"
 import { motion, AnimatePresence } from "framer-motion"
+import { GlobalLoader } from "@/components"
 
 export function QuizPlayer({ quizId }: { quizId: string }) {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
@@ -72,7 +73,7 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
   }
 
   if (!quiz)
-    return <div className="text-center p-10 text-muted-foreground">Loading quiz...</div>
+    return <GlobalLoader/>
 
   if (finished) {
     const percentage = (score / quiz.questions.length) * 100
