@@ -152,45 +152,75 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         url: result.url,
-      })
-    } catch (checkoutError: any) {
+      })    } catch (checkoutError: any) {
       console.error("Error creating checkout session:", checkoutError)
+
+      // Provide more user-friendly error messages based on error type
+      let userMessage = "We're having trouble processing your subscription. Please try again."
+      let errorType = "CHECKOUT_ERROR"
+
+      if (checkoutError.message?.includes("Invalid plan")) {
+        userMessage = "The selected plan is not available. Please choose a different plan."
+        errorType = "INVALID_PLAN"
+      } else if (checkoutError.message?.includes("User already has an active subscription")) {
+        userMessage = "You already have an active subscription. You can manage it from your account settings."
+        errorType = "ALREADY_SUBSCRIBED"
+      } else if (checkoutError.message?.includes("authentication") || checkoutError.message?.includes("API key")) {
+        userMessage = "There's a configuration issue on our end. Please contact support."
+        errorType = "CONFIGURATION_ERROR"
+      } else if (checkoutError.message?.includes("network") || checkoutError.message?.includes("timeout")) {
+        userMessage = "Network error. Please check your connection and try again."
+        errorType = "NETWORK_ERROR"
+      } else if (checkoutError.message?.includes("Card error") || checkoutError.message?.includes("payment")) {
+        userMessage = "Payment processing failed. Please check your payment details and try again."
+        errorType = "PAYMENT_ERROR"
+      }
 
       return NextResponse.json(
         {
           success: false,
           error: "Checkout Error",
-          message: checkoutError.message || "Failed to create checkout session",
-          errorType: "CHECKOUT_ERROR",
+          message: userMessage,
+          errorType: errorType,
+          details: checkoutError.message, // Technical details for debugging
         },
         { status: 500 },
       )
-    }
-  } catch (error: any) {
+    }  } catch (error: any) {
     console.error("Error creating subscription:", error)
 
+    // Provide user-friendly error messages
+    let userMessage = "We encountered an issue while setting up your subscription. Please try again."
+    let statusCode = 500
+    let errorType = "SERVER_ERROR"
+
     if (error.message === "User already has an active subscription") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Subscription conflict",
-          message: "You already have an active subscription",
-          details: error.message,
-          errorType: "ALREADY_SUBSCRIBED",
-        },
-        { status: 409 },
-      )
+      userMessage = "You already have an active subscription. You can manage it from your account settings."
+      statusCode = 409
+      errorType = "ALREADY_SUBSCRIBED"
+    } else if (error.message?.includes("authentication") || error.message?.includes("unauthorized")) {
+      userMessage = "Your session has expired. Please log in again and try again."
+      statusCode = 401
+      errorType = "AUTHENTICATION_ERROR"
+    } else if (error.message?.includes("validation") || error.message?.includes("invalid")) {
+      userMessage = "The subscription details are invalid. Please check your selection and try again."
+      statusCode = 400
+      errorType = "VALIDATION_ERROR"
+    } else if (error.message?.includes("network") || error.message?.includes("timeout")) {
+      userMessage = "Network error. Please check your connection and try again."
+      statusCode = 503
+      errorType = "NETWORK_ERROR"
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create subscription",
-        message: "An error occurred while creating your subscription",
-        details: error.message,
-        errorType: "SERVER_ERROR",
+        error: "Subscription Error",
+        message: userMessage,
+        errorType: errorType,
+        details: error.message, // Technical details for debugging
       },
-      { status: 500 },
+      { status: statusCode },
     )
   }
 }

@@ -1,399 +1,143 @@
 import { type NextRequest, NextResponse } from "next/server"
-import Stripe from "stripe"
-import { prisma } from "@/lib/db"
-import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
-import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
+import { PaymentWebhookHandler, PaymentProvider } from "@/app/dashboard/subscription/services"
+import { logger } from "@/lib/logger"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-10-28.acacia",
-})
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
-
+/**
+ * Enhanced Webhook Handler
+ * 
+ * This endpoint handles webhooks from all supported payment providers
+ * using the unified webhook handler system.
+ */
 export async function POST(req: NextRequest) {
   try {
+    // Get the request body and headers
     const body = await req.text()
-    const sig = req.headers.get("stripe-signature")!
+    const signature = req.headers.get("stripe-signature") || req.headers.get("webhook-signature") || ""
+    
+    // Convert headers to a plain object
+    const headers: Record<string, string> = {}
+    req.headers.forEach((value, key) => {
+      headers[key] = value
+    })
 
-    let event: Stripe.Event
-
-    try {
-      event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-    } catch (err) {
-      console.error(`Webhook signature verification failed: ${err}`)
-      return NextResponse.json({ message: `Webhook Error: ${err}` }, { status: 400 })
-    }
-
-    // Handle the event
-    try {
-      switch (event.type) {
-        case "checkout.session.completed": {
-          const session = event.data.object as Stripe.Checkout.Session
-          await handleCheckoutSessionCompleted(session)
-          break
-        }
-        case "invoice.paid": {
-          const invoice = event.data.object as Stripe.Invoice
-          await handleInvoicePaid(invoice)
-          break
-        }
-        case "customer.subscription.updated": {
-          const subscription = event.data.object as Stripe.Subscription
-          await handleSubscriptionUpdated(subscription)
-          break
-        }
-        case "customer.subscription.deleted": {
-          const subscription = event.data.object as Stripe.Subscription
-          await handleSubscriptionDeleted(subscription)
-          break
-        }
-        default:
-          console.log(`Unhandled event type: ${event.type}`)
-      }
-    } catch (error) {
-      console.error(`Error processing webhook event ${event.type}:`, error)
-      // Don't return an error response, as Stripe will retry the webhook
-      // Instead, log the error and return a 200 response to acknowledge receipt
-    }
-
-    return NextResponse.json({ received: true })
-  } catch (error) {
-    console.error("Webhook error:", error)
-    return NextResponse.json({ message: "Webhook handler failed", error: String(error) }, { status: 500 })
-  }
-}
-
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  // Process the checkout session
-  if (!session.metadata?.userId) {
-    console.error("No user ID in session metadata")
-    return
-  }
-
-  const userId = session.metadata.userId
-  const planId = session.metadata.planName
-
-  // Find the plan to get the correct token amount
-  const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId)
-  const tokensToAdd = plan ? plan.tokens : Number.parseInt(session.metadata.tokens || "0", 10)
-
-  try {
-    // If this is a subscription checkout
-    if (session.mode === "subscription" && session.subscription) {
-      let subscription
-
-      try {
-        subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-      } catch (stripeError) {
-        console.error("Error retrieving subscription from Stripe:", stripeError)
-        // Continue with the session data we have
-        subscription = {
-          id: session.subscription,
-          customer: session.customer,
-          current_period_start: Math.floor(Date.now() / 1000),
-          current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from now
-        }
-      }      // Use the consistent subscription service for guaranteed data consistency
-      const result = await SubscriptionService.updateUserSubscription(
-        userId,
-        {
-          planId: (planId || "FREE") as any,
-          status: "ACTIVE",
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          stripeSubscriptionId: typeof subscription.id === "string" ? subscription.id : null,
-          stripeCustomerId: subscription.customer as string,
-        },
-        tokensToAdd
+    // Determine the payment provider based on headers or other indicators
+    const provider = determinePaymentProvider(headers)
+    
+    if (!provider) {
+      logger.error("Could not determine payment provider from webhook request")
+      return NextResponse.json(
+        { message: "Invalid webhook request - unknown provider" }, 
+        { status: 400 }
       )
-
-      if (!result.success) {
-        console.error(`Failed to update subscription for user ${userId}:`, result.message)
-        return
-      }
-
-      console.log(`Successfully updated subscription for user ${userId} to plan ${planId} with ${tokensToAdd} tokens`)
-
-      // Process referral if applicable
-      if (session.metadata.referralUseId || session.metadata.referralCode) {
-        await processReferralBenefits(session)
-      }
-    }
-  } catch (error) {
-    console.error("Error processing checkout session:", error)
-  }
-}
-
-async function processReferralBenefits(session: any) {
-  try {
-    const userId = session.metadata.userId
-    const referralUseId = session.metadata.referralUseId
-    const referralCode = session.metadata.referralCode
-
-    // Skip if no referral information
-    if (!userId || (!referralCode && !referralUseId)) {
-      return
     }
 
-    // Check if this referral has already been processed
-    const existingReferralUse = await prisma.userReferralUse.findFirst({
-      where: {
-        referredId: userId,
-        status: "COMPLETED",
-      },
-    })
+    logger.info(`Processing webhook from ${provider}`)
 
-    if (existingReferralUse) {
-      console.log(`Referral for user ${userId} already processed`)
-      return
-    }
-
-    // Find referral record either by ID or code
-    let referral
-    let referrerId
-
-    if (referralUseId) {
-      const referralUse = await prisma.userReferralUse.findUnique({
-        where: { id: referralUseId },
-        include: { referral: true },
-      })
-
-      if (referralUse) {
-        referral = referralUse.referral
-        referrerId = referralUse.referrerId
-
-        // Update the referral use status
-        await prisma.userReferralUse.update({
-          where: { id: referralUseId },
-          data: { status: "COMPLETED" },
-        })
-      }
-    } else if (referralCode) {
-      referral = await prisma.userReferral.findUnique({
-        where: { referralCode },
-      })
-
-      if (referral) {
-        referrerId = referral.userId
-
-        // Create a new referral use record
-        await prisma.userReferralUse.create({
-          data: {
-            referrerId: referrerId,
-            referredId: userId,
-            referralId: referral.id,
-            status: "COMPLETED",
-            planId: session.metadata.planName || "UNKNOWN",
-          },
-        })
-      }
-    }
-
-    if (!referral || !referrerId || referrerId === userId) {
-      console.log(`No valid referral found or self-referral for user ${userId}`)
-      return
-    }
-
-    const REFERRER_BONUS = 10
-    const REFERRED_USER_BONUS = 5
-
-    // Add bonus to referred user (current user)
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    })
-
-    if (user) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          credits: user.credits + REFERRED_USER_BONUS,
-        },
-      })
-
-      await prisma.tokenTransaction.create({
-        data: {
-          userId,
-          credits: REFERRED_USER_BONUS,
-          amount: 0, // Assuming amount is 0 for this transaction
-          type: "REFERRAL",
-          description: `Referral bonus for subscribing using referral code`,
-          user: { connect: { id: userId } }, // Assuming user relation needs to be connected
-        },
-      })
-    }
-
-    // Add bonus to referrer
-    const referrer = await prisma.user.findUnique({
-      where: { id: referrerId },
-    })
-
-    if (referrer) {
-      await prisma.user.update({
-        where: { id: referrerId },
-        data: {
-          credits: referrer.credits + REFERRER_BONUS,
-        },
-      })
-
-      await prisma.tokenTransaction.create({
-        data: {
-          userId: referrerId,
-          credits: REFERRER_BONUS,
-          amount: 0,
-          type: "REFERRAL",
-          description: `Referral bonus for user ${userId} subscribing to ${session.metadata.planName || "subscription"} plan`,
-        },
-      })
-    }
-
-    console.log(`Successfully applied referral benefits for user ${userId}`)
-  } catch (error) {
-    console.error("Error processing referral benefits:", error)
-    // Don't throw error to avoid disrupting the webhook processing
-  }
-}
-
-async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  if (!invoice.subscription || !invoice.customer) {
-    return
-  }
-
-  try {
-    // Find the user by Stripe customer ID
-    const userSubscription = await prisma.userSubscription.findFirst({
-      where: { stripeCustomerId: invoice.customer as string },
-    })
-
-    if (!userSubscription) {
-      console.error(`No user found with Stripe customer ID: ${invoice.customer}`)
-      return
-    }
-
-    // Update subscription status to ACTIVE
-    await prisma.userSubscription.update({
-      where: { id: userSubscription.id },
-      data: { status: "ACTIVE" },
-    })
-
-    // Get subscription details to check if this is a renewal
-    let subscription
-
-    try {
-      subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
-    } catch (stripeError) {
-      console.error("Error retrieving subscription from Stripe:", stripeError)
-      return
-    }
-
-    // If this is a renewal (not the first invoice), add tokens again
-    if (subscription.metadata.planName) {
-      const planId = subscription.metadata.planName
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId)
-
-      if (plan) {
-        const user = await prisma.user.findUnique({
-          where: { id: userSubscription.userId },
-        })
-
-        if (user) {
-          console.log(`Adding ${plan.tokens} tokens to user ${userSubscription.userId} from plan ${planId} renewal`)
-
-          await prisma.user.update({
-            where: { id: userSubscription.userId },
-            data: {
-              credits: user.credits + plan.tokens,
-            },
-          })
-
-          // Log the token addition for renewal
-          await prisma.tokenTransaction.create({
-            data: {
-              userId: userSubscription.userId,
-              credits: plan.tokens,
-              amount: invoice.amount_paid / 100, // Convert cents to dollars
-              type: "RENEWAL",
-              description: `Added ${plan.tokens} tokens from ${planId} plan renewal`,
-            },
-          })
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error processing invoice paid:", error)
-  }
-}
-
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  try {
-    // Find the user by Stripe subscription ID
-    const userSubscription = await prisma.userSubscription.findFirst({
-      where: { stripeSubscriptionId: subscription.id },
-    })
-
-    if (!userSubscription) {
-      console.error(`No user found with Stripe subscription ID: ${subscription.id}`)
-      return
-    }
-
-    // Map Stripe status to our status
-    let status: string
-    switch (subscription.status) {
-      case "active":
-        status = "ACTIVE"
-        break
-      case "past_due":
-        status = "PAST_DUE"
-        break
-      case "canceled":
-        status = "CANCELED"
-        break
-      case "unpaid":
-        status = "PAST_DUE"
-        break
-      default:
-        status = "INACTIVE"
-    }    // Use consistent subscription service
-    const result = await SubscriptionService.updateUserSubscription(
-      userSubscription.userId,
-      {
-        planId: userSubscription.planId as any,
-        status: status as any,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        stripeSubscriptionId: subscription.id,
-        stripeCustomerId: subscription.customer as string,
-      }
+    // Process the webhook using the unified handler
+    const result = await PaymentWebhookHandler.processWebhook(
+      provider,
+      body,
+      signature,
+      headers
     )
 
-    if (!result.success) {
-      console.error(`Failed to update subscription status for user ${userSubscription.userId}:`, result.message)
+    if (result.success) {
+      logger.info(`Webhook processed successfully: ${result.eventId} (${result.eventType})`)
+      return NextResponse.json({ 
+        received: true,
+        eventId: result.eventId,
+        eventType: result.eventType,
+        message: result.message
+      })
     } else {
-      console.log(`Successfully updated subscription status for user ${userSubscription.userId} to ${status}`)
+      logger.error(`Webhook processing failed: ${result.error}`)
+      
+      // Return appropriate status code based on whether retry is recommended
+      const statusCode = result.shouldRetry ? 500 : 400
+      
+      return NextResponse.json(
+        { 
+          message: "Webhook processing failed",
+          error: result.error,
+          eventId: result.eventId,
+          shouldRetry: result.shouldRetry
+        }, 
+        { status: statusCode }
+      )
     }
   } catch (error) {
-    console.error("Error processing subscription updated:", error)
+    logger.error("Webhook handler error:", error)
+    
+    return NextResponse.json(
+      { 
+        message: "Webhook handler failed", 
+        error: error instanceof Error ? error.message : String(error)
+      }, 
+      { status: 500 }
+    )
   }
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  try {
-    // Find the user by Stripe subscription ID
-    const userSubscription = await prisma.userSubscription.findFirst({
-      where: { stripeSubscriptionId: subscription.id },
-    })
+/**
+ * Determine the payment provider based on webhook headers
+ */
+function determinePaymentProvider(headers: Record<string, string>): PaymentProvider | null {
+  // Stripe webhook detection
+  if (headers["stripe-signature"]) {
+    return PaymentProvider.STRIPE
+  }
 
-    if (!userSubscription) {
-      console.error(`No user found with Stripe subscription ID: ${subscription.id}`)
-      return
-    }    // Use consistent subscription service to cancel
-    const result = await SubscriptionService.cancelSubscription(userSubscription.userId)
+  // PayPal webhook detection
+  if (headers["paypal-transmission-id"] || headers["paypal-auth-algo"]) {
+    return PaymentProvider.PAYPAL
+  }
+
+  // Square webhook detection
+  if (headers["square-signature"]) {
+    return PaymentProvider.SQUARE
+  }
+
+  // Razorpay webhook detection
+  if (headers["x-razorpay-signature"]) {
+    return PaymentProvider.RAZORPAY
+  }
+
+  // Check user-agent for additional clues
+  const userAgent = headers["user-agent"]?.toLowerCase() || ""
+  
+  if (userAgent.includes("stripe")) {
+    return PaymentProvider.STRIPE
+  }
+  
+  if (userAgent.includes("paypal")) {
+    return PaymentProvider.PAYPAL
+  }
+
+  // Default to Stripe if we can't determine (for backward compatibility)
+  return PaymentProvider.STRIPE
+}
+
+/**
+ * Health check endpoint for webhook monitoring
+ */
+export async function GET() {
+  try {
+    const stats = PaymentWebhookHandler.getProcessingStats()
     
-    if (!result.success) {
-      console.error(`Failed to cancel subscription for user ${userSubscription.userId}:`, result.message)
-    } else {
-      console.log(`Successfully canceled subscription for user ${userSubscription.userId}`)
-    }
+    return NextResponse.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      processingStats: stats,
+      message: "Webhook handler is operational"
+    })
   } catch (error) {
-    console.error("Error processing subscription deleted:", error)
+    return NextResponse.json(
+      {
+        status: "unhealthy",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error)
+      },
+      { status: 500 }
+    )
   }
 }
