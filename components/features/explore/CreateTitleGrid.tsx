@@ -112,7 +112,6 @@ const tiles = [  {
     title: "Essay & Open Questions",
     description:
       "Create thought-provoking essay questions that encourage critical thinking and deeper analysis of topics.",
-      "Create thought-provoking essay questions that encourage critical thinking and deeper analysis of topics.",
     url: "/dashboard/openended",
     color: "green",
     quotes: [
@@ -580,9 +579,9 @@ function Tile({
               asChild
               className={`w-full text-base h-12 sm:h-14 bg-${color}-500 hover:bg-${color}-600 text-white shadow-lg`}
               aria-label={`Get started with ${title}`}
-              disabled={isPremium && data?.subscriptionPlan !== "PREMIUM"}
+              disabled={isPremium && data?.plan !== "PREMIUM"}
             >
-              <Link href={isPremium && data?.subscriptionPlan !== "PREMIUM" ? "/pricing" : url}>
+              <Link href={isPremium && data?.plan !== "PREMIUM" ? "/pricing" : url}>
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
