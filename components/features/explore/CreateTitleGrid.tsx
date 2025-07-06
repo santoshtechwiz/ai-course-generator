@@ -57,7 +57,6 @@ interface CreateTileGridProps {
 const tiles = [  {
     icon: FileQuestion,
     title: "Multiple Choice Questions",
-    title: "Multiple Choice Questions",
     description:
       "Create effective multiple-choice quizzes that adapt to your skill level and provide instant feedback.",
     url: "/dashboard/mcq",
@@ -108,7 +107,6 @@ const tiles = [  {
   },
   {
     icon: PenTool,
-    title: "Essay & Open Questions",
     title: "Essay & Open Questions",
     description:
       "Create thought-provoking essay questions that encourage critical thinking and deeper analysis of topics.",
@@ -161,10 +159,10 @@ const tiles = [  {
   {
     icon: BookOpen,
     title: "Complete Course Builder",
-    title: "Complete Course Builder",
+
     description:
       "Create entire courses with organized modules, lessons, and assessments - all perfectly structured to match your curriculum.",
-      "Create entire courses with organized modules, lessons, and assessments - all perfectly structured to match your curriculum.",
+
     url: "/dashboard/create",
     color: "purple",
     quotes: [
@@ -212,7 +210,7 @@ const tiles = [  {
       "Create flashcard sets that adapt to your learning progress, focusing on what you need to review most.",
     url: "/dashboard/flashcard",
     color: "indigo",
-    color: "indigo",
+
     quotes: [
       "Create effective study cards with spaced repetition technology",
       "Focus review time on cards you need to practice most",
@@ -268,7 +266,7 @@ function Tile({
   }, [quoteInterval]);
 
   // Fixed logic: Premium features are disabled for FREE users, enabled for BASIC and PREMIUM
-  const isDisabled = isPremium && data?.subscriptionPlan === "FREE";
+  const isDisabled = isPremium && data?.plan === "FREE";
 
   return (
     <>
@@ -546,7 +544,7 @@ function Tile({
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
                 className="flex justify-center"
-                className="flex justify-center"
+         
               >
                 <Icon
                   className={`h-24 w-24 sm:h-32 sm:w-32 text-${color}-500 opacity-20`}
@@ -557,7 +555,7 @@ function Tile({
           </ScrollArea>
 
           <DialogFooter className="sm:flex-row gap-2 sm:gap-3 pt-4 border-t">
-            {data?.subscriptionPlan === "FREE" && isPremium && (
+            {data?.plan === "FREE" && isPremium && (
               <Button
                 variant="outline"
                 className="w-full sm:w-auto text-base border-amber-300 text-amber-700 hover:bg-amber-50"
