@@ -54,9 +54,9 @@ interface CreateTileGridProps {
   benefits?: string[];
 }
 
-const tiles = [
-  {
+const tiles = [  {
     icon: FileQuestion,
+    title: "Multiple Choice Questions",
     title: "Multiple Choice Questions",
     description:
       "Create effective multiple-choice quizzes that adapt to your skill level and provide instant feedback.",
@@ -91,6 +91,11 @@ const tiles = [
       "Test reading comprehension with intelligently generated questions",
       "Automatically extract key concepts from complex documents",
       "Save hours of manual question writing with AI assistance",
+      "Transform any document into a quiz in under 30 seconds",
+      "Create assessments from textbooks, articles, or your own materials",
+      "Test reading comprehension with intelligently generated questions",
+      "Automatically extract key concepts from complex documents",
+      "Save hours of manual question writing with AI assistance",
     ],
     isPremium: false,
     seoKeywords:
@@ -104,11 +109,18 @@ const tiles = [
   {
     icon: PenTool,
     title: "Essay & Open Questions",
+    title: "Essay & Open Questions",
     description:
+      "Create thought-provoking essay questions that encourage critical thinking and deeper analysis of topics.",
       "Create thought-provoking essay questions that encourage critical thinking and deeper analysis of topics.",
     url: "/dashboard/openended",
     color: "green",
     quotes: [
+      "Generate thoughtful essay prompts for any subject in seconds",
+      "Create questions that develop critical thinking skills",
+      "Include helpful guidance notes for each prompt",
+      "Structure questions for different educational levels",
+      "Create rubrics and grading criteria automatically",
       "Generate thoughtful essay prompts for any subject in seconds",
       "Create questions that develop critical thinking skills",
       "Include helpful guidance notes for each prompt",
@@ -150,7 +162,9 @@ const tiles = [
   {
     icon: BookOpen,
     title: "Complete Course Builder",
+    title: "Complete Course Builder",
     description:
+      "Create entire courses with organized modules, lessons, and assessments - all perfectly structured to match your curriculum.",
       "Create entire courses with organized modules, lessons, and assessments - all perfectly structured to match your curriculum.",
     url: "/dashboard/create",
     color: "purple",
@@ -199,7 +213,13 @@ const tiles = [
       "Create flashcard sets that adapt to your learning progress, focusing on what you need to review most.",
     url: "/dashboard/flashcard",
     color: "indigo",
+    color: "indigo",
     quotes: [
+      "Create effective study cards with spaced repetition technology",
+      "Focus review time on cards you need to practice most",
+      "Generate flashcard sets from your notes or textbooks",
+      "Track memory retention and learning progress",
+      "Study smarter, not longer, with adaptive review sessions",
       "Create effective study cards with spaced repetition technology",
       "Focus review time on cards you need to practice most",
       "Generate flashcard sets from your notes or textbooks",
@@ -527,6 +547,7 @@ function Tile({
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
                 className="flex justify-center"
+                className="flex justify-center"
               >
                 <Icon
                   className={`h-24 w-24 sm:h-32 sm:w-32 text-${color}-500 opacity-20`}
@@ -559,8 +580,9 @@ function Tile({
               asChild
               className={`w-full text-base h-12 sm:h-14 bg-${color}-500 hover:bg-${color}-600 text-white shadow-lg`}
               aria-label={`Get started with ${title}`}
+              disabled={isPremium && data?.subscriptionPlan !== "PREMIUM"}
             >
-              <Link href={url}>
+              <Link href={isPremium && data?.subscriptionPlan !== "PREMIUM" ? "/pricing" : url}>
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
