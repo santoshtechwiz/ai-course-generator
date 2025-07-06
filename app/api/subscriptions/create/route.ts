@@ -60,9 +60,7 @@ export async function POST(req: NextRequest) {
         },
         { status: 400 },
       )
-    }
-
-    const userId = session.user.id
+    }    const userId = session.user.id
 
     // Check if user already has an active subscription
     const existingSubscription = await prisma.userSubscription.findUnique({
@@ -79,6 +77,30 @@ export async function POST(req: NextRequest) {
           errorType: "PLAN_CHANGE_RESTRICTED",
         },
         { status: 200 },
+      )
+    }
+
+    // Check if user has a recent pending subscription to prevent double-processing
+    const recentPendingSubscription = await prisma.pendingSubscription.findFirst({
+      where: {
+        userId,
+        status: "PENDING",
+        createdAt: {
+          gte: new Date(Date.now() - 5 * 60 * 1000), // Within last 5 minutes
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+
+    if (recentPendingSubscription) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Subscription In Progress",
+          message: "You already have a subscription request in progress. Please wait a few minutes or contact support if this persists.",
+          errorType: "SUBSCRIPTION_IN_PROGRESS",
+        },
+        { status: 429 }, // Too Many Requests
       )
     }
 
@@ -115,10 +137,27 @@ export async function POST(req: NextRequest) {
 
       // Use the validated discount percentage from the service
       validatedData.promoDiscount = promoValidation.discount||0;
-    }
-
-    // Create a pending subscription record before redirecting to payment
+    }    // Create or update pending subscription record before redirecting to payment
     try {
+      // Clean up any existing pending subscriptions for this user (including old ones)
+      await prisma.pendingSubscription.deleteMany({
+        where: {
+          userId,
+          status: "PENDING",
+        },
+      })
+
+      // Also clean up any old pending subscriptions (older than 1 hour) across all users
+      await prisma.pendingSubscription.deleteMany({
+        where: {
+          status: "PENDING",
+          createdAt: {
+            lt: new Date(Date.now() - 60 * 60 * 1000), // Older than 1 hour
+          },
+        },
+      })
+
+      // Create a new pending subscription record
       await prisma.pendingSubscription.create({
         data: {
           userId,
@@ -132,7 +171,7 @@ export async function POST(req: NextRequest) {
         },
       })
     } catch (error) {
-      console.error("Error creating pending subscription record:", error)
+      console.error("Error managing pending subscription record:", error)
       // Continue with checkout even if recording fails
     }
 

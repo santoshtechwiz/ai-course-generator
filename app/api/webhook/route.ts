@@ -1,15 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { PaymentWebhookHandler, PaymentProvider } from "@/app/dashboard/subscription/services"
 import { logger } from "@/lib/logger"
 
 /**
- * Enhanced Webhook Handler
+ * Webhook Handler
  * 
  * This endpoint handles webhooks from all supported payment providers
  * using the unified webhook handler system.
  */
 export async function POST(req: NextRequest) {
   try {
+    // Dynamic imports to avoid circular dependency issues
+    const { PaymentWebhookHandler, PaymentProvider } = await import("@/app/dashboard/subscription/services")
+    
     // Get the request body and headers
     const body = await req.text()
     const signature = req.headers.get("stripe-signature") || req.headers.get("webhook-signature") || ""
@@ -18,10 +20,8 @@ export async function POST(req: NextRequest) {
     const headers: Record<string, string> = {}
     req.headers.forEach((value, key) => {
       headers[key] = value
-    })
-
-    // Determine the payment provider based on headers or other indicators
-    const provider = determinePaymentProvider(headers)
+    })    // Determine the payment provider based on headers or other indicators
+    const provider = determinePaymentProvider(headers, PaymentProvider)
     
     if (!provider) {
       logger.error("Could not determine payment provider from webhook request")
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 /**
  * Determine the payment provider based on webhook headers
  */
-function determinePaymentProvider(headers: Record<string, string>): PaymentProvider | null {
+function determinePaymentProvider(headers: Record<string, string>, PaymentProvider: any): any {
   // Stripe webhook detection
   if (headers["stripe-signature"]) {
     return PaymentProvider.STRIPE
@@ -122,6 +122,7 @@ function determinePaymentProvider(headers: Record<string, string>): PaymentProvi
  */
 export async function GET() {
   try {
+    const { PaymentWebhookHandler } = await import("@/app/dashboard/subscription/services")
     const stats = PaymentWebhookHandler.getProcessingStats()
     
     return NextResponse.json({

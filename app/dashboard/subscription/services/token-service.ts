@@ -6,13 +6,11 @@
  */
 
 import { prisma } from "@/lib/db"
-import { createLogger } from "@/lib/logger"
-
-// Initialize logger
-const logger = createLogger("token-service")
+import { logger } from "@/lib/logger"
 
 // Cache for token operations to reduce database load
-const tokenCache = new Map<string, { balance: number; timestamp: number }>()
+const tokenBalanceCache = new Map<string, { balance: number; timestamp: number }>()
+const tokenHistoryCache = new Map<string, { history: any[]; timestamp: number }>()
 const CACHE_TTL = 30 * 1000 // 30 seconds
 
 /**
@@ -29,11 +27,9 @@ export class TokenService {
     try {
       if (!userId) {
         throw new Error("User ID is required")
-      }
-
-      // Check cache first
+      }      // Check cache first
       const cacheKey = `balance_${userId}`
-      const cachedData = tokenCache.get(cacheKey)
+      const cachedData = tokenBalanceCache.get(cacheKey)
 
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
         logger.debug(`Using cached token balance for user ${userId}`)
@@ -54,7 +50,7 @@ export class TokenService {
       const balance = user.credits || 0
 
       // Cache the result
-      tokenCache.set(cacheKey, { balance, timestamp: Date.now() })
+      tokenBalanceCache.set(cacheKey, { balance, timestamp: Date.now() })
 
       return balance
     } catch (error) {
@@ -205,15 +201,13 @@ export class TokenService {
       if (!userId) {
         logger.warn("No user ID provided for token history")
         return []
-      }
-
-      // Check cache first
+      }      // Check cache first
       const cacheKey = `history_${userId}_${limit}`
-      const cachedData = tokenCache.get(cacheKey)
+      const cachedData = tokenHistoryCache.get(cacheKey)
 
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
         logger.debug(`Using cached token history for user ${userId}`)
-        return cachedData.balance
+        return cachedData.history
       }
 
       // Get token transactions from database
@@ -230,10 +224,8 @@ export class TokenService {
         type: tx.type,
         description: tx.description,
         date: tx.createdAt.toISOString(),
-      }))
-
-      // Cache the result
-      tokenCache.set(cacheKey, { balance: result, timestamp: Date.now() })
+      }))      // Cache the result
+      tokenHistoryCache.set(cacheKey, { history: result, timestamp: Date.now() })
 
       return result
     } catch (error) {
@@ -258,16 +250,19 @@ export class TokenService {
       return false
     }
   }
-
   /**
    * Clear cache for a specific user
    * @private
-   */
-  private static clearUserCache(userId: string): void {
-    const keysToDelete = Array.from(tokenCache.keys()).filter((key) => key.includes(userId))
+   */  private static clearUserCache(userId: string): void {
+    const balanceKeysToDelete = Array.from(tokenBalanceCache.keys()).filter((key: string) => key.includes(userId))
+    const historyKeysToDelete = Array.from(tokenHistoryCache.keys()).filter((key: string) => key.includes(userId))
 
-    keysToDelete.forEach((key) => {
-      tokenCache.delete(key)
+    balanceKeysToDelete.forEach((key: string) => {
+      tokenBalanceCache.delete(key)
+    })
+
+    historyKeysToDelete.forEach((key: string) => {
+      tokenHistoryCache.delete(key)
     })
   }
 
@@ -275,7 +270,8 @@ export class TokenService {
    * Clear all cache
    */
   static clearAllCache(): void {
-    tokenCache.clear()
+    tokenBalanceCache.clear()
+    tokenHistoryCache.clear()
     logger.info("Cleared all token cache")
   }
 }
