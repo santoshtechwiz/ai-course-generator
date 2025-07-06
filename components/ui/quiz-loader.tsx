@@ -1,25 +1,10 @@
-"use client"
-
-import { useGlobalLoading } from "@/store/slices/global-loading-slice"
-import { useEffect } from "react"
+import { ClipLoader } from "react-spinners"
 
 export function QuizLoader() {
-  const { showLoading, hideLoading } = useGlobalLoading()
-
-  useEffect(() => {
-    const loaderId = showLoading({
-      message: "Loading Quizzes...",
-      subMessage: "Fetching your personalized content",
-      variant: 'spinner',
-      theme: 'primary',
-      isBlocking: false,
-      priority: 1
-    })
-
-    return () => {
-      hideLoading(loaderId)
-    }
-  }, [showLoading, hideLoading])
-
-  return null // Loading handled by GlobalLoader
+  return (
+    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+      <ClipLoader color="#3B82F6" size={40} />
+      <p className="text-sm text-muted-foreground">Loading Quizzes...</p>
+    </div>
+  )
 }

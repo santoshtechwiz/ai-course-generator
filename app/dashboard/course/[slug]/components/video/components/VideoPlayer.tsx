@@ -6,7 +6,7 @@ import ReactPlayer from "react-player/youtube"
 import { useSession } from "next-auth/react"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
 import PlayerControls from "./PlayerControls"
-import VideoLoadingOverlay from "./VideoLoadingOverlay"
+import { useGlobalLoader } from '@/store/global-loader'
 import VideoErrorState from "./VideoErrorState"
 import BookmarkManager from "./BookmarkManager"
 import KeyboardShortcutsModal from "../../KeyboardShortcutsModal"
@@ -110,6 +110,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const { data: session } = useSession()
   const { toast } = useToast()
+  const { startLoading, stopLoading } = useGlobalLoader()
 
   // State management with proper initialization
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false)
@@ -239,11 +240,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return null
     }
   }, [isMounted, containerRef])
-
   // Enhanced player ready handler with better error handling
   const handlePlayerReady = useCallback(() => {
     setPlayerReady(true)
     setIsLoadingDuration(false)
+    
+    // Stop global loading when video is ready
+    stopLoading()
 
     if (playerRef.current) {
       try {
@@ -262,10 +265,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       } catch (error) {
         console.warn("Error getting video duration:", error)
       }
-    }
-
-    handlers.onReady()
-  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady])
+    }    handlers.onReady()
+  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading])
 
   // Enhanced play handler with better UX
   const handlePlayClick = useCallback(() => {
@@ -492,7 +493,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return () => cancelAnimationFrame(animationFrame)
     }
   }, [state.playing, chapterStartShown, playerReady, canPlayVideo, showChapterEnd, isMounted])
-
   // Reset overlay states when video changes with proper cleanup
   useEffect(() => {
     setChapterStartShown(false)
@@ -503,11 +503,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsLoadingDuration(true)
     setCertificateState("idle")
 
+    // Start loading when video changes
+    startLoading({
+      message: "Loading video...",
+      isBlocking: false
+    })
+
     // Clear any pending timeouts
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current)
     }
-  }, [videoId])
+  }, [videoId, startLoading])
 
   // Enhanced overlay handlers with better state management
   const handleChapterStartComplete = useCallback(() => {
@@ -667,8 +673,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onDuration={(duration) => {
             setVideoDuration(duration)
             setIsLoadingDuration(false)
-          }}
-          config={{
+          }}          config={{
             youtube: {
               playerVars: {
                 autoplay: 0,
@@ -685,7 +690,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
               },
             },
-          }}
+          } as any}
         />
       </div>
 
@@ -694,12 +699,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <div className="bg-black/20 backdrop-blur-sm rounded-full p-1 sm:p-1.5 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
           <span className="text-white font-bold text-xs select-none">CourseAI</span>
         </div>
-      </div>
-
-      {/* Loading overlay */}
-      {(state.isLoading || state.isBuffering || isLoadingDuration) && (
-        <VideoLoadingOverlay isVisible={true} message={state.isBuffering ? "Buffering..." : "Loading video..."} />
-      )}
+      </div>      {/* Video loading managed by global loader - no local overlay needed */}
 
       {/* Error state */}
       {state.playerError && (

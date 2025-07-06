@@ -3,8 +3,7 @@
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { GlobalLoader } from "@/components/ui/loader"
-import { CourseAILoader } from "@/components/ui/loader/courseai-loader"
+import { ClipLoader } from "react-spinners"
 
 
 
@@ -21,7 +20,10 @@ const CodePage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <CourseAILoader context="loading" />
+        <div className="flex flex-col items-center justify-center py-12">
+          <ClipLoader color="#3B82F6" size={40} />
+          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
+        </div>
       ) : (
         <CodeQuizForm 
           credits={quizPlan.credits} 

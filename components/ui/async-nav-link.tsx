@@ -4,7 +4,7 @@ import type React from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useCallback } from "react"
 
-import { useGlobalLoading } from "@/store/slices/global-loading-slice"
+import { useGlobalLoader } from "@/store/global-loader"
 
 interface AsyncNavLinkProps {
   href: string
@@ -21,26 +21,21 @@ interface AsyncNavLinkProps {
   }
 }
 
-export function AsyncNavLink({ href, children, className, onClick, loaderOptions = {} }: AsyncNavLinkProps) {
-  const router = useRouter()
+export function AsyncNavLink({ href, children, className, onClick, loaderOptions = {} }: AsyncNavLinkProps) {  const router = useRouter()
   const pathname = usePathname()
-  const { showLoading } = useGlobalLoading()
+  const { startLoading } = useGlobalLoader()
   const isActive = pathname === href
-
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
-
+      
       const options = {
         message: "Loading...",
-        variant: "spinner" as const,
-        theme: "primary" as const,
         isBlocking: true,
-        priority: 5,
         ...loaderOptions,
       }
 
-      const loaderId = showLoading(options)
+      startLoading(options)
 
       if (onClick) onClick()
 
@@ -50,7 +45,7 @@ export function AsyncNavLink({ href, children, className, onClick, loaderOptions
         // Note: loader will be automatically hidden by navigation hook
       }, 50)
     },
-    [href, router, showLoading, onClick, loaderOptions],
+    [href, router, startLoading, onClick, loaderOptions],
   )
 
   return (

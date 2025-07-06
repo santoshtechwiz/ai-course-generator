@@ -1,40 +1,25 @@
 "use client"
 
-import React, { useEffect } from "react"
-import { useGlobalLoading } from "@/store/slices/global-loading-slice"
+import React from "react"
 
 interface VideoLoadingOverlayProps {
   isVisible: boolean
   message?: string
 }
 
+/**
+ * Simple VideoLoadingOverlay that only renders when visible
+ * All loading state is handled by the global loader system
+ */
 const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({ 
   isVisible, 
   message = "Loading video..." 
 }) => {
-  const { showLoading, hideLoading } = useGlobalLoading()
+  // Don't use any loader hooks here to prevent infinite loops
+  // The global loader is managed at a higher level
+  if (!isVisible) return null
 
-  useEffect(() => {
-    let loaderId: string | null = null
-
-    if (isVisible) {
-      loaderId = showLoading({
-        message,
-        variant: 'spinner',
-        theme: 'primary',
-        isBlocking: true,
-        priority: 5
-      })
-    }
-
-    return () => {
-      if (loaderId) {
-        hideLoading(loaderId)
-      }
-    }
-  }, [isVisible, message, showLoading, hideLoading])
-
-  return null // Loading handled by GlobalLoader
+  return null // All loading handled by GlobalLoader at app level
 }
 
 export default React.memo(VideoLoadingOverlay)

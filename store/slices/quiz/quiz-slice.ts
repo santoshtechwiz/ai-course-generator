@@ -3,7 +3,6 @@ import type { RootState } from '@/store'
 import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
-import { useGlobalLoadingStore } from '../global-loading-slice'
 
 // Initial State
 const initialState: QuizState = {
@@ -16,14 +15,10 @@ const initialState: QuizState = {
   results: null,
   isCompleted: false,
   status: 'idle',
-  error: null,
-  requiresAuth: false,
+  error: null,  requiresAuth: false,
   redirectAfterLogin: null,
   userId: null,
 }
-
-// Helper to show/hide loading via global state
-const globalLoading = useGlobalLoadingStore.getState()
 
 // Async Thunks
 
@@ -31,8 +26,7 @@ const globalLoading = useGlobalLoadingStore.getState()
  * Load quiz definition based on slug/type
  */
 export const fetchQuiz = createAsyncThunk(
-  "quiz/fetch",
-  async (
+  "quiz/fetch",  async (
     payload: {
       slug?: string
       quizType?: QuizType
@@ -40,19 +34,9 @@ export const fetchQuiz = createAsyncThunk(
     },
     { rejectWithValue }
   ) => {
-    // Show global loading
-    const loaderId = globalLoading.showLoading({
-      message: "Loading quiz...",
-      subMessage: "Fetching questions and content",
-      variant: 'spinner',
-      theme: 'primary',
-      isBlocking: true,
-      priority: 5
-    })
-
     try {
       if (!payload) {
-        globalLoading.hideLoading(loaderId)
+        return rejectWithValue('No payload provided')
         return rejectWithValue({ error: "No payload provided" })
       }
 
@@ -60,7 +44,6 @@ export const fetchQuiz = createAsyncThunk(
       const type = payload.quizType as QuizType
 
       if (payload.data && Array.isArray(payload.data.questions)) {
-        globalLoading.hideLoading(loaderId)
         return {
           ...payload.data,
           slug,
@@ -70,20 +53,17 @@ export const fetchQuiz = createAsyncThunk(
       }
 
       if (!slug || !type) {
-        globalLoading.hideLoading(loaderId)
         return rejectWithValue({ error: "Missing slug or quizType" })
       }
 
       const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS]
       if (!endpoint) {
-        globalLoading.hideLoading(loaderId)
         return rejectWithValue({ error: `Invalid quiz type: ${type}` })
       }
 
       const response = await fetch(`${endpoint}/${slug}`)
       if (!response.ok) {
         const errorText = await response.text()
-        globalLoading.hideLoading(loaderId)
         return rejectWithValue({
           error: `Error loading quiz: ${response.status}`,
           details: errorText,
@@ -93,7 +73,6 @@ export const fetchQuiz = createAsyncThunk(
       const data = await response.json()
 
       if (!data || !Array.isArray(data.questions)) {
-        globalLoading.hideLoading(loaderId)
         return rejectWithValue({ error: "Invalid quiz data" })
       }
 
@@ -149,11 +128,9 @@ export const fetchQuiz = createAsyncThunk(
       }
 
       console.log("Quiz fetched successfully:", normalized)
-      globalLoading.hideLoading(loaderId)
       return normalized
     } catch (error: any) {
       console.error("Quiz fetch error:", error)
-      globalLoading.hideLoading(loaderId)
       return rejectWithValue({
         error: error.message || "Failed to load quiz",
       })
@@ -167,16 +144,6 @@ export const fetchQuiz = createAsyncThunk(
 export const submitQuiz = createAsyncThunk(
   'quiz/submit',
   async (_, { getState }) => {
-    // Show global loading for submission
-    const loaderId = globalLoading.showLoading({
-      message: "Submitting quiz...",
-      subMessage: "Calculating your results",
-      variant: 'spinner',
-      theme: 'primary',
-      isBlocking: true,
-      priority: 8
-    })
-
     try {
       const state = getState() as RootState
       const quiz = state.quiz as unknown as QuizState
@@ -248,10 +215,8 @@ export const submitQuiz = createAsyncThunk(
         results: tempResults,
       }
 
-      globalLoading.hideLoading(loaderId)
       return results
     } catch (error) {
-      globalLoading.hideLoading(loaderId)
       throw error
     }
   }

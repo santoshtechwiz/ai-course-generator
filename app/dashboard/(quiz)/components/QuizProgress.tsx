@@ -3,7 +3,7 @@
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Clock, Target, TrendingUp, Zap, Award, Flame } from "lucide-react"
-import { LoaderComponent } from "@/components/ui/loader/courseai-loader"
+import { ClipLoader } from "react-spinners"
 
 interface QuizProgressProps {
   currentQuestionIndex: number
@@ -82,7 +82,12 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 }) => {
   // Show loader if loading
   if (isLoading) {
-    return <LoaderComponent isLoading={true} variant="grid" fullscreen={false} message="Loading quiz progress..." className="max-w-4xl mx-auto" />
+    return (
+      <div className="max-w-4xl mx-auto flex flex-col items-center justify-center py-12">
+        <ClipLoader color="#3B82F6" size={40} />
+        <p className="mt-4 text-sm text-muted-foreground">Loading quiz progress...</p>
+      </div>
+    )
   }
 
   // Ensure values are valid

@@ -16,7 +16,7 @@ import type { DashboardUser, UserStats } from "@/app/types/types"
 
 // Import components dynamically to prevent navigation during render
 import dynamic from "next/dynamic"
-import { CourseAILoader } from "@/components/ui/loader/courseai-loader"
+import { GlobalLoader } from "@/components/ui/loader"
 
 const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,
@@ -101,7 +101,7 @@ export default function DashboardPage() {
   const safeUserData: DashboardUser = userData as DashboardUser
   const safeUserStats: UserStats = userStats as UserStats
   if (status === "loading") {
-    return <CourseAILoader context="processing" />
+    return <GlobalLoader  />
   }
 
   // Return early without router navigation during render

@@ -12,7 +12,7 @@ import {
 } from "@/store/slices/flashcard-slice"
 import { useAuth } from '@/modules/auth'
 import { AnimatePresence, motion } from "framer-motion"
-import { QuizLoader } from "@/components/ui/quiz-loader"
+import { ClipLoader } from "react-spinners"
 import FlashCardResults from "./FlashCardQuizResults"
 import { Button } from "@/components/ui/button"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
@@ -92,10 +92,11 @@ export default function FlashcardResultHandler({
     router.replace(`/dashboard/flashcard/${slug}`)
     return null
   }
-
   if (isAuthLoading) {
-    return (      <div className="flex items-center justify-center min-h-[400px]">
-        <QuizLoader />
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <ClipLoader color="#3B82F6" size={40} />
+        <p className="text-sm text-muted-foreground">Loading quiz results...</p>
       </div>
     )
   }
@@ -160,9 +161,9 @@ export default function FlashcardResultHandler({
               stillLearningCards: processedResults.stillLearningCards || []
             }}
           />
-        ) : (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <QuizLoader />
+        ) : (          <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+            <ClipLoader color="#3B82F6" size={40} />
+            <p className="text-sm text-muted-foreground">Loading quiz results...</p>
           </div>
         )}
       </motion.div>

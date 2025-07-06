@@ -9,10 +9,11 @@ import { JsonLD, generateMetadata } from "@/lib/seo-manager-new"
 import { QuizzesClient } from "./components/QuizzesClient"
 import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
 import QuizDashboardWrapper from "./components/QuizDashboardWrapper"
-import TestComponent from "./components/TestComponent"
-import { Loader } from "@/components/ui/loader"
+
+
 import ClientOnly from "@/components/ClientOnly"
 import { AnimatedIntro } from "./components/AnimatedIntro"
+import Loader from "@/components/ui/loader"
 
 
 export const metadata: Metadata = generateMetadata({
@@ -66,7 +67,7 @@ const QuizPage = async () => {
           <Suspense
             fallback={
               <div className="space-y-4">
-                <Loader variant="skeleton"/>
+                <Loader/>
                 <QuizzesSkeleton />
               </div>
             }
