@@ -26,7 +26,13 @@ const CourseAILandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState("hero")
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   const router = useRouter()
+
+  // Client-side hydration check
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   // Refs for sections
   const heroRef = useRef<HTMLDivElement>(null)
@@ -153,6 +159,8 @@ const CourseAILandingPage = () => {
       document.body.style.overflow = ""
     }
   }, [isMenuOpen])
+
+  if (!isHydrated) return null
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
@@ -356,10 +364,10 @@ const CourseAILandingPage = () => {
 
       <main>
         {/* Hero Section */}
-        <section id="hero" ref={heroRef}>
-          <HeroSection
+        <section id="hero" ref={heroRef}>          <HeroSection
             scrollToFeatures={() => scrollToSection("features")}
             scrollToHowItWorks={() => scrollToSection("how-it-works")}
+            isHydrated={isHydrated}
           />
         </section>
 

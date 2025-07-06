@@ -11,6 +11,7 @@ import { Loader2, Check, Lock, AlertCircle } from "lucide-react"
 import { type PlanType } from "../../../../hooks/useQuizPlan"
 // ✅ UNIFIED: Using unified auth system
 import { useAuth, useSubscription } from "@/modules/auth"
+import { calculateCreditInfo, getCreditMessage } from "@/utils/credit-utils"
 
 interface CustomButtonStates {
   default?: {
@@ -42,10 +43,11 @@ interface CustomButtonStates {
 interface PlanAwareButtonProps extends Omit<ButtonProps, "onClick"> {
   label: string
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
-  isLoggedIn: boolean
+  isLoggedIn?: boolean // Optional - will be auto-detected if not provided
   isLoading?: boolean
   isEnabled?: boolean
-  hasCredits?: boolean
+  hasCredits?: boolean // This will be auto-calculated if not provided
+  creditsRequired?: number // Number of credits required for this action
   loadingLabel?: string
   requiredPlan?: PlanType
   currentPlan?: PlanType
@@ -59,14 +61,16 @@ interface PlanAwareButtonProps extends Omit<ButtonProps, "onClick"> {
 export default function PlanAwareButton({
   label,
   onClick,
-  isLoggedIn,
+  isLoggedIn, // Will be auto-detected if not provided
   isLoading = false,
   isEnabled = true,
-  hasCredits = true,
+  hasCredits, // Will be auto-calculated if not provided
+  creditsRequired = 1, // Default to 1 credit required
   loadingLabel = "Processing...",
   requiredPlan = "FREE",
   currentPlan,
-  fallbackHref = "/dashboard/subscription",  onPlanRequired,
+  fallbackHref = "/dashboard/subscription",
+  onPlanRequired,
   onInsufficientCredits,
   customStates,
   className = "",
@@ -78,11 +82,40 @@ export default function PlanAwareButton({
   const router = useRouter()
   
   // ✅ UNIFIED: Get subscription details from unified auth system
-  const { isAuthenticated } = useAuth()
-  const subscription = useSubscription()
-    // Use provided plan or get from unified auth state if not provided
+  const { isAuthenticated, user } = useAuth()
+  const { subscription } = useSubscription()
+  
+  // Auto-detect authentication if not explicitly provided
+  const effectiveIsLoggedIn = isLoggedIn !== undefined ? isLoggedIn : isAuthenticated
+    // Calculate remaining credits automatically using utility
+  const creditInfo = calculateCreditInfo(
+    user?.credits,
+    user?.creditsUsed,
+    subscription?.credits,
+    subscription?.tokensUsed
+  )
+  
+  // Use provided hasCredits or calculate automatically based on credits required
+  const effectiveHasCredits = hasCredits !== undefined 
+    ? hasCredits 
+    : creditInfo.hasEnoughCredits(creditsRequired)  // Debug info in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('PlanAwareButton Debug:', {
+      isLoggedIn,
+      effectiveIsLoggedIn,
+      isAuthenticated,
+      creditInfo,
+      creditsRequired,
+      effectiveHasCredits,
+      hasCredits,
+      userCredits: user?.credits,
+      userCreditsUsed: user?.creditsUsed,
+      subscriptionCredits: subscription?.credits,
+      subscriptionTokensUsed: subscription?.tokensUsed
+    })
+  }// Use provided plan or get from unified auth state if not provided
   const effectivePlan = currentPlan || subscription?.plan || "FREE"
-  const isAlreadySubscribed = subscription?.status === 'active' || false
+  const isAlreadySubscribed = subscription?.status === 'ACTIVE' || false
   
   // Check if the user's plan meets requirements
   const meetsRequirement = (): boolean => {
@@ -111,10 +144,8 @@ export default function PlanAwareButton({
           e.preventDefault()
         },
       }
-    }
-
-    // Authentication check - only show if definitely not logged in
-    if (isLoggedIn === false) {
+    }    // Authentication check - only show if definitely not logged in
+    if (effectiveIsLoggedIn === false) {
       const notLoggedInState = customStates?.notLoggedIn ?? {}
       return {
         label: notLoggedInState.label ?? "Sign in to continue",
@@ -140,14 +171,12 @@ export default function PlanAwareButton({
           e.preventDefault()
         },
       }
-    }
-
-    // Credit check
-    if (!hasCredits) {
+    }    // Credit check - now uses calculated remaining credits
+    if (!effectiveHasCredits) {
       const noCreditsState = customStates?.noCredits ?? {}
       return {
-        label: noCreditsState.label ?? "Get more credits",
-        tooltip: noCreditsState.tooltip ?? "You need more credits to use this feature",
+        label: noCreditsState.label ?? `Need ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''}`,
+        tooltip: noCreditsState.tooltip ?? `You need ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''} to use this feature. You have ${creditInfo.remainingCredits} remaining.`,
         disabled: false,
         icon: <AlertCircle className="h-4 w-4" />,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -155,6 +184,11 @@ export default function PlanAwareButton({
           if (onInsufficientCredits) {
             onInsufficientCredits()
           } else {
+            toast({
+              title: "Insufficient Credits",
+              description: `You need ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''} for this action. You have ${creditInfo.remainingCredits} remaining.`,
+              variant: "destructive",
+            })
             router.push("/dashboard/subscription")
           }
         },

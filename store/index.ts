@@ -3,12 +3,12 @@ import { persistReducer, persistStore } from "redux-persist"
 import storage from "redux-persist/lib/storage"
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux"
 
-// Core reducers (no auth slices since we use session-based auth)
+// Core reducers (session-based auth, no user slice needed)
 import { quizReducer } from "./slices/quiz"
 import flashcardReducer from "./slices/flashcard-slice"
 import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
-import userReducer from "./slices/user-slice"
+import { subscriptionSlice } from "./slices/subscription-slice"
 
 // Persist configs for non-auth slices
 const coursePersistConfig = {
@@ -63,13 +63,13 @@ const quizPersistConfig = {
   ],
 }
 
-// Root reducer with only non-auth slices (auth is now session-based)
+// Root reducer with session-based auth only
 const rootReducer = combineReducers({
-  // Other slices
   quiz: persistReducer(quizPersistConfig, quizReducer),
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
+  subscription: subscriptionSlice.reducer,
 })
 
 // ✅ Clean store setup without auth middleware (session-based auth)

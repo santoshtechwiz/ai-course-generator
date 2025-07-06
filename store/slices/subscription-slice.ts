@@ -53,16 +53,15 @@ export const fetchSubscription = createAsyncThunk<
   const { forceRefresh = false } = options || {}
   const now = Date.now()
 
-  const isRecent =
-    typeof lastFetched === "number" && now - lastFetched < MIN_FETCH_INTERVAL
+  const isRecent = typeof lastFetched === "number" && now - lastFetched < MIN_FETCH_INTERVAL
 
   if ((isFetching || isRecent) && !forceRefresh) {
     logger.debug("Subscription fetch skipped (in-flight or recent)")
     return data ?? DEFAULT_FREE_SUBSCRIPTION
   }
+
   try {
     const cacheBuster = `nocache=${Date.now()}`
-
     const res = await withTimeout(
       fetch(`/api/subscriptions/status?${cacheBuster}`, {
         headers: {
@@ -83,43 +82,36 @@ export const fetchSubscription = createAsyncThunk<
 
     if (!res.ok) {
       logger.warn(`Subscription API error: ${res.status}`)
+      // Preserve existing data if API fails but user is authenticated
       if (data && data.subscriptionPlan !== "FREE") {
-        logger.info("Preserving existing subscription data despite API error")
         return data
       }
       return DEFAULT_FREE_SUBSCRIPTION
     }
 
-    let result: SubscriptionStatusResponse
-    try {
-      result = await res.json()
-    } catch (err) {
-      logger.error("Failed to parse subscription response", err)
-      return DEFAULT_FREE_SUBSCRIPTION
-    }    const transformed: SubscriptionData = {
+    const result: SubscriptionStatusResponse = await res.json()
+    
+    const transformed: SubscriptionData = {
       credits: Math.max(0, result.credits || 0),
       tokensUsed: Math.max(0, result.tokensUsed || 0),
       subscriptionPlan: result.subscriptionPlan || "FREE",
       cancelAtPeriodEnd: Boolean(result.cancelAtPeriodEnd),
       expirationDate: result.expirationDate,
       status: (result.status as SubscriptionStatusType) || "INACTIVE",
-      subscriptionId: "", // Not provided by API response
+      subscriptionId: result.subscriptionId || "",
       isSubscribed: false, // will be updated next
     }
 
-    const isExpired =
-      transformed.expirationDate &&
-      new Date(transformed.expirationDate) < new Date()
-
+    // Handle expiration logic
+    const isExpired = transformed.expirationDate && new Date(transformed.expirationDate) < new Date()
     if (transformed.status === "INACTIVE" || isExpired) {
       transformed.status = "EXPIRED"
     }
-
     transformed.isSubscribed = transformed.status === "ACTIVE"
 
     return transformed
   } catch (error) {
-    logger.warn("Subscription fetch failed, using default plan", error)
+    logger.warn("Subscription fetch failed", error)
     return DEFAULT_FREE_SUBSCRIPTION
   }
 })
@@ -186,6 +178,45 @@ export const resumeSubscription = createAsyncThunk<
   }
 })
 
+export const forceSyncSubscription = createAsyncThunk<
+  SubscriptionData,
+  void,
+  { state: RootState; rejectValue: string }
+>("subscription/forceSync", async (_, { rejectWithValue }) => {
+  try {
+    logger.info("Force syncing subscription with Stripe...")
+    
+    const res = await withTimeout(
+      fetch("/api/subscriptions/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        credentials: "include",
+      }),
+      15000 // 15 second timeout for sync
+    )
+
+    if (res.status === 401) {
+      logger.warn("User not authenticated for force sync")
+      return DEFAULT_FREE_SUBSCRIPTION
+    }
+
+    if (!res.ok) {
+      throw new Error(`Force sync failed: ${res.status} - ${res.statusText}`)
+    }
+
+    const syncResult = await res.json()
+    logger.info("Force sync completed", syncResult)
+    
+    return syncResult.subscription
+  } catch (error) {
+    logger.error("Force sync failed", error)
+    return rejectWithValue(error instanceof Error ? error.message : 'Force sync failed')
+  }
+})
+
 export const subscriptionSlice = createSlice({
   name: "subscription",
   initialState,
@@ -217,14 +248,30 @@ export const subscriptionSlice = createSlice({
         state.isFetching = false
         state.isLoading = false
         state.error = action.error.message || "Failed to fetch subscription"
-      })
-      .addCase(cancelSubscription.fulfilled, (state, action) => {
+      })      .addCase(cancelSubscription.fulfilled, (state, action) => {
         state.data = action.payload
         state.lastFetched = Date.now()
       })
       .addCase(resumeSubscription.fulfilled, (state, action) => {
         state.data = action.payload
         state.lastFetched = Date.now()
+      })
+      .addCase(forceSyncSubscription.pending, (state) => {
+        state.isFetching = true
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(forceSyncSubscription.fulfilled, (state, action) => {
+        state.data = action.payload
+        state.lastFetched = Date.now()
+        state.isFetching = false
+        state.isLoading = false
+        state.error = null
+      })
+      .addCase(forceSyncSubscription.rejected, (state, action) => {
+        state.isFetching = false
+        state.isLoading = false
+        state.error = action.payload || "Force sync failed"
       })
   },
 })

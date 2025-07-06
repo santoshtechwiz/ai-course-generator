@@ -1,7 +1,7 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
-import { motion } from "framer-motion"
+import { useCallback, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,8 @@ import { OpenEndedQuestion } from "@/types/quiz"
 import { selectQuizStatus, saveAnswer, selectAnswerForQuestion } from "@/store/slices/quiz-slice"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
+import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
+import { toast } from "sonner"
 
 interface QuizQuestionProps {
   question: OpenEndedQuestion
@@ -17,10 +19,10 @@ interface QuizQuestionProps {
   totalQuestions: number
   isLastQuestion: boolean
   onAnswer: (answer: string, elapsedTime: number, hintsUsed: boolean) => void
-  onNext?: () => void
-  onPrevious?: () => void
-  onSubmit?: () => void
-  onRetake?: () => void
+  onNext?: () => void | Promise<void>
+  onPrevious?: () => void | Promise<void>
+  onSubmit?: () => void | Promise<void>
+  onRetake?: () => void | Promise<void>
   showRetake?: boolean
 }
 
@@ -37,6 +39,8 @@ export function OpenEndedQuizQuestion({
   showRetake = false,
 }: QuizQuestionProps) {
   const dispatch = useAppDispatch()
+  const [isTyping, setIsTyping] = useState(false)
+  const [wordCount, setWordCount] = useState(0)
 
   // Get current answer from Redux store
   const currentAnswer = useAppSelector((state) => selectAnswerForQuestion(state, question.id))
@@ -53,17 +57,25 @@ export function OpenEndedQuizQuestion({
 
   const handleAnswerChange = useCallback(
     (newAnswer: string) => {
-      // Save answer to Redux immediately on change
-      dispatch(
-        saveAnswer({
-          questionId: question.id,
-          answer: {
+      setIsTyping(true)
+      setWordCount(newAnswer.trim().split(/\s+/).filter(word => word.length > 0).length)
+      
+      // Debounce the save to Redux
+      const timeoutId = setTimeout(() => {
+        dispatch(
+          saveAnswer({
             questionId: question.id,
-            text: newAnswer,
-            timestamp: Date.now(),
-          } as any,
-        }),
-      )
+            answer: {
+              questionId: question.id,
+              text: newAnswer,
+              timestamp: Date.now(),
+            } as any,
+          }),
+        )
+        setIsTyping(false)
+      }, 300)
+
+      return () => clearTimeout(timeoutId)
     },
     [dispatch, question.id],
   )
@@ -89,21 +101,50 @@ export function OpenEndedQuizQuestion({
     }
   }
 
+  const getWordCountColor = () => {
+    if (wordCount < 10) return "text-red-500"
+    if (wordCount < 25) return "text-orange-500"
+    if (wordCount < 50) return "text-yellow-500"
+    return "text-green-500"
+  }
+
   return (
-    <QuizContainer
-      questionNumber={questionNumber}
-      totalQuestions={totalQuestions}
-      quizType="openended"
-      animationKey={question.id}
-      contentClassName="space-y-4"
-      quizTitle="Open-Ended Question"
-      quizSubtitle="Answer the following question in detail:"
+    <QuizStateProvider
+      onError={(error) => toast.error(error)}
+      onSuccess={(message) => toast.success(message || "Answer saved!")}
+      globalLoading={isLastQuestion}
     >
+      {(stateManager) => (        <QuizContainer
+          questionNumber={questionNumber}
+          totalQuestions={totalQuestions}
+          quizType="openended"
+          animationKey={question.id}
+          contentClassName="space-y-4"
+          quizTitle="Open-Ended Question"
+          quizSubtitle="Answer the following question in detail:"
+        >
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className={cn("text-white", getDifficultyColor("medium"))}>
             Medium
           </Badge>
+          
+          {/* Word count indicator */}
+          <Badge variant="outline" className={cn("text-xs", getWordCountColor())}>
+            {wordCount} {wordCount === 1 ? 'word' : 'words'}
+          </Badge>
+          
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+            >
+              <Badge variant="secondary" className="text-xs">
+                Typing...
+              </Badge>
+            </motion.div>
+          )}
         </div>
       </div>
       
@@ -114,54 +155,83 @@ export function OpenEndedQuizQuestion({
         transition={{ delay: 0.3 }}
         data-testid="question-text"
       >
-        {question.text}
+        {(question as any).text || question.question || "Question text not available"}
       </motion.h2>
 
-      <Textarea
-        value={answerText}
-        onChange={(e) => handleAnswerChange(e.target.value)}
-        placeholder="Type your answer here..."
-        className="min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary md:min-h-[200px]"
-        data-testid="answer-textarea"
-        disabled={isSubmitting}
-        aria-label="Your answer"
-        autoComplete="off"
-        onKeyDown={(e) => {
-          // Submit with Ctrl+Enter or Cmd+Enter
-          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-            e.preventDefault();
-            if (answerText.trim()) {
-              isLastQuestion ? onSubmit?.() : onNext?.();
+      <div className="relative">
+        <Textarea
+          value={answerText}
+          onChange={(e) => handleAnswerChange(e.target.value)}
+          placeholder="Type your answer here..."
+          className={cn(
+            "min-h-[150px] resize-none transition-all duration-200 focus:min-h-[200px] focus:ring-2 focus:ring-primary md:min-h-[200px]",
+            "border-2 border-border/60 hover:border-primary/40 focus:border-primary",
+            answerText.length > 0 && "border-primary/60"
+          )}
+          data-testid="answer-textarea"
+          disabled={isSubmitting || stateManager.isSubmitting}
+          aria-label="Your answer"
+          autoComplete="off"
+          onKeyDown={(e) => {
+            // Submit with Ctrl+Enter or Cmd+Enter
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              if (answerText.trim()) {
+                isLastQuestion ? onSubmit?.() : onNext?.();
+              }
             }
-          }
-        }}
-      />
-
-      {hints.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">Keywords to consider:</p>
-          <div className="flex flex-wrap gap-2">
-            {hints.map((hint, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {hint}
-              </Badge>
-            ))}
-          </div>
+          }}
+        />
+        
+        {/* Character count */}
+        <div className="absolute bottom-2 right-3 text-xs text-muted-foreground">
+          {answerText.length} characters
         </div>
-      )}
+      </div>
+
+      <AnimatePresence>
+        {hints.length > 0 && (
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <p className="text-sm font-medium text-muted-foreground">Keywords to consider:</p>
+            <div className="flex flex-wrap gap-2">
+              {hints.map((hint: string, index: number) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Badge variant="outline" className="text-xs">
+                    {hint}
+                  </Badge>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <QuizFooter
-        onSubmit={onSubmit || (() => handleSubmitAnswer() && isLastQuestion)}
-        onNext={onNext || (!isLastQuestion ? () => handleSubmitAnswer() && onNext?.() : undefined)}
+        onSubmit={onSubmit && isLastQuestion ? () => stateManager.handleSubmit(onSubmit) : undefined}
+        onNext={onNext && !isLastQuestion ? () => stateManager.handleNext(onNext) : undefined}
         onPrevious={onPrevious}
         onRetake={onRetake}
         canGoNext={!!answerText.trim()}
         canGoPrevious={false}
         isLastQuestion={isLastQuestion}
-        isSubmitting={isSubmitting}
+        isSubmitting={isSubmitting || stateManager.isSubmitting}
         showRetake={showRetake}
+        submitState={stateManager.submitState}
+        nextState={stateManager.nextState}
       />
     </QuizContainer>
+      )}
+    </QuizStateProvider>
   )
 }
 

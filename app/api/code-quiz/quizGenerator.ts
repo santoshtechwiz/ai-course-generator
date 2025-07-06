@@ -14,34 +14,32 @@ export async function generateCodingMCQs(
       model: "gpt-3.5-turbo-1106",
       messages: [
         {
-          role: "system",
-          content: `Generate a coding quiz for ${language} on the topic of ${title} at a ${difficulty} difficulty level. 
-          Each quiz question must have:
-          1. A question that does not include any code.
-          2. A 'codeSnippet' field containing the code relevant to the question.
-          3. Four unlabeled answer options (without A, B, C, D labels).
-          4. Only one correct answer.
+          role: "system",          content: `Create ${amount} ${language} coding quiz questions on ${title} (${difficulty} level).
 
-          Requirements:
-          - Programming language: ${language}
-          - Difficulty level: ${difficulty}
-          - Question: Must be clear and not contain any code.
-          - Code snippet: Must contain relevant code that requires interpretation or analysis to answer the question. It MUST NOT directly reveal the answer.
-          - Options: Provide four unlabeled answer options with only one correct answer.
+          RULES:
+          1. Use "______" or "???" placeholders in code - NEVER reveal answers
+          2. 80% code completion, 10% code analysis, 10% concept-only
 
-          Steps:
-          1. Define the topic language and difficulty level for the quiz.
-          2. Create a clear title for the question without using any code.
-          3. Develop a code snippet related to the question that requires interpretation and does not reveal the answer.
-          4. Formulate four unlabeled answer options based on the code snippet, ensuring one of them is correct.
-          5. Double-check that the correct answer isn't immediately obvious from the code snippet alone.
+          FORMATS:
           
-          Generate exactly ${amount} questions in this format.
-          Ensure that 90% of the questions are coding-related and 10% are concept-related.For concept-related questions, do not include a 'codeSnippet'. Each question should provide four unlabeled answer options, with only one correct answer.
-          `,
+          Code Completion:
+          Q: "What completes this function?"
+          Code: "function add(a, b) {\n  return a ______ b;\n}"
+          Options: ["+", "-", "*", "/"]
+
+          Code Analysis: 
+          Q: "What's the output?"
+          Code: "console.log([1,2,3].length);"
+          Options: ["3", "2", "undefined", "error"]
+
+          Concept (no code):
+          Q: "Which is fastest?"
+          Code: ""
+          Options: ["Array.find", "for loop", "forEach", "map"]
+
+          Generate practical, realistic questions with clear correct answers.`,
         },
-      ],
-      functions: [
+      ],      functions: [
         {
           name: "create_coding_mcqs",
           parameters: {
@@ -52,15 +50,18 @@ export async function generateCodingMCQs(
                 items: {
                   type: "object",
                   properties: {
-                    question: { type: "string" }, // Title for the question
-                    codeSnippet: { type: "string" }, // Code snippet for the question
+                    question: { type: "string" },
+                    codeSnippet: { 
+                      type: "string",
+                      description: "Code with placeholders (______) or empty string for concept questions"
+                    },
                     options: {
                       type: "array",
                       items: { type: "string" },
                       minItems: 4,
                       maxItems: 4,
                     },
-                    correctAnswer: { type: "string" }, // Correct answer
+                    correctAnswer: { type: "string" },
                   },
                   required: ["question", "codeSnippet", "options", "correctAnswer"],
                 },
@@ -81,8 +82,8 @@ export async function generateCodingMCQs(
     const quizData: { quizzes: CodeChallenge[] } = JSON.parse(functionCall.arguments)
 
     return quizData.quizzes.map((q) => ({
-      question: q.question, // Include the title field
-      codeSnippet: q.codeSnippet,
+      question: q.question,
+      codeSnippet: q.codeSnippet || "", // Handle concept questions without code
       options: q.options,
       language: language,
       correctAnswer: q.correctAnswer,

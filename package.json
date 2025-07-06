@@ -11,6 +11,7 @@
     "test:coverage": "jest --config jest.config.ts --coverage --no-stack-trace",
     "test:perf": "jest --config jest.config.ts --no-stack-trace --detectOpenHandles --logHeapUsage --colors",
     "test:specific": "jest --config jest.config.ts --testPathPattern",
+    "test:consistency": "jest --config jest.config.ts --testPathPattern=subscription-consistency",
     "validate-styles": "node scripts/validate-styles.js",
     "dev": "npm run validate-styles && next dev",
     "build": "next build",
@@ -24,7 +25,10 @@
     "export": "next export",
     "prod:build": "npm run prod:migrate && npm run build",
     "knip": "knip",
-    "prod": "set NODE_ENV=production npm run migrate && npm run build && npm run start"
+    "prod": "set NODE_ENV=production npm run migrate && npm run build && npm run start",
+    "check-consistency": "tsx scripts/check-subscription-consistency.ts",
+    "fix-consistency": "tsx scripts/check-subscription-consistency.ts --fix",
+    "setup-consistency": "npx prisma db execute --file prisma/migrations/fix_subscription_consistency.sql"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",

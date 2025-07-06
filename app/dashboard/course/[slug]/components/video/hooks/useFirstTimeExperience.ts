@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import useAuth from "../../../../../../../hooks/use-auth"
+import { useAuth } from "@/modules/auth"
 
 interface FirstTimeExperienceOptions {
   videoId: string
@@ -11,7 +11,20 @@ export function useFirstTimeExperience({ videoId }: FirstTimeExperienceOptions) 
   const [showKeyboardShortcutHelp, setShowKeyboardShortcutHelp] = useState(false)
   const [hasInteracted, setHasInteracted] = useState(false)
   const [hasShownTutorial, setHasShownTutorial] = useState(false)
-  const { isAuthenticated, userId, getGuestId } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+  const userId = user?.id
+
+  // Get or create guest ID for unauthenticated users
+  const getGuestId = useCallback(() => {
+    if (typeof window === "undefined") return null
+    
+    const existing = sessionStorage.getItem("guest-id")
+    if (existing?.startsWith("guest-")) return existing
+    
+    const newId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
+    sessionStorage.setItem("guest-id", newId)
+    return newId
+  }, [])
 
   // Check if first time user
   useEffect(() => {

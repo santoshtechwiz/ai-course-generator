@@ -3,7 +3,7 @@ import { logger } from "@/lib/logger";
 import { LRUCache } from "lru-cache";
 import { getPaymentGateway } from "./payment-gateway-factory";
 import { PaymentGateway } from "./payment-gateway-interface";
-import { PromoValidationResult, SubscriptionPlanType } from "@/app/types/subscription";
+import { PromoValidationResult, SubscriptionPlanType, SubscriptionStatusType } from "@/app/types/subscription";
 import { VALID_PROMO_CODES } from "../components/subscription-plans";
 
 const MAX_CACHE_SIZE = 1000; // Set an appropriate cache size
@@ -22,10 +22,9 @@ export class SubscriptionService {
 
     keysToDelete.forEach((key) => subscriptionCache.delete(key))
     logger.debug(`Cleared cache for user ${userId}`)
-  }
-  /**
+  }  /**
    * 
-   * Activate the free plan for a user
+   * Activate the free plan for a user with guaranteed consistency
    *
    * @param userId - The ID of the user
    * @returns Object with success status and plan information
@@ -35,25 +34,19 @@ export class SubscriptionService {
   ): Promise<{ success: boolean; message?: string; alreadySubscribed?: boolean }> {
     try {
       logger.info(`Activating free plan for user ${userId}`)
-
-      // Use a transaction to ensure all database operations succeed or fail together
-      return await prisma.$transaction(async (tx: any) => {
+      
+      return await prisma.$transaction(async (tx) => {
         // Check if user already has a subscription
         const existingSubscription = await tx.userSubscription.findUnique({
           where: { userId },
         })
 
-        // Get the user to check their current credits
-        const user = await tx.user.findUnique({
-          where: { id: userId },
-          select: { credits: true },
-        })
-
-        if (!user) {
-          throw new Error(`User with ID ${userId} not found`)
+        // If user already has active free plan, return success
+        if (existingSubscription?.planId === "FREE" && existingSubscription.status === "ACTIVE") {
+          return { success: true, message: "Already on free plan", alreadySubscribed: true }
         }
 
-        // Check if there\'s a token transaction record for free plan tokens
+        // Check if user already received free tokens
         const existingFreeTokens = await tx.tokenTransaction.findFirst({
           where: {
             userId,
@@ -62,94 +55,57 @@ export class SubscriptionService {
           },
         })
 
-        // If user already has an active free plan, just return success without adding tokens again
-        if (
-          existingSubscription &&
-          existingSubscription.planId === "FREE" &&
-          existingSubscription.status === "ACTIVE"
-        ) {
-          logger.info(`User ${userId} is already on the free plan. Not adding tokens again.`)
-          return {
-            success: true,
-            message: "You are already on the free plan",
-            alreadySubscribed: true,
-          }
-        }
-
-        // If user already has an active paid subscription, they cannot activate the free plan
-        if (
-          existingSubscription &&
-          existingSubscription.planId !== "FREE" &&
-          existingSubscription.status === "ACTIVE"
-        ) {
-          throw new Error(
-            "You already have an active paid subscription. Please cancel it before activating the free plan.",
-          )
-        }
-
-        // Set subscription end date to 1 year from now
+        const tokensToAdd = existingFreeTokens ? 0 : 5
         const currentPeriodEnd = new Date()
         currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1)
 
-        // If user already has a free plan, just ensure it\'s active
-        if (existingSubscription && existingSubscription.planId === "FREE") {
-          // Update the subscription to ensure it\'s active
-          await tx.userSubscription.update({
-            where: { userId },
-            data: {
-              status: "ACTIVE",
-              currentPeriodStart: new Date(),
-              currentPeriodEnd,
-            },
-          })
-        } else {
-          // Create new free subscription
-          await tx.userSubscription.create({
-            data: {
-              userId,
-              planId: "FREE",
-              status: "ACTIVE",
-              currentPeriodStart: new Date(),
-              currentPeriodEnd,
-            },
-          })
-        }
+        // Update subscription
+        await tx.userSubscription.upsert({
+          where: { userId },
+          update: {
+            planId: "FREE",
+            status: "ACTIVE",
+            currentPeriodStart: new Date(),
+            currentPeriodEnd,
+          },
+          create: {
+            userId,
+            planId: "FREE",
+            status: "ACTIVE",
+            currentPeriodStart: new Date(),
+            currentPeriodEnd,
+          },
+        })
 
-        // Only add tokens if the user hasn\'t received free tokens before
-        if (!existingFreeTokens) {
-          // Add 5 tokens for new free plan users
-          const updatedUser = await tx.user.update({
-            where: { id: userId },
-            data: {
-              credits: {
-                increment: 5,
-              },
-            },
-          })
+        // Update user with consistent data
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            userType: "FREE",
+            ...(tokensToAdd > 0 && {
+              credits: { increment: tokensToAdd }
+            })
+          },
+        })
 
-          // Create a token transaction record to track the addition of tokens
+        // Add token transaction if applicable
+        if (tokensToAdd > 0) {
           await tx.tokenTransaction.create({
             data: {
               userId,
-              credits: 5,
+              credits: tokensToAdd,
               amount: 0,
               type: "SUBSCRIPTION",
               description: "Added 5 tokens for free plan",
             },
           })
-
-          logger.info(`Added 5 tokens to user ${userId}, new balance: ${updatedUser.credits}`)
         }
 
         // Clear cache for this user
         this.clearUserCache(userId)
 
-        logger.info(`Free plan activated successfully for user ${userId}`)
-
-        return {
-          success: true,
-          message: "Free plan activated successfully",
-        }
+        logger.info(`Successfully activated free plan for user ${userId}`, { tokensAdded: tokensToAdd })
+        return { success: true, message: "Free plan activated successfully" }
       })
     } catch (error: any) {
       logger.error(`Error activating free plan for user ${userId}:`, error)
@@ -522,10 +478,8 @@ export class SubscriptionService {
         `Failed to retrieve billing details: ${error instanceof Error ? error.message : String(error)}`,
       )
     }
-  }
-
-  /**
-   * Cancel a user\'s subscription
+  }  /**
+   * Cancel a user\'s subscription with guaranteed consistency
    *
    * @param userId - The ID of the user
    * @returns Object with success status and message
@@ -533,23 +487,35 @@ export class SubscriptionService {
   static async cancelSubscription(
     userId: string,
   ): Promise<{ success: boolean; message: string }> {
-    try {
-      // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway("stripe")
+    try {      // For simplicity, assume Stripe as the payment gateway
+      const paymentGateway = getPaymentGateway()
       await paymentGateway.cancelSubscription(userId)
 
-      // Update subscription status in our database
-      await prisma.userSubscription.update({
-        where: { userId },
-        data: { status: "CANCELED" },
+      // Use transactional update to ensure consistency
+      return await prisma.$transaction(async (tx) => {
+        // Update subscription to canceled
+        await tx.userSubscription.update({
+          where: { userId },
+          data: {
+            status: "CANCELED",
+            cancelAtPeriodEnd: true,
+          },
+        })
+
+        // Update user type to FREE
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            userType: "FREE",
+          },
+        })
+
+        // Clear cache for this user
+        this.clearUserCache(userId)
+
+        logger.info(`Subscription canceled for user ${userId}`)
+        return { success: true, message: "Subscription canceled successfully." }
       })
-
-      // Clear cache for this user
-      this.clearUserCache(userId)
-
-      logger.info(`Subscription canceled for user ${userId}`)
-
-      return { success: true, message: "Subscription canceled successfully." }
     } catch (error: any) {
       logger.error(`Error canceling subscription for user ${userId}:`, error)
       return { success: false, message: "Failed to cancel subscription." }
@@ -600,12 +566,10 @@ export class SubscriptionService {
     try {
       if (tokensUsed <= 0) {
         return { success: false, message: "Tokens used must be a positive number." }
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { userId },
-        select: { credits: true, creditsUsed: true },
-      })
+      }        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { credits: true, creditsUsed: true },
+        })
 
       if (!user) {
         return { success: false, message: "User not found." }
@@ -654,25 +618,65 @@ export class SubscriptionService {
    *
    * @returns Array of subscription plans
    */
-
-  static getBillingHistory = async (customerId: string): Promise<any[]> => {
+  /**
+   * Get billing history for a user from Stripe
+   * @param userId - The user ID (will be converted to customer ID internally)
+   * @returns Promise resolving to billing history with success status
+   */
+  static getBillingHistory = async (userId: string): Promise<{
+    success: boolean;
+    history?: Array<{
+      id: string;
+      date: string;
+      amount: number;
+      status: "paid" | "pending" | "failed";
+      description: string;
+      invoiceUrl?: string;
+    }>;
+    error?: string;
+  }> => {
     try {
-      if (!customerId) {
-        throw new Error("Customer ID is required")
+      if (!userId) {
+        return { success: false, error: "User ID is required" }
       }
 
-// For simplicity, assume Stripe as the payment gateway
-const paymentGateway = getPaymentGateway() as PaymentGateway | undefined;
-if (!paymentGateway || typeof paymentGateway.getBillingHistory !== "function") {
-  logger.error("Payment gateway is not available or does not support getBillingHistory");
-  return [];
-}
+      // Check cache first
+      const cacheKey = `billing_${userId}`
+      const cached = subscriptionCache.get(cacheKey)
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        logger.debug(`Returning cached billing history for user ${userId}`)
+        return { success: true, history: cached.data }
+      }
 
-const billingHistory = await paymentGateway.getBillingHistory(customerId);
-return billingHistory;
+      // Get payment gateway (Stripe)
+      const paymentGateway = getPaymentGateway() as PaymentGateway | undefined
+      if (!paymentGateway || typeof paymentGateway.getBillingHistory !== "function") {
+        logger.error("Payment gateway is not available or does not support getBillingHistory")
+        return { success: false, error: "Billing history not available" }
+      }
+
+      // Fetch billing history from Stripe - this returns any[] directly
+      const billingData = await paymentGateway.getBillingHistory(userId)
+
+      // Transform Stripe data to our format
+      const history = billingData.map((item: any) => ({
+        id: item.id || '',
+        date: new Date(item.created * 1000).toISOString(), // Stripe uses unix timestamps
+        amount: item.amount_paid || item.total || 0,
+        status: (item.status === "paid" ? "paid" : item.status === "open" ? "pending" : "failed") as "paid" | "pending" | "failed",
+        description: item.description || `${item.lines?.data?.[0]?.description || 'Subscription'} - ${item.billing_reason || 'Payment'}`,
+        invoiceUrl: item.invoice_pdf || item.hosted_invoice_url || undefined,
+      }))
+
+      // Cache the result
+      subscriptionCache.set(cacheKey, { data: history, timestamp: Date.now() })
+
+      logger.info(`Retrieved billing history for user ${userId}, ${history.length} items`)
+      return { success: true, history }
+
     } catch (error: any) {
-      logger.error(`Error fetching billing history for customer ${customerId}:`, error)
-      return []
+      logger.error(`Error fetching billing history for user ${userId}:`, error)
+      return { success: false, error: "Failed to retrieve billing history" }
     }
   }
   static getPaymentMethods = async (userId: string): Promise<any[]> => {
@@ -694,5 +698,294 @@ return billingHistory;
       logger.error(`Error fetching payment methods for user ${userId}:`, error)
       return []
     }
+  }
+
+  /**
+   * Update user subscription with guaranteed consistency
+   * This method ensures user.userType stays in sync with subscription data
+   */
+  static async updateUserSubscription(
+    userId: string, 
+    subscriptionData: {
+      planId: SubscriptionPlanType
+      status: SubscriptionStatusType
+      currentPeriodStart?: Date
+      currentPeriodEnd?: Date
+      cancelAtPeriodEnd?: boolean
+      stripeSubscriptionId?: string
+      stripeCustomerId?: string
+    },
+    tokensToAdd: number = 0
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Determine effective user type based on subscription status
+        const effectiveUserType: SubscriptionPlanType = 
+          subscriptionData.status === "ACTIVE" ? subscriptionData.planId : "FREE"
+
+        // Update or create subscription
+        await tx.userSubscription.upsert({
+          where: { userId },
+          update: {
+            planId: subscriptionData.planId,
+            status: subscriptionData.status,
+            currentPeriodStart: subscriptionData.currentPeriodStart,
+            currentPeriodEnd: subscriptionData.currentPeriodEnd,
+            cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
+            stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+            stripeCustomerId: subscriptionData.stripeCustomerId,
+          },
+          create: {
+            userId,
+            planId: subscriptionData.planId,
+            status: subscriptionData.status,
+            currentPeriodStart: subscriptionData.currentPeriodStart || new Date(),
+            currentPeriodEnd: subscriptionData.currentPeriodEnd || new Date(),
+            cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
+            stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+            stripeCustomerId: subscriptionData.stripeCustomerId,
+          },
+        })
+
+        // Update user with consistent data
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            userType: effectiveUserType,
+            ...(tokensToAdd > 0 && {
+              credits: { increment: tokensToAdd }
+            })
+          },
+        })
+
+        // Create token transaction if tokens were added
+        if (tokensToAdd > 0) {
+          await tx.tokenTransaction.create({
+            data: {
+              userId,
+              credits: tokensToAdd,
+              amount: 0,
+              type: "SUBSCRIPTION",
+              description: `Added ${tokensToAdd} tokens from ${subscriptionData.planId} plan`,
+            },
+          })
+        }
+
+        // Clear cache
+        this.clearUserCache(userId)
+
+        logger.info(`Successfully updated subscription for user ${userId}`, {
+          planId: subscriptionData.planId,
+          status: subscriptionData.status,
+          userType: effectiveUserType,
+          tokensAdded: tokensToAdd,
+        })
+
+        return { success: true, message: "Subscription updated successfully" }
+      })
+    } catch (error) {
+      logger.error(`Error updating subscription for user ${userId}:`, error)
+      return { success: false, message: `Failed to update subscription: ${error instanceof Error ? error.message : String(error)}` }
+    }
+  }
+
+  /**
+   * Get user subscription data with guaranteed consistency
+   */
+  static async getUserSubscriptionData(userId: string): Promise<{
+    userId: string
+    userType: SubscriptionPlanType
+    credits: number
+    creditsUsed: number
+    subscription: any
+    isActive: boolean
+    isSubscribed: boolean
+  } | null> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          subscription: true,
+        },
+      })
+
+      if (!user) {
+        return null
+      }
+
+      // Determine the effective subscription status
+      const subscription = user.subscription
+      const isActive = subscription?.status === "ACTIVE" && 
+                      subscription.currentPeriodEnd && 
+                      subscription.currentPeriodEnd > new Date()
+      
+      const effectivePlan: SubscriptionPlanType = isActive && subscription 
+        ? subscription.planId as SubscriptionPlanType 
+        : "FREE"
+      
+      const isSubscribed = isActive && effectivePlan !== "FREE"
+
+      return {
+        userId: user.id,
+        userType: effectivePlan, // Use subscription data as source of truth
+        credits: user.credits,
+        creditsUsed: user.creditsUsed,
+        subscription: subscription ? {
+          planId: subscription.planId as SubscriptionPlanType,
+          status: subscription.status as SubscriptionStatusType,
+          currentPeriodStart: subscription.currentPeriodStart,
+          currentPeriodEnd: subscription.currentPeriodEnd,
+          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+          stripeSubscriptionId: subscription.stripeSubscriptionId || undefined,
+          stripeCustomerId: subscription.stripeCustomerId || undefined,
+        } : null,
+        isActive: isActive || false,
+        isSubscribed,
+      }
+    } catch (error) {
+      logger.error(`Error getting user subscription data for ${userId}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Cancel user subscription with guaranteed consistency
+   */
+  static async cancelUserSubscription(userId: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Update subscription to canceled
+        await tx.userSubscription.update({
+          where: { userId },
+          data: {
+            status: "CANCELED",
+            cancelAtPeriodEnd: true,
+          },
+        })
+
+        // Update user type to FREE
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            userType: "FREE",
+          },
+        })
+
+        logger.info(`Successfully canceled subscription for user ${userId}`)
+        return { success: true, message: "Subscription canceled successfully" }
+      })
+    } catch (error) {
+      logger.error(`Error canceling subscription for user ${userId}:`, error)
+      return { success: false, message: `Failed to cancel subscription: ${error instanceof Error ? error.message : String(error)}` }
+    }
+  }
+
+  /**
+   * Validate subscription data consistency for a user
+   */
+  static async validateUserConsistency(userId: string): Promise<{
+    isConsistent: boolean
+    issues: string[]
+    userData: any
+  }> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { subscription: true },
+      })
+
+      if (!user) {
+        return {
+          isConsistent: false,
+          issues: ["User not found"],
+          userData: null,
+        }
+      }
+
+      const issues: string[] = []
+      const subscription = user.subscription
+
+      // Check consistency rules
+      if (subscription) {
+        if (subscription.status === "ACTIVE" && user.userType !== subscription.planId) {
+          issues.push(`User type "${user.userType}" does not match active subscription plan "${subscription.planId}"`)
+        }
+        if (subscription.status !== "ACTIVE" && user.userType !== "FREE") {
+          issues.push(`User type should be "FREE" when subscription status is "${subscription.status}"`)
+        }
+      } else {
+        if (user.userType !== "FREE") {
+          issues.push(`User has no subscription but userType is "${user.userType}" instead of "FREE"`)
+        }
+      }
+
+      return {
+        isConsistent: issues.length === 0,
+        issues,
+        userData: {
+          userId: user.id,
+          userType: user.userType,
+          subscription: subscription ? {
+            planId: subscription.planId,
+            status: subscription.status,
+          } : null,
+        },
+      }
+    } catch (error) {
+      logger.error(`Error validating consistency for user ${userId}:`, error)
+      return {
+        isConsistent: false,
+        issues: [`Validation error: ${error instanceof Error ? error.message : String(error)}`],
+        userData: null,
+      }
+    }
+  }
+
+  /**
+   * Fix inconsistent data for a user
+   */
+  static async fixUserConsistency(userId: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const validation = await this.validateUserConsistency(userId)
+      
+      if (validation.isConsistent) {
+        return { success: true, message: "Data is already consistent" }
+      }
+
+      return await prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          include: { subscription: true },
+        })
+
+        if (!user) {
+          throw new Error("User not found")
+        }
+
+        const subscription = user.subscription
+        let correctUserType: SubscriptionPlanType = "FREE"
+
+        if (subscription && subscription.status === "ACTIVE") {
+          correctUserType = subscription.planId as SubscriptionPlanType
+        }
+
+        // Update user type to match subscription
+        await tx.user.update({
+          where: { id: userId },
+          data: { userType: correctUserType },
+        })
+
+        logger.info(`Fixed consistency for user ${userId}`, {
+          oldUserType: user.userType,
+          newUserType: correctUserType,
+          subscriptionPlan: subscription?.planId,
+          subscriptionStatus: subscription?.status,
+        })
+
+        return { success: true, message: `Fixed consistency: set userType to ${correctUserType}` }
+      })
+    } catch (error) {
+      logger.error(`Error fixing consistency for user ${userId}:`, error)
+      return { success: false, message: `Failed to fix consistency: ${error instanceof Error ? error.message : String(error)}` }    }
   }
 }

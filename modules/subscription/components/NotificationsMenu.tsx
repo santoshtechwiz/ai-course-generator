@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
-import { useAuth } from "@/modules/auth"
+import { useAuth, useSubscription } from "@/modules/auth"
+import { calculateCreditInfo } from "@/utils/credit-utils"
 
 interface NotificationsMenuProps {
   refreshCredits?: () => void
@@ -21,7 +22,8 @@ interface NotificationsMenuProps {
 
 export default function NotificationsMenu({ refreshCredits }: NotificationsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { user, subscription } = useAuth()
+  const { user } = useAuth()
+  const { subscription } = useSubscription()
 
   const handleOpen = (open: boolean) => {
     setIsOpen(open)
@@ -29,12 +31,18 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
       refreshCredits()
     }
   }
-  const creditCount = user?.credits || 0
-  const tokensUsed = 0 // Not available in session data, would need separate API call
+  
+  // Calculate accurate credit information
+  const creditInfo = calculateCreditInfo(
+    user?.credits,
+    user?.creditsUsed,
+    subscription?.credits,
+    subscription?.tokensUsed
+  )
+  
   const subscriptionPlan = subscription?.plan || "FREE"
-  const isSubscribed = subscription?.status === "active" || false
-  const isExpired = subscription?.status === "canceled"
-  const subscriptionStatus = isExpired ? "Expired" : subscription?.status || "inactive"
+  const isSubscribed = subscription?.isActive || false
+  const subscriptionStatus = subscription?.status || "INACTIVE"
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpen}>
@@ -44,9 +52,8 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
           size="icon"
           className="relative rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300"
         >
-          <Bell className="h-4 w-4" />
-          <AnimatePresence>
-            {creditCount > 0 && (
+          <Bell className="h-4 w-4" />          <AnimatePresence>
+            {creditInfo.remainingCredits > 0 && (
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -58,7 +65,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
                   variant="default"
                   className="h-5 min-w-5 flex bg-red-500 items-center justify-center rounded-full px-1 text-[10px] font-medium"
                 >
-                  {creditCount}
+                  {creditInfo.remainingCredits}
                 </Badge>
               </motion.div>
             )}
@@ -69,12 +76,11 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
       <DropdownMenuContent
         align="end"
         className="w-80 rounded-xl p-2 shadow-lg border border-border/50 backdrop-blur-sm bg-background/95"
-      >
-        <DropdownMenuLabel className="font-normal">
+      >        <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">Credits Available</p>
+            <p className="text-sm font-medium">Credit Usage</p>
             <p className="text-xs text-muted-foreground">
-              You have {creditCount} credits remaining. Tokens used: {tokensUsed}.
+              {creditInfo.usedCredits} used of {creditInfo.totalCredits} total credits. {creditInfo.remainingCredits} remaining.
             </p>
           </div>
         </DropdownMenuLabel>

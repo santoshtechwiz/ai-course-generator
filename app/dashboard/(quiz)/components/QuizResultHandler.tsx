@@ -24,7 +24,7 @@ import {
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
-import { GlobalLoader } from '@/components/ui/loader'
+import CourseAILoader from '@/components/ui/loader'
 
 interface Props {
   slug: string
@@ -120,7 +120,7 @@ const quizResultMachine = createMachine({
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { isAuthenticated, isLoading: isAuthLoading, login } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
 
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
@@ -294,13 +294,11 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
       }
     }, 4000);
   }
-  
-  // Handle sign in action
+    // Handle sign in action
   const handleSignIn = () => {
     send({ type: 'SIGN_IN' })
-    login('credentials', {
-      callbackUrl: `/dashboard/${quizType}/${slug}/results`,
-    })
+    // Redirect to sign-in page with proper callback URL
+    window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}/${slug}/results`)}`
   }
     // Effect to handle authentication changes
   useEffect(() => {
@@ -337,16 +335,15 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps// Render loading or redirecting states with a single consistent loader
   if (isLoading || state.matches('loading') || isRedirecting) {
     const isRedirectingToQuiz = isRedirecting;
-    
-    return (
-      <GlobalLoader 
-        fullScreen={true}
-        size="lg"
-        text={isRedirectingToQuiz ? "Preparing your quiz" : "Loading your quiz results"}
-        subText={isRedirectingToQuiz ? "Redirecting you to the quiz page..." : "Please wait while we retrieve your results"}
-        theme="primary"
-        className="!z-50" // Ensure loader is on top
-      />
+      return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <CourseAILoader 
+          isLoading={true}
+          message={isRedirectingToQuiz ? "Preparing your quiz" : "Loading your quiz results"}
+          subMessage={isRedirectingToQuiz ? "Redirecting you to the quiz page..." : "Please wait while we retrieve your results"}
+          className="!z-50"
+        />
+      </div>
     )
   }
 

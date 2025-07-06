@@ -24,7 +24,7 @@ interface QuizCourseWrapperProps {
 }
 
 export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps) {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
 
@@ -38,16 +38,17 @@ export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps)
   const plan = SUBSCRIPTION_PLANS.find((plan) => plan.name === subscriptionPlan)
 
   const getMaxQuestions = () => {
-    return plan?.limits.maxQuestionsPerQuiz || 0
+    return plan?.limits.maxQuestionsPerQuiz || 5 // Default to 5 for FREE plan
   }
-  const isLoggedIn = !!session?.user
+  
+  // Use unified auth state - no need to pass isLoggedIn since PlanAwareButton auto-detects
   const maxQuestions = getMaxQuestions()
   const credits = user?.credits || 0
 
   const commonProps = {
     maxQuestions,
     subscriptionPlan,
-    isLoggedIn,
+    // Remove isLoggedIn since PlanAwareButton now auto-detects authentication
     credits,
     params,
   }

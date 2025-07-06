@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks"
 import { useState } from "react"
 
 export function AuthStatusIndicator() {
-  const { isAuthenticated, isLoading, user, logout, login } = useAuth()
+  const { isAuthenticated, isLoading, user, signOut } = useAuth()
   const { toast } = useToast()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [isSigningIn, setIsSigningIn] = useState(false)

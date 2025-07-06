@@ -1,15 +1,15 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/GlobalButton"
 import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 interface QuizFooterProps {
-  onNext?: () => void
-  onPrevious?: () => void
-  onSubmit?: () => void
-  onRetake?: () => void  // Add onRetake prop
+  onNext?: () => void | Promise<void>
+  onPrevious?: () => void | Promise<void>
+  onSubmit?: () => void | Promise<void>
+  onRetake?: () => void | Promise<void>
   canGoNext?: boolean
   canGoPrevious?: boolean
   isLastQuestion?: boolean
@@ -17,8 +17,10 @@ interface QuizFooterProps {
   submitLabel?: string
   className?: string
   isSubmitting?: boolean
-  showRetake?: boolean  // Add showRetake prop
-  hasAnswer?: boolean   // Add hasAnswer prop
+  showRetake?: boolean
+  hasAnswer?: boolean
+  submitState?: "idle" | "loading" | "success" | "error"
+  nextState?: "idle" | "loading" | "success" | "error"
 }
 
 export function QuizFooter({
@@ -32,16 +34,21 @@ export function QuizFooter({
   submitLabel = "Submit Quiz",
   className,
   isSubmitting = false,
+  submitState = "idle",
+  nextState = "idle",
 }: QuizFooterProps) {
   // ✅ FIX: Always show submit button on last question
   const showSubmit = isLastQuestion
 
   return (
-    <div
+    <motion.div
       className={cn(
         "flex flex-col sm:flex-row items-center gap-3 px-4 py-4 border-t bg-card shadow-sm",
         className
       )}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
       {/* Previous Button */}
       <Button
@@ -61,24 +68,27 @@ export function QuizFooter({
         <Button
           onClick={onSubmit}
           disabled={isSubmitting}
+          state={submitState || (isSubmitting ? "loading" : "idle")}
+          loadingText="Submitting..."
+          successText="Submitted!"
+          errorText="Try Again"
           className="flex items-center gap-2 w-full sm:w-auto min-w-[160px] bg-emerald-600 hover:bg-emerald-700"
-        >          {isSubmitting ? (
-            <GlobalLoader size="xs" className="w-4 h-4" />
-          ) : (
-            <CheckCircle className="w-4 h-4" />
-          )}
-          {isSubmitting ? "Submitting..." : submitLabel}
+        >
+          <CheckCircle className="w-4 h-4" />
+          {submitLabel}
         </Button>
       ) : (
         <Button
           onClick={onNext}
           disabled={!canGoNext || isSubmitting}
+          state={nextState || "idle"}
+          loadingText="Loading..."
           className="flex items-center gap-2 w-full sm:w-auto min-w-[120px]"
         >
           {nextLabel}
           <ChevronRight className="w-4 h-4" />
         </Button>
       )}
-    </div>
+    </motion.div>
   )
 }

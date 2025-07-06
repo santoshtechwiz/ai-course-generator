@@ -22,11 +22,21 @@ export const SubscriptionSlider: React.FC<SubscriptionSliderProps> = ({
   onValueChange,
   ariaLabel = "Select number of questions",
 }) => {  // Use unified auth to get subscription data
-  const subscription = useSubscription()
+  const { subscription } = useSubscription()
   const currentPlan =
     SUBSCRIPTION_PLANS.find((plan) => plan.id === subscription?.plan) || SUBSCRIPTION_PLANS[0]
-  const maxQuestions = currentPlan?.limits?.maxQuestionsPerQuiz || 0 // Added null checks
+  const maxQuestions = currentPlan?.limits?.maxQuestionsPerQuiz || 5 // Default to 5 for FREE plan
   const isMaxPlan = currentPlan.name === "ULTIMATE"
+  
+  // Debug info in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('SubscriptionSlider Debug:', {
+      subscriptionPlan: subscription?.plan,
+      currentPlan: currentPlan?.name,
+      maxQuestions,
+      isMaxPlan
+    })
+  }
   
   const getNextPlan = (): string => {
     const currentIndex = SUBSCRIPTION_PLANS.findIndex((plan) => plan.name === currentPlan.name)

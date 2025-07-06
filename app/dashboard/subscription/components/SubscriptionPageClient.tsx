@@ -1,23 +1,12 @@
 "use client"
 
 import { useEffect, useState, useCallback, Suspense, lazy } from "react"
-import { useSession } from "next-auth/react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
-import { useAppSelector, useAppDispatch } from "@/store"
-import {
-  selectSubscriptionData,
-  fetchSubscription,
-  selectSubscriptionLoading,
-  selectSubscriptionError,
-  selectIsSubscribed,
-  selectIsCancelled,
-  selectSubscriptionPlan,
-} from "@/store/slices/subscription-slice"
-
+import { useSubscription } from "@/modules/auth"
 
 import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 
@@ -43,22 +32,19 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [referralCode, setReferralCode] = useState<string | null>(refCode)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
 
-  const dispatch = useAppDispatch()
-  const subscription = useAppSelector(selectSubscriptionData)
-  const isLoading = useAppSelector(selectSubscriptionLoading)
-  const error = useAppSelector(selectSubscriptionError)
-  const isSubscribed = useAppSelector(selectIsSubscribed)
-  const isCancelled = useAppSelector(selectIsCancelled)
-  const subscriptionPlan = useAppSelector(selectSubscriptionPlan)
-
+  // Use the unified subscription hook
+  const { subscription, isLoading, error, isAuthenticated, user } = useSubscription()
+  
   const isProd = process.env.NODE_ENV === "production"
-  const { data: session, status: sessionStatus } = useSession()
-  const userId = session?.user?.id ?? null
+  const userId = user?.id ?? null
   const router = useRouter()
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  // const isSubscribed = subscription?.isSubscribed || false
+  // Derived subscription state
+  const isSubscribed = subscription?.isSubscribed || false
+  const isCancelled = subscription?.cancelAtPeriodEnd || false
+  const subscriptionPlan = subscription?.plan || 'FREE'
 
   // Extract referral code from URL parameters
   useEffect(() => {
@@ -75,7 +61,6 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
       }
     }
   }, [searchParams])
-
   // Check for pending subscription data in localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -91,18 +76,13 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [])
 
-  // Fetch subscription data when session changes
-  useEffect(() => {
-    if (sessionStatus === "authenticated" && userId) {
-      dispatch(fetchSubscription())
-    }
-  }, [userId, sessionStatus, dispatch])
-
+  // Note: Subscription data is now automatically synced via GlobalSubscriptionSynchronizer
+  // No need for manual fetchSubscription calls
   // Handle subscription button click for unauthenticated users
   const handleUnauthenticatedSubscribe = useCallback(
     (planName: SubscriptionPlanType, duration: number, promoCode?: string, promoDiscount?: number) => {
       // Only show login modal if user is definitely not authenticated
-      if (sessionStatus !== "loading" && sessionStatus === "unauthenticated") {
+      if (!isLoading && !isAuthenticated) {
         const subscriptionData = {
           planName,
           duration,
@@ -114,7 +94,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
         setShowLoginModal(true)
       }
     },
-    [referralCode, sessionStatus],
+    [referralCode, isLoading, isAuthenticated],
   )
 
   const handleManageSubscription = useCallback(() => {
@@ -127,35 +107,22 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [isCancelled, router])
 
-  // Handle retry
-  const handleRetry = () => {
-    dispatch(fetchSubscription())
-  }
-
   const renderContent = () => {
-    // Show skeleton during initial session loading
-    if (sessionStatus === "loading" && !subscription) {
+    // Show skeleton during initial loading
+    if (isLoading && !subscription) {
       return <SubscriptionSkeleton />
     }
 
     return (
-      <div className="space-y-8">
-        {error && (
+      <div className="space-y-8">        {error && (
           <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
             <AlertTriangle className="h-5 w-5" />
             <AlertTitle>Error loading subscription data</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
               <p>{error}</p>
-              <Button variant="outline" size="sm" onClick={handleRetry} className="w-fit mt-2" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Retrying...
-                  </>
-                ) : (
-                  "Retry"
-                )}
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                Subscription data will sync automatically when available.
+              </p>
             </AlertDescription>
           </Alert>
         )}
@@ -211,17 +178,27 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
       </div>
     )
   }
-
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">      {/* Debug: Force Sync Button - Development Only */}
+      {process.env.NODE_ENV === "development" && userId && (
+        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+            Debug: Subscription State
+          </h3>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300 mb-3">
+            Current: Plan {subscription?.plan || 'UNKNOWN'}, Status {subscription?.status || 'UNKNOWN'}          </p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300">
+            Sync Status: Session-driven (automatic)
+          </p>
+        </div>
+      )}
+
       {!isLoading && subscription && (
         <Suspense fallback={null}>
           <TrialModal />
         </Suspense>
-      )}
-
-      {/* Only show login modal if user is definitely unauthenticated */}
-      {sessionStatus === "unauthenticated" && (
+      )}      {/* Only show login modal if user is definitely unauthenticated */}
+      {!isAuthenticated && !isLoading && (
         <LoginModal
           isOpen={showLoginModal}
           onClose={() => setShowLoginModal(false)}
@@ -232,7 +209,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
 
       {renderContent()}
 
-      {isLoading && sessionStatus === "authenticated" && userId && (
+      {isLoading && isAuthenticated && userId && (
         <div className="fixed bottom-4 right-4 bg-background border rounded-full shadow-lg p-2 flex items-center animate-in fade-in slide-in-from-bottom-5 duration-300">
           <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
           <span className="text-sm">Loading your data...</span>
@@ -247,8 +224,8 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           setShowCancellationDialog(false)
           return Promise.resolve()
         }}
-        expirationDate={subscription?.expirationDate || null}
-        planName={subscription?.subscriptionPlan || ""}
+        expirationDate={subscription?.currentPeriodEnd || null}
+        planName={subscription?.plan || ""}
       />
     </div>
   )

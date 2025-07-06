@@ -9,12 +9,14 @@ import LinkedinProvider, { LinkedInProfile } from "next-auth/providers/linkedin"
 import type { DefaultJWT } from "next-auth/jwt"
 import { prisma } from "./db"
 import { sendEmail } from "@/lib/email"
+import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string
       credits: number
+      creditsUsed: number
       accessToken: string
       isAdmin: boolean
       userType: string
@@ -26,6 +28,7 @@ declare module "next-auth" {
 
   interface User extends DefaultUser {
     credits: number
+    creditsUsed: number
     isAdmin: boolean
     userType: string
   }
@@ -35,6 +38,7 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string
     credits: number
+    creditsUsed: number
     isAdmin: boolean
     userType: string
     subscriptionPlan: string | null
@@ -87,11 +91,11 @@ export const authOptions: NextAuthOptions = {
     }
   },
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
-      // Initial sign in
+    async jwt({ token, user, account, trigger }) {      // Initial sign in
       if (user) {
         token.id = user.id
         token.credits = user.credits || 0
+        token.creditsUsed = user.creditsUsed || 0
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
         token.updatedAt = Date.now()
@@ -124,9 +128,7 @@ export const authOptions: NextAuthOptions = {
         if (now - lastRefresh < 5000) {
           return token
         }
-      }
-
-      if (token.id && shouldRefreshToken && refreshCount < 3) {
+      }      if (token.id && shouldRefreshToken && refreshCount < 3) {
         try {
           // Mark this user as having an active refresh
           if (userId) {
@@ -134,39 +136,39 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Increment refresh count to prevent infinite loops
-          token.refreshCount = refreshCount + 1
-
-          // Check cache first
-          const cachedUser = userCache.get(userId)
-          let dbUser
-
-          if (cachedUser && now - cachedUser.timestamp < USER_CACHE_TTL) {
-            dbUser = cachedUser.data
+          token.refreshCount = refreshCount + 1          // Use consistent subscription service to get user data
+          const userData = await SubscriptionService.getUserSubscriptionData(token.id)
+            if (userData) {
+            token.credits = userData.credits
+            token.creditsUsed = userData.creditsUsed
+            token.isAdmin = false // We'll need to get this from user table separately if needed
+            token.userType = userData.userType // This now comes from subscription data
+            token.subscriptionPlan = userData.subscription?.planId || null
+            token.subscriptionStatus = userData.subscription?.status || null
+            token.updatedAt = now
+            token.refreshCount = 0 // Reset count after successful refresh
           } else {
-            dbUser = await prisma.user.findUnique({
+            // Fallback to direct user query if subscription service fails
+            const dbUser = await prisma.user.findUnique({
               where: { id: token.id },
               include: {
                 subscription: true,
               },
             })
 
-            // Update cache
             if (dbUser) {
-              userCache.set(userId, {
-                data: dbUser,
-                timestamp: now,
-              })
+              token.credits = dbUser.credits
+              token.creditsUsed = dbUser.creditsUsed
+              token.isAdmin = dbUser.isAdmin
+              // Use subscription data as source of truth for userType
+              token.userType = dbUser.subscription?.status === "ACTIVE" 
+                ? dbUser.subscription.planId 
+                : "FREE"
+              token.subscriptionPlan = dbUser.subscription?.planId || null
+              token.subscriptionStatus = dbUser.subscription?.status || null
+              token.updatedAt = now
+              token.refreshCount = 0
             }
-          }
-
-          if (dbUser) {
-            token.credits = dbUser.credits
-            token.isAdmin = dbUser.isAdmin
-            token.userType = dbUser.userType
-            token.subscriptionPlan = dbUser.subscription?.planId || null
-            token.subscriptionStatus = dbUser.subscription?.status || null
-            token.updatedAt = now
-            token.refreshCount = 0 // Reset count after successful refresh
           }
 
           // Clear the active refresh marker
@@ -183,11 +185,11 @@ export const authOptions: NextAuthOptions = {
 
       return token
     },    async session({ session, token }) {
-      if (token && session.user) {
-        // Only update session if necessary
+      if (token && session.user) {        // Only update session if necessary
         if (
           session.user.id !== token.id ||
           session.user.credits !== token.credits ||
+          session.user.creditsUsed !== token.creditsUsed ||
           session.user.isAdmin !== token.isAdmin ||
           session.user.userType !== token.userType ||
           session.user.subscriptionPlan !== token.subscriptionPlan ||
@@ -195,6 +197,7 @@ export const authOptions: NextAuthOptions = {
         ) {
           session.user.id = token.id
           session.user.credits = token.credits || 0
+          session.user.creditsUsed = token.creditsUsed || 0
           session.user.isAdmin = token.isAdmin || false
           session.user.userType = token.userType || "FREE"
           session.user.subscriptionPlan = token.subscriptionPlan || null
@@ -297,13 +300,13 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.LINKEDIN_CLIENT_ID || "",
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET || "",
       client: { token_endpoint_auth_method: "client_secret_post" },
-      issuer: "https://www.linkedin.com",
-      profile: (profile: LinkedInProfile) => ({
+      issuer: "https://www.linkedin.com",      profile: (profile: LinkedInProfile) => ({
         id: profile.sub,
         name: profile.name,
         email: profile.email,
         image: profile.picture,
         credits: 0, 
+        creditsUsed: 0,
         isAdmin: false, 
         userType: "FREE", 
       }),

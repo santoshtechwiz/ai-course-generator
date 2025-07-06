@@ -140,7 +140,7 @@ const quizResultMachine = createMachine({
 export default function GenericQuizResultHandler({ slug, quizType, children }: Props) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { isAuthenticated, isLoading: isAuthLoading, login } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
 
   const quizResults = useSelector(selectQuizResults)
   const quizStatus = useSelector(selectQuizStatus)
@@ -281,12 +281,10 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     }, 300)
   }
   
-  // Handle sign in action
-  const handleSignIn = () => {
+  // Handle sign in action  const handleSignIn = () => {
     send({ type: 'SIGN_IN' })
-    login('credentials', {
-      callbackUrl: `/dashboard/${quizType}/${slug}/results`,
-    })
+    // Redirect to sign-in page with proper callback URL
+    window.location.href = `/api/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/${quizType}/${slug}/results`)}`
   }
   
   // Effect to handle authentication changes

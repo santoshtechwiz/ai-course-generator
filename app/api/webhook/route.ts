@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { prisma } from "@/lib/db"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
+import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-10-28.acacia",
@@ -92,55 +93,26 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           current_period_start: Math.floor(Date.now() / 1000),
           current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from now
         }
-      }
-
-      // Update the user's subscription in the database
-      await prisma.userSubscription.upsert({
-        where: { userId },
-        update: {
-          planId: planId || "FREE",
+      }      // Use the consistent subscription service for guaranteed data consistency
+      const result = await SubscriptionService.updateUserSubscription(
+        userId,
+        {
+          planId: (planId || "FREE") as any,
           status: "ACTIVE",
-          stripeSubscriptionId: typeof subscription.id === "string" ? subscription.id : null,
           currentPeriodStart: new Date(subscription.current_period_start * 1000),
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        },
-        create: {
-          userId,
-          planId: planId || "FREE",
-          status: "ACTIVE",
           stripeSubscriptionId: typeof subscription.id === "string" ? subscription.id : null,
           stripeCustomerId: subscription.customer as string,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
         },
-      })
+        tokensToAdd
+      )
 
-      // Add tokens to the user's account
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-      })
-
-      if (user) {
-        console.log(`Adding ${tokensToAdd} tokens to user ${userId} from plan ${planId}`)
-
-        await prisma.$transaction([
-          prisma.user.update({
-            where: { id: userId },
-            data: {
-              credits: user.credits + tokensToAdd,
-            },
-          }),
-          prisma.tokenTransaction.create({
-            data: {
-              userId,
-              amount: (session.amount_total ?? 0) / 100,
-              credits: tokensToAdd,
-              type: "SUBSCRIPTION",
-              description: `Added ${tokensToAdd} tokens from ${planId || "subscription"} plan`,
-            },
-          }),
-        ])
+      if (!result.success) {
+        console.error(`Failed to update subscription for user ${userId}:`, result.message)
+        return
       }
+
+      console.log(`Successfully updated subscription for user ${userId} to plan ${planId} with ${tokensToAdd} tokens`)
 
       // Process referral if applicable
       if (session.metadata.referralUseId || session.metadata.referralCode) {
@@ -363,7 +335,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       return
     }
 
-    // Update subscription status based on Stripe status
+    // Map Stripe status to our status
     let status: string
     switch (subscription.status) {
       case "active":
@@ -380,16 +352,24 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         break
       default:
         status = "INACTIVE"
-    }
-
-    await prisma.userSubscription.update({
-      where: { id: userSubscription.id },
-      data: {
-        status,
+    }    // Use consistent subscription service
+    const result = await SubscriptionService.updateUserSubscription(
+      userSubscription.userId,
+      {
+        planId: userSubscription.planId as any,
+        status: status as any,
         currentPeriodStart: new Date(subscription.current_period_start * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      },
-    })
+        stripeSubscriptionId: subscription.id,
+        stripeCustomerId: subscription.customer as string,
+      }
+    )
+
+    if (!result.success) {
+      console.error(`Failed to update subscription status for user ${userSubscription.userId}:`, result.message)
+    } else {
+      console.log(`Successfully updated subscription status for user ${userSubscription.userId} to ${status}`)
+    }
   } catch (error) {
     console.error("Error processing subscription updated:", error)
   }
@@ -405,13 +385,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     if (!userSubscription) {
       console.error(`No user found with Stripe subscription ID: ${subscription.id}`)
       return
+    }    // Use consistent subscription service to cancel
+    const result = await SubscriptionService.cancelSubscription(userSubscription.userId)
+    
+    if (!result.success) {
+      console.error(`Failed to cancel subscription for user ${userSubscription.userId}:`, result.message)
+    } else {
+      console.log(`Successfully canceled subscription for user ${userSubscription.userId}`)
     }
-
-    // Update subscription status to CANCELED
-    await prisma.userSubscription.update({
-      where: { id: userSubscription.id },
-      data: { status: "CANCELED" },
-    })
   } catch (error) {
     console.error("Error processing subscription deleted:", error)
   }

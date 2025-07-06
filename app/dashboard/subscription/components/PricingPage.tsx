@@ -16,9 +16,8 @@ import { Label } from "@/components/ui/label"
 import { useMediaQuery, useToast } from "@/hooks"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
-import { useAppSelector, useAppDispatch } from "@/store"
-import { selectSubscription, fetchSubscription } from "@/store/slices/subscription-slice"
-import useSubscription from "@/hooks/use-subscription"
+import { useSubscription } from "@/modules/auth"
+import useSubscriptionHook from "@/hooks/use-subscription"
 import {
   PricingPageProps,
   SubscriptionPlanType,

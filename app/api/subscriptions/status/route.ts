@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 import { getServerAuthSession } from "@/lib/server-auth"
+import { SubscriptionService } from "@/app/dashboard/subscription/services/subscription-service"
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,42 +8,22 @@ export async function GET(req: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    }    // Use the unified SubscriptionService to get consistent data
+    const subscriptionData = await SubscriptionService.getUserSubscriptionData(session.user.id)
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        credits: true,
-        creditsUsed: true,
-        subscription: {
-          select: {
-            id: true,
-            planId: true,
-            status: true,
-            currentPeriodEnd: true,
-            cancelAtPeriodEnd: true,
-          },
-        },
-      },
-    })
-  
-    if (!user) {
+    if (!subscriptionData) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const subscription = user.subscription
-    const isActive = subscription?.status.toLowerCase() === "active"
-    const isExpired = subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
-
     const response = {
-      credits: typeof user.credits === "number" ? user.credits : 0,
-      tokensUsed: typeof user.creditsUsed === "number" ? user.creditsUsed : 0,
-      isSubscribed: !!subscription && isActive && !isExpired,
-      subscriptionPlan: subscription?.planId || "FREE",
-      expirationDate: subscription?.currentPeriodEnd?.toISOString() || null,
-      status: isExpired ? "EXPIRED" : subscription?.status || "INACTIVE",
-      cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
+      credits: subscriptionData.credits,
+      tokensUsed: subscriptionData.creditsUsed,
+      isSubscribed: subscriptionData.isSubscribed,
+      subscriptionPlan: subscriptionData.subscription?.planId || "FREE",
+      expirationDate: subscriptionData.subscription?.currentPeriodEnd?.toISOString() || null,
+      status: subscriptionData.subscription?.status || "INACTIVE",
+      cancelAtPeriodEnd: subscriptionData.subscription?.cancelAtPeriodEnd || false,
+      subscriptionId: subscriptionData.subscription?.id || "",
     }
 
     return NextResponse.json(response)

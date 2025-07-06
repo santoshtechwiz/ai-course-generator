@@ -21,15 +21,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
-import { useAppSelector } from "@/store"
-import { selectTokenUsage } from "@/store/slices/subscription-slice"
+import { useSubscription } from "@/modules/auth"
 
 import { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
-import useSubscription from "@/hooks/use-subscription"
+import useSubscriptionHook from "@/hooks/use-subscription"
 import PlanAwareButton from "../../components/PlanAwareButton"
+import { calculateCreditInfo } from "@/utils/credit-utils"
 
 const flashcardSchema = z.object({
   title: z.string().nonempty("Topic is required"),
@@ -56,9 +56,17 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   const [submissionError, setSubmissionError] = React.useState<string | null>(null)
   const [isSuccess, setIsSuccess] = React.useState(false)
 
-  // Get subscription data including token usage
-  const { data: subscriptionStatus } = useSubscription()
-  const tokenUsageData = useAppSelector(selectTokenUsage)
+  // Get subscription data from the unified auth system
+  const { subscription: subscriptionData, user } = useSubscription()
+  const { data: subscriptionStatus } = useSubscriptionHook()
+
+  // Calculate accurate credit information
+  const creditInfo = calculateCreditInfo(
+    user?.credits,
+    user?.creditsUsed,
+    subscriptionData?.credits,
+    subscriptionData?.tokensUsed
+  )
 
   // Use a ref to track if component is mounted
   const isMounted = React.useRef(false)
@@ -112,10 +120,9 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     })
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
-
   const { mutateAsync: createFlashCardsMutation } = useMutation({
     mutationFn: async (data: FlashCardFormData) => {
-      data.userType = subscriptionStatus?.subscriptionPlan
+      data.userType = subscriptionData?.plan || 'FREE'
       const response = await axios.post("/api/quizzes/flashcard", data)
       return response.data
     },
@@ -402,18 +409,22 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                   </Button>
                 ))}
               </div>
-            </motion.div>
-
-            <motion.div
+            </motion.div>            <motion.div
               className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
               <h3 className="text-base font-semibold mb-2">Available Credits</h3>
-              <Progress value={(credits / 10) * 100} className="h-2" />
+              <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credits remaining.
+                You have <span className="font-bold text-primary">{creditInfo.remainingCredits}</span> credits remaining 
+                out of <span className="font-medium">{creditInfo.totalCredits}</span> total.
+                {creditInfo.usedCredits > 0 && (
+                  <span className="block mt-1">
+                    ({creditInfo.usedCredits} used)
+                  </span>
+                )}
               </p>
             </motion.div>
 
@@ -437,14 +448,14 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-            >
-              <PlanAwareButton
+            >              <PlanAwareButton
                 label="Generate Flashcards"
                 onClick={handleSubmit(onSubmit)}
                 isLoggedIn={isLoggedIn}
                 isEnabled={!isDisabled}
                 isLoading={isLoading}
-                hasCredits={credits > 0}
+                hasCredits={creditInfo.hasEnoughCredits(1)}
+                creditsRequired={1}
                 loadingLabel="Generating Flashcards..."
                 className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg rounded-md"
                 showIcon={true}
@@ -512,8 +523,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
             <span className="font-medium capitalize">{watch("difficulty")}</span> difficulty level for topic:{" "}
             <span className="font-medium">{watch("title")}</span>
           </p>
-          
-          {tokenUsageData?.hasExceededLimit && (
+            {subscriptionData && subscriptionData.tokensUsed >= 1000 && (
             <Alert variant="destructive" className="mt-4">
               <AlertTitle>Token limit exceeded</AlertTitle>
               <AlertDescription>

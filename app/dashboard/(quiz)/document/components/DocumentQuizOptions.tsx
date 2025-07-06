@@ -33,21 +33,22 @@ export function DocumentQuizOptions({ onOptionsChange }: DocumentQuizOptionsProp
           value={options.numberOfQuestions}
           onValueChange={(value) => handleChange("numberOfQuestions", value)}
         />
-      </div>
-
-      <div>
+      </div>      <div>
         <Label>Difficulty</Label>
-        <SubscriptionSlider
-         
-        
-       
-          value={options.difficulty}
-          onValueChange={(value) => handleChange("difficulty", value)}
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Easy</span>
-          <span>Medium</span>
-          <span>Hard</span>
+        <div className="space-y-2">
+          <input
+            type="range"
+            min={1}
+            max={100}
+            value={options.difficulty}
+            onChange={(e) => handleChange("difficulty", parseInt(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Easy</span>
+            <span>Medium</span>
+            <span>Hard</span>
+          </div>
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ const databaseUrl = process.env.DATABASE_URL!
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
+new PrismaClient({
     datasources: {
       db: {
         url: databaseUrl,

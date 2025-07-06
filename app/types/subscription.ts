@@ -80,6 +80,7 @@ export interface SubscriptionData {
   status?: SubscriptionStatusType | string
   features?: string[]
   subscriptionId?: string
+  currentPeriodEnd?: string | null
 }
 
 export interface EnhancedSubscriptionData extends SubscriptionData {
@@ -97,6 +98,7 @@ export interface SubscriptionStatusResponse {
   expirationDate?: string
   cancelAtPeriodEnd?: boolean
   status: SubscriptionStatusType
+  subscriptionId?: string
   isActive?: boolean
   active?: boolean
   plan?: string

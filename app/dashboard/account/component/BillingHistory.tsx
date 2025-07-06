@@ -38,17 +38,22 @@ export function BillingHistory({ billingHistory }: BillingHistoryProps) {
       setTimeout(() => setIsLoading(null), 500) // Add a small delay for better UX
     }
   }, [])
-
   // Memoize filtered history to prevent recalculation on every render
   const filteredHistory = useMemo(() => {
+    // Ensure billingHistory is an array before filtering
+    if (!Array.isArray(billingHistory)) {
+      console.warn('BillingHistory: billingHistory is not an array:', billingHistory)
+      return []
+    }
+    
     return billingHistory.filter((item) => {
-      const matchesSearch = item.description?.toLowerCase().includes(searchTerm?.toLowerCase())
+      const matchesSearch = item.description?.toLowerCase().includes(searchTerm?.toLowerCase() || '')
       const matchesStatus = statusFilter === "all" || item.status?.toLowerCase() === statusFilter?.toLowerCase()
       return matchesSearch && matchesStatus
     })
   }, [billingHistory, searchTerm, statusFilter])
 
-  if (billingHistory.length === 0) {
+  if (!Array.isArray(billingHistory) || billingHistory.length === 0) {
     return (
       <CardContent className="text-center py-8 px-4 sm:py-12 sm:px-6">
         <div className="bg-slate-50 dark:bg-slate-800 rounded-full p-4 w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 flex items-center justify-center">

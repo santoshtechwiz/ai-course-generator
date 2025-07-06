@@ -7,7 +7,8 @@ const createJestConfig = nextJest({
 });
 
 // Jest config overrides
-const customJestConfig: Config = {  testEnvironment: "jest-environment-jsdom",
+const customJestConfig: Config = {
+  testEnvironment: "jest-environment-jsdom",
   coverageProvider: "v8",
   verbose: true,
   reporters: [

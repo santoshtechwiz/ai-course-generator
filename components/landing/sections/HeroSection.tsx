@@ -23,6 +23,16 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
   const isMobile = useMobile()
   const [hasScrolled, setHasScrolled] = useState(false)
   const [isInView, setIsInView] = useState(true)
+  const [isClient, setIsClient] = useState(false)
+  const [animationsReady, setAnimationsReady] = useState(false)
+
+  // Client-side hydration check
+  useEffect(() => {
+    setIsClient(true)
+    // Delay animations to prevent hydration mismatch
+    const timer = setTimeout(() => setAnimationsReady(true), 150)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Parallax effects
   const { scrollYProgress } = useScroll({
@@ -80,14 +90,17 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
         observer.unobserve(containerRef.current)
       }
     }
-  }, [hasScrolled])
-  // Optimized floating particles component with server-client consistency
+  }, [hasScrolled])  // Optimized floating particles component with server-client consistency
   const AppleStyleParticles = () => {
     // Use clientOnly state to prevent hydration mismatches
     const [isClient, setIsClient] = useState(false)
+    const [isReady, setIsReady] = useState(false)
 
     useEffect(() => {
       setIsClient(true)
+      // Delay animation start to ensure smooth hydration
+      const timer = setTimeout(() => setIsReady(true), 100)
+      return () => clearTimeout(timer)
     }, [])
     
     // Fixed particle settings to ensure server-client consistency
@@ -119,7 +132,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
               scale: settings.scale,
               opacity: settings.opacity
             }}
-            animate={{
+            animate={isReady ? {
               x: [
                 `${settings.x}%`,
                 `${settings.x + 5}%`,
@@ -132,12 +145,12 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
                 `${settings.y + 5}%`,
                 `${settings.y}%`,
               ],
-            }}
-            transition={{
+            } : {}}
+            transition={isReady ? {
               duration: 10 + i * 2,
               repeat: Infinity,
               ease: "easeInOut",
-            }}
+            } : { duration: 0 }}
             style={{
               width: settings.size,
               height: settings.size,
@@ -146,6 +159,7 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
               background: `radial-gradient(circle, rgba(var(--primary-rgb), ${settings.opacity}) 0%, rgba(var(--primary-rgb), 0) 70%)`,
               willChange: "transform, opacity"
             }}
+            suppressHydrationWarning
           />
         )
       }
@@ -279,21 +293,21 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
           >
             Introducing CourseAI
           </motion.span>
-        </motion.div>
-
-        {/* Heading with character-by-character animation */}
+        </motion.div>        {/* Heading with character-by-character animation */}
         <div className="overflow-hidden">
           <motion.h1
             ref={titleRef}
             className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto"
             style={{ y: titleY }}
+            suppressHydrationWarning
           >
             <motion.span
               className="inline-block"
               custom={1}
               initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
+              animate={animationsReady && isInView ? "visible" : "hidden"}
               variants={titleAnimation}
+              suppressHydrationWarning
             >
               Create Engaging{" "}
             </motion.span>
@@ -301,8 +315,9 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
               className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60"
               custom={2}
               initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
+              animate={animationsReady && isInView ? "visible" : "hidden"}
               variants={titleAnimation}
+              suppressHydrationWarning
             >
               AI-powered
             </motion.span>
@@ -311,48 +326,48 @@ const HeroSection = ({ scrollToFeatures, scrollToHowItWorks, isHydrated = false 
               className="inline-block"
               custom={3}
               initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
+              animate={animationsReady && isInView ? "visible" : "hidden"}
               variants={titleAnimation}
+              suppressHydrationWarning
             >
               courses and quizzes
             </motion.span>
           </motion.h1>
-        </div>
-        <br />
+        </div>        <br />
         <motion.span
           className="inline-block text-xl md:text-2xl font-semibold"
           custom={4}
           initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
+          animate={animationsReady && isInView ? "visible" : "hidden"}
           variants={titleAnimation}
+          suppressHydrationWarning
         >
           From Any Topic
-        </motion.span>
-        <motion.p
+        </motion.span>        <motion.p
           initial={{ opacity: 0, y: 30, filter: "blur(3px)" }}
           animate={{
-            opacity: isInView ? 1 : 0,
-            y: isInView ? 0 : 30,
-            filter: isInView ? "blur(0px)" : "blur(3px)",
+            opacity: animationsReady && isInView ? 1 : 0,
+            y: animationsReady && isInView ? 0 : 30,
+            filter: animationsReady && isInView ? "blur(0px)" : "blur(3px)",
           }}
           transition={{ duration: 0.8, delay: 0.6, ease: APPLE_EASING }}
           className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10"
           style={{ y: subtitleY }}
+          suppressHydrationWarning
         >
           Turn text, ideas, or content into interactive, high-quality courses—no videos required. We will build courses
           from YouTube.
-        </motion.p>
-
-        <motion.div
+        </motion.p>        <motion.div
           initial={{ opacity: 0, y: 40, filter: "blur(3px)" }}
           animate={{
-            opacity: isInView ? 1 : 0,
-            y: isInView ? 0 : 40,
-            filter: isInView ? "blur(0px)" : "blur(3px)",
+            opacity: animationsReady && isInView ? 1 : 0,
+            y: animationsReady && isInView ? 0 : 40,
+            filter: animationsReady && isInView ? "blur(0px)" : "blur(3px)",
           }}
           transition={{ duration: 0.8, delay: 0.8, ease: APPLE_EASING }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
           style={{ y: buttonsY }}
+          suppressHydrationWarning
         >
           <FeedbackButton
             size="lg"
