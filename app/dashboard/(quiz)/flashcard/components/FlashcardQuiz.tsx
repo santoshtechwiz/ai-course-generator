@@ -129,6 +129,7 @@ export default function FlashCardQuiz({
           slug,
           title,
           questions: cards,
+          userId: ""
         }),
       )
     }
