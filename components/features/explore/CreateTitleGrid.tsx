@@ -59,14 +59,14 @@ const tiles = [
     icon: FileQuestion,
     title: "Multiple Choice Questions",
     description:
-      "Create effective multiple-choice quizzes that adapt to your students' skill level and provide instant feedback.",
+      "Create effective multiple-choice quizzes that adapt to your skill level and provide instant feedback.",
     url: "/dashboard/mcq",
     color: "blue",
     quotes: [
-      "Create engaging quizzes that adapt to each student's level",
-      "Get detailed analytics on student performance and question effectiveness",
+      "Create engaging quizzes that adapt to each learner's level",
+      "Get detailed analytics on performance and question effectiveness",
       "Save hours with automatic question generation for any topic",
-      "Easily customize difficulty levels for differentiated learning",
+      "Easily customize difficulty levels for different learning needs",
       "Export quizzes in multiple formats for online or printed use",
     ],
     isPremium: false,
@@ -74,8 +74,8 @@ const tiles = [
       "multiple choice quiz creator, adaptive quizzes, educational assessment tools",
     benefits: [
       "Reduces quiz creation time by 80%",
-      "Increases student engagement through personalized questions",
-      "Provides detailed analytics on student performance",
+      "Increases engagement through personalized questions",
+      "Provides detailed analytics on performance",
     ],
   },
   {
@@ -133,7 +133,7 @@ const tiles = [
     color: "pink",
     quotes: [
       "Create vocabulary-building exercises in seconds",
-      "Focus student attention on key terminology and concepts",
+      "Focus attention on key terminology and concepts",
       "Generate exercises with adjustable difficulty levels",
       "Include context clues to support learning",
       "Perfect for language learning and technical subjects",
@@ -143,7 +143,7 @@ const tiles = [
       "fill-in-the-blank creator, cloze exercises, vocabulary practice",
     benefits: [
       "Reinforces key terminology and concepts",
-      "Adjustable difficulty for differentiated learning",
+      "Adjustable difficulty for different learning needs",
       "Great for vocabulary building and concept review",
     ],
   },
@@ -158,7 +158,7 @@ const tiles = [
       "Design complete courses with a simple, intuitive interface",
       "Organize content into modules, lessons, and assessments",
       "Include multimedia elements for engaging learning experiences",
-      "Create learning paths that adapt to student progress",
+      "Create learning paths that adapt to progress",
       "Save weeks of planning and organization time",
     ],
     isPremium: false,
@@ -183,7 +183,7 @@ const tiles = [
       "Generate exercises from beginner to advanced levels",
       "Include starter code and test cases for guided learning",
     ],
-    isPremium: true,
+    isPremium: false,
     seoKeywords:
       "coding challenge creator, programming exercises, code assessment",
     benefits: [
@@ -248,9 +248,8 @@ function Tile({
     };
   }, [quoteInterval]);
 
-  const isDisabled =
-    isPremium &&
-    (data?.subscriptionPlan === "BASIC" || data?.subscriptionPlan === "FREE");
+  // Fixed logic: Premium features are disabled for FREE users, enabled for BASIC and PREMIUM
+  const isDisabled = isPremium && data?.subscriptionPlan === "FREE";
 
   return (
     <>
@@ -273,7 +272,7 @@ function Tile({
         >
           <Card
             className={`h-full flex flex-col justify-between transition-all duration-300 hover:shadow-lg ${
-              isDisabled ? "opacity-80 cursor-not-allowed" : "cursor-pointer"
+              isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-xl"
             }`}
             onClick={() => !isDisabled && setIsOpen(true)}
           >
@@ -308,14 +307,14 @@ function Tile({
                       >
                         <Badge
                           variant="outline"
-                          className="bg-amber-100 text-amber-800 border-amber-300"
+                          className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 font-medium"
                         >
                           Premium
                         </Badge>
                       </motion.div>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      <p>Requires premium subscription</p>
+                      <p>Requires subscription to access</p>
                     </TooltipContent>
                   </Tooltip>
                 )}
@@ -326,28 +325,34 @@ function Tile({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="text-base sm:text-lg text-muted-foreground"
+                className="text-base sm:text-lg text-muted-foreground leading-relaxed"
               >
                 {description}
               </motion.p>
             </CardContent>
             <CardFooter className="justify-center mt-2">
               <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: isDisabled ? 1 : 1.05 }}
+                whileTap={{ scale: isDisabled ? 1 : 0.95 }}
+                className="w-full"
               >
                 <Button
-                  variant="secondary"
-                  className={`bg-${color}-100 hover:bg-${color}-200 dark:bg-${color}-900 dark:hover:bg-${color}-800 text-${color}-700 dark:text-${color}-300 w-full`}
+                  variant={isDisabled ? "outline" : "secondary"}
+                  className={`${
+                    isDisabled 
+                      ? "border-gray-300 text-gray-500 bg-gray-50 hover:bg-gray-100" 
+                      : `bg-${color}-100 hover:bg-${color}-200 dark:bg-${color}-900 dark:hover:bg-${color}-800 text-${color}-700 dark:text-${color}-300`
+                  } w-full transition-all duration-200`}
                   disabled={isDisabled}
                 >
-                  {isDisabled ? "Upgrade to Access" : "Create Now"}
+                  {isDisabled ? "Upgrade to Access" : "Get Started"}
                 </Button>
               </motion.div>
             </CardFooter>
           </Card>
         </motion.div>
-      </TooltipProvider>{" "}
+      </TooltipProvider>
+      
       <Dialog open={isOpen && !isDisabled} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[90vw] sm:h-[80vh] max-h-[90vh] flex flex-col">
           <ScrollArea className="h-full">
@@ -375,7 +380,7 @@ function Tile({
                 {isPremium && (
                   <Badge
                     variant="outline"
-                    className="ml-3 bg-amber-100 text-amber-800 border-amber-300"
+                    className="ml-3 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 font-medium"
                   >
                     Premium Feature
                   </Badge>
@@ -391,7 +396,7 @@ function Tile({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.5 }}
-                      className="text-lg sm:text-2xl italic mt-4 sm:mt-6"
+                      className="text-lg sm:text-2xl italic mt-4 sm:mt-6 text-center"
                     >
                       "{quotes[currentQuote]}"
                     </motion.p>
@@ -401,7 +406,7 @@ function Tile({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5, delay: 0.4 }}
-                    className="text-base sm:text-lg mt-4 text-muted-foreground"
+                    className="text-base sm:text-lg mt-4 text-muted-foreground leading-relaxed"
                   >
                     {description}
                   </motion.p>
@@ -416,9 +421,27 @@ function Tile({
               className="flex-grow flex flex-col space-y-8 py-6 sm:py-10"
             >
               {/* Key Benefits Section */}
-              <div className="rounded-lg border p-4 bg-muted/20">
-                <h3 className="text-xl font-medium mb-3">Key Benefits</h3>
-                <ul className="space-y-2">
+              <div className="rounded-lg border p-6 bg-muted/20">
+                <h3 className="text-xl font-semibold mb-4 flex items-center">
+                  <div className={`mr-2 text-${color}-500`}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/>
+                      <path d="M9 11V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </div>
+                  Key Benefits
+                </h3>
+                <ul className="space-y-3">
                   {benefits?.map((benefit, i) => (
                     <motion.li
                       key={i}
@@ -427,7 +450,7 @@ function Tile({
                       transition={{ delay: 0.4 + i * 0.1 }}
                       className="flex items-start"
                     >
-                      <div className={`mr-2 text-${color}-500 mt-1`}>
+                      <div className={`mr-3 text-${color}-500 mt-1 flex-shrink-0`}>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           width="16"
@@ -442,21 +465,60 @@ function Tile({
                           <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                       </div>
-                      <span>{benefit}</span>
+                      <span className="text-sm sm:text-base">{benefit}</span>
                     </motion.li>
                   ))}
                 </ul>
               </div>
 
-              {/* Example Use Case */}
-              <div className="rounded-lg border p-4">
-                <h3 className="text-xl font-medium mb-3">How It Works</h3>
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>Select your topic or upload your content</li>
-                  <li>Choose customization options and difficulty level</li>
-                  <li>Generate your content with one click</li>
-                  <li>Edit, refine, and save your creation</li>
-                  <li>Share with students or use in your learning materials</li>
+              {/* How It Works Section */}
+              <div className="rounded-lg border p-6">
+                <h3 className="text-xl font-semibold mb-4 flex items-center">
+                  <div className={`mr-2 text-${color}-500`}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v6m0 6v6"/>
+                      <path d="m15.5 3.5-1.5 1.5"/>
+                      <path d="m10 12-1.5 1.5"/>
+                      <path d="m15.5 20.5-1.5-1.5"/>
+                      <path d="m4.5 10.5 1.5 1.5"/>
+                      <path d="m20.5 10.5-1.5 1.5"/>
+                      <path d="m4.5 13.5 1.5-1.5"/>
+                    </svg>
+                  </div>
+                  How It Works
+                </h3>
+                <ol className="space-y-2">
+                  <li className="flex items-start">
+                    <span className={`mr-3 text-${color}-500 font-semibold flex-shrink-0`}>1.</span>
+                    <span className="text-sm sm:text-base">Select your topic or upload your content</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className={`mr-3 text-${color}-500 font-semibold flex-shrink-0`}>2.</span>
+                    <span className="text-sm sm:text-base">Choose customization options and difficulty level</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className={`mr-3 text-${color}-500 font-semibold flex-shrink-0`}>3.</span>
+                    <span className="text-sm sm:text-base">Generate your content with one click</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className={`mr-3 text-${color}-500 font-semibold flex-shrink-0`}>4.</span>
+                    <span className="text-sm sm:text-base">Edit, refine, and save your creation</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className={`mr-3 text-${color}-500 font-semibold flex-shrink-0`}>5.</span>
+                    <span className="text-sm sm:text-base">Share or use in your learning materials</span>
+                  </li>
                 </ol>
               </div>
 
@@ -467,18 +529,18 @@ function Tile({
                 className="flex justify-center"
               >
                 <Icon
-                  className={`h-24 w-24 sm:h-32 sm:w-32 text-${color}-500`}
+                  className={`h-24 w-24 sm:h-32 sm:w-32 text-${color}-500 opacity-20`}
                   aria-hidden="true"
                 />
               </motion.div>
             </motion.div>
           </ScrollArea>
 
-          <DialogFooter className="sm:flex-row gap-2 sm:gap-3">
-            {data?.subscriptionPlan !== "PREMIUM" && (
+          <DialogFooter className="sm:flex-row gap-2 sm:gap-3 pt-4 border-t">
+            {data?.subscriptionPlan === "FREE" && isPremium && (
               <Button
                 variant="outline"
-                className="w-full sm:w-auto text-base"
+                className="w-full sm:w-auto text-base border-amber-300 text-amber-700 hover:bg-amber-50"
                 aria-label={`Upgrade to access ${title}`}
                 asChild
               >
@@ -487,7 +549,7 @@ function Tile({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Upgrade to Premium
+                    Upgrade to Access
                   </motion.span>
                 </Link>
               </Button>
@@ -495,17 +557,10 @@ function Tile({
 
             <Button
               asChild
-              className={`w-full text-base h-12 sm:h-14 bg-${color}-500 hover:bg-${color}-600 text-white`}
+              className={`w-full text-base h-12 sm:h-14 bg-${color}-500 hover:bg-${color}-600 text-white shadow-lg`}
               aria-label={`Get started with ${title}`}
-              disabled={isPremium && data?.subscriptionPlan !== "PREMIUM"}
             >
-              <Link
-                href={
-                  isPremium && data?.subscriptionPlan !== "PREMIUM"
-                    ? "/dashboard/subscription"
-                    : url
-                }
-              >
+              <Link href={url}>
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -513,9 +568,7 @@ function Tile({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {isPremium && data?.subscriptionPlan !== "PREMIUM"
-                    ? "See Pricing Plans"
-                    : "Create Now"}
+                  Get Started Now
                 </motion.span>
               </Link>
             </Button>
@@ -544,16 +597,26 @@ export function CreateTileGrid() {
           ))}
         </div>
 
-        <div className="mt-10 text-center">
-          <p className="text-muted-foreground mb-4">
-            Looking for something specific? Our AI can help you create custom
-            educational content.
-          </p>
-          <Button variant="outline" size="lg" className="mt-2">
-            Contact Support
-          </Button>
+        <div className="mt-12 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <p className="text-muted-foreground mb-6 text-lg">
+              Looking for something specific? Our AI can help you create custom educational content.
+            </p>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="mt-2 px-8 py-3 text-base hover:shadow-md transition-all duration-200"
+            >
+              Contact Support
+            </Button>
+          </motion.div>
         </div>
       </section>
     </>
   );
 }
+

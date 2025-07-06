@@ -1,140 +1,160 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useCallback, type ReactNode } from 'react'
-import { useSession } from 'next-auth/react'
-import { useAppDispatch } from '@/store'
-import { fetchSubscription, forceSyncSubscription } from '@/store/slices/subscription-slice'
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { useSession } from "next-auth/react";
+import { useAppDispatch, useAppSelector } from "@/store";
+import {
+  fetchSubscription,
+  forceSyncSubscription,
+  selectSubscriptionData,
+} from "@/store/slices/subscription-slice";
 
 // Types
 export interface User {
-  id: string
-  name?: string | null
-  email?: string | null
-  image?: string | null
-  credits?: number
-  creditsUsed?: number
-  isAdmin?: boolean
-  userType?: string
-  subscriptionPlan?: string | null
-  subscriptionStatus?: string | null
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  credits?: number;
+  creditsUsed?: number;
+  isAdmin?: boolean;
+  userType?: string;
+  subscriptionPlan?: string | null;
+  subscriptionStatus?: string | null;
 }
 
 export interface Subscription {
-  plan: string
-  status: string
-  isActive: boolean
-  credits: number
-  tokensUsed: number
-  currentPeriodEnd?: string | null
-  cancelAtPeriodEnd?: boolean
+  plan: string;
+  status: string;
+  isActive: boolean;
+  credits: number;
+  tokensUsed: number;
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export interface AuthState {
-  user: User | null
-  subscription: Subscription | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  refreshUserData: () => Promise<void>
-  refreshSubscription: () => Promise<void>
-  syncWithBackend: () => Promise<void>
+  user: User | null;
+  subscription: Subscription | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  refreshUserData: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
+  syncWithBackend: () => Promise<void>;
 }
 
 // Context
-const AuthContext = createContext<AuthState | undefined>(undefined)
+const AuthContext = createContext<AuthState | undefined>(undefined);
 
-// Provider Component
+// Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, status, update } = useSession()
-  const dispatch = useAppDispatch()
-    // Refresh functions
+  const { data: session, status, update } = useSession();
+  const dispatch = useAppDispatch();
+  const reduxSubscription = useAppSelector(selectSubscriptionData);
+
+  // Load fresh subscription on session load
+  useEffect(() => {
+    if (session?.user) {
+      dispatch(fetchSubscription({ forceRefresh: true }));
+    }
+  }, [session?.user, dispatch]);
+
   const refreshUserData = useCallback(async () => {
     try {
-      // Use NextAuth's update mechanism to refresh the session with latest backend data
-      await update()
+      await update();
     } catch (error) {
-      console.error('Failed to refresh user data:', error)
+      console.error("Failed to refresh user data:", error);
     }
-  }, [update])
+  }, [update]);
 
   const refreshSubscription = useCallback(async () => {
     try {
-      // Force refresh the subscription data from Redux
-      await dispatch(fetchSubscription({ forceRefresh: true })).unwrap()
+      await dispatch(fetchSubscription({ forceRefresh: true })).unwrap();
     } catch (error) {
-      console.error('Failed to refresh subscription data:', error)
+      console.error("Failed to refresh subscription data:", error);
     }
-  }, [dispatch])
+  }, [dispatch]);
 
   const syncWithBackend = useCallback(async () => {
     try {
-      // 1. Force sync with Stripe/backend to ensure consistency
-      await dispatch(forceSyncSubscription()).unwrap()
-      // 2. Refresh the session to get the latest auth data
-      await update()
+      await dispatch(forceSyncSubscription()).unwrap();
+      await update();
     } catch (error) {
-      console.error('Failed to sync with backend:', error)
+      console.error("Failed to sync with backend:", error);
     }
-  }, [dispatch, update])
-    // Transform session data to our auth state
-  const user: User | null = session?.user ? {
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-    image: session.user.image,
-    credits: session.user.credits || 0,
-    creditsUsed: session.user.creditsUsed || 0,
-    isAdmin: session.user.isAdmin || false,
-    userType: session.user.userType || 'FREE',
-    subscriptionPlan: session.user.subscriptionPlan,
-    subscriptionStatus: session.user.subscriptionStatus,
-  } : null
+  }, [dispatch, update]);
 
-  // Map subscription data from session
-  const subscription: Subscription | null = user ? {
-    plan: user.subscriptionPlan || 'FREE',
-    status: user.subscriptionStatus || 'INACTIVE',
-    isActive: user.subscriptionStatus === 'ACTIVE',
-    credits: user.credits || 0,
-    tokensUsed: 0, // This would come from session if needed
-    currentPeriodEnd: null, // This would come from session if needed
-    cancelAtPeriodEnd: false,
-  } : null
+  const user: User | null = session?.user
+    ? {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+        credits: session.user.credits || 0,
+        creditsUsed: session.user.creditsUsed || 0,
+        isAdmin: session.user.isAdmin || false,
+        userType: session.user.userType || "FREE",
+        subscriptionPlan:
+          reduxSubscription?.subscriptionPlan || session.user.subscriptionPlan,
+        subscriptionStatus:
+          reduxSubscription?.status || session.user.subscriptionStatus,
+      }
+    : null;
+
+  const subscription: Subscription | null = reduxSubscription
+    ? {
+        plan: reduxSubscription.subscriptionPlan ?? "",
+        status: reduxSubscription.status ?? "",
+        isActive: reduxSubscription.status === "ACTIVE",
+        credits: reduxSubscription.credits ?? 0,
+        tokensUsed: reduxSubscription.tokensUsed ?? 0,
+        currentPeriodEnd: reduxSubscription.expirationDate ?? null,
+        cancelAtPeriodEnd: reduxSubscription.cancelAtPeriodEnd ?? false,
+      }
+    : null;
 
   const authState: AuthState = {
     user,
     subscription,
     isAuthenticated: !!session?.user,
-    isLoading: status === 'loading',
+    isLoading: status === "loading",
     refreshUserData,
     refreshSubscription,
     syncWithBackend,
-  }
+  };
 
   return (
-    <AuthContext.Provider value={authState}>
-      {children}
-    </AuthContext.Provider>
-  )
+    <AuthContext.Provider value={authState}>{children}</AuthContext.Provider>
+  );
 }
 
 // Hooks
 export function useAuth(): AuthState {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
+  return context;
 }
 
 export function useUser(): User | null {
-  return useAuth().user
+  return useAuth().user;
 }
 
 export function useSubscription(): Subscription | null {
-  return useAuth().subscription
+  return useAuth().subscription;
 }
 
-export function useAuthStatus(): { isAuthenticated: boolean; isLoading: boolean } {
-  const { isAuthenticated, isLoading } = useAuth()
-  return { isAuthenticated, isLoading }
+export function useAuthStatus(): {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+} {
+  const { isAuthenticated, isLoading } = useAuth();
+  return { isAuthenticated, isLoading };
 }
