@@ -1,16 +1,27 @@
 import type { Quiz, QuizGenerationParams } from "@/app/types/types"
 import { OpenAI } from "openai"
 import https from "https"
+import { defaultAIProvider } from "@/lib/ai"
 
+/**
+ * @deprecated Use the AIProvider interface and defaultAIProvider from @/lib/ai instead
+ */
 const agent = new https.Agent({
   rejectUnauthorized: false,
 })
+
+/**
+ * @deprecated Use defaultAIProvider from @/lib/ai instead
+ */
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   httpAgent: agent,
   dangerouslyAllowBrowser: true,
 })
 
+/**
+ * @deprecated Use defaultAIProvider.generateOpenEndedQuiz or defaultAIProvider.generateFillInTheBlanksQuiz instead
+ */
 export const generateQuizFlexible = async (params: QuizGenerationParams): Promise<Quiz> => {
   const { model, messages, functions, functionCall } = params
 

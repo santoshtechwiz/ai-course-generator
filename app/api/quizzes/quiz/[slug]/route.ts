@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import { getAuthSession } from "@/lib/auth"
+import { QuizServiceFactory } from "@/app/services/quiz-service-factory"
+import { QuizRepository } from "@/app/repositories/quiz.repository"
 
 // Define response types for better type safety
 interface QuizResponse {
@@ -17,41 +17,41 @@ interface ErrorResponse {
   error: string
 }
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function PATCH(req: Request, { params }: { params: { slug: string } }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getAuthSession()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { slug } = await params
+    const { slug } = params
     const { isPublic, isFavorite } = await req.json()
 
-    const quiz = await prisma.userQuiz.findUnique({
-      where: { slug },
-      select: { userId: true },
-    })
+    // First get the quiz to determine its type
+    const quizRepository = new QuizRepository()
+    const quiz = await quizRepository.findBySlug(slug)
 
     if (!quiz) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
 
-    // if (quiz.userId !== session.user.id) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    // }
+    // Get the appropriate service
+    const quizService = QuizServiceFactory.getQuizService(quiz.quizType)
 
-    const updatedQuiz = await prisma.userQuiz.update({
-      where: { slug },
-      data: {
-        isPublic: isPublic !== undefined ? isPublic : undefined,
-        isFavorite: isFavorite !== undefined ? isFavorite : undefined,
-      },
-    })
+    // Update the quiz
+    const updatedQuiz = await quizService.updateQuizProperties(
+      slug,
+      session.user.id,
+      { isPublic, isFavorite }
+    )
 
     return NextResponse.json(updatedQuiz)
   } catch (error) {
     console.error("Error updating quiz:", error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to update quiz" },
+      { status: 500 }
+    )
   }
 }
 

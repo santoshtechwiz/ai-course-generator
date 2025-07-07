@@ -1,9 +1,9 @@
 import type { FlashCard } from "@/app/types/types"
-import openai from "./openaiUtils"
+import { defaultAIProvider } from "@/lib/ai"
 
 export async function generateFlashCards(title: string, count = 5): Promise<FlashCard[]> {
   try {
-    const response = await openai.chat.completions.create({
+    const result = await defaultAIProvider.generateChatCompletion({
       model: "gpt-3.5-turbo",
       messages: [
         {
@@ -41,25 +41,21 @@ export async function generateFlashCards(title: string, count = 5): Promise<Flas
           },
         },
       ],
-      function_call: "auto",
+      functionCall: { name: "generate_flashcards" },
     })
 
-    const functionCall = response.choices[0]?.message?.function_call
-    if (!functionCall || functionCall.name !== "generate_flashcards") {
+    if (!result.functionCall || result.functionCall.name !== "generate_flashcards") {
       throw new Error("Function call not received from API.")
     }
 
-    const parsedResponse = JSON.parse(functionCall.arguments)
-    if (!Array.isArray(parsedResponse.flashcards)) {
-      throw new Error("Invalid API response format")
-    }
-
-    return parsedResponse.flashcards.map((item: { question: string; answer: string }) => ({
-      question: item.question,
-      answer: item.answer,
+    const parsedArguments = JSON.parse(result.functionCall.arguments)
+    return parsedArguments.flashcards.map((card: any) => ({
+      id: Math.floor(Math.random() * 1000000), // Generate a temporary ID
+      question: card.question,
+      answer: card.answer,
     }))
   } catch (error) {
-    console.error("Error generating flash cards:", error)
-    throw new Error("Failed to generate flash cards")
+    console.error("Failed to generate flashcards:", error)
+    throw new Error(`Error generating flashcards: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
