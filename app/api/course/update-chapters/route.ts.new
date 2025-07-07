@@ -1,0 +1,120 @@
+import { NextResponse } from "next/server"
+import { getAuthSession } from "@/lib/auth"
+import { z } from "zod"
+import { courseService } from "@/app/services/course.service"
+
+// Define validation schema
+const chapterSchema = z.object({
+  id: z.number().nullable(), // null for new chapters
+  title: z.string().min(1, "Chapter title is required"),
+  videoId: z.string().nullable(),
+  unitId: z.number(),
+  position: z.number(), // This will map to the 'order' field in the database
+  isCustom: z.boolean().optional(),
+  youtubeSearchQuery: z.string().optional(),
+})
+
+const unitSchema = z.object({
+  id: z.number(),
+  chapters: z.array(chapterSchema),
+})
+
+const updateChaptersSchema = z.object({
+  courseId: z.number(),
+  slug: z.string(),
+  units: z.array(unitSchema),
+})
+
+export async function POST(req: Request) {
+  try {
+    // Authenticate user
+    const session = await getAuthSession()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Parse and validate request body
+    const body = await req.json()
+
+    try {
+      var validatedData = updateChaptersSchema.parse(body)
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: "Validation error",
+            details: validationError.errors,
+          },
+          { status: 400 },
+        )
+      }
+      return NextResponse.json(
+        {
+          error: "Invalid request data",
+        },
+        { status: 400 },
+      )
+    }
+
+    try {
+      // Use service to update course chapters
+      await courseService.updateCourseChapters(validatedData)
+
+      // Return success response
+      return NextResponse.json({
+        success: true,
+        message: "Chapters updated successfully",
+        courseId: validatedData.courseId,
+        slug: validatedData.slug,
+      })
+    } catch (error) {
+      console.error("Error updating chapters:", error)
+      
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
+      // Handle specific error cases
+      if (errorMessage === "Course not found") {
+        return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      }
+      
+      if (errorMessage === "Permission denied" || errorMessage.includes("Unauthorized")) {
+        return NextResponse.json({ error: "Unauthorized access to this course" }, { status: 403 })
+      }
+      
+      if (errorMessage.includes("not found")) {
+        return NextResponse.json(
+          {
+            error: "One or more records not found",
+          },
+          { status: 404 },
+        )
+      }
+      
+      if (errorMessage.includes("Duplicate")) {
+        return NextResponse.json(
+          {
+            error: "Duplicate chapter information detected",
+          },
+          { status: 409 },
+        )
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Failed to update chapters",
+          details: errorMessage
+        },
+        { status: 500 },
+      )
+    }
+  } catch (error) {
+    console.error("Error processing request:", error)
+
+    return NextResponse.json(
+      {
+        error: "An unexpected error occurred",
+      },
+      { status: 500 },
+    )
+  }
+}

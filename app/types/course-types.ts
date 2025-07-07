@@ -1,3 +1,70 @@
+// Structure for course content generation output
+export type OutputUnits = {
+  title: string;
+  chapters: {
+    youtube_search_query: string;
+    chapter_title: string;
+  }[];
+}[];
+
+// Course search parameters
+export interface CourseSearchParams {
+  search?: string;
+  category?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
+/**
+ * Type for course update data
+ */
+export interface CourseUpdateData {
+  title?: string;
+  description?: string;
+  isFavorite?: boolean;
+  progress?: number;
+  isPublic?: boolean;
+}
+
+/**
+ * Type for course chapters update
+ */
+export interface CourseChaptersUpdate {
+  courseId: number;
+  slug: string;
+  units: Array<{
+    id: number;
+    chapters: Array<{
+      id: number | null;
+      title: string;
+      videoId: string | null;
+      unitId: number;
+      position: number;
+      isCustom?: boolean;
+      youtubeSearchQuery?: string;
+    }>;
+  }>;
+}
+
+/**
+ * Type for chapter creation
+ */
+export interface ChapterInput {
+  title: string;
+  youtubeSearchQuery?: string;
+  videoId?: string | null;
+  unitId: number;
+  position: number;
+}
+
+/**
+ * Type for video status
+ */
+export type VideoStatus = "pending" | "processing" | "completed" | "error";
+
 // Video and chapter related types
 export interface VideoMetadata {
   id: string;
@@ -172,4 +239,47 @@ export interface Question {
   question: string;
   answer: string;
   options: string[];
+}
+
+/**
+ * Type for course creation parameters
+ */
+export interface CourseCreateParams {
+  title: string;
+  description?: string;
+  image?: string;
+  userId: string;
+  categoryId: number;
+  slug: string;
+}
+
+/**
+ * Type for course filtering results
+ */
+export interface FilteredCourseResult {
+  courses: any[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/**
+ * Enum for course difficulty levels
+ */
+export enum CourseDifficulty {
+  Beginner = "Beginner",
+  Intermediate = "Intermediate",
+  Advanced = "Advanced",
+}
+
+/**
+ * Interface for course stats
+ */
+export interface CourseStats {
+  totalCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  totalHours: number;
+  completedHours: number;
 }

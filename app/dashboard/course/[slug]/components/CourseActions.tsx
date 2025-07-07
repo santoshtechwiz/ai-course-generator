@@ -1,7 +1,5 @@
 "use client"
 
-import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -12,13 +10,12 @@ import {
   Star,
   Trash2,
   Loader2,
-  ChevronRight,
-  ChevronLeft,
   Settings,
   Copy,
   Twitter,
   Facebook,
   Linkedin,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
 import { useCourseActions } from "@/hooks/useCourseActions"
@@ -39,29 +36,22 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
-import { useScrollDirection } from "@/hooks/useScrollDirection"
+import { Button } from "@/components/ui/button"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 interface CourseActionsProps {
   slug: string
-  position?: "left" | "right"
 }
 
-export default function CourseActions({ slug, position = "left" }: CourseActionsProps) {
+export default function CourseActions({ slug }: CourseActionsProps) {
   const { status, loading, handleAction, handleRating } = useCourseActions({ slug })
   const [showRating, setShowRating] = useState(false)
-  const [isOpen, setIsOpen] = useState(false)
-  const { visible } = useScrollDirection()
-  const [hasInteracted, setHasInteracted] = useState(false)
-
-  // Set hasInteracted to true after first interaction
-  useEffect(() => {
-    if (isOpen && !hasInteracted) {
-      setHasInteracted(true)
-    }
-  }, [isOpen, hasInteracted])
+  const [showShareOptions, setShowShareOptions] = useState(false)
+  const isMobile = useMediaQuery("(max-width: 640px)")
 
   const handleShare = async (type: "copy" | "twitter" | "facebook" | "linkedin") => {
     const url = `${window.location.origin}/course/${slug}`
@@ -80,76 +70,11 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank")
         break
     }
+    
+    setShowShareOptions(false)
   }
-
-  // Close the panel when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (isOpen && !target.closest("[data-course-actions]")) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [isOpen])
 
   // Animation variants
-  const containerVariants = {
-    hidden: {
-      opacity: 0,
-      y: 20,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 25,
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: 20,
-      transition: {
-        duration: 0.2,
-      },
-    },
-  }
-
-  const panelVariants = {
-    hidden: {
-      opacity: 0,
-      x: position === "left" ? -20 : 20,
-      width: 0,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      width: "auto",
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 30,
-        when: "beforeChildren",
-        staggerChildren: 0.05,
-      },
-    },
-    exit: {
-      opacity: 0,
-      x: position === "left" ? -20 : 20,
-      width: 0,
-      transition: {
-        duration: 0.2,
-        when: "afterChildren",
-        staggerChildren: 0.05,
-        staggerDirection: -1,
-      },
-    },
-  }
-
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: {
@@ -161,430 +86,472 @@ export default function CourseActions({ slug, position = "left" }: CourseActions
         damping: 25,
       },
     },
-    exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
   }
+
+  const ratingVariants = {
+    hidden: { opacity: 0, height: 0 },
+    visible: {
+      opacity: 1,
+      height: "auto",
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      },
+    },
+    exit: { opacity: 0, height: 0 },
+  }
+
+  const ActionButton = ({
+    onClick,
+    icon,
+    label,
+    isLoading,
+    loadingState,
+    color = "bg-primary hover:bg-primary/90",
+    tooltip,
+    disabled = false,
+  }: {
+    onClick: () => void
+    icon: React.ReactNode
+    label: string
+    isLoading: boolean
+    loadingState?: string
+    color?: string
+    tooltip: string
+    disabled?: boolean
+  }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <motion.button
+          onClick={onClick}
+          className={cn(
+            "flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium",
+            "text-primary-foreground transition-all duration-200 shadow hover:shadow-md",
+            color,
+            disabled && "opacity-50 cursor-not-allowed"
+          )}
+          variants={itemVariants}
+          whileHover={!disabled ? { scale: 1.05 } : {}}
+          whileTap={!disabled ? { scale: 0.95 } : {}}
+          disabled={disabled || isLoading}
+        >
+          {isLoading && loadingState ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            icon
+          )}
+          <span className="hidden sm:inline">{label}</span>
+        </motion.button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
 
   return (
     <TooltipProvider delayDuration={300}>
-      <AnimatePresence>
-        {visible && (
+      <div className="w-full">
+        {/* Mobile Actions Bar */}
+        {isMobile && (
           <motion.div
-            data-course-actions
-            className={cn(
-              "fixed z-50 flex flex-col items-center",
-              position === "left"
-                ? "left-4 sm:left-6 bottom-20 sm:top-1/2 sm:-translate-y-1/2"
-                : "right-4 sm:right-6 bottom-20 sm:top-1/2 sm:-translate-y-1/2",
-            )}
-            variants={{
-              hidden: {
-                opacity: 0,
-                y: 20,
-              },
-              visible: {
-                opacity: 1,
-                y: 0,
-                transition: {
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 25,
-                },
-              },
-              exit: {
-                opacity: 0,
-                y: 20,
-                transition: {
-                  duration: 0.2,
-                },
-              },
-            }}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            initial={{ y: 50 }}
+            animate={{ y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-background/90 backdrop-blur-sm border rounded-xl shadow-lg p-2 z-50 w-[calc(100%-2rem)] max-w-md"
           >
-            {/* Main panel with actions */}
-            <AnimatePresence mode="wait">
-              {isOpen && (
-                <motion.div
-                  className={cn(
-                    "bg-card/95 backdrop-blur-sm border shadow-lg rounded-xl overflow-hidden mb-3",
-                    position === "left" ? "origin-bottom-left" : "origin-bottom-right",
-                  )}
-                  variants={{
-                    hidden: {
-                      opacity: 0,
-                      scale: 0.8,
-                      x: position === "left" ? -20 : 20,
-                    },
-                    visible: {
-                      opacity: 1,
-                      scale: 1,
-                      x: 0,
-                      transition: {
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30,
-                        when: "beforeChildren",
-                        staggerChildren: 0.05,
-                      },
-                    },
-                    exit: {
-                      opacity: 0,
-                      scale: 0.8,
-                      x: position === "left" ? -20 : 20,
-                      transition: {
-                        duration: 0.2,
-                        when: "afterChildren",
-                        staggerChildren: 0.05,
-                        staggerDirection: -1,
-                      },
-                    },
-                  }}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <div className="flex flex-col p-3 gap-3">
-                    {/* Public/Private Toggle */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          onClick={() => handleAction("privacy")}
-                          className={cn(
-                            "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
-                            "shadow-sm hover:shadow-md",
-                          )}
-                          variants={{
-                            hidden: { opacity: 0, y: 10 },
-                            visible: {
-                              opacity: 1,
-                              y: 0,
-                              transition: {
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 25,
-                              },
-                            },
-                            exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          disabled={loading === "privacy"}
-                        >
-                          {loading === "privacy" ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : status.isPublic ? (
-                            <Eye className="h-5 w-5" />
-                          ) : (
-                            <EyeOff className="h-5 w-5" />
-                          )}
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent side={position === "left" ? "right" : "left"}>
-                        <p>{status.isPublic ? "Make Private" : "Make Public"}</p>
-                      </TooltipContent>
-                    </Tooltip>
+            <div className="flex items-center justify-between gap-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => handleAction("privacy")}>
+                    {status.isPublic ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                    <span>{status.isPublic ? "Make Private" : "Make Public"}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAction("favorite")}>
+                    <Heart className={cn("mr-2 h-4 w-4", status.isFavorite && "fill-current")} />
+                    <span>{status.isFavorite ? "Unfavorite" : "Favorite"}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowRating(true)}>
+                    <Star className={cn("mr-2 h-4 w-4", status.rating && "fill-current")} />
+                    <span>Rate Course</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowShareOptions(true)}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    <span>Share</span>
+                  </DropdownMenuItem>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-                    {/* Favorite Toggle */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          onClick={() => handleAction("favorite")}
-                          className={cn(
-                            "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-pink-500 hover:bg-pink-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
-                            "shadow-sm hover:shadow-md",
-                          )}
-                          variants={{
-                            hidden: { opacity: 0, y: 10 },
-                            visible: {
-                              opacity: 1,
-                              y: 0,
-                              transition: {
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 25,
-                              },
-                            },
-                            exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          disabled={loading === "favorite"}
-                        >
-                          {loading === "favorite" ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : (
-                            <Heart className={cn("h-5 w-5", status.isFavorite && "fill-current")} />
-                          )}
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent side={position === "left" ? "right" : "left"}>
-                        <p>{status.isFavorite ? "Unfavorite" : "Favorite"}</p>
-                      </TooltipContent>
-                    </Tooltip>
+              <ActionButton
+                onClick={() => handleAction("privacy")}
+                icon={status.isPublic ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                label={status.isPublic ? "Public" : "Private"}
+                isLoading={loading === "privacy"}
+                loadingState="privacy"
+                color={status.isPublic ? "bg-emerald-500 hover:bg-emerald-600" : "bg-amber-500 hover:bg-amber-600"}
+                tooltip={status.isPublic ? "Make Private" : "Make Public"}
+              />
 
-                    {/* Share Button */}
-                    <Tooltip>
-                      <DropdownMenu>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuTrigger asChild>
-                            <motion.button
-                              className={cn(
-                                "w-10 h-10 flex items-center justify-center rounded-lg",
-                                "bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
-                                "shadow-sm hover:shadow-md",
-                              )}
-                              variants={{
-                                hidden: { opacity: 0, y: 10 },
-                                visible: {
-                                  opacity: 1,
-                                  y: 0,
-                                  transition: {
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 25,
-                                  },
-                                },
-                                exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
-                              }}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <Share2 className="h-5 w-5" />
-                            </motion.button>
-                          </DropdownMenuTrigger>
-                        </TooltipTrigger>
-                        <DropdownMenuContent align={position === "left" ? "start" : "end"} className="w-56">
-                          <DropdownMenuItem onClick={() => handleShare("copy")}>
-                            <Copy className="mr-2 h-4 w-4" />
-                            <span>Copy link</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleShare("twitter")}>
-                            <Twitter className="mr-2 h-4 w-4" />
-                            <span>Share on Twitter</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare("facebook")}>
-                            <Facebook className="mr-2 h-4 w-4" />
-                            <span>Share on Facebook</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare("linkedin")}>
-                            <Linkedin className="mr-2 h-4 w-4" />
-                            <span>Share on LinkedIn</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <TooltipContent side={position === "left" ? "right" : "left"}>
-                        <p>Share</p>
-                      </TooltipContent>
-                    </Tooltip>
+              <ActionButton
+                onClick={() => handleAction("favorite")}
+                icon={<Heart className={cn("h-4 w-4", status.isFavorite && "fill-current")} />}
+                label={status.isFavorite ? "Favorited" : "Favorite"}
+                isLoading={loading === "favorite"}
+                loadingState="favorite"
+                color={status.isFavorite ? "bg-pink-500 hover:bg-pink-600" : "bg-gray-500 hover:bg-gray-600"}
+                tooltip={status.isFavorite ? "Unfavorite" : "Favorite"}
+              />
 
-                    {/* Rate Course */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          onClick={() => setShowRating(!showRating)}
-                          className={cn(
-                            "w-10 h-10 flex items-center justify-center rounded-lg",
-                            "bg-amber-500 hover:bg-amber-600 text-white transition-all duration-200 shadow-md hover:shadow-lg",
-                            "shadow-sm hover:shadow-md",
-                          )}
-                          variants={{
-                            hidden: { opacity: 0, y: 10 },
-                            visible: {
-                              opacity: 1,
-                              y: 0,
-                              transition: {
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 25,
-                              },
-                            },
-                            exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Star className={cn("h-5 w-5", status.rating && "fill-current")} />
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent side={position === "left" ? "right" : "left"}>
-                        <p>Rate Course</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <AnimatePresence>
-                      {showRating && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                          className="flex flex-col gap-2 items-center bg-muted/50 rounded-lg p-2 shadow-sm"
-                        >
-                          <div className="text-xs font-medium text-muted-foreground">
-                            {status.rating ? `Your rating: ${status.rating}/5` : "Rate this course"}
-                          </div>
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((value) => (
-                              <motion.button
-                                key={value}
-                                onClick={() => handleRating(value)}
-                                whileHover={{ scale: 1.2 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="p-1"
-                              >
-                                <Star
-                                  className={cn(
-                                    "h-5 w-5 transition-colors duration-150",
-                                    value <= (status.rating || 0)
-                                      ? "text-amber-400 fill-amber-400"
-                                      : "text-muted-foreground hover:text-amber-400",
-                                  )}
-                                />
-                              </motion.button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Delete Button */}
-                    <Tooltip>
-                      <AlertDialog>
-                        <TooltipTrigger asChild>
-                          <AlertDialogTrigger asChild>
-                            <motion.button
-                              className={cn(
-                                "w-10 h-10 flex items-center justify-center rounded-lg",
-                                "bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all duration-200 shadow-md hover:shadow-lg",
-                                "shadow-sm hover:shadow-md",
-                              )}
-                              variants={{
-                                hidden: { opacity: 0, y: 10 },
-                                visible: {
-                                  opacity: 1,
-                                  y: 0,
-                                  transition: {
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 25,
-                                  },
-                                },
-                                exit: { opacity: 0, y: 10, transition: { duration: 0.15 } },
-                              }}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </motion.button>
-                          </AlertDialogTrigger>
-                        </TooltipTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Course?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete your course and all its content. This action cannot be
-                              undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleAction("delete")}
-                              disabled={loading === "delete"}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              {loading === "delete" ? (
-                                <span className="flex items-center gap-2">
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  Deleting...
-                                </span>
-                              ) : (
-                                "Delete"
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      <TooltipContent side={position === "left" ? "right" : "left"}>
-                        <p>Delete Course</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Toggle button */}
-            <motion.button
-              onClick={() => setIsOpen(!isOpen)}
-              className={cn(
-                "flex items-center justify-center rounded-full shadow-lg",
-                "bg-primary text-primary-foreground",
-                "h-14 w-14 transition-all duration-300",
-                isOpen ? "scale-90" : "scale-100",
-              )}
-              whileHover={{ scale: isOpen ? 0.95 : 1.05 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <AnimatePresence mode="wait">
-                {isOpen ? (
-                  <motion.div
-                    key="close"
-                    initial={{ rotate: 0, opacity: 0 }}
-                    animate={{ rotate: 0, opacity: 1 }}
-                    exit={{ rotate: 90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {position === "left" ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="open"
-                    initial={{ rotate: -90, opacity: 0 }}
-                    animate={{ rotate: 0, opacity: 1 }}
-                    exit={{ rotate: 90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="relative"
-                  >
-                    <Settings className="h-6 w-6" />
-
-                    {/* Notification badge */}
-                    {!hasInteracted && (
-                      <Badge
-                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-white"
-                        variant="destructive"
-                      >
-                        !
-                      </Badge>
-                    )}
-
-                    {/* Attention-grabbing pulse animation */}
-                    {!hasInteracted && (
-                      <motion.div
-                        className="absolute inset-0 rounded-full bg-primary"
-                        initial={{ opacity: 0.3, scale: 1 }}
-                        animate={{
-                          opacity: [0.3, 0, 0.3],
-                          scale: [1, 1.3, 1],
-                        }}
-                        transition={{
-                          repeat: Number.POSITIVE_INFINITY,
-                          duration: 1.5,
-                          repeatType: "loop",
-                        }}
-                      />
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => setShowShareOptions(true)}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
           </motion.div>
         )}
-      </AnimatePresence>
+
+        {/* Desktop Actions Bar */}
+        {!isMobile && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-wrap items-center gap-3 p-4 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg"
+          >
+            <div className="flex items-center gap-3">
+              <ActionButton
+                onClick={() => handleAction("privacy")}
+                icon={status.isPublic ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                label={status.isPublic ? "Public" : "Private"}
+                isLoading={loading === "privacy"}
+                loadingState="privacy"
+                color={status.isPublic ? "bg-emerald-500 hover:bg-emerald-600" : "bg-amber-500 hover:bg-amber-600"}
+                tooltip={status.isPublic ? "Make Private" : "Make Public"}
+              />
+
+              <ActionButton
+                onClick={() => handleAction("favorite")}
+                icon={<Heart className={cn("h-4 w-4", status.isFavorite && "fill-current")} />}
+                label={status.isFavorite ? "Favorited" : "Favorite"}
+                isLoading={loading === "favorite"}
+                loadingState="favorite"
+                color={status.isFavorite ? "bg-pink-500 hover:bg-pink-600" : "bg-gray-500 hover:bg-gray-600"}
+                tooltip={status.isFavorite ? "Unfavorite" : "Favorite"}
+              />
+
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <motion.button
+                        className={cn(
+                          "flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium",
+                          "bg-blue-500 hover:bg-blue-600 text-primary-foreground transition-all duration-200 shadow hover:shadow-md"
+                        )}
+                        variants={itemVariants}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        <span>Share</span>
+                      </motion.button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Share this course</p>
+                  </TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => handleShare("copy")}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    <span>Copy link</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleShare("twitter")}>
+                    <Twitter className="mr-2 h-4 w-4" />
+                    <span>Twitter</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare("facebook")}>
+                    <Facebook className="mr-2 h-4 w-4" />
+                    <span>Facebook</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare("linkedin")}>
+                    <Linkedin className="mr-2 h-4 w-4" />
+                    <span>LinkedIn</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="relative">
+                <ActionButton
+                  onClick={() => setShowRating(!showRating)}
+                  icon={<Star className={cn("h-4 w-4", status.rating && "fill-current")} />}
+                  label={status.rating ? `Rated (${status.rating}/5)` : "Rate"}
+                  isLoading={false}
+                  color="bg-amber-500 hover:bg-amber-600"
+                  tooltip="Rate this course"
+                />
+                
+                <AnimatePresence>
+                  {showRating && (
+                    <motion.div
+                      className="absolute bottom-full left-0 mb-3 bg-background border rounded-lg p-3 shadow-lg z-10 w-52"
+                      variants={ratingVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">Your Rating</p>
+                        <button 
+                          onClick={() => setShowRating(false)}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button
+                            key={value}
+                            onClick={() => {
+                              handleRating(value)
+                              setShowRating(false)
+                            }}
+                            className={cn(
+                              "p-1 transition-colors",
+                              value <= (status.rating || 0)
+                                ? "text-amber-400"
+                                : "text-muted-foreground hover:text-amber-400"
+                            )}
+                          >
+                            <Star
+                              className={cn(
+                                "h-5 w-5",
+                                value <= (status.rating || 0) && "fill-current"
+                              )}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Fixed: Properly wrap delete button with AlertDialogTrigger */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <div>
+                  <ActionButton
+                    onClick={() => {}} // Empty handler since AlertDialogTrigger handles it
+                    icon={<Trash2 className="h-4 w-4" />}
+                    label="Delete"
+                    isLoading={loading === "delete"}
+                    loadingState="delete"
+                    color="bg-destructive hover:bg-destructive/90"
+                    tooltip="Delete this course"
+                  />
+                </div>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Course?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete your course and all its content. This action cannot be
+                    undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleAction("delete")}
+                    disabled={loading === "delete"}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {loading === "delete" ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Deleting...
+                      </span>
+                    ) : (
+                      "Delete"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </motion.div>
+        )}
+
+        {/* Mobile Modals */}
+        <AnimatePresence>
+          {/* Mobile Rating Modal */}
+          {isMobile && showRating && (
+            <motion.div
+              className="fixed inset-0 bg-black/70 z-[100] flex items-end"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowRating(false)}
+            >
+              <motion.div
+                className="bg-background rounded-t-xl p-5 w-full"
+                initial={{ y: 300 }}
+                animate={{ y: 0 }}
+                exit={{ y: 300 }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold">Rate this course</h3>
+                  <button onClick={() => setShowRating(false)}>
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="flex justify-center gap-2 mb-6">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        handleRating(value)
+                        setShowRating(false)
+                      }}
+                      className={cn(
+                        "p-2 transition-all",
+                        value <= (status.rating || 0)
+                          ? "text-amber-400 scale-110"
+                          : "text-muted-foreground hover:text-amber-400"
+                      )}
+                    >
+                      <Star
+                        className={cn(
+                          "h-8 w-8",
+                          value <= (status.rating || 0) && "fill-current"
+                        )}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-center text-muted-foreground text-sm">
+                  {status.rating ? `Your rating: ${status.rating}/5` : "Select your rating"}
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Mobile Share Modal */}
+          {isMobile && showShareOptions && (
+            <motion.div
+              className="fixed inset-0 bg-black/70 z-[100] flex items-end"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowShareOptions(false)}
+            >
+              <motion.div
+                className="bg-background rounded-t-xl p-5 w-full"
+                initial={{ y: 300 }}
+                animate={{ y: 0 }}
+                exit={{ y: 300 }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold">Share this course</h3>
+                  <button onClick={() => setShowShareOptions(false)}>
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  <button
+                    onClick={() => handleShare("copy")}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full">
+                      <Copy className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-sm">Copy</span>
+                  </button>
+                  <button
+                    onClick={() => handleShare("twitter")}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full">
+                      <Twitter className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <span className="text-sm">Twitter</span>
+                  </button>
+                  <button
+                    onClick={() => handleShare("facebook")}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full">
+                      <Facebook className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <span className="text-sm">Facebook</span>
+                  </button>
+                  <button
+                    onClick={() => handleShare("linkedin")}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full">
+                      <Linkedin className="h-6 w-6 text-blue-700" />
+                    </div>
+                    <span className="text-sm">LinkedIn</span>
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Global AlertDialog for Delete - Rendered at top level */}
+        <AlertDialog>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Course?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete your course and all its content. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleAction("delete")}
+                disabled={loading === "delete"}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {loading === "delete" ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </span>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </TooltipProvider>
   )
 }

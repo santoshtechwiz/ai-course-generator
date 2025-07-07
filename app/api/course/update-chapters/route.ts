@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 import { z } from "zod"
-import { Prisma } from "@prisma/client"
+import { courseService } from "@/app/services/course.service"
+import type { CourseChaptersUpdate } from "@/app/types/course-types"
 
 // Define validation schema
 const chapterSchema = z.object({
@@ -49,7 +49,12 @@ export async function POST(req: Request) {
           { status: 400 },
         )
       }
-      throw validationError
+      return NextResponse.json(
+        {
+          error: "Invalid request data",
+        },
+        { status: 400 },
+      )
     }
 
     // Verify course ownership

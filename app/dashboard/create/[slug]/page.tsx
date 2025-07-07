@@ -48,9 +48,8 @@ export default async function CreateChapters({ params }: { params: Promise<{ slu
   }
 
   const course = await getCourses(slug)
-
   if (!course) {
-    return redirect("/create")
+    return redirect("/dashboard/course/create")
   }
 
   return (

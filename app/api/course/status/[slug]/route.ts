@@ -4,16 +4,16 @@ import { videoService } from "@/app/services/video.service"
 /**
  * GET: Get the video processing status for a course
  */
-export async function GET(req: Request, props: { params: Promise<{ slug: string }> }) {
+export async function GET(req: Request, props: { params: Promise<{ courseId: string }> }) {
   const params = await props.params
   try {
-    const slug = Number(params.slug)
-
-    if (!slug) {
-      return NextResponse.json({ error: "Invalid course slug" }, { status: 400 })
+    const courseId = Number(params.courseId)
+    
+    if (isNaN(courseId)) {
+      return NextResponse.json({ error: "Invalid course ID" }, { status: 400 })
     }
     
-    const status = await videoService.getCourseVideoStatus(slug)
+    const status = await videoService.getCourseVideoStatus(courseId)
     return NextResponse.json(status)
   } catch (error) {
     console.error("Error fetching course status:", error)

@@ -72,7 +72,7 @@ export default function CoursesClient({
     queryFn: async ({ pageParam = 1 }) => {
       try {
         // Build the API URL with proper parameters
-        const apiUrl = new URL("/api/courses", window.location.origin)
+        const apiUrl = new URL("/api/course", window.location.origin)
         apiUrl.searchParams.set("page", pageParam.toString())
         apiUrl.searchParams.set("limit", ITEMS_PER_PAGE.toString())
 

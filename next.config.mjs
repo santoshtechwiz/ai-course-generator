@@ -31,13 +31,28 @@ const nextConfig = {
     ],
     minimumCacheTTL: 60, // Cache images for at least 60 seconds
   },
-
   // Rewrites
   async rewrites() {
     return [
       {
         source: "/sitemap.xml",
         destination: "/api/sitemap",
+      },
+    ]
+  },
+  
+  // Redirects
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/create",
+        destination: "/dashboard/course/create",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/create/:path*",
+        destination: "/dashboard/course/create/:path*",
+        permanent: true,
       },
     ]
   },

@@ -73,7 +73,7 @@ const CTASection = () => {
                   errorText="Please try again"
                   onClickAsync={async () => {
                     await new Promise((resolve) => setTimeout(resolve, 800))
-                    router.push("/dashboard/create")
+                    router.push("/dashboard/course/create")
                     return true
                   }}
                 >
