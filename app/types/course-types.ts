@@ -283,3 +283,68 @@ export interface CourseStats {
   totalHours: number;
   completedHours: number;
 }
+
+// Module types - extending CourseUnit concept
+export interface ModuleCreateData {
+  title: string;
+  description?: string;
+  courseId: number;
+  order?: number;
+  isRequired?: boolean;
+  estimatedDuration?: number;
+}
+
+export interface ModuleUpdateData {
+  title?: string;
+  description?: string;
+  order?: number;
+  isRequired?: boolean;
+  estimatedDuration?: number;
+  isCompleted?: boolean;
+}
+
+export interface ModuleWithProgress extends CourseUnit {
+  description?: string;
+  isRequired: boolean;
+  estimatedDuration: number;
+  completionRate: number;
+  chaptersCompleted: number;
+  totalChapters: number;
+  userProgress?: {
+    isCompleted: boolean;
+    completedChapters: number[];
+    timeSpent: number;
+    lastAccessedAt: Date;
+  };
+}
+
+export interface ModuleSearchParams {
+  courseId?: number;
+  isCompleted?: boolean;
+  isRequired?: boolean;
+  orderBy?: 'title' | 'order' | 'createdAt';
+  sortDirection?: 'asc' | 'desc';
+}
+
+export interface ModuleStats {
+  totalModules: number;
+  completedModules: number;
+  inProgressModules: number;
+  averageProgress: number;
+  totalChapters: number;
+  completedChapters: number;
+  estimatedTimeRemaining: number;
+}
+
+// Module operation result types
+export interface ModuleOperationResult {
+  success: boolean;
+  message: string;
+  module?: ModuleWithProgress;
+}
+
+export interface ModuleListResult {
+  modules: ModuleWithProgress[];
+  totalCount: number;
+  stats: ModuleStats;
+}

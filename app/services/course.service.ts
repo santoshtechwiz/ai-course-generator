@@ -128,9 +128,7 @@ export class CourseService {
       limit = 20,
       sortBy = "viewCount",
       sortOrder = "desc",
-    } = options;
-
-    const result = await courseRepository.findCourses({
+    } = options;    const result = await courseRepository.findCourses({
       search,
       category,
       userId,
@@ -138,7 +136,13 @@ export class CourseService {
       limit,
       sortBy,
       sortOrder,
-    });
+    }) as {
+      courses: CourseWithRelations[];
+      totalCount: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
 
     // Process courses to add calculated fields
     const formattedCourses = result.courses.map((course: CourseWithRelations) => {
@@ -409,6 +413,41 @@ export class CourseService {
         }
       }
     }, processingTime);
+  }
+
+  /**
+   * Get module details by ID (module is equivalent to courseUnit)
+   */
+  async getModuleById(moduleId: number, userId: string) {
+    return courseRepository.getModuleById(moduleId, userId);
+  }
+
+  /**
+   * Update module information
+   */
+  async updateModule(moduleId: number, userId: string, updateData: any) {
+    return courseRepository.updateModule(moduleId, userId, updateData);
+  }
+
+  /**
+   * Delete a module
+   */
+  async deleteModule(moduleId: number, userId: string) {
+    return courseRepository.deleteModule(moduleId, userId);
+  }
+
+  /**
+   * Create a new module for a course
+   */
+  async createModule(userId: string, moduleData: any) {
+    return courseRepository.createModule(userId, moduleData);
+  }
+
+  /**
+   * Get all modules for a course
+   */
+  async getModulesForCourse(courseId: number, userId: string) {
+    return courseRepository.getModulesForCourse(courseId, userId);
   }
 }
 

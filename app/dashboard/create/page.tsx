@@ -1,3 +1,5 @@
+
+
 import RandomQuote from "@/components/RandomQuote";
 import { BookOpen, Lightbulb, TrendingUp, ArrowRight } from "lucide-react";
 import { getCourseDetails } from "@/app/actions/getCourseDetails";
@@ -6,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { QueryParams } from "@/app/types/types";
 import PopularCourses from "@/app/dashboard/course/components/PopularCourses";
-import { QuizCourseWrapper } from "../../(quiz)/components/QuizCourseWrapper";
+import { QuizCourseWrapper } from "../(quiz)/components/QuizCourseWrapper";
 import { generateSeoMetadata } from "@/lib/utils/seo-utils";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +63,7 @@ const Page = async ({
       : "";
 
     courseData = await getCourseDetails();
+    console.log("Fetched course data:", courseData);
   } catch (error) {
     console.warn("Failed to fetch course details:", error);
   }
@@ -74,7 +77,7 @@ const Page = async ({
     description:
       "Design and build your own interactive course with our intuitive course creation tools.",
     creator: { "@type": "Organization", name: "Course AI" },
-    url: `${baseUrl}/dashboard/course/create`,
+    url: `${baseUrl}/dashboard/explore`,
   };
 
   const breadcrumbSchema = {
@@ -92,7 +95,7 @@ const Page = async ({
         "@type": "ListItem",
         position: 3,
         name: "Create Course",
-        item: `${baseUrl}/dashboard/course/create`,
+        item: `${baseUrl}/dashboard/explore`,
       },
     ],
   };

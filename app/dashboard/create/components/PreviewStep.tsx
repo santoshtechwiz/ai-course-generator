@@ -1,14 +1,18 @@
+import type { UseFormWatch } from "react-hook-form"
 import { Badge } from "@/components/ui/badge"
+import type { CreateCourseInput } from "@/schema/schema"
 import { BookOpen } from "lucide-react"
 
 interface PreviewStepProps {
-  titleValue: string
-  descriptionValue: string
-  categoryValue: string
-  units: string[]
+  watch: UseFormWatch<CreateCourseInput>
 }
 
-export function PreviewStep({ titleValue, descriptionValue, categoryValue, units }: PreviewStepProps) {
+export function PreviewStep({ watch }: PreviewStepProps) {
+  const title = watch("title")
+  const description = watch("description")
+  const category = watch("category")
+  const units = watch("units")
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -18,14 +22,14 @@ export function PreviewStep({ titleValue, descriptionValue, categoryValue, units
 
       <div className="space-y-4 p-6 bg-muted rounded-lg">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">{titleValue || "Course Title"}</h2>
-          {categoryValue && (
+          <h2 className="text-2xl font-bold">{title || "Course Title"}</h2>
+          {category && (
             <Badge variant="secondary" className="text-xs font-medium">
-              {categoryValue}
+              {category}
             </Badge>
           )}
         </div>
-        <p className="text-muted-foreground">{descriptionValue || "Course Description"}</p>
+        <p className="text-muted-foreground">{description || "Course Description"}</p>
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center">
             <BookOpen className="mr-2 h-5 w-5" />

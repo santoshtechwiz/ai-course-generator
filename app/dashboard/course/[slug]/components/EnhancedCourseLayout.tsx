@@ -7,8 +7,6 @@ import { Home, ChevronRight, Menu } from "lucide-react"
 import { FullCourseType } from "@/app/types/types"
 import MainContent from "./MainContent"
 import { cn } from "@/lib/utils"
-import CourseActions from "./CourseActions"
-
 
 interface EnhancedCourseLayoutProps {
   course: FullCourseType
@@ -43,7 +41,6 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
         >
           {theatreMode ? "Exit Theater Mode" : "Theater Mode"}
         </Button>
-        <CourseActions slug={course.slug} />
       </header>
 
       {/* Main content with theatre mode support */}
