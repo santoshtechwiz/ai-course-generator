@@ -1,21 +1,9 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
-  Eye,
-  EyeOff,
-  Share2,
-  Trash2,
-  Download,
-  Heart,
-  Lock,
-  Settings,
-  Loader2,
-  Sparkles,
-  TrendingUp,
-  Users,
+  Eye, EyeOff, Share2, Trash2, Download, Heart, Lock, Settings, Loader2, TrendingUp,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -25,10 +13,9 @@ import QuizPDFDownload from "@/app/dashboard/create/components/QuizPdfButton"
 import { useAuth } from "@/modules/auth"
 import { ConfirmDialog } from "./ConfirmDialog"
 
-
 interface QuizActionsProps {
   quizId: string
-  quizData?: any // Adjust type as needed
+  quizData?: any
   quizSlug: string
   initialIsPublic: boolean
   initialIsFavorite: boolean
@@ -39,12 +26,10 @@ interface QuizActionsProps {
 }
 
 export function QuizActions({
-  quizId,
-  quizData,
   quizSlug,
+  quizData,
   initialIsPublic,
   initialIsFavorite,
-  userId,
   ownerId,
   className,
   children,
@@ -53,55 +38,28 @@ export function QuizActions({
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
   const [isPublicLoading, setIsPublicLoading] = useState(false)
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
-  
-  const router = useRouter()
-  const { user, subscription, isAuthenticated, isLoading } = useAuth()
-    // Extract values from auth state
-  const currentUserId = user?.id || null
-  const canDownloadPDF = subscription?.features?.advancedAnalytics || false
-  const isOwner = currentUserId === ownerId // Use ownerId from props, not userId
-  
-  console.log("QuizActions Debug:", { 
-    currentUserId, 
-    ownerId,
-    isOwner,
-    canDownloadPDF, 
-    isAuthenticated, 
-    isLoading,
-    user: user ? { id: user.id, email: user.email } : null,
-    subscription: subscription ? { 
-      plan: subscription.plan, 
-      status: subscription.status,
-      features: subscription.features 
-    } : null
-  });
-   const promptLogin = () => {
-    toast({
-      title: "Authentication required",
-      description: "Please log in to perform this action",
-      variant: "destructive",
-    })
-  }
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  const promptUpgrade = () => {
-    toast({
-      title: "Premium feature",
-      description: "Upgrade to Premium to download PDFs",
-      variant: "destructive",
-    })
-  }  
-  const updateQuiz = async (field: string, value: boolean) => {
+  const router = useRouter()
+  const { user, subscription, isAuthenticated } = useAuth()
+  const currentUserId = user?.id
+  const canDownloadPDF = subscription?.features?.advancedAnalytics || false
+  const isOwner = currentUserId === ownerId
+
+  const promptLogin = () =>
+    toast({ title: "Authentication required", description: "Please log in to perform this action", variant: "destructive" })
+
+  const promptUpgrade = () =>
+    toast({ title: "Premium feature", description: "Upgrade to Premium to download PDFs", variant: "destructive" })
+
+  const updateQuiz = async (field: "isPublic" | "isFavorite", value: boolean) => {
+    const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
     if (!isAuthenticated || !currentUserId) return promptLogin()
     if (field === "isPublic" && !isOwner) {
-      toast({
-        title: "Permission denied",
-        description: "Only the quiz owner can change visibility",
-        variant: "destructive",
-      })
+      toast({ title: "Permission denied", description: "Only the quiz owner can change visibility", variant: "destructive" })
       return
     }
 
-    const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
     try {
       setLoading(true)
       const res = await fetch(`/api/quizzes/common/${quizSlug}`, {
@@ -109,314 +67,191 @@ export function QuizActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: value }),
       })
-      if (!res.ok) throw new Error(res.statusText || "Update failed")
+      if (!res.ok) throw new Error("Update failed")
       field === "isPublic" ? setIsPublic(value) : setIsFavorite(value)
       toast({
-        title:
-          field === "isPublic"
-            ? value
-              ? "Quiz is now public"
-              : "Quiz is now private"
-            : value
-              ? "Added to favorites"
-              : "Removed from favorites",
+        title: field === "isPublic"
+          ? value ? "Quiz is now public" : "Quiz is now private"
+          : value ? "Added to favorites" : "Removed from favorites",
       })
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: err.message, variant: "destructive" })
     } finally {
       setLoading(false)
     }
   }
+
   const handleShare = async () => {
     try {
       const shareUrl = `${window.location.origin}/quiz/${quizSlug}`
       if (navigator.share) {
-        await navigator.share({
-          title: "Check out this quiz!",
-          text: "I found this awesome quiz you might like:",
-          url: shareUrl,
-        })
+        await navigator.share({ title: "Check out this quiz!", text: "I found this awesome quiz you might like:", url: shareUrl })
       } else {
         await navigator.clipboard.writeText(shareUrl)
         toast({ title: "Link copied", description: "Quiz link copied to clipboard" })
       }
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        toast({
-          title: "Sharing failed",
-          description: "Please try again",
-          variant: "destructive",
-        })
+        toast({ title: "Sharing failed", description: "Please try again", variant: "destructive" })
       }
     }
-  }  
-  const actionButtons = [
+  }
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true)
+      await toast.promise(
+        fetch(`/api/quizzes/common/${quizSlug}`, { method: "DELETE" }),
+        {
+          loading: "Deleting quiz...",
+          success: "Quiz deleted successfully",
+          error: "Failed to delete quiz",
+        }
+      )
+      setTimeout(() => router.push("/dashboard"), 500)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const baseButtonClasses =
+    "group relative flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-4 py-3 rounded-xl border text-sm font-semibold transition-all duration-200 shadow-sm sm:min-w-[120px] min-w-[40px] h-12 sm:h-14"
+
+  const buttonStyles = {
+    favorite: "bg-pink-100 border-pink-200 text-pink-700 hover:bg-pink-200 dark:bg-pink-950 dark:border-pink-800 dark:text-pink-300",
+    share: "bg-blue-100 border-blue-200 text-blue-700 hover:bg-blue-200 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300",
+    download: canDownloadPDF
+      ? "bg-emerald-100 border-emerald-200 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-300"
+      : "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400",
+    visibility: isPublic
+      ? "bg-green-100 border-green-200 text-green-700 hover:bg-green-200 dark:bg-green-950 dark:border-green-800 dark:text-green-300"
+      : "bg-yellow-100 border-yellow-200 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-300",
+    delete: "bg-red-100 border-red-200 text-red-700 hover:bg-red-200 dark:bg-red-950 dark:border-red-800 dark:text-red-300",
+  }
+
+  const actionButtons = useMemo(() => [
     {
       id: "favorite",
-      icon: Heart,
       label: "Favorite",
-      onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
+      icon: Heart,
       loading: isFavoriteLoading,
+      onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
       disabled: !isAuthenticated,
-      active: isFavorite && isAuthenticated,
-      badge: !isAuthenticated ? "Sign In" : null,
-      badgeColor: !isAuthenticated ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" : "",
+      active: isFavorite,
+      badge: !isAuthenticated ? "Sign In" : undefined,
     },
     {
       id: "share",
-      icon: Share2,
       label: "Share",
-      onClick: handleShare,
+      icon: Share2,
       loading: false,
+      onClick: handleShare,
       disabled: false,
-      active: false,
       badge: "Popular",
-      badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
     },
     {
       id: "download",
-      icon: Download,
       label: "PDF",
-      onClick: !isAuthenticated ? promptLogin : !canDownloadPDF ? promptUpgrade : undefined,
+      icon: Download,
       loading: false,
+      onClick: !isAuthenticated ? promptLogin : !canDownloadPDF ? promptUpgrade : undefined,
       disabled: !isAuthenticated || !canDownloadPDF,
-      active: false,
       badge: !isAuthenticated ? "Sign In" : canDownloadPDF ? "Premium" : "Locked",
-      badgeColor: !isAuthenticated 
-        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-        : canDownloadPDF
-        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-      lockIcon: isAuthenticated && !canDownloadPDF,
     },
-    ...(isOwner && isAuthenticated
-      ? [
-        {
-          id: "visibility",
-          icon: isPublic ? Eye : EyeOff,
-          label: isPublic ? "Public" : "Private",
-          onClick: () => updateQuiz("isPublic", !isPublic),
-          loading: isPublicLoading,
-          disabled: false,
-          active: isPublic,
-          badge: isPublic ? "Live" : "Draft",
-          badgeColor: isPublic
-            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-        },
-        {
-          id: "delete",
-          icon: Trash2,
-          label: "Delete",
-          onClick: null,
-          loading: false,
-          disabled: false,
-          active: false,
-          badge: "Danger",
-          badgeColor: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-        },
-      ]
-      : []),
-  ]
+    ...(isOwner && isAuthenticated ? [
+      {
+        id: "visibility",
+        label: isPublic ? "Public" : "Private",
+        icon: isPublic ? Eye : EyeOff,
+        loading: isPublicLoading,
+        onClick: () => updateQuiz("isPublic", !isPublic),
+        disabled: false,
+        badge: isPublic ? "Live" : "Draft",
+        active: isPublic,
+      },
+      {
+        id: "delete",
+        label: "Delete",
+        icon: Trash2,
+        loading: isDeleting,
+        onClick: handleDelete,
+        disabled: false,
+        badge: "Danger",
+      },
+    ] : [])
+  ], [isAuthenticated, isFavorite, isFavoriteLoading, isPublic, isPublicLoading, isDeleting, canDownloadPDF])
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className={cn("w-full", className)}>
-        {/* Compact Header */}
-        <div className="flex items-center justify-between mb-3">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Settings className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+              <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Quiz Actions
-            </span>
+            <span className="text-lg font-semibold text-gray-800 dark:text-white">Quiz Actions</span>
           </div>
-          <div className="flex gap-1">
-            <Badge variant="secondary" className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-900/20">
-              <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
-              Popular
-            </Badge>
-          </div>
+          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-900/20">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            Popular
+          </Badge>
         </div>
 
-        {/* Compact Action Buttons */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 shadow-sm">
-          <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-            {actionButtons.map((action) => {
-              const Icon = action.icon
-              
-              // Special handling for download button
-              if (action.id === "download") {
-                return (
-                  <Tooltip key={action.id}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className={cn(
-                          "relative flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 cursor-pointer hover:shadow-sm",
-                          !isAuthenticated
-                            ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300"
-                            : canDownloadPDF
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-300"
-                            : "bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400",
-                        )}
-                        onClick={!isAuthenticated ? promptLogin : !canDownloadPDF ? promptUpgrade : undefined}
-                      >
-                        {action.badge && (
-                          <span
-                            className={cn(
-                              "absolute -top-1 -right-1 px-1 py-0.5 text-[9px] rounded-full font-medium leading-none",
-                              action.badgeColor,
-                            )}
-                          >
-                            {action.badge}
-                          </span>
-                        )}
-                        {currentUserId && !canDownloadPDF && (
-                          <Lock className="h-3 w-3 text-gray-400" />
-                        )}
-                        {currentUserId && canDownloadPDF ? (
-                          <QuizPDFDownload
-                            quizData={quizData}
-                            config={{ showOptions: true, showAnswers: true }}
-                            variant="ghost"
-                            size="sm"
-                            className="!p-0 !m-0 !h-4 !w-4"
-                          />
-                        ) : (
-                          <Icon className="h-4 w-4" />
-                        )}
-                        <span className="hidden sm:inline">{action.label}</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        {!isAuthenticated 
-                          ? "Sign in to download PDF" 
-                          : canDownloadPDF 
-                          ? "Download this quiz as PDF" 
-                          : "Upgrade to Premium to download PDF"
-                        }
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                )
-              }
-
-              // Special handling for delete button
-              if (action.id === "delete") {
-                return (
-                  <Tooltip key={action.id}>
-                    <TooltipTrigger asChild>
-                      <ConfirmDialog
-                        onConfirm={async () => {
-                          try {
-                            const res = await fetch(`/api/quizzes/common/${quizSlug}`, {
-                              method: "DELETE",
-                              headers: { "Content-Type": "application/json" },
-                            })
-                            if (!res.ok) throw new Error("Failed to delete")
-                            toast({ title: "Deleted", description: "Quiz deleted successfully" })
-                            router.push("/dashboard")
-                          } catch (err: any) {
-                            toast({ title: "Error", description: err.message, variant: "destructive" })
-                          }
-                        }}
-                        trigger={
-                          <div
-                            className={cn(
-                              "relative flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 cursor-pointer hover:shadow-sm",
-                              "bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300"
-                            )}
-                          >
-                            {action.badge && (
-                              <span className="absolute -top-1 -right-1 px-1 py-0.5 text-[9px] rounded-full font-medium leading-none bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-                                {action.badge}
-                              </span>
-                            )}
-                            {action.loading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Icon className="h-4 w-4" />
-                            )}
-                            <span className="hidden sm:inline">{action.label}</span>
-                          </div>
-                        }
-                      >
-                        <div className="text-center space-y-3">
-                          <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                            <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
-                          </div>
-                          <h3 className="font-semibold text-lg">Delete Quiz</h3>
-                          <p className="text-sm text-muted-foreground">
-                            This action is permanent. Are you sure?
-                          </p>
-                        </div>
-                      </ConfirmDialog>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete this quiz permanently</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )
-              }
-
-              // Regular action buttons
-              return (
-                <Tooltip key={action.id}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={cn(
-                        "relative flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 cursor-pointer hover:shadow-sm",
-                        action.active && "ring-1 ring-offset-1 ring-blue-500",
-                        action.disabled && "opacity-60 cursor-not-allowed",
-                        action.id === "favorite"
-                          ? !isAuthenticated
-                            ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300"
-                            : action.active
-                            ? "bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100 dark:bg-pink-950/20 dark:border-pink-800 dark:text-pink-300"
-                            : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300"
-                          : action.id === "share"
-                          ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300"
-                          : action.id === "visibility"
-                          ? action.active
-                            ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-950/20 dark:border-green-800 dark:text-green-300"
-                            : "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-300"
-                          : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300"
-                      )}
-                      onClick={!action.disabled && action.onClick ? action.onClick : undefined}
-                    >
-                      {action.badge && (
-                        <span
-                          className={cn(
-                            "absolute -top-1 -right-1 px-1 py-0.5 text-[9px] rounded-full font-medium leading-none",
-                            action.badgeColor,
+        {/* Toolbar */}
+        <div className="w-full rounded-2xl border bg-white dark:bg-zinc-900 shadow-md p-4 sm:p-6">
+          <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
+            {actionButtons.map(({ id, label, icon: Icon, loading, disabled, onClick, badge, active }) => (
+              <Tooltip key={id}>
+                <TooltipTrigger asChild>
+                  {id === "delete" ? (
+                    <ConfirmDialog
+                      onConfirm={onClick}
+                      trigger={
+                        <div className={cn(baseButtonClasses, buttonStyles[id as keyof typeof buttonStyles], active && "ring-2 ring-offset-2 ring-blue-400", disabled && "opacity-60 cursor-not-allowed")}>
+                          {badge && (
+                            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] rounded-full font-bold bg-white/90 text-gray-700 dark:bg-black/50 dark:text-white">
+                              {badge}
+                            </span>
                           )}
-                        >
-                          {action.badge}
+                          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
+                          <span className="hidden sm:inline">{label}</span>
+                        </div>
+                      }
+                    >
+                      <div className="text-center space-y-3">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                          <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+                        </div>
+                        <h3 className="font-semibold text-lg">Delete Quiz</h3>
+                        <p className="text-sm text-muted-foreground">This action is permanent. Are you sure?</p>
+                      </div>
+                    </ConfirmDialog>
+                  ) : (
+                    <div
+                      className={cn(baseButtonClasses, buttonStyles[id as keyof typeof buttonStyles], active && "ring-2 ring-offset-2 ring-blue-400", disabled && "opacity-60 cursor-not-allowed")}
+                      onClick={!disabled ? onClick : undefined}
+                    >
+                      {badge && (
+                        <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] rounded-full font-bold bg-white/90 text-gray-700 dark:bg-black/50 dark:text-white">
+                          {badge}
                         </span>
                       )}
-                      {action.loading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Icon className="h-4 w-4" />
-                      )}
-                      <span className="hidden sm:inline">{action.label}</span>
+                      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
+                      <span className="hidden sm:inline">{label}</span>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{action.label}</p>
-                  </TooltipContent>
-                </Tooltip>
-              )
-            })}
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{label}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
           </div>
 
-          {children && <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">{children}</div>}
-        </div>      </div>
+          {children && <div className="mt-6 border-t pt-4 border-gray-200 dark:border-gray-700">{children}</div>}
+        </div>
+      </div>
     </TooltipProvider>
   )
 }

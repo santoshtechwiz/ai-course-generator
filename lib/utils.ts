@@ -1,8 +1,10 @@
 import { nanoid } from "nanoid"
 import slugify from "slugify"
-import type { QuizType } from "@/app/types/types"
 import clsx, { ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+
+// Define a local QuizType for this file
+type QuizType = 'blanks' | 'openended' | 'mcq' | 'code' | 'flashcard';
 
 
 export function copyToClipboard(text: string): Promise<void> {
@@ -79,4 +81,19 @@ export const getAIModel = (userType: string): string => {
     default:
       return "gpt-3.5-turbo-1106"
   }
+}
+
+/**
+ * Get the AI model to use based on user type
+ * 
+ * @param userType The user type (FREE, BASIC, PREMIUM, ULTIMATE)
+ * @returns The AI model to use
+ */
+export const getAIModelFromConfig = (userType: string): string => {
+  // Import this way to avoid circular dependencies
+  const { getAIProviderConfig } = require('./ai/config');
+  const config = getAIProviderConfig();
+  
+  // Return the model for the user type, or default to FREE
+  return config.models[userType] || config.models.FREE;
 }
