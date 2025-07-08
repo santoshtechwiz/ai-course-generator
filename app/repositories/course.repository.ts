@@ -421,54 +421,71 @@ export class CourseRepository extends BaseRepository<any> {
 
     return course && course.userId === userId;
   }
-
   /**
    * Update course chapters (batch update for course editor)
    */
   async updateCourseChapters(data: CourseChaptersUpdate) {
-    await prisma.$transaction(async (tx) => {
-      for (const unit of data.units) {
-        // Process chapters for this unit
-        for (const [index, chapter] of unit.chapters.entries()) {
-          if (chapter.id) {
-            // Update existing chapter
-            await tx.chapter.update({
-              where: { id: chapter.id },
-              data: {
-                title: chapter.title,
-                videoId: chapter.videoId,
-                order: index, // Use the existing 'order' field instead of 'position'
-                youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
-                // Mark as custom chapter in the summary field if isCustom is true
-                summary: chapter.isCustom ? `Custom chapter: ${chapter.title}` : null,
-              },
-            });
-          } else {
-            // Create new chapter
-            await tx.chapter.create({
-              data: {
-                title: chapter.title,
-                videoId: chapter.videoId,
-                unitId: unit.id,
-                order: index, // Use the existing 'order' field
-                youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
-                videoStatus: chapter.videoId ? "completed" : "idle",
-                // Mark as custom chapter in the summary field
-                summary: chapter.isCustom ? "Custom chapter created by user" : null,
-                summaryStatus: "COMPLETED", // Set appropriate status
-              },
-            });
+    try {
+      // Use transaction options with a longer timeout
+      await prisma.$transaction(async (tx) => {
+        // Log start of transaction
+        console.log(`Starting transaction for course chapters update - courseId: ${data.courseId}`);
+        
+        // Process chapters by unit
+        for (const unit of data.units) {
+          // Process chapters for this unit
+          for (const [index, chapter] of unit.chapters.entries()) {
+            try {
+              if (chapter.id) {
+                // Update existing chapter
+                await tx.chapter.update({
+                  where: { id: chapter.id },
+                  data: {
+                    title: chapter.title,
+                    videoId: chapter.videoId,
+                    order: index, // Use the existing 'order' field instead of 'position'
+                    youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
+                    // Mark as custom chapter in the summary field if isCustom is true
+                    summary: chapter.isCustom ? `Custom chapter: ${chapter.title}` : null,
+                  },
+                });
+              } else {
+                // Create new chapter
+                await tx.chapter.create({
+                  data: {
+                    title: chapter.title,
+                    videoId: chapter.videoId,
+                    unitId: unit.id,
+                    order: index, // Use the existing 'order' field
+                    youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
+                    videoStatus: chapter.videoId ? "completed" : "idle",
+                    // Mark as custom chapter in the summary field
+                    summary: chapter.isCustom ? "Custom chapter created by user" : null,
+                    summaryStatus: "COMPLETED", // Set appropriate status
+                  },
+                });
+              }
+            } catch (chapterError) {
+              console.error(`Error processing chapter for unit ${unit.id}, chapter ${chapter.title}:`, chapterError);
+              // Throw the error to fail the transaction
+              throw chapterError;
+            }
           }
         }
-      }
-    });
+      }, {
+        maxWait: 15000, // 15s max waiting time
+        timeout: 60000   // 60s transaction timeout - increased for larger batches
+      });
 
-    // Clear course cache
-    courseCache.del(`course_${data.courseId}`);
-    courseCache.del(`course_${data.slug}`);
-    courseCache.del(`chapters_course_${data.courseId}`);
+      // Clear course cache after successful transaction
+      courseCache.del(`course_${data.courseId}`);
+      courseCache.del(`course_${data.slug}`);
+      courseCache.del(`chapters_course_${data.courseId}`);
 
-    return { success: true, message: "Course chapters updated successfully" };
+      return { success: true, message: "Course chapters updated successfully" };    } catch (error: any) {
+      console.error(`Failed to update course chapters for courseId: ${data.courseId}`, error);
+      return { success: false, message: `Failed to update chapters: ${error?.message || 'Unknown error'}` };
+    }
   }
 
   /**
