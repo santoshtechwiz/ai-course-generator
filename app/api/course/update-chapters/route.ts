@@ -57,85 +57,21 @@ export async function POST(req: Request) {
       )
     }
 
-    // Verify course ownership
-    const course = await prisma.course.findUnique({
-      where: { id: validatedData.courseId },
-      select: { userId: true },
-    })
-
-    if (!course || course.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized access to this course" }, { status: 403 })
-    }
-
-    // Process each unit and its chapters
+    // Use service to update course chapters
     try {
-      await prisma.$transaction(async (tx) => {
-        for (const unit of validatedData.units) {
-          // Process chapters for this unit
-          for (const [index, chapter] of unit.chapters.entries()) {
-            if (chapter.id) {
-              // Update existing chapter
-              await tx.chapter.update({
-                where: { id: chapter.id },
-                data: {
-                  title: chapter.title,
-                  videoId: chapter.videoId,
-                  order: index, // Use the existing 'order' field instead of 'position'
-                  youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
-                  // Add isCustom field if it exists in your schema
-                  // If not, you can track custom chapters by setting a flag in the summary field
-                  summary: chapter.isCustom ? `Custom chapter: ${chapter.title}` : null,
-                },
-              })
-            } else {
-              // Create new chapter
-              await tx.chapter.create({
-                data: {
-                  title: chapter.title,
-                  videoId: chapter.videoId,
-                  unitId: unit.id,
-                  order: index, // Use the existing 'order' field
-                  youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
-                  videoStatus: chapter.videoId ? "completed" : "idle",
-                  // Mark as custom chapter in the summary field if isCustom doesn't exist
-                  summary: "Custom chapter created by user",
-                  summaryStatus: "COMPLETED", // Set appropriate status
-                },
-              })
-            }
-          }
-        }
+      const result = await courseService.updateCourseChapters(validatedData, session.user.id)
+      
+      return NextResponse.json({
+        success: true,
+        message: "Course chapters updated successfully",
+        slug: validatedData.slug,
       })
-    } catch (dbError) {
-      // Handle specific database errors
-      if (dbError instanceof Prisma.PrismaClientKnownRequestError) {
-        if (dbError.code === "P2025") {
-          return NextResponse.json(
-            {
-              error: "Record not found",
-              details: "The chapter or unit you're trying to update doesn't exist",
-            },
-            { status: 404 },
-          )
-        }
-        if (dbError.code === "P2002") {
-          return NextResponse.json(
-            {
-              error: "Unique constraint violation",
-              details: "A duplicate entry was detected",
-            },
-            { status: 409 },
-          )
-        }
+    } catch (serviceError) {
+      if ((serviceError as Error).message === "Unauthorized access to this course") {
+        return NextResponse.json({ error: "Unauthorized access to this course" }, { status: 403 })
       }
-      throw dbError
+      throw serviceError
     }
-
-    return NextResponse.json({
-      success: true,
-      message: "Course chapters updated successfully",
-      slug: validatedData.slug,
-    })
   } catch (error) {
     console.error("Error updating course chapters:", error)
 

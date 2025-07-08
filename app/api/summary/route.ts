@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import NodeCache from "node-cache"
-import { prisma } from "@/lib/db"
+import { CourseService } from "@/app/services"
 import YoutubeService from "@/services/youtubeService"
 import { generateVideoSummary } from "@/lib/chatgptAndGoogleAi"
 
@@ -19,10 +19,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { chapterId } = bodyParser.parse(body)
 
-    const chapter = await prisma.chapter.findUnique({
-      where: { id: chapterId },
-      select: { id: true, videoId: true, summary: true, summaryStatus: true },
-    })
+    const courseService = new CourseService()
+    const chapter = await courseService.getChapterById(chapterId)
 
     if (!chapter) {
       return NextResponse.json({ success: false, error: "Chapter not found" }, { status: 404 })
@@ -33,28 +31,28 @@ export async function POST(req: NextRequest) {
     }
 
     if (!chapter.videoId) {
-      await updateChapterSummaryStatus(chapterId, "no_summary_available")
+      await courseService.updateChapterSummaryStatus(chapterId, "no_summary_available")
       return NextResponse.json({ success: false, message: "No video ID available for summary generation" })
     }
 
     // Check cache first
-    const cachedSummary = summaryCache.get<string>(chapter.videoId)
+    const cachedSummary = summaryCache.get<string>(chapter.videoId as string)
     if (cachedSummary) {
-      await updateChapterSummary(chapterId, cachedSummary)
+      await courseService.updateChapterSummary(chapterId, cachedSummary)
       return NextResponse.json({ success: true, data: cachedSummary })
     }
 
     // Use processingCache as a lock
-    if (processingCache.get<boolean>(chapter.videoId)) {
+    if (processingCache.get<boolean>(chapter.videoId as string)) {
       return NextResponse.json({ success: true, message: "Summary generation in progress", status: "processing" })
     }
 
     // Set processing status in cache
-    processingCache.set(chapter.videoId, true)
+    processingCache.set(chapter.videoId as string, true)
 
     // Generate summary
     try {
-      const summary = await generateAndSaveSummary(chapterId, chapter.videoId)
+      const summary = await generateAndSaveSummary(chapterId, chapter.videoId as string)
       return NextResponse.json({ success: true, data: summary })
     } catch (error) {
       console.error(`Error in summary generation for chapter ${chapterId}:`, error)
@@ -105,18 +103,14 @@ async function fetchAndGenerateSummary(videoId: string): Promise<string | null> 
 }
 
 async function updateChapterSummary(chapterId: number, summary: string) {
-  await prisma.chapter.update({
-    where: { id: chapterId },
-    data: { summary, summaryStatus: "completed" },
-  })
+  const courseService = new CourseService()
+  await courseService.updateChapterSummary(chapterId, summary)
 }
 
 async function updateChapterSummaryStatus(
   chapterId: number,
   status: "processing" | "completed" | "error" | "no_summary_available",
 ) {
-  await prisma.chapter.update({
-    where: { id: chapterId },
-    data: { summaryStatus: status },
-  })
+  const courseService = new CourseService()
+  await courseService.updateChapterSummaryStatus(chapterId, status)
 }

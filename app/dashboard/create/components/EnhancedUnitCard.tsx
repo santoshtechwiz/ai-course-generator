@@ -4,16 +4,16 @@ import React from "react"
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Droppable, Draggable } from "react-beautiful-dnd"
-import { GripVertical, Plus, Pencil, Eye } from "lucide-react"
+import { GripVertical, Plus, Pencil, Eye, X } from "lucide-react"
 import { cn } from "@/lib/tailwindUtils"
 import type { Chapter, CourseUnit } from "@prisma/client"
-import ChapterCard from "./ChapterCard"
+import EnhancedChapterCard from "./EnhancedChapterCard"
 import ChapterEditor from "./ChapterEditor"
 import AddChapterForm from "./AddChapterForm"
-import type { ChapterCardHandler } from "./ChapterCard"
-import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
+import type { ChapterCardHandler } from "./EnhancedChapterCard"
+import type { VideoStatus } from "../hooks/useVideoProcessing"
 
-interface UnitCardProps {
+interface EnhancedUnitCardProps {
   unit: CourseUnit & { chapters: Chapter[] }
   unitIndex: number
   chapterRefs: Record<string, React.RefObject<ChapterCardHandler>>
@@ -23,7 +23,7 @@ interface UnitCardProps {
   addingToUnitId: string | null
   newChapter: { title: string; youtubeId: string }
   isGeneratingVideos: boolean
-  generationStatuses: Record<string, ChapterGenerationStatus>
+  videoStatuses: Record<number, VideoStatus>
   onChapterComplete: (chapterId: string) => void
   onStartEditingChapter: (chapter: Chapter) => void
   onSaveChapterTitle: () => void
@@ -37,9 +37,10 @@ interface UnitCardProps {
   onCancelAddingChapter: () => void
   extractYoutubeIdFromUrl: (url: string) => string | null
   onGenerateVideo: (chapter: Chapter) => Promise<boolean>
+  onCancelProcessing: (chapterId: number) => Promise<boolean>
 }
 
-const UnitCard = React.memo<UnitCardProps>(
+const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
   ({
     unit,
     unitIndex,
@@ -50,7 +51,7 @@ const UnitCard = React.memo<UnitCardProps>(
     addingToUnitId,
     newChapter,
     isGeneratingVideos,
-    generationStatuses,
+    videoStatuses,
     onChapterComplete,
     onStartEditingChapter,
     onSaveChapterTitle,
@@ -64,6 +65,7 @@ const UnitCard = React.memo<UnitCardProps>(
     onCancelAddingChapter,
     extractYoutubeIdFromUrl,
     onGenerateVideo,
+    onCancelProcessing,
   }) => {
     return (
       <Card>
@@ -72,7 +74,9 @@ const UnitCard = React.memo<UnitCardProps>(
             <span className="text-sm font-medium text-muted-foreground">Unit {unitIndex + 1}</span>
             <span className="text-lg font-semibold mt-1">{unit.name}</span>
           </CardTitle>
-        </CardHeader>        <CardContent className="space-y-2">          <Droppable droppableId={`unit-${String(unit.id)}`} isDropDisabled={false} isCombineEnabled={false}>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Droppable droppableId={`unit-${String(unit.id)}`} isDropDisabled={false} isCombineEnabled={false}>
             {(provided, snapshot) => (
               <div
                 {...provided.droppableProps}
@@ -115,17 +119,26 @@ const UnitCard = React.memo<UnitCardProps>(
                                     <Eye className="h-4 w-4" />
                                   </Button>
                                 )}
+                                {videoStatuses[chapter.id]?.status === "processing" && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => onCancelProcessing(chapter.id)}
+                                    className="text-red-500"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             )}
-                            <ChapterCard
+                            <EnhancedChapterCard
                               ref={chapterRefs[String(chapter.id)]}
                               chapter={chapter}
                               chapterIndex={chapterIndex}
                               onChapterComplete={onChapterComplete}
                               isCompleted={completedChapters.has(String(chapter.id))}
-                              isGenerating={isGeneratingVideos}
-                              hideVideoControls={true}
-                              generationStatus={generationStatuses[String(chapter.id)]}
+                              isGeneratingVideos={isGeneratingVideos}
+                              hideVideoControls={false}
                               onGenerateVideo={onGenerateVideo}
                               isFree={chapterIndex === 0} // First chapter in each unit is free
                             />
@@ -169,6 +182,6 @@ const UnitCard = React.memo<UnitCardProps>(
   },
 )
 
-UnitCard.displayName = "UnitCard"
+EnhancedUnitCard.displayName = "EnhancedUnitCard"
 
-export default UnitCard
+export default EnhancedUnitCard

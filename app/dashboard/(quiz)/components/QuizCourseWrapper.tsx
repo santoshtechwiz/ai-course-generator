@@ -13,8 +13,9 @@ import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCa
 import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
 import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
-import CreateCourseForm from "@/app/dashboard/course/create/components/CreateCourseForm"
+
 import { useAuth } from "@/modules/auth"
+import CreateCourseForm from "../../create/components/CreateCourseForm"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard"
 

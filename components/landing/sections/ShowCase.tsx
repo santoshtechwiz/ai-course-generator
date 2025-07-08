@@ -598,11 +598,9 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
   const handleNavigation = async () => {
     setIsNavigating(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      // Fix navigation to go to create pages instead
+      await new Promise((resolve) => setTimeout(resolve, 800))      // Fix navigation to go to create pages instead
       if (product.type === "course") {
-        router.push(`/dashboard/create/course`)
+        router.push(`/dashboard/create`)
       } else if (product.type === "quiz" && product.quizType) {
         router.push(`/dashboard/create/${product.quizType == "blanks" ? "blanks" : product.quizType}`)
       }

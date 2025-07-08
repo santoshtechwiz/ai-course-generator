@@ -2,7 +2,7 @@ import { BaseRepository } from "./base.repository";
 import prisma from "@/lib/db";
 import { generateSlug } from "@/lib/utils";
 import NodeCache from "node-cache";
-import type { OutputUnits } from "@/app/types/course-types";
+import type { OutputUnits, CourseChaptersUpdate } from "@/app/types/course-types";
 
 // Enhanced cache for course operations
 const courseCache = new NodeCache({
@@ -11,29 +11,6 @@ const courseCache = new NodeCache({
   useClones: false, // Disable cloning for better performance
   maxKeys: 1000, // Limit cache size
 });
-
-// Repository interfaces for type safety
-interface CourseSearchResult {
-  courses: any[];
-  totalCount: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-interface ModuleListResult {
-  modules: any[];
-  totalCount: number;
-  stats: {
-    totalModules: number;
-    completedModules: number;
-    inProgressModules: number;
-    averageProgress: number;
-    totalChapters: number;
-    completedChapters: number;
-    estimatedTimeRemaining: number;
-  };
-}
 
 /**
  * Repository for handling course data operations
@@ -94,7 +71,7 @@ export class CourseRepository extends BaseRepository<any> {
     limit?: number;
     sortBy?: string;
     sortOrder?: string;
-  }): Promise<CourseSearchResult> {
+  }) {
     // Create a cache key based on all parameters
     const cacheKey = `courses_${search || ""}_${category || ""}_${userId || ""}_${page}_${limit}_${sortBy}_${sortOrder}`;
     
@@ -304,156 +281,31 @@ export class CourseRepository extends BaseRepository<any> {
   }
 
   /**
-   * Update course details
+   * Get or create a category by name
    */
-  async update(courseId: number, data: any) {
-    const updatedCourse = await prisma.course.update({
-      where: { id: courseId },
-      data,
-      include: {
-        courseUnits: true,
-        category: true,
-      },
-    });
-    
-    // Clear cache entries for this course
-    courseCache.del(`course_${courseId}`);
-    courseCache.del(`course_${updatedCourse.slug}`);
-    courseCache.del(`course_${updatedCourse.slug}_true`);
-    
-    return updatedCourse;
-  }
-  
-  /**
-   * Update favorite status for a course
-   */
-  async updateFavoriteStatus(userId: string, courseId: number, isFavorite: boolean) {
-    if (isFavorite) {
-      return prisma.favorite.upsert({
-        where: {
-          unique_user_course: {
-            userId,
-            courseId,
-          },
-        },
-        create: { userId, courseId },
-        update: {},
-      });
-    } else {
-      return prisma.favorite.deleteMany({
-        where: { userId, courseId },
-      });
+  async getOrCreateCategory(categoryName: string) {
+    const cacheKey = `category_${categoryName}`;
+    const cachedCategory = courseCache.get<number>(cacheKey);
+
+    if (cachedCategory) {
+      return cachedCategory;
     }
-  }
-  
-  /**
-   * Get course status for a user (public and favorite status)
-   */
-  async getCourseStatusForUser(slug: string, userId: string) {
-    const cacheKey = `course_status_${slug}_${userId}`;
-    const cachedStatus = courseCache.get(cacheKey);
-    
-    if (cachedStatus) {
-      return cachedStatus;
+
+    const existingCategory = await prisma.category.findUnique({
+      where: { name: categoryName },
+    });
+
+    if (existingCategory) {
+      courseCache.set(cacheKey, existingCategory.id);
+      return existingCategory.id;
     }
-    
-    const course = await prisma.course.findUnique({
-      where: { slug: slug },
-      include: { favorites: { where: { userId } } },
+
+    const createdCategory = await prisma.category.create({
+      data: { name: categoryName },
     });
-    
-    if (course) {
-      courseCache.set(cacheKey, course, 300); // 5 minutes TTL for status
-    }
-    
-    return course;
-  }
-  
-  /**
-   * Delete a course and all related data
-   */
-  async deleteCourse(courseId: number) {
-    // Get the course to clear cache later
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { slug: true },
-    });
-    
-    await prisma.$transaction(async (tx) => {
-      // Delete related data first
-      await tx.favorite.deleteMany({ where: { courseId } });
-      await tx.courseProgress.deleteMany({ where: { courseId } });
 
-      // Delete course units and their chapters
-      const courseUnits = await tx.courseUnit.findMany({
-        where: { courseId },
-        select: { id: true },
-      });
-
-      for (const unit of courseUnits) {
-        const chapters = await tx.chapter.findMany({
-          where: { unitId: unit.id },
-          select: { id: true },
-        });
-
-        for (const chapter of chapters) {
-          await tx.courseQuiz.deleteMany({ where: { chapterId: chapter.id } });
-        }
-
-        await tx.chapter.deleteMany({ where: { unitId: unit.id } });
-      }
-
-      await tx.courseUnit.deleteMany({ where: { courseId } });
-
-      // Finally, delete the course
-      await tx.course.delete({ where: { id: courseId } });
-    });
-    
-    // Clear cache entries
-    if (course) {
-      courseCache.del(`course_${courseId}`);
-      courseCache.del(`course_${course.slug}`);
-      courseCache.del(`course_${course.slug}_true`);
-    }
-    
-    return true;
-  }
-
-  /**
-   * Get all categories for a course
-   */
-  async getAllCategories() {
-    return prisma.category.findMany();
-  }
-
-  /**
-   * Get all courses for a user
-   */
-  async getAllCoursesForUser(userId: string) {
-    return prisma.course.findMany({
-      where: { userId },
-      include: {
-        category: true,
-        ratings: true,
-        _count: {
-          select: {
-            courseUnits: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-  }
-
-  /**
-   * Find a chapter by ID
-   */
-  async findChapterById(chapterId: number) {
-    return prisma.chapter.findUnique({
-      where: { id: chapterId },
-    });
+    courseCache.set(cacheKey, createdCategory.id);
+    return createdCategory.id;
   }
 
   /**
@@ -470,67 +322,153 @@ export class CourseRepository extends BaseRepository<any> {
   }
 
   /**
-   * Update chapters for a course
+   * Find a chapter by ID
    */
-  async updateCourseChapters(data: {
-    courseId: number;
-    slug: string;
-    units: Array<{
-      id: number;
-      chapters: Array<{
-        id: number | null;
-        title: string;
-        videoId: string | null;
-        unitId: number;
-        position: number;
-        isCustom?: boolean;
-        youtubeSearchQuery?: string;
-      }>;
-    }>;
-  }) {
-    // Find the course to verify it exists
-    const course = await prisma.course.findUnique({
-      where: { id: data.courseId },
+  async findChapterById(chapterId: number) {
+    return prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+  }
+
+  /**
+   * Get chapters by course ID
+   */
+  async getChaptersByCourseId(courseId: number) {
+    const cacheKey = `chapters_course_${courseId}`;
+    const cachedChapters = courseCache.get(cacheKey);
+    
+    if (cachedChapters) {
+      return cachedChapters;
+    }
+    
+    const chapters = await prisma.chapter.findMany({
+      where: {
+        unit: {
+          courseId: courseId,
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        youtubeSearchQuery: true,
+      },
+      orderBy: {
+        id: "asc",
+      },
     });
 
-    if (!course) {
-      throw new Error("Course not found");
-    }
+    courseCache.set(cacheKey, chapters, 900); // 15 minutes cache
+    return chapters;
+  }
+  /**
+   * Update chapter summary
+   */
+  async updateChapterSummary(chapterId: number, summary: string | null) {
+    const chapter = await prisma.chapter.update({
+      where: { id: chapterId },
+      data: { 
+        summary,
+        summaryStatus: summary ? "completed" : "error"
+      },
+    });
 
-    // Process each unit and its chapters
-    for (const unit of data.units) {
-      // Process each chapter      for (const chapter of unit.chapters) {
-        if (chapter.id) {
-          // Update existing chapter
-          await prisma.chapter.update({
-            where: { id: chapter.id },
-            data: {
-              title: chapter.title,
-              videoId: chapter.videoId,
-              youtubeSearchQuery: chapter.youtubeSearchQuery || "",
-              order: chapter.position,
-            },
-          });
-        } else {
-          // Create new chapter
-          await prisma.chapter.create({
-            data: {
-              title: chapter.title,
-              videoId: chapter.videoId,
-              youtubeSearchQuery: chapter.youtubeSearchQuery || "",
-              unitId: unit.id,
-              order: chapter.position,
-            },
-          });
+    // Clear chapter cache
+    courseCache.del(`chapter_${chapterId}`);
+    
+    return chapter;
+  }
+  /**
+   * Get chapter by ID with specific fields
+   */
+  async getChapterById(chapterId: number, selectFields?: any): Promise<any> {
+    const defaultSelect = {
+      id: true,
+      videoId: true,
+      summary: true,
+      summaryStatus: true,
+    };
+
+    return await prisma.chapter.findUnique({
+      where: { id: chapterId },
+      select: selectFields || defaultSelect,
+    });
+  }
+
+  /**
+   * Update chapter summary status
+   */
+  async updateChapterSummaryStatus(
+    chapterId: number,
+    status: "processing" | "completed" | "error" | "no_summary_available"
+  ) {
+    // Clear cache for this chapter
+    courseCache.del(`chapter_${chapterId}`);
+    
+    return await prisma.chapter.update({
+      where: { id: chapterId },
+      data: { summaryStatus: status },
+    });
+  }
+
+  /**
+   * Verify course ownership
+   */
+  async verifyCourseOwnership(courseId: number, userId: string) {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { userId: true },
+    });
+
+    return course && course.userId === userId;
+  }
+
+  /**
+   * Update course chapters (batch update for course editor)
+   */
+  async updateCourseChapters(data: CourseChaptersUpdate) {
+    await prisma.$transaction(async (tx) => {
+      for (const unit of data.units) {
+        // Process chapters for this unit
+        for (const [index, chapter] of unit.chapters.entries()) {
+          if (chapter.id) {
+            // Update existing chapter
+            await tx.chapter.update({
+              where: { id: chapter.id },
+              data: {
+                title: chapter.title,
+                videoId: chapter.videoId,
+                order: index, // Use the existing 'order' field instead of 'position'
+                youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
+                // Mark as custom chapter in the summary field if isCustom is true
+                summary: chapter.isCustom ? `Custom chapter: ${chapter.title}` : null,
+              },
+            });
+          } else {
+            // Create new chapter
+            await tx.chapter.create({
+              data: {
+                title: chapter.title,
+                videoId: chapter.videoId,
+                unitId: unit.id,
+                order: index, // Use the existing 'order' field
+                youtubeSearchQuery: chapter.youtubeSearchQuery || chapter.title,
+                videoStatus: chapter.videoId ? "completed" : "idle",
+                // Mark as custom chapter in the summary field
+                summary: chapter.isCustom ? "Custom chapter created by user" : null,
+                summaryStatus: "COMPLETED", // Set appropriate status
+              },
+            });
+          }
         }
       }
-    }
+    });
 
-    // Clear cache for this course
-    courseCache.del(`course_${course.id}`);
-    courseCache.del(`course_${course.slug}`);
+    // Clear course cache
+    courseCache.del(`course_${data.courseId}`);
+    courseCache.del(`course_${data.slug}`);
+    courseCache.del(`chapters_course_${data.courseId}`);
 
-    return course;
+    return { success: true, message: "Course chapters updated successfully" };
   }
 
   /**
@@ -592,370 +530,6 @@ export class CourseRepository extends BaseRepository<any> {
 
     return uniqueData;
   }
-  
-  async getOrCreateCategory(name: string) {
-    let category = await prisma.category.findUnique({
-      where: { name },
-    });
-
-    if (!category) {
-      category = await prisma.category.create({
-        data: { name },
-      });
-    }
-
-    return category;
-  }
-
-  /**
-   * Get module (courseUnit) by ID with progress information
-   */
-  async getModuleById(moduleId: number, userId: string) {
-    const cacheKey = `module_${moduleId}_${userId}`;
-    const cached = courseCache.get(cacheKey);
-    
-    if (cached) {
-      return cached;
-    }
-
-    const module = await prisma.courseUnit.findUnique({
-      where: { id: moduleId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            userId: true,
-            title: true,
-          },
-        },
-        chapters: {
-          orderBy: { order: 'asc' },
-          include: {
-            _count: {
-              select: {
-                courseQuizzes: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            chapters: true,
-          },
-        },
-      },
-    });
-
-    if (!module) {
-      return null;
-    }
-
-    // Check if user has access to this module
-    if (module.course.userId !== userId) {
-      throw new Error("Forbidden");
-    }
-
-    // Get user progress for this module
-    const progress = await prisma.courseProgress.findFirst({
-      where: {
-        userId,
-        courseId: module.course.id,
-      },
-    });
-
-    // Calculate completion stats
-    const totalChapters = module._count.chapters;
-    const completedChapters = progress?.completedChapters?.length || 0;
-    const completionRate = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
-
-    const result = {
-      ...module,
-      description: module.name, // Map name to description for backwards compatibility
-      isRequired: true, // Default value
-      estimatedDuration: 60, // Default 60 minutes
-      completionRate,
-      chaptersCompleted: completedChapters,
-      totalChapters,
-      userProgress: progress ? {
-        isCompleted: progress.isCompleted || false,
-        completedChapters: progress.completedChapters || [],
-        timeSpent: progress.timeSpent || 0,
-        lastAccessedAt: progress.lastAccessedAt || new Date(),
-      } : null,
-    };
-
-    courseCache.set(cacheKey, result, 300); // 5 minutes cache
-    return result;
-  }
-
-  /**
-   * Update module (courseUnit) information
-   */
-  async updateModule(moduleId: number, userId: string, updateData: any) {
-    // First check if module exists and user has access
-    const module = await this.getModuleById(moduleId, userId);
-    if (!module) {
-      throw new Error("Module not found");
-    }
-
-    // Prepare update data
-    const updateFields: any = {};
-    if (updateData.title) updateFields.name = updateData.title;
-    if (updateData.order !== undefined) updateFields.order = updateData.order;
-    if (updateData.isCompleted !== undefined) updateFields.isCompleted = updateData.isCompleted;
-
-    // Update the courseUnit
-    const updatedModule = await prisma.courseUnit.update({
-      where: { id: moduleId },
-      data: updateFields,
-      include: {
-        chapters: {
-          orderBy: { order: 'asc' },
-        },
-        _count: {
-          select: {
-            chapters: true,
-          },
-        },
-      },
-    });
-
-    // Clear cache
-    courseCache.del(`module_${moduleId}_${userId}`);
-
-    return {
-      success: true,
-      message: "Module updated successfully",
-      module: updatedModule,
-    };
-  }
-
-  /**
-   * Delete module (courseUnit) and all related data
-   */
-  async deleteModule(moduleId: number, userId: string) {
-    // First check if module exists and user has access
-    const module = await this.getModuleById(moduleId, userId);
-    if (!module) {
-      throw new Error("Module not found");
-    }
-
-    await prisma.$transaction(async (tx) => {
-      // Delete all chapters and their related data
-      const chapters = await tx.chapter.findMany({
-        where: { unitId: moduleId },
-        select: { id: true },
-      });
-
-      for (const chapter of chapters) {
-        // Delete course quizzes for each chapter
-        await tx.courseQuiz.deleteMany({
-          where: { chapterId: chapter.id },
-        });
-      }
-
-      // Delete all chapters in this unit
-      await tx.chapter.deleteMany({
-        where: { unitId: moduleId },
-      });
-
-      // Finally delete the course unit (module)
-      await tx.courseUnit.delete({
-        where: { id: moduleId },
-      });
-    });
-
-    // Clear cache
-    courseCache.del(`module_${moduleId}_${userId}`);
-
-    return {
-      success: true,
-      message: "Module deleted successfully",
-    };
-  }
-
-  /**
-   * Create a new module (courseUnit) for a course
-   */
-  async createModule(userId: string, moduleData: any) {
-    // Verify user owns the course
-    const course = await prisma.course.findUnique({
-      where: { id: moduleData.courseId },
-      select: { userId: true, title: true },
-    });
-
-    if (!course) {
-      throw new Error("Course not found");
-    }
-
-    if (course.userId !== userId) {
-      throw new Error("Forbidden");
-    }
-
-    // Get the next order if not provided
-    let order = moduleData.order;
-    if (order === undefined) {
-      const lastModule = await prisma.courseUnit.findFirst({
-        where: { courseId: moduleData.courseId },
-        orderBy: { order: 'desc' },
-        select: { order: true },
-      });
-      order = (lastModule?.order || 0) + 1;
-    }
-
-    // Create the module
-    const newModule = await prisma.courseUnit.create({
-      data: {
-        name: moduleData.title,
-        courseId: moduleData.courseId,
-        order: order,
-        isCompleted: false,
-        duration: moduleData.estimatedDuration || 60,
-      },
-      include: {
-        chapters: {
-          orderBy: { order: 'asc' },
-        },
-        _count: {
-          select: {
-            chapters: true,
-          },
-        },
-      },
-    });
-
-    return {
-      success: true,
-      message: "Module created successfully",
-      module: {
-        ...newModule,
-        description: moduleData.description || "",
-        isRequired: moduleData.isRequired ?? true,
-        estimatedDuration: moduleData.estimatedDuration || 60,
-        completionRate: 0,
-        chaptersCompleted: 0,
-        totalChapters: 0,
-      },
-    };
-  }
-
-  /**
-   * Get all modules for a course with progress information
-   */
-  async getModulesForCourse(courseId: number, userId: string): Promise<ModuleListResult> {
-    const cacheKey = `course_modules_${courseId}_${userId}`;
-    const cached = courseCache.get(cacheKey);
-    
-    if (cached) {
-      return cached;
-    }
-
-    // Verify user has access to the course
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { userId: true, isPublic: true },
-    });
-
-    if (!course) {
-      throw new Error("Course not found");
-    }
-
-    if (course.userId !== userId && !course.isPublic) {
-      throw new Error("Forbidden");
-    }
-
-    // Get all modules for the course
-    const modules = await prisma.courseUnit.findMany({
-      where: { courseId },
-      orderBy: { order: 'asc' },
-      include: {
-        chapters: {
-          orderBy: { order: 'asc' },
-          include: {
-            _count: {
-              select: {
-                courseQuizzes: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            chapters: true,
-          },
-        },
-      },
-    });    // Get user progress
-    const progress = await prisma.courseProgress.findFirst({
-      where: {
-        userId,
-        courseId,
-      },
-    });    const completedChapters: (number | string)[] = progress?.completedChapters as (number | string)[] || [];
-
-    // Transform modules with progress data
-    const modulesWithProgress = modules.map(module => {
-      const totalChapters = module._count.chapters;
-      const moduleCompletedChapters = module.chapters.filter(chapter => 
-        completedChapters.includes(chapter.id) || completedChapters.includes(chapter.id.toString())
-      ).length;
-      
-      const completionRate = totalChapters > 0 ? (moduleCompletedChapters / totalChapters) * 100 : 0;
-
-      return {
-        ...module,
-        title: module.name, // Map name to title
-        description: "", // Default empty description
-        isRequired: true, // Default value
-        estimatedDuration: module.duration || 60,
-        completionRate,
-        chaptersCompleted: moduleCompletedChapters,
-        totalChapters,
-        userProgress: {
-          isCompleted: completionRate === 100,
-          completedChapters: module.chapters
-            .filter(chapter => completedChapters.includes(chapter.id) || completedChapters.includes(chapter.id.toString()))
-            .map(chapter => chapter.id),
-          timeSpent: 0, // Could be calculated from detailed progress tracking
-          lastAccessedAt: progress?.lastAccessedAt || new Date(),
-        },
-      };
-    });
-
-    // Calculate overall stats
-    const totalModules = modules.length;
-    const completedModules = modulesWithProgress.filter(m => m.userProgress.isCompleted).length;
-    const inProgressModules = modulesWithProgress.filter(m => 
-      m.completionRate > 0 && m.completionRate < 100
-    ).length;
-    
-    const averageProgress = totalModules > 0 
-      ? modulesWithProgress.reduce((sum, m) => sum + m.completionRate, 0) / totalModules 
-      : 0;
-
-    const totalChapters = modulesWithProgress.reduce((sum, m) => sum + m.totalChapters, 0);
-    const totalCompletedChapters = modulesWithProgress.reduce((sum, m) => sum + m.chaptersCompleted, 0);
-    
-    const estimatedTimeRemaining = modulesWithProgress
-      .filter(m => !m.userProgress.isCompleted)
-      .reduce((sum, m) => sum + m.estimatedDuration, 0);
-
-    const result = {
-      modules: modulesWithProgress,
-      totalCount: totalModules,
-      stats: {
-        totalModules,
-        completedModules,
-        inProgressModules,
-        averageProgress,
-        totalChapters,
-        completedChapters: totalCompletedChapters,
-        estimatedTimeRemaining,
-      },
-    };
-
-    courseCache.set(cacheKey, result, 300); // 5 minutes cache
-    return result;
-  }
 }
+
 export const courseRepository = new CourseRepository();

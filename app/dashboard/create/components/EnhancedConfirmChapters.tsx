@@ -13,10 +13,11 @@ import type { Course, CourseUnit, Chapter } from "@prisma/client"
 import VideoPlayer from "./VideoPlayer"
 import { cn } from "@/lib/tailwindUtils"
 import UnitCard from "./UnitCard"
-import { useCourseEditor } from "../hooks/useCourseEditor"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { GuidedHelp, GuidedHelpButton, useGuidedHelp } from "./GuidedHelp"
 import { ContextualHelp } from "./ContextualHelp"
+import { useEnhancedCourseEditor } from "../hooks/useEnhancedCourseEditor"
+import EnhancedUnitCard from "./EnhancedUnitCard"
 
 export type CourseProps = {
   course: Course & {
@@ -26,7 +27,7 @@ export type CourseProps = {
   }
 }
 
-const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
+const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   const {
     course,
     completedChapters,
@@ -42,7 +43,8 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
     isSaving,
     isGeneratingVideos,
     chapterRefs,
-    generationStatuses,
+    videoStatuses,
+    queueStatus,
     totalChaptersCount,
     progress,
     allChaptersCompleted,
@@ -60,20 +62,28 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
     saveAndContinue,
     extractYoutubeIdFromUrl,
     generateVideoForChapter,
-  } = useCourseEditor(initialCourse)
+    cancelVideoProcessing,
+  } = useEnhancedCourseEditor(initialCourse)
 
   // Use the guided help hook
   const { showHelp, openHelp, closeHelp, dismissPermanently } = useGuidedHelp()
 
-  // Mark all chapters as completed on initial load
+  // Initialize video processing on first load
   useEffect(() => {
     if (completedChapters.size === 0) {
-      handleGenerateAll()
+      // Mark all chapters with videos as completed
+      const chaptersWithVideos = course.units.flatMap((unit) => 
+        unit.chapters.filter(chapter => chapter.videoId)
+      )
+      
+      chaptersWithVideos.forEach(chapter => {
+        handleChapterComplete(String(chapter.id))
+      })
     }
-  }, [completedChapters.size, handleGenerateAll])
+  }, [course.units, completedChapters.size, handleChapterComplete])
 
   // Count chapters with errors
-  const chaptersWithErrors = Object.values(generationStatuses).filter((status) => status.status === "error").length
+  const chaptersWithErrors = Object.values(videoStatuses).filter((status) => status.status === "error").length
 
   return (
     <div className="flex flex-col h-full">
@@ -128,17 +138,19 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           </Alert>
         )}
 
-        {/* Show alert when videos are being generated */}
+        {/* Show queue status when videos are being generated */}
         {isGeneratingVideos && (
           <Alert className="mt-4 bg-primary/10 border-primary/20">
             <GlobalLoader size="xs" className="text-primary" />
             <AlertTitle>Generating Videos</AlertTitle>
             <AlertDescription>
               Videos are being generated for your chapters. This may take a few minutes.
+              {queueStatus.pending > 0 && ` (${queueStatus.pending} videos in progress, ${queueStatus.size} in queue)`}
             </AlertDescription>
           </Alert>
         )}
-      </div>      <ScrollArea className="flex-grow">
+      </div>
+      <ScrollArea className="flex-grow">
         <DragDropContext onDragEnd={handleDragEnd} isCombineEnabled={false}>
           <div className="p-4 space-y-4">
             {course.units.map((unit, unitIndex) => (
@@ -148,7 +160,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                 description="You can reorder chapters by dragging them using the handle on the left. Add custom chapters with the 'Add Chapter' button."
                 side="right"
               >
-                <UnitCard
+                <EnhancedUnitCard
                   unit={unit}
                   unitIndex={unitIndex}
                   chapterRefs={chapterRefs.current}
@@ -158,7 +170,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   addingToUnitId={addingToUnitId}
                   newChapter={newChapter}
                   isGeneratingVideos={isGeneratingVideos}
-                  generationStatuses={generationStatuses}
+                  videoStatuses={videoStatuses}
                   onChapterComplete={handleChapterComplete}
                   onStartEditingChapter={startEditingChapter}
                   onSaveChapterTitle={saveChapterTitle}
@@ -172,6 +184,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   onCancelAddingChapter={cancelAddingChapter}
                   extractYoutubeIdFromUrl={extractYoutubeIdFromUrl}
                   onGenerateVideo={generateVideoForChapter}
+                  onCancelProcessing={cancelVideoProcessing}
                 />
               </ContextualHelp>
             ))}
@@ -198,7 +211,8 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                 "transition-all duration-300 shadow-md",
                 allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : "",
               )}
-            >              {isSaving || isGeneratingVideos ? (
+            >
+              {isSaving || isGeneratingVideos ? (
                 <span className="flex items-center">
                   <GlobalLoader className="w-4 h-4 mr-2" />
                   {isSaving ? "Saving..." : "Generating Videos..."}
@@ -234,4 +248,4 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   )
 }
 
-export default ConfirmChapters
+export default EnhancedConfirmChapters

@@ -163,7 +163,7 @@ const tiles = [  {
     description:
       "Create entire courses with organized modules, lessons, and assessments - all perfectly structured to match your curriculum.",
 
-    url: "/dashboard/course/create",
+    url: "/dashboard/create",
     color: "purple",
     quotes: [
       "Design complete courses with a simple, intuitive interface",

@@ -41,21 +41,7 @@ const nextConfig = {
     ]
   },
   
-  // Redirects
-  async redirects() {
-    return [
-      {
-        source: "/dashboard/create",
-        destination: "/dashboard/course/create",
-        permanent: true,
-      },
-      {
-        source: "/dashboard/create/:path*",
-        destination: "/dashboard/course/create/:path*",
-        permanent: true,
-      },
-    ]
-  },
+  
 
   // Environment variables
   env: {

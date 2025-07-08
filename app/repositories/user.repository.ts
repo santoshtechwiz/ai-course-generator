@@ -81,4 +81,49 @@ export class UserRepository extends BaseRepository<any> {
       new Date(user.subscription.currentPeriodEnd) > new Date()
     );
   }
+
+  /**
+   * Get user profile with detailed information
+   */
+  async getUserProfileDetails(userId: string) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        credits: true,
+        userType: true,
+        isAdmin: true,
+        lastLogin: true,
+        createdAt: true,
+        subscription: {
+          select: {
+            planId: true,
+            status: true,
+            currentPeriodEnd: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Update user profile information
+   */
+  async updateUserProfile(userId: string, updateData: { name?: string; image?: string }) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+      },
+    });
+  }
 }
+
+export const userRepository = new UserRepository();

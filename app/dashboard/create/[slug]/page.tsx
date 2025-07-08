@@ -48,9 +48,7 @@ export default async function CreateChapters({ params }: { params: Promise<{ slu
   }
 
   const course = await getCourses(slug)
-  if (!course) {
-    return redirect("/dashboard/course/create")
-  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-shadcn-primary-50">
