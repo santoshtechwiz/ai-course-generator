@@ -70,7 +70,7 @@ export const QUIZ_STATUS = {
 // API endpoint paths
 export const API_PATHS = {
   MCQ: "/api/quizzes/mcq",
-  CODE: "/api/quizzes/code",
+  CODE: "/api/quizzes/code", 
   BLANKS: "/api/quizzes/blanks",
   OPENENDED: "/api/quizzes/openended",
   COMMON: "/api/quizzes/common"

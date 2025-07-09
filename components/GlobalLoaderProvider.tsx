@@ -9,10 +9,10 @@ export function GlobalLoaderProvider({ children }: { children: React.ReactNode }
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { startLoading, stopLoading } = useGlobalLoader()
-
   // Handle navigation loading
   useEffect(() => {
     let timeoutId: NodeJS.Timeout
+    let loaderShown = false
 
     // Show loader with a slight delay to prevent flicker on fast navigations
     timeoutId = setTimeout(() => {
@@ -20,13 +20,19 @@ export function GlobalLoaderProvider({ children }: { children: React.ReactNode }
         message: 'Loading page...', 
         isBlocking: false 
       })
+      loaderShown = true
     }, 100)
 
     // Hide loader when navigation completes
     const hideLoader = () => {
       clearTimeout(timeoutId)
-      stopLoading()
+      if (loaderShown) {
+        stopLoading()
+      }
     }
+
+    // Call hideLoader immediately to ensure it runs on initial render and route changes
+    hideLoader()
 
     // Clean up on route change
     return hideLoader

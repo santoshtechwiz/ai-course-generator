@@ -2,10 +2,11 @@ import { videoRepository } from "@/app/repositories/video.repository"
 import YoutubeService from "@/services/youtubeService"
 import { optimizedVideoService } from "@/app/services/optimized-video.service"
 import PQueue from "p-queue"
-import pRetry from "p-retry"
+import pRetry, { AbortError, FailedAttemptError } from "p-retry"
 import pTimeout from "p-timeout"
 import delay from "delay"
 import { Subject } from "rxjs"
+import { Chapter } from "@/app/types/course-types"
 
 // Types
 export interface VideoProcessingOptions {
@@ -52,7 +53,7 @@ const DEFAULT_CONFIG = {
  * - Integration with optimized video service
  * - Ability to cancel pending requests
  */
-export class EnhancedVideoProcessingService {
+export class VideoProcessingService {
   private processingQueue: PQueue
   private statusUpdates = new Subject<VideoGenerationStatus>()
   private activeProcesses = new Map<number, { cancel: () => void }>()
@@ -90,9 +91,9 @@ export class EnhancedVideoProcessingService {
     options: VideoProcessingOptions = {},
     events?: VideoProcessingEvents
   ) {
-    const startTime = Date.now()
-    const priority = options.priority || 0
-    
+    const startTime = Date.now();
+    const priority = options.priority || 0;
+
     // Create status update
     const updateStatus = (status: Partial<VideoGenerationStatus>) => {
       const updatedStatus = {
@@ -100,40 +101,40 @@ export class EnhancedVideoProcessingService {
         ...status,
         startTime,
         processingTime: Date.now() - startTime,
-      } as VideoGenerationStatus
-      
+      } as VideoGenerationStatus;
+
       // Emit status update
-      this.statusUpdates.next(updatedStatus)
-      
+      this.statusUpdates.next(updatedStatus);
+
       // Call event callback if provided
       if (events?.onStatusChange) {
-        events.onStatusChange(updatedStatus)
+        events.onStatusChange(updatedStatus);
       }
-      
+
       // Call specific event callbacks
       if (status.status === "completed" && events?.onComplete) {
-        events.onComplete(updatedStatus)
+        events.onComplete(updatedStatus);
       }
-      
+
       if (status.status === "error" && events?.onError) {
-        events.onError(updatedStatus)
+        events.onError(updatedStatus);
       }
-      
-      return updatedStatus
-    }
-    
+
+      return updatedStatus;
+    };
+
     try {
       // Get chapter data
-      const chapter = await videoRepository.findChapterById(chapterId)
-      
+      const chapter = (await videoRepository.findChapterById(chapterId)) as Chapter | null;
+
       if (!chapter) {
         return updateStatus({
           status: "error",
           error: "Chapter not found",
           endTime: Date.now(),
-        })
+        });
       }
-      
+
       // Check if video already exists
       if (chapter.videoId) {
         return updateStatus({
@@ -141,40 +142,40 @@ export class EnhancedVideoProcessingService {
           videoId: chapter.videoId,
           message: "Video already processed",
           endTime: Date.now(),
-        })
+        });
       }
-      
+
       // Check if already processing
       if (chapter.videoStatus === "processing") {
         return updateStatus({
           status: "processing",
           message: "Video generation already in progress",
-        })
+        });
       }
-      
+
       // Update chapter status to processing
-      await videoRepository.updateChapterVideo(chapterId, null, "processing")
-      updateStatus({ status: "queued", message: "Video generation task queued" })
-      
+      await videoRepository.updateChapterVideo(chapterId, null, "processing");
+      updateStatus({ status: "queued", message: "Video generation task queued" });
+
       // Add the task to the queue with priority
       const processPromise = this.processingQueue.add(
-        () => this.processVideoTask(chapterId, chapter.youtubeSearchQuery, options, updateStatus),
+        () => this.processVideoTask(chapterId, chapter.youtubeSearchQuery || "", options, updateStatus),
         { priority }
-      )
-      
+      );
+
       // Return initial status
       return {
         success: true,
         message: "Video generation task queued",
         videoStatus: "processing",
-      }
+      };
     } catch (error) {
-      console.error(`Error processing video for chapter ${chapterId}:`, error)
+      console.error(`Error processing video for chapter ${chapterId}:`, error);
       return updateStatus({
         status: "error",
         error: error instanceof Error ? error.message : "Unknown error",
         endTime: Date.now(),
-      })
+      });
     }
   }
   
@@ -212,102 +213,101 @@ export class EnhancedVideoProcessingService {
     
     // Process with different priorities to stagger the requests
     const results = await Promise.all(
-      chapterIds.map((chapterId, index) => 
+      chapterIds.map((chapterId, index) =>
         this.processVideo(
-          chapterId, 
-          { ...options, priority: -(index) }, // Higher index = lower priority
+          chapterId,
+          { ...options, priority: -index }, // Higher index = lower priority
           {
             onStatusChange: (status) => {
-              console.log(`Chapter ${chapterId} status: ${status.status}`)
-            }
+              console.log(`Chapter ${chapterId} status: ${status.status}`);
+            },
           }
         )
       )
-    )
-    
-    const successful = results.filter(r => r.success).length
-    
+    );
+
+    const successful = results.filter((r) => (r as any).success).length;
+
     return {
       success: successful > 0,
       message: `Processed ${successful} out of ${chapterIds.length} videos`,
       processed: successful,
       total: chapterIds.length,
-    }
+    };
   }
   
   /**
    * Process a single video with improved error handling and retry logic
    */
   private async processVideoTask(
-    chapterId: number, 
+    chapterId: number,
     searchQuery: string,
     options: VideoProcessingOptions,
     updateStatus: (status: Partial<VideoGenerationStatus>) => VideoGenerationStatus
   ): Promise<VideoGenerationStatus> {
-    let abortController = new AbortController()
-    let videoId: string | null = null
-    
+    let abortController = new AbortController();
+    let videoId: string | null = null;
+
     // Register the process for possible cancellation
     this.activeProcesses.set(chapterId, {
       cancel: () => {
-        abortController.abort()
+        abortController.abort();
         updateStatus({
           status: "error",
           error: "Processing cancelled",
           endTime: Date.now(),
-        })
-      }
-    })
-    
+        });
+      },
+    });
+
     try {
-      updateStatus({ status: "processing", message: "Fetching video..." })
-      
+      updateStatus({ status: "processing", message: "Fetching video..." });
+
       // Check if should use optimized service
       if (options.useOptimizedService ?? DEFAULT_CONFIG.USE_OPTIMIZED_SERVICE) {
         const result = await pTimeout(
           optimizedVideoService.processVideoQuick(chapterId, searchQuery),
           { milliseconds: options.timeout || DEFAULT_CONFIG.TIMEOUT_MS, signal: abortController.signal }
-        )
-        
-        videoId = result.videoId
+        );
+
+        videoId = result.videoId ?? null;
       } else {
         // Use standard video processing with retries
-        videoId = await this.fetchVideoWithRetries(searchQuery, options, abortController.signal)
+        videoId = await this.fetchVideoWithRetries(searchQuery, options, abortController.signal);
       }
-      
+
       if (!videoId) {
-        throw new Error("Failed to find a suitable video")
+        throw new Error("Failed to find a suitable video");
       }
-      
+
       // Update the chapter with the video ID
-      await videoRepository.updateChapterVideo(chapterId, videoId, "completed")
-      
+      await videoRepository.updateChapterVideo(chapterId, videoId, "completed");
+
       // Update status and clean up
       const result = updateStatus({
         status: "completed",
         videoId,
         message: "Video generation completed successfully",
         endTime: Date.now(),
-      })
-      
-      this.activeProcesses.delete(chapterId)
-      return result
-      
+      });
+
+      this.activeProcesses.delete(chapterId);
+      return result;
     } catch (error) {
-      console.error(`Error processing video for chapter ${chapterId}:`, error)
-      
+      console.error(`Error processing video for chapter ${chapterId}:`, error);
+
       // Update chapter with error status
-      await videoRepository.updateChapterVideo(chapterId, null, "error")
-      
+      await videoRepository.updateChapterVideo(chapterId, null, "error");
+
       // Update status and clean up
       const result = updateStatus({
         status: "error",
         error: error instanceof Error ? error.message : "Unknown error",
         endTime: Date.now(),
-      })
-      
-      this.activeProcesses.delete(chapterId)
-      return result
+      });
+
+      this.activeProcesses.delete(chapterId);
+      return result;
     }
   }
   
@@ -322,42 +322,44 @@ export class EnhancedVideoProcessingService {
     return pRetry(
       async () => {
         // Add small delay between attempts
-        await delay(1000)
-        
+        await delay(1000);
+
         // Check for abort
         if (signal?.aborted) {
-          throw new pRetry.AbortError("Operation cancelled")
+          throw new AbortError("Operation cancelled");
         }
-        
+
         // Fetch video ID
         const videoId = await pTimeout(
           YoutubeService.searchYoutube(searchQuery),
           { milliseconds: options.timeout || DEFAULT_CONFIG.TIMEOUT_MS, signal }
-        )
-        
+        );
+
         if (!videoId) {
-          throw new Error("Failed to fetch video ID")
+          throw new Error("Failed to fetch video ID");
         }
-        
-        return videoId
+
+        return videoId;
       },
       {
         retries: options.retries || DEFAULT_CONFIG.RETRIES,
-        onFailedAttempt: (error) => {
-          console.log(`Attempt failed for "${searchQuery}". ${error.retriesLeft} retries left.`)
-          
+        onFailedAttempt: (error: FailedAttemptError) => {
+          console.log(`Attempt failed for "${searchQuery}". ${error.retriesLeft} retries left.`);
+
           // Abort retries on certain conditions
-          if (signal?.aborted || 
-              (error.response?.status === 403) ||
-              error instanceof pRetry.AbortError) {
-            throw new pRetry.AbortError(error.message)
+          if (
+            signal?.aborted ||
+            (typeof (error as any).response?.status !== "undefined" && (error as any).response.status === 403) ||
+            error instanceof AbortError
+          ) {
+            throw new AbortError(error.message);
           }
         },
         signal,
       }
-    )
+    );
   }
 }
 
 // Create singleton instance
-export const enhancedVideoProcessingService = new EnhancedVideoProcessingService()
+export const enhancedVideoProcessingService = new VideoProcessingService()

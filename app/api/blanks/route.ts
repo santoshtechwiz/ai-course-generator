@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { prisma } from "@/lib/db"
 import { generateSlug } from "@/lib/utils"
-import { generateOpenEndedFillIntheBlanks } from "@/lib/chatgpt/userMcqQuiz"
+import { BlanksQuizService } from "@/app/services/blanks-quiz.service"
 import { getAuthSession } from "@/lib/auth"
 
 interface OpenEndedFillInTheBlanksQuestion {
@@ -25,10 +25,9 @@ export async function POST(req: Request) {
 
     if (session.user.credits < creditDeduction) {
       return { error: "Insufficient credits", status: 403 }
-    }
-
-    // Move quiz and slug generation outside the transaction
-    const quiz = await generateOpenEndedFillIntheBlanks(topic, amount, "")
+    }    // Move quiz and slug generation outside the transaction
+    const blanksQuizService = new BlanksQuizService()
+    const quiz = await blanksQuizService.generateQuiz({ title: topic, amount })
     let baseSlug = generateSlug(topic)
     let slug = baseSlug
     let suffix = 2
@@ -36,47 +35,53 @@ export async function POST(req: Request) {
     // Ensure unique slug
     while (await prisma.userQuiz.findUnique({ where: { slug } })) {
       slug = `${baseSlug}-${suffix++}`
-    }
-
-    const userQuiz = await prisma.$transaction(async (tx) => {
+    }    const userQuiz = await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: userId },
         data: { credits: { decrement: creditDeduction } },
       })
 
-      // Only DB operations inside transaction
-      return await tx.userQuiz.create({
+      // Create the quiz first
+      const createdQuiz = await tx.userQuiz.create({
         data: {
           userId,
           title,
           timeStarted: new Date(),
           quizType: "blanks",
           slug: slug,
-          questions: {
-            create: (quiz.questions as unknown as OpenEndedFillInTheBlanksQuestion[]).map(
-              (q) => ({
-                question: q.question,
-                answer: q.correct_answer,
-                questionType: "blanks",
-                openEndedQuestion: {
-                  create: {
-                    hints: (q?.hints ?? []).join("|"),
-                    difficulty: q?.difficulty,
-                    tags: (q?.tags ?? []).join("|"),
-                  },
-                },
-              }),
-            ),
-          },
-        },
-        include: {
-          questions: {
-            include: {
-              openEndedQuestion: true,
-            },
-          },
         },
       })
+
+      // Create questions with proper formatting for blanks questions
+      if (quiz.questions && quiz.questions.length > 0) {
+        await Promise.all(
+          quiz.questions.map(async (q: any) => {
+            const question = await tx.userQuizQuestion.create({
+              data: {
+                userQuizId: createdQuiz.id,
+                question: q.question,
+                answer: q.correct_answer || q.answer,
+                questionType: "blanks",
+              },
+            })
+
+            // Create the open-ended question details for blanks
+            if (q.hints || q.difficulty || q.tags) {
+              await tx.openEndedQuestion.create({
+                data: {
+                  questionId: question.id,
+                  userQuizId: createdQuiz.id,
+                  hints: Array.isArray(q.hints) ? q.hints.join("|") : (q.hints || ""),
+                  difficulty: q.difficulty || "medium",
+                  tags: Array.isArray(q.tags) ? q.tags.join("|") : (q.tags || ""),
+                },
+              })
+            }
+          })
+        )
+      }
+
+      return createdQuiz
     }, { timeout: 15000 }) // Increased transaction timeout to 15 seconds
 
     return NextResponse.json({ quizId: userQuiz.id, slug: userQuiz.slug })

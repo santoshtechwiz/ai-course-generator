@@ -16,7 +16,9 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
       document.documentElement.classList.remove('page-loaded');
     };
   }, []);
-    return (    <div className="client-layout-wrapper">
+
+  return (
+    <div className="client-layout-wrapper">
       <ThemeProvider
         attribute="class"
         defaultTheme="system"

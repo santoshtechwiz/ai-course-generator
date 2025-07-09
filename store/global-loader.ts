@@ -61,10 +61,7 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           error: undefined
         })
       },      stopLoading: () => {
-        const currentState = get()
-        // Only update state if not already idle to prevent infinite loops
-        if (currentState.state === 'idle') return
-        
+        // Force reset the state to idle regardless of current state
         set({
           state: 'idle',
           isLoading: false,

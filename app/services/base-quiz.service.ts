@@ -28,7 +28,7 @@ export abstract class BaseQuizService {
     if (!quiz) {
       throw new Error("Quiz not found");
     }
-
+    console.log("Quiz found:", quiz);
     return {
       isPublic: quiz.isPublic,
       isFavorite: quiz.isFavorite,

@@ -1,31 +1,43 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import Link from "next/link"
-import { ChevronLeft, ChevronRight, BookOpen, CheckCircle, AlertCircle } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { DragDropContext } from "react-beautiful-dnd"
-import type { Course, CourseUnit, Chapter } from "@prisma/client"
-import VideoPlayer from "./VideoPlayer"
-import { cn } from "@/lib/tailwindUtils"
-import UnitCard from "./UnitCard"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { GuidedHelp, GuidedHelpButton, useGuidedHelp } from "./GuidedHelp"
-import { ContextualHelp } from "./ContextualHelp"
-import { useEnhancedCourseEditor } from "../hooks/useEnhancedCourseEditor"
-import EnhancedUnitCard from "./EnhancedUnitCard"
+import { useEffect } from "react";
+import Link from "next/link";
+import {
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import { GlobalLoader } from "@/components/ui/loader";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DragDropContext } from "react-beautiful-dnd";
+import type { Course, CourseUnit, Chapter } from "@prisma/client";
+import VideoPlayer from "./VideoPlayer";
+import { cn } from "@/lib/tailwindUtils";
+import UnitCard from "./UnitCard";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { GuidedHelp, GuidedHelpButton, useGuidedHelp } from "./GuidedHelp";
+import { ContextualHelp } from "./ContextualHelp";
+import { useEnhancedCourseEditor } from "../hooks/useEnhancedCourseEditor";
+import EnhancedUnitCard from "./EnhancedUnitCard";
+import { useToast } from "@/hooks";
 
 export type CourseProps = {
   course: Course & {
     units: (CourseUnit & {
-      chapters: Chapter[]
-    })[]
-  }
-}
+      chapters: Chapter[];
+    })[];
+  };
+};
 
 const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   const {
@@ -63,37 +75,52 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
     extractYoutubeIdFromUrl,
     generateVideoForChapter,
     cancelVideoProcessing,
-  } = useEnhancedCourseEditor(initialCourse)
-
+  } = useEnhancedCourseEditor(initialCourse);
+  const toast = useToast();
   // Use the guided help hook
-  const { showHelp, openHelp, closeHelp, dismissPermanently } = useGuidedHelp()
-
+  const { showHelp, openHelp, closeHelp, dismissPermanently } = useGuidedHelp();
   // Initialize video processing on first load
   useEffect(() => {
+    // Check if there are any chapters
+    const allChapters = course.units.flatMap(unit => unit.chapters);
+    console.log(`🔍 Initial load found ${allChapters.length} chapters in ${course.units.length} units`);
+    
+    // Show a helpful message if there are no chapters
+    if (allChapters.length === 0) {
+      toast({
+        title: "Welcome to Course Creation",
+        description: "To get started, add chapters to your course units. After adding chapters, you can generate videos for them.",
+      });
+    }
+    
     if (completedChapters.size === 0) {
       // Mark all chapters with videos as completed
-      const chaptersWithVideos = course.units.flatMap((unit) => 
-        unit.chapters.filter(chapter => chapter.videoId)
-      )
-      
-      chaptersWithVideos.forEach(chapter => {
-        handleChapterComplete(String(chapter.id))
-      })
+      const chaptersWithVideos = course.units.flatMap((unit) =>
+        unit.chapters.filter((chapter) => chapter.videoId)
+      );
+
+      chaptersWithVideos.forEach((chapter) => {
+        handleChapterComplete(String(chapter.id));
+      });
     }
-  }, [course.units, completedChapters.size, handleChapterComplete])
+  }, [course.units, completedChapters.size, handleChapterComplete, toast]);
 
   // Count chapters with errors
-  const chaptersWithErrors = Object.values(videoStatuses).filter((status) => status.status === "error").length
+  const chaptersWithErrors = Object.values(videoStatuses).filter(
+    (status) => status.status === "error"
+  ).length;
 
   return (
     <div className="flex flex-col h-full">
       {/* Guided Help Modal */}
       {showHelp && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <GuidedHelp onClose={closeHelp} onDismissPermanently={dismissPermanently} />
+          <GuidedHelp
+            onClose={closeHelp}
+            onDismissPermanently={dismissPermanently}
+          />
         </div>
       )}
-
       <div className="flex-none p-4 border-b">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -115,7 +142,8 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           />
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              {completedChapters.size} of {totalChaptersCount} chapters completed
+              {completedChapters.size} of {totalChaptersCount} chapters
+              completed
             </p>
             {allChaptersCompleted && (
               <span className="text-sm text-green-600 font-medium flex items-center">
@@ -125,34 +153,46 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
             )}
           </div>
         </div>
-
         {/* Show alert if there are chapters with errors */}
         {chaptersWithErrors > 0 && (
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Video Generation Issues</AlertTitle>
             <AlertDescription>
-              {chaptersWithErrors} {chaptersWithErrors === 1 ? "chapter" : "chapters"} had errors during video
-              generation. You can retry generating videos for these chapters individually.
+              {chaptersWithErrors}{" "}
+              {chaptersWithErrors === 1 ? "chapter" : "chapters"} had errors
+              during video generation. You can retry generating videos for these
+              chapters individually.
             </AlertDescription>
           </Alert>
-        )}
-
+        )}{" "}
         {/* Show queue status when videos are being generated */}
         {isGeneratingVideos && (
           <Alert className="mt-4 bg-primary/10 border-primary/20">
-            <GlobalLoader size="xs" className="text-primary" />
+            <div className="animate-spin h-4 w-4 text-primary mr-2" />
             <AlertTitle>Generating Videos</AlertTitle>
             <AlertDescription>
-              Videos are being generated for your chapters. This may take a few minutes.
-              {queueStatus.pending > 0 && ` (${queueStatus.pending} videos in progress, ${queueStatus.size} in queue)`}
+              Videos are being generated for your chapters. This may take a few
+              minutes.
+              {queueStatus.pending > 0 &&
+                ` (${queueStatus.pending} videos in progress, ${queueStatus.size} in queue)`}
             </AlertDescription>
           </Alert>
         )}
-      </div>
-      <ScrollArea className="flex-grow">
-        <DragDropContext onDragEnd={handleDragEnd} isCombineEnabled={false}>
+      </div>{" "}      <ScrollArea className="flex-grow">
+        <DragDropContext onDragEnd={handleDragEnd}>
           <div className="p-4 space-y-4">
+            {/* Display a helpful message if there are no chapters */}
+            {course.units.flatMap(unit => unit.chapters).length === 0 && (
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>No Chapters Found</AlertTitle>
+                <AlertDescription>
+                  Start by adding chapters to your course units. Once you have chapters, you can generate videos for them.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {course.units.map((unit, unitIndex) => (
               <ContextualHelp
                 key={String(unit.id)}
@@ -178,8 +218,12 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   onEditingChapterTitleChange={setEditingChapterTitle}
                   onShowVideo={showVideo}
                   onStartAddingChapter={startAddingChapter}
-                  onNewChapterTitleChange={(title) => setNewChapter({ ...newChapter, title })}
-                  onNewChapterYoutubeIdChange={(id) => setNewChapter({ ...newChapter, youtubeId: id })}
+                  onNewChapterTitleChange={(title) =>
+                    setNewChapter({ ...newChapter, title })
+                  }
+                  onNewChapterYoutubeIdChange={(id) =>
+                    setNewChapter({ ...newChapter, youtubeId: id })
+                  }
                   onAddNewChapter={addNewChapter}
                   onCancelAddingChapter={cancelAddingChapter}
                   extractYoutubeIdFromUrl={extractYoutubeIdFromUrl}
@@ -204,18 +248,20 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
             description="This will save your course structure and generate videos for any chapters that don't have videos yet."
             side="top"
           >
+            {" "}
             <Button
               onClick={saveAndContinue}
               disabled={isSaving || isGeneratingVideos}
               className={cn(
                 "transition-all duration-300 shadow-md",
-                allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : "",
+                allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : ""
               )}
             >
-              {isSaving || isGeneratingVideos ? (
+              {" "}
+              {isSaving ? (
                 <span className="flex items-center">
-                  <GlobalLoader className="w-4 h-4 mr-2" />
-                  {isSaving ? "Saving..." : "Generating Videos..."}
+                  <div className="animate-spin h-4 w-4 text-primary mr-2" />
+                  Saving...
                 </span>
               ) : (
                 <span className="flex items-center">
@@ -227,25 +273,27 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   ) : (
                     <>Generate Videos & Continue</>
                   )}
+                  <ChevronRight className="w-4 h-4 ml-2" />
                 </span>
               )}
-              <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </ContextualHelp>
         </div>
       </div>
-
       {/* Video Dialog */}
       <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
         <DialogContent className="sm:max-w-3xl">
+          {" "}
           <DialogHeader>
             <DialogTitle>{currentVideoTitle}</DialogTitle>
           </DialogHeader>
-          <VideoPlayer videoId={currentVideoId} className="mt-2" />
+          {currentVideoId && (
+            <VideoPlayer videoId={currentVideoId} className="mt-2" />
+          )}
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default EnhancedConfirmChapters
+export default EnhancedConfirmChapters;

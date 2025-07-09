@@ -2,7 +2,7 @@ import PQueue from 'p-queue'
 import pRetry from 'p-retry'
 import pTimeout from 'p-timeout'
 import axios, { AxiosError } from 'axios'
-import { createCacheManager, logger, CACHE_TTL, CACHE_KEYS, type MemoryCache } from './cache/cache-manager-clean'
+import { createCacheManager, logger, CACHE_TTL, CACHE_KEYS, type MemoryCache } from './cache/cache-manager'
 import { videoRepository } from '@/app/repositories/video.repository'
 import YoutubeService from '@/services/youtubeService'
 

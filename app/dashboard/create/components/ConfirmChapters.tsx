@@ -139,7 +139,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           </Alert>
         )}
       </div>      <ScrollArea className="flex-grow">
-        <DragDropContext onDragEnd={handleDragEnd} isCombineEnabled={false}>
+        <DragDropContext onDragEnd={handleDragEnd}>
           <div className="p-4 space-y-4">
             {course.units.map((unit, unitIndex) => (
               <ContextualHelp

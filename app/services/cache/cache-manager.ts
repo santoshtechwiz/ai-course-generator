@@ -11,22 +11,22 @@ interface Logger {
 // Console-based logger implementation
 class ConsoleLogger implements Logger {
   info(message: string, meta?: any): void {
-    console.log(`[INFO] ${new Date().toISOString()} - ${message}`, meta || '')
+    console.log(`[INFO] ${new Date().toISOString()} - ${message}`, meta ? JSON.stringify(meta) : '')
   }
 
   error(message: string, meta?: any): void {
-    console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, meta || '')
+    console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, meta ? JSON.stringify(meta) : '')
   }
 
   warn(message: string, meta?: any): void {
-    console.warn(`[WARN] ${new Date().toISOString()} - ${message}`, meta || '')
+    console.warn(`[WARN] ${new Date().toISOString()} - ${message}`, meta ? JSON.stringify(meta) : '')
   }
 }
 
 export const logger = new ConsoleLogger()
 
 // Cache configuration
-const CACHE_TTL = {
+export const CACHE_TTL = {
   VIDEO_ID: 60 * 60 * 24, // 24 hours
   TOPIC_SEARCH: 60 * 30,  // 30 minutes
   CHAPTER_STATUS: 60 * 10, // 10 minutes
@@ -34,59 +34,7 @@ const CACHE_TTL = {
 }
 
 // Cache keys
-const CACHE_KEYS = {
-  VIDEO_ID: (query: string) => `video:${Buffer.from(query).toString('base64')}`,
-  TOPIC_SEARCH: (topic: string) => `topic:${topic}`,
-  CHAPTER_STATUS: (chapterId: number) => `chapter:${chapterId}`,
-  PROCESSING_LOCK: (chapterId: number) => `lock:chapter:${chapterId}`,
-  REQUEST_DEBOUNCE: (topic: string) => `debounce:${topic}`
-}
-
-export interface CacheManager {
-  get<T>(key: string): Promise<T | null>
-  set<T>(key: string, value: T, ttl?: number): Promise<void>
-  del(key: string): Promise<void>
-  exists(key: string): Promise<boolean>
-  setex(key: string, ttl: number, value: string): Promise<void>
-}
-
-import NodeCache from 'node-cache'
-import { v4 as uuidv4 } from 'uuid'
-
-// Simple logger interface
-interface Logger {
-  info(message: string, meta?: any): void
-  error(message: string, meta?: any): void
-  warn(message: string, meta?: any): void
-}
-
-// Console-based logger implementation
-class ConsoleLogger implements Logger {
-  info(message: string, meta?: any): void {
-    console.log(`[INFO] ${new Date().toISOString()} - ${message}`, meta || '')
-  }
-
-  error(message: string, meta?: any): void {
-    console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, meta || '')
-  }
-
-  warn(message: string, meta?: any): void {
-    console.warn(`[WARN] ${new Date().toISOString()} - ${message}`, meta || '')
-  }
-}
-
-export const logger = new ConsoleLogger()
-
-// Cache configuration
-const CACHE_TTL = {
-  VIDEO_ID: 60 * 60 * 24, // 24 hours
-  TOPIC_SEARCH: 60 * 30,  // 30 minutes
-  CHAPTER_STATUS: 60 * 10, // 10 minutes
-  FALLBACK_CONTENT: 60 * 60 * 2 // 2 hours
-}
-
-// Cache keys
-const CACHE_KEYS = {
+export const CACHE_KEYS = {
   VIDEO_ID: (query: string) => `video:${Buffer.from(query).toString('base64')}`,
   TOPIC_SEARCH: (topic: string) => `topic:${topic}`,
   CHAPTER_STATUS: (chapterId: number) => `chapter:${chapterId}`,
@@ -203,5 +151,3 @@ export function createCacheManager(): MemoryCache {
   logger.info('Using enhanced in-memory cache')
   return new MemoryCache()
 }
-
-export { CACHE_TTL, CACHE_KEYS }

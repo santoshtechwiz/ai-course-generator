@@ -7,6 +7,7 @@ import { Home, ChevronRight, Menu } from "lucide-react"
 import { FullCourseType } from "@/app/types/types"
 import MainContent from "./MainContent"
 import { cn } from "@/lib/utils"
+import CourseActions from "./CourseActions"
 
 interface EnhancedCourseLayoutProps {
   course: FullCourseType
@@ -33,7 +34,10 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
         theatreMode && "h-0 p-0 overflow-hidden opacity-0"
       )}>
        
-
+   <CourseActions 
+      slug={course.slug}
+   
+      ></CourseActions>
         <Button
           variant="outline"
           size="sm"
@@ -44,6 +48,9 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
       </header>
 
       {/* Main content with theatre mode support */}
+   
+        
+  
       <div className={cn(
         "flex-1",
         theatreMode && "bg-black"

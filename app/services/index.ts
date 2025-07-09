@@ -14,6 +14,9 @@ export * from '../repositories/course-quiz.repository';
  */
 export * from './base-quiz.service';
 export * from './code-quiz.service';
+export * from './mcq-quiz.service';
+export * from './blanks-quiz.service';
+export * from './openended-quiz.service';
 export * from './quiz-list.service';
 export * from './quiz-service-factory';
 export * from './course.service';

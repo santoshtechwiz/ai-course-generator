@@ -42,7 +42,6 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
 
   // Refs for chapter components
   const chapterRefs = useRef<Record<string, React.RefObject<ChapterCardHandler>>>({})
-
   // Use our enhanced video processing
   const {
     processVideo,
@@ -50,11 +49,32 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
     cancelProcessing,
     isProcessing,
     statuses,
-    queueStatus,
-  } = useVideoProcessing({
-    useEnhancedService: true,
+    queueStatus,  } = useVideoProcessing({
+    useEnhancedService: false, // Use standard API instead of enhanced
     onComplete: (status) => {
+      console.log(`Video completed for chapter ${status.chapterId}:`, status)
       handleChapterComplete(String(status.chapterId))
+      
+      // Update course state with new video ID
+      if (status.videoId) {
+        setCourse((prevCourse) => {
+          const newCourse = JSON.parse(JSON.stringify(prevCourse))
+          for (const unit of newCourse.units) {
+            const chapterIndex = unit.chapters.findIndex(
+              (ch: Chapter) => String(ch.id) === String(status.chapterId)
+            )
+            if (chapterIndex !== -1) {
+              unit.chapters[chapterIndex].videoId = status.videoId
+              unit.chapters[chapterIndex].videoStatus = "completed"
+              break
+            }
+          }
+          return newCourse
+        })
+      }
+    },
+    onError: (status) => {
+      console.error(`Video failed for chapter ${status.chapterId}:`, status)
     }
   })
 
@@ -62,10 +82,11 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
   const totalChaptersCount = useMemo(() => {
     return course.units.reduce((acc, unit) => acc + unit.chapters.length, 0)
   }, [course.units])
-
   // Calculate chapters currently being processed
   const processingChaptersCount = useMemo(() => {
-    return Object.values(isProcessing).filter(Boolean).length
+    const count = Object.values(isProcessing).filter(Boolean).length
+    console.log(`📊 Processing chapters count: ${count}`, isProcessing)
+    return count
   }, [isProcessing])
 
   // Calculate overall progress
@@ -131,45 +152,67 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
   const handleChapterComplete = useCallback((chapterId: string) => {
     setCompletedChapters((prev) => new Set(prev).add(chapterId))
   }, [])
+  // Generate videos for all chapters that don't have videos (sequential, with UX)
+  const handleGenerateAll = useCallback(async (retryFailed = false) => {
+    console.log("🔍 handleGenerateAll called with course:", {
+      units: course.units.map(unit => ({
+        id: unit.id,
+        name: unit.name,
+        chapterCount: unit.chapters.length
+      }))
+    })
 
-  // Generate videos for all chapters that don't have videos
-  const handleGenerateAll = useCallback(async () => {
     const allChapters = course.units.flatMap((unit) => unit.chapters)
-    const chaptersWithoutVideos = allChapters.filter((chapter) => !chapter.videoId)
-
-    if (chaptersWithoutVideos.length === 0) {
+    console.log(`📊 Total chapters found: ${allChapters.length}`)
+    
+    let chaptersToProcess = allChapters.filter((chapter) => !chapter.videoId)
+    console.log(`📊 Chapters without videos: ${chaptersToProcess.length}`)
+    
+    if (retryFailed) {
+      // Only retry chapters with error/timeout
+      chaptersToProcess = allChapters.filter((chapter) =>
+        statuses[chapter.id]?.status === "error"
+      )
+      console.log(`📊 Chapters with errors to retry: ${chaptersToProcess.length}`)
+    }
+    
+    if (chaptersToProcess.length === 0) {
+      console.log("⚠️ No chapters to process!")
       toast({
-        title: "All videos ready",
-        description: "All chapters already have videos",
+        title: retryFailed ? "No failed chapters" : "All videos ready",
+        description: retryFailed
+          ? "No chapters need retry."
+          : allChapters.length > 0 
+            ? "All chapters already have videos" 
+            : "Please add chapters to your course first",
       })
-      
       // Mark all chapters as completed
       const newCompletedChapters = new Set(completedChapters)
       allChapters.forEach((chapter) => {
         newCompletedChapters.add(String(chapter.id))
       })
       setCompletedChapters(newCompletedChapters)
-      
       return true
     }
-
     toast({
-      title: "Generating videos",
-      description: `Starting video generation for ${chaptersWithoutVideos.length} chapters`,
+      title: retryFailed ? "Retrying failed videos" : "Generating videos",
+      description: `${retryFailed ? "Retrying" : "Starting video generation for"} ${chaptersToProcess.length} chapters`,
     })
-
-    // Process all videos using the enhanced service
-    const chapterIds = chaptersWithoutVideos.map((chapter) => chapter.id)
-    const result = await processMultipleVideos(chapterIds)
-
+    // Sequential processing
+    const chapterIds = chaptersToProcess.map((chapter) => chapter.id)
+    const result = await processMultipleVideos(chapterIds, { retryFailed })
     toast({
-      title: result.success ? "Success" : "Partial success",
-      description: `Generated videos for ${result.processed} out of ${chaptersWithoutVideos.length} chapters`,
+      title: result.success ? "Success" : result.failed ? "Some videos failed" : "Partial success",
+      description: `Generated videos for ${result.processed} out of ${chaptersToProcess.length} chapters` + (result.failed ? `. ${result.failed} failed.` : ""),
       variant: result.processed === 0 ? "destructive" : "default",
     })
-
     return result.success
-  }, [course.units, completedChapters, processMultipleVideos, toast])
+  }, [course.units, completedChapters, processMultipleVideos, statuses, toast])
+
+  // Retry handler for failed/timeouts
+  const retryFailedChapters = useCallback(async () => {
+    await handleGenerateAll(true)
+  }, [handleGenerateAll])
 
   // Generate video for a single chapter
   const generateVideoForChapter = useCallback(
@@ -343,9 +386,9 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
 
       // Insert at destination
       destChapters.splice(destination.index, 0, removed)
-
+      
       setCourse(newCourse)
-
+      
       toast({
         title: "Chapter Moved",
         description: `${removed.title} has been moved successfully`,
@@ -353,55 +396,94 @@ export function useEnhancedCourseEditor(initialCourse: CourseWithUnits) {
     },
     [course, toast],
   )
-
   const prepareUpdateData = useCallback(() => {
     return {
       courseId: course.id,
       slug: course.slug,
       units: course.units.map((unit) => ({
         id: unit.id,
-        name: unit.name,
-        chapters: unit.chapters.map((chapter, index) => ({
-          id: chapter.id,
-          title: chapter.title,
-          videoId: chapter.videoId,
-          position: index,
-        })),
-      })),
-    }
+        chapters: unit.chapters.map((chapter, index) => {
+          // Handle new chapters which may have string IDs
+          const isNewChapter = typeof chapter.id === 'string';
+          
+          return {
+            id: isNewChapter ? null : chapter.id,
+            title: chapter.title,
+            videoId: chapter.videoId || null,
+            unitId: unit.id,
+            position: index,
+            // Only include these if they exist in the chapter object
+            ...(chapter.youtubeSearchQuery ? { youtubeSearchQuery: chapter.youtubeSearchQuery } : {})
+          };
+        }),
+      })),    }
   }, [course])
-
+  
   const saveAndContinue = useCallback(async () => {
     setIsSaving(true)
-
     try {
-      // If not all chapters are completed, generate videos first
-      if (!allChaptersCompleted) {
+      // Check if there are any chapters to save
+      const allChapters = course.units.flatMap(unit => unit.chapters);
+      console.log(`📋 saveAndContinue: Found ${allChapters.length} chapters in ${course.units.length} units`);
+      
+      // First, save the current course structure to database
+      const updateData = prepareUpdateData()
+      
+      // Debug: Log the data being sent
+      console.log("Sending update data to API:", JSON.stringify(updateData, null, 2))
+      
+      // Save to database using the existing course update API
+      const saveResponse = await axios.post(`/api/course/update-chapters`, updateData)
+      if (!saveResponse.data.success) {
+        throw new Error(saveResponse.data.error || "Failed to save course structure")
+      }
+
+      toast({
+        title: "Course Structure Saved",
+        description: "Course structure saved to database successfully",
+      })
+
+      // If we have no chapters, inform the user
+      if (allChapters.length === 0) {
+        toast({
+          title: "No Chapters Found",
+          description: "Please add chapters to your course before generating videos.",
+        })
+      }
+      // If not all chapters are completed and we have chapters, generate videos sequentially
+      else if (!allChaptersCompleted) {
+        toast({
+          title: "Generating Videos",
+          description: "Starting sequential video generation for chapters without videos...",
+        })
+        
         const success = await handleGenerateAll()
+        
         if (!success) {
-          throw new Error("Failed to generate all videos")
+          toast({
+            title: "Some videos failed",
+            description: "Some videos failed to generate. You can retry failed chapters from the course page.",
+            variant: "destructive",
+          })
+          // Don't return here - still redirect as course structure is saved
+        } else {
+          toast({
+            title: "All Videos Generated",
+            description: "All videos have been generated successfully",
+          })
         }
       }
 
-      // Prepare data for API
-      const updateData = prepareUpdateData()
+      toast({
+        title: "Course Ready",
+        description: "Course has been saved and is ready for viewing",
+      })
 
-      // Save the updated course data
-      const response = await axios.put(`/api/courses/${course.slug}/structure`, updateData)
-
-      if (response.data.success) {
-        toast({
-          title: "Course Saved",
-          description: "Course structure saved successfully",
-        })
-
-        // Navigate to the next step
-        router.push(`/dashboard/create/${course.slug}/settings`)
-      } else {
-        throw new Error(response.data.error || "Failed to save course")
-      }
+      // Navigate to the course page (not settings)
+      router.push(`/dashboard/course/${course.slug}`)
+      
     } catch (error) {
-      console.error("Error saving course:", error)
+      console.error("Error in saveAndContinue:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save course",

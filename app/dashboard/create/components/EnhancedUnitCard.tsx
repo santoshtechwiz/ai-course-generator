@@ -74,9 +74,8 @@ const EnhancedUnitCard = React.memo<EnhancedUnitCardProps>(
             <span className="text-sm font-medium text-muted-foreground">Unit {unitIndex + 1}</span>
             <span className="text-lg font-semibold mt-1">{unit.name}</span>
           </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Droppable droppableId={`unit-${String(unit.id)}`} isDropDisabled={false} isCombineEnabled={false}>
+        </CardHeader>        <CardContent className="space-y-2">
+          <Droppable droppableId={`unit-${String(unit.id)}`} isDropDisabled={false}>
             {(provided, snapshot) => (
               <div
                 {...provided.droppableProps}

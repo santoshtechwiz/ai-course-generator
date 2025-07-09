@@ -232,13 +232,7 @@ export interface Chapter {
   isFree: boolean;
   duration: number;
   questions: Question[];
-}
-
-export interface Question {
-  id: number;
-  question: string;
-  answer: string;
-  options: string[];
+  youtubeSearchQuery?: string; // <-- PATCHED: add this property for compatibility
 }
 
 /**

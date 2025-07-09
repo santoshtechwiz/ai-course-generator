@@ -124,8 +124,7 @@ export function VideoProgressIndicator({
         return 0
     }
   })()
-  
-  return (
+    return (
     <div className={cn("flex flex-col space-y-1", className)}>
       <div className="flex items-center justify-between">
         {showLabel && (
@@ -136,14 +135,12 @@ export function VideoProgressIndicator({
         )}
         
         {showControls && (
-          <div className="flex space-x-2">
-            {currentStatus === "processing" && onCancel && (
+          <div className="flex space-x-2">            {currentStatus === "processing" && onCancel && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onCancel}
                 className={buttonSize}
-                disabled={currentStatus === "completed"}
               >
                 Cancel
               </Button>
@@ -154,9 +151,21 @@ export function VideoProgressIndicator({
                 variant="outline"
                 size="sm"
                 onClick={onRetry}
-                className={buttonSize}
+                className={cn(buttonSize, "text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600")}
               >
                 <RefreshCcw className="h-3 w-3 mr-1" /> Retry
+              </Button>
+            )}
+            
+            {/* Allow retrying even for stuck "processing" videos if they've been in that state for too long */}
+            {currentStatus === "processing" && status?.message?.includes("stuck") && onRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                className={cn(buttonSize, "text-yellow-500 border-yellow-200 hover:bg-yellow-50 hover:text-yellow-600")}
+              >
+                <RefreshCcw className="h-3 w-3 mr-1" /> Retry Stuck
               </Button>
             )}
           </div>
@@ -170,8 +179,7 @@ export function VideoProgressIndicator({
           progressHeight,
           {
             "animate-pulse": currentStatus === "processing",
-          }
-        )}
+          }        )}
         indicatorClassName={cn(getStatusColor())}
       />
     </div>

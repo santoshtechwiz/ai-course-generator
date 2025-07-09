@@ -63,9 +63,7 @@ export const fetchQuiz = createAsyncThunk(
       const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS]
       if (!endpoint) {
         return rejectWithValue({ error: `Invalid quiz type: ${type}` })
-      }
-
-      const response = await fetch(`${endpoint}/${slug}`)
+      }      const response = await fetch(`${endpoint}/${slug}`)
       if (!response.ok) {
         const errorText = await response.text()
         return rejectWithValue({
@@ -76,11 +74,26 @@ export const fetchQuiz = createAsyncThunk(
 
       const data = await response.json()
 
-      if (!data || !Array.isArray(data.questions)) {
-        return rejectWithValue({ error: "Invalid quiz data" })
+      // Handle new API response format from services
+      let quizData = data;
+      let rawQuestions = [];
+
+      // Check if the response has the new service format
+      if (data.quizData && data.quizData.questions) {
+        quizData = data.quizData;
+        rawQuestions = data.quizData.questions;
+      } else if (data.questions) {
+        // Fallback to old format
+        rawQuestions = data.questions;
+      } else {
+        return rejectWithValue({ error: "Invalid quiz data: no questions found" })
       }
 
-      const questions = data.questions.map((q: any) => {
+      if (!Array.isArray(rawQuestions)) {
+        return rejectWithValue({ error: "Invalid quiz data: questions must be an array" })
+      }
+
+      const questions = rawQuestions.map((q: any) => {
         const base: QuizQuestion = {
           id: q.id || crypto.randomUUID(),
           question: q.question,
@@ -118,17 +131,17 @@ export const fetchQuiz = createAsyncThunk(
             tags: open.tags || [],
             hints: open.hints || [],
           }
-        }
-
-        return base
+        }        return base
       })
 
       const normalized = {
-        ...data,
+        ...quizData,
+        ...data, // Include additional properties from the service response (isPublic, isFavorite, etc.)
         questions,
         slug,
         quizType: type,
         id: slug,
+        title: quizData.title || data.title || slug,
       }
 
       console.log("Quiz fetched successfully:", normalized)

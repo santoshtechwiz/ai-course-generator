@@ -30,20 +30,20 @@ import { quizCreationSchema } from "@/schema/schema"
 import { generateSlug } from "@/lib/utils"
 import NodeCache from "node-cache"
 import axios from "axios"
-import { QuizType } from "@/types/quiz"
+import { QuizType } from "@/types/quiz-types";
 import { generateQuestions } from "@/lib/chatgpt/generateQuestions"
 import createQuestions from "@/lib/create-questions"
+import { McqQuizService } from "@/app/services/mcq-quiz.service"
 
 const cache = new NodeCache({ stdTTL: 600 }) // Cache for 10 minutes
 
 export const dynamic = "force-dynamic"
 
-// Create a server-side fetch wrapper
+// Create a server-side fetch wrapper using the service
 async function fetchQuizQuestions(amount: number, title: string, type: QuizType, difficulty: string, userType: string) {
-  // For server-side code, using fetch directly is fine as it doesn't need CSRF/auth handling
-  const questions = await generateQuestions({ amount, title, type, difficulty });
-
-  return questions;;
+  const mcqQuizService = new McqQuizService();
+  const questions = await mcqQuizService.generateQuiz({ amount, title, type, difficulty });
+  return questions;
 }
 
 export async function POST(req: Request) {
@@ -68,7 +68,8 @@ export async function POST(req: Request) {
 
     try {
       // 3. Create questions for the quiz
-      await createQuestions(questions, userQuiz.id, quizType)
+      const formattedQuestions = questions.questions; // Extract the array of questions
+      await createQuestions(formattedQuestions, userQuiz.id, "mcq");
 
       // 4. Update topic count
       await updateTopicCount(title)

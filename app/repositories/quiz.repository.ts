@@ -10,7 +10,6 @@ export class QuizRepository extends BaseRepository<any> {
   constructor() {
     super(prisma.userQuiz);
   }
-
   /**
    * Find a quiz by its slug
    */
@@ -19,6 +18,9 @@ export class QuizRepository extends BaseRepository<any> {
       where: { slug },
       include: {
         questions: {
+          include: {
+            openEndedQuestion: true,
+          },
           orderBy: {
             id: "asc",
           },

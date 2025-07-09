@@ -1,5 +1,5 @@
 import { OptimizedVideoService } from '@/app/services/optimized-video.service'
-import { createCacheManager } from '@/app/services/cache/cache-manager-clean'
+import { createCacheManager } from '@/app/services/cache/cache-manager'
 import YoutubeService from '@/services/youtubeService'
 import { videoRepository } from '@/app/repositories/video.repository'
 

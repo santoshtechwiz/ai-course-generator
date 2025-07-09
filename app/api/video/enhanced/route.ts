@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { enhancedVideoProcessingService } from "@/app/services/enhanced-video-processing.service"
+import { enhancedVideoProcessingService } from "@/app/services/video-processing.service"
 
 // Define request body validation schema
 const bodyParser = z.object({
