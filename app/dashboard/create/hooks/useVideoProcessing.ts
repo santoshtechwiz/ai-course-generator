@@ -11,11 +11,12 @@ export interface VideoStatus {
   progress?: number
   message?: string
   retryCount?: number  // Track API call retry attempts
+  startTime?: number | string // Added for stuck detection
 }
 
 export interface UseVideoProcessingOptions {
   onStatusChange?: (status: VideoStatus) => void
-  onComplete?: (status: VideoStatus) => void
+  onComplete?: (status: VideoStatus) => void // Added
   onError?: (status: VideoStatus) => void
   pollingInterval?: number
   useEnhancedService?: boolean
@@ -113,136 +114,229 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
     }
   }, [useEnhancedService, onStatusChange, onError, toast])
+    // Check status
+  const checkStatus = useCallback(async (chapterId: number) => {
+    try {
+      const endpoint = `/api/video/status/${chapterId}`
+      
+      console.log(`🔍 Checking status for chapter ${chapterId} at ${endpoint}`)
+      const response = await axios.get(endpoint)
+      console.log(`📡 Status response for chapter ${chapterId}:`, response.data)
+      
+      // Successful completion - video is ready
+      if (response.data.videoId) {
+        console.log(`✅ Video completed for chapter ${chapterId}, videoId: ${response.data.videoId}`)
+        const completedStatus: VideoStatus = {
+          chapterId,
+          status: "completed",
+          videoId: response.data.videoId,
+          message: "Video generated successfully"
+        }
+        
+        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+        setStatuses((prev) => ({
+          ...prev,
+          [chapterId]: completedStatus
+        }))
+        
+        if (onStatusChange) {
+          onStatusChange(completedStatus)
+        }
+        if (onComplete) {
+          onComplete(completedStatus)
+        }
+        return true
+      }
+      // Error state
+      if (response.data.status === "error") {
+        const errorStatus: VideoStatus = {
+          chapterId,
+          status: "error",
+          message: response.data.error || "Video generation failed"
+        }
+        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+        setStatuses((prev) => ({
+          ...prev,
+          [chapterId]: errorStatus
+        }))
+        if (onError) {
+          onError(errorStatus)
+        }
+        return false
+      }
+      // Still processing
+      return null
+    } catch (error) {
+      console.error(`Error checking status for chapter ${chapterId}:`, error)
+      setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+      setStatuses((prev) => ({
+        ...prev,
+        [chapterId]: {
+          chapterId,
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to check status"
+        }
+      }))
+      if (onError) {
+        onError({
+          chapterId,
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to check status"
+        })
+      }
+      return false
+    }
+  }, [onStatusChange, onComplete, onError, setIsProcessing, setStatuses])
+    // Helper function to wait for completion
+  const waitForCompletion = useCallback(async (chapterId: number): Promise<{ success: boolean; error?: string }> => {
+    let attempts = 0
+    const maxAttempts = 60 // 10 minutes with 10 second intervals
+
+    return new Promise((resolve) => {
+      const checkCompletion = async () => {
+        try {
+          const result = await checkStatus(chapterId)
+          
+          // If completed successfully
+          if (result === true) {
+            resolve({ success: true })
+            return
+          }
+          
+          // If error occurred
+          if (result === false) {
+            const status = statuses[chapterId]
+            resolve({ success: false, error: status?.message || "Video generation failed" })
+            return
+          }
+          
+          // Still processing, continue checking
+          attempts++
+          if (attempts >= maxAttempts) {
+            setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+            setStatuses((prev) => ({
+              ...prev,
+              [chapterId]: {
+                chapterId,
+                status: "error",
+                message: "Timeout: Video generation took too long"
+              }
+            }))
+            resolve({ success: false, error: "Timeout: Video generation took too long" })
+            return
+          }
+          
+          // Wait and try again
+          setTimeout(checkCompletion, 10000) // 10 second intervals
+          
+        } catch (error) {
+          resolve({ 
+            success: false, 
+            error: error instanceof Error ? error.message : "Unknown error" 
+          })
+        }
+      }
+      
+      // Start checking
+      checkCompletion()
+    })
+  }, [checkStatus, statuses, setIsProcessing, setStatuses])
     // Process multiple videos (sequentially for enhanced service)
   const processMultipleVideos = useCallback(async (chapterIds: number[], options: { retryFailed?: boolean } = {}) => {
     if (chapterIds.length === 0) return { success: true, processed: 0 }
 
-    // Sequential processing for enhanced service
-    if (useEnhancedService) {
-      let processed = 0
-      let failed = 0
-      let lastError = null
-      
-      for (let i = 0; i < chapterIds.length; i++) {
-        const chapterId = chapterIds[i]
-        
-        // If retryFailed is set, only retry chapters with error/timeout
-        if (options.retryFailed && statuses[chapterId]?.status !== "error") {
-          continue
+    let processed = 0
+    let failed = 0
+    let lastError = null
+
+    for (let i = 0; i < chapterIds.length; i++) {
+      const chapterId = chapterIds[i]
+
+      // If retryFailed is set, only retry chapters with error/timeout
+      if (options.retryFailed && statuses[chapterId]?.status !== "error") {
+        continue
+      }
+
+      try {
+        // Set processing state
+        setIsProcessing((prev) => ({ ...prev, [chapterId]: true }))
+
+        // Update initial status
+        const queuedStatus: VideoStatus = {
+          chapterId,
+          status: "queued",
+          message: `Processing video ${processed + 1} of ${chapterIds.length}...`
         }
-        
-        try {
-          // Set processing state
-          setIsProcessing((prev) => ({ ...prev, [chapterId]: true }))
-          
-          // Update initial status
-          const queuedStatus: VideoStatus = {
-            chapterId,
-            status: "queued",
-            message: `Processing video ${processed + 1} of ${chapterIds.length}...`
-          }
-          
-          setStatuses((prev) => ({
-            ...prev,
-            [chapterId]: queuedStatus
-          }))
-          
-          if (onStatusChange) {
-            onStatusChange(queuedStatus)
-          }
-          
-          // Call the video generation API directly
-          const endpoint = "/api/video/enhanced"
-          const response = await axios.post(endpoint, { 
-            chapterId, 
-            options: { useOptimizedService: true } 
-          })
-          
-          if (!response.data.success) {
-            throw new Error(response.data.error || "Failed to process video")
-          }
-          
-          // Update queue status if available
-          if (response.data.queueStatus) {
-            setQueueStatus(response.data.queueStatus)
-          }
-          
-          // Wait for completion using polling
-          const result = await waitForCompletion(chapterId)
-          
-          if (result.success) {
-            processed++
-          } else {
-            failed++
-            lastError = result.error || "Unknown error"
-          }
-          
-        } catch (err) {
+
+        setStatuses((prev) => ({
+          ...prev,
+          [chapterId]: queuedStatus
+        }))
+
+        if (onStatusChange) {
+          onStatusChange(queuedStatus)
+        }
+
+        // Call the video generation API directly
+        const endpoint = useEnhancedService ? "/api/video/enhanced" : "/api/video"
+        const response = await axios.post(endpoint, useEnhancedService
+          ? { chapterId, options: { useOptimizedService: true } }
+          : { chapterId })
+
+        if (!response.data.success) {
+          throw new Error(response.data.error || "Failed to process video")
+        }
+
+        // Update queue status if available
+        if (response.data.queueStatus) {
+          setQueueStatus(response.data.queueStatus)
+        }
+
+        // Wait for completion using polling
+        const result = await waitForCompletion(chapterId)
+
+        if (result.success) {
+          processed++
+        } else {
           failed++
-          lastError = err instanceof Error ? err.message : "Unknown error"
-          
-          const errorStatus: VideoStatus = {
-            chapterId,
-            status: "error",
-            message: lastError
-          }
-          
-          setStatuses((prev) => ({
-            ...prev,
-            [chapterId]: errorStatus
-          }))
-          
-          setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
-          
-          if (onError) {
-            onError(errorStatus)
-          }
+          lastError = result.error || "Unknown error"
         }
-        
-        // Small delay between videos to avoid overwhelming the server
-        if (i < chapterIds.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+      } catch (err) {
+        failed++
+        lastError = err instanceof Error ? err.message : "Unknown error"
+
+        const errorStatus: VideoStatus = {
+          chapterId,
+          status: "error",
+          message: lastError
+        }
+
+        setStatuses((prev) => ({
+          ...prev,
+          [chapterId]: errorStatus
+        }))
+
+        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
+
+        if (onError) {
+          onError(errorStatus)
         }
       }
-      
-      return {
-        success: failed === 0,
-        processed,
-        failed,
-        error: lastError,
-        total: chapterIds.length
+
+      // Small delay between videos to avoid overwhelming the server
+      if (i < chapterIds.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
       }
-    } 
-    
-    // Fallback to old processing method
-    try {
-      const results = await Promise.all(
-        chapterIds.map(chapterId => processVideo(chapterId))
-      )
-      
-      const successful = results.filter(r => r.success).length
-      
-      return {
-        success: successful > 0,
-        processed: successful,
-        total: chapterIds.length
-      }
-    } catch (error) {
-      console.error("Error processing multiple videos:", error)
-      
-      toast({
-        title: "Batch Processing Error",
-        description: error instanceof Error ? error.message : "Failed to process videos",
-        variant: "destructive"
-      })
-      
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : "Unknown error",
-        processed: 0,
-        total: chapterIds.length
-      }
-    }  }, [statuses, useEnhancedService, onStatusChange, onError, toast, processVideo])
+    }
+
+    return {
+      success: failed === 0,
+      processed,
+      failed,
+      error: lastError,
+      total: chapterIds.length
+    }
+  }, [useEnhancedService, statuses, onStatusChange, onError, setIsProcessing, setStatuses, setQueueStatus, waitForCompletion, toast])
   
   // Cancel processing
   const cancelProcessing = useCallback(async (chapterId: number) => {
@@ -310,129 +404,6 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
       processVideo(chapterId)
     }, 1000)
   }, [processVideo])
-    // Check status
-  const checkStatus = useCallback(async (chapterId: number) => {
-    try {
-      const endpoint = `/api/video/status/${chapterId}`
-      
-      console.log(`🔍 Checking status for chapter ${chapterId} at ${endpoint}`)
-      const response = await axios.get(endpoint)
-      console.log(`📡 Status response for chapter ${chapterId}:`, response.data)
-      
-      // Successful completion - video is ready
-      if (response.data.videoId) {
-        console.log(`✅ Video completed for chapter ${chapterId}, videoId: ${response.data.videoId}`)
-        const completedStatus: VideoStatus = {
-          chapterId,
-          status: "completed",
-          videoId: response.data.videoId,
-          message: "Video generated successfully"
-        }
-        
-        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
-        setStatuses((prev) => ({
-          ...prev,
-          [chapterId]: completedStatus
-        }))
-        
-        if (onStatusChange) {
-          onStatusChange(completedStatus)
-        }
-        
-        if (onComplete) {
-          onComplete(completedStatus)
-        }
-        
-        return true
-      }
-      
-      // Check for explicit error status
-      if (response.data.failed || response.data.videoStatus === "error" || 
-          response.data.error || response.data.status === "error") {
-        
-        console.warn(`⚠️ Error status detected for chapter ${chapterId}:`, response.data)
-        
-        const errorStatus: VideoStatus = {
-          chapterId,
-          status: "error",
-          message: response.data.message || response.data.error || "Video generation failed"
-        }
-        
-        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
-        setStatuses((prev) => ({
-          ...prev,
-          [chapterId]: errorStatus
-        }))
-        
-        if (onStatusChange) {
-          onStatusChange(errorStatus)
-        }
-        
-        if (onError) {
-          onError(errorStatus)
-        }
-        
-        return false
-      }
-      
-      // Still processing
-      const processingStatus: VideoStatus = {
-        chapterId,
-        status: "processing",
-        progress: response.data.progress || 0,
-        message: response.data.message || "Video generation in progress..."
-      }
-      
-      setStatuses((prev) => ({
-        ...prev,
-        [chapterId]: processingStatus
-      }))
-      
-      if (onStatusChange) {
-        onStatusChange(processingStatus)
-      }
-      
-      return null // Still in progress
-    } catch (error) {
-      console.error(`Error checking status for chapter ${chapterId}:`, error)
-      
-      // If the API call itself fails, don't mark as error immediately
-      // This could be a temporary network issue
-      const currentAttempts = statuses[chapterId]?.retryCount || 0
-      
-      // After 3 failed API calls, consider it an error
-      if (currentAttempts >= 3) {
-        const errorStatus: VideoStatus = {
-          chapterId,
-          status: "error",
-          message: "Failed to check video status after multiple attempts"
-        }
-        
-        setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
-        setStatuses((prev) => ({
-          ...prev,
-          [chapterId]: errorStatus
-        }))
-        
-        if (onError) {
-          onError(errorStatus)
-        }
-        
-        return false
-      }
-      
-      // Increment retry count but keep processing
-      setStatuses((prev) => ({
-        ...prev,
-        [chapterId]: {
-          ...prev[chapterId],
-          retryCount: currentAttempts + 1
-        }
-      }))
-      
-      return null // Still consider as processing
-    }  
-  }, [onStatusChange, onComplete, onError])
     // Poll status with exponential backoff
   const pollStatus = useCallback((chapterId: number) => {
     console.log(`🔄 Starting polling for chapter ${chapterId}`)
@@ -537,60 +508,6 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     }
   }, [pollingInterval, checkStatus, onError, setIsProcessing, setStatuses])
   
-  // Helper function to wait for completion
-  const waitForCompletion = useCallback(async (chapterId: number): Promise<{ success: boolean; error?: string }> => {
-    let attempts = 0
-    const maxAttempts = 60 // 10 minutes with 10 second intervals
-    
-    return new Promise((resolve) => {
-      const checkCompletion = async () => {
-        try {
-          const result = await checkStatus(chapterId)
-          
-          // If completed successfully
-          if (result === true) {
-            resolve({ success: true })
-            return
-          }
-          
-          // If error occurred
-          if (result === false) {
-            const status = statuses[chapterId]
-            resolve({ success: false, error: status?.message || "Video generation failed" })
-            return
-          }
-          
-          // Still processing, continue checking
-          attempts++
-          if (attempts >= maxAttempts) {
-            setIsProcessing((prev) => ({ ...prev, [chapterId]: false }))
-            setStatuses((prev) => ({
-              ...prev,
-              [chapterId]: {
-                chapterId,
-                status: "error",
-                message: "Timeout: Video generation took too long"
-              }
-            }))
-            resolve({ success: false, error: "Timeout: Video generation took too long" })
-            return
-          }
-          
-          // Wait and try again
-          setTimeout(checkCompletion, 10000) // 10 second intervals
-          
-        } catch (error) {
-          resolve({ 
-            success: false, 
-            error: error instanceof Error ? error.message : "Unknown error" 
-          })
-        }
-      }
-      
-      // Start checking
-      checkCompletion()
-    })
-  }, [checkStatus, statuses])
   // Initialize status for chapters that already have videos
   const initializeChapterStatus = useCallback((chapterId: number, videoId?: string | null) => {
     if (videoId) {
@@ -677,19 +594,28 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
         const stuckThreshold = 5 * 60 * 1000 // 5 minutes
         const potentiallyStuck = Object.entries(statuses).filter(([chapterId, status]) => {
           const isProcessing = status.status === "processing"
-          const startTime = status.startTime || now
-          const timeDiff = now - (typeof startTime === 'string' ? new Date(startTime).getTime() : startTime)
+          let startTimeNum = now
+          if (status.startTime) {
+            startTimeNum = typeof status.startTime === 'string' ? new Date(status.startTime).getTime() : status.startTime
+          }
+          const timeDiff = now - startTimeNum
           return isProcessing && timeDiff > stuckThreshold
         })
 
         if (potentiallyStuck.length > 0) {
           console.warn(`[VideoProcessing] ⚠️ Potentially stuck chapters detected:`, 
-            potentiallyStuck.map(([id, status]) => ({ 
-              id, 
-              status: status.status, 
-              message: status.message,
-              duration: Math.round((now - (status.startTime || now)) / 1000) + 's'
-            }))
+            potentiallyStuck.map(([id, status]) => { 
+              let startTimeNum = now
+              if (status.startTime) {
+                startTimeNum = typeof status.startTime === 'string' ? new Date(status.startTime).getTime() : status.startTime
+              }
+              return {
+                id,
+                status: status.status,
+                message: status.message,
+                duration: Math.round((now - startTimeNum) / 1000) + 's'
+              }
+            })
           )
         }
       }
