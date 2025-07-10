@@ -654,6 +654,52 @@ export function useVideoProcessing(options: UseVideoProcessingOptions = {}) {
     
     return () => clearInterval(interval)
   }, [useEnhancedService])
+    // Enhanced logging for debugging
+  useEffect(() => {
+    const logCurrentState = () => {
+      const processingChapters = Object.entries(isProcessing).filter(([_, processing]) => processing)
+      const statusSummary = Object.entries(statuses).reduce((acc, [chapterId, status]) => {
+        acc[status.status] = (acc[status.status] || 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+
+      if (processingChapters.length > 0 || Object.keys(statuses).length > 0) {
+        console.log(`[VideoProcessing] State Summary:`, {
+          processing: processingChapters.map(([id, _]) => id),
+          processingCount: processingChapters.length,
+          statusSummary,
+          queueStatus,
+          timestamp: new Date().toISOString()
+        })
+
+        // Check for potential stuck chapters
+        const now = Date.now()
+        const stuckThreshold = 5 * 60 * 1000 // 5 minutes
+        const potentiallyStuck = Object.entries(statuses).filter(([chapterId, status]) => {
+          const isProcessing = status.status === "processing"
+          const startTime = status.startTime || now
+          const timeDiff = now - (typeof startTime === 'string' ? new Date(startTime).getTime() : startTime)
+          return isProcessing && timeDiff > stuckThreshold
+        })
+
+        if (potentiallyStuck.length > 0) {
+          console.warn(`[VideoProcessing] ⚠️ Potentially stuck chapters detected:`, 
+            potentiallyStuck.map(([id, status]) => ({ 
+              id, 
+              status: status.status, 
+              message: status.message,
+              duration: Math.round((now - (status.startTime || now)) / 1000) + 's'
+            }))
+          )
+        }
+      }
+    }
+
+    // Log state every 30 seconds when there's activity
+    const interval = setInterval(logCurrentState, 30000)
+    return () => clearInterval(interval)
+  }, [isProcessing, statuses, queueStatus])
+
   return {
     processVideo,
     processMultipleVideos,

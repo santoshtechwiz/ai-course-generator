@@ -147,6 +147,43 @@ export class VideoRepository extends BaseRepository<any> {
 
     return { status, progress };
   }
+
+  /**
+   * Find chapters by their video status
+   */
+  async findChaptersWithStatus(status: 'idle' | 'processing' | 'completed' | 'error') {
+    const cacheKey = `chapters_status_${status}`;
+    const cachedChapters = videoCache.get(cacheKey);
+    
+    if (cachedChapters) {
+      return cachedChapters;
+    }
+    
+    try {
+      const chapters = await prisma.chapter.findMany({
+        where: { videoStatus: status },
+        select: { 
+          id: true, 
+          title: true,
+          youtubeSearchQuery: true, 
+          videoId: true, 
+          videoStatus: true,
+          summary: true,
+          summaryStatus: true,
+          updatedAt: true
+        },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      // Cache for a shorter time for status-based queries
+      videoCache.set(cacheKey, chapters, 300); // 5 minutes
+      
+      return chapters;
+    } catch (error) {
+      console.error(`Error finding chapters with status ${status}:`, error);
+      return null;
+    }
+  }
 }
 
 export const videoRepository = new VideoRepository();

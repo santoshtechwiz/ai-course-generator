@@ -21,8 +21,7 @@ const chapterCache = new Map<
 /**
  * Service for handling video processing business logic
  */
-export class VideoService {
-  /**
+export class VideoService {  /**
    * Get the status of a chapter's video
    */
   async getChapterVideoStatus(chapterId: number) {
@@ -41,18 +40,21 @@ export class VideoService {
       timestamp: new Date().toISOString(),
     };
   }
-
   /**
    * Process a video for a chapter
    */
   async processVideo(chapterId: number) {
+    console.log(`[VideoService] Processing video for chapter ${chapterId}`)
+    
     // Get chapter from cache or database
     let chapter = chapterCache.get(chapterId);
 
     if (!chapter) {
+      console.log(`[VideoService] Chapter ${chapterId} not in cache, fetching from database`)
       const chapterData = await videoRepository.findChapterById(chapterId);
 
       if (!chapterData) {
+        console.error(`[VideoService] Chapter ${chapterId} not found in database`)
         throw new Error("Chapter not found");
       }
 
@@ -65,10 +67,12 @@ export class VideoService {
 
       // Add to cache
       chapterCache.set(chapterId, chapter);
+      console.log(`[VideoService] Chapter ${chapterId} added to cache`)
     }
 
     // If video already exists, return early
     if (chapter.videoId) {
+      console.log(`[VideoService] Chapter ${chapterId} already has video: ${chapter.videoId}`)
       return {
         success: true,
         message: "Video already processed.",
@@ -79,6 +83,7 @@ export class VideoService {
 
     // If processing is in progress, return early
     if (chapter.videoStatus === "processing") {
+      console.log(`[VideoService] Chapter ${chapterId} already processing`)
       return {
         success: true,
         message: "Video generation already in progress.",
@@ -86,14 +91,20 @@ export class VideoService {
       };
     }
 
+    console.log(`[VideoService] Starting video processing for chapter ${chapterId} with search query: "${chapter.youtubeSearchQuery}"`)
+
     // Update chapter status to processing
     await videoRepository.updateChapterVideo(chapterId, null, "processing");
 
     // Update cache
     chapterCache.set(chapterId, { ...chapter, videoStatus: "processing" });
 
+    console.log(`[VideoService] Chapter ${chapterId} marked as processing, adding to queue`)
+
     // Add the task to the queue
     queue.add(() => this.fetchAndUpdateVideo(chapterId, chapter!.youtubeSearchQuery));
+
+    console.log(`[VideoService] Chapter ${chapterId} added to processing queue (queue size: ${queue.size}, pending: ${queue.pending})`)
 
     return {
       success: true,

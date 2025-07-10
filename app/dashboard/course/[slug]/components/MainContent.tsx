@@ -15,6 +15,7 @@ import VideoPlayer from "./video/components/VideoPlayer"
 import VideoNavigationSidebar from "./video/components/VideoNavigationSidebar"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
+import VideoGenerationSection from "./VideoGenerationSection"
 
 import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
 import { VideoDebug } from "./video/components/VideoDebug"
@@ -23,6 +24,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { User } from "@/modules/auth"
 import { useAuth } from "@/modules/auth"
 import { isAdmin } from "@/lib/auth"
+import CourseActions from "./CourseActions"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -532,9 +534,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     <div className="min-h-screen bg-background">
       {/* Mobile header */}
       <div className="flex">
-        {/* Main content */}
-        <main className="flex-1 min-w-0">
-          <div className="max-w-6xl mx-auto p-4 lg:p-6">
+        {/* Main content */}        <main className="flex-1 min-w-0">
+             <CourseActions slug={course.slug} />
+   
+          <div className="max-w-6xl mx-auto p-4 lg:p-6">            {/* Video Generation Section */}
+            <VideoGenerationSection 
+              course={course}
+              onVideoGenerated={(chapterId, videoId) => {
+                console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
+                // Optionally auto-select the newly generated video
+                if (videoId) {
+                  dispatch(setCurrentVideoApi(videoId))
+                }
+              }}
+            />
+
             {/* Video player section */}
             <div className="space-y-6">
               {/* Video player */}
@@ -551,7 +565,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       onVideoLoad={handleVideoLoad}
                       onPlayerReady={handlePlayerReady}
                       onBookmark={handleSeekToBookmark}
-                      bookmarks={Array.isArray(bookmarks) && typeof bookmarks[0] === 'object' ? bookmarks : []}
+                      bookmarks={[]}
                       isAuthenticated={!!user}
                       autoPlay={false}
                       showControls={true}
@@ -632,8 +646,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               <CourseDetailsTabs
                 course={course}
                 currentChapter={currentChapter}
-                accessLevels={accessLevels}
-                onSeekToBookmark={handleSeekToBookmark}
+                accessLevels={accessLevels}                onSeekToBookmark={handleSeekToBookmark}
               />
             </div>
           </div>

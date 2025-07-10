@@ -19,23 +19,34 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
   const [status, setStatus] = useState<CourseStatus>({ isPublic: false, isFavorite: false, rating: null })
 
   const router = useRouter()
-
   const fetchCourseStatus = useCallback(async () => {
     try {
       setLoading("status")
-      const response = await fetch(`/api/course/${slug}/status`)
+      const response = await fetch(`/api/course/status/${slug}`)
       if (!response.ok) {
+        // If course status doesn't exist, it's not necessarily an error
+        // Just use default values
+        if (response.status === 404) {
+          console.log(`Course status not found for ${slug}, using defaults`)
+          setStatus({ isPublic: false, isFavorite: false, rating: null })
+          return
+        }
         throw new Error(`Failed to fetch course status: ${response.statusText}`)
       }
       const data = await response.json()
-      setStatus(data)
-    } catch (error) {
+      setStatus(data)    } catch (error) {
       console.error("Error fetching course status:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch course status. Please try again.",
-        variant: "destructive",
-      })
+      // Don't show error toast for 404s, just use defaults
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (!errorMessage.includes('404')) {
+        toast({
+          title: "Warning",
+          description: "Could not fetch course status. Using default values.",
+          variant: "default",
+        })
+      }
+      // Set default values on error
+      setStatus({ isPublic: false, isFavorite: false, rating: null })
     } finally {
       setLoading(null)
     }

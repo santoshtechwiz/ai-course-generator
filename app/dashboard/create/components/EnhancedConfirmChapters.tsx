@@ -1,45 +1,36 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import Link from "next/link";
-import {
-  ChevronLeft,
-  ChevronRight,
-  BookOpen,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
-import { GlobalLoader } from "@/components/ui/loader";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { DragDropContext } from "react-beautiful-dnd";
-import type { Course, CourseUnit, Chapter } from "@prisma/client";
-import VideoPlayer from "./VideoPlayer";
-import { cn } from "@/lib/tailwindUtils";
-import UnitCard from "./UnitCard";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { GuidedHelp, GuidedHelpButton, useGuidedHelp } from "./GuidedHelp";
-import { ContextualHelp } from "./ContextualHelp";
-import { useEnhancedCourseEditor } from "../hooks/useEnhancedCourseEditor";
-import EnhancedUnitCard from "./EnhancedUnitCard";
-import { useToast } from "@/hooks";
+import { useEffect } from "react"
+import Link from "next/link"
+import { ChevronLeft, ChevronRight, BookOpen, CheckCircle, AlertCircle, PlayCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DragDropContext } from "react-beautiful-dnd"
+import type { Course, CourseUnit, Chapter } from "@prisma/client"
+import VideoPlayer from "./VideoPlayer"
+import { cn } from "@/lib/tailwindUtils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { GuidedHelp, GuidedHelpButton, useGuidedHelp } from "./GuidedHelp"
+import { ContextualHelp } from "./ContextualHelp"
+import { useEnhancedCourseEditor } from "../hooks/useEnhancedCourseEditor"
+import EnhancedUnitCard from "./EnhancedUnitCard"
+import { useToast } from "@/hooks"
+import { useRouter } from "next/navigation"
+import axios from "axios"
 
 export type CourseProps = {
   course: Course & {
     units: (CourseUnit & {
-      chapters: Chapter[];
-    })[];
-  };
-};
+      chapters: Chapter[]
+    })[]
+  }
+}
 
 const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
+  const router = useRouter()
+  const courseEditor = useEnhancedCourseEditor(initialCourse)
   const {
     course,
     completedChapters,
@@ -75,50 +66,44 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
     extractYoutubeIdFromUrl,
     generateVideoForChapter,
     cancelVideoProcessing,
-  } = useEnhancedCourseEditor(initialCourse);
-  const toast = useToast();
+  } = courseEditor
+  const { toast } = useToast()
   // Use the guided help hook
-  const { showHelp, openHelp, closeHelp, dismissPermanently } = useGuidedHelp();
+  const { showHelp, openHelp, closeHelp, dismissPermanently } = useGuidedHelp()
   // Initialize video processing on first load
   useEffect(() => {
     // Check if there are any chapters
-    const allChapters = course.units.flatMap(unit => unit.chapters);
-    console.log(`🔍 Initial load found ${allChapters.length} chapters in ${course.units.length} units`);
-    
+    const allChapters = course.units.flatMap((unit) => unit.chapters)
+    console.log(`🔍 Initial load found ${allChapters.length} chapters in ${course.units.length} units`)
+
     // Show a helpful message if there are no chapters
     if (allChapters.length === 0) {
       toast({
         title: "Welcome to Course Creation",
-        description: "To get started, add chapters to your course units. After adding chapters, you can generate videos for them.",
-      });
+        description:
+          "To get started, add chapters to your course units. After adding chapters, you can generate videos for them.",
+      })
     }
-    
+
+    // Only mark chapters that already have videos as completed - don't auto-generate
     if (completedChapters.size === 0) {
-      // Mark all chapters with videos as completed
-      const chaptersWithVideos = course.units.flatMap((unit) =>
-        unit.chapters.filter((chapter) => chapter.videoId)
-      );
+      const chaptersWithVideos = course.units.flatMap((unit) => unit.chapters.filter((chapter) => chapter.videoId))
 
       chaptersWithVideos.forEach((chapter) => {
-        handleChapterComplete(String(chapter.id));
-      });
+        handleChapterComplete(String(chapter.id))
+      })
     }
-  }, [course.units, completedChapters.size, handleChapterComplete, toast]);
+  }, [course.units, completedChapters.size, handleChapterComplete, toast])
 
   // Count chapters with errors
-  const chaptersWithErrors = Object.values(videoStatuses).filter(
-    (status) => status.status === "error"
-  ).length;
+  const chaptersWithErrors = Object.values(videoStatuses).filter((status) => status.status === "error").length
 
   return (
     <div className="flex flex-col h-full">
       {/* Guided Help Modal */}
       {showHelp && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <GuidedHelp
-            onClose={closeHelp}
-            onDismissPermanently={dismissPermanently}
-          />
+          <GuidedHelp onClose={closeHelp} onDismissPermanently={dismissPermanently} />
         </div>
       )}
       <div className="flex-none p-4 border-b">
@@ -142,8 +127,7 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           />
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              {completedChapters.size} of {totalChaptersCount} chapters
-              completed
+              {completedChapters.size} of {totalChaptersCount} chapters completed
             </p>
             {allChaptersCompleted && (
               <span className="text-sm text-green-600 font-medium flex items-center">
@@ -152,47 +136,76 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
               </span>
             )}
           </div>
-        </div>
-        {/* Show alert if there are chapters with errors */}
-        {chaptersWithErrors > 0 && (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Video Generation Issues</AlertTitle>
-            <AlertDescription>
-              {chaptersWithErrors}{" "}
-              {chaptersWithErrors === 1 ? "chapter" : "chapters"} had errors
-              during video generation. You can retry generating videos for these
-              chapters individually.
-            </AlertDescription>
-          </Alert>
-        )}{" "}
+        </div>{" "}
         {/* Show queue status when videos are being generated */}
         {isGeneratingVideos && (
           <Alert className="mt-4 bg-primary/10 border-primary/20">
             <div className="animate-spin h-4 w-4 text-primary mr-2" />
             <AlertTitle>Generating Videos</AlertTitle>
             <AlertDescription>
-              Videos are being generated for your chapters. This may take a few
-              minutes.
-              {queueStatus.pending > 0 &&
-                ` (${queueStatus.pending} videos in progress, ${queueStatus.size} in queue)`}
+              <div className="space-y-2">
+                <div>
+                  Videos are being generated for your chapters. This may take a few minutes.
+                  {queueStatus.pending > 0 &&
+                    ` (${queueStatus.pending} videos in progress, ${queueStatus.size} in queue)`}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  You can continue editing your course while videos are being generated. You'll be automatically
+                  redirected when all videos are ready.
+                </div>
+              </div>
             </AlertDescription>
           </Alert>
         )}
-      </div>{" "}      <ScrollArea className="flex-grow">
+        {/* Show retry options if some videos failed */}
+        {chaptersWithErrors > 0 && !isGeneratingVideos && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Video Generation Issues</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-3">
+                <div>
+                  {chaptersWithErrors} {chaptersWithErrors === 1 ? "chapter" : "chapters"} had errors during video
+                  generation.
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleGenerateAll(true)} // retry failed only
+                    disabled={isSaving || isGeneratingVideos}
+                  >
+                    Retry Failed Videos
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleGenerateAll(false)} // regenerate all
+                    disabled={isSaving || isGeneratingVideos}
+                  >
+                    Regenerate All Videos
+                  </Button>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>{" "}
+      <ScrollArea className="flex-grow">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="p-4 space-y-4">
             {/* Display a helpful message if there are no chapters */}
-            {course.units.flatMap(unit => unit.chapters).length === 0 && (
+            {course.units.flatMap((unit) => unit.chapters).length === 0 && (
               <Alert className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>No Chapters Found</AlertTitle>
                 <AlertDescription>
-                  Start by adding chapters to your course units. Once you have chapters, you can generate videos for them.
+                  Start by adding chapters to your course units. Once you have chapters, you can generate videos for
+                  them.
                 </AlertDescription>
               </Alert>
             )}
-            
+
             {course.units.map((unit, unitIndex) => (
               <ContextualHelp
                 key={String(unit.id)}
@@ -218,12 +231,8 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
                   onEditingChapterTitleChange={setEditingChapterTitle}
                   onShowVideo={showVideo}
                   onStartAddingChapter={startAddingChapter}
-                  onNewChapterTitleChange={(title) =>
-                    setNewChapter({ ...newChapter, title })
-                  }
-                  onNewChapterYoutubeIdChange={(id) =>
-                    setNewChapter({ ...newChapter, youtubeId: id })
-                  }
+                  onNewChapterTitleChange={(title) => setNewChapter({ ...newChapter, title })}
+                  onNewChapterYoutubeIdChange={(id) => setNewChapter({ ...newChapter, youtubeId: id })}
                   onAddNewChapter={addNewChapter}
                   onCancelAddingChapter={cancelAddingChapter}
                   extractYoutubeIdFromUrl={extractYoutubeIdFromUrl}
@@ -242,41 +251,90 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
               <ChevronLeft className="w-4 h-4 mr-2" />
               Back
             </Link>
-          </Button>
+          </Button>{" "}
           <ContextualHelp
-            title="Save and Continue"
-            description="This will save your course structure and generate videos for any chapters that don't have videos yet."
+            title="Save Course"
+            description="Save your course structure and optionally generate videos for all chapters. You can also save without videos and generate them later from the course page."
             side="top"
           >
-            {" "}
-            <Button
-              onClick={saveAndContinue}
-              disabled={isSaving || isGeneratingVideos}
-              className={cn(
-                "transition-all duration-300 shadow-md",
-                allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : ""
+            <div className="flex gap-3">
+              <Button
+                onClick={saveAndContinue}
+                disabled={isSaving || isGeneratingVideos}
+                className={cn(
+                  "flex-1 transition-all duration-300 shadow-md",
+                  allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : "",
+                )}
+              >
+                {isSaving || isGeneratingVideos ? (
+                  <span className="flex items-center">
+                    <div className="animate-spin h-4 w-4 text-primary mr-2" />
+                    {isSaving ? "Saving..." : "Generating Videos..."}
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    {allChaptersCompleted ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Save & View Course
+                      </>
+                    ) : (
+                      <>
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        Save & Generate Videos
+                      </>
+                    )}
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </span>
+                )}
+              </Button>
+
+              {/* Add explicit "Generate All Videos" button */}
+              {!allChaptersCompleted && !isGeneratingVideos && (
+                <Button
+                  onClick={() => handleGenerateAll(false)}
+                  disabled={isSaving}
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Generate All Videos
+                </Button>
               )}
-            >
-              {" "}
-              {isSaving ? (
-                <span className="flex items-center">
-                  <div className="animate-spin h-4 w-4 text-primary mr-2" />
-                  Saving...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  {allChaptersCompleted ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Save & Continue
-                    </>
-                  ) : (
-                    <>Generate Videos & Continue</>
-                  )}
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </span>
+
+              {/* Skip videos option - only show if there are chapters without videos */}
+              {course.units.flatMap((unit) => unit.chapters).some((chapter) => !chapter.videoId) && (
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    // Save course without generating videos, then redirect
+                    try {
+                      const updateData = courseEditor.prepareUpdateData()
+                      const saveResponse = await axios.post(`/api/course/update-chapters`, updateData)
+                      if (!saveResponse.data.success) {
+                        throw new Error(saveResponse.data.error || "Failed to save course structure")
+                      }
+                      toast({
+                        title: "Course Saved",
+                        description: "Course saved successfully. You can generate videos later from the course page.",
+                      })
+                      router.push(`/dashboard/course/${course.slug}`)
+                    } catch (error) {
+                      console.error("Error saving course:", error)
+                      toast({
+                        title: "Error",
+                        description: error instanceof Error ? error.message : "Failed to save course",
+                        variant: "destructive",
+                      })
+                    }
+                  }}
+                  disabled={isSaving || isGeneratingVideos}
+                  className="whitespace-nowrap"
+                >
+                  Save Without Videos
+                </Button>
               )}
-            </Button>
+            </div>
           </ContextualHelp>
         </div>
       </div>
@@ -287,13 +345,11 @@ const EnhancedConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           <DialogHeader>
             <DialogTitle>{currentVideoTitle}</DialogTitle>
           </DialogHeader>
-          {currentVideoId && (
-            <VideoPlayer videoId={currentVideoId} className="mt-2" />
-          )}
+          {currentVideoId && <VideoPlayer videoId={currentVideoId} className="mt-2" />}
         </DialogContent>
       </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default EnhancedConfirmChapters;
+export default EnhancedConfirmChapters

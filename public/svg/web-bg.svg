@@ -1,0 +1,51 @@
+<svg width="400" height="200" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="webGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F0FDF4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DCFCE7;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="200" fill="url(#webGradient)" />
+  
+  <!-- Browser window mockup -->
+  <g opacity="0.7">
+    <!-- Browser frame -->
+    <rect x="50" y="40" width="300" height="120" rx="8" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+    
+    <!-- Browser header -->
+    <rect x="50" y="40" width="300" height="30" rx="8" fill="#F9FAFB"/>
+    <rect x="50" y="62" width="300" height="1" fill="#E5E7EB"/>
+    
+    <!-- Browser dots -->
+    <circle cx="65" cy="55" r="3" fill="#EF4444"/>
+    <circle cx="80" cy="55" r="3" fill="#F59E0B"/>
+    <circle cx="95" cy="55" r="3" fill="#10B981"/>
+    
+    <!-- Address bar -->
+    <rect x="120" y="47" width="150" height="16" rx="8" fill="#E5E7EB"/>
+    
+    <!-- Content area with code-like elements -->
+    <g opacity="0.6">
+      <!-- HTML tag-like elements -->
+      <rect x="70" y="85" width="80" height="8" rx="2" fill="#3B82F6"/>
+      <rect x="160" y="85" width="120" height="8" rx="2" fill="#10B981"/>
+      
+      <rect x="90" y="100" width="60" height="6" rx="2" fill="#8B5CF6"/>
+      <rect x="160" y="100" width="90" height="6" rx="2" fill="#F59E0B"/>
+      
+      <rect x="70" y="115" width="100" height="8" rx="2" fill="#EF4444"/>
+      <rect x="180" y="115" width="80" height="8" rx="2" fill="#06B6D4"/>
+      
+      <rect x="90" y="130" width="140" height="6" rx="2" fill="#84CC16"/>
+    </g>
+  </g>
+  
+  <!-- Code brackets decoration -->
+  <g opacity="0.4" fill="#10B981">
+    <text x="320" y="50" font-family="monospace" font-size="20" font-weight="bold">&lt;/&gt;</text>
+    <text x="30" y="150" font-family="monospace" font-size="16" font-weight="bold">{}</text>
+    <text x="350" y="180" font-family="monospace" font-size="14" font-weight="bold">&lt;!--</text>
+  </g>
+</svg>

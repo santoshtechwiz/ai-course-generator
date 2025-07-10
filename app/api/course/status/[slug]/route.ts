@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import { videoService } from "@/app/services/video.service"
+import { courseService } from "@/app/services/course.service"
+import { getAuthSession } from "@/lib/auth"
 
 /**
- * GET: Get the video processing status for a course
+ * GET: Get the course status (public/private, favorite, etc.)
  */
 export async function GET(req: Request, props: { params: Promise<{ slug: string }> }) {
   const params = await props.params
@@ -12,9 +13,22 @@ export async function GET(req: Request, props: { params: Promise<{ slug: string 
     if (!slug) {
       return NextResponse.json({ error: "Invalid course slug" }, { status: 400 })
     }
+
+    // Get the current user session
+    const session = await getAuthSession()
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     
-    const status = await videoService.getCourseVideoStatus(slug)
-    return NextResponse.json(status)
+    const status = await courseService.getCourseStatus(slug, session.user.id)
+    
+    // Add rating field (currently not implemented in service, so default to null)
+    const response = {
+      ...status,
+      rating: null // TODO: Implement rating retrieval in course service
+    }
+    
+    return NextResponse.json(response)
   } catch (error) {
     console.error("Error fetching course status:", error)
     
