@@ -96,7 +96,7 @@ export class PaymentConfigValidator {
         // Support both new naming convention and legacy naming
         const stripeKey = isProduction 
           ? (process.env.STRIPE_SECRET_KEY || process.env.STRIPE_LIVE_SECRET_KEY)
-          : (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
+          : (process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
 
         if (!stripeKey) {
           errors.push(`Missing Stripe ${isProduction ? 'live' : 'test'} secret key`)
@@ -164,12 +164,12 @@ export class PaymentConfigValidator {
     const isProduction = process.env.NODE_ENV === 'production'
     
     // Check for any Stripe configuration
-    const hasStripeSecret = !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY)
+    const hasStripeSecret = !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
     const hasStripeWebhook = !!process.env.STRIPE_WEBHOOK_SECRET
     
     if (!hasStripeSecret) {
       issues.push("No Stripe secret key found")
-      suggestions.push(`Add ${isProduction ? 'STRIPE_SECRET_KEY' : 'STRIPE_TEST_SECRET_KEY'} to your environment`)
+      suggestions.push(`Add ${isProduction ? 'STRIPE_SECRET_KEY' : 'STRIPE_SECRET_KEY'} to your environment`)
     }
     
     if (!hasStripeWebhook) {
@@ -178,7 +178,7 @@ export class PaymentConfigValidator {
     }
     
     // Check key format
-    const currentKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY
+    const currentKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY
     if (currentKey) {
       if (isProduction && !currentKey.startsWith('sk_live_')) {
         issues.push("Using test key in production environment")
@@ -261,7 +261,7 @@ export class PaymentConfigManager {
         // Support both new naming convention and legacy naming
         const stripeApiKey = isProduction 
           ? (process.env.STRIPE_SECRET_KEY || process.env.STRIPE_LIVE_SECRET_KEY)
-          : (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
+          : (process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
 
         if (!stripeApiKey) return null
 

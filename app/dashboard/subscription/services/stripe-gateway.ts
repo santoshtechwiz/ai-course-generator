@@ -13,7 +13,7 @@ import { PaymentProvider, PaymentStatus } from "./payment-gateway-interface"
 import { logger } from "@/lib/logger"
 
 // Initialize Stripe with the API key and proper configuration
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_TEST || "", {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2025-02-24.acacia",
   timeout: 30000, // 30 second timeout for API requests
   maxNetworkRetries: 3, // Automatically retry failed requests

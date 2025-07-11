@@ -28,13 +28,13 @@ export async function GET(req: NextRequest) {
         errors: stripeEnvErrors,
       },
       currentConfig: {
-        hasStripeSecret: !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY),
+        hasStripeSecret: !!(process.env.STRIPE_SECRET_KEY ),
         hasStripeWebhook: !!process.env.STRIPE_WEBHOOK_SECRET,
         nodeEnv: process.env.NODE_ENV,
         keyType: process.env.STRIPE_SECRET_KEY 
           ? process.env.STRIPE_SECRET_KEY.substring(0, 7) + "..."
-          : process.env.STRIPE_TEST_SECRET_KEY 
-            ? process.env.STRIPE_TEST_SECRET_KEY.substring(0, 8) + "..."
+          : process.env.STRIPE_SECRET_KEY 
+            ? process.env.STRIPE_SECRET_KEY.substring(0, 8) + "..."
             : "none",
       },
       recommendations: [
