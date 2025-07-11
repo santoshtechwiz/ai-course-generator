@@ -10,12 +10,8 @@ export function getAIProviderConfig() {
     // The provider type to use (openai, google, etc.)
     providerType: process.env.AI_PROVIDER_TYPE || 'openai',
     
-    // API key for the provider - falls back to provider-specific keys
-    apiKey: process.env.AI_PROVIDER_API_KEY || 
-            (process.env.AI_PROVIDER_TYPE === 'google' ? 
-             process.env.GOOGLE_AI_API_KEY : 
-             process.env.OPENAI_API_KEY),
-    
+    // API key for OpenAI only
+    apiKey: process.env.OPENAI_API_KEY,
     // Default models to use for different user tiers
     models: {
       FREE: process.env.AI_MODEL_FREE || 'gpt-3.5-turbo-1106',
