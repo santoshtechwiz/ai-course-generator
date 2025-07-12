@@ -63,6 +63,7 @@ export class CodeQuizService extends BaseQuizService {
       question: q.question,
       codeSnippet: q.codeSnippet,
       options: JSON.parse(q.options || '[]'),
+      answer: q.answer,
       correctAnswer: q.answer,
       type: 'code',
     }));

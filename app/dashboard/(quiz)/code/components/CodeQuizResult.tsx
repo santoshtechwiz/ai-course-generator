@@ -6,16 +6,8 @@ import { BaseQuizResult } from "../../components/BaseQuizResult"
 import { processQuizAnswers } from "../../utils/quiz-result-utils"
 import { LearningInsights } from "../../mcq/components/LearningInsights"
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-/**
- * CodeQuizResult Component - Displays Code quiz results
- * Extends BaseQuizResult with code-specific processing
- */
 export default function CodeQuizResult({ result, onRetake }: CodeQuizResultProps) {
-  // Render the insights tab content with code-specific guidance
+
   const renderCodeInsights = (performance: any, stats: any) => {
     return (
       <div className="space-y-6">

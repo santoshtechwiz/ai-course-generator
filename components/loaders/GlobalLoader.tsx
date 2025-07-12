@@ -15,7 +15,7 @@ const COLORS = {
   backgroundDark: 'rgba(17, 24, 39, 0.95)'
 }
 
-function LoadingSpinner({ size = 40 }: { size?: number }) {
+export function LoadingSpinner({ size = 40 }: { size?: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}

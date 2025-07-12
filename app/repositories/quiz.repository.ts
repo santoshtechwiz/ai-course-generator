@@ -28,6 +28,8 @@ export class QuizRepository extends BaseRepository<any> {
       },
     });
   }
+
+
   /**
    * Create a new quiz
    */

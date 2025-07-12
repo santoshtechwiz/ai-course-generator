@@ -4,15 +4,13 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import { AnimatePresence, motion } from 'framer-motion'
-import { RefreshCw, Loader2 } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { createMachine } from 'xstate'
 import { useMachine } from '@xstate/react'
 
-import { Skeleton } from '@/components/ui/skeleton'
 import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
 import { Progress } from '@/components/ui/progress'
-import { GlobalLoader } from '@/components/ui/loader'
 
 import { useAuth } from '@/modules/auth'
 import {
@@ -25,6 +23,7 @@ import {
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
+import { LoadingSpinner } from '@/components/loaders/GlobalLoader'
 
 interface Props {
   slug: string
@@ -337,11 +336,8 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     const isRedirectingToQuiz = isRedirecting;
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-        <GlobalLoader
-          message={isRedirectingToQuiz ? "Preparing your quiz" : "Loading your quiz results"}
-          // subMessage is not supported in GlobalLoader, so only pass message
-          className="!z-50"
-        />
+        <LoadingSpinner/>
+   
       </div>
     )
   }

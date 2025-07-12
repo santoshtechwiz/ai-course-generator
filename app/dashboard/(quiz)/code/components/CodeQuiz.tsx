@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, memo } from "react"
+import { useState, useCallback, memo, useMemo } from "react"
 import { motion } from "framer-motion"
 import { useAppDispatch } from "@/store"
 import { saveAnswer } from "@/store/slices/quiz-slice"
@@ -61,56 +61,59 @@ const CodeQuiz = ({
   const dispatch = useAppDispatch()
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(existingAnswer || null)
   const [copied, setCopied] = useState(false)
+  const [isAnswering, setIsAnswering] = useState(false)
 
-  // Enhanced options with better quality and clarity
-  const enhancedOptions =
-    question.options?.map((option, index) => {
-      // Ensure options are distinct and meaningful
-      const optionVariations = [
-        option,
-        // Add contextual variations based on code type
-        ...(question.language === "javascript"
-          ? [
-              option.replace(/function/g, "method"),
-              option.replace(/variable/g, "identifier"),
-              option.replace(/returns/g, "outputs"),
-            ]
-          : []),
-        ...(question.language === "python"
-          ? [option.replace(/function/g, "def"), option.replace(/print/g, "output"), option.replace(/list/g, "array")]
-          : []),
-      ]
+  const options = useMemo(
+    () =>
+      question.options?.map((option) => {
+        const optionVariations = [
+          option,
+          ...(question.language === "javascript"
+            ? [
+                option.replace(/function/g, "method"),
+                option.replace(/variable/g, "identifier"),
+                option.replace(/returns/g, "outputs"),
+              ]
+            : []),
+          ...(question.language === "python"
+            ? [
+                option.replace(/function/g, "def"),
+                option.replace(/print/g, "output"),
+                option.replace(/list/g, "array"),
+              ]
+            : []),
+        ]
+        return {
+          id: option,
+          text: optionVariations[0],
+        }
+      }) || [],
+    [question.options, question.language]
+  )
 
-      // Return the most appropriate variation
-      return optionVariations[0]
-    }) || []
-  const handleAnswerSelection = useCallback((option: string) => {
-    if (isSubmitting) return
+  const handleOptionSelect = useCallback(
+    async (optionId: string) => {
+      if (isAnswering || isSubmitting) return
 
-    if (!enhancedOptions.includes(option)) return
-
-    // Only update state if different from current selection
-    if (selectedAnswer !== option) {
-      setSelectedAnswer(option)
-      onAnswer(option)
-
+      setIsAnswering(true)
       try {
-        dispatch(
-          saveAnswer({
-            questionId: String(question.id),
-            answer: {
-              questionId: question.id,
-              selectedOptionId: option,
-              timestamp: Date.now(),
-              type: "code",
-            },
-          }),
-        )
+        await new Promise((resolve) => setTimeout(resolve, 150))
+
+        const selected = options.find((o) => o.id === optionId)
+        if (selected) {
+          setSelectedAnswer(selected.text)
+          dispatch(saveAnswer({ questionId: String(question.id), userAnswer: selected.text }))
+          onAnswer(selected.text)
+        }
       } catch (error) {
-        console.error("Redux dispatch failed:", error)
+        console.error("Failed to select answer:", error)
+      } finally {
+        setIsAnswering(false)
       }
-    }
-  }, [isSubmitting, enhancedOptions, selectedAnswer, onAnswer, dispatch, question.id])
+    },
+    [isAnswering, isSubmitting, options, onAnswer, dispatch, question.id]
+  )
+
   const handleCopyCode = useCallback(async () => {
     if (question.codeSnippet) {
       try {
@@ -125,6 +128,7 @@ const CodeQuiz = ({
 
   const progressPercentage = Math.round((questionNumber / totalQuestions) * 100)
   const hasAnswer = !!selectedAnswer
+
   return (
     <QuizContainer
       questionNumber={questionNumber}
@@ -133,12 +137,11 @@ const CodeQuiz = ({
       animationKey={question.id}
       quizTitle={quizTitle}
       quizSubtitle={quizSubtitle}
-      difficulty={difficulty === 'Medium' ? 'medium' : difficulty === 'Hard' ? 'hard' : 'easy'}
+      difficulty={difficulty.toLowerCase()}
       category={category}
       timeLimit={timeLimit}
     >
       <div className="space-y-6">
-        {/* Question Header - Aligned with MCQ */}
         <motion.div
           className="text-center space-y-4 mb-6"
           initial={{ opacity: 0, y: -20 }}
@@ -168,7 +171,6 @@ const CodeQuiz = ({
           />
         </motion.div>
 
-        {/* Code Block - Enhanced and Aligned */}
         {question.codeSnippet && (
           <motion.div
             className="max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-border/30 group"
@@ -180,10 +182,8 @@ const CodeQuiz = ({
               transition: { duration: 0.2 },
             }}
           >
-            {/* Code Header - Improved */}
             <motion.div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700/50">
               <div className="flex items-center gap-3">
-                {/* Terminal Dots */}
                 <div className="flex gap-1.5">
                   <motion.div
                     className="w-3 h-3 rounded-full bg-red-500/80"
@@ -199,7 +199,6 @@ const CodeQuiz = ({
                   />
                 </div>
 
-                {/* Language Badge */}
                 <motion.div
                   className="flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg backdrop-blur-sm"
                   whileHover={{ scale: 1.02, backgroundColor: "rgba(51, 65, 85, 0.7)" }}
@@ -212,7 +211,6 @@ const CodeQuiz = ({
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Language Badge with Icon */}
                 <Badge
                   variant="secondary"
                   className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30 font-semibold text-xs"
@@ -221,7 +219,6 @@ const CodeQuiz = ({
                   {(question.language || "javascript").toUpperCase()}
                 </Badge>
 
-                {/* Copy Button */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -240,7 +237,6 @@ const CodeQuiz = ({
               </div>
             </motion.div>
 
-            {/* Code Content - Enhanced */}
             <motion.div className="relative overflow-hidden">
               <SyntaxHighlighter
                 language={question.language || "javascript"}
@@ -264,13 +260,11 @@ const CodeQuiz = ({
                 {question.codeSnippet}
               </SyntaxHighlighter>
 
-              {/* Subtle overlay gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none" />
             </motion.div>
           </motion.div>
         )}
 
-        {/* Options - Aligned with MCQ styling */}
         <motion.div
           className="max-w-3xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
@@ -278,16 +272,15 @@ const CodeQuiz = ({
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           <CodeQuizOptions
-            options={enhancedOptions}
+            options={options.map((o) => o.text)}
             selectedOption={selectedAnswer}
-            onSelect={handleAnswerSelection}
+            onSelect={handleOptionSelect}
             disabled={isSubmitting}
             correctAnswer={question.correctAnswer}
             showCorrectAnswer={false}
           />
         </motion.div>
 
-        {/* Footer - Consistent with MCQ */}
         {showNavigation && (
           <motion.div
             className="max-w-3xl mx-auto"
@@ -313,5 +306,4 @@ const CodeQuiz = ({
   )
 }
 
-// Use memo to prevent unnecessary re-renders
 export default memo(CodeQuiz)

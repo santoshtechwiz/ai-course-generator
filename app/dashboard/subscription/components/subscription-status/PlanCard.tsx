@@ -214,6 +214,11 @@ export default function PlanCards({
                       transition={{ duration: 1, delay: 0.2 * index }}
                     />
                   </div>
+                  <div className="mt-2 text-center sm:text-left">
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      Up to {plan.limits.maxQuestionsPerQuiz} questions per quiz
+                    </span>
+                  </div>
                 </div>
 
                 {/* Replace the old feature list with our new FeatureCategoryList component */}

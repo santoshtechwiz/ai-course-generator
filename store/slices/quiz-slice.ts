@@ -299,7 +299,7 @@ const quizSlice = createSlice({
 
     saveAnswer(state, action: PayloadAction<{
       questionId: string;
-      answer: string | Record<string, any>;
+      userAnswer: string | Record<string, any>;
       selectedOptionId?: string
     }>) {
       const question = state.questions.find((q) => String(q.id) === action.payload.questionId)
@@ -307,12 +307,12 @@ const quizSlice = createSlice({
 
       const correctAnswer = question.correctOptionId || question.answer || ''
 
-      const userAnswer = typeof action.payload.answer === 'string'
-        ? action.payload.answer
+      const userAnswer = typeof action.payload.userAnswer === 'string'
+        ? action.payload.userAnswer
         : ''
 
       const selectedOptionId = action.payload.selectedOptionId ||
-        (typeof action.payload.answer === 'object' && action.payload.answer.selectedOptionId) ||
+        (typeof action.payload.userAnswer === 'object' && action.payload.userAnswer.selectedOptionId) ||
         null
 
       const isCorrect = selectedOptionId
@@ -322,7 +322,7 @@ const quizSlice = createSlice({
 
       state.answers[action.payload.questionId] = {
         questionId: action.payload.questionId,
-        userAnswer: typeof action.payload.answer === 'object' ? '' : action.payload.answer,
+        userAnswer: typeof action.payload.userAnswer === 'object' ? '' : action.payload.userAnswer,
         selectedOptionId,
         isCorrect,
         type: question.type,
