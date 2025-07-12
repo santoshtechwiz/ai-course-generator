@@ -9,6 +9,7 @@ import PopularCourses from "@/app/dashboard/course/components/PopularCourses";
 import { QuizCourseWrapper } from "../(quiz)/components/QuizCourseWrapper";
 import { generateSeoMetadata } from "@/lib/utils/seo-utils";
 import NavigationDebugger from "@/components/debug/NavigationDebugger";
+import { JsonLD } from "@/lib/seo-manager-new";
 
 export const dynamic = "force-dynamic";
 
@@ -101,14 +102,8 @@ const Page = async ({
   return (
     <div className="container mx-auto py-6 min-h-screen bg-background text-foreground space-y-8">
       {process.env.NODE_ENV === 'development' && <NavigationDebugger />}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <JsonLD type="CreativeWork" data={creativeWorkSchema} />
+      <JsonLD type="BreadcrumbList" data={breadcrumbSchema} />
 
       <RandomQuote />
 

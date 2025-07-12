@@ -3,7 +3,19 @@
 import type React from "react"
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Share2, Trash2, Download, Heart, Settings, Loader2, TrendingUp, Crown } from "lucide-react"
+import {
+  Eye,
+  EyeOff,
+  Share2,
+  Trash2,
+  Download,
+  Heart,
+  Settings,
+  Loader2,
+  TrendingUp,
+  Crown,
+  Lock,
+} from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -45,7 +57,8 @@ export function QuizActions({
   const router = useRouter()
   const { user, subscription, isAuthenticated } = useAuth()
   const currentUserId = user?.id
-  const canDownloadPDF = subscription?.features?.advancedAnalytics || false
+  const canDownloadPDF = subscription?.status.toLowerCase() === "active" || subscription?.plan.toLocaleLowerCase()!== "free";
+
   const isOwner = currentUserId === ownerId
 
   const promptLogin = () =>
@@ -56,7 +69,11 @@ export function QuizActions({
     })
 
   const promptUpgrade = () =>
-    toast({ title: "Premium feature", description: "Upgrade to Premium to download PDFs", variant: "destructive" })
+    toast({
+      title: "Premium feature",
+      description: "Upgrade to Premium to download PDFs",
+      variant: "destructive",
+    })
 
   const updateQuiz = async (field: "isPublic" | "isFavorite", value: boolean) => {
     const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
@@ -151,7 +168,7 @@ export function QuizActions({
         loading: false,
         onClick: handleShare,
         disabled: false,
-        badge: "Popular",
+        badge: "Public",
         color: "blue",
         description: "Share this quiz with others",
       },
@@ -200,29 +217,27 @@ export function QuizActions({
   )
 
   const getButtonStyles = (color: string, active?: boolean, disabled?: boolean, premium?: boolean) => {
-    const baseStyles =
+    const base =
       "group relative flex items-center justify-center sm:justify-start gap-2 px-4 py-3 rounded-xl border text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md sm:min-w-[140px] min-w-[48px] h-12 sm:h-14 overflow-hidden"
 
     if (disabled) {
-      return cn(baseStyles, "bg-muted/50 border-muted text-muted-foreground cursor-not-allowed")
+      return cn(base, "bg-muted/50 border-muted text-muted-foreground cursor-not-allowed")
     }
 
     const colorMap = {
       pink: active
-        ? "bg-pink-500 border-pink-500 text-white hover:bg-pink-600 shadow-pink-200 dark:shadow-pink-900/20"
-        : "bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100 dark:bg-pink-950/50 dark:border-pink-800 dark:text-pink-300",
-      blue: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300",
+        ? "bg-pink-500 border-pink-500 text-white hover:bg-pink-600"
+        : "bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100",
+      blue: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100",
       emerald: premium
-        ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 text-amber-700 hover:from-amber-100 hover:to-yellow-100 dark:from-amber-950/20 dark:to-yellow-950/20 dark:border-amber-800 dark:text-amber-300"
-        : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:border-emerald-800 dark:text-emerald-300",
-      green:
-        "bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-950/50 dark:border-green-800 dark:text-green-300",
-      yellow:
-        "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-950/50 dark:border-yellow-800 dark:text-yellow-300",
-      red: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:border-red-800 dark:text-red-300",
+        ? "bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 text-yellow-700 hover:from-yellow-100 hover:to-amber-100"
+        : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100",
+      green: "bg-green-50 border-green-200 text-green-700 hover:bg-green-100",
+      yellow: "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100",
+      red: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
     }
 
-    return cn(baseStyles, colorMap[color as keyof typeof colorMap])
+    return cn(base, colorMap[color as keyof typeof colorMap])
   }
 
   return (
@@ -246,7 +261,7 @@ export function QuizActions({
                 </motion.div>
                 <div>
                   <h3 className="text-lg font-bold text-foreground">Quiz Actions</h3>
-                  <p className="text-sm text-muted-foreground">Manage your quiz settings</p>
+                  <p className="text-sm text-muted-foreground">Control your quiz from here</p>
                 </div>
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -278,155 +293,87 @@ export function QuizActions({
                     description,
                     premium,
                     destructive,
-                  }) => (
-                    <motion.div
-                      key={id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.2, delay: actionButtons.findIndex((btn) => btn.id === id) * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onHoverStart={() => setHoveredAction(id)}
-                      onHoverEnd={() => setHoveredAction(null)}
-                    >
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          {destructive ? (
-                            <ConfirmDialog
-                              onConfirm={onClick}
-                              trigger={
-                                <div className={getButtonStyles(color, active, disabled)}>
-                                  {/* Animated background */}
-                                  <motion.div
-                                    className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                    initial={false}
-                                  />
-
-                                  {/* Badge */}
-                                  {badge && (
-                                    <motion.span
-                                      className="absolute -top-2 -right-2 px-2 py-0.5 text-[10px] rounded-full font-bold bg-background border shadow-sm z-10"
-                                      initial={{ scale: 0 }}
-                                      animate={{ scale: 1 }}
-                                      transition={{ delay: 0.3, type: "spring" }}
-                                    >
-                                      {badge}
-                                    </motion.span>
-                                  )}
-
-                                  {/* Premium indicator */}
-                                  {premium && (
+                  }) => {
+                    const showLock = premium && disabled
+                    return (
+                      <motion.div
+                        key={id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.2 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onHoverStart={() => setHoveredAction(id)}
+                        onHoverEnd={() => setHoveredAction(null)}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {destructive ? (
+                              <ConfirmDialog
+                                onConfirm={onClick}
+                                trigger={
+                                  <div className={getButtonStyles(color, active, disabled)}>
                                     <motion.div
-                                      className="absolute -top-1 -left-1 p-1 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full shadow-lg"
-                                      animate={{ rotate: hoveredAction === id ? 360 : 0 }}
-                                      transition={{ duration: 0.5 }}
-                                    >
-                                      <Crown className="h-3 w-3 text-white" />
-                                    </motion.div>
-                                  )}
-
-                                  <div className="relative z-10 flex items-center gap-2">
-                                    {loading ? (
-                                      <Loader2 className="h-5 w-5 animate-spin" />
-                                    ) : (
-                                      <motion.div
-                                        animate={{
-                                          scale: hoveredAction === id ? 1.1 : 1,
-                                          rotate:
-                                            hoveredAction === id && id === "favorite" && active ? [0, -10, 10, 0] : 0,
-                                        }}
-                                        transition={{ duration: 0.2 }}
-                                      >
-                                        <Icon
-                                          className={cn("h-5 w-5", active && id === "favorite" && "fill-current")}
-                                        />
-                                      </motion.div>
+                                      className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                      initial={false}
+                                    />
+                                    {badge && (
+                                      <span className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white border shadow-sm font-bold z-10">
+                                        {badge}
+                                      </span>
                                     )}
-                                    <span className="hidden sm:inline font-medium">{label}</span>
+                                    {showLock && (
+                                      <Lock className="absolute top-1 left-1 h-4 w-4 text-yellow-600" />
+                                    )}
+                                    <div className="relative z-10 flex items-center gap-2">
+                                      {loading ? (
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                      ) : (
+                                        <Icon className={cn("h-5 w-5", active && id === "favorite" && "fill-current")} />
+                                      )}
+                                      <span className="hidden sm:inline font-medium">{label}</span>
+                                    </div>
                                   </div>
+                                }
+                              >
+                                <div className="text-center space-y-4">
+                                  <Trash2 className="mx-auto h-10 w-10 text-red-600" />
+                                  <h3 className="text-lg font-semibold">Delete Quiz</h3>
+                                  <p className="text-muted-foreground text-sm">This action is permanent.</p>
                                 </div>
-                              }
-                            >
-                              <div className="text-center space-y-4">
-                                <motion.div
-                                  className="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center"
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ type: "spring", delay: 0.1 }}
-                                >
-                                  <Trash2 className="h-8 w-8 text-red-600 dark:text-red-400" />
-                                </motion.div>
-                                <div>
-                                  <h3 className="font-bold text-lg mb-2">Delete Quiz</h3>
-                                  <p className="text-sm text-muted-foreground">
-                                    This action cannot be undone. Are you absolutely sure?
-                                  </p>
-                                </div>
-                              </div>
-                            </ConfirmDialog>
-                          ) : (
-                            <div
-                              className={getButtonStyles(color, active, disabled, premium)}
-                              onClick={!disabled ? onClick : undefined}
-                            >
-                              {/* Animated background */}
-                              <motion.div
-                                className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                initial={false}
-                              />
-
-                              {/* Badge */}
-                              {badge && (
-                                <motion.span
-                                  className="absolute -top-2 -right-2 px-2 py-0.5 text-[10px] rounded-full font-bold bg-background border shadow-sm z-10"
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ delay: 0.3, type: "spring" }}
-                                >
-                                  {badge}
-                                </motion.span>
-                              )}
-
-                              {/* Premium indicator */}
-                              {premium && (
-                                <motion.div
-                                  className="absolute -top-1 -left-1 p-1 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full shadow-lg"
-                                  animate={{ rotate: hoveredAction === id ? 360 : 0 }}
-                                  transition={{ duration: 0.5 }}
-                                >
-                                  <Crown className="h-3 w-3 text-white" />
-                                </motion.div>
-                              )}
-
-                              <div className="relative z-10 flex items-center gap-2">
-                                {loading ? (
-                                  <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                  <motion.div
-                                    animate={{
-                                      scale: hoveredAction === id ? 1.1 : 1,
-                                      rotate: hoveredAction === id && id === "favorite" && active ? [0, -10, 10, 0] : 0,
-                                    }}
-                                    transition={{ duration: 0.2 }}
-                                  >
-                                    <Icon className={cn("h-5 w-5", active && id === "favorite" && "fill-current")} />
-                                  </motion.div>
+                              </ConfirmDialog>
+                            ) : (
+                              <div
+                                className={getButtonStyles(color, active, disabled, premium)}
+                                onClick={!disabled ? onClick : undefined}
+                              >
+                                {badge && (
+                                  <span className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white border shadow-sm font-bold z-10">
+                                    {badge}
+                                  </span>
                                 )}
-                                <span className="hidden sm:inline font-medium">{label}</span>
+                                {showLock && (
+                                  <Lock className="absolute top-1 left-1 h-4 w-4 text-yellow-600" />
+                                )}
+                                <div className="relative z-10 flex items-center gap-2">
+                                  {loading ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                  ) : (
+                                    <Icon className={cn("h-5 w-5", active && id === "favorite" && "fill-current")} />
+                                  )}
+                                  <span className="hidden sm:inline font-medium">{label}</span>
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-xs">
-                          <div className="text-center">
-                            <p className="font-medium">{label}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{description}</p>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </motion.div>
-                  ),
+                            )}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-center text-sm">{description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </motion.div>
+                    )
+                  },
                 )}
               </AnimatePresence>
             </div>
