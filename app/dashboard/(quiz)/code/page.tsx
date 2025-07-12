@@ -2,8 +2,8 @@
 
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
-import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { GlobalLoader } from "../../../../components/GlobalLoader"
+import { GlobalLoader } from "@/components/loaders";
+import { useQuizPlan } from "@/modules/auth";
 
 const CodePage = () => {
   // Use our standardized hook for all quiz pages
