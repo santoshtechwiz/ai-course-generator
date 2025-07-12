@@ -33,7 +33,7 @@ import { motion } from "framer-motion";
 import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
-import { GlobalLoader } from "@/components/ui/loader";
+import { GlobalLoader, useLoader } from "@/components/ui/loader";
 import { QuizSchema } from "@/lib/seo-manager-new";
 import { QuizActions } from "../../components/QuizActions";
 

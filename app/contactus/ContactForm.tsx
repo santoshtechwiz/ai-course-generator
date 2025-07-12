@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import CourseAILoader from "@/components/ui/loader"
+import { GlobalLoader } from '@/components/ui/loader'
 
 import { createContactSubmission } from "@/app/actions/actions"
 import { Bug, CreditCard, Lightbulb, HelpCircle, MessageSquare, ChevronRight, CheckCircle, Send, AlertCircle } from 'lucide-react'
@@ -123,7 +123,7 @@ export default function ImprovedContactForm() {
   if (isPending) {
     return (
       <div className="max-w-3xl mx-auto mt-10">
-        <CourseAILoader 
+        <GlobalLoader 
           isLoading={true} 
           message="Submitting your message..." 
         />

@@ -3,7 +3,7 @@
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, Clock, Target, TrendingUp, Zap, Award, Flame } from "lucide-react"
-import { ClipLoader } from "react-spinners"
+import { GlobalLoader } from "@/components/ui/loader"
 
 interface QuizProgressProps {
   currentQuestionIndex: number
@@ -84,7 +84,7 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto flex flex-col items-center justify-center py-12">
-        <ClipLoader color="#3B82F6" size={40} />
+        <GlobalLoader />
         <p className="mt-4 text-sm text-muted-foreground">Loading quiz progress...</p>
       </div>
     )

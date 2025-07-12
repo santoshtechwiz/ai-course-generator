@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator"
 
 import EmailCampaignManager from "../components/email/email-campaign-manager"
 import EmailTemplateSystem from "../components/email/email-template-system"
-import { LoadingSkeleton } from "@/components/ui/SkeletonLoader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 export const metadata = {
@@ -40,13 +40,13 @@ export default async function EmailPage() {
         </TabsList>
 
         <TabsContent value="campaigns" className="space-y-6">
-          <Suspense fallback={<LoadingSkeleton />}>
+          <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <EmailCampaignManager />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6">
-          <Suspense fallback={<LoadingSkeleton />}>
+          <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <EmailTemplateSystem />
           </Suspense>
         </TabsContent>

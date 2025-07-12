@@ -13,7 +13,7 @@ import QuizDashboardWrapper from "./components/QuizDashboardWrapper"
 
 import ClientOnly from "@/components/ClientOnly"
 import { AnimatedIntro } from "./components/AnimatedIntro"
-import Loader from "@/components/ui/loader"
+import { GlobalLoader } from "@/components/ui/loader"
 
 
 export const metadata: Metadata = generateMetadata({
@@ -67,7 +67,7 @@ const QuizPage = async () => {
           <Suspense
             fallback={
               <div className="space-y-4">
-                <Loader/>
+                <GlobalLoader type="card" />
                 <QuizzesSkeleton />
               </div>
             }

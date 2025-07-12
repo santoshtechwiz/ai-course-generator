@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { ReferralBanner } from "@/components/ReferralBanner"
 import { useSubscription } from "@/modules/auth"
 
-import { SubscriptionSkeleton } from "@/components/ui/SkeletonLoader"
 
 import { LoginModal } from "@/app/auth/signin/components/LoginModal"
 
@@ -16,6 +15,7 @@ import { CancellationDialog } from "./cancellation-dialog"
 import { useMediaQuery } from "@/hooks"
 import TrialModal from "@/components/features/subscription/TrialModal"
 import { SubscriptionPlanType } from "@/app/types/subscription"
+import SubscriptionSkeleton from "./SubscriptionSkeleton"
 
 
 // Lazy load components
@@ -31,10 +31,20 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
   const [pendingSubscriptionData, setPendingSubscriptionData] = useState<any>(null)
   const [referralCode, setReferralCode] = useState<string | null>(refCode)
   const [showCancellationDialog, setShowCancellationDialog] = useState(false)
+  // Fallback for infinite loading
+  const [timedOut, setTimedOut] = useState(false)
 
   // Use the unified subscription hook
   const { subscription, isLoading, error, isAuthenticated, user } = useSubscription()
-  
+
+  // Log subscription errors for debugging
+  useEffect(() => {
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error("Subscription fetch error:", error)
+    }
+  }, [error])
+
   const isProd = process.env.NODE_ENV === "production"
   const userId = user?.id ?? null
   const router = useRouter()
@@ -107,10 +117,53 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
     }
   }, [isCancelled, router])
 
+  // Timeout fallback: if loading takes too long, show error
+  useEffect(() => {
+    if (isLoading && !timedOut) {
+      const timeout = setTimeout(() => {
+        setTimedOut(true)
+      }, 10000) // 10 seconds
+      return () => clearTimeout(timeout)
+    }
+    if (!isLoading && timedOut) {
+      setTimedOut(false)
+    }
+  }, [isLoading, timedOut])
+
   const renderContent = () => {
     // Show skeleton during initial loading
-    if (isLoading && !subscription) {
+    if ((isLoading && !subscription) && !timedOut) {
       return <SubscriptionSkeleton />
+    }
+    // Show error if loading timed out
+    if (timedOut) {
+      return (
+        <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle>Subscription service unavailable</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>We couldn't load your subscription data. Please try again later or contact support.</p>
+            <p className="text-sm text-muted-foreground">
+              This may be a temporary issue. If the problem persists, please refresh the page.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )
+    }
+    // Show error if subscription fetch failed
+    if (error) {
+      return (
+        <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-5 duration-300">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle>Error loading subscription data</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>{typeof error === 'string' ? error : 'Failed to load subscription data.'}</p>
+            <p className="text-sm text-muted-foreground">
+              Please try again or contact support if this persists.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )
     }
 
     return (

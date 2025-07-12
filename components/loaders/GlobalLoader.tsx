@@ -1,13 +1,12 @@
 "use client"
 
-import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { HashLoader } from 'react-spinners'
-import { AlertCircle } from 'lucide-react'
-import { useGlobalLoader } from '@/store/global-loader'
-import { cn } from '@/lib/utils'
+import React from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { HashLoader } from "react-spinners"
+import { AlertCircle } from "lucide-react"
+import { useGlobalLoader } from "@/store/global-loader"
+import { cn } from "@/lib/utils"
 
-// Course AI brand colors
 const COLORS = {
   primary: '#3B82F6', // blue-500
   success: '#10B981', // emerald-500
@@ -171,7 +170,6 @@ export function GlobalLoader() {
               {getSubMessage()}
             </motion.p>
           )}
-          
           {state === 'loading' && typeof progress === 'number' && (
             <ProgressBar progress={progress} />
           )}
@@ -238,5 +236,3 @@ export function GlobalLoader() {
     </AnimatePresence>
   )
 }
-
-export default GlobalLoader

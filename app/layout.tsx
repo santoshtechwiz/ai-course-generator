@@ -8,6 +8,8 @@ import { getServerAuthSession } from "@/lib/server-auth";
 import ClientLayoutWrapper from "./client-layout-wrapper";
 import { Suspense } from "react";
 import { font } from "./font";
+import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
+import { GlobalLoader } from "@/components/loaders";
 
 export const metadata: Metadata = {
   ...defaultMetadata,
@@ -70,50 +72,44 @@ export default async function RootLayout({
   const session = await getServerAuthSession();
 
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className="scroll-smooth overflow-x-hidden"
-    >
-      <head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=5"
-        />
-        <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
-        <meta
-          name="google-site-verification"
-          content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
-        />
-      </head>
-
-      <body
-        className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
+    <GlobalLoaderProvider>
+      <html
+        lang="en"
+        suppressHydrationWarning
+        className="scroll-smooth overflow-x-hidden"
       >
-        <Providers session={session}>
-          <ClientLayoutWrapper>
-            <main className="flex-1 w-full">
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center min-h-[60vh] w-full">
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                      <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                        Loading...
-                      </p>
-                    </div>
-                  </div>
-                }
-              >
-                {children}
-              </Suspense>
-            </main>
-            <Footer />
-          </ClientLayoutWrapper>
-        </Providers>
+        <head>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=5"
+          />
+          <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
+          <meta
+            name="google-site-verification"
+            content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
+          />
+        </head>
 
-        <DefaultSEO currentPath="/" includeFAQ={true} />
-      </body>
-    </html>
+        <body
+          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
+        >
+          <Providers session={session}>
+            <ClientLayoutWrapper>
+              <main className="flex-1 w-full">
+                <Suspense
+                  fallback={<GlobalLoader />}
+                >
+                  {children}
+                </Suspense>
+              </main>
+              <Footer />
+            </ClientLayoutWrapper>
+          </Providers>
+
+          <DefaultSEO currentPath="/" includeFAQ={true} />
+        </body>
+      </html>
+      <GlobalLoader />
+    </GlobalLoaderProvider>
   );
 }

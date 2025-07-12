@@ -1,47 +1,42 @@
 "use client"
 
-import React, { useEffect } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { GlobalLoader } from './GlobalLoader'
-import { useGlobalLoader } from '@/store/global-loader'
+import React, { useEffect } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { GlobalLoader } from "@/components/loaders/GlobalLoader"
+import { useGlobalLoader } from "@/store/global-loader"
 
 export function GlobalLoaderProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const { startLoading, stopLoading } = useGlobalLoader()
-  // Handle navigation loading
+
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout
-    let loaderShown = false
-
-    // Show loader with a slight delay to prevent flicker on fast navigations
-    timeoutId = setTimeout(() => {
-      startLoading({ 
-        message: 'Loading page...', 
-        isBlocking: false 
-      })
-      loaderShown = true
-    }, 100)
-
-    // Hide loader when navigation completes
-    const hideLoader = () => {
-      clearTimeout(timeoutId)
-      if (loaderShown) {
-        stopLoading()
+    let timeout: NodeJS.Timeout | null = null
+    const handleStart = () => {
+      // Only show loader if not already loading
+      if (!timeout) {
+        timeout = setTimeout(() => {
+          startLoading({ message: "Loading..." })
+        }, 100) // Small delay to avoid flicker
       }
     }
+    const handleComplete = () => {
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+      }
+      stopLoading()
+    }
 
-    // Call hideLoader immediately to ensure it runs on initial render and route changes
-    hideLoader()
+    // Listen to navigation events
+    router.events?.on?.("routeChangeStart", handleStart)
+    router.events?.on?.("routeChangeComplete", handleComplete)
+    router.events?.on?.("routeChangeError", handleComplete)
 
-    // Clean up on route change
-    return hideLoader
-  }, [pathname, searchParams, startLoading, stopLoading])
-
-  // Clean up any stray loaders on mount
-  useEffect(() => {
-    stopLoading()
-  }, [stopLoading])
+    // Fallback: stop loader on pathname change (for app router)
+    handleComplete()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   return (
     <>

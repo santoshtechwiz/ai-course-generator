@@ -21,10 +21,10 @@ import {
   clearQuizState,
   checkAuthAndLoadResults,
 } from '@/store/slices/quiz-slice'
+import { useGlobalLoader } from '@/store/global-loader'
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
-import { GlobalLoader } from '@/components/ui/loader'
 
 interface Props {
   slug: string

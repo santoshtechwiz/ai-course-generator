@@ -26,3 +26,5 @@ const VideoLoadingOverlay: React.FC<VideoLoadingOverlayProps> = ({
 };
 
 export default React.memo(VideoLoadingOverlay);
+
+// [DELETED: All loader logic is now handled by the centralized loader system in components/loaders.]

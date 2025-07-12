@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 import { blanksQuizSchema } from "@/schema/schema"
-import CourseAILoader from "@/components/ui/loader"
+import { GlobalLoader } from '@/components/ui/loader'
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -183,7 +183,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   if (isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto p-6">
-        <CourseAILoader isLoading={true} message="Creating your fill-in-the-blanks quiz..." />
+        <GlobalLoader />
       </div>
     )
   }
@@ -498,8 +498,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
         confirmText="Generate Now"
         cancelText="Cancel"
         showTokenUsage={true}
-        status={isLoading ? "loading" : submitError ? "error" : null}
-        errorMessage={submitError}
+        status={isLoading ? "loading" : submitError ? "error" : undefined}
+        errorMessage={submitError ?? undefined}
         tokenUsage={{
           used: Math.max(0, maxQuestions - credits),
           available: maxQuestions,

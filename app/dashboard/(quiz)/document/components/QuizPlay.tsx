@@ -20,7 +20,8 @@ import {
 import { Label } from "@/components/ui/label"
 import type { Quiz } from "@/lib/quiz-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { GlobalLoader } from "@/components/ui/loader"
+import { useGlobalLoader } from '@/store/global-loader'
+import { GlobalLoader } from '@/components/ui/loader'
 
 
 export function QuizPlayer({ quizId }: { quizId: string }) {

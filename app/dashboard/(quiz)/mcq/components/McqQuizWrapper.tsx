@@ -77,7 +77,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       hasShownLoaderRef.current = true;
       showLoading({
         message: "🎉 Quiz completed! Calculating your results...",
-        variant: 'spinner',
         theme: 'primary',
         isBlocking: true,
         priority: 8
@@ -119,7 +118,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       toast.success("Quiz submitted successfully!")
       showLoading({
         message: "🎉 Quiz completed! Calculating your results...",
-        variant: 'spinner',
         theme: 'primary',
         isBlocking: true,
         priority: 8

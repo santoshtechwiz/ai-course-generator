@@ -9,9 +9,7 @@ import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
-import CourseAILoader from "@/components/ui/loader"
-
-
+import { GlobalLoader } from "@/components/ui/loader"
 export default function OpenEndedQuizPage({
   params,
 }: {
@@ -25,7 +23,16 @@ export default function OpenEndedQuizPage({
 
   // Check for loading state
   if (authStatus === "loading") {
-    return <CourseAILoader isLoading={true} message="Initializing quiz..." subMessage="Loading user session" />
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] w-full">
+        <div className="flex flex-col items-center space-y-4">
+          <GlobalLoader />
+          <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
+            Initializing quiz...<br />Loading user session
+          </p>
+        </div>
+      </div>
+    )
   }
 
   if (!slug) {

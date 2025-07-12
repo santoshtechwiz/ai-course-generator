@@ -25,7 +25,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { GlobalLoader } from "@/components/ui/loader"
+import { GlobalLoader, useGlobalLoader } from "@/components/ui/loader"
 
 
 interface CodeQuizWrapperProps {

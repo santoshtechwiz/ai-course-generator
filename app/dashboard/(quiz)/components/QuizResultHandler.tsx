@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { NoResults } from '@/components/ui/no-results'
 import SignInPrompt from '@/app/auth/signin/components/SignInPrompt'
 import { Progress } from '@/components/ui/progress'
+import { GlobalLoader } from '@/components/ui/loader'
 
 import { useAuth } from '@/modules/auth'
 import {
@@ -24,7 +25,6 @@ import {
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
-import CourseAILoader from '@/components/ui/loader'
 
 interface Props {
   slug: string
@@ -335,12 +335,11 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   }, [state.value, isRedirecting]); // eslint-disable-line react-hooks/exhaustive-deps// Render loading or redirecting states with a single consistent loader
   if (isLoading || state.matches('loading') || isRedirecting) {
     const isRedirectingToQuiz = isRedirecting;
-      return (
+    return (
       <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-        <CourseAILoader 
-          isLoading={true}
+        <GlobalLoader
           message={isRedirectingToQuiz ? "Preparing your quiz" : "Loading your quiz results"}
-          subMessage={isRedirectingToQuiz ? "Redirecting you to the quiz page..." : "Please wait while we retrieve your results"}
+          // subMessage is not supported in GlobalLoader, so only pass message
           className="!z-50"
         />
       </div>

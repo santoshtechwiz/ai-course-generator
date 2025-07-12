@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { LoadingSkeleton } from "@/components/ui/SkeletonLoader"
+import { useGlobalLoader } from "@/store/global-loader"
+import { GlobalLoader } from "@/components/ui/loader"
 
 // Dynamically import the CourseList component to avoid hydration issues
 const CourseList = dynamic(() => import("@/components/features/home/CourseLists"), {
   ssr: false,
-  loading: () => <LoadingSkeleton />,
+  loading: () => <GlobalLoader message="Loading courses..." type="card" />,
 })
-
-
 
 const url = process.env.NEXT_PUBLIC_WEBSITE_URL
   ? `${process.env.NEXT_PUBLIC_WEBSITE_URL}/dashboard/explore`

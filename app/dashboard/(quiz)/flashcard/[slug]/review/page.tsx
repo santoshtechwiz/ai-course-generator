@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { GlobalLoader } from "@/components/ui/loader"
+import { GlobalLoader, useLoader } from "@/components/ui/loader"
 import QuizPlayLayout from "../../../components/layouts/QuizPlayLayout"
 
 interface FlashCardReviewPageProps {
