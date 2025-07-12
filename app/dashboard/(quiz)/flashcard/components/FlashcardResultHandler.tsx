@@ -12,10 +12,10 @@ import {
 } from "@/store/slices/flashcard-slice"
 import { useAuth } from '@/modules/auth'
 import { AnimatePresence, motion } from "framer-motion"
-import GlobalLoader from "@/components/ui/loaders/GlobalLoader"
 import FlashCardResults from "./FlashCardQuizResults"
 import { Button } from "@/components/ui/button"
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt"
+import { GlobalLoader } from "@/components/loaders"
 
 interface FlashcardResultHandlerProps {
   slug: string
