@@ -200,9 +200,10 @@ export function PricingPage({
   );
 
   useEffect(() => {
-    if (isAuthenticated && !subscriptionData) {
-      dispatch(fetchSubscription())
-    }
+    // Removed: subscription fetching is now handled globally by AuthProvider
+    // if (isAuthenticated && !subscriptionData) {
+    //   dispatch(fetchSubscription())
+    // }
   }, [isAuthenticated, subscriptionData, dispatch]);
     
   const daysUntilExpiration = expirationDate
