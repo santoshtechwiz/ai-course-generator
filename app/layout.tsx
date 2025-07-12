@@ -8,6 +8,8 @@ import { getServerAuthSession } from "@/lib/server-auth";
 import ClientLayoutWrapper from "./client-layout-wrapper";
 import { Suspense } from "react";
 import { font } from "./font";
+import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
+import { GlobalLoader } from "@/components/loaders";
 
 export const metadata: Metadata = {
   ...defaultMetadata,  metadataBase: new URL("https://courseai.io"),
@@ -472,33 +474,26 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="//platform.twitter.com" />
       </head>
 
-      <body
-        className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
-      >
-        <Providers session={session}>
-          <ClientLayoutWrapper>
-            <main className="flex-1 w-full">
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center min-h-[60vh] w-full">
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                      <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                        Loading...
-                      </p>
-                    </div>
-                  </div>
-                }
-              >
-                {children}
-              </Suspense>
-            </main>
-            <Footer />
-          </ClientLayoutWrapper>
-        </Providers>
+        <body
+          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
+        >
+          <Providers session={session}>
+            <ClientLayoutWrapper>
+              <main className="flex-1 w-full">
+                <Suspense
+                  fallback={<GlobalLoader />}
+                >
+                  {children}
+                </Suspense>
+              </main>
+              <Footer />
+            </ClientLayoutWrapper>
+          </Providers>
 
-        <DefaultSEO currentPath="/" includeFAQ={true} />
-      </body>
-    </html>
+          <DefaultSEO currentPath="/" includeFAQ={true} />
+        </body>
+      </html>
+      <GlobalLoader />
+    </GlobalLoaderProvider>
   );
 }

@@ -19,6 +19,4 @@ export * from "./tooltip"
 
 // Enhanced Components
 // Centralized Loader System
-export * from "./loader"
-
 export * from "./async-nav-link"

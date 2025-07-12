@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-import NodeCache from "node-cache"
 import type { NextRequest } from "next/server"
+import { QuizListService } from "@/app/services/quiz-list.service"
+import { getAuthSession } from "@/lib/auth"
 
 // Define response types for better type safety
 interface QuizListItem {
@@ -12,18 +12,13 @@ interface QuizListItem {
   timeStarted: Date
   slug: string
   questionCount: number
+  isFavorite: boolean
+  difficulty: string
 }
 
 interface ErrorResponse {
   error: string
 }
-
-// Create a cache for quizzes with 15 minute TTL
-const quizzesCache = new NodeCache({
-  stdTTL: 900, // 15 minutes
-  checkperiod: 60, // Check for expired keys every minute
-  useClones: false, // Disable cloning for better performance
-})
 
 export async function GET(req: NextRequest): Promise<NextResponse<QuizListItem[] | ErrorResponse>> {
   try {
@@ -32,63 +27,24 @@ export async function GET(req: NextRequest): Promise<NextResponse<QuizListItem[]
     const limit = Number.parseInt(searchParams.get("limit") || "10", 10)
     const quizType = searchParams.get("type") || undefined
     const search = searchParams.get("search") || undefined
+    const favorites = searchParams.get("favorites") === "true"
 
-    // Create a cache key based on the request parameters
-    const cacheKey = `quizzes_${limit}_${quizType || "all"}_${search || ""}`
+    // Get user from session if available
+    const session = await getAuthSession()
+    const userId = session?.user?.id
 
-    // Check if we have a cached response
-    const cachedResponse = quizzesCache.get<QuizListItem[]>(cacheKey)
-    if (cachedResponse) {
-      return NextResponse.json(cachedResponse)
-    }
+    const quizListService = new QuizListService()
 
-    // Build the query
-    const where: any = {
-      isPublic: true,
-      ...(quizType ? { quizType } : {}),
-      ...(search
-        ? {
-            title: {
-              contains: search,
-              mode: "insensitive" as const,
-            },
-          }
-        : {}),
-    }
-
-    const quizzes = await prisma.userQuiz.findMany({
-      take: limit,
-      orderBy: {
-        timeStarted: "desc",
-      },
-      select: {
-        id: true,
-        title: true,
-        quizType: true,
-        isPublic: true,
-        timeStarted: true,
-        slug: true,
-        _count: {
-          select: { questions: true },
-        },
-      },
-      where,
+    const quizzes = await quizListService.listQuizzes({
+      limit,
+      quizType,
+      search,
+      userId,
+      favoritesOnly: favorites,
     })
 
-    // Transform the data to include questionCount
-    const transformedQuizzes = quizzes.map((quiz) => ({
-      ...quiz,
-      questionCount: quiz._count.questions,
-    }))
-
-    // Filter quizzes with questionCount > 0
-    const filteredQuizzes = transformedQuizzes.filter((quiz) => quiz.questionCount > 0)
-
-    // Shuffle the filtered quizzes array
-    const shuffledQuizzes = filteredQuizzes.sort(() => Math.random() - 0.5)
-
-    // Cache the response
-    quizzesCache.set(cacheKey, shuffledQuizzes)
+    // Shuffle the quizzes
+    const shuffledQuizzes = [...quizzes].sort(() => Math.random() - 0.5)
 
     return NextResponse.json(shuffledQuizzes)
   } catch (error) {

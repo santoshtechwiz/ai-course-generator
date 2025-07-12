@@ -13,8 +13,9 @@ import FlashCardCreate from "@/app/dashboard/(quiz)/flashcard/components/FlashCa
 import FillInTheBlankQuizForm from "@/app/dashboard/(quiz)/blanks/components/BlankQuizForm"
 import CodeQuizForm from "@/app/dashboard/(quiz)/code/components/CodeQuizForm"
 import OpenEndedQuizForm from "@/app/dashboard/(quiz)/openended/components/OpenEndedQuizForm"
-import CreateCourseForm from "@/app/dashboard/create/components/CreateCourseForm"
+
 import { useAuth } from "@/modules/auth"
+import CreateCourseForm from "../../create/components/CreateCourseForm"
 
 type QuizType = "mcq" | "openended" | "fill-in-the-blanks" | "course" | "code" | "flashcard"
 
@@ -56,17 +57,17 @@ export function QuizCourseWrapper({ type, queryParams }: QuizCourseWrapperProps)
   const renderQuizForm = () => {
     switch (type) {
       case "mcq":
-        return <CreateQuizForm {...commonProps} />
+        return <CreateQuizForm isLoggedIn={false} {...commonProps} />
       case "openended":
-        return <OpenEndedQuizForm {...commonProps} />
+        return <OpenEndedQuizForm isLoggedIn={false} {...commonProps} />
       case "fill-in-the-blanks":
-        return <FillInTheBlankQuizForm {...commonProps} />
+        return <FillInTheBlankQuizForm isLoggedIn={false} {...commonProps} />
       case "course":
         return <CreateCourseForm {...commonProps} />
       case "code":
-        return <CodeQuizForm {...commonProps} />
+        return <CodeQuizForm isLoggedIn={false} {...commonProps} />
       case "flashcard":
-        return <FlashCardCreate maxCards={0} {...commonProps} />
+        return <FlashCardCreate isLoggedIn={false} maxCards={0} {...commonProps} />
       default:
         return null
     }

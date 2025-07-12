@@ -1,48 +1,48 @@
-import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 
-export type LoaderState = 'idle' | 'loading' | 'success' | 'error'
+export type LoaderState = "idle" | "loading" | "success" | "error";
 
 export interface LoaderOptions {
-  message?: string
-  subMessage?: string
-  progress?: number
-  isBlocking?: boolean
-  priority?: number
+  message?: string;
+  subMessage?: string;
+  progress?: number;
+  isBlocking?: boolean;
+  priority?: number;
 }
 
 interface GlobalLoaderStore {
   // State
-  state: LoaderState
-  isLoading: boolean
-  message?: string
-  subMessage?: string
-  progress?: number
-  isBlocking: boolean
-  error?: string
-  
+  state: LoaderState;
+  isLoading: boolean;
+  message?: string;
+  subMessage?: string;
+  progress?: number;
+  isBlocking: boolean;
+  error?: string;
+
   // Actions
-  startLoading: (options?: LoaderOptions) => void
-  stopLoading: () => void
-  setSuccess: (message?: string) => void
-  setError: (error: string) => void
-  setProgress: (progress: number) => void
-  
+  startLoading: (options?: LoaderOptions) => void;
+  stopLoading: () => void;
+  setSuccess: (message?: string) => void;
+  setError: (error: string) => void;
+  setProgress: (progress: number) => void;
+
   // Async helper
   withLoading: <T>(
     promise: Promise<T>,
     options?: LoaderOptions & {
-      onSuccess?: (result: T) => void
-      onError?: (error: any) => void
+      onSuccess?: (result: T) => void;
+      onError?: (error: any) => void;
     }
-  ) => Promise<T>
+  ) => Promise<T>;
 }
 
 export const useGlobalLoader = create<GlobalLoaderStore>()(
   devtools(
     (set, get) => ({
       // Initial state
-      state: 'idle',
+      state: "idle",
       isLoading: false,
       message: undefined,
       subMessage: undefined,
@@ -52,111 +52,111 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
 
       startLoading: (options = {}) => {
         set({
-          state: 'loading',
+          state: "loading",
           isLoading: true,
-          message: options.message || 'Loading...',
+          message: options.message || "Loading...",
           subMessage: options.subMessage,
           progress: options.progress,
           isBlocking: options.isBlocking || false,
-          error: undefined
-        })
-      },      stopLoading: () => {
-        const currentState = get()
-        // Only update state if not already idle to prevent infinite loops
-        if (currentState.state === 'idle') return
-        
+          error: undefined,
+        });
+      },
+      stopLoading: () => {
+        // Force reset the state to idle regardless of current state
         set({
-          state: 'idle',
+          state: "idle",
           isLoading: false,
           message: undefined,
           subMessage: undefined,
           progress: undefined,
           isBlocking: false,
-          error: undefined
-        })
+          error: undefined,
+        });
       },
 
       setSuccess: (message) => {
         set({
-          state: 'success',
+          state: "success",
           isLoading: false,
-          message: message || 'Success!',
-          error: undefined
-        })
+          message: message || "Success!",
+          error: undefined,
+        });
         // Auto-reset after 2 seconds, but only if still in success state
         setTimeout(() => {
-          if (get().state === 'success') {
-            get().stopLoading()
+          if (get().state === "success") {
+            get().stopLoading();
           }
-        }, 2000)
+        }, 2000);
       },
 
       setError: (error) => {
         set({
-          state: 'error',
+          state: "error",
           isLoading: false,
           error,
-          message: 'Error occurred'
-        })
+          message: "Error occurred",
+        });
         // Auto-reset after 3 seconds, but only if still in error state
         setTimeout(() => {
-          if (get().state === 'error') {
-            get().stopLoading()
+          if (get().state === "error") {
+            get().stopLoading();
           }
-        }, 3000)
+        }, 3000);
       },
 
       setProgress: (progress) => {
-        set({ progress: Math.max(0, Math.min(100, progress)) })
+        set({ progress: Math.max(0, Math.min(100, progress)) });
       },
 
       withLoading: async (promise, options = {}) => {
-        const { onSuccess, onError, ...loaderOptions } = options
-        const { startLoading, setSuccess, setError } = get()
+        const { onSuccess, onError, ...loaderOptions } = options;
+        const { startLoading, setSuccess, setError } = get();
 
-        startLoading(loaderOptions)
+        startLoading(loaderOptions);
 
         try {
-          const result = await promise
-          setSuccess()
-          onSuccess?.(result)
-          return result
+          const result = await promise;
+          setSuccess();
+          onSuccess?.(result);
+          return result;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'An error occurred'
-          setError(errorMessage)
-          onError?.(error)
-          throw error
+          const errorMessage =
+            error instanceof Error ? error.message : "An error occurred";
+          setError(errorMessage);
+          onError?.(error);
+          throw error;
         }
-      }
+      },
     }),
     {
-      name: 'global-loader-store'
+      name: "global-loader-store",
     }
   )
-)
+);
 
 // Compatibility layer for legacy imports
 export const useGlobalLoading = () => {
-  const store = useGlobalLoader()
-  
+  const store = useGlobalLoader();
+
   return {
     showLoading: (options: any) => {
       store.startLoading({
         message: options.message || "Loading...",
         subMessage: options.subMessage,
         progress: options.progress,
-        isBlocking: options.isBlocking || false
-      })
+        isBlocking: options.isBlocking || false,
+      });
       // Return a fake ID for compatibility
-      return Math.random().toString(36).substr(2, 9)    },
+      return Math.random().toString(36).substr(2, 9);
+    },
     hideLoading: (id?: string) => {
       // Simplified to prevent infinite loops - just a no-op
       // Components should not be managing global loader state directly
     },
     updateLoading: (id: string, options: any) => {
       if (options.progress !== undefined) {
-        store.setProgress(options.progress)
+        store.setProgress(options.progress);
       }
-    }
-  }
-}
+    },
+  };
+};

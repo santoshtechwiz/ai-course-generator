@@ -133,8 +133,8 @@ export class SubscriptionService {
 
       // Check cache first with extended TTL during errors
       const cacheKey = `subscription_${userId}`
-      let cachedData = subscriptionCache.get(cacheKey) // Declare cachedData with let
       const now = Date.now()
+      let cachedData = subscriptionCache.get(cacheKey) // Declare cachedData at function level
 
       // Use cached data if available and not expired
       if (cachedData) {
@@ -233,11 +233,11 @@ export class SubscriptionService {
         } else {
           logger.error(`Database error fetching subscription data: ${typeof dbError === "string" ? dbError : JSON.stringify(dbError)}`, { userId, errorCount });
         }
-        
-        // Fall back to cached data even if expired, or default values
-        if (cachedData) {
+          // Fall back to cached data even if expired, or default values
+        const cachedDataFallback = subscriptionCache.get(cacheKey)
+        if (cachedDataFallback) {
           logger.warn(`Using expired cached subscription data for user ${userId} due to DB error`);
-          return cachedData.data;
+          return cachedDataFallback.data;
         }
 
         const defaultData = {
@@ -262,11 +262,11 @@ export class SubscriptionService {
       } else {
         logger.error(`Error in getSubscriptionStatus for user ${userId}: ${error}`);
       }
-      
-      // Return cached data if available, otherwise provide default with more detailed status
-      if (cachedData) {
+        // Return cached data if available, otherwise provide default with more detailed status
+      const cachedDataError = subscriptionCache.get(`subscription_${userId}`)
+      if (cachedDataError) {
         logger.info(`Returning cached data for user ${userId} due to error`);
-        return cachedData.data;
+        return cachedDataError.data;
       }
       
       // If we get here, we have a network or service failure
@@ -360,23 +360,24 @@ export class SubscriptionService {
    *
    * @param promoCode - The promo code to validate
    * @returns Object with validation status and applicable plan
-   */
-  static async validatePromoCode(
+   */  static async validatePromoCode(
     promoCode: string,
   ): Promise<PromoValidationResult> {
-    // Simulate promo code validation
-    const validPromo = VALID_PROMO_CODES.find((p: any) => p.code === promoCode)
+    // Check if promo code exists in valid codes
+    const discount = VALID_PROMO_CODES[promoCode]
 
-    if (validPromo) {
+    if (discount) {
       return {
-        isValid: true,
-        planId: validPromo.planId,
-        discount: validPromo.discount,
+        valid: true,
+        code: promoCode,
+        discount,
+        discountPercentage: discount,
+        discountType: "percentage",
         message: "Promo code applied successfully!",
       }
     } else {
       return {
-        isValid: false,
+        valid: false,
         message: "Invalid promo code.",
       }
     }
@@ -396,7 +397,7 @@ export class SubscriptionService {
     try {
       const validationResult = await this.validatePromoCode(promoCode)
 
-      if (!validationResult.isValid) {
+      if (!validationResult.valid) {
         return { success: false, message: validationResult.message || "Invalid promo code." }
       }
 
@@ -427,10 +428,9 @@ export class SubscriptionService {
     planId: string,
     duration: number = 12, // Default to 12 months if not specified
     options?: any // Accept options for promo/referral
-  ): Promise<{ success: boolean; url?: string; message?: string }> {
-    try {
+  ): Promise<{ success: boolean; url?: string; message?: string }> {    try {
       // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway() as PaymentGateway
+      const paymentGateway = await getPaymentGateway()
       const checkoutResult = await paymentGateway.createCheckoutSession(userId, planId, duration, options)
       console.log(`Checkout URL created for user ${userId} and plan ${planId}: ${checkoutResult.url}`);
       return { success: true, url: checkoutResult.url }
@@ -462,11 +462,9 @@ export class SubscriptionService {
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
         logger.debug(`Using cached billing data for user ${userId}`)
         return cachedData.data
-      }
-
-      // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway
-      const billingDetails = await paymentGateway.getBillingDetails(userId)
+      }      // For simplicity, assume Stripe as the payment gateway
+      const paymentGateway = await getPaymentGateway()
+      const billingDetails = await paymentGateway.getBillingHistory(userId)
 
       // Cache the result
       subscriptionCache.set(cacheKey, { data: billingDetails, timestamp: Date.now() })
@@ -488,7 +486,7 @@ export class SubscriptionService {
     userId: string,
   ): Promise<{ success: boolean; message: string }> {
     try {      // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway()
+      const paymentGateway = await getPaymentGateway()
       await paymentGateway.cancelSubscription(userId)
 
       // Use transactional update to ensure consistency
@@ -529,14 +527,8 @@ export class SubscriptionService {
     try {
       if (!userId || !sessionId) {
         throw new Error("User ID and Session ID are required")
-      }
-
-      // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway | undefined
-      if (!paymentGateway || typeof paymentGateway.getPaymentStatus !== "function") {
-        logger.error("Payment gateway is not available or does not support getPaymentStatus")
-        return { success: false, message: "Payment gateway unavailable." }
-      }
+      }      // For simplicity, assume Stripe as the payment gateway
+      const paymentGateway = await getPaymentGateway()
       const status = await paymentGateway.getPaymentStatus(sessionId)
 
       if (status?.status === "succeeded") {
@@ -646,14 +638,8 @@ export class SubscriptionService {
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         logger.debug(`Returning cached billing history for user ${userId}`)
         return { success: true, history: cached.data }
-      }
-
-      // Get payment gateway (Stripe)
-      const paymentGateway = getPaymentGateway() as PaymentGateway | undefined
-      if (!paymentGateway || typeof paymentGateway.getBillingHistory !== "function") {
-        logger.error("Payment gateway is not available or does not support getBillingHistory")
-        return { success: false, error: "Billing history not available" }
-      }
+      }      // Get payment gateway (Stripe)
+      const paymentGateway = await getPaymentGateway()
 
       // Fetch billing history from Stripe - this returns any[] directly
       const billingData = await paymentGateway.getBillingHistory(userId)
@@ -683,15 +669,8 @@ export class SubscriptionService {
     try {
       if (!userId) {
         throw new Error("User ID is required")
-      }
-
-      // For simplicity, assume Stripe as the payment gateway
-      const paymentGateway = getPaymentGateway("stripe") as PaymentGateway | undefined
-      if (!paymentGateway || typeof paymentGateway.getPaymentMethods !== "function") {
-        logger.error("Payment gateway is not available or does not support getPaymentMethods")
-        return []
-      }
-
+      }      // For simplicity, assume Stripe as the payment gateway
+      const paymentGateway = await getPaymentGateway()
       const paymentMethods = await paymentGateway.getPaymentMethods(userId)
       return paymentMethods
     } catch (error: any) {

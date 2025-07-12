@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 import { codeQuizSchema } from "@/schema/schema"
-import CourseAILoader from "@/components/ui/loader"
+import { GlobalLoader } from '@/components/ui/loader'
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -321,7 +321,7 @@ export default function CodeQuizForm({ isLoggedIn, maxQuestions, credits, params
   if (isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto p-6">
-        <CourseAILoader isLoading={true} message="Creating your code quiz..." />
+        <GlobalLoader message="Creating your code quiz..." />
       </div>
     )
   }

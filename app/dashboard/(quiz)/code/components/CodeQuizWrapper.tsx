@@ -25,7 +25,8 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { GlobalLoader } from "@/components/ui/loader"
+import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+
 
 
 interface CodeQuizWrapperProps {
@@ -120,7 +121,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
     dispatch(saveAnswer({
       questionId: String(currentQuestion.id),
-      answer: selectedOptionId,
+      userAnswer: selectedOptionId,
       selectedOptionId
     }))
 
@@ -185,13 +186,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   if (isLoading) {
       return (
-      <GlobalLoader
-        fullScreen={true}
-        size="lg"
-        text="AI is generating your personalized quiz results"
-        subText="Crafting personalized content with advanced AI technology"
-        theme="primary"
-      />
+      <LoadingSpinner/>
     )
   }
   if (hasError) {

@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useGlobalLoader } from "@/store/global-loader"
 import { GlobalLoader } from "@/components/ui/loader"
 
 interface QuizzesSkeletonProps {

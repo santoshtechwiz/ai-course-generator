@@ -4,10 +4,11 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { motion, AnimatePresence } from "framer-motion"
-import { ClipLoader } from "react-spinners"
 import { CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useGlobalLoader } from '@/store/global-loader'
+import { GlobalLoader } from '@/components/ui/loader'
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 relative overflow-hidden",
@@ -154,7 +155,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <ClipLoader size={16} color="currentColor" />
+              <GlobalLoader size={16} color="currentColor" />
               {loadingText || "Loading..."}
             </motion.div>
           )

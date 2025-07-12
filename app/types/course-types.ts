@@ -1,3 +1,70 @@
+// Structure for course content generation output
+export type OutputUnits = {
+  title: string;
+  chapters: {
+    youtube_search_query: string;
+    chapter_title: string;
+  }[];
+}[];
+
+// Course search parameters
+export interface CourseSearchParams {
+  search?: string;
+  category?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
+/**
+ * Type for course update data
+ */
+export interface CourseUpdateData {
+  title?: string;
+  description?: string;
+  isFavorite?: boolean;
+  progress?: number;
+  isPublic?: boolean;
+}
+
+/**
+ * Type for course chapters update
+ */
+export interface CourseChaptersUpdate {
+  courseId: number;
+  slug: string;
+  units: Array<{
+    id: number;
+    chapters: Array<{
+      id: number | null;
+      title: string;
+      videoId: string | null;
+      unitId: number;
+      position: number;
+      isCustom?: boolean;
+      youtubeSearchQuery?: string;
+    }>;
+  }>;
+}
+
+/**
+ * Type for chapter creation
+ */
+export interface ChapterInput {
+  title: string;
+  youtubeSearchQuery?: string;
+  videoId?: string | null;
+  unitId: number;
+  position: number;
+}
+
+/**
+ * Type for video status
+ */
+export type VideoStatus = "pending" | "processing" | "completed" | "error";
+
 // Video and chapter related types
 export interface VideoMetadata {
   id: string;
@@ -165,11 +232,113 @@ export interface Chapter {
   isFree: boolean;
   duration: number;
   questions: Question[];
+  youtubeSearchQuery?: string; // <-- PATCHED: add this property for compatibility
 }
 
-export interface Question {
-  id: number;
-  question: string;
-  answer: string;
-  options: string[];
+/**
+ * Type for course creation parameters
+ */
+export interface CourseCreateParams {
+  title: string;
+  description?: string;
+  image?: string;
+  userId: string;
+  categoryId: number;
+  slug: string;
+}
+
+/**
+ * Type for course filtering results
+ */
+export interface FilteredCourseResult {
+  courses: any[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/**
+ * Enum for course difficulty levels
+ */
+export enum CourseDifficulty {
+  Beginner = "Beginner",
+  Intermediate = "Intermediate",
+  Advanced = "Advanced",
+}
+
+/**
+ * Interface for course stats
+ */
+export interface CourseStats {
+  totalCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  totalHours: number;
+  completedHours: number;
+}
+
+// Module types - extending CourseUnit concept
+export interface ModuleCreateData {
+  title: string;
+  description?: string;
+  courseId: number;
+  order?: number;
+  isRequired?: boolean;
+  estimatedDuration?: number;
+}
+
+export interface ModuleUpdateData {
+  title?: string;
+  description?: string;
+  order?: number;
+  isRequired?: boolean;
+  estimatedDuration?: number;
+  isCompleted?: boolean;
+}
+
+export interface ModuleWithProgress extends CourseUnit {
+  description?: string;
+  isRequired: boolean;
+  estimatedDuration: number;
+  completionRate: number;
+  chaptersCompleted: number;
+  totalChapters: number;
+  userProgress?: {
+    isCompleted: boolean;
+    completedChapters: number[];
+    timeSpent: number;
+    lastAccessedAt: Date;
+  };
+}
+
+export interface ModuleSearchParams {
+  courseId?: number;
+  isCompleted?: boolean;
+  isRequired?: boolean;
+  orderBy?: 'title' | 'order' | 'createdAt';
+  sortDirection?: 'asc' | 'desc';
+}
+
+export interface ModuleStats {
+  totalModules: number;
+  completedModules: number;
+  inProgressModules: number;
+  averageProgress: number;
+  totalChapters: number;
+  completedChapters: number;
+  estimatedTimeRemaining: number;
+}
+
+// Module operation result types
+export interface ModuleOperationResult {
+  success: boolean;
+  message: string;
+  module?: ModuleWithProgress;
+}
+
+export interface ModuleListResult {
+  modules: ModuleWithProgress[];
+  totalCount: number;
+  stats: ModuleStats;
 }

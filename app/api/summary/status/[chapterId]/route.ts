@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db"
+import { CourseService } from "@/app/services"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest, context: { params: Promise<{ chapterId?: string }> }) {
@@ -10,13 +10,11 @@ export async function GET(req: NextRequest, context: { params: Promise<{ chapter
   }
 
   try {
-    const chapter = await prisma.chapter.findUnique({
-      where: { id: chapterIdNumber },
-      select: {
-        summary: true,
-        summaryStatus: true,
-        videoId: true,
-      },
+    const courseService = new CourseService()
+    const chapter = await courseService.getChapterById(chapterIdNumber, {
+      summary: true,
+      summaryStatus: true,
+      videoId: true,
     })
 
     if (!chapter) {

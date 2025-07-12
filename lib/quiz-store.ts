@@ -26,7 +26,7 @@ export interface DocumentQuizAttempt {
 }
 
 const DB_NAME = "quizAppDB"
-const DB_VERSION = 2 // ✅ Incremented to force upgrade and add "quizAttempts" store
+const DB_VERSION = 2
 const QUIZ_STORE = "quizzes"
 const ATTEMPT_STORE = "quizAttempts"
 const isBrowser = typeof window !== "undefined"
@@ -86,7 +86,7 @@ class IndexedDBStore {
     }
   }
 
-  async saveQuiz(title: string, questions: Question[]): Promise<Quiz> {
+  async saveQuiz(title: string, questions: DocumentQuestion[]): Promise<Quiz> {
     await this.ensureDBReady()
 
     const quiz: Quiz = {
@@ -181,12 +181,11 @@ class IndexedDBStore {
     })
   }
 
-  // ✅ Attempts Logic Below
   async startQuizAttempt(quizId: string): Promise<string> {
     await this.ensureDBReady()
 
     const attemptId = crypto.randomUUID()
-    const attempt: QuizAttempt = {
+    const attempt: DocumentQuizAttempt = {
       id: attemptId,
       quizId,
       answers: [],
@@ -208,7 +207,6 @@ class IndexedDBStore {
   async saveQuizAnswer(attemptId: string, questionIndex: number, answerIndex: number): Promise<void> {
     await this.ensureDBReady()
 
-    // Add a runtime check for attemptId
     if (!attemptId) {
       throw new Error("Invalid attemptId passed to saveQuizAnswer")
     }
@@ -219,7 +217,11 @@ class IndexedDBStore {
       const req = store.get(attemptId)
 
       req.onsuccess = () => {
-        const attempt = req.result as QuizAttempt
+        const attempt = req.result as DocumentQuizAttempt
+        if (!attempt) {
+          reject(new Error("Attempt not found"))
+          return
+        }
         attempt.answers[questionIndex] = answerIndex
         store.put(attempt)
         resolve()
@@ -229,7 +231,7 @@ class IndexedDBStore {
     })
   }
 
-  async completeQuizAttempt(attemptId: string): Promise<QuizAttempt | null> {
+  async completeQuizAttempt(attemptId: string): Promise<DocumentQuizAttempt | null> {
     await this.ensureDBReady()
 
     return new Promise((resolve, reject) => {
@@ -242,7 +244,7 @@ class IndexedDBStore {
       attemptReq.onerror = () => reject(attemptReq.error)
 
       attemptReq.onsuccess = () => {
-        const attempt = attemptReq.result as QuizAttempt
+        const attempt = attemptReq.result as DocumentQuizAttempt
         if (!attempt) return resolve(null)
 
         const quizReq = quizStore.get(attempt.quizId)

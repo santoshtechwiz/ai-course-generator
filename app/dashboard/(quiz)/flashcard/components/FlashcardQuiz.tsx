@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { toast } from "sonner"
 import { Confetti } from "@/components/ui/confetti"
-import { GlobalLoader } from "@/components/ui/loader"
+import { GlobalLoader, useGlobalLoader } from "@/components/ui/loader"
 import { cn } from "@/lib/utils"
 import {
   initFlashCardQuiz,
@@ -18,6 +18,7 @@ import {
   ANSWER_TYPES
 } from "@/store/slices/flashcard-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
+import { useGlobalLoader } from '@/store/global-loader'
 
 // Import modular components
 import { FlashcardFront } from "./FlashcardFront"

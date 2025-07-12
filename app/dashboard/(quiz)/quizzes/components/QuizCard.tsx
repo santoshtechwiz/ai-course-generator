@@ -28,7 +28,7 @@ import {
   Heart,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { AsyncNavLink } from "@/components/ui"
+import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
 import { cn } from "@/lib/utils"
 import type { QuizType } from "@/app/types/quiz-types"
 

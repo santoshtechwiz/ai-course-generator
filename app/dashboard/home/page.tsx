@@ -13,10 +13,11 @@ import { useUserData, useUserStats } from "@/hooks/useUserDashboard"
 import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
 import type { DashboardUser, UserStats } from "@/app/types/types"
+import { useGlobalLoader } from '@/store/global-loader'
+import { GlobalLoader } from '@/components/ui/loader'
 
 // Import components dynamically to prevent navigation during render
 import dynamic from "next/dynamic"
-import { GlobalLoader } from "@/components/ui/loader"
 
 const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,

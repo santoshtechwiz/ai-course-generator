@@ -31,7 +31,6 @@ const nextConfig = {
     ],
     minimumCacheTTL: 60, // Cache images for at least 60 seconds
   },
-
   // Rewrites
   async rewrites() {
     return [
@@ -41,6 +40,8 @@ const nextConfig = {
       },
     ]
   },
+  
+  
 
   // Environment variables
   env: {

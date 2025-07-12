@@ -1,12 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
-import { Home, ChevronRight, Menu } from "lucide-react"
 import { FullCourseType } from "@/app/types/types"
 import MainContent from "./MainContent"
 import { cn } from "@/lib/utils"
+import CourseActions from "./CourseActions"
 
 interface EnhancedCourseLayoutProps {
   course: FullCourseType
@@ -27,13 +26,13 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
   return (
     <div className="min-h-screen flex flex-col">
       {/* Top navigation bar */}
-      <header className={cn(
-        "bg-background/95 backdrop-blur-sm border-b p-3 flex items-center justify-between",
-        "transition-all duration-300",
-        theatreMode && "h-0 p-0 overflow-hidden opacity-0"
-      )}>
-       
-
+      <header
+        className={cn(
+          "bg-background/95 backdrop-blur-sm border-b px-4 py-3 flex items-center justify-between",
+          "transition-all duration-300",
+          theatreMode && "h-0 p-0 overflow-hidden opacity-0"
+        )}
+      >
         <Button
           variant="outline"
           size="sm"
@@ -43,16 +42,11 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
         </Button>
       </header>
 
-      {/* Main content with theatre mode support */}
-      <div className={cn(
-        "flex-1",
-        theatreMode && "bg-black"
-      )}>
-        <MainContent 
-          course={course} 
-          initialChapterId={initialChapterId} 
-        />
-      
+      {/* Main area */}
+      <div className={cn("flex-1", theatreMode && "bg-black")}>
+        <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-6">
+              <MainContent course={course} initialChapterId={initialChapterId} />
+        </div>
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronDown, ChevronUp } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
+import { GlobalLoader, useGlobalLoader } from "@/store/global-loader"
 
 interface DebugPanelProps {
   editingChapterId: string | null

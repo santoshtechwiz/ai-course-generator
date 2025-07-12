@@ -20,7 +20,8 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useMobile } from "@/hooks/use-mobile"
-import { GlobalLoader } from "@/components/ui/loader"
+import { useGlobalLoader } from '@/store/global-loader'
+import { GlobalLoader } from '@/components/ui/loader'
 
 // Types based on the API response
 interface CourseQuizCard {
@@ -594,15 +595,15 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
   const isMobile = useMobile()
+  const { startLoading } = useGlobalLoader();
 
   const handleNavigation = async () => {
     setIsNavigating(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      // Fix navigation to go to create pages instead
+      startLoading({ message: product.type === "course" ? "Creating course..." : "Generating quiz..." });
+      await new Promise((resolve) => setTimeout(resolve, 800))      // Fix navigation to go to create pages instead
       if (product.type === "course") {
-        router.push(`/dashboard/create/course`)
+        router.push(`/dashboard/create`)
       } else if (product.type === "quiz" && product.quizType) {
         router.push(`/dashboard/create/${product.quizType == "blanks" ? "blanks" : product.quizType}`)
       }

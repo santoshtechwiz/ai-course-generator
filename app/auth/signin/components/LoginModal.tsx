@@ -7,9 +7,10 @@ import { getProviders, signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useGlobalLoader } from '@/store/global-loader'
+import { GlobalLoader } from '@/components/ui/loader'
 
 import { useToast } from "@/hooks"
-import CourseAILoader from "@/components/ui/loader"
 
 interface LoginModalProps {
   isOpen: boolean
@@ -274,7 +275,7 @@ export function LoginModal({
         <form onSubmit={handleLogin} className="space-y-5 p-6">
           {/* Auth Providers */}
           {!providers ? (
-            <CourseAILoader isLoading={true} message="Loading authentication options..."  />
+            <GlobalLoader message="Loading authentication options..." type="card" />
           ) : (
             <ModalAuthButtonGroup />
           )}

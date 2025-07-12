@@ -442,8 +442,7 @@ const CourseAILandingPage = () => {
                     className="px-8 py-6 text-lg rounded-full bg-primary hover:bg-primary/90 transition-all shadow-lg"
                     loadingText="Redirecting..."
                     successText="Redirected!"
-                    errorText="Please try again"
-                    onClickAsync={async () => {
+                    errorText="Please try again"                    onClickAsync={async () => {
                       await new Promise((resolve) => setTimeout(resolve, 800))
                       router.push("/dashboard/create")
                       return true

@@ -105,7 +105,16 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
   }, [])
 
   const handleGenerateAll = useCallback(() => {
-    // Mark all chapters as completed immediately
+    // Don't auto-mark chapters as completed - wait for explicit user action
+    console.log("handleGenerateAll called - user initiated video generation")
+
+    // Show confirmation toast
+    toast({
+      title: "Starting Video Generation",
+      description: "Generating videos for all chapters without existing videos...",
+    })
+
+    // Mark all chapters as completed immediately for UI feedback
     const allChapters = course.units.flatMap((unit) => unit.chapters)
     const newCompletedChapters = new Set(completedChapters)
 
@@ -114,7 +123,7 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
     })
 
     setCompletedChapters(newCompletedChapters)
-  }, [course.units, completedChapters])
+  }, [course.units, completedChapters, toast])
 
   const startEditingChapter = useCallback((chapter: Chapter) => {
     setEditingChapterId(String(chapter.id))
@@ -491,13 +500,24 @@ export function useCourseEditor(initialCourse: CourseWithUnits) {
     }
   }, [course])
 
-  // Save course changes
   const saveAndContinue = useCallback(async () => {
     try {
       setIsSaving(true)
 
-      // First, generate videos for all chapters
-      await generateAllVideos()
+      // Check if there are chapters without videos
+      const allChapters = course.units.flatMap((unit) => unit.chapters)
+      const chaptersWithoutVideos = allChapters.filter((chapter) => !chapter.videoId)
+
+      if (chaptersWithoutVideos.length > 0) {
+        // Ask user if they want to generate videos
+        toast({
+          title: "Generating Videos",
+          description: `Starting video generation for ${chaptersWithoutVideos.length} chapters...`,
+        })
+
+        // Generate videos for all chapters
+        await generateAllVideos()
+      }
 
       // Prepare data for API
       const updatedCourse = prepareUpdateData()

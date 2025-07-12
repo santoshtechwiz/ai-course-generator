@@ -135,15 +135,28 @@ export function PricingPage({
       if (result?.redirectUrl) {
         router.push(result.redirectUrl);
         return;
-      }
+      }      if (!result.success) {
+        // Show user-friendly error messages based on error type
+        let errorTitle = "Subscription Failed"
+        let errorDescription = result.message
 
-      if (!result.success) {
+        if (result.error === "SUBSCRIPTION_IN_PROGRESS") {
+          errorTitle = "Subscription In Progress"
+          errorDescription = "You already have a subscription request being processed. Please wait a few minutes before trying again."
+        } else if (result.error === "PLAN_CHANGE_RESTRICTED") {
+          errorTitle = "Plan Change Not Allowed"
+          errorDescription = "You cannot change your subscription until your current plan expires."
+        } else if (result.error === "ALREADY_SUBSCRIBED") {
+          errorTitle = "Already Subscribed"
+          errorDescription = "You already have an active subscription. Manage it from your account settings."
+        }
+
         toast({
-          title: "Subscription Failed",
-          description: result.message,
+          title: errorTitle,
+          description: errorDescription,
           variant: "destructive",
         })
-        setSubscriptionError(result.message || "Subscription failed.")
+        setSubscriptionError(errorDescription)
       }
     } catch (error: any) {
       const message = error?.message || "Unexpected error."
@@ -187,9 +200,10 @@ export function PricingPage({
   );
 
   useEffect(() => {
-    if (isAuthenticated && !subscriptionData) {
-      dispatch(fetchSubscription())
-    }
+    // Removed: subscription fetching is now handled globally by AuthProvider
+    // if (isAuthenticated && !subscriptionData) {
+    //   dispatch(fetchSubscription())
+    // }
   }, [isAuthenticated, subscriptionData, dispatch]);
     
   const daysUntilExpiration = expirationDate

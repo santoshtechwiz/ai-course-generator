@@ -11,6 +11,7 @@ import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw, Sparkles, Bo
 import { toast } from "@/hooks/use-toast"
 import type { Course, CourseProgress, UserQuizAttempt } from "@/app/types/types"
 import { useLocalStorage } from "@/lib/useLocalStorage"
+import { useGlobalLoader } from '@/store/global-loader'
 
 interface AIRecommendationsProps {
   courses: Course[]
@@ -44,6 +45,7 @@ const CACHE_TTL = 24 * 60 * 60 * 1000
 
 export default function AIRecommendations({ courses, courseProgress, quizAttempts }: AIRecommendationsProps) {
   const router = useRouter()
+  const { startLoading } = useGlobalLoader()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -264,6 +266,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     if (recommendation.type === "quiz") {
       generatePersonalizedQuiz(recommendation)
     } else {
+      startLoading({ message: "Loading course..." });
       router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
     }
   }
@@ -346,6 +349,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
       // Navigate to the course page
       const recommendation = recommendations.find((r) => r.type === "quiz")
       if (recommendation) {
+        startLoading({ message: "Loading course..." });
         router.push(`/dashboard/course/${recommendation.slug}?chapter=${recommendation.chapterId}`)
       }
     }

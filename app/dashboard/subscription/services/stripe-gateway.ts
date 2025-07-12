@@ -1,20 +1,20 @@
 /**
  * Stripe Payment Gateway Implementation
  *
- * This file contains the implementation of the Stripe payment gateway.
- * It handles all Stripe-specific operations like creating checkout sessions,
- * managing subscriptions, and verifying payments.
+ * This file contains the implementation of the Stripe payment gateway
+ * with better error handling, security, caching, and extensibility.
  */
 
 import Stripe from "stripe"
 import { prisma } from "@/lib/db"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
-import type { PaymentGateway, PaymentOptions, CheckoutResult, PaymentStatusResult } from "./payment-gateway-interface"
+import type { PaymentGateway, PaymentOptions, CheckoutResult, PaymentStatusResult, PaymentGatewayConfig } from "./payment-gateway-interface"
+import { PaymentProvider, PaymentStatus } from "./payment-gateway-interface"
 import { logger } from "@/lib/logger"
 
 // Initialize Stripe with the API key and proper configuration
-const stripe = new Stripe("***REMOVED***", {
-  apiVersion: "2024-10-28.acacia",
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2025-02-24.acacia",
   timeout: 30000, // 30 second timeout for API requests
   maxNetworkRetries: 3, // Automatically retry failed requests
 })
@@ -26,6 +26,57 @@ const customerCache = new Map<string, string>()
  * Stripe Payment Gateway implementation
  */
 export class StripeGateway implements PaymentGateway {
+  /**
+   * Get the provider name
+   */
+  getProvider(): PaymentProvider {
+    return PaymentProvider.STRIPE
+  }
+
+  /**
+   * Initialize the gateway with configuration
+   */
+  async initialize(config: PaymentGatewayConfig): Promise<void> {
+    // Stripe is initialized at module level, but we could validate config here
+    logger.info("Stripe gateway initialized")
+  }
+
+  /**
+   * Health check for the payment gateway
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Test Stripe API connectivity by listing a single customer
+      await stripe.customers.list({ limit: 1 })
+      return true
+    } catch (error) {
+      logger.error("Stripe health check failed:", error)
+      return false
+    }
+  }
+
+  /**
+   * Get payment status (alias for verifyPaymentStatus for interface compatibility)
+   */
+  async getPaymentStatus(sessionId: string): Promise<PaymentStatusResult> {
+    return this.verifyPaymentStatus(sessionId)
+  }
+
+  /**
+   * Get checkout session details
+   */
+  async getCheckoutSessionDetails(sessionId: string): Promise<any> {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['line_items', 'subscription', 'payment_intent']
+      })
+      return session
+    } catch (error) {
+      logger.error(`Failed to get checkout session details for ${sessionId}:`, error)
+      throw new Error(`Failed to retrieve checkout session: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
   public async createCheckoutSession(
     userId: string,
     planName: string,
@@ -144,12 +195,15 @@ export class StripeGateway implements PaymentGateway {
         if (!session.url) {
           logger.error("Stripe did not return a checkout URL")
           throw new Error("Failed to generate checkout URL")
-        }
-
-        return {
+        }        return {
           sessionId: session.id,
           url: session.url,
           customerId: stripeCustomerId,
+          provider: PaymentProvider.STRIPE,
+          amount: session.amount_total || priceOption.price * 100,
+          currency: "usd" as any,
+          expiresAt: new Date(session.expires_at * 1000),
+          metadata: session.metadata || {},
         }
       } catch (stripeError: any) {
         // Enhanced error handling for Stripe checkout creation
@@ -269,11 +323,16 @@ export class StripeGateway implements PaymentGateway {
       logger.error(`Error resuming subscription: ${error instanceof Error ? error.message : String(error)}`)
       throw error
     }
-  }
-
-  public async verifyPaymentStatus(sessionId: string): Promise<PaymentStatusResult> {
-    if (!sessionId) {
-      return { status: "failed" }
+  }  public async verifyPaymentStatus(sessionId: string): Promise<PaymentStatusResult> {
+    if (!sessionId) {      return { 
+        status: PaymentStatus.FAILED,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Session ID is required',
+          type: 'validation_error',
+          retryable: false
+        }
+      }
     }
 
     try {
@@ -298,23 +357,20 @@ export class StripeGateway implements PaymentGateway {
             // Process successful payment
             if (session.metadata?.userId && session.metadata?.tokens) {
               await this.processSuccessfulPayment(session)
-            }
-
-            return {
-              status: "succeeded",
+            }            return {
+              status: PaymentStatus.SUCCEEDED,
               subscription: session.subscription,
               customerId: typeof session.customer === "string" ? session.customer : session.customer?.id,
               amountPaid: session.amount_total ? session.amount_total / 100 : undefined,
-            }
-          } else if (session.status === "open") {
+            }          } else if (session.status === "open") {
             logger.info(`Payment pending for session ${sessionId}`)
-            return { status: "pending" }
+            return { status: PaymentStatus.PENDING }
           } else if (session.payment_status === "unpaid") {
             logger.info(`Payment failed for session ${sessionId}`)
-            return { status: "failed" }
+            return { status: PaymentStatus.FAILED }
           } else {
             logger.info(`Payment canceled for session ${sessionId}`)
-            return { status: "canceled" }
+            return { status: PaymentStatus.CANCELED }
           }
         } catch (error: any) {
           lastError = error
@@ -335,14 +391,20 @@ export class StripeGateway implements PaymentGateway {
             throw error
           }
         }
-      }
-
-      // If we've exhausted retries
+      }      // If we've exhausted retries
       logger.error(`Failed to verify payment after ${maxRetries} retries:`, lastError)
       throw lastError
     } catch (error) {
       logger.error(`Error verifying payment status: ${error instanceof Error ? error.message : String(error)}`)
-      return { status: "failed" }
+      return { 
+        status: PaymentStatus.FAILED,
+        error: {
+          code: 'VERIFICATION_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error during payment verification',
+          type: 'api_error',
+          retryable: true
+        }
+      }
     }
   }
 

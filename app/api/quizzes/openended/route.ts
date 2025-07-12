@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { generateSlug } from "@/lib/utils"
-import { generateOpenEndedQuiz } from "@/lib/chatgpt/userMcqQuiz"
+import { OpenEndedQuizService } from "@/app/services/openended-quiz.service"
 
 export async function POST(req: Request) {
   try {
@@ -14,73 +14,74 @@ export async function POST(req: Request) {
     if (!userId) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
+
     const creditDeduction = amount > 5 ? 2 : 1
 
     if (session.user.credits < creditDeduction) {
-      return { error: "Insufficient credits", status: 403 }
+      return NextResponse.json({ error: "Insufficient credits" }, { status: 403 })
     }
 
-    const quiz = await generateOpenEndedQuiz(title, amount)
+    const openEndedQuizService = new OpenEndedQuizService()
+    const quiz = await openEndedQuizService.generateQuiz({ title, amount })
+
     let slug = generateSlug(title)
     let suffix = 1
-    // Ensure slug uniqueness
     while (await prisma.userQuiz.findUnique({ where: { slug } })) {
       slug = `${generateSlug(title)}-${suffix++}`
-    }
-
-    // Increased transaction timeout to 60 seconds (60000ms)
-    const userQuiz = await prisma.$transaction(
+    }    const userQuiz = await prisma.$transaction(
       async (tx) => {
         await tx.user.update({
           where: { id: userId },
           data: { credits: { decrement: creditDeduction } },
         })
 
-        return await tx.userQuiz.create({
+        const createdQuiz = await tx.userQuiz.create({
           data: {
+            title,
+            slug,
             userId,
-            title: title,
-            timeStarted: new Date(),
             quizType: "openended",
-            slug: slug,
-            questions: {
-              create: (quiz.questions as unknown as {
-                question: string
-                correct_answer: string
-                hints: string[]
-                difficulty: string
-                tags: string[]
-              }[]).map(
-                (q) => ({
-                  question: q.question,
-                  answer: q.correct_answer,
-                  questionType: "openended",
-                  openEndedQuestion: {
-                    create: {
-                      hints: q.hints.join("|"),
-                      difficulty: q.difficulty,
-                      tags: q.tags.join("|"),
-                    },
-                  },
-                }),
-              ),
-            },
-          },
-          include: {
-            questions: {
-              include: {
-                openEndedQuestion: true,
-              },
-            },
+            timeStarted: new Date(),
           },
         })
+
+        // Create questions with proper formatting for open-ended questions
+        if (quiz.questions && quiz.questions.length > 0) {
+          await Promise.all(
+            quiz.questions.map(async (q: any) => {
+              const question = await tx.userQuizQuestion.create({
+                data: {
+                  userQuizId: createdQuiz.id,
+                  question: q.question,
+                  answer: q.answer,
+                  questionType: "openended",
+                },
+              })
+
+              // Create the open-ended question details
+              if (q.hints || q.difficulty || q.tags) {
+                await tx.openEndedQuestion.create({
+                  data: {
+                    questionId: question.id,
+                    userQuizId: createdQuiz.id,
+                    hints: Array.isArray(q.hints) ? q.hints.join("|") : (q.hints || ""),
+                    difficulty: q.difficulty || "medium",
+                    tags: Array.isArray(q.tags) ? q.tags.join("|") : (q.tags || ""),
+                  },
+                })
+              }
+            })
+          )
+        }
+
+        return createdQuiz
       },
       {
         timeout: 60000, // 60 seconds timeout
       },
     )
 
-    return NextResponse.json({ quizId: userQuiz.id, slug: userQuiz.slug })
+    return NextResponse.json(userQuiz)
   } catch (error) {
     console.error("Error generating quiz:", error)
     return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 })

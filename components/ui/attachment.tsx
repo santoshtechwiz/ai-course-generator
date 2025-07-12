@@ -4,9 +4,9 @@ import type React from "react"
 
 import { useState } from "react"
 import { cn } from "@/lib/tailwindUtils"
-import { Loader } from "@/components/ui/loader"
 import { X, Paperclip, File, FileText, ImageIcon, FileArchive } from "lucide-react"
 import Image from "next/image"
+import { HashLoader } from "react-spinners"
 
 export type AttachmentType = "image" | "document" | "archive" | "unknown"
 
@@ -20,6 +20,10 @@ export interface AttachmentProps {
   onRemove?: (id: string) => void
   isLoading?: boolean
   className?: string
+}
+
+function InlineSpinner({ size = 24, className = "" }: { size?: number; className?: string }) {
+  return <HashLoader color="#3B82F6" size={size} className={className} />
 }
 
 export function Attachment({
@@ -68,11 +72,11 @@ export function Attachment({
     >
       {isLoading ? (
         <div className="flex items-center justify-center h-10 w-10 rounded-md bg-muted">
-          <Loader size="sm" />
+          <InlineSpinner size={20} />
         </div>
       ) : type === "image" && thumbnailUrl ? (
         <div className="relative h-10 w-10 overflow-hidden rounded-md border bg-muted">
-          {!isImageLoaded && <Loader size="sm" className="absolute inset-0" />}
+          {!isImageLoaded && <InlineSpinner size={20} className="absolute inset-0" />}
           <Image
             src={thumbnailUrl || "/placeholder.svg"}
             alt={name}
@@ -201,7 +205,7 @@ export function AttachmentUploader({
 
       <div className="flex flex-col items-center justify-center gap-2 text-center">
         {isLoading ? (
-          <Loader size="md" text="Uploading..." />
+          <InlineSpinner size={24} />
         ) : (
           <>
             <div className="rounded-full bg-primary/10 p-3">

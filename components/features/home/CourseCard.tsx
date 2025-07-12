@@ -27,7 +27,7 @@ import {
   TrendingUp,
   Heart,
 } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
+import { useGlobalLoader } from '@/store/global-loader'
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -133,6 +133,7 @@ export const CourseCard = React.memo(
     const [isHovered, setIsHovered] = useState(false)
     const [isFavorite, setIsFavorite] = useState(false)
     const router = useRouter()
+    const { startLoading, stopLoading } = useGlobalLoader()
 
     // Memoized random selections for consistent rendering
     const { selectedImage, gradientBg, categoryConfig } = useMemo(() => {
@@ -156,9 +157,12 @@ export const CourseCard = React.memo(
     const levelConfig = LEVEL_CONFIG[courseLevel] || LEVEL_CONFIG.Intermediate
 
     const handleCardClick = (e: React.MouseEvent) => {
-      e.preventDefault()
-      setIsNavigating(true)
-      router.push(`/dashboard/course/${slug}`)
+      e.preventDefault();
+      startLoading({ message: "Loading course...", isBlocking: true });
+      setTimeout(() => {
+        router.push(`/dashboard/course/${slug}`);
+      }, 100);
+      // Optionally, stopLoading can be called after navigation completes if needed
     }
 
     const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -234,23 +238,6 @@ export const CourseCard = React.memo(
             isHovered && "shadow-2xl shadow-primary/10",
           )}
         >
-          {/* Loading Overlay */}
-          <AnimatePresence>
-            {isNavigating && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20"
-              >                <GlobalLoader 
-                  size="md"
-                  text="Loading course..."
-                  theme="primary"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Enhanced Image Section */}
           <div className="relative w-full aspect-[16/10] overflow-hidden">
             {/* Background Pattern */}

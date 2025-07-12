@@ -84,9 +84,8 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
-          <Button asChild>
-            <Link href="/dashboard/course/create">
+          </div>          <Button asChild>
+            <Link href="/dashboard/create">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Course
             </Link>

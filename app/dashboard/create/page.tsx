@@ -1,5 +1,3 @@
-
-
 import RandomQuote from "@/components/RandomQuote";
 import { BookOpen, Lightbulb, TrendingUp, ArrowRight } from "lucide-react";
 import { getCourseDetails } from "@/app/actions/getCourseDetails";
@@ -10,6 +8,8 @@ import type { QueryParams } from "@/app/types/types";
 import PopularCourses from "@/app/dashboard/course/components/PopularCourses";
 import { QuizCourseWrapper } from "../(quiz)/components/QuizCourseWrapper";
 import { generateSeoMetadata } from "@/lib/utils/seo-utils";
+import NavigationDebugger from "@/components/debug/NavigationDebugger";
+import { JsonLD } from "@/lib/seo-manager-new";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export const metadata = generateSeoMetadata({
     "Design and build your own interactive course with our intuitive course creation tools. Share your expertise and engage learners effectively.",
   keywords: [
     "course creation",
-    "build online course",
+    "build online course", 
     "teaching platform",
     "educational content",
     "course design",
@@ -99,17 +99,11 @@ const Page = async ({
       },
     ],
   };
-
   return (
     <div className="container mx-auto py-6 min-h-screen bg-background text-foreground space-y-8">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      {process.env.NODE_ENV === 'development' && <NavigationDebugger />}
+      <JsonLD type="CreativeWork" data={creativeWorkSchema} />
+      <JsonLD type="BreadcrumbList" data={breadcrumbSchema} />
 
       <RandomQuote />
 

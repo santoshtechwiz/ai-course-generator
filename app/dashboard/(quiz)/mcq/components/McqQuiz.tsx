@@ -65,26 +65,28 @@ const McqQuiz = ({
     }))
   }, [question?.options])
 
-  const handleOptionSelect = useCallback(async (optionId: string) => {
-    if (isAnswering || isSubmitting) return
-    
-    setIsAnswering(true)
-    
-    try {
-      // Add visual feedback delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 150))
-      
-      setSelectedOption(optionId)
-      onAnswer(optionId)
-      
-      // Show brief success feedback
-      toast.success("Answer selected!", { duration: 1000 })
-    } catch (error) {
-      toast.error("Failed to select answer")
-    } finally {
-      setIsAnswering(false)
+const handleOptionSelect = useCallback(async (optionId: string) => {
+  if (isAnswering || isSubmitting) return
+
+  setIsAnswering(true)
+
+  try {
+    await new Promise(resolve => setTimeout(resolve, 150))
+    setSelectedOption(optionId)
+
+    const selected = options.find((o) => o.id === optionId)
+    if (selected) {
+      onAnswer(selected.text) // ✅ Send actual answer text instead of index ID
     }
-  }, [onAnswer, isAnswering, isSubmitting])
+
+  
+  } catch (error) {
+    console.log("Failed to select answer")
+  } finally {
+    setIsAnswering(false)
+  }
+}, [onAnswer, isAnswering, isSubmitting, options])
+
 
   const questionText = question.text || question.question || "Question not available"
 

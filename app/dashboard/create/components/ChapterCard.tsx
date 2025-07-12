@@ -15,7 +15,6 @@ import { useChapterProcessing } from "../hooks/useChapterProcessing"
 import { useToast } from "@/hooks"
 import VideoPlayer from "./VideoPlayer"
 
-
 type Props = {
   chapter: Chapter
   chapterIndex: number
@@ -140,9 +139,9 @@ const ActionButton: React.FC<ActionButtonProps> = React.memo(
 
     if (status === "success") {
       return (
-        <Button disabled variant="outline" className="w-full sm:w-auto">
+        <Button disabled variant="outline" className="w-full sm:w-auto bg-transparent">
           <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-          Completed
+          Video Ready
         </Button>
       )
     }
@@ -151,7 +150,7 @@ const ActionButton: React.FC<ActionButtonProps> = React.memo(
       return (
         <Button disabled variant="secondary" className="w-full sm:w-auto">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Processing...
+          Generating Video...
         </Button>
       )
     }
@@ -161,14 +160,15 @@ const ActionButton: React.FC<ActionButtonProps> = React.memo(
       return (
         <Button onClick={() => triggerProcessing()} variant="destructive" className="w-full sm:w-auto">
           <RefreshCw className="mr-2 h-4 w-4" />
-          {isTimeout ? "Timed Out - Retry" : "Retry"}
+          {isTimeout ? "Timed Out - Retry" : "Retry Generation"}
         </Button>
       )
     }
 
     return (
       <Button onClick={() => triggerProcessing()} className="w-full sm:w-auto" data-sidebar="generate-button">
-        Generate
+        <PlayCircle className="mr-2 h-4 w-4" />
+        Generate Video
       </Button>
     )
   },
@@ -198,18 +198,24 @@ const ChapterCard = React.memo(
       useEffect(() => {
         setVideoId(chapter.videoId || "")
       }, [chapter.videoId])
-      
+
       React.useImperativeHandle(ref, () => ({
         triggerLoad: async () => {
-          if (!isCompleted && state.videoStatus !== "processing") {
+          // Only generate video if explicitly requested and chapter doesn't have video
+          if (!isCompleted && state.videoStatus !== "processing" && !chapter.videoId) {
+            console.log(`🎬 User explicitly requested video generation for chapter: ${chapter.title}`)
             if (props.onGenerateVideo) {
               await props.onGenerateVideo(chapter)
             } else {
               await triggerProcessing()
             }
-          }        },
+          } else if (chapter.videoId) {
+            console.log(`✅ Chapter ${chapter.title} already has video: ${chapter.videoId}`)
+            onChapterComplete(String(chapter.id))
+          }
+        },
       }))
-      
+
       const { isProcessing, isSuccess, isError } = useMemo(() => {
         // If we have a specific generation status, use it
         if (props.generationStatus) {
@@ -345,7 +351,7 @@ const ChapterCard = React.memo(
           })
         }
       }
-      
+
       const handleGenerateVideo = async () => {
         if (props.onGenerateVideo) {
           await props.onGenerateVideo(chapter)
@@ -409,20 +415,21 @@ const ChapterCard = React.memo(
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">              <StatusIndicator
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              {" "}
+              <StatusIndicator
                 icon={PlayCircle}
                 label="Video"
                 status={props.generationStatus?.status || state.videoStatus}
                 message={props.generationStatus?.message}
               />
-
               {!isEditingVideo ? (
                 <div className="flex gap-2 mt-2">
                   {!props.hideVideoControls && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-xs"
+                      className="text-xs bg-transparent"
                       onClick={() => setIsEditingVideo(true)}
                       data-sidebar="video-button"
                     >
@@ -431,7 +438,7 @@ const ChapterCard = React.memo(
                     </Button>
                   )}
                   {chapter.videoId && (
-                    <Button variant="outline" size="sm" className="text-xs" onClick={handlePreviewVideo}>
+                    <Button variant="outline" size="sm" className="text-xs bg-transparent" onClick={handlePreviewVideo}>
                       <Eye className="h-3.5 w-3.5 mr-1" />
                       Preview
                     </Button>
@@ -471,7 +478,12 @@ const ChapterCard = React.memo(
                   className="w-full"
                   fallbackMessage="Video not available"
                 />
-                <Button size="sm" variant="outline" className="mt-2" onClick={() => setShowVideoPreview(false)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 bg-transparent"
+                  onClick={() => setShowVideoPreview(false)}
+                >
                   Close Preview
                 </Button>
               </div>
@@ -481,7 +493,8 @@ const ChapterCard = React.memo(
             <ActionButton
               isSuccess={isSuccess}
               isProcessing={isProcessing}
-              isGenerating={isGenerating}              triggerProcessing={handleGenerateVideo}
+              isGenerating={isGenerating}
+              triggerProcessing={handleGenerateVideo}
               generationStatus={props.generationStatus}
             />
           </CardFooter>

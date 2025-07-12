@@ -17,9 +17,10 @@ import Logo from "./Logo"
 import { useAuth, useSubscription } from "@/modules/auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
+import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
+import { useGlobalLoader } from '@/store/global-loader'
 
 import { motion, AnimatePresence } from "framer-motion"
-import { AsyncNavLink } from "@/components/ui"
 
 
 
@@ -28,6 +29,7 @@ export default function MainNavbar() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const subscription = useSubscription()
+  const { startLoading } = useGlobalLoader()
   
   // Extract subscription details
   const totalTokens = user?.credits || 0
@@ -137,14 +139,18 @@ export default function MainNavbar() {
   const handleSearchOpen = useCallback(() => setIsSearchModalOpen(true), [])
   const handleSearchClose = useCallback(() => setIsSearchModalOpen(false), [])
   const handleMobileMenuToggle = useCallback(() => setIsMobileMenuOpen((prev) => !prev), [])
-  const handleSignIn = useCallback(() => router.push("/api/auth/signin"), [router])
+  const handleSignIn = useCallback(() => {
+    startLoading({ message: "Redirecting to sign in..." });
+    router.push("/api/auth/signin")
+  }, [router, startLoading])
 
   const handleSearchResult = useCallback(
     (url: string) => {
+      startLoading({ message: "Loading page..." });
       router.push(url)
       handleSearchClose()
     },
-    [router, handleSearchClose],
+    [router, handleSearchClose, startLoading],
   )  // Navigation items with active state and animations
   const navigationItems = useMemo(
     () =>

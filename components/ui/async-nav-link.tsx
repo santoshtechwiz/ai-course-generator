@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useCallback } from "react"
 
 import { useGlobalLoader } from "@/store/global-loader"
+import { GlobalLoader } from "@/components/ui/loader"
 
 interface AsyncNavLinkProps {
   href: string
@@ -54,3 +55,5 @@ export function AsyncNavLink({ href, children, className, onClick, loaderOptions
     </a>
   )
 }
+
+// [DELETED: Moved to components/loaders/AsyncNavLink.tsx. Use that instead.]

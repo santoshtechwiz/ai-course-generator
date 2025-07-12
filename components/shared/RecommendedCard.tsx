@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { type RecommendedItem } from "@/app/utils/get-recommended-items"
+import { useGlobalLoader } from '@/store/global-loader'
 
 interface RecommendedCardProps {
   item: RecommendedItem
@@ -14,6 +15,7 @@ interface RecommendedCardProps {
 
 export function RecommendedCard({ item, index }: RecommendedCardProps) {
   const router = useRouter()
+  const { startLoading } = useGlobalLoader();
   
   const getUrl = () => {
     if (item.type === "course") {
@@ -79,7 +81,12 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
         
         <CardFooter className="pb-4 pt-0">
           <Button 
-            onClick={() => router.push(getUrl())} 
+            onClick={() => {
+              startLoading({ message: item.type === "course" ? "Loading course..." : "Loading quiz...", isBlocking: true });
+              setTimeout(() => {
+                router.push(getUrl())
+              }, 100);
+            }} 
             variant="outline" 
             className="w-full"
           >

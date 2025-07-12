@@ -130,7 +130,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   const handleSubmitQuiz = useCallback(async () => {
     const loaderId = showLoading({
       message: "🎉 Quiz completed! Calculating your results...",
-      variant: 'spinner',
+      variant: 'default',
       theme: 'primary',
       isBlocking: true,
       priority: 8

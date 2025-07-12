@@ -2,10 +2,8 @@
 
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
-import { useQuizPlan } from "../../../../hooks/useQuizPlan"
-import { ClipLoader } from "react-spinners"
-
-
+import { GlobalLoader } from "@/components/loaders";
+import { useQuizPlan } from "@/modules/auth";
 
 const CodePage = () => {
   // Use our standardized hook for all quiz pages
@@ -21,7 +19,7 @@ const CodePage = () => {
     >
       {quizPlan.isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
-          <ClipLoader color="#3B82F6" size={40} />
+          <GlobalLoader />
           <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
         </div>
       ) : (

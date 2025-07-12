@@ -28,7 +28,8 @@
     "prod": "set NODE_ENV=production npm run migrate && npm run build && npm run start",
     "check-consistency": "tsx scripts/check-subscription-consistency.ts",
     "fix-consistency": "tsx scripts/check-subscription-consistency.ts --fix",
-    "setup-consistency": "npx prisma db execute --file prisma/migrations/fix_subscription_consistency.sql"
+    "setup-consistency": "npx prisma db execute --file prisma/migrations/fix_subscription_consistency.sql",
+    "video-fix": "node scripts/video-health-check.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.14",
@@ -170,6 +171,7 @@
     "remark-html": "^16.0.1",
     "reselect": "5.1.1",
     "resend": "^4.2.0",
+    "rxjs": "7.8.2",
     "screenfull": "^6.0.0",
     "side-channel-weakmap": "1.0.2",
     "slugify": "^1.6.6",

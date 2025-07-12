@@ -1,11 +1,13 @@
 import type React from "react"
 import { Toaster } from "@/components/ui/toaster"
+import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
 
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 import CourseAIState from "@/components/development/CourseAIState"
 
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
+import { GlobalLoader } from "@/components/ui/loader"
 
 
 
@@ -24,10 +26,10 @@ export default async function DashboardLayout({
   const session = await getAuthSession()
 
   return (
-    <div className="min-h-screen flex flex-col font-body">
-      <DashboardShell>
-
-
+    <GlobalLoaderProvider>
+      <div className="min-h-screen flex flex-col font-body">
+        <DashboardShell>
+          <GlobalLoader />
           <main className="flex-1 pt-16 ">
             {children}
           </main>          <Toaster />
@@ -35,5 +37,6 @@ export default async function DashboardLayout({
           {process.env.NODE_ENV !== "production" && <CourseAIState />}
         </DashboardShell>
       </div>
+    </GlobalLoaderProvider>
   )
 }

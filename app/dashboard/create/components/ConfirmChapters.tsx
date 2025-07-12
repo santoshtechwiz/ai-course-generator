@@ -2,8 +2,8 @@
 
 import { useEffect } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, BookOpen, CheckCircle, AlertCircle } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
+import { ChevronLeft, ChevronRight, BookOpen, CheckCircle, AlertCircle, PlayCircle } from "lucide-react"
+import { GlobalLoader, useGlobalLoader } from "@/components/ui/loader"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -65,12 +65,24 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
   // Use the guided help hook
   const { showHelp, openHelp, closeHelp, dismissPermanently } = useGuidedHelp()
 
-  // Mark all chapters as completed on initial load
+  // Remove or comment out this useEffect that auto-generates videos
+  // useEffect(() => {
+  //   if (completedChapters.size === 0) {
+  //     handleGenerateAll()
+  //   }
+  // }, [completedChapters.size, handleGenerateAll])
+
+  // Replace with this useEffect that only marks existing videos as completed
   useEffect(() => {
     if (completedChapters.size === 0) {
-      handleGenerateAll()
+      // Only mark chapters that already have videos as completed
+      const chaptersWithVideos = course.units.flatMap((unit) => unit.chapters.filter((chapter) => chapter.videoId))
+
+      chaptersWithVideos.forEach((chapter) => {
+        handleChapterComplete(String(chapter.id))
+      })
     }
-  }, [completedChapters.size, handleGenerateAll])
+  }, [completedChapters.size, handleChapterComplete, course.units])
 
   // Count chapters with errors
   const chaptersWithErrors = Object.values(generationStatuses).filter((status) => status.status === "error").length
@@ -83,7 +95,6 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           <GuidedHelp onClose={closeHelp} onDismissPermanently={dismissPermanently} />
         </div>
       )}
-
       <div className="flex-none p-4 border-b">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -138,7 +149,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
             </AlertDescription>
           </Alert>
         )}
-      </div>
+      </div>{" "}
       <ScrollArea className="flex-grow">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="p-4 space-y-4">
@@ -189,39 +200,54 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
           </Button>
           <ContextualHelp
             title="Save and Continue"
-            description="This will save your course structure and generate videos for any chapters that don't have videos yet."
+            description="This will save your course structure. You can choose to generate videos now or save without videos and generate them later."
             side="top"
           >
-            <Button
-              onClick={saveAndContinue}
-              disabled={isSaving || isGeneratingVideos}
-              className={cn(
-                "transition-all duration-300 shadow-md",
-                allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : "",
+            <div className="flex gap-3">
+              <Button
+                onClick={saveAndContinue}
+                disabled={isSaving || isGeneratingVideos}
+                className={cn(
+                  "transition-all duration-300 shadow-md",
+                  allChaptersCompleted ? "bg-green-600 hover:bg-green-700" : "",
+                )}
+              >
+                {isSaving || isGeneratingVideos ? (
+                  <span className="flex items-center">
+                    <GlobalLoader className="w-4 h-4 mr-2" />
+                    {isSaving ? "Saving..." : "Generating Videos..."}
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    {allChaptersCompleted ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Save & View Course
+                      </>
+                    ) : (
+                      <>Save & Generate Videos</>
+                    )}
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </span>
+                )}
+              </Button>
+
+              {/* Add explicit "Generate All Videos" button when there are chapters without videos */}
+              {!allChaptersCompleted && !isGeneratingVideos && (
+                <Button
+                  onClick={() => handleGenerateAll()}
+                  disabled={isSaving}
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Generate All Videos
+                </Button>
               )}
-            >              {isSaving || isGeneratingVideos ? (
-                <span className="flex items-center">
-                  <GlobalLoader className="w-4 h-4 mr-2" />
-                  {isSaving ? "Saving..." : "Generating Videos..."}
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  {allChaptersCompleted ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Save & Continue
-                    </>
-                  ) : (
-                    <>Generate Videos & Continue</>
-                  )}
-                </span>
-              )}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
+            </div>
           </ContextualHelp>
         </div>
       </div>
-
       {/* Video Dialog */}
       <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
         <DialogContent className="sm:max-w-3xl">
