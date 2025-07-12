@@ -1,91 +1,413 @@
 "use client"
 
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
+import { Download, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Plus, Trash } from "lucide-react"
-import type { DocumentQuestion } from "@/lib/quiz-store"
+import { memo } from "react"
+import { toast } from "@/hooks/use-toast"
 
-interface Props {
-  questions: DocumentQuestion[]
-  onSave: (questions: DocumentQuestion[]) => Promise<void>
-  onUpdate: (questions: DocumentQuestion[]) => void
+// Define the component props
+interface Question {
+  id: string
+  question: string
+  options: string[]
+  correctAnswer: number
+  explanation?: string
 }
 
-export default function DocumentQuizDisplay({ questions, onSave, onUpdate }: Props) {
-  const update = (q: DocumentQuestion[]) => onUpdate(q)
+interface QuizPDFProps {
+  questions: Question[]
+  title?: string
+}
 
-  const handleQuestionChange = (i: number, val: string) => {
-    const q = [...questions]
-    q[i].question = val
-    update(q)
+// Simple PDF generation using HTML and print
+const generatePDFContent = (questions: Question[], title: string) => {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${title}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          margin: 40px;
+          color: #333;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 40px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 20px;
+        }
+        .title {
+          font-size: 28px;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+        .subtitle {
+          font-size: 16px;
+          color: #666;
+        }
+        .question {
+          margin-bottom: 30px;
+          page-break-inside: avoid;
+        }
+        .question-number {
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 10px;
+          color: #2563eb;
+        }
+        .question-text {
+          font-size: 16px;
+          margin-bottom: 15px;
+          font-weight: 500;
+        }
+        .options {
+          margin-left: 20px;
+        }
+        .option {
+          margin-bottom: 8px;
+          font-size: 14px;
+        }
+        .correct-answer {
+          background-color: #dcfce7;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-weight: bold;
+          color: #166534;
+        }
+        .answer-key {
+          page-break-before: always;
+          margin-top: 40px;
+        }
+        .answer-key-title {
+          font-size: 24px;
+          font-weight: bold;
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 15px;
+        }
+        .answer-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          border-bottom: 1px solid #eee;
+        }
+        .footer {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          font-size: 12px;
+          color: #666;
+        }
+        @media print {
+          body { margin: 20px; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="title">${title}</div>
+        <div class="subtitle">${questions.length} Questions • Generated Quiz</div>
+      </div>
+
+      ${questions
+        .map(
+          (question, index) => `
+        <div class="question">
+          <div class="question-number">Question ${index + 1}</div>
+          <div class="question-text">${question.question}</div>
+          <div class="options">
+            ${question.options
+              .map(
+                (option, optionIndex) => `
+              <div class="option">
+                <strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${option}
+                ${optionIndex === question.correctAnswer ? '<span class="correct-answer">✓ Correct Answer</span>' : ""}
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+        </div>
+      `,
+        )
+        .join("")}
+
+      <div class="answer-key">
+        <div class="answer-key-title">Answer Key</div>
+        ${questions
+          .map(
+            (question, index) => `
+          <div class="answer-item">
+            <span><strong>${index + 1}.</strong> ${question.question.substring(0, 50)}${question.question.length > 50 ? "..." : ""}</span>
+            <span><strong>${String.fromCharCode(65 + question.correctAnswer)}</strong> - ${question.options[question.correctAnswer]}</span>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+
+      <div class="footer">
+        Generated by CourseAI • ${new Date().toLocaleDateString()}
+      </div>
+    </body>
+    </html>
+  `
+  return htmlContent
+}
+
+const downloadPDF = async (questions: Question[], title: string) => {
+  try {
+    const htmlContent = generatePDFContent(questions, title)
+
+    // Create a new window for printing
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) {
+      throw new Error("Popup blocked. Please allow popups for this site.")
+    }
+
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+
+    // Wait for content to load
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print()
+        // Close the window after printing (optional)
+        setTimeout(() => {
+          printWindow.close()
+        }, 1000)
+      }, 500)
+    }
+
+    toast({
+      title: "PDF Ready",
+      description: "Print dialog opened. Choose 'Save as PDF' to download.",
+    })
+  } catch (error) {
+    console.error("PDF generation error:", error)
+    toast({
+      title: "PDF Generation Failed",
+      description: "Could not generate PDF. Please try again.",
+      variant: "destructive",
+    })
+  }
+}
+
+// Alternative: Download as HTML file
+const downloadHTML = (questions: Question[], title: string) => {
+  try {
+    const htmlContent = generatePDFContent(questions, title)
+    const blob = new Blob([htmlContent], { type: "text/html" })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.html`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: "Quiz Downloaded",
+      description: "HTML file downloaded successfully. Open in browser and print to PDF.",
+    })
+  } catch (error) {
+    console.error("HTML download error:", error)
+    toast({
+      title: "Download Failed",
+      description: "Could not download quiz. Please try again.",
+      variant: "destructive",
+    })
+  }
+}
+
+interface PDFDownloadButtonProps {
+  questions: Question[]
+  title: string
+  className?: string
+  variant?: "default" | "outline" | "secondary"
+  size?: "sm" | "default" | "lg"
+}
+
+export const PDFDownloadButton = memo(function PDFDownloadButton({
+  questions,
+  title,
+  className = "",
+  variant = "outline",
+  size = "default",
+}: PDFDownloadButtonProps) {
+  if (questions.length === 0) {
+    return (
+      <Button disabled variant={variant} size={size} className={className}>
+        <Download className="mr-2 h-4 w-4" />
+        No Questions to Export
+      </Button>
+    )
   }
 
-  const handleOptionChange = (qi: number, oi: number, val: string) => {
-    const q = [...questions]
-    q[qi].options[oi] = val
-    update(q)
+  const handleDownload = () => {
+    // Try PDF print first, fallback to HTML download
+    downloadPDF(questions, title)
   }
 
-  const handleCorrectChange = (qi: number, oi: number) => {
-    const q = [...questions]
-    q[qi].correctAnswer = oi
-    update(q)
-  }
-
-  const addOption = (qi: number) => {
-    const q = [...questions]
-    q[qi].options.push("")
-    update(q)
-  }
-
-  const removeOption = (qi: number, oi: number) => {
-    const q = [...questions]
-    q[qi].options.splice(oi, 1)
-    update(q)
-  }
-
-  const removeQuestion = (i: number) => {
-    const q = [...questions]
-    q.splice(i, 1)
-    update(q)
+  const handleHTMLDownload = () => {
+    downloadHTML(questions, title)
   }
 
   return (
-    <div className="space-y-6">
-      {questions.map((q, qi) => (
-        <Card key={q.id}>
-          <CardHeader className="flex justify-between items-center">
-            <CardTitle>Question {qi + 1}</CardTitle>
-            <Button variant="ghost" size="icon" onClick={() => removeQuestion(qi)}>
-              <Trash className="h-4 w-4 text-red-500" />
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea value={q.question} onChange={(e) => handleQuestionChange(qi, e.target.value)} />
-            {q.options.map((opt, oi) => (
-              <div key={oi} className="flex items-center gap-2">
-                <Input value={opt} onChange={(e) => handleOptionChange(qi, oi, e.target.value)} />
-                <input
-                  type="radio"
-                  checked={q.correctAnswer === oi}
-                  onChange={() => handleCorrectChange(qi, oi)}
-                />
-                <span className="text-sm">Correct</span>
-                {q.options.length > 2 && (
-                  <Button size="icon" variant="ghost" onClick={() => removeOption(qi, oi)}>
-                    <Trash className="w-3 h-3 text-destructive" />
-                  </Button>
-                )}
+    <div className="flex gap-2">
+      <Button onClick={handleDownload} variant={variant} size={size} className={className}>
+        <Download className="mr-2 h-4 w-4" />
+        Print PDF
+      </Button>
+      <Button onClick={handleHTMLDownload} variant="ghost" size={size} className="text-xs">
+        <FileText className="mr-1 h-3 w-3" />
+        HTML
+      </Button>
+    </div>
+  )
+})
+
+// Enhanced version with more options
+export const EnhancedPDFDownloadButton = memo(function EnhancedPDFDownloadButton({
+  questions,
+  title,
+  className = "",
+  variant = "outline",
+  size = "default",
+}: PDFDownloadButtonProps) {
+  if (questions.length === 0) {
+    return (
+      <Button disabled variant={variant} size={size} className={className}>
+        <Download className="mr-2 h-4 w-4" />
+        No Questions to Export
+      </Button>
+    )
+  }
+
+  const handleJSONDownload = () => {
+    try {
+      const quizData = {
+        title,
+        questions,
+        generatedAt: new Date().toISOString(),
+        totalQuestions: questions.length,
+      }
+
+      const blob = new Blob([JSON.stringify(quizData, null, 2)], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Quiz Data Downloaded",
+        description: "JSON file downloaded successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Could not download quiz data.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleCSVDownload = () => {
+    try {
+      const csvContent = [
+        ["Question", "Option A", "Option B", "Option C", "Option D", "Correct Answer"],
+        ...questions.map((q) => [
+          q.question,
+          q.options[0] || "",
+          q.options[1] || "",
+          q.options[2] || "",
+          q.options[3] || "",
+          String.fromCharCode(65 + q.correctAnswer),
+        ]),
+      ]
+        .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+        .join("\n")
+
+      const blob = new Blob([csvContent], { type: "text/csv" })
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "CSV Downloaded",
+        description: "Quiz exported as CSV file successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Could not export quiz as CSV.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  return (
+    <div className="flex gap-1">
+      <Button onClick={() => downloadPDF(questions, title)} variant={variant} size={size} className={className}>
+        <Download className="mr-2 h-4 w-4" />
+        PDF
+      </Button>
+      <Button onClick={() => downloadHTML(questions, title)} variant="ghost" size="sm" title="Download as HTML">
+        HTML
+      </Button>
+      <Button onClick={handleCSVDownload} variant="ghost" size="sm" title="Download as CSV">
+        CSV
+      </Button>
+      <Button onClick={handleJSONDownload} variant="ghost" size="sm" title="Download as JSON">
+        JSON
+      </Button>
+    </div>
+  )
+})
+
+export default function DocumentQuizPDF({ questions, title = "Generated Quiz" }: QuizPDFProps) {
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">{title}</h1>
+      <p className="text-gray-600 mb-6">{questions.length} Questions</p>
+
+      {questions.map((question, index) => (
+        <div key={question.id} className="mb-6 p-4 border rounded-lg">
+          <h3 className="font-semibold mb-2">Question {index + 1}</h3>
+          <p className="mb-3">{question.question}</p>
+          <div className="space-y-1">
+            {question.options.map((option, optionIndex) => (
+              <div
+                key={optionIndex}
+                className={`p-2 rounded ${
+                  optionIndex === question.correctAnswer ? "bg-green-100 font-semibold" : "bg-gray-50"
+                }`}
+              >
+                {String.fromCharCode(65 + optionIndex)}. {option}
+                {optionIndex === question.correctAnswer && <span className="ml-2 text-green-600">✓</span>}
               </div>
             ))}
-            <Button onClick={() => addOption(qi)} size="sm" variant="outline">
-              <Plus className="mr-2 w-4 h-4" />
-              Add Option
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   )

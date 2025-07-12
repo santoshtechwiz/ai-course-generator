@@ -1,6 +1,9 @@
 "use client"
 
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from "@react-pdf/renderer"
+import { Download } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { memo } from "react"
 
 // Define the component props with configuration options
 interface Question {
@@ -8,22 +11,19 @@ interface Question {
   question: string
   options: string[]
   correctAnswer: number
+  explanation?: string
 }
 
 interface QuizPDFProps {
   questions: Question[]
   title?: string
-  // Configuration options
   config?: {
-    // Highlighting options
     highlightAnswers?: boolean
     highlightColor?: string
-    // Copyright options
     showCopyright?: boolean
     copyrightText?: string
     copyrightPosition?: "left" | "center" | "right"
     copyrightFontSize?: number
-    // Styling options
     fontFamily?: string
     backgroundColor?: string
     questionColor?: string
@@ -31,22 +31,24 @@ interface QuizPDFProps {
   }
 }
 
-export default function DocumentQuizPDF({ questions, title = "Generated Quiz", config = {} }: QuizPDFProps) {
-  // Set default configuration values
+const DocumentQuizPDF = memo(function DocumentQuizPDF({
+  questions,
+  title = "Generated Quiz",
+  config = {},
+}: QuizPDFProps) {
   const {
-    highlightAnswers = true, // Changed default to true to show answers
-    highlightColor = "#4CAF50",
+    highlightAnswers = true,
+    highlightColor = "#1976D2",
     showCopyright = true,
     copyrightText = "© CourseAI",
     copyrightPosition = "center",
     copyrightFontSize = 10,
     fontFamily = "Helvetica",
     backgroundColor = "#FFFFFF",
-    questionColor = "#333333",
-    optionColor = "#555555",
+    questionColor = "#111111",
+    optionColor = "#222222",
   } = config
 
-  // Create dynamic styles based on configuration
   const styles = StyleSheet.create({
     page: {
       flexDirection: "column",
@@ -84,7 +86,7 @@ export default function DocumentQuizPDF({ questions, title = "Generated Quiz", c
       marginBottom: 5,
       color: highlightColor,
       fontWeight: "bold",
-      backgroundColor: "#e6f7e6", // Light green background for highlighted options
+      backgroundColor: "#E3F2FD",
       padding: "3 5",
       borderRadius: 3,
     },
@@ -112,64 +114,79 @@ export default function DocumentQuizPDF({ questions, title = "Generated Quiz", c
       textAlign: "center",
       color: questionColor,
     },
-    answerItem: {
+    answerTable: {
+      width: "auto",
+      margin: "10 0",
+    },
+    answerTableRow: {
+      flexDirection: "row",
+    },
+    answerTableCell: {
+      width: "50%",
       fontSize: 12,
-      marginBottom: 5,
       color: optionColor,
+      padding: 4,
+      borderBottom: "1 solid #e0e0e0",
     },
   })
 
+  const chunkArray = (arr: any[], size: number) => {
+    const result = []
+    for (let i = 0; i < arr.length; i += size) {
+      result.push(arr.slice(i, i + size))
+    }
+    return result
+  }
+
+  const QUESTIONS_PER_PAGE = 10
+  const questionChunks = chunkArray(questions, QUESTIONS_PER_PAGE)
+
   return (
     <Document>
-      {/* Quiz Questions Page */}
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>{title}</Text>
-
-        {questions.map((question, index) => (
-          <View key={question.id} style={styles.section}>
-            <Text style={styles.question}>{`${index + 1}. ${question.question}`}</Text>
-            {question.options.map((option, optionIndex) => {
-              // Determine if this option is the correct answer
-              const isCorrectAnswer = optionIndex === question.correctAnswer
-              // Apply highlighting style if enabled and this is the correct answer
-              const optionStyle = highlightAnswers && isCorrectAnswer ? styles.highlightedOption : styles.option
-
-              return (
-                <Text key={optionIndex} style={optionStyle}>
-                  {`${String.fromCharCode(65 + optionIndex)}. ${option}`}
+      {questionChunks.map((chunk, pageIdx) => (
+        <Page key={pageIdx} size="A4" style={styles.page}>
+          {pageIdx === 0 && <Text style={styles.title}>{title}</Text>}
+          {chunk.map((question, index) => (
+            <View key={question.id} style={styles.section}>
+              <Text style={styles.question}>{`${pageIdx * QUESTIONS_PER_PAGE + index + 1}. ${question.question}`}</Text>
+              {question.options.map((option: string, optionIndex: number) => {
+                const isCorrectAnswer = optionIndex === question.correctAnswer
+                const optionStyle = highlightAnswers && isCorrectAnswer ? styles.highlightedOption : styles.option
+                return (
+                  <Text key={optionIndex} style={optionStyle}>
+                    {`${String.fromCharCode(65 + optionIndex)}. ${option}`}
+                  </Text>
+                )
+              })}
+              {question.explanation && (
+                <Text style={{ fontSize: 11, color: "#616161", marginTop: 2, marginBottom: 5, fontStyle: "italic" }}>
+                  {question.explanation}
                 </Text>
-              )
-            })}
-          </View>
-        ))}
+              )}
+            </View>
+          ))}
+          {showCopyright && <Text style={styles.footer}>{copyrightText}</Text>}
+          <Text
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+            fixed
+          />
+        </Page>
+      ))}
 
-        {/* Copyright notice */}
-        {showCopyright && <Text style={styles.footer}>{copyrightText}</Text>}
-
-        {/* Page number */}
-        <Text
-          style={styles.pageNumber}
-          render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-          fixed
-        />
-      </Page>
-
-      {/* Answer Key Page */}
       <Page size="A4" style={styles.page}>
         <Text style={styles.answerKey}>Answer Key</Text>
-
-        {questions.map((question, index) => (
-          <View key={`answer-${question.id}`} style={styles.section}>
-            <Text style={styles.answerItem}>
-              {`${index + 1}. ${String.fromCharCode(65 + question.correctAnswer)} - ${question.options[question.correctAnswer]}`}
-            </Text>
-          </View>
-        ))}
-
-        {/* Copyright notice */}
+        <View style={styles.answerTable}>
+          {questions.map((question, index) => (
+            <View key={`answer-${question.id}`} style={styles.answerTableRow}>
+              <Text style={styles.answerTableCell}>{`${index + 1}. ${question.question}`}</Text>
+              <Text style={styles.answerTableCell}>
+                {`${String.fromCharCode(65 + question.correctAnswer)} - ${question.options[question.correctAnswer]}`}
+              </Text>
+            </View>
+          ))}
+        </View>
         {showCopyright && <Text style={styles.footer}>{copyrightText}</Text>}
-
-        {/* Page number */}
         <Text
           style={styles.pageNumber}
           render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
@@ -178,4 +195,45 @@ export default function DocumentQuizPDF({ questions, title = "Generated Quiz", c
       </Page>
     </Document>
   )
+})
+
+interface PDFDownloadButtonProps {
+  questions: Question[]
+  title: string
+  className?: string
+  variant?: "default" | "outline" | "secondary"
+  size?: "sm" | "default" | "lg"
 }
+
+export const PDFDownloadButton = memo(function PDFDownloadButton({
+  questions,
+  title,
+  className = "",
+  variant = "outline",
+  size = "default",
+}: PDFDownloadButtonProps) {
+  if (questions.length === 0) {
+    return (
+      <Button disabled variant={variant} size={size} className={className}>
+        <Download className="mr-2 h-4 w-4" />
+        No Questions to Export
+      </Button>
+    )
+  }
+
+  return (
+    <PDFDownloadLink
+      document={<DocumentQuizPDF questions={questions} title={title} />}
+      fileName={`${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.pdf`}
+    >
+      {({ loading }) => (
+        <Button disabled={loading} variant={variant} size={size} className={className}>
+          <Download className="mr-2 h-4 w-4" />
+          {loading ? "Preparing PDF..." : "Download PDF"}
+        </Button>
+      )}
+    </PDFDownloadLink>
+  )
+})
+
+export default DocumentQuizPDF
