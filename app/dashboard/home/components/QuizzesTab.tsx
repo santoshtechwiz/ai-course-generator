@@ -6,12 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, PlusCircle, GraduationCap, Clock, CheckCircle, AlertCircle, BookOpen, Loader2 } from "lucide-react"
+import { Search, GraduationCap, Clock, CheckCircle, AlertCircle, BookOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { DashboardUser, UserQuiz, UserQuizAttempt } from "@/app/types/types"
 import QuizResultsDialog from "./QuizResultsDialog"
-import { QuizType } from "@/app/types/quiz-types"
+import type { QuizType } from "@/app/types/quiz-types"
+import { useGlobalLoader } from "@/store/global-loader" // Import useGlobalLoader
 
 interface QuizzesTabProps {
   userData: DashboardUser
@@ -21,16 +22,11 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("quizzes")
   const [selectedAttempt, setSelectedAttempt] = useState<UserQuizAttempt | null>(null)
-  const [loadingQuizId, setLoadingQuizId] = useState<string | null>(null)
   const router = useRouter()
+  const { startLoading, stopLoading } = useGlobalLoader() // Use global loader
 
   // Use useMemo to calculate filtered data only when dependencies change
-  const {
-    filteredAllQuizzes,
-    filteredCompletedQuizzes,
-    filteredInProgressQuizzes,
-    filteredAttempts
-  } = useMemo(() => {
+  const { filteredAllQuizzes, filteredCompletedQuizzes, filteredInProgressQuizzes, filteredAttempts } = useMemo(() => {
     // Filter and sort quizzes with null checks
     const allQuizzes = userData?.userQuizzes || []
     const completedQuizzes = allQuizzes.filter((quiz) => quiz.timeEnded !== null)
@@ -54,7 +50,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
       filteredAllQuizzes: filterQuizzes(allQuizzes),
       filteredCompletedQuizzes: filterQuizzes(completedQuizzes),
       filteredInProgressQuizzes: filterQuizzes(inProgressQuizzes),
-      filteredAttempts: filterAttempts(quizAttempts)
+      filteredAttempts: filterAttempts(quizAttempts),
     }
   }, [userData, searchTerm])
 
@@ -89,13 +85,16 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
   }, [])
 
   // Use useCallback to memoize this function
-  const handleQuizClick = useCallback((quizId: string, quizType: string, slug: string) => {
-    setLoadingQuizId(quizId)
-    // Use requestAnimationFrame to ensure this happens after render
-    requestAnimationFrame(() => {
-      router.push(`/dashboard/${quizType}/${slug}`)
-    })
-  }, [router])
+  const handleQuizClick = useCallback(
+    (quizId: string, quizType: string, slug: string) => {
+      startLoading({ message: "Loading quiz...", isBlocking: false, id: `quiz-load-${quizId}` })
+      // Use requestAnimationFrame to ensure this happens after render
+      requestAnimationFrame(() => {
+        router.push(`/dashboard/${quizType}/${slug}`)
+      })
+    },
+    [router, startLoading],
+  )
 
   return (
     <div className="space-y-6">
@@ -112,7 +111,6 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-         
         </div>
       </div>
 
@@ -129,7 +127,6 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
             quizzes={filteredAllQuizzes}
             getQuizTypeLabel={getQuizTypeLabel}
             getQuizTypeColor={getQuizTypeColor}
-            loadingQuizId={loadingQuizId}
             onQuizClick={handleQuizClick}
           />
         </TabsContent>
@@ -139,7 +136,6 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
             quizzes={filteredInProgressQuizzes}
             getQuizTypeLabel={getQuizTypeLabel}
             getQuizTypeColor={getQuizTypeColor}
-            loadingQuizId={loadingQuizId}
             onQuizClick={handleQuizClick}
           />
         </TabsContent>
@@ -149,7 +145,6 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
             quizzes={filteredCompletedQuizzes}
             getQuizTypeLabel={getQuizTypeLabel}
             getQuizTypeColor={getQuizTypeColor}
-            loadingQuizId={loadingQuizId}
             onQuizClick={handleQuizClick}
           />
         </TabsContent>
@@ -179,11 +174,12 @@ interface QuizGridProps {
   quizzes: UserQuiz[]
   getQuizTypeLabel: (type: QuizType) => string
   getQuizTypeColor: (type: QuizType) => string
-  loadingQuizId: string | null
   onQuizClick: (quizId: string, quizType: string, slug: string) => void
 }
 
-function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, loadingQuizId, onQuizClick }: QuizGridProps) {
+function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, onQuizClick }: QuizGridProps) {
+  const { isLoading: isGlobalLoading, loadingId } = useGlobalLoader() // Use global loader to check loading state
+
   if (quizzes.length === 0) {
     return (
       <Card>
@@ -205,16 +201,23 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, loadingQuizId, 
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {quizzes.map((quiz) => {
         if (!quiz) return null
+        const isLoadingThisQuiz = isGlobalLoading && loadingId === `quiz-load-${quiz.id}`
         return (
           <Card
             key={quiz.id}
             className={`overflow-hidden transition-all duration-300 ${
-              loadingQuizId === quiz.id ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
+              isLoadingThisQuiz ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
             }`}
-            onClick={() => quiz && quiz.id && quiz.quizType && quiz.slug && onQuizClick(quiz.id, quiz.quizType as string, quiz.slug as string)}
+            onClick={() =>
+              quiz &&
+              quiz.id &&
+              quiz.quizType &&
+              quiz.slug &&
+              onQuizClick(quiz.id, quiz.quizType as string, quiz.slug as string)
+            }
           >
             <CardContent className="p-4 relative cursor-pointer">
-              {loadingQuizId === quiz.id && (
+              {isLoadingThisQuiz && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>

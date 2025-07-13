@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
+import { useAuth } from "@/modules/auth"
 
 interface CourseStatus {
   isPublic: boolean
@@ -17,9 +18,10 @@ interface UseCourseActionsProps {
 export function useCourseActions({ slug }: UseCourseActionsProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [status, setStatus] = useState<CourseStatus>({ isPublic: false, isFavorite: false, rating: null })
-
+  const { isAuthenticated } = useAuth() // ✅ Your global auth state
   const router = useRouter()
   const fetchCourseStatus = useCallback(async () => {
+     if (!isAuthenticated) return // ✅ Prevent API call
     try {
       setLoading("status")
       const response = await fetch(`/api/course/status/${slug}`)
@@ -50,7 +52,7 @@ export function useCourseActions({ slug }: UseCourseActionsProps) {
     } finally {
       setLoading(null)
     }
-  }, [slug])
+  }, [slug, isAuthenticated])
 
   useEffect(() => {
     fetchCourseStatus()

@@ -123,6 +123,24 @@ export interface CourseData {
   about?: {
     name: string;
   };
+  // --- Added for schema.org compliance ---
+  offers?: {
+    price: string;
+    priceCurrency: string;
+    url?: string;
+    availability?: string;
+    priceValidUntil?: string;
+  };
+  hasCourseInstance?: {
+    name?: string;
+    description?: string;
+    courseMode?: string;
+    startDate?: string;
+    endDate?: string;
+    location?: {
+      url?: string;
+    };
+  };
 }
 
 export interface QuizData {

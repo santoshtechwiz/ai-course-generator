@@ -197,6 +197,31 @@ export function generateCourseSchema(course: CourseData): Schema {
         name: course.about.name,
       },
     }),
+    // --- Add offers and hasCourseInstance if present ---
+    ...(course.offers && {
+      offers: {
+        "@type": "Offer",
+        price: course.offers.price,
+        priceCurrency: course.offers.priceCurrency,
+        url: course.offers.url || course.url,
+        availability: course.offers.availability || "https://schema.org/InStock",
+        ...(course.offers.priceValidUntil && { priceValidUntil: course.offers.priceValidUntil }),
+      },
+    }),
+    ...(course.hasCourseInstance && {
+      hasCourseInstance: {
+        "@type": "CourseInstance",
+        name: course.hasCourseInstance.name || course.name,
+        description: course.hasCourseInstance.description || course.description,
+        courseMode: course.hasCourseInstance.courseMode || "online",
+        startDate: course.hasCourseInstance.startDate || course.dateCreated,
+        endDate: course.hasCourseInstance.endDate || course.dateModified,
+        location: {
+          "@type": "VirtualLocation",
+          url: (course.hasCourseInstance.location && course.hasCourseInstance.location.url) || course.url,
+        },
+      },
+    }),
   };
 }
 

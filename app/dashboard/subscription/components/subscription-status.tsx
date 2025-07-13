@@ -17,7 +17,7 @@ export default function SubscriptionStatus() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Subscription</span>
-            <Badge variant="outline">Loading...</Badge>
+            <Badge variant="outline"></Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

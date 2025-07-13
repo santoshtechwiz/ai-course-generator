@@ -20,7 +20,6 @@ const CodePage = () => {
       {quizPlan.isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
           <GlobalLoader />
-          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
         </div>
       ) : (
         <CodeQuizForm 

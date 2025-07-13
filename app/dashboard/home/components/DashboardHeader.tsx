@@ -75,53 +75,7 @@ const DashboardHeader = memo(function DashboardHeader({ userData, quickStats, to
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <Card className="p-2 flex items-center gap-2 bg-primary text-primary-foreground">
-                <CreditCard className="h-5 w-5" />
-                <div>
-                  <p className="text-xs opacity-90">Credits</p>
-                  <p className="font-medium">{memoizedUserData.credits}</p>
-                </div>
-              </Card>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={memoizedUserData.image || ""} alt={memoizedUserData.name || "User"} />
-                      <AvatarFallback>{memoizedUserData.name?.charAt(0) || "U"}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/profile">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/subscription">
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      <span>Subscription</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+       
           </div>
 
           {/* Stats row */}

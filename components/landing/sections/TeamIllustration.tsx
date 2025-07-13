@@ -1,18 +1,31 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useEffect, useState } from "react"
 
 const TeamIllustration = () => {
+  // Accessibility: check for reduced motion
+  const [reduceMotion, setReduceMotion] = useState(false)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+      setReduceMotion(media.matches)
+      const handler = () => setReduceMotion(media.matches)
+      media.addEventListener("change", handler)
+      return () => media.removeEventListener("change", handler)
+    }
+  }, [])
+
   // Apple-style animation variants with optimized values
   const svgVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        duration: 0.6, // Reduced from 0.8 for better performance
+        duration: reduceMotion ? 0.01 : 0.6, // Reduce duration if prefers-reduced-motion
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
-        staggerChildren: 0.08, // Reduced from 0.1 for better performance
-        delayChildren: 0.1, // Reduced from 0.2 for better performance
+        staggerChildren: reduceMotion ? 0 : 0.08, // Reduced from 0.1 for better performance
+        delayChildren: reduceMotion ? 0 : 0.1, // Reduced from 0.2 for better performance
       },
     },
   }
@@ -23,7 +36,7 @@ const TeamIllustration = () => {
       scale: 1,
       opacity: 1,
       transition: {
-        duration: 0.6, // Reduced from 0.8 for better performance
+        duration: reduceMotion ? 0.01 : 0.6, // Reduced from 0.8 for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     },
@@ -35,7 +48,7 @@ const TeamIllustration = () => {
       pathLength: 1,
       opacity: 1,
       transition: {
-        duration: 1.2, // Reduced from 1.5 for better performance
+        duration: reduceMotion ? 0.01 : 1.2, // Reduced from 1.5 for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     },
@@ -47,15 +60,15 @@ const TeamIllustration = () => {
       scale: 1,
       opacity: 1,
       transition: {
-        duration: 0.6, // Reduced from 0.8 for better performance
-        delay: delay * 0.8, // Reduced delay multiplier for better performance
+        duration: reduceMotion ? 0.01 : 0.6, // Reduced from 0.8 for better performance
+        delay: reduceMotion ? 0 : delay * 0.8, // Reduced delay multiplier for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     }),
     hover: {
       scale: 1.03, // Reduced from 1.05 for better performance
       transition: {
-        duration: 0.2, // Reduced from 0.3 for better performance
+        duration: reduceMotion ? 0.01 : 0.2, // Reduced from 0.3 for better performance
         ease: [0.25, 0.1, 0.25, 1], // Apple-style easing
       },
     },

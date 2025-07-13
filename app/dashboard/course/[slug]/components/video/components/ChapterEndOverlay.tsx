@@ -92,7 +92,7 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
             >
               <Download className="h-4 w-4" />
             </motion.div>
-            <span>Downloading...</span>
+      
           </>
         )
       case "success":

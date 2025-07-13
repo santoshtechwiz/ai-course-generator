@@ -1,42 +1,41 @@
 "use client"
 
-import React, { useEffect } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import React, { useEffect, useRef } from "react"
+import { usePathname } from "next/navigation"
 import { GlobalLoader } from "@/components/loaders/GlobalLoader"
 import { useGlobalLoader } from "@/store/global-loader"
 
 export function GlobalLoaderProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const pathname = usePathname()
   const { startLoading, stopLoading } = useGlobalLoader()
+  const previousPath = useRef<string | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout | null = null
-    const handleStart = () => {
-      // Only show loader if not already loading
-      if (!timeout) {
-        timeout = setTimeout(() => {
-          startLoading({ message: "Loading..." })
-        }, 100) // Small delay to avoid flicker
+    // Only act if pathname actually changed
+    if (previousPath.current !== null && previousPath.current !== pathname) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+
+      // Small delay to avoid flicker on fast routes
+      timeoutRef.current = setTimeout(() => {
+        startLoading({ message: "Loading...", isBlocking: true })
+      }, 100)
+
+      // Simulate load finish
+      const finish = () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
+        stopLoading()
       }
-    }
-    const handleComplete = () => {
-      if (timeout) {
-        clearTimeout(timeout)
-        timeout = null
-      }
-      stopLoading()
+
+      // Add artificial delay to allow user to see loading (optional)
+      setTimeout(finish, 500)
     }
 
-    // Listen to navigation events
-    router.events?.on?.("routeChangeStart", handleStart)
-    router.events?.on?.("routeChangeComplete", handleComplete)
-    router.events?.on?.("routeChangeError", handleComplete)
-
-    // Fallback: stop loader on pathname change (for app router)
-    handleComplete()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+    previousPath.current = pathname
+  }, [pathname, startLoading, stopLoading])
 
   return (
     <>

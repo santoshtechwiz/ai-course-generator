@@ -82,7 +82,7 @@ export function QuizFooter({
           onClick={onNext}
           disabled={!canGoNext || isSubmitting}
           state={nextState || "idle"}
-          loadingText="Loading..."
+          loadingText=""
           className="flex items-center gap-2 w-full sm:w-auto min-w-[120px]"
         >
           {nextLabel}
