@@ -4,7 +4,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { NewsletterForm } from "../newsletter-form"
-import Logo from "../Navbar/Logo"
+
 
 import {
   Twitter,
@@ -12,6 +12,7 @@ import {
   Linkedin,
   Instagram,
 } from "lucide-react"
+import Logo from "./Logo"
 
 const footerLinks = [
   {
@@ -85,7 +86,7 @@ export default function Footer() {
         {/* Logo + Description */}
         <motion.div className="lg:col-span-4 space-y-6" variants={itemAnimation}>
           <Link href="/" className="inline-block">
-            <Logo size="large" />
+           <Logo/>
           </Link>
           <p className="text-muted-foreground text-base leading-relaxed max-w-sm">
             Empowering education through AI-driven learning experiences. Create and take quizzes,
