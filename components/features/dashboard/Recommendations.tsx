@@ -9,14 +9,15 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Brain, ArrowRight, Target, RotateCcw, BookOpen, RefreshCw, Sparkles, BookMarked } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import type { Course, CourseProgress, UserQuizAttempt } from "@/app/types/types"
+import type { CourseUnit, Chapter, CourseProgress as AppCourseProgress } from "@/app/types/course-types"
+import type { UserQuizAttempt as AppUserQuizAttempt } from "@/app/types/quiz-types"
 import { useLocalStorage } from "@/lib/useLocalStorage"
 import { useGlobalLoader } from '@/store/global-loader'
 
 interface AIRecommendationsProps {
-  courses: Course[]
-  courseProgress: CourseProgress[]
-  quizAttempts: UserQuizAttempt[]
+  courses: any[] // fallback to any for now due to type mismatch
+  courseProgress: AppCourseProgress[]
+  quizAttempts: AppUserQuizAttempt[]
 }
 
 interface Recommendation {
@@ -70,9 +71,11 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     // Analyze quiz attempts to find knowledge gaps
     quizAttempts.forEach((attempt) => {
       const relevantCourse = courses.find((c) =>
-        c.courseUnits?.some((unit) =>
-          unit.chapters.some((chapter) => chapter.questions?.some((question) => question.id === attempt.userQuizId)),
-        ),
+        c.courseUnits && Array.isArray(c.courseUnits) && c.courseUnits.some((unit: CourseUnit) =>
+          unit.chapters && Array.isArray(unit.chapters) && unit.chapters.some((chapter: Chapter) =>
+            chapter.questions && Array.isArray(chapter.questions) && chapter.questions.some((question) => question.id === attempt.userQuizId)
+          )
+        )
       )
 
       if (relevantCourse) {
@@ -80,7 +83,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
         topicEngagement.set(relevantCourse.title, (topicEngagement.get(relevantCourse.title) || 0) + 1)
 
         // If score is low, mark as knowledge gap
-        if (attempt.score !== null && attempt.score < 70) {
+        if (attempt.score !== null && attempt.score !== undefined && attempt.score < 70) {
           knowledgeGaps.set(relevantCourse.title, (knowledgeGaps.get(relevantCourse.title) || 0) + 1)
         }
       }
@@ -88,7 +91,7 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
 
     // Analyze course progress to find interests
     courseProgress.forEach((progress) => {
-      const course = courses.find((c) => c.id === progress.id)
+      const course = courses.find((c) => c.id == progress.courseId)
       if (course) {
         // Increase topic engagement based on progress
         topicEngagement.set(course.title, (topicEngagement.get(course.title) || 0) + Math.floor(progress.progress / 10))
@@ -126,60 +129,63 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
         .sort((a, b) => a.progress - b.progress)
 
       if (lowProgressCourses.length > 0) {
-        const course = courses.find((c) => c.id === lowProgressCourses[0].id)
+        const course = courses.find((c) => c.id == lowProgressCourses[0].courseId)
         if (
           course &&
-          course.courseUnits &&
+          course.courseUnits && Array.isArray(course.courseUnits) &&
           course.courseUnits.length > 0 &&
+          course.courseUnits[0].chapters && Array.isArray(course.courseUnits[0].chapters) &&
           course.courseUnits[0].chapters.length > 0
         ) {
           // Find the next incomplete chapter
-          const completedChaptersArray = lowProgressCourses[0].completedChapters
-            ? JSON.parse(lowProgressCourses[0].completedChapters)
+          const completedChaptersArray = Array.isArray(lowProgressCourses[0].completedChapters)
+            ? lowProgressCourses[0].completedChapters
             : []
 
           const nextChapter =
             course.courseUnits
-              .flatMap((unit) => unit.chapters)
-              .find((chapter) => !completedChaptersArray.includes(chapter.id)) || course.courseUnits[0].chapters[0]
+              .flatMap((unit: CourseUnit) => unit.chapters || [])
+              .find((chapter: Chapter) => !completedChaptersArray.includes(chapter.id)) || (course.courseUnits[0].chapters && course.courseUnits[0].chapters[0])
 
-          newRecommendations.push({
-            type: "next",
-            message: `Continue ${course.title} to maintain your learning momentum`,
-            courseId: course.id,
-            chapterId: nextChapter.id,
-            slug: course.slug || "",
-            generatedAt: new Date(),
-          })
+          if (nextChapter) {
+            newRecommendations.push({
+              type: "next",
+              message: `Continue ${course.title} to maintain your learning momentum`,
+              courseId: typeof course.id === "string" ? parseInt(course.id) : course.id,
+              chapterId: typeof nextChapter.id === "string" ? parseInt(nextChapter.id) : nextChapter.id,
+              slug: course.slug || "",
+              generatedAt: new Date(),
+            })
+          }
         }
       }
 
       // Find quizzes with low scores
       const lowScoreQuizzes = quizAttempts
-        .filter((q) => q.score !== null && q.score < 70)
+        .filter((q) => q.score !== null && q.score !== undefined && q.score < 70)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
       if (lowScoreQuizzes.length > 0) {
         const latestLowScoreQuiz = lowScoreQuizzes[0]
         const relevantCourse = courses.find((c) =>
-          c.courseUnits?.some((unit) =>
-            unit.chapters.some((chapter) =>
-              chapter.questions?.some((question) => question.id === latestLowScoreQuiz.userQuizId),
-            ),
-          ),
+          c.courseUnits && Array.isArray(c.courseUnits) && c.courseUnits.some((unit: CourseUnit) =>
+            unit.chapters && Array.isArray(unit.chapters) && unit.chapters.some((chapter: Chapter) =>
+              chapter.questions && Array.isArray(chapter.questions) && chapter.questions.some((question) => question.id === latestLowScoreQuiz.userQuizId)
+            )
+          )
         )
 
         if (relevantCourse) {
           const relevantChapter = relevantCourse.courseUnits
-            ?.flatMap((unit) => unit.chapters)
-            .find((chapter) => chapter.questions?.some((question) => question.id === latestLowScoreQuiz.userQuizId))
+            .flatMap((unit: CourseUnit) => unit.chapters || [])
+            .find((chapter: Chapter) => chapter.questions && Array.isArray(chapter.questions) && chapter.questions.some((question) => question.id === latestLowScoreQuiz.userQuizId))
 
           if (relevantChapter) {
             newRecommendations.push({
               type: "review",
               message: `Review ${relevantChapter.title} to improve your quiz score of ${latestLowScoreQuiz.score}%`,
-              courseId: relevantCourse.id,
-              chapterId: relevantChapter.id,
+              courseId: typeof relevantCourse.id === "string" ? parseInt(relevantCourse.id) : relevantCourse.id,
+              chapterId: typeof relevantChapter.id === "string" ? parseInt(relevantChapter.id) : relevantChapter.id,
               slug: relevantCourse.slug || "",
               generatedAt: new Date(),
             })
@@ -190,23 +196,22 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
       // Recommend practice if no recent activity
       const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
       const inactiveCourses = courseProgress
-        .filter((c) => new Date(c.lastAccessedAt) < twoWeeksAgo && !c.isCompleted)
-        .sort((a, b) => new Date(a.lastAccessedAt).getTime() - new Date(b.lastAccessedAt).getTime())
+        .filter((c) => c.lastAccessedAt && new Date(c.lastAccessedAt as string) < twoWeeksAgo && !c.isCompleted)
+        .sort((a, b) => new Date(a.lastAccessedAt as string).getTime() - new Date(b.lastAccessedAt as string).getTime())
 
       if (inactiveCourses.length > 0) {
-        const course = courses.find((c) => c.id === inactiveCourses[0]?.id)
-        if (course && course.courseUnits && course.courseUnits.length > 0) {
-          // Find a chapter with questions for practice
+        const course = courses.find((c) => c.id == inactiveCourses[0].courseId)
+        if (course && course.courseUnits && Array.isArray(course.courseUnits) && course.courseUnits.length > 0) {
           const chapterWithQuestions = course.courseUnits
-            .flatMap((unit) => unit.chapters)
-            .find((chapter) => chapter.questions && chapter.questions.length > 0)
+            .flatMap((unit: CourseUnit) => unit.chapters || [])
+            .find((chapter: Chapter) => chapter.questions && Array.isArray(chapter.questions) && chapter.questions.length > 0)
 
           if (chapterWithQuestions) {
             newRecommendations.push({
               type: "practice",
-              message: `Practice ${course.title} to refresh your knowledge after ${getTimeSinceLastAccess(inactiveCourses[0].lastAccessedAt.toISOString())}`,
-              courseId: course.id,
-              chapterId: chapterWithQuestions.id,
+              message: `Practice ${course.title} to refresh your knowledge after ${getTimeSinceLastAccess(inactiveCourses[0].lastAccessedAt as string)}`,
+              courseId: typeof course.id === "string" ? parseInt(course.id) : course.id,
+              chapterId: typeof chapterWithQuestions.id === "string" ? parseInt(chapterWithQuestions.id) : chapterWithQuestions.id,
               slug: course.slug || "",
               generatedAt: new Date(),
             })
@@ -219,14 +224,14 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
         const topInterest = userAnalysis.topicEngagement[0]
         const relevantCourse = courses.find((c) => c.title === topInterest)
 
-        if (relevantCourse && relevantCourse.courseUnits && relevantCourse.courseUnits.length > 0) {
+        if (relevantCourse && relevantCourse.courseUnits && Array.isArray(relevantCourse.courseUnits) && relevantCourse.courseUnits.length > 0 && relevantCourse.courseUnits[0].chapters && Array.isArray(relevantCourse.courseUnits[0].chapters) && relevantCourse.courseUnits[0].chapters.length > 0) {
           const firstChapter = relevantCourse.courseUnits[0].chapters[0]
 
           newRecommendations.push({
             type: "quiz",
             message: `Take a personalized quiz on ${topInterest} to test your knowledge`,
-            courseId: relevantCourse.id,
-            chapterId: firstChapter.id,
+            courseId: typeof relevantCourse.id === "string" ? parseInt(relevantCourse.id) : relevantCourse.id,
+            chapterId: typeof firstChapter.id === "string" ? parseInt(firstChapter.id) : firstChapter.id,
             slug: relevantCourse.slug || "",
             generatedAt: new Date(),
           })
@@ -275,11 +280,10 @@ export default function AIRecommendations({ courses, courseProgress, quizAttempt
     setIsGeneratingQuiz(true)
 
     try {
-      // Find the course and chapter for this recommendation
-      const course = courses.find((c) => c.id === recommendation.courseId)
+      const course = courses.find((c) => c.id == recommendation.courseId)
       const chapter = course?.courseUnits
-        ?.flatMap((unit) => unit.chapters)
-        .find((ch) => ch.id === recommendation.chapterId)
+        ?.flatMap((unit: CourseUnit) => unit.chapters || [])
+        .find((ch: Chapter) => ch.id == recommendation.chapterId)
 
       if (!course || !chapter) {
         throw new Error("Course or chapter not found")

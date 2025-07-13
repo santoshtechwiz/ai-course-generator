@@ -1,3 +1,6 @@
+// INTERNAL USE ONLY: This component is not intended for public distribution.
+// NOTE: This component is currently not used anywhere in the project.
+
 "use client"
 
 import { useEffect, useState } from 'react'
