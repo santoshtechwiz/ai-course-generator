@@ -14,6 +14,7 @@ import QuizDashboardWrapper from "./components/QuizDashboardWrapper"
 import ClientOnly from "@/components/ClientOnly"
 import { AnimatedIntro } from "./components/AnimatedIntro"
 import { GlobalLoader } from "@/components/ui/loader"
+import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 
 export const metadata: Metadata = generateMetadata({
@@ -37,7 +38,7 @@ export const metadata: Metadata = generateMetadata({
 
 export const dynamic = "force-dynamic"
 
-const QuizPage = async () => {
+const Page = async () => {
   const session = await getAuthSession()
   const userId = session?.user?.id
   const quizzesData = await getQuizzes({ page: 1, limit: 5, searchTerm: "", userId: userId, quizTypes: [] })
@@ -47,11 +48,16 @@ const QuizPage = async () => {
     quizzes: quizzesData.quizzes as QuizListItem[],
     nextCursor: quizzesData.nextCursor,
   }
-  
+
   return (
     <QuizDashboardWrapper>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Main container with the gradient background */}
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-950 dark:to-gray-900 py-8">
+        {" "}
+        {/* Added py-8 here */}
+        <div className="container mx-auto px-4 max-w-7xl">
+          {" "}
+          {/* Removed py-8 from here */}
           <JsonLD
             type="default"
             data={{
@@ -62,16 +68,14 @@ const QuizPage = async () => {
               url: "https://courseai.io/dashboard/quizzes",
             }}
           />
-
-          <AnimatedIntro />
-          <Suspense
-            fallback={
-              <div className="space-y-4">
-                <GlobalLoader type="card" />
-                <QuizzesSkeleton />
-              </div>
-            }
-          >
+          {/* Ensure AnimatedIntro content is centered and has bottom margin */}
+          <div className="text-center mb-8">
+            {" "}
+            {/* Added text-center and mb-8 */}
+            <AnimatedIntro />
+          </div>
+          <Suspense fallback={<SuspenseGlobalFallback message="Loading Courses..." />}>
+           
             <ClientOnly>
               <QuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
             </ClientOnly>
@@ -82,4 +86,4 @@ const QuizPage = async () => {
   )
 }
 
-export default QuizPage
+export default Page

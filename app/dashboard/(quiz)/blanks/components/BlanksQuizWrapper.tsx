@@ -29,6 +29,7 @@ import BlanksQuiz from "./BlanksQuiz"
 import { QuizActions } from "../../components/QuizActions"
 import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
+import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 
 
 interface BlanksQuizWrapperProps {
@@ -177,11 +178,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <p className="text-sm text-gray-600">Loading quiz...</p>
-        </div>
-      </div>
+      <LoadingSpinner></LoadingSpinner>
     )
   }
 
