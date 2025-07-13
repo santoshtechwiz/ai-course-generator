@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import AdminNav from "./components/admin-nav"
+import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
 
 export default async function AdminLayout({
   children,
@@ -17,14 +18,16 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
-        <aside className="hidden md:block">
-          <AdminNav user={{ isAdmin: true }} />
-        </aside>
+    <PageWrapper>
+      <PageHeader>
+        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
+          <aside className="hidden md:block">
+            <AdminNav user={{ isAdmin: true }} />
+          </aside>
 
-        <main>{children}</main>
-      </div>
-    </div>
+          <main>{children}</main>
+        </div>
+      </PageHeader>
+    </PageWrapper>
   )
 }
