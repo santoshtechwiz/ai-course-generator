@@ -37,7 +37,7 @@ export const fetchQuiz = createAsyncThunk(
     try {
       if (!payload) {
         return rejectWithValue('No payload provided')
-        return rejectWithValue({ error: "No payload provided" })
+     
       }
 
       const slug = payload.slug?.trim() || ""
@@ -111,8 +111,8 @@ export const fetchQuiz = createAsyncThunk(
           const open = q.openEndedQuestion || {}
           return {
             ...base,
-            tags: open.tags || [],
-            hints: open.hints || [],
+            tags: q.tags || open.tags || [],
+            hints: q.hints || open.hints || [],
           }
         }
 

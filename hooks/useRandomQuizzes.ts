@@ -33,8 +33,7 @@ export function useRandomQuizzes(count: number = 5) {
         params: { count }
       })
       
-      console.log("API response:", response); // Debug the response structure
-      
+ 
       // Properly handle the response data - check if it's an array or nested in a property
       let quizzesData = Array.isArray(response) ? response : 
                        Array.isArray(response.quizzes) ? response.quizzes : 
@@ -53,8 +52,7 @@ export function useRandomQuizzes(count: number = 5) {
         popularity: quiz.popularity || "Medium",
       }));
 
-      console.log("Processed quizzes:", processedQuizzes); // Debug processed data
-      
+
       if (processedQuizzes.length === 0) {
         console.log("No quizzes returned from API, using fallbacks");
         setQuizzes(generateFallbackQuizzes(count));

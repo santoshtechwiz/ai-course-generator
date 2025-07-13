@@ -20,7 +20,7 @@ import {
   selectQuizId,
   selectQuizType,
   fetchQuiz,
-} from "@/store/slices/quiz-slice"
+} from "@/store/slices/quiz/quiz-slice"
 
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
@@ -28,7 +28,6 @@ import BlanksQuiz from "./BlanksQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
 import { useGlobalLoading } from "@/store/slices/global-loading-slice"
-import { GlobalLoader } from "@/components/ui/loader"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
 
 

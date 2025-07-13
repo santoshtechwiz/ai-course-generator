@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
+import { useGlobalLoader } from "@/store/global-loader"
 
 interface SummaryResponse {
   success: boolean
@@ -18,9 +19,11 @@ const fetchChapterSummary = async (chapterId: number): Promise<SummaryResponse> 
  * @returns Query object with summary data and status
  */
 export const useChapterSummary = (chapterId: number) => {
+  const { withLoading } = useGlobalLoader()
+
   return useQuery({
     queryKey: ["chapterSummary", chapterId],
-    queryFn: () => fetchChapterSummary(chapterId),
+    queryFn: () => withLoading(fetchChapterSummary(chapterId)),
     retry: 3,
     retryDelay: 60000, // 1 minute
     enabled: false, // Disable automatic fetching

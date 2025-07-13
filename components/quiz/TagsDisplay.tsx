@@ -1,33 +1,37 @@
-"use client"
-
 import { Badge } from "@/components/ui/badge"
 import { Tag } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 interface TagsDisplayProps {
   tags: string[]
   maxVisible?: number
-  className?: string
-  variant?: "default" | "secondary" | "outline"
 }
 
-export function TagsDisplay({ tags, maxVisible = 3, className, variant = "secondary" }: TagsDisplayProps) {
-  if (!tags || tags.length === 0) return null
+export function TagsDisplay({ tags, maxVisible = 3 }: TagsDisplayProps) {
+  if (!tags || tags.length === 0) {
+    return null
+  }
 
   const visibleTags = tags.slice(0, maxVisible)
-  const remainingCount = tags.length - maxVisible
+  const remainingTagsCount = tags.length - visibleTags.length
 
   return (
-    <div className={cn("flex items-center gap-2 flex-wrap", className)}>
-      <Tag className="w-4 h-4 text-muted-foreground" />
-      {visibleTags.map((tag, index) => (
-        <Badge key={index} variant={variant} className="text-xs">
+    <div className="flex flex-wrap gap-2">
+      {visibleTags.map((tag) => (
+        <Badge
+          key={tag}
+          variant="secondary"
+          className="text-xs sm:text-sm bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 whitespace-nowrap shadow-sm"
+        >
+          <Tag className="w-3 h-3 mr-1 flex-shrink-0" />
           {tag}
         </Badge>
       ))}
-      {remainingCount > 0 && (
-        <Badge variant="outline" className="text-xs">
-          +{remainingCount} more
+      {remainingTagsCount > 0 && (
+        <Badge
+          variant="secondary"
+          className="text-xs sm:text-sm bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 whitespace-nowrap shadow-sm"
+        >
+          +{remainingTagsCount} more
         </Badge>
       )}
     </div>

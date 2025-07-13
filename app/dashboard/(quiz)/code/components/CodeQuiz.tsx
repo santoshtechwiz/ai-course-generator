@@ -3,7 +3,7 @@
 import { useState, useCallback, memo, useMemo } from "react"
 import { motion } from "framer-motion"
 import { useAppDispatch } from "@/store"
-import { saveAnswer } from "@/store/slices/quiz-slice"
+import { saveAnswer } from "@/store/slices/quiz/quiz-slice"
 import type { CodeQuestion } from "./types"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"

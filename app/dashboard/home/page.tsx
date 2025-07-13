@@ -22,6 +22,7 @@ import DashboardHeader from "./components/DashboardHeader"
 import DashboardSidebar from "./components/DashboardSidebar"
 import { useGlobalLoader } from "@/store/global-loader"
 import dynamic from "next/dynamic"
+import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
@@ -215,25 +216,25 @@ export default function DashboardPage() {
             </TabsList>
 
             <TabsContent value="overview" className="mt-0">
-              <Suspense fallback={<LoadingState />}>
+              <Suspense fallback={<SuspenseGlobalFallback message="Loading Overview..." />}>
                 <OverviewTab userData={safeUserData} userStats={safeUserStats} />
               </Suspense>
             </TabsContent>
 
             <TabsContent value="courses" className="mt-0">
-              <Suspense fallback={<LoadingState />}>
+              <Suspense fallback={<SuspenseGlobalFallback message="Loading Courses..." />}>
                 <CoursesTab userData={safeUserData} />
               </Suspense>
             </TabsContent>
 
             <TabsContent value="quizzes" className="mt-0">
-              <Suspense fallback={<LoadingState />}>
+              <Suspense fallback={<SuspenseGlobalFallback message="Loading Quizzes..." />}>
                 <QuizzesTab userData={safeUserData} />
               </Suspense>
             </TabsContent>
 
             <TabsContent value="stats" className="mt-0">
-              <Suspense fallback={<LoadingState />}>
+              <Suspense fallback={<SuspenseGlobalFallback message="Loading Statistics..." />}>
                 <StatsTab userStats={safeUserStats} quizAttempts={safeUserData.quizAttempts} />
               </Suspense>
             </TabsContent>

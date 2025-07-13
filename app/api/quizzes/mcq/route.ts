@@ -29,11 +29,10 @@ import { getAuthSession } from "@/lib/auth"
 import { quizCreationSchema } from "@/schema/schema"
 import { generateSlug } from "@/lib/utils"
 import NodeCache from "node-cache"
-import axios from "axios"
-import { QuizType } from "@/types/quiz-types";
-import { generateQuestions } from "@/lib/chatgpt/generateQuestions"
+
 import createQuestions from "@/lib/create-questions"
 import { McqQuizService } from "@/app/services/mcq-quiz.service"
+import { QuizType } from "@/app/types/quiz-types"
 
 const cache = new NodeCache({ stdTTL: 600 }) // Cache for 10 minutes
 

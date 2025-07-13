@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
-import { hydrateStateFromStorage, restoreQuizAfterAuth } from "@/store/slices/quiz-slice";
+import { hydrateStateFromStorage, restoreQuizAfterAuth } from "@/store/slices/quiz/quiz-slice";
 import { StorageService } from '@/lib/storage-service';
 
 export function useQuizStateManager() {

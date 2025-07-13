@@ -272,7 +272,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session }) {
       if (process.env.NODE_ENV === "development") {
-        console.log("Session event triggered", { userId: session?.user?.id })
+       
       }
     },
   },

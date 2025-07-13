@@ -16,9 +16,8 @@ import { CourseCard } from "./CourseCard"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
-// Add missing imports at the top of the file
-// Remove this line:
-// import { useInView } from "react-intersection-observer";
+import { useGlobalLoader } from "@/store/global-loader"
+
 // Add memo and useCallback to optimize rendering
 const MemoizedCourseCard = React.memo(CourseCard)
 
@@ -198,32 +197,13 @@ export default function CoursesClient({
   // Update the isLoading condition to include when selectedCategory changes
   const isLoadingState = isLoading || (selectedCategory !== null && status === "loading")
 
+  // Remove the local loading spinner/logic
+  // Use useGlobalLoader for loading state
+  const { isLoading: globalLoading } = useGlobalLoader()
+
   // Replace the existing isLoading check with this updated condition
-  if (isLoadingState) {
-    return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
-        <div className="flex justify-between items-center mb-6">
-          <div className="h-8 w-48 bg-muted/60 rounded-md animate-pulse"></div>
-          <div className="h-10 w-32 bg-muted/60 rounded-md animate-pulse"></div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <CourseCard
-              key={index}
-              title=""
-              description=""
-              rating={0}
-              slug=""
-              unitCount={0}
-              lessonCount={0}
-              quizCount={0}
-              viewCount={0}
-              loading={true}
-            />
-          ))}
-        </div>
-      </div>
-    )
+  if (globalLoading) {
+    return null
   }
 
   // Enhanced empty state with better visuals

@@ -3,16 +3,18 @@
 import React, { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
-import { clearQuizState } from "@/store/slices/quiz-slice"
+
 import type { AppDispatch } from "@/store"
 import BlankQuizResults from "../blanks/components/BlankQuizResults"
 import OpenEndedQuizResults from "../openended/components/QuizResultsOpenEnded"
 import { NoResults } from "@/components/ui/no-results"
 import FlashCardResults from "../flashcard/components/FlashCardQuizResults"
 import CodeQuizResult from "../code/components/CodeQuizResult"
-import type { QuizType } from "@/types/quiz"
+
 import {McqQuizResult} from "../mcq/components/McqQuizResult"
 import { Button } from "@/components/ui"
+import { QuizType } from "@/app/types/quiz-types"
+import { resetQuiz } from "@/store/slices/quiz"
 
 
 interface QuizResultProps {
@@ -27,7 +29,7 @@ export default function QuizResult({ result, slug, quizType = "mcq", onRetake }:
   const dispatch = useDispatch<AppDispatch>()
 
   const handleRetake = () => {
-    dispatch(clearQuizState())
+    dispatch(resetQuiz())
     router.push(`/dashboard/${quizType}/${slug}`)
   }
 

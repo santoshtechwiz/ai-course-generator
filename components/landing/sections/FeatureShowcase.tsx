@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, useInView } from "framer-motion"
 import { ArrowRight } from "lucide-react"
+import { useGlobalLoader } from "@/store/global-loader"
 
 // SVG icons for features
 const FeatureIcon = ({ type }: { type: string }) => {

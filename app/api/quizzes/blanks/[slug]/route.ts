@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 
-import { prisma } from "@/lib/db"
 import { BlanksQuizService } from "@/app/services/blanks-quiz.service"
 import { getAuthSession } from "@/lib/auth"
 
@@ -15,6 +14,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
     const blanksQuizService = new BlanksQuizService()
     const quiz = await blanksQuizService.getQuizBySlug(slug, session?.user?.id)
+    console.log("Quiz retrieved:", quiz);
 
     if (!quiz) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })

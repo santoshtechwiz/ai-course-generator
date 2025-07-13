@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { render as rtlRender } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import React from 'react';
-import quizReducer from '@/store/slices/quiz-slice';
+import quizReducer from '@/store/slices/quiz/quiz-slice';
 
 // Function to render components with Redux provider for testing
 export function renderWithRedux(

@@ -17,9 +17,10 @@ import {
   selectQuizResults,
   selectQuizStatus,
   selectQuizQuestions,
-  clearQuizState,
+
   checkAuthAndLoadResults,
-} from '@/store/slices/quiz-slice'
+  resetQuiz,
+} from '@/store/slices/quiz/quiz-slice'
 
 import type { AppDispatch } from '@/store'
 import { QuizType } from '@/app/types/quiz-types'
@@ -147,7 +148,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
   useEffect(() => {
     if (quizResults && quizResults.slug !== slug) {
       // If current stored results are for a different quiz, clear them
-      dispatch(clearQuizState());
+      dispatch(resetQuiz());
     }
   }, [dispatch, quizResults, slug]);
   // Optimized effect for loading results
@@ -174,7 +175,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
 
     // Clear any results that don't match the current slug
     if (quizResults && quizResults.slug !== slug) {
-      dispatch(clearQuizState());
+      dispatch(resetQuiz());
     }
 
     // If we already have matching results and user is authenticated, immediately show results
@@ -263,7 +264,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     setIsRedirecting(true);
     
     // Clear quiz state immediately to prevent issues with shared state
-    dispatch(clearQuizState());
+    dispatch(resetQuiz());
     
     // Tell state machine we're taking action
     send({ type: 'RETAKE' });
@@ -276,7 +277,7 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
     setErrorMessage(null);
     
     // Clear quiz state to start fresh
-    dispatch(clearQuizState());
+    dispatch(resetQuiz());
     
     // Set loading state
     send({ type: 'RETRY' });

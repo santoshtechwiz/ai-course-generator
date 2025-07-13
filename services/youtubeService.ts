@@ -4,6 +4,7 @@ import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube
 import { Supadata, type TranscriptChunk } from "@supadata/js"
 import pRetry from "p-retry"
 import pTimeout from "p-timeout"
+import { useGlobalLoader } from "@/store/global-loader"
 
 export interface YoutubeSearchResponse {
   items: Array<{

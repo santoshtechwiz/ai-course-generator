@@ -14,7 +14,7 @@ export class QuizRepository extends BaseRepository<any> {
    * Find a quiz by its slug
    */
   async findBySlug(slug: string) {
-    return prisma.userQuiz.findUnique({
+    const quiz = await prisma.userQuiz.findUnique({
       where: { slug },
       include: {
         questions: {
@@ -27,6 +27,10 @@ export class QuizRepository extends BaseRepository<any> {
         },
       },
     });
+    if (!quiz) {
+      return null;
+    }
+    return quiz;
   }
 
 

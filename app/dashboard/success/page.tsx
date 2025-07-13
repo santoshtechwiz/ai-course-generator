@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton"
 import { SUBSCRIPTION_PLANS } from "../subscription/components/subscription-plans"
 import { SubscriptionService } from "../subscription/services/subscription-service"
+import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 export const dynamic = "force-dynamic"
 
@@ -42,7 +43,7 @@ export default async function PaymentSuccessPage({
         </p>
       </div>
 
-      <Suspense fallback={<SuccessPageSkeleton />}>
+      <Suspense fallback={<SuspenseGlobalFallback message="Loading success page..." />}>
         <SuccessPageContent userId={userId} sessionId={stripeSessionId} />
       </Suspense>
     </div>

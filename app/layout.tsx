@@ -11,6 +11,7 @@ import { font } from "./font";
 
 import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
+import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
 
 export const metadata: Metadata = {
   ...defaultMetadata,
@@ -97,9 +98,7 @@ export default async function RootLayout({
           <Providers session={session}>
             <ClientLayoutWrapper>
               <main className="flex-1 w-full">
-                <Suspense
-                  fallback={<GlobalLoader />}
-                >
+                <Suspense fallback={<SuspenseGlobalFallback />}>
                   {children}
                 </Suspense>
               </main>

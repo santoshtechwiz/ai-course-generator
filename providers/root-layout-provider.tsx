@@ -14,9 +14,7 @@ import React from "react";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "@/store";
-import { Loader } from "../components/ui/loader";
-import ProgressBar from "@/app/dashboard/course/[slug]/components/video/components/ProgressBar";
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
+import { useGlobalLoader } from "@/store/global-loader";
 
 // Create a query client with optimized settings
 const createQueryClient = () =>
@@ -49,6 +47,10 @@ export function RootLayoutProvider({
     setMounted(true);
   }, []);
 
+  // Example usage in async actions:
+  // const { withLoading } = useGlobalLoader()
+  // await withLoading(apiCall())
+
   return (
     <React.StrictMode>
       <Provider store={store}>
@@ -69,7 +71,7 @@ export function RootLayoutProvider({
                   <TooltipProvider>
                     <SubscriptionProvider>
                       <AnimationProvider>
-                        <Suspense fallback={<LoadingSpinner />}>
+                        <Suspense fallback={<></>}>
                           <Toaster
                             position="top-right"
                             closeButton

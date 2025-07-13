@@ -21,7 +21,6 @@ import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useMobile } from "@/hooks/use-mobile"
 import { useGlobalLoader } from '@/store/global-loader'
-import { GlobalLoader } from '@/components/ui/loader'
 
 // Types based on the API response
 interface CourseQuizCard {
@@ -303,9 +302,8 @@ const ProductGallery = () => {
         </motion.div>
       </div>
 
-      {isLoading ? (
-        <LoadingState />
-      ) : error ? (
+      {/* Remove LoadingState usage and rely on global loader */}
+      {error ? (
         <ErrorState error={error} onRetry={retryFetch} />
       ) : filteredProducts.length === 0 ? (
         <EmptyState onReset={() => setFilter("all")} />
@@ -402,15 +400,6 @@ const ProductGallery = () => {
     </div>
   )
 }
-
-const LoadingState = () => (
-  <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-      <GlobalLoader className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-      <p className="text-muted-foreground">Loading AI learning tools...</p>
-    </motion.div>
-  </div>
-)
 
 const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) => (
   <div className="flex items-center justify-center h-80 bg-card/30 backdrop-blur-sm rounded-2xl border border-border/10">
@@ -691,13 +680,13 @@ const ProductCard = ({ product, isActive, theme }: CourseQuizCardProps) => {
             animate={
               isActive
                 ? {
-                    scale: [1, 1.03, 1], // Reduced from [1, 1.05, 1]
-                    rotate: [0, 0.5, -0.5, 0], // Reduced from [0, 1, -1, 0]
+                    scale: [1, 1.03, 1],
+                    rotate: [0, 0.5, -0.5, 0],
                   }
                 : {}
             }
             transition={{
-              duration: 5, // Reduced from 6
+              duration: 5,
               repeat: Number.POSITIVE_INFINITY,
               repeatType: "reverse",
               ease: APPLE_EASING,

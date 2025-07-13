@@ -37,17 +37,29 @@ const MarkdownComponents = {
   h5: memo(({ children, ...props }: any) => createElement("h5", { ...props, className: markdownStyles.h5 }, children)),
   h6: memo(({ children, ...props }: any) => createElement("h6", { ...props, className: markdownStyles.h6 }, children)),
   p: memo(({ children, ...props }: any) => createElement("p", { ...props, className: markdownStyles.p }, children)),
-  a: memo(({ children, ...props }: any) => createElement("a", { ...props, className: markdownStyles.a, target: "_blank", rel: "noopener noreferrer" }, children)),
+  a: memo(({ children, ...props }: any) =>
+    createElement(
+      "a",
+      { ...props, className: markdownStyles.a, target: "_blank", rel: "noopener noreferrer" },
+      children,
+    ),
+  ),
   ul: memo(({ children, ...props }: any) => createElement("ul", { ...props, className: markdownStyles.ul }, children)),
   ol: memo(({ children, ...props }: any) => createElement("ol", { ...props, className: markdownStyles.ol }, children)),
   li: memo(({ children, ...props }: any) => createElement("li", { ...props, className: markdownStyles.li }, children)),
-  blockquote: memo(({ children, ...props }: any) => createElement("blockquote", { ...props, className: markdownStyles.blockquote }, children)),
+  blockquote: memo(({ children, ...props }: any) =>
+    createElement("blockquote", { ...props, className: markdownStyles.blockquote }, children),
+  ),
   hr: memo(({ ...props }: any) => createElement("hr", { ...props, className: markdownStyles.hr })),
   img: memo(({ ...props }: any) => createElement("img", { ...props, className: markdownStyles.img, loading: "lazy" })),
-  table: memo(({ children, ...props }: any) => createElement("table", { ...props, className: markdownStyles.table }, children)),
+  table: memo(({ children, ...props }: any) =>
+    createElement("table", { ...props, className: markdownStyles.table }, children),
+  ),
   th: memo(({ children, ...props }: any) => createElement("th", { ...props, className: markdownStyles.th }, children)),
   td: memo(({ children, ...props }: any) => createElement("td", { ...props, className: markdownStyles.td }, children)),
-  pre: memo(({ children, ...props }: any) => createElement("pre", { ...props, className: markdownStyles.pre }, children)),
+  pre: memo(({ children, ...props }: any) =>
+    createElement("pre", { ...props, className: markdownStyles.pre }, children),
+  ),
   code: memo(({ inline, children, ...props }: any) => {
     if (inline) {
       return createElement("code", { ...props, className: markdownStyles.inlineCode }, children)
@@ -65,7 +77,9 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
       components={{
         p: ({ children }) => <p className="mb-4 leading-relaxed text-base">{children}</p>,
         h3: ({ children }) => (
-          <h3 className="text-xl font-semibold mb-3 mt-6 text-primary border-b border-primary/30 pb-2">{children}</h3>
+          <h3 className="text-xl font-semibold mb-3 mt-6 text-purple-700 dark:text-purple-300 border-b border-purple-300/50 pb-2">
+            {children}
+          </h3>
         ),
         ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-2">{children}</ul>,
         li: ({ children }) => {
@@ -86,12 +100,12 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
         strong: ({ children }) => {
           const text = String(children).trim()
           return text.includes(" ") ? (
-            <strong className="font-bold text-primary">{children}</strong>
+            <strong className="font-bold text-purple-700 dark:text-purple-300">{children}</strong>
           ) : (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <strong className="font-bold text-primary cursor-help">{children}</strong>
+                  <strong className="font-bold text-purple-700 dark:text-purple-300 cursor-help">{children}</strong>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Important concept</p>
@@ -101,7 +115,12 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
           )
         },
         a: ({ href, children }) => (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-purple-600 hover:underline dark:text-purple-400"
+          >
             {children}
           </a>
         ),

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
 import axios from "axios"
 import { useToast } from "@/hooks"
+import { useGlobalLoader } from "@/store/global-loader"
 import type { Chapter } from "@prisma/client"
 
 type ProcessingStatus = "idle" | "processing" | "success" | "error"
@@ -14,6 +15,7 @@ interface ChapterProcessingState {
 
 export const useChapterProcessing = (chapter: Chapter) => {
   const { toast } = useToast()
+  const { withLoading } = useGlobalLoader()
   const [state, setState] = useState<ChapterProcessingState>({
     videoStatus: chapter.videoId ? "success" : "idle",
   })

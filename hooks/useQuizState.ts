@@ -10,7 +10,7 @@ import {
   setQuizResults,
   selectQuizState,
   persistQuizState
-} from '@/store/slices/quiz-slice';
+} from '@/store/slices/quiz/quiz-slice';
 
 export function useQuizState(quizIdentifier?: string | { slug: string }) {
   const dispatch = useDispatch<AppDispatch>();
