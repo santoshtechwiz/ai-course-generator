@@ -18,7 +18,7 @@ export async function GET(_: Request, props: { params: Promise<{ slug: string }>
     return NextResponse.json({
       ...result,
       slug,
-      quizId: result.quizData.id?.toString(),
+      quizId: result.id?.toString(),
       userId,
       ownerId: result.userId || userId,
     })

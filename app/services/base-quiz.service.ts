@@ -24,7 +24,7 @@ export abstract class BaseQuizService {
    */
   async getQuizBySlug(slug: string, userId: string) {
     const quiz = await this.quizRepository.findBySlug(slug);
-    
+
     if (!quiz) {
       throw new Error("Quiz not found");
     }
@@ -32,11 +32,9 @@ export abstract class BaseQuizService {
     return {
       isPublic: quiz.isPublic,
       isFavorite: quiz.isFavorite,
-      quizData: {
-        id: quiz.id,
-        title: quiz.title,
-        questions: this.formatQuestions(quiz.questions),
-      },
+      id: quiz.id,
+      title: quiz.title,
+      questions: this.formatQuestions(quiz.questions),
       userId: quiz.userId,
     };
   }
@@ -44,9 +42,13 @@ export abstract class BaseQuizService {
   /**
    * Update a quiz's properties (isPublic, isFavorite)
    */
-  async updateQuizProperties(slug: string, userId: string, data: { isPublic?: boolean; isFavorite?: boolean }) {
+  async updateQuizProperties(
+    slug: string,
+    userId: string,
+    data: { isPublic?: boolean; isFavorite?: boolean }
+  ) {
     const quiz = await this.quizRepository.findBySlug(slug);
-    
+
     if (!quiz) {
       throw new Error("Quiz not found");
     }

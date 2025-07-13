@@ -75,12 +75,12 @@ export const fetchSubscription = createAsyncThunk<
       10000
     )
 
-    if (res.status === 401) {
+    if (res?.status === 401) {
       logger.warn("User not authenticated for subscription")
       return DEFAULT_FREE_SUBSCRIPTION
     }
 
-    if (!res.ok) {
+    if (!res?.ok) {
       logger.warn(`Subscription API error: ${res.status}`)
       // Preserve existing data if API fails but user is authenticated
       if (data && data.subscriptionPlan !== "FREE") {

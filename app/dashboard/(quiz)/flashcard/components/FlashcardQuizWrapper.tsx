@@ -36,6 +36,7 @@ import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 import { GlobalLoader, useLoader } from "@/components/ui/loader";
 import { QuizSchema } from "@/lib/seo-manager-new";
 import { QuizActions } from "../../components/QuizActions";
+import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -49,7 +50,8 @@ export default function FlashcardQuizWrapper({
   const initRef = useRef(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const searchParams = useSearchParams();  const { isAuthenticated, user, isLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const { isAuthenticated, user, isLoading } = useAuth();
 
   const isReviewMode = searchParams?.get("review") === "true";
   const isResetMode = searchParams?.get("reset") === "true";
@@ -66,9 +68,7 @@ export default function FlashcardQuizWrapper({
   const userId = user?.id;
   const quizId = useSelector((state: RootState) => state.flashcard.quizId);
   const quizData = useSelector((state: RootState) => state.flashcard.results);
-  const quizOwnerId = useSelector(
-    (state: RootState) => state.flashcard.userId
-  );
+  const quizOwnerId = useSelector((state: RootState) => state.flashcard.userId);
   // Initial load: clear state if needed and fetch quiz
   useEffect(() => {
     if (!slug || isLoading) return;
@@ -281,7 +281,7 @@ export default function FlashcardQuizWrapper({
   if (quizStatus === "loading" || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <GlobalLoader size="sm" />
+        <LoadingSpinner />
         <p className="mt-4 text-muted-foreground">
           {isReviewMode
             ? "Loading your review cards..."
@@ -318,7 +318,9 @@ export default function FlashcardQuizWrapper({
     return (
       <SignInPrompt
         onSignIn={() =>
-          router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/flashcard/${slug}`)}`)
+          router.push(
+            `/auth/signin?callbackUrl=${encodeURIComponent(`/dashboard/flashcard/${slug}`)}`
+          )
         }
         onRetake={() => {
           dispatch(clearQuizState());
@@ -385,7 +387,9 @@ export default function FlashcardQuizWrapper({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-    >      <QuizSchema
+    >
+    
+      <QuizSchema
         name={quizTitle || title || "Flashcard Quiz"}
         url={`https://courseai.io/dashboard/flashcard/${slug}`}
         description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
