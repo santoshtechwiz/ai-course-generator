@@ -24,18 +24,7 @@ export default async function SubscriptionDetails({
     )
   }
 
-  // If activeTab is "billing", we'll just show the billing history directly
-  if (activeTab === "billing") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Billing History</CardTitle>
-          <CardDescription>View your past invoices and payment history</CardDescription>
-        </CardHeader>
-        <BillingHistory billingHistory={subscriptionData.billingHistory} />
-      </Card>
-    )
-  }
+
 
   // Otherwise, show the subscription management interface
   return <ManageSubscription userId={userId} subscriptionData={subscriptionData} />

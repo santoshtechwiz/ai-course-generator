@@ -11,6 +11,7 @@ import { AlertTriangle } from "lucide-react"
 import SubscriptionDetails from "./component/SubscriptionDetails"
 import { AccountOverview } from "./component/AccountOverview"
 import { SubscriptionService } from "../subscription/services/subscription-service"
+import { BillingHistory } from "./component/BillingHistory"
 
 export default async function SubscriptionAccountPage() {
   const session = await getAuthSession()
@@ -118,7 +119,7 @@ export default async function SubscriptionAccountPage() {
 
         <TabsContent value="billing" className="animate-in fade-in-50 slide-in-from-right-5">
           <Suspense fallback={<SubscriptionDetailsSkeleton />}>
-            <SubscriptionDetails userId={userId} getSubscriptionData={getSubscriptionData} activeTab="billing" />
+            <BillingHistory userId={userId} />
           </Suspense>
         </TabsContent>
       </Tabs>

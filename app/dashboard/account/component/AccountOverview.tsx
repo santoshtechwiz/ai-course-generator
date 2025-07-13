@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "./status-badge"
 import { ReferralSystem } from "./ReferralSystem"
-import { BillingHistory } from "@/components/billing/BillingHistory"
+
 import { CreditCard, User, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PlanBadge } from "../../subscription/components/subscription-status/plan-badge"
@@ -43,19 +43,7 @@ export function AccountOverview({ userId }: { userId: string }) {
   const tokenRemaining = Math.max(tokenLimit - tokenUsage, 0)
   const tokenUsagePercentage = tokenLimit > 0 ? Math.round((tokenUsage / tokenLimit) * 100) : 0
   
-  // Debug info for development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('AccountOverview Credit Debug:', {
-      sessionTokensUsed,
-      sessionTokenLimit,
-      tokenUsage,
-      tokenLimit,
-      tokenRemaining,
-      tokenUsagePercentage,
-      sessionUser: session?.user,
-      subscriptionData: subscription.subscription
-    })
-  }
+
 
   const formattedExpirationDate = subscription.subscription?.currentPeriodEnd
     ? new Date(subscription.subscription.currentPeriodEnd).toLocaleDateString("en-US", {
@@ -76,16 +64,7 @@ export function AccountOverview({ userId }: { userId: string }) {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Debug Section - Development Only */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <h4 className="text-sm font-semibold mb-2">Debug Info (Dev Only)</h4>
-                <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
-                  <p><strong>Session Status:</strong> {status}</p>
-                  <div><strong>Session User:</strong> <pre className="whitespace-pre-wrap">{JSON.stringify(session?.user, null, 1)}</pre></div>
-                  <div><strong>Auth User:</strong> <pre className="whitespace-pre-wrap">{JSON.stringify(user, null, 1)}</pre></div>
-                </div>
-              </div>
-            )}
+        
             
             {/* User Info */}
             <div className="space-y-4">
@@ -241,8 +220,7 @@ export function AccountOverview({ userId }: { userId: string }) {
           </CardContent>
         </Card>
 
-        {/* Billing History */}
-        <BillingHistory userId={userId} />
+     
       </div>
 
       {/* Referral System */}
