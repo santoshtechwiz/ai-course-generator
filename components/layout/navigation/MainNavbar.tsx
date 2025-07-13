@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import Link from "next/link"
 import { Search, Menu, X, CreditCard, Sparkles } from "lucide-react"
 import { navItems } from "@/constants/navItems"
 import { ThemeToggle } from "@/components/layout/navigation/ThemeToggle"
@@ -13,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-import Logo from "./Logo"
+
 import { useAuth, useSubscription } from "@/modules/auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
@@ -21,7 +20,7 @@ import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
 import { useGlobalLoader } from '@/store/global-loader'
 
 import { motion, AnimatePresence } from "framer-motion"
-
+import Logo from "@/components/shared/Logo"
 
 
 export default function MainNavbar() {
@@ -34,7 +33,7 @@ export default function MainNavbar() {
   // Extract subscription details
   const totalTokens = user?.credits || 0
   const tokenUsage = 0 // TODO: Track token usage
-  const subscriptionPlan = subscription?.plan || 'FREE'
+  const subscriptionPlan = subscription?.subscription.plan || 'FREE'
   const isSubscriptionLoading = authLoading
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -299,9 +298,9 @@ export default function MainNavbar() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Link href="/" aria-label="Return to homepage">
-              <Logo />
-            </Link>
+            <AsyncNavLink href="/" aria-label="Return to homepage">
+            <Logo />
+            </AsyncNavLink>
           </motion.div>
 
           {/* Desktop Navigation */}

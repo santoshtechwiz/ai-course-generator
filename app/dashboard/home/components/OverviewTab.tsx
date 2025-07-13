@@ -129,7 +129,7 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
                         <h3 className="font-medium truncate">{course.course?.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress value={course.progress || 0} className="h-2 w-24" />
-                          <span className="text-xs text-muted-foreground">{course.progress || 0}% complete</span>
+                          <span className="text-xs text-muted-foreground">{Math.round(course.progress || 0)}% complete</span>
                         </div>
                       </div>
                     </div>

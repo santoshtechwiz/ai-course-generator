@@ -82,6 +82,32 @@ const config: Config = {
           "sans-serif",
         ],
       },
+      fontSize: {
+        xs: ["0.75rem", { lineHeight: "1.5" }],
+        sm: ["0.875rem", { lineHeight: "1.5715" }],
+        base: ["1rem", { lineHeight: "1.75" }],
+        lg: ["1.125rem", { lineHeight: "2" }],
+        xl: ["1.25rem", { lineHeight: "2.25" }],
+        "2xl": ["1.5rem", { lineHeight: "2.5" }],
+        "3xl": ["1.875rem", { lineHeight: "2.75" }],
+        "4xl": ["2.25rem", { lineHeight: "3" }],
+      },
+      spacing: {
+        4: "1rem",
+        6: "1.5rem",
+        8: "2rem",
+        12: "3rem",
+        16: "4rem",
+        24: "6rem",
+        32: "8rem",
+        40: "10rem",
+        48: "12rem",
+        56: "14rem",
+        64: "16rem",
+      },
+      maxWidth: {
+        "7xl": "80rem",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -188,17 +214,7 @@ const config: Config = {
         "float": "float 3s ease-in-out infinite",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
       },
-      spacing: {
-        "4.5": "1.125rem", // 18px
-        "7.5": "1.875rem", // 30px
-        "8.5": "2.125rem", // 34px
-        "13": "3.25rem", // 52px
-        "15": "3.75rem", // 60px
-        "18": "4.5rem", // 72px
-        "22": "5.5rem", // 88px
-        "26": "6.5rem", // 104px
-        "30": "7.5rem", // 120px
-      },      height: {
+      height: {
         screen: "100vh",
         "screen-small": "100dvh",
       },

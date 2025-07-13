@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
-import quizReducer from '@/store/slices/quiz-slice'
+import quizReducer from '@/store/slices/quiz/quiz-slice'
 
 // Mock the components we'll be testing
 jest.mock('@/app/dashboard/(quiz)/code/components/CodeQuiz', () => ({

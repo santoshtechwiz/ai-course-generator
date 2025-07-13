@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast"
 import type { VideoPlayerProps } from "../types"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
+import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -110,7 +111,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const { data: session } = useSession()
   const { toast } = useToast()
-  const { startLoading, stopLoading } = useGlobalLoader()
+  const { startLoading, stopLoading ,isLoading} = useGlobalLoader()
 
   // State management with proper initialization
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false)
@@ -503,11 +504,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsLoadingDuration(true)
     setCertificateState("idle")
 
-    // Start loading when video changes
-    startLoading({
-      message: "Loading video...",
-      isBlocking: false
-    })
+    if(isLoading){
+      return <LoadingSpinner />
+    }
 
     // Clear any pending timeouts
     if (controlsTimeoutRef.current) {

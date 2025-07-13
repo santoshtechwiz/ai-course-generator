@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, MessageSquare, BarChart3, Award, TrendingUp, Bookmark as BookmarkIcon, Trash, File } from "lucide-react"
+import { FileText, MessageSquare, BarChart3, Award, TrendingUp, BookmarkIcon, File } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
@@ -14,7 +14,6 @@ import CourseAISummary from "./CourseSummary"
 
 export interface AccessLevels {
   isSubscribed: boolean
- 
   isAuthenticated: boolean
   isAdmin: boolean
 }
@@ -22,7 +21,6 @@ export interface AccessLevels {
 interface CourseDetailsTabsProps {
   course: FullCourseType
   currentChapter?: FullChapterType
-  
   accessLevels?: AccessLevels // New prop for standardized access control
   onSeekToBookmark?: (time: number, title?: string) => void
 }
@@ -30,7 +28,6 @@ interface CourseDetailsTabsProps {
 export default function CourseDetailsTabs({
   course,
   currentChapter,
-
   accessLevels,
   onSeekToBookmark,
 }: CourseDetailsTabsProps) {
@@ -97,15 +94,14 @@ export default function CourseDetailsTabs({
     [onSeekToBookmark],
   )
 
-
   // Add a tab for bookmarks, if they don't exist already
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: <FileText className="h-4 w-4 mr-2" /> },
-    { id: 'notes', label: 'Notes', icon: <MessageSquare className="h-4 w-4 mr-2" /> },
-    { id: 'transcripts', label: 'Transcript', icon: <FileText className="h-4 w-4 mr-2" /> },
-    { id: 'bookmarks', label: 'Bookmarks', icon: <BookmarkIcon className="h-4 w-4 mr-2" /> },
-    { id: 'resources', label: 'Resources', icon: <File className="h-4 w-4 mr-2" /> },
-  ];
+    { id: "overview", label: "Overview", icon: <FileText className="h-4 w-4 mr-2" /> },
+    { id: "notes", label: "Notes", icon: <MessageSquare className="h-4 w-4 mr-2" /> },
+    { id: "transcripts", label: "Transcript", icon: <FileText className="h-4 w-4 mr-2" /> },
+    { id: "bookmarks", label: "Bookmarks", icon: <BookmarkIcon className="h-4 w-4 mr-2" /> },
+    { id: "resources", label: "Resources", icon: <File className="h-4 w-4 mr-2" /> },
+  ]
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
@@ -223,7 +219,7 @@ export default function CourseDetailsTabs({
                         Congratulations! You've completed all chapters.
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" className="ml-auto">
+                    <Button variant="outline" size="sm" className="ml-auto bg-transparent">
                       <Award className="h-4 w-4 mr-2" />
                       Certificate
                     </Button>
@@ -248,7 +244,7 @@ export default function CourseDetailsTabs({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {accessLevels.isAuthenticated && bookmarks.length > 0 ? (
+              {accessLevels?.isAuthenticated && bookmarks.length > 0 ? (
                 <div className="space-y-3">
                   {bookmarks.map((bookmark) => (
                     <div
@@ -284,7 +280,7 @@ export default function CourseDetailsTabs({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>Sign in to save video bookmarks</p>
-                  <Button variant="outline" className="mt-4">
+                  <Button variant="outline" className="mt-4 bg-transparent">
                     Sign In
                   </Button>
                 </div>

@@ -11,7 +11,8 @@ import { BookOpen, Search, Clock, CheckCircle, PlusCircle, Loader2 } from "lucid
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import type { DashboardUser, Course, CourseProgress, Favorite } from "@/app/types/types"
+import type { DashboardUser, Course } from "@/app/types/types"
+import { useGlobalLoader } from "@/store/global-loader" // Import useGlobalLoader
 
 interface CoursesTabProps {
   userData: DashboardUser
@@ -20,8 +21,8 @@ interface CoursesTabProps {
 export default function CoursesTab({ userData }: CoursesTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("all")
-  const [loadingCourseId, setLoadingCourseId] = useState<string | null>(null)
   const router = useRouter()
+  const { startLoading, stopLoading } = useGlobalLoader() // Use global loader
 
   // Ensure proper null checks for all arrays
   const allCourses = userData?.courses || []
@@ -46,28 +47,24 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
   const filteredAllCourses = filterCourses(allCourses)
 
   const filteredInProgressCourses = filterCourses(
-    inProgressCourses
-      .map((p) => p.course)
-      .filter((course): course is Course => Boolean(course))
+    inProgressCourses.map((p) => p.course).filter((course): course is Course => Boolean(course)),
   )
-  
+
   const filteredCompletedCourses = filterCourses(
-    completedCourses
-      .map((p) => p.course)
-      .filter((course): course is Course => Boolean(course))
+    completedCourses.map((p) => p.course).filter((course): course is Course => Boolean(course)),
   )
-  
+
   const filteredFavoriteCourses = filterCourses(favoriteCourses)
 
   // Use useCallback to prevent recreation on each render
   const handleCourseClick = useCallback(
     (courseId: string, slug: string) => {
-      setLoadingCourseId(courseId)
+      startLoading({ message: "Loading course...", isBlocking: false, id: `course-load-${courseId}` })
       requestAnimationFrame(() => {
         router.push(`/dashboard/course/${slug}`)
       })
     },
-    [router],
+    [router, startLoading],
   )
 
   return (
@@ -84,7 +81,8 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>          <Button asChild>
+          </div>{" "}
+          <Button asChild>
             <Link href="/dashboard/create">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Course
@@ -102,36 +100,19 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
-          <CourseGrid
-            courses={filteredAllCourses}
-            loadingCourseId={loadingCourseId}
-            onCourseClick={handleCourseClick}
-          />
+          <CourseGrid courses={filteredAllCourses} onCourseClick={handleCourseClick} />
         </TabsContent>
 
         <TabsContent value="in-progress" className="mt-6">
-          <CourseGrid
-            courses={filteredInProgressCourses}
-            showProgress
-            loadingCourseId={loadingCourseId}
-            onCourseClick={handleCourseClick}
-          />
+          <CourseGrid courses={filteredInProgressCourses} showProgress onCourseClick={handleCourseClick} />
         </TabsContent>
 
         <TabsContent value="completed" className="mt-6">
-          <CourseGrid
-            courses={filteredCompletedCourses}
-            loadingCourseId={loadingCourseId}
-            onCourseClick={handleCourseClick}
-          />
+          <CourseGrid courses={filteredCompletedCourses} onCourseClick={handleCourseClick} />
         </TabsContent>
 
         <TabsContent value="favorites" className="mt-6">
-          <CourseGrid
-            courses={filteredFavoriteCourses}
-            loadingCourseId={loadingCourseId}
-            onCourseClick={handleCourseClick}
-          />
+          <CourseGrid courses={filteredFavoriteCourses} onCourseClick={handleCourseClick} />
         </TabsContent>
       </Tabs>
     </div>
@@ -141,11 +122,12 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 interface CourseGridProps {
   courses: any[]
   showProgress?: boolean
-  loadingCourseId: string | null
   onCourseClick: (courseId: string, slug: string) => void
 }
 
-function CourseGrid({ courses, showProgress = false, loadingCourseId, onCourseClick }: CourseGridProps) {
+function CourseGrid({ courses, showProgress = false, onCourseClick }: CourseGridProps) {
+  const { isLoading: isGlobalLoading, loadingId } = useGlobalLoader() // Use global loader to check loading state
+
   if (courses.length === 0) {
     return (
       <Card>
@@ -167,59 +149,62 @@ function CourseGrid({ courses, showProgress = false, loadingCourseId, onCourseCl
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {courses.map((course) => (
-        <Card
-          key={course.id}
-          className={`overflow-hidden transition-all duration-300 ${
-            loadingCourseId === course.id ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
-          }`}
-          onClick={() => onCourseClick(course.id, course.slug)}
-        >
-          <div className="relative h-40 w-full cursor-pointer">
-            <Image src={course.image || "/placeholder.svg"} alt={course.title} fill className="object-cover" />
-            {course.category && (
-              <Badge className="absolute top-2 right-2 bg-black/60 hover:bg-black/70">{course.category.name}</Badge>
-            )}
-            {loadingCourseId === course.id && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-          </div>
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 cursor-pointer">
-              {course.title}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{course.description}</p>
-
-            {showProgress && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">Progress</span>
-                  <span className="text-xs font-medium">{course.progress || 0}%</span>
+      {courses.map((course) => {
+        const isLoadingThisCourse = isGlobalLoading && loadingId === `course-load-${course.id}`
+        return (
+          <Card
+            key={course.id}
+            className={`overflow-hidden transition-all duration-300 ${
+              isLoadingThisCourse ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
+            }`}
+            onClick={() => onCourseClick(course.id, course.slug)}
+          >
+            <div className="relative h-40 w-full cursor-pointer">
+              <Image src={course.image || "/placeholder.svg"} alt={course.title} fill className="object-cover" />
+              {course.category && (
+                <Badge className="absolute top-2 right-2 bg-black/60 hover:bg-black/70">{course.category.name}</Badge>
+              )}
+              {isLoadingThisCourse && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-                <Progress value={course.progress || 0} className="h-2" />
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Clock className="mr-1 h-4 w-4" />
-                <span>{course.estimatedHours || "N/A"} hours</span>
-              </div>
-              {course.isCompleted && (
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                >
-                  <CheckCircle className="mr-1 h-3 w-3" />
-                  Completed
-                </Badge>
               )}
             </div>
-          </CardContent>
-        </Card>
-      ))}
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 cursor-pointer">
+                {course.title}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{course.description}</p>
+
+              {showProgress && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-muted-foreground">Progress</span>
+                    <span className="text-xs font-medium">{course.progress || 0}%</span>
+                  </div>
+                  <Progress value={course.progress || 0} className="h-2" />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="mr-1 h-4 w-4" />
+                  <span>{course.estimatedHours || "N/A"} hours</span>
+                </div>
+                {course.isCompleted && (
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  >
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                    Completed
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

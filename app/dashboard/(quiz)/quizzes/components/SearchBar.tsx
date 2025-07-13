@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import { Search, X, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -33,16 +32,14 @@ export function SearchBar({
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
     }
-
     if (search) {
       setIsTyping(true)
       typingTimeoutRef.current = setTimeout(() => {
         setIsTyping(false)
-      }, 500)
+      }, 500) // Adjust delay as needed
     } else {
       setIsTyping(false)
     }
-
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
@@ -52,17 +49,22 @@ export function SearchBar({
 
   return (
     <div className="relative group">
+      {/* Animated focus ring */}
       <motion.div
-        className="absolute inset-0 rounded-md"
+        className="absolute inset-0 rounded-md pointer-events-none"
         animate={{
-          boxShadow: isFocused ? "0 0 0 2px rgba(var(--primary), 0.3)" : "none",
+          boxShadow: isFocused ? "0 0 0 2px var(--tw-ring-color)" : "none",
         }}
         transition={{ duration: 0.2 }}
+        style={
+          {
+            // Dynamically set ring color based on theme or a specific purple
+            "--tw-ring-color": "hsl(262 83% 58%)", // A shade of purple for the ring
+          } as React.CSSProperties
+        }
       />
-
       <div className="relative flex items-center">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-600 dark:text-purple-400" />
         <Input
           ref={inputRef}
           type="search"
@@ -71,9 +73,8 @@ export function SearchBar({
           onChange={onSearchChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="pl-10 pr-10 py-2 h-10 bg-background border-input"
+          className="pl-10 pr-10 py-2 h-10 bg-purple-50 dark:bg-purple-950 border-purple-300 dark:border-purple-700 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
         />
-
         <AnimatePresence>
           {search && (
             <motion.div
@@ -84,13 +85,13 @@ export function SearchBar({
               className="absolute right-3 top-1/2 transform -translate-y-1/2"
             >
               {isTyping ? (
-                <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                <Loader2 className="h-4 w-4 text-purple-600 dark:text-purple-400 animate-spin" />
               ) : (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
+                  className="h-5 w-5 p-0 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-800 hover:text-purple-800 dark:hover:text-purple-200"
                   onClick={() => {
                     onClearSearch()
                     inputRef.current?.focus()
@@ -104,12 +105,11 @@ export function SearchBar({
           )}
         </AnimatePresence>
       </div>
-
       {isSearching && search && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute -bottom-6 left-0 text-xs text-muted-foreground"
+          className="absolute -bottom-6 left-0 text-xs text-purple-600 dark:text-purple-400"
         >
           Searching for "{search}"...
         </motion.div>

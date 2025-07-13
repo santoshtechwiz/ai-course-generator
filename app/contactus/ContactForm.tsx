@@ -16,7 +16,9 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/tailwindUtils"
-import Logo from "@/components/Navbar/Logo"
+import Logo from "@/components/shared/Logo"
+import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+
 
 interface ContactFormData {
   name: string
@@ -123,14 +125,13 @@ export default function ImprovedContactForm() {
   if (isPending) {
     return (
       <div className="max-w-3xl mx-auto mt-10">
-        <GlobalLoader 
-          isLoading={true} 
-          message="Submitting your message..." 
+        <LoadingSpinner 
+         
         />
       </div>
     )
   }
-
+  
   return (
     <Card className="max-w-3xl mx-auto mt-10 shadow-md border-muted/40 overflow-hidden transition-all duration-300 hover:shadow-lg">
       <CardHeader className="text-center space-y-4 pb-6 border-b bg-muted/20">

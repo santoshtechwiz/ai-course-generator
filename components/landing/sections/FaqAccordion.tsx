@@ -276,7 +276,7 @@ const FaqAccordion = () => {
 							window.location.href = "/contactus"
 							return true
 						}}
-						loadingText="Loading..."
+						loadingText="Contacting support..."
 						successText="Opening contact page"
 						showIcon={false}
 					>

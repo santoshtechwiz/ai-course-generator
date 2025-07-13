@@ -18,7 +18,7 @@ import {
   resetQuiz,
   submitQuiz,
   fetchQuiz,
-} from "@/store/slices/quiz-slice"
+} from "@/store/slices/quiz/quiz-slice"
 
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"

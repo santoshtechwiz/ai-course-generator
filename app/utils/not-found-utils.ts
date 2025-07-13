@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { headers } from "next/dist/server/request/headers";
 
 /**
  * Sets appropriate headers for 404 pages to ensure proper SEO handling

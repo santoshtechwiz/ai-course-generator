@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/GlobalButton"
 import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
+import { LoadingSpinner } from "../loaders/GlobalLoader"
 
 interface QuizFooterProps {
   onNext?: () => void | Promise<void>
@@ -74,7 +75,11 @@ export function QuizFooter({
           errorText="Try Again"
           className="flex items-center gap-2 w-full sm:w-auto min-w-[160px] bg-emerald-600 hover:bg-emerald-700"
         >
-          <CheckCircle className="w-4 h-4" />
+          {isSubmitting || submitState === "loading" ? (
+            <LoadingSpinner  />
+          ) : (
+            <CheckCircle className="w-4 h-4" />
+          )}
           {submitLabel}
         </Button>
       ) : (
@@ -82,7 +87,7 @@ export function QuizFooter({
           onClick={onNext}
           disabled={!canGoNext || isSubmitting}
           state={nextState || "idle"}
-          loadingText="Loading..."
+          loadingText=""
           className="flex items-center gap-2 w-full sm:w-auto min-w-[120px]"
         >
           {nextLabel}

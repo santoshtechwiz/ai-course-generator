@@ -1,12 +1,19 @@
-"use client"
+"use client";
 
+import { BaseQuizResults } from "../../components/BaseTextQuizResult";
 
-
-import { BaseQuizResults } from "../../components/BaseTextQuizResult"
-
-
-
-export default function BlankQuizResults({ result, onRetake, isAuthenticated = true, slug }: BlankQuizResultsProps) {
+interface BlankQuizResultsProps {
+  result: any;
+  onRetake?: () => void;
+  isAuthenticated?: boolean;
+  slug: string;
+}
+export default function BlankQuizResults({
+  result,
+  onRetake,
+  isAuthenticated = true,
+  slug,
+}: BlankQuizResultsProps) {
   return (
     <BaseQuizResults
       result={result}
@@ -15,5 +22,5 @@ export default function BlankQuizResults({ result, onRetake, isAuthenticated = t
       slug={slug}
       quizType="blanks"
     />
-  )
+  );
 }

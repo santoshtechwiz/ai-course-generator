@@ -31,7 +31,7 @@ export function AsyncNavLink({ href, children, className, onClick, loaderOptions
       e.preventDefault()
       
       const options = {
-        message: "Loading...",
+        message: loaderOptions.message || "Navigating...",
         isBlocking: true,
         ...loaderOptions,
       }

@@ -11,6 +11,7 @@ import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import ClientOnly from "@/components/ClientOnly"
 import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-found-utils"
 import { JsonLD } from "@/lib/seo-manager-new"
+import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = notFoundMetadata
@@ -159,7 +160,7 @@ export default function NotFound() {
             </h3>
             
             <ClientOnly>
-              <Suspense fallback={<RecommendationsFallback />}>
+              <Suspense fallback={<SuspenseGlobalFallback />}>
                 <Recommendations />
               </Suspense>
             </ClientOnly>

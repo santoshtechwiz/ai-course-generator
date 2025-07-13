@@ -1,8 +1,9 @@
 "use client"
 
-import { useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion, useInView } from "framer-motion"
 import { ArrowRight } from "lucide-react"
+import { useGlobalLoader } from "@/store/global-loader"
 
 // SVG icons for features
 const FeatureIcon = ({ type }: { type: string }) => {
@@ -91,6 +92,17 @@ const features = [
 const APPLE_EASING = [0.25, 0.1, 0.25, 1]
 
 const FeatureShowcase = () => {
+  const [reduceMotion, setReduceMotion] = useState(false)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+      setReduceMotion(media.matches)
+      const handler = () => setReduceMotion(media.matches)
+      media.addEventListener("change", handler)
+      return () => media.removeEventListener("change", handler)
+    }
+  }, [])
+
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, amount: 0.2 })
 
@@ -101,8 +113,8 @@ const FeatureShowcase = () => {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.6,
-        delay,
+        duration: reduceMotion ? 0.01 : 0.6,
+        delay: reduceMotion ? 0 : delay,
         ease: APPLE_EASING,
       },
     }),
@@ -116,8 +128,8 @@ const FeatureShowcase = () => {
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.5,
-        delay,
+        duration: reduceMotion ? 0.01 : 0.5,
+        delay: reduceMotion ? 0 : delay,
         ease: APPLE_EASING,
       },
     }),
@@ -126,7 +138,7 @@ const FeatureShowcase = () => {
       scale: 1.01,
       boxShadow: "0 10px 20px -8px rgba(0, 0, 0, 0.1)",
       transition: {
-        duration: 0.2,
+        duration: reduceMotion ? 0.01 : 0.2,
         ease: APPLE_EASING,
       },
     },

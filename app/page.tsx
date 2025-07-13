@@ -1,5 +1,6 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
 import { generateMetadata, JsonLD } from '@/lib/seo-manager-new'
+import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
 
 export const metadata = generateMetadata({
   title: 'Home',
@@ -8,17 +9,17 @@ export const metadata = generateMetadata({
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <JsonLD
-        type="website"
-        data={{
-          name: 'AI Learning Platform',
-          url: 'https://ai-learning-platform.com',
-        }}
-      />
-      <div className="flex-grow">
+    <PageWrapper>
+      <PageHeader>
+        <JsonLD
+          type="website"
+          data={{
+            name: 'AI Learning Platform',
+            url: 'https://courseai.io',
+          }}
+        />
         <CourseAILandingPage />
-      </div>
-    </div>
+      </PageHeader>
+    </PageWrapper>
   )
 }

@@ -16,6 +16,7 @@ import { useMediaQuery } from "@/hooks"
 import TrialModal from "@/components/features/subscription/TrialModal"
 import { SubscriptionPlanType } from "@/app/types/subscription"
 import SubscriptionSkeleton from "./SubscriptionSkeleton"
+import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
 
 // Lazy load components
@@ -213,7 +214,7 @@ export default function SubscriptionPageClient({ refCode }: { refCode: string | 
           </Alert>
         )}
 
-        <Suspense fallback={<SubscriptionSkeleton />}>
+        <Suspense fallback={<SuspenseGlobalFallback message="Loading subscription plans..." />}>
           <PricingPage
             userId={userId}
             isProd={isProd}

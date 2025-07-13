@@ -33,7 +33,7 @@ import { NoResults } from "@/components/ui/no-results"
 import { BestGuess } from "@/components/ui/best-guess"
 
 import { useDispatch } from "react-redux"
-import { clearQuizState } from "@/store/slices/quiz-slice"
+
 import {
   getPerformanceLevel,
   getSimilarityLabel,
@@ -41,6 +41,7 @@ import {
   getSimilarityFeedback,
 } from "@/lib/utils/text-similarity"
 import { cn } from "@/lib/utils"
+import { resetQuiz } from "@/store/slices/quiz"
 
 interface QuestionResult {
   questionId: string | number
@@ -186,7 +187,7 @@ export function BaseQuizResults({ result, onRetake, isAuthenticated = true, slug
   // Handlers
   const handleRetake = useCallback(() => {
     if (onRetake) return onRetake()
-    dispatch(clearQuizState())
+    dispatch(resetQuiz())
     router.push(`/dashboard/${quizType}/${result?.slug || slug}`)
   }, [onRetake, dispatch, router, result?.slug, slug, quizType])
 

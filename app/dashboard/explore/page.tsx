@@ -1,6 +1,7 @@
-import { JsonLD, generateMetadata } from "@/lib/seo-manager-new"
-import { CreateComponent } from "@/components/features/explore/CreateComponent"
-import type { Metadata } from "next"
+import { JsonLD, generateMetadata } from "@/lib/seo-manager-new";
+import { CreateComponent } from "@/components/features/explore/CreateComponent";
+import type { Metadata } from "next";
+import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
 
 // Enhanced metadata for better SEO
 export const metadata: Metadata = generateMetadata({
@@ -26,7 +27,7 @@ export const metadata: Metadata = generateMetadata({
     height: 630,
     alt: "CourseAI Content Creation Tools",
   },
-})
+});
 
 export default function ExplorePage() {
   // Schema.org structured data for FAQs
@@ -55,31 +56,19 @@ export default function ExplorePage() {
           "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives.",
       },
     ],
-  }
+  };
 
   return (
     <>
       <JsonLD type="faq" data={faqSchema} />
+      <PageWrapper>
+        <PageHeader
+          title="Explore AI-Powered Content Creation"
+          description="Create professional-quality educational content in minutes with our AI tools. "
+        />
 
-      {/* Main component */}
-      <CreateComponent />
-
-      {/* 
-        SEO Enhancement Note:
-        
-        For optimal SEO, consider enhancing the CreateComponent to include:
-        
-        1. Semantic HTML structure with proper heading hierarchy (h1, h2, h3)
-        2. Descriptive text about each tool with relevant keywords
-        3. User testimonials or reviews
-        4. Example use cases for each tool
-        5. FAQ section that matches the schema above
-        6. Internal links to related content
-        7. Call-to-action buttons with descriptive text
-        
-        These enhancements will significantly improve search engine visibility
-        while providing a better user experience.
-      */}
+        <CreateComponent />
+      </PageWrapper>
     </>
-  )
+  );
 }

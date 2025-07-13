@@ -39,26 +39,24 @@ export class McqQuizService extends BaseQuizService {
     /**
      * Get an MCQ quiz by its slug
      */
-    async getQuizBySlug(slug: string, userId?: string) {
+    async getQuizBySlug(slug: string, userId: string) {
         const quiz = await this.quizRepository.findBySlug(slug);
-        
+
         if (!quiz) {
-            return null;
+            throw new Error("Quiz not found");
         }
 
         // Check if quiz is accessible (public or owned by user)
         if (!quiz.isPublic && quiz.userId !== userId) {
-            return null;
+            throw new Error("Unauthorized");
         }
 
         return {
             isPublic: quiz.isPublic,
             isFavorite: quiz.isFavorite,
-            quizData: {
-                id: quiz.id,
-                title: quiz.title,
-                questions: this.formatQuestions(quiz.questions),
-            },
+            id: quiz.id,
+            title: quiz.title,
+            questions: this.formatQuestions(quiz.questions),
             userId: quiz.userId,
         };
     }

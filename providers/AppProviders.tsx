@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/modules/auth'
 import { AnimationProvider } from './animation-provider'
 import GlobalLoaderProvider from '@/components/GlobalLoaderProvider'
+import { useGlobalLoader } from "@/store/global-loader"
 
 interface AppProvidersProps {
   children: ReactNode
@@ -48,3 +49,7 @@ export function AppProviders({ children, session }: AppProvidersProps) {
     </SessionProvider>
   )
 }
+
+// Example usage in async actions:
+// const { withLoading } = useGlobalLoader()
+// await withLoading(apiCall())

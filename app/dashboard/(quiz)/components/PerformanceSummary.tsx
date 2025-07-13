@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import dynamic from "next/dynamic"
+
+// Dynamically import Confetti to avoid SSR issues
+const Confetti = dynamic(() => import("react-confetti"), { ssr: false })
 
 interface PerformanceSummaryProps {
   title: string
@@ -72,8 +76,21 @@ export function PerformanceSummary({
     return "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
   }
 
+  // Show confetti for high scores
+  const showConfetti = percentage >= 90
+
   return (
     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+      {showConfetti && (
+        <div className="fixed inset-0 z-[100] pointer-events-none">
+          <Confetti
+            width={typeof window !== "undefined" ? window.innerWidth : 1920}
+            height={typeof window !== "undefined" ? window.innerHeight : 1080}
+            numberOfPieces={250}
+            recycle={false}
+          />
+        </div>
+      )}
       <Card className={`relative overflow-hidden border-2 ${getPerformanceBg()}`}>
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/5 dark:to-white/5" />
 
@@ -223,24 +240,48 @@ export function PerformanceSummary({
           <Separator className="my-6" />
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
             <Button
               onClick={onRetry}
               variant="outline"
-              className="flex items-center gap-2 bg-background/80 hover:bg-background"
+              className="flex items-center gap-2 bg-background/80 hover:bg-background min-h-[48px] min-w-[180px] text-base"
             >
               <RotateCcw className="w-4 h-4" />
               Retake Quiz
             </Button>
-
-            <Button onClick={onGoHome} variant="secondary" className="flex items-center gap-2">
+            <Button
+              onClick={onGoHome}
+              variant="secondary"
+              className="flex items-center gap-2 min-h-[48px] min-w-[180px] text-base"
+            >
               <Home className="w-4 h-4" />
               Continue to Next Quiz
             </Button>
-
-            <Button onClick={onShare} variant="ghost" size="icon" className="hover:bg-background/80">
+            <Button
+              onClick={onShare}
+              variant="ghost"
+              size="icon"
+              className="hover:bg-background/80 min-h-[48px] min-w-[48px]"
+              aria-label="Share your results"
+            >
               <Share2 className="w-4 h-4" />
             </Button>
+            {/* Actionable feedback: Review incorrect answers */}
+            {stats.incorrect > 0 && (
+              <Button
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.scrollTo({ top: 0, behavior: "smooth" })
+                  }
+                  // Optionally, trigger a callback or highlight incorrect answers if available
+                }}
+                variant="destructive"
+                className="flex items-center gap-2 min-h-[48px] min-w-[180px] text-base"
+              >
+                <XCircle className="w-4 h-4" />
+                Review Incorrect Answers
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

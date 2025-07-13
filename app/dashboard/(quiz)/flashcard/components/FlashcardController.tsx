@@ -52,32 +52,7 @@ export function FlashcardController({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Progress indicator */}
-      <div className="w-full mb-4">
-        <div className="flex justify-between text-sm text-muted-foreground mb-1">
-          <span>Card {currentIndex + 1} of {totalCards}</span>
-          <motion.span
-            key={`progress-${Math.round(progress)}`}
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            {Math.round(progress)}% Complete
-          </motion.span>
-        </div>
-        <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-          <motion.div 
-            className={cn(
-              "h-full", 
-              isReviewMode ? "bg-gradient-to-r from-yellow-400 to-yellow-500" : "bg-gradient-to-r from-green-400 to-green-500"
-            )}
-            style={{ width: `${progress}%` }}
-            initial={{ width: `${(Math.max(0, currentIndex - 1) / totalCards) * 100}%` }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-      </div>
+   
     
       {/* Settings Panel */}
       {showSettings && (
