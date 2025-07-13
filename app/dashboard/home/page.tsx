@@ -28,6 +28,10 @@ import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 
+import type { DashboardUser, UserStats } from "@/app/types/types"
+import { useAuth } from "@/hooks"
+import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+
 const OverviewTab = dynamic(() => import("./components/OverviewTab"), {
   loading: () => <Skeleton className="h-[500px] w-full" />,
   ssr: false,

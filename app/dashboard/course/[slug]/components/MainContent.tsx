@@ -623,7 +623,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       <h2 className="text-xl font-semibold mb-1">{currentChapter.title}</h2>
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span>{isVideoLoading ? "Loading..." : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
+                        <span>{isVideoLoading ? null : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
                         {currentChapter.isFree && (<span className="px-2 py-1 rounded bg-gray-200 text-gray-800 text-xs">Free</span>)}
                         {!user && !hasPlayedFreeVideo && (
                           <span className="px-2 py-1 rounded border border-green-600 text-green-600 text-xs">Preview</span>
