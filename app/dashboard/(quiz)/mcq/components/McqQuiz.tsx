@@ -1,12 +1,12 @@
 "use client"
 
-import { useMemo, useState, useCallback } from "react"
+import { useMemo, useState, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 import { cn } from "@/lib/utils"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 
 interface McqQuizProps {
@@ -20,6 +20,8 @@ interface McqQuizProps {
   onNext?: () => void | Promise<void>
   onSubmit?: () => void | Promise<void>
   onRetake?: () => void | Promise<void>
+  onSkip?: () => void | Promise<void>
+  onExit?: () => void | Promise<void>
   isSubmitting?: boolean
   questionNumber?: number
   totalQuestions?: number
@@ -32,6 +34,13 @@ interface McqQuizProps {
   difficulty?: string
   category?: string
   timeLimit?: number
+  error?: string | null
+  onRetry?: () => void
+  allowSkip?: boolean
+  skippedQuestions?: number
+  autoSave?: boolean
+  lastSaved?: Date
+  enableKeyboardShortcuts?: boolean
 }
 
 const McqQuiz = ({
@@ -40,6 +49,8 @@ const McqQuiz = ({
   onNext,
   onSubmit,
   onRetake,
+  onSkip,
+  onExit,
   isSubmitting = false,
   questionNumber = 1,
   totalQuestions = 1,
@@ -52,9 +63,17 @@ const McqQuiz = ({
   difficulty = "Medium",
   category = "General Knowledge",
   timeLimit,
+  error,
+  onRetry,
+  allowSkip = false,
+  skippedQuestions = 0,
+  autoSave = false,
+  lastSaved,
+  enableKeyboardShortcuts = true,
 }: McqQuizProps) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
   const [isAnswering, setIsAnswering] = useState(false)
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1)
 
   const options = useMemo(() => {
     // Ensure unique keys by using both index and option text
@@ -65,186 +84,258 @@ const McqQuiz = ({
     }))
   }, [question?.options])
 
-const handleOptionSelect = useCallback(async (optionId: string) => {
-  if (isAnswering || isSubmitting) return
+  // Keyboard navigation for options
+  useEffect(() => {
+    if (!enableKeyboardShortcuts) return
 
-  setIsAnswering(true)
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Prevent shortcuts when typing in inputs
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return
+      }
 
-  try {
-    await new Promise(resolve => setTimeout(resolve, 150))
-    setSelectedOption(optionId)
+      // Number keys (1-4) for quick selection
+      const numberKey = parseInt(event.key)
+      if (numberKey >= 1 && numberKey <= options.length && !isAnswering) {
+        event.preventDefault()
+        const optionIndex = numberKey - 1
+        handleOptionSelect(options[optionIndex].id)
+      }
 
-    const selected = options.find((o) => o.id === optionId)
-    if (selected) {
-      onAnswer(selected.text) // ✅ Send actual answer text instead of index ID
+      // Letter keys (A-D) for selection
+      const letterKey = event.key.toUpperCase()
+      const letterIndex = letterKey.charCodeAt(0) - 65 // A=0, B=1, C=2, D=3
+      if (letterIndex >= 0 && letterIndex < options.length && !isAnswering) {
+        event.preventDefault()
+        handleOptionSelect(options[letterIndex].id)
+      }
+
+      // Arrow key navigation
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        setFocusedIndex(prev => (prev + 1) % options.length)
+      }
+      
+      if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        setFocusedIndex(prev => prev <= 0 ? options.length - 1 : prev - 1)
+      }
+
+      // Enter to select focused option
+      if (event.key === 'Enter' && focusedIndex >= 0 && focusedIndex < options.length) {
+        event.preventDefault()
+        handleOptionSelect(options[focusedIndex].id)
+      }
     }
 
-  
-  } catch (error) {
-    console.log("Failed to select answer")
-  } finally {
-    setIsAnswering(false)
-  }
-}, [onAnswer, isAnswering, isSubmitting, options])
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [enableKeyboardShortcuts, options, isAnswering, focusedIndex])
 
+  const handleOptionSelect = useCallback(async (optionId: string) => {
+    if (isAnswering || isSubmitting) return
 
-  const questionText = question.text || question.question || "Question not available"
+    setIsAnswering(true)
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 150))
+      setSelectedOption(optionId)
+
+      const selected = options.find((o) => o.id === optionId)
+      if (selected) {
+        onAnswer(selected.text) // ✅ Send actual answer text instead of index ID
+      }
+    } catch (error) {
+      console.error("Error selecting option:", error)
+      toast.error("Failed to select option. Please try again.")
+    } finally {
+      setIsAnswering(false)
+    }
+  }, [isAnswering, isSubmitting, options, onAnswer])
+
+  const questionText = question?.text || question?.question || "Question not available"
 
   return (
-    <QuizStateProvider
-      onError={(error) => toast.error(error)}
-      onSuccess={(message) => toast.success(message || "Great job!")}
-      globalLoading={isLastQuestion} // Use global loading for final submission
-    >
-      {(stateManager) => (        <QuizContainer
-          questionNumber={questionNumber}
-          totalQuestions={totalQuestions}
-          quizType="mcq"
-          animationKey={question.id}
-          quizTitle={quizTitle}
-          quizSubtitle={quizSubtitle}
-          difficulty={difficulty as "easy" | "medium" | "hard"}
-        >
-          <div className="space-y-6">
-            <motion.div
-              className="text-center space-y-4 mb-6"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+    <QuizStateProvider>
+      <QuizContainer
+        questionNumber={questionNumber}
+        totalQuestions={totalQuestions}
+        quizType="mcq"
+        animationKey={questionNumber}
+        quizTitle={quizTitle}
+        quizSubtitle={quizSubtitle}
+        difficulty={difficulty}
+        error={error}
+        onRetry={onRetry}
+        autoSave={autoSave}
+        lastSaved={lastSaved}
+        enableKeyboardShortcuts={enableKeyboardShortcuts}
+      >
+        <div className="space-y-6">
+          {/* Question */}
+          <div className="space-y-4">
+            <h2 
+              className="text-xl font-semibold text-foreground leading-relaxed"
+              id="question-text"
             >
-              <motion.h2
-                className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground leading-relaxed max-w-4xl mx-auto px-4 break-words"
-                transition={{ delay: 0.1, duration: 0.5 }}
-              >
-                {questionText}
-              </motion.h2>
+              {questionText}
+            </h2>
 
-              <motion.div
-                className="h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full mx-auto max-w-32"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-              />
-            </motion.div>
+            {/* Keyboard hints */}
+            {enableKeyboardShortcuts && (
+              <div className="text-xs text-muted-foreground flex items-center gap-4">
+                <span>Use number keys (1-{options.length}) or letter keys (A-{String.fromCharCode(64 + options.length)}) to select</span>
+                <span>Arrow keys to navigate</span>
+              </div>
+            )}
+          </div>
 
-            <div className="max-w-3xl mx-auto space-y-3">
-              <AnimatePresence>
-                {options.map((option, index) => {
-                  const isSelected = selectedOption === option.id
-                  const isDisabled = isAnswering || isSubmitting || stateManager.isSubmitting
-                  
-                  return (
-                    <motion.div
-                      key={option.id}
-                      whileHover={!isDisabled ? { scale: 1.01, x: 2 } : {}}
-                      whileTap={!isDisabled ? { scale: 0.99 } : {}}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          {/* Options */}
+          <div className="space-y-3" role="radiogroup" aria-labelledby="question-text">
+            <AnimatePresence mode="popLayout">
+              {options.map((option, index) => {
+                const isSelected = selectedOption === option.id
+                const isFocused = focusedIndex === index
+                
+                return (
+                  <motion.div
+                    key={option.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ 
+                      duration: 0.3,
+                      delay: index * 0.1,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25
+                    }}
+                    className="relative"
+                  >
+                    <button
+                      onClick={() => handleOptionSelect(option.id)}
+                      disabled={isAnswering || isSubmitting}
+                      onFocus={() => setFocusedIndex(index)}
+                      onBlur={() => setFocusedIndex(-1)}
+                      className={cn(
+                        "w-full p-4 rounded-lg border-2 text-left transition-all duration-200 group",
+                        "hover:border-primary/50 hover:bg-primary/5 hover:shadow-md",
+                        "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
+                        isSelected && "border-primary bg-primary/10 shadow-lg",
+                        isFocused && "ring-2 ring-primary/50 ring-offset-1",
+                        !isSelected && !isFocused && "border-border bg-background"
+                      )}
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-describedby={`option-${index}-description`}
                     >
-                      <motion.label
-                        htmlFor={`option-${option.id}`}
-                        className={cn(
-                          "group relative flex items-start space-x-3 p-3 sm:p-4 overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300",
-                          "hover:shadow-lg hover:shadow-primary/10",
-                          isSelected
-                            ? "border-primary bg-gradient-to-r from-primary/15 via-primary/8 to-primary/5 shadow-lg shadow-primary/20"
-                            : "border-border/60 bg-gradient-to-r from-card/90 to-card/70 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/8 hover:to-primary/4",
-                          isDisabled && "opacity-60 cursor-not-allowed"
-                        )}
-                        onClick={() => !isDisabled && handleOptionSelect(option.id)}
-                      >
-                        <AnimatePresence>
-                          {isSelected && (
-                            <motion.div
-                              className="absolute inset-0 bg-gradient-to-r from-primary/12 to-primary/6"
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.8 }}
-                              transition={{ duration: 0.3 }}
-                            />
+                      <div className="flex items-center gap-3">
+                        {/* Option Letter */}
+                        <div className={cn(
+                          "flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-all duration-200",
+                          isSelected 
+                            ? "bg-primary text-primary-foreground border-primary" 
+                            : "border-muted-foreground text-muted-foreground group-hover:border-primary group-hover:text-primary"
+                        )}>
+                          {isSelected ? (
+                            <CheckCircle2 className="w-4 h-4" />
+                          ) : (
+                            option.letter
                           )}
-                        </AnimatePresence>
-
-                        {/* Radio Input */}
-                        <input
-                          type="radio"
-                          name="mcq-option"
-                          id={`option-${option.id}`}
-                          value={option.id}
-                          checked={isSelected}
-                          disabled={isDisabled}
-                          onChange={() => !isDisabled && handleOptionSelect(option.id)}
-                          className="sr-only"
-                        />
-
-                        {/* Letter */}
-                        <div
-                          className={cn(
-                            "flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm flex-shrink-0 transition-all duration-300",
-                            isSelected
-                              ? "bg-primary text-primary-foreground shadow-md"
-                              : "bg-muted/60 text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
-                          )}
-                        >
-                          {option.letter}
                         </div>
 
                         {/* Option Text */}
-                        <div
-                          className={cn(
-                            "flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0",
-                            "break-words whitespace-normal",
-                            isSelected ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground",
-                          )}
-                        >
-                          <motion.span
-                            initial={false}
-                            animate={isSelected ? { x: 4 } : { x: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                            className="block"
-                          >
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-sm font-medium transition-colors duration-200 break-words",
+                            isSelected ? "text-primary" : "text-foreground group-hover:text-primary"
+                          )}>
                             {option.text}
-                          </motion.span>
+                          </p>
                         </div>
 
-                        {/* Check Icon */}
-                        <AnimatePresence>
-                          {isSelected && (
-                            <motion.div
-                              className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground flex-shrink-0"
-                              initial={{ scale: 0, opacity: 0, rotate: -180 }}
-                              animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                              exit={{ scale: 0, opacity: 0, rotate: 180 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <CheckCircle2 className="w-4 h-4" />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.label>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-            </div>
+                        {/* Keyboard shortcut hint */}
+                        {enableKeyboardShortcuts && (
+                          <div className={cn(
+                            "flex-shrink-0 px-2 py-1 rounded text-xs border transition-all duration-200",
+                            isSelected 
+                              ? "bg-primary/20 border-primary/30 text-primary" 
+                              : "bg-muted border-muted-foreground/20 text-muted-foreground opacity-0 group-hover:opacity-100"
+                          )}>
+                            {index + 1}
+                          </div>
+                        )}
+                      </div>
+                    </button>
 
-            {/* Enhanced Footer with State Management */}
-            <QuizFooter
-              onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
-              onPrevious={undefined}
-              onSubmit={isLastQuestion && onSubmit ? () => stateManager.handleSubmit(onSubmit) : undefined}
-              onRetake={onRetake}
-              canGoNext={!!selectedOption && !isAnswering}
-              canGoPrevious={false}
-              isLastQuestion={isLastQuestion}
-              isSubmitting={isSubmitting || stateManager.isSubmitting}
-              showRetake={showRetake}
-              hasAnswer={!!selectedOption}
-              submitState={stateManager.submitState}
-              nextState={stateManager.nextState}
-            />
+                    {/* Loading overlay */}
+                    {isAnswering && isSelected && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute inset-0 bg-primary/10 rounded-lg flex items-center justify-center"
+                      >
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
           </div>
-        </QuizContainer>
-      )}
+
+          {/* Error state for options */}
+          {error && !onRetry && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg"
+            >
+              <div className="flex items-center gap-2 text-destructive text-sm">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Please select an option to continue</span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Selected answer confirmation */}
+          {selectedOption && !isAnswering && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-950/20 dark:border-green-800"
+            >
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <div>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                    Answer Selected
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    {options.find(o => o.id === selectedOption)?.text}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </QuizContainer>
+
+      <QuizFooter
+        onNext={onNext}
+        onSubmit={onSubmit}
+        onSkip={onSkip}
+        onExit={onExit}
+        canGoNext={canGoNext && !!selectedOption}
+        isLastQuestion={isLastQuestion}
+        isSubmitting={isSubmitting}
+        hasAnswer={!!selectedOption}
+        allowSkip={allowSkip}
+        skippedQuestions={skippedQuestions}
+        unsavedChanges={!!selectedOption && !autoSave}
+        enableKeyboardShortcuts={enableKeyboardShortcuts}
+      />
     </QuizStateProvider>
   )
 }

@@ -4,11 +4,13 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Lightbulb, Eye, AlertTriangle, CheckCircle, Info, HelpCircle, BookOpen, Target } from "lucide-react"
+import { Lightbulb, Eye, AlertTriangle, CheckCircle, Info, HelpCircle, BookOpen, Target, Zap, ChevronDown, ChevronUp } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import type { HintLevel } from "@/lib/utils/hint-system"
 import { analyzeUserInput } from "@/lib/utils/hint-system"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Progress } from "@/components/ui/progress"
 
 interface HintSystemProps {
   hints: HintLevel[]
@@ -18,6 +20,7 @@ interface HintSystemProps {
   correctAnswer?: string
   questionText?: string
   maxHints?: number
+  enableKeyboardShortcuts?: boolean
 }
 
 const containerVariants = {
@@ -49,27 +52,9 @@ const hintVariants = {
     opacity: 0,
     x: 20,
     scale: 0.95,
-    transition: { duration: 0.2 },
-  },
-}
-
-const proactiveHintVariants = {
-  hidden: { opacity: 0, y: -10, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
     transition: {
-      type: "spring",
-      stiffness: 400,
-      damping: 25,
+      duration: 0.2,
     },
-  },
-  exit: {
-    opacity: 0,
-    y: -10,
-    scale: 0.95,
-    transition: { duration: 0.2 },
   },
 }
 
@@ -77,310 +62,315 @@ export function HintSystem({
   hints,
   onHintUsed,
   className,
-  userInput,
-  correctAnswer,
-  questionText,
-  maxHints = 5,
+  userInput = "",
+  correctAnswer = "",
+  questionText = "",
+  maxHints = 3,
+  enableKeyboardShortcuts = true,
 }: HintSystemProps) {
-  const [revealedCount, setRevealedCount] = useState(0)
-  const [proactiveHint, setProactiveHint] = useState<string | null>(null)
-  const [showConfirmation, setShowConfirmation] = useState(false)
-  const [hintToConfirm, setHintToConfirm] = useState<HintLevel | null>(null)
-  const [hintIndexToConfirm, setHintIndexToConfirm] = useState<number | null>(null)
+  const [currentHintIndex, setCurrentHintIndex] = useState(-1)
+  const [usedHints, setUsedHints] = useState<number[]>([])
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [showHintPreview, setShowHintPreview] = useState(false)
 
-  // Effect to analyze user input and provide proactive hints
+  // Keyboard shortcuts
   useEffect(() => {
-    if (userInput && correctAnswer && questionText) {
-      const feedback = analyzeUserInput(userInput, correctAnswer, questionText)
-      setProactiveHint(feedback)
-    } else {
-      setProactiveHint(null)
+    if (!enableKeyboardShortcuts) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Prevent shortcuts when typing in inputs
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      // Show next hint with 'H' key
+      if (event.key.toLowerCase() === 'h' && currentHintIndex < hints.length - 1 && currentHintIndex < maxHints - 1) {
+        event.preventDefault()
+        handleNextHint()
+      }
+
+      // Toggle hint system with 'T' key
+      if (event.key.toLowerCase() === 't' && hints.length > 0) {
+        event.preventDefault()
+        setIsCollapsed(!isCollapsed)
+      }
     }
-  }, [userInput, correctAnswer, questionText])
 
-  if (!hints || hints.length === 0) return null
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [enableKeyboardShortcuts, currentHintIndex, hints.length, maxHints, isCollapsed])
 
-  const nextHint = hints[revealedCount]
-  const availableHints = hints.slice(0, maxHints)
+  // Analyze user input for intelligent hint suggestions
+  const inputAnalysis = userInput && correctAnswer 
+    ? analyzeUserInput(userInput, correctAnswer, questionText)
+    : null
 
-  const handleReveal = () => {
-    if (!nextHint) return
+  const handleNextHint = () => {
+    if (currentHintIndex >= hints.length - 1 || currentHintIndex >= maxHints - 1) return
 
-    // Show confirmation for high spoiler hints (level 4 and above)
-    if (nextHint.spoilerLevel === "high" && revealedCount >= 3) {
-      setHintToConfirm(nextHint)
-      setHintIndexToConfirm(revealedCount)
-      setShowConfirmation(true)
-    } else {
-      // Otherwise, reveal directly
-      revealConfirmedHint()
-    }
+    const nextIndex = currentHintIndex + 1
+    const hint = hints[nextIndex]
+    
+    setCurrentHintIndex(nextIndex)
+    setUsedHints(prev => [...prev, nextIndex])
+    onHintUsed?.(nextIndex, hint)
   }
 
-  const revealConfirmedHint = () => {
-    const next = revealedCount
-    if (next < availableHints.length) {
-      const hint = availableHints[next]
-      onHintUsed?.(next, hint)
-      setRevealedCount(next + 1)
-      setShowConfirmation(false)
-      setHintToConfirm(null)
-      setHintIndexToConfirm(null)
-    }
-  }
-
-  const cancelConfirmation = () => {
-    setShowConfirmation(false)
-    setHintToConfirm(null)
-    setHintIndexToConfirm(null)
-  }
-
-  const getHintIcon = (index: number) => {
-    switch (index) {
-      case 0:
-        return HelpCircle
-      case 1:
-        return BookOpen
-      case 2:
-        return Target
-      case 3:
-        return Eye
-      case 4:
+  const getHintIcon = (level: string) => {
+    switch (level.toLowerCase()) {
+      case "gentle":
         return Lightbulb
+      case "moderate":
+        return Info
+      case "strong":
+        return Target
+      case "direct":
+        return Eye
       default:
         return HelpCircle
     }
   }
 
-  const getColor = (spoiler: HintLevel["spoilerLevel"], index: number) => {
-    if (index >= 4) {
-      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/20 dark:text-red-300 dark:border-red-800"
-    } else if (index >= 2) {
-      return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/20 dark:text-yellow-300 dark:border-yellow-800"
-    } else {
-      return "bg-green-100 text-green-800 border-green-200 dark:bg-green-950/20 dark:text-green-300 dark:border-green-800"
+  const getHintColor = (level: string) => {
+    switch (level.toLowerCase()) {
+      case "gentle":
+        return "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300"
+      case "moderate":
+        return "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-300"
+      case "strong":
+        return "bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/20 dark:border-orange-800 dark:text-orange-300"
+      case "direct":
+        return "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300"
+      default:
+        return "bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-950/20 dark:border-gray-800 dark:text-gray-300"
     }
   }
 
-  const totalPenalty = availableHints.slice(0, revealedCount).reduce((acc, h) => acc + (h.penalty || 0), 0)
+  const getNextHintLevel = () => {
+    if (currentHintIndex >= hints.length - 1 || currentHintIndex >= maxHints - 1) return null
+    return hints[currentHintIndex + 1]?.level || "unknown"
+  }
+
+  const hintProgress = ((currentHintIndex + 1) / Math.min(hints.length, maxHints)) * 100
+
+  if (hints.length === 0) return null
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible">
-      <Card
-        className={cn(
-          "bg-gradient-to-r from-blue-50/60 to-indigo-50/60 border-blue-200 relative overflow-hidden dark:from-blue-950/30 dark:to-indigo-950/30 dark:border-blue-700",
-          className,
-        )}
-      >
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300 text-lg">
-              <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              Learning Hints
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-sm font-medium">
-                {revealedCount}/{maxHints} Revealed
-              </Badge>
-            </div>
-          </div>
-          <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-            Progressive hints to guide your learning. Each hint provides more specific guidance.
-          </p>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Proactive Hint Section */}
-          <AnimatePresence>
-            {proactiveHint && (
-              <motion.div
-                variants={proactiveHintVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 border border-cyan-200 dark:border-cyan-700 text-cyan-800 dark:text-cyan-200 p-4 rounded-lg shadow-sm"
-              >
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-cyan-600 dark:text-cyan-400" />
-                  <div>
-                    <div className="font-semibold mb-1">Smart Analysis</div>
-                    <p className="text-sm leading-relaxed">{proactiveHint}</p>
-                  </div>
+    <motion.div
+      className={cn("w-full max-w-2xl mx-auto", className)}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      role="region"
+      aria-label="Hint system"
+    >
+      <Collapsible open={!isCollapsed} onOpenChange={setIsCollapsed}>
+        <Card className="border-2 border-dashed border-muted-foreground/20 bg-background/50 backdrop-blur-sm">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-yellow-500" />
+                  <span>Hint System</span>
+                  {usedHints.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {usedHints.length} used
+                    </Badge>
+                  )}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {enableKeyboardShortcuts && (
+                    <Badge variant="outline" className="text-xs">
+                      Press H for hint
+                    </Badge>
+                  )}
+                  {isCollapsed ? (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
 
-          {/* Revealed Hints */}
-          <AnimatePresence>
-            {availableHints.slice(0, revealedCount).map((hint, index) => {
-              const HintIcon = getHintIcon(index)
-              return (
+              {/* Progress bar */}
+              {usedHints.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                    <span>Hints used</span>
+                    <span>{usedHints.length} / {Math.min(hints.length, maxHints)}</span>
+                  </div>
+                  <Progress value={hintProgress} className="h-1.5" />
+                </div>
+              )}
+            </CardHeader>
+          </CollapsibleTrigger>
+
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              {/* Input Analysis */}
+              {inputAnalysis && userInput.trim().length > 0 && (
                 <motion.div
-                  key={index}
-                  variants={hintVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  layout
-                  className="border rounded-xl p-4 bg-white dark:bg-gray-950/50 shadow-sm hover:shadow-md transition-all duration-300 space-y-3"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-3 bg-muted/50 rounded-lg border border-muted"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white">
-                        <HintIcon className="w-4 h-4" />
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-medium">Answer Analysis</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <p>Similarity: {(inputAnalysis.similarity * 100).toFixed(1)}%</p>
+                    {inputAnalysis.feedback && (
+                      <p className="mt-1">{inputAnalysis.feedback}</p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Available Hints */}
+              <div className="space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {hints.slice(0, currentHintIndex + 1).map((hint, index) => {
+                    const Icon = getHintIcon(hint.level)
+                    const colorClass = getHintColor(hint.level)
+                    
+                    return (
+                      <motion.div
+                        key={`hint-${index}`}
+                        variants={hintVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        layout
+                        className={cn(
+                          "p-4 rounded-lg border-2",
+                          colorClass
+                        )}
+                        role="alert"
+                        aria-live="polite"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            <Icon className="w-5 h-5 mt-0.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs font-medium">
+                                {hint.level} hint {index + 1}
+                              </Badge>
+                              {hint.penalty && (
+                                <Badge variant="destructive" className="text-xs">
+                                  -{hint.penalty} points
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm leading-relaxed">
+                              {hint.content}
+                            </p>
+                            {hint.example && (
+                              <div className="mt-2 p-2 bg-background/60 rounded border border-current/20">
+                                <p className="text-xs font-medium mb-1">Example:</p>
+                                <p className="text-xs italic">{hint.example}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </AnimatePresence>
+
+                {/* Next Hint Preview */}
+                {currentHintIndex < hints.length - 1 && currentHintIndex < maxHints - 1 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center"
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-dashed border-muted-foreground/30" />
                       </div>
-                      <div>
-                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">Hint {index + 1}</span>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{hint.description}</div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="bg-background px-3 text-muted-foreground">
+                          Next hint available ({getNextHintLevel()})
+                        </span>
                       </div>
                     </div>
-                    <Badge className={cn("text-xs font-medium", getColor(hint.spoilerLevel, index))}>
-                      {index >= 4 ? "ANSWER" : index >= 2 ? "DETAILED" : "GENTLE"}
-                    </Badge>
-                  </div>
 
+                    <Button
+                      onClick={handleNextHint}
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 hover:bg-yellow-50 hover:border-yellow-300 transition-colors"
+                      onMouseEnter={() => setShowHintPreview(true)}
+                      onMouseLeave={() => setShowHintPreview(false)}
+                    >
+                      <Lightbulb className="w-4 h-4 mr-2" />
+                      Get Next Hint
+                      {enableKeyboardShortcuts && (
+                        <kbd className="ml-2 px-1.5 py-0.5 bg-muted border rounded text-xs">H</kbd>
+                      )}
+                    </Button>
+
+                    {/* Hint Preview */}
+                    <AnimatePresence>
+                      {showHintPreview && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          className="mt-2 p-2 bg-muted/80 rounded border text-xs text-muted-foreground"
+                        >
+                          Preview: {hints[currentHintIndex + 1]?.content.slice(0, 50)}...
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+
+                {/* Max hints reached */}
+                {currentHintIndex >= maxHints - 1 && hints.length > maxHints && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border-l-4 border-l-blue-400"
+                    className="text-center p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/20 dark:border-amber-800"
                   >
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{hint.content}</p>
+                    <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto mb-2" />
+                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                      Maximum hints reached. Try to solve it with what you've learned!
+                    </p>
                   </motion.div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="text-gray-500 dark:text-gray-400">
-                      {hint.type === "direct"
-                        ? "Complete Answer"
-                        : hint.type === "semantic"
-                          ? "Meaning Clue"
-                          : hint.type === "structural"
-                            ? "Structure Clue"
-                            : "Context Clue"}
-                    </div>
-                    <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-medium">
-                      <span>-{hint.penalty}% score</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-
-          {/* Reveal Next Hint Button */}
-          {revealedCount < availableHints.length ? (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Button
-                onClick={handleReveal}
-                className={cn(
-                  "w-full text-sm transition-all duration-300 ease-in-out",
-                  revealedCount >= 4
-                    ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl"
-                    : revealedCount >= 2
-                      ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl"
-                      : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl",
                 )}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                {revealedCount >= 4 ? (
-                  <span className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    Show Complete Answer (-{nextHint?.penalty || 20}%)
-                  </span>
-                ) : (
-                  `Get Hint ${revealedCount + 1} (-${nextHint?.penalty || 5}%)`
-                )}
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center text-gray-500 dark:text-gray-400 text-sm py-4 flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg border"
-            >
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span className="font-medium">All hints revealed</span>
-            </motion.div>
-          )}
 
-          {/* Score Impact Display */}
-          {revealedCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 text-sm">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>Learning Impact</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-orange-700 dark:text-orange-300">
-                    -{totalPenalty}% from final score
-                  </div>
-                  <div className="text-xs text-orange-600 dark:text-orange-400">
-                    Hints help learning but reduce assessment score
-                  </div>
-                </div>
+                {/* All hints used */}
+                {currentHintIndex >= hints.length - 1 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center p-3 bg-green-50 border border-green-200 rounded-lg dark:bg-green-950/20 dark:border-green-800"
+                  >
+                    <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-2" />
+                    <p className="text-sm text-green-800 dark:text-green-300">
+                      All hints revealed! You should have enough information to solve this.
+                    </p>
+                  </motion.div>
+                )}
               </div>
-            </motion.div>
-          )}
-        </CardContent>
 
-        {/* Confirmation Modal for Final Answer */}
-        <AnimatePresence>
-          {showConfirmation && hintToConfirm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700"
-              >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <AlertTriangle className="h-8 w-8 text-red-500" />
-                  </div>
-
-                  <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">Show Complete Answer?</h3>
-
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                    This will reveal the complete answer. While this helps you learn, it will significantly impact your
-                    assessment score.
-                  </p>
-
-                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-6">
-                    <div className="flex items-center justify-center gap-2 text-red-700 dark:text-red-300 font-medium">
-                      <span>Score Impact: -{hintToConfirm.penalty}%</span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button variant="outline" onClick={cancelConfirmation} className="flex-1 bg-transparent">
-                      Keep Trying
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={revealConfirmedHint}
-                      className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                    >
-                      Show Answer
-                    </Button>
+              {/* Keyboard shortcuts info */}
+              {enableKeyboardShortcuts && (
+                <div className="mt-4 pt-3 border-t border-muted text-xs text-muted-foreground">
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    <span><kbd className="px-1 py-0.5 bg-muted border rounded">H</kbd> Next hint</span>
+                    <span><kbd className="px-1 py-0.5 bg-muted border rounded">T</kbd> Toggle hints</span>
                   </div>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Card>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </motion.div>
   )
 }
