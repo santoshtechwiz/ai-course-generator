@@ -4,7 +4,6 @@ import { useMemo, useState, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
-import { useQuizState } from "@/components/quiz/QuizStateProvider"
 import { cn } from "@/lib/utils"
 import { CheckCircle2, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
@@ -74,9 +73,8 @@ const McqQuiz = ({
   const [selectedOption, setSelectedOption] = useState<string | null>(existingAnswer || null)
   const [isAnswering, setIsAnswering] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState<number>(-1)
-  
-  // Use quiz state hook for state management
-  const quizState = useQuizState()
+  const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle")
+  const [nextState, setNextState] = useState<"idle" | "loading" | "success" | "error">("idle")
 
   const options = useMemo(() => {
     // Ensure unique keys by using both index and option text
@@ -150,7 +148,7 @@ const McqQuiz = ({
       }
     } catch (error) {
       console.error("Error selecting option:", error)
-      quizState.setError("Failed to select option. Please try again.")
+      toast.error("Failed to select option. Please try again.")
     } finally {
       setIsAnswering(false)
     }
@@ -332,14 +330,14 @@ const McqQuiz = ({
         onExit={onExit}
         canGoNext={canGoNext && !!selectedOption}
         isLastQuestion={isLastQuestion}
-        isSubmitting={isSubmitting || quizState.isSubmitting}
+        isSubmitting={isSubmitting}
         hasAnswer={!!selectedOption}
         allowSkip={allowSkip}
         skippedQuestions={skippedQuestions}
         unsavedChanges={!!selectedOption && !autoSave}
         enableKeyboardShortcuts={enableKeyboardShortcuts}
-        submitState={quizState.submitState}
-        nextState={quizState.nextState}
+        submitState={submitState}
+        nextState={nextState}
       />
     </>
   )
