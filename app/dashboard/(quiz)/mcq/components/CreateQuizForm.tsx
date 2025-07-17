@@ -210,81 +210,97 @@ export default function CreateQuizForm({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-4xl mx-auto space-y-6 lg:space-y-8"
+      className="w-full max-w-4xl mx-auto"
     >
-      <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-        <CardContent className="space-y-8 lg:space-y-10 p-6 lg:p-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-10">
+      <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm">
+        <CardContent className="p-8 lg:p-12">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+            {/* Topic Section */}
             <motion.div
               className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
-                Topic
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="w-[200px]">Enter any topic you'd like to be quizzed on</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="title"
-                  placeholder="Enter the quiz topic"
-                  className="w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg border border-input rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
-                  {...register("title")}
-                  aria-describedby="topic-description"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-base font-semibold text-foreground flex items-center gap-2">
+                  Quiz Topic
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p>Enter any topic you'd like to be quizzed on. Be specific for better questions.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </Label>
+                <p className="text-sm text-muted-foreground" id="topic-description">
+                  Choose a specific topic for more focused questions
+                </p>
               </div>
+              
+              <Input
+                id="title"
+                placeholder="e.g., JavaScript Arrays, Python Loops, Machine Learning Basics"
+                className="h-14 text-base bg-background/50 border-border/50 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all duration-200"
+                {...register("title")}
+                aria-describedby="topic-description"
+              />
+              
               {errors.title && (
-                <p className="text-sm text-destructive mt-1" id="topic-error">
+                <p className="text-sm text-destructive flex items-center gap-1" id="topic-error">
                   {errors.title.message}
                 </p>
               )}
-              <p className="text-sm text-muted-foreground" id="topic-description">
-                Choose a specific topic for more focused questions
-              </p>
             </motion.div>
 
+            {/* Number of Questions Section */}
             <motion.div
-              className="space-y-4"
+              className="space-y-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <Label className="text-base font-medium text-foreground flex items-center gap-2">
-                Number of Questions
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="w-[200px]">Select how many questions you want in your quiz</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
-              <div className="space-y-4 lg:space-y-5 px-2 lg:px-4">
-                <div className="flex items-center justify-between px-2 lg:px-4">
-                  <Timer className="w-5 h-5 lg:w-6 lg:h-6 text-muted-foreground" />
+              <div className="space-y-2">
+                <Label className="text-base font-semibold text-foreground flex items-center gap-2">
+                  Number of Questions
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p>Select how many questions you want in your quiz (1-{maxQuestions})</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Select between 1 and {maxQuestions} questions
+                </p>
+              </div>
+
+              <div className="bg-muted/30 rounded-xl p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Timer className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">Questions</span>
+                  </div>
                   <motion.span
-                    className="text-2xl lg:text-3xl font-bold text-primary tabular-nums"
+                    className="text-3xl font-bold text-primary tabular-nums"
                     key={amount}
-                    initial={{ scale: 1.2, color: "#00ff00" }}
-                    animate={{ scale: 1, color: "var(--primary)" }}
+                    initial={{ scale: 1.2, color: "#22c55e" }}
+                    animate={{ scale: 1, color: "hsl(var(--primary))" }}
                     transition={{ type: "spring", stiffness: 300, damping: 10 }}
                   >
                     {amount}
                   </motion.span>
                 </div>
+                
                 <Controller
                   name="amount"
                   control={control}
@@ -296,68 +312,107 @@ export default function CreateQuizForm({
                     />
                   )}
                 />
-                <p className="text-sm text-muted-foreground text-center">
-                  Select between 1 and {maxQuestions} questions
-                </p>
               </div>
-              {errors.amount && <p className="text-sm text-destructive mt-1">{errors.amount.message}</p>}
-              <p className="text-sm text-muted-foreground mt-2">
-                {isLoggedIn
-                  ? "Unlimited quizzes available"
-                  : `This quiz will use ${amount} credit${amount > 1 ? "s" : ""}`}
-              </p>
+
+              {errors.amount && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  {errors.amount.message}
+                </p>
+              )}
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>
+                  {isLoggedIn
+                    ? "Unlimited quizzes available"
+                    : `This quiz will use ${amount} credit${amount > 1 ? "s" : ""}`}
+                </span>
+              </div>
             </motion.div>
 
+            {/* Difficulty Section */}
             <motion.div
-              className="space-y-4"
+              className="space-y-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Label className="text-base font-medium text-foreground flex items-center gap-2">
-                Difficulty
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="w-[200px]">Choose how challenging the questions should be</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
-                {["easy", "medium", "hard"].map((level) => (
+              <div className="space-y-2">
+                <Label className="text-base font-semibold text-foreground flex items-center gap-2">
+                  Difficulty Level
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p>Choose how challenging the questions should be</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Select the complexity level for your quiz questions
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { level: "easy", emoji: "🟢", description: "Basic concepts" },
+                  { level: "medium", emoji: "🟡", description: "Intermediate topics" },
+                  { level: "hard", emoji: "🔴", description: "Advanced challenges" }
+                ].map(({ level, emoji, description }) => (
                   <Button
                     key={level}
                     type="button"
                     variant={difficulty === level ? "default" : "outline"}
                     className={cn(
-                      "capitalize w-full h-12 lg:h-14 font-medium transition-all text-base lg:text-lg",
-                      difficulty === level ? "border-primary shadow-sm" : "hover:border-primary/50",
+                      "h-16 flex-col gap-2 font-medium transition-all duration-200 group",
+                      difficulty === level 
+                        ? "border-primary shadow-lg scale-105" 
+                        : "hover:border-primary/50 hover:scale-102 hover:shadow-md"
                     )}
                     onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
                     aria-pressed={difficulty === level}
                   >
-                    {level}
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{emoji}</span>
+                      <span className="capitalize text-base font-semibold">{level}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                      {description}
+                    </span>
                   </Button>
                 ))}
               </div>
             </motion.div>
 
+            {/* Credits Section */}
             <motion.div
-              className="bg-primary/5 border border-primary/20 rounded-lg p-4 lg:p-6 space-y-3 lg:space-y-4"
+              className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent border border-primary/20 rounded-xl p-6 space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <h3 className="text-base lg:text-lg font-semibold mb-2">Available Credits</h3>
-              <Progress value={creditPercentage} className="h-2 lg:h-3" />
-              <p className="text-xs lg:text-sm text-muted-foreground">
-                You have <span className="font-bold text-primary">{credits}</span> credit{credits !== 1 ? "s" : ""}{" "}
-                remaining.
-              </p>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-foreground">Available Credits</h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-primary">{credits} remaining</span>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Progress value={creditPercentage} className="h-3 bg-muted/30" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    You have <span className="font-semibold text-foreground">{credits}</span> credit{credits !== 1 ? "s" : ""} remaining
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {creditPercentage.toFixed(0)}%
+                  </span>
+                </div>
+              </div>
             </motion.div>
 
             <AnimatePresence>
@@ -375,8 +430,9 @@ export default function CreateQuizForm({
               )}
             </AnimatePresence>
 
+            {/* Submit Section */}
             <motion.div
-              className="pt-6 lg:pt-8 border-t border-border/60"
+              className="pt-8 border-t border-border/30"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
@@ -389,7 +445,7 @@ export default function CreateQuizForm({
                 isLoading={isLoading}
                 hasCredits={credits > 0}
                 loadingLabel="Generating Quiz..."
-                className="w-full h-12 lg:h-14 text-base lg:text-lg font-medium transition-all duration-300 hover:shadow-lg"
+                className="w-full h-16 text-lg font-semibold transition-all duration-300 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your quiz",
