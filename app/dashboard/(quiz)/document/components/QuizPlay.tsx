@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { GlobalLoader } from "@/components/ui/loader"
+import { useGlobalLoader } from "@/store/global-loader"
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -107,6 +107,7 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
   const [loading, setLoading] = useState(true)
+  const { startQuizLoading, stopLoading } = useGlobalLoader()
   const [saving, setSaving] = useState(false)
   const [startTime] = useState(Date.now())
   const [lastSaved, setLastSaved] = useState<number | null>(null)
@@ -171,7 +172,8 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
   useEffect(() => {
     async function loadQuiz() {
       try {
-        setLoading(true)
+                setLoading(true)
+        startQuizLoading("Document Quiz")
         const q = await quizStore.getQuiz(quizId)
         if (!q) {
           toast({
@@ -201,6 +203,7 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
         })
       } finally {
         setLoading(false)
+        stopLoading()
       }
     }
 
@@ -293,7 +296,7 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
     })
   }
 
-  if (loading) return <GlobalLoader />
+  if (loading) return null // Loading handled by global loader
 
   if (!quiz) {
     return (

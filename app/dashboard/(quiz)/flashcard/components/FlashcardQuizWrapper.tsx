@@ -36,7 +36,7 @@ import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 import { GlobalLoader, useLoader } from "@/components/ui/loader";
 import { QuizSchema } from "@/lib/seo-manager-new";
 import { QuizActions } from "../../components/QuizActions";
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
+import { Loader2 } from "lucide-react";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -281,7 +281,7 @@ export default function FlashcardQuizWrapper({
   if (quizStatus === "loading" || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <LoadingSpinner />
+                    <Loader2 className="h-8 w-8 animate-spin" />
         <p className="mt-4 text-muted-foreground">
           {isReviewMode
             ? "Loading your review cards..."

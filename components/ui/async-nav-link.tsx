@@ -15,8 +15,8 @@ interface AsyncNavLinkProps {
   loaderOptions?: {
     message?: string
     subMessage?: string
-    variant?: "spinner" | "dots" | "pulse" | "skeleton"
-    theme?: "primary" | "secondary" | "accent" | "neutral"
+    variant?: "spinner" | "dots" | "pulse" | "shimmer"
+    theme?: "primary" | "secondary" | "accent" | "minimal"
     isBlocking?: boolean
     priority?: number
   }

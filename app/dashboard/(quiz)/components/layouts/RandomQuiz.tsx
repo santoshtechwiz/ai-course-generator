@@ -569,53 +569,73 @@ export const RandomQuiz: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
+    <motion.div 
+      className="h-full flex flex-col bg-gradient-to-br from-background via-muted/5 to-muted/20 rounded-2xl border border-border/50 shadow-lg backdrop-blur-sm overflow-hidden"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
       {/* Enhanced Responsive Header */}
       <motion.div
-        className="sticky top-0 z-20 bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-sm"
+        className="bg-gradient-to-r from-card via-card/90 to-card border-b border-border/30 backdrop-blur-sm"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <div className="p-3 sm:p-4 lg:p-6">
+        <div className="p-4 sm:p-5 lg:p-6">
           {/* Header content - responsive layout */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div className="flex-1 min-w-0">
-              {/* <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                Discover Quizzes
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">
-                Explore our collection of interactive learning experiences
-              </p> */}
-            </div>
-            {/* Action buttons - responsive layout */}
-            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
-              {/* Filter toggle */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm px-2 sm:px-3"
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-6 mb-6">
+              <motion.div 
+                className="flex-1 min-w-0"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
               >
-                {showFilters ? <X className="h-3 w-3 sm:h-4 sm:w-4" /> : <Filter className="h-3 w-3 sm:h-4 sm:w-4" />}
-                <span className="hidden sm:inline">Filters</span>
-              </Button>
-              {/* Refresh button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isLoading || isTransitioning}
-                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm px-2 sm:px-3 bg-transparent"
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent leading-tight">
+                  Discover Quizzes
+                </h2>
+                <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
+                  Interactive learning experiences tailored for you
+                </p>
+              </motion.div>
+                          {/* Action buttons - responsive layout */}
+              <motion.div 
+                className="flex items-center gap-3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
               >
-                {isLoading ? (
-                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
-                )}
-                <span className="hidden sm:inline">Refresh</span>
-              </Button>
-            </div>
+                {/* Filter toggle */}
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center gap-2 text-sm px-3 py-2 bg-background/50 hover:bg-accent/80 transition-all duration-200 border-border/50"
+                  >
+                    {showFilters ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+                    <span className="hidden sm:inline">Filters</span>
+                  </Button>
+                </motion.div>
+                
+                {/* Refresh button */}
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    disabled={isLoading || isTransitioning}
+                    className="flex items-center gap-2 text-sm px-3 py-2 bg-background/50 hover:bg-accent/80 transition-all duration-200 border-border/50"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline">Refresh</span>
+                  </Button>
+                </motion.div>
+              </motion.div>
           </div>
           {/* Enhanced Responsive Filter Section */}
           <AnimatePresence>
@@ -676,7 +696,7 @@ export const RandomQuiz: React.FC = () => {
         </div>
       </motion.div>
       {/* Responsive Content Area */}
-      <div className="flex-1 p-3 sm:p-4 lg:p-6">
+      <div className="flex-1 p-4 sm:p-5 lg:p-6">
         {isLoading ? (
           <div className="flex items-center justify-center h-64 sm:h-96">
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
@@ -833,6 +853,6 @@ export const RandomQuiz: React.FC = () => {
           </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

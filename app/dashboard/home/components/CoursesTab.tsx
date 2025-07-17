@@ -126,7 +126,7 @@ interface CourseGridProps {
 }
 
 function CourseGrid({ courses, showProgress = false, onCourseClick }: CourseGridProps) {
-  const { isLoading: isGlobalLoading, loadingId } = useGlobalLoader() // Use global loader to check loading state
+  const { isLoading: isGlobalLoading } = useGlobalLoader() // Use global loader to check loading state
 
   if (courses.length === 0) {
     return (
