@@ -25,7 +25,8 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+import { useGlobalLoader } from "@/store/global-loader"
+import { useEffect } from "react"
 
 
 
@@ -202,15 +203,24 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       />
     )
   }
+  const { startLoading, stopLoading } = useGlobalLoader()
+
+  useEffect(() => {
+    if (!formattedQuestion) {
+      startLoading({
+        message: "AI is generating your personalized quiz results",
+        subMessage: "Crafting personalized content with advanced AI technology",
+        theme: "primary",
+        size: "lg",
+        isBlocking: true
+      })
+    } else {
+      stopLoading()
+    }
+  }, [formattedQuestion, startLoading, stopLoading])
+
   if (!formattedQuestion) {
-    return (
-      <GlobalLoader
-        fullScreen={true}
-        size="lg"        text="AI is generating your personalized quiz results"
-        subText="Crafting personalized content with advanced AI technology"
-        theme="primary"
-      />
-    )
+    return null // Loading handled by global state
   }  return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      <QuizActions
         initialIsFavorite={false}

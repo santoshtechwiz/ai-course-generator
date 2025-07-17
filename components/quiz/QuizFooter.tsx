@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/GlobalButton"
 import { ChevronLeft, ChevronRight, CheckCircle, SkipForward, X, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { LoadingSpinner } from "../loaders/GlobalLoader"
+import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -185,7 +185,7 @@ export function QuizFooter({
             >
               {submitState === "loading" || isSubmitting ? (
                 <>
-                  <LoadingSpinner className="w-4 h-4" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Submitting...</span>
                 </>
               ) : submitState === "success" ? (
@@ -218,7 +218,7 @@ export function QuizFooter({
             >
               {nextState === "loading" ? (
                 <>
-                  <LoadingSpinner className="w-4 h-4" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Loading...</span>
                 </>
               ) : (

@@ -178,7 +178,7 @@ interface QuizGridProps {
 }
 
 function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, onQuizClick }: QuizGridProps) {
-  const { isLoading: isGlobalLoading, loadingId } = useGlobalLoader() // Use global loader to check loading state
+  const { isLoading: isGlobalLoading } = useGlobalLoader() // Use global loader to check loading state
 
   if (quizzes.length === 0) {
     return (

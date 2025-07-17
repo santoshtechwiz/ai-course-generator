@@ -11,7 +11,7 @@ import { useSession } from "next-auth/react";
 import { QuizContainer } from "@/components/quiz/QuizContainer";
 import { toast } from "sonner";
 import { Confetti } from "@/components/ui/confetti";
-import { GlobalLoader } from "@/components/ui/loader";
+import { useGlobalLoader } from "@/store/global-loader";
 import { cn } from "@/lib/utils";
 import {
   initFlashCardQuiz,
@@ -86,6 +86,7 @@ export default function FlashCardQuiz({
     "correct" | "incorrect" | "still_learning" | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { startLoading, stopLoading } = useGlobalLoader();
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [swipeDisabled, setSwipeDisabled] = useState(false);
@@ -152,11 +153,19 @@ export default function FlashCardQuiz({
 
   // Loading state
   useEffect(() => {
+    startLoading({
+      message: "Loading flashcards...",
+      subMessage: "Preparing your study materials",
+      theme: "primary",
+      isBlocking: true
+    });
+    
     const timer = setTimeout(() => {
       setIsLoading(false);
+      stopLoading();
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [startLoading, stopLoading]);
 
   // Process results
   const processedResults = useMemo(() => {
@@ -523,13 +532,7 @@ export default function FlashCardQuiz({
     swipeDisabled,
   ]);
   if (isLoading) {
-    return (
-      <GlobalLoader
-        text="Loading flashcards..."
-        subText="Preparing your study materials"
-        theme="primary"
-      />
-    );
+    return null; // Loading handled by global state
   }
   if (!cards || cards.length === 0) {
     return (
