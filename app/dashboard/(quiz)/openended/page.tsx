@@ -13,19 +13,15 @@ const OpenEndedPage = () => {
   // Fix: Changed hook name from useQuizPlan to avoid duplicating the same hook
   // Fix: Update credit requirement to correct value for open-ended questions
   const quizPlan = useQuizPlan(2); // Require 2 credits for open-ended quiz (corrected from MCQ)
-  const { startLoading, stopLoading } = useGlobalLoader();
+  const { startQuizLoading, stopLoading } = useGlobalLoader();
 
   useEffect(() => {
     if (quizPlan.isLoading) {
-      startLoading({ 
-        message: "Loading quiz plan...", 
-        subMessage: "Checking your subscription and limits",
-        theme: "primary"
-      });
+      startQuizLoading("Open-Ended");
     } else {
       stopLoading();
     }
-  }, [quizPlan.isLoading, startLoading, stopLoading]);
+  }, [quizPlan.isLoading, startQuizLoading, stopLoading]);
 
   return (
     <QuizCreateLayout

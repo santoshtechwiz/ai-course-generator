@@ -86,7 +86,7 @@ export default function FlashCardQuiz({
     "correct" | "incorrect" | "still_learning" | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { startLoading, stopLoading } = useGlobalLoader();
+  const { startQuizLoading, stopLoading } = useGlobalLoader();
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [swipeDisabled, setSwipeDisabled] = useState(false);
@@ -153,19 +153,14 @@ export default function FlashCardQuiz({
 
   // Loading state
   useEffect(() => {
-    startLoading({
-      message: "Loading flashcards...",
-      subMessage: "Preparing your study materials",
-      theme: "primary",
-      isBlocking: true
-    });
+    startQuizLoading("Flashcards");
     
     const timer = setTimeout(() => {
       setIsLoading(false);
       stopLoading();
     }, 500);
     return () => clearTimeout(timer);
-  }, [startLoading, stopLoading]);
+  }, [startQuizLoading, stopLoading]);
 
   // Process results
   const processedResults = useMemo(() => {

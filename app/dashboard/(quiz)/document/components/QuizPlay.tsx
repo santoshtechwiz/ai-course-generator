@@ -107,7 +107,7 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
   const [loading, setLoading] = useState(true)
-  const { startLoading, stopLoading } = useGlobalLoader()
+  const { startQuizLoading, stopLoading } = useGlobalLoader()
   const [saving, setSaving] = useState(false)
   const [startTime] = useState(Date.now())
   const [lastSaved, setLastSaved] = useState<number | null>(null)
@@ -172,13 +172,8 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
   useEffect(() => {
     async function loadQuiz() {
       try {
-        setLoading(true)
-      startLoading({
-        message: "Loading quiz...",
-        subMessage: "Preparing your quiz experience",
-        theme: "primary",
-        isBlocking: true
-      })
+                setLoading(true)
+        startQuizLoading("Document Quiz")
         const q = await quizStore.getQuiz(quizId)
         if (!q) {
           toast({

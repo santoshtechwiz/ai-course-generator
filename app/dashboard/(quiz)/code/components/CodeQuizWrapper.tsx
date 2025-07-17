@@ -203,21 +203,15 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       />
     )
   }
-  const { startLoading, stopLoading } = useGlobalLoader()
+  const { startQuizLoading, stopLoading } = useGlobalLoader()
 
   useEffect(() => {
     if (!formattedQuestion) {
-      startLoading({
-        message: "AI is generating your personalized quiz results",
-        subMessage: "Crafting personalized content with advanced AI technology",
-        theme: "primary",
-        size: "lg",
-        isBlocking: true
-      })
+      startQuizLoading("Code Quiz")
     } else {
       stopLoading()
     }
-  }, [formattedQuestion, startLoading, stopLoading])
+  }, [formattedQuestion, startQuizLoading, stopLoading])
 
   if (!formattedQuestion) {
     return null // Loading handled by global state
