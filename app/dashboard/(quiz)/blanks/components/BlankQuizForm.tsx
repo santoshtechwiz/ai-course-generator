@@ -29,7 +29,8 @@ import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
-import FormContainer from "../../FormContainer"
+import FormContainer from "@/app/dashboard/FormContainer"
+
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
 
@@ -184,9 +185,9 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-4xl mx-auto p-6">
+      <FormContainer>
         <GlobalLoader />
-      </div>
+      </FormContainer>
     )
   }
 

@@ -286,7 +286,7 @@ export default function MainNavbar() {
         aria-label="Main navigation"
       >
         <motion.div 
-          className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8"
+          className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl"
           initial="hidden"
           animate="visible"
           variants={navbarVariants}
@@ -327,18 +327,22 @@ export default function MainNavbar() {
                 variant="ghost"
                 size="icon"
                 onClick={handleSearchOpen}
-                className="h-9 w-9 hover:bg-accent transition-colors duration-200"
+                className="h-9 w-9 hover:bg-accent/80 transition-all duration-200 relative overflow-hidden group"
                 aria-label="Search"
                 data-testid="search-button"
               >
-                <Search className="h-4 w-4" />
+                <Search className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
                 <span className="sr-only">Search</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
               </Button>
             </motion.div>
 
             {/* Theme Toggle */}
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <ThemeToggle />
+              <div className="relative overflow-hidden rounded-md">
+                <ThemeToggle />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 pointer-events-none" />
+              </div>
             </motion.div>
 
             {/* Notifications - Desktop Only */}

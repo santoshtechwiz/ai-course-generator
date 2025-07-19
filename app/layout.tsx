@@ -12,9 +12,7 @@ import { font } from "./font";
 import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
-import Footer from "@/components/shared/Footer";
-import { Providers } from "@/store/provider";
-import { Suspense } from "react";
+
 
 export const metadata: Metadata = {
   ...defaultMetadata,

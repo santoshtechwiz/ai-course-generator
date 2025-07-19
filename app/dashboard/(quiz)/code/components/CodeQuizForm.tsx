@@ -55,7 +55,7 @@ import { QueryParams } from "@/app/types/types";
 import { useSubscription } from "@/modules/auth";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import PlanAwareButton from "../../components/PlanAwareButton";
-import FormContainer from "../../FormContainer";
+import FormContainer from "@/app/dashboard/FormContainer";
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
   userType?: string;

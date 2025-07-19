@@ -28,7 +28,7 @@ import { SubscriptionSlider } from "@/app/dashboard/subscription/components/Subs
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
-import FormContainer from "../../FormContainer"
+import FormContainer from "@/app/dashboard/FormContainer"
 
 
 const openEndedQuizSchema = z.object({

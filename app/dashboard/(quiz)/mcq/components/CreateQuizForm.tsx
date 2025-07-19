@@ -28,7 +28,7 @@ import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { SubscriptionSlider } from "../../../subscription/components/SubscriptionSlider"
-import FormContainer from "../../FormContainer"
+import FormContainer from "@/app/dashboard/FormContainer"
 
 
 interface Subscription {
@@ -278,7 +278,7 @@ export default function CreateQuizForm({
   }, [credits])
 
   return (
-    <FormContainer variant="glass" >
+    <FormContainer variant="glass">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Topic Selection */}
         <motion.div

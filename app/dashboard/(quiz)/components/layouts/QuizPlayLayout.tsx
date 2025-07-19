@@ -1,9 +1,7 @@
 "use client"
 
-import { type ReactNode, useMemo } from "react"
-import { cn } from "@/lib/tailwindUtils"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
+import { useMediaQuery } from "@/hooks"
+import type React from "react"
 import { RandomQuiz } from "./RandomQuiz"
 import { Suspense, useMemo, useEffect, useState } from "react"
 import { JsonLD } from "@/lib/seo-manager-new"
@@ -104,29 +102,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
     }
   }, [pathname, quizType, quizSlug])
 
-  // Memoize sidebar content to prevent unnecessary re-renders
-  const sidebarContent = useMemo(() => {
-    if (isMobile) return null
-    return (
-      <div className="lg:w-80 xl:w-96 shrink-0">
-        <div className="sticky top-24">
-          <Suspense
-            fallback={
-              <div className="p-6 border rounded-xl bg-muted/20 animate-pulse">
-                <div className="h-12 bg-muted rounded-lg mb-4"></div>
-                <div className="h-48 bg-muted rounded-lg mb-4"></div>
-                <div className="h-6 bg-muted rounded-md w-3/4 mb-3"></div>
-                <div className="h-24 bg-muted rounded-md"></div>
-                <div className="h-10 bg-muted rounded-md w-1/2 mt-4"></div>
-              </div>
-            }
-          >
-            <RandomQuiz />
-          </Suspense>
-        </div>
-      </div>
-    )
-  }, [isMobile])
+
 
   const quizTypeLabel = getQuizTypeLabel(quizMeta.type)
 
@@ -136,7 +112,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
   }
 
   return (
-    <div className="container mx-auto py-4 px-3 md:px-4 lg:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       <JsonLD
         type="Quiz"
         data={{
@@ -155,60 +131,65 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
         }}
       />
 
-      <motion.div
-        className="flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isLoaded ? 1 : 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        layout
-      >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div
-          className="flex-1 min-w-0 max-w-none min-h-[60vh] lg:min-h-[70vh]"
+          className="flex flex-col lg:flex-row gap-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isLoaded ? 1 : 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
           layout
-          transition={{
-            type: "spring",
-            stiffness: 100,
-            damping: 15,
-            mass: 1,
-          }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            {children}
-          </motion.div>
-        </motion.div>
-
-        {!isMobile && (
-          <motion.div
-            className="lg:w-80 xl:w-96 shrink-0"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: isLoaded ? 1 : 0, x: 0 }}
+          {/* Main Quiz Content */}
+          <motion.main
+            className="flex-1 min-w-0 max-w-none"
+            layout
             transition={{
-              duration: 0.4,
-              delay: 0.3,
+              type: "spring",
+              stiffness: 100,
+              damping: 15,
+              mass: 1,
             }}
           >
-            <div className="sticky top-24">
-              <Suspense
-                fallback={
-                  <div className="p-6 border rounded-xl bg-muted/20 animate-pulse shadow-sm">
-                    <div className="h-12 bg-muted rounded-lg mb-4"></div>
-                    <div className="h-48 bg-muted rounded-lg mb-4"></div>
-                    <div className="h-6 bg-muted rounded-md w-3/4 mb-3"></div>
-                    <div className="h-24 bg-muted rounded-md"></div>
-                    <div className="h-10 bg-muted rounded-md w-1/2 mt-4"></div>
-                  </div>
-                }
-              >
-                <RandomQuiz />
-              </Suspense>
-            </div>
-          </motion.div>
-        )}
-      </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="min-h-[70vh]"
+            >
+              {children}
+            </motion.div>
+          </motion.main>
+
+          {/* Sidebar - Hidden on mobile */}
+          {!isMobile && (
+            <motion.aside
+              className="w-full lg:w-80 xl:w-96 shrink-0"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: isLoaded ? 1 : 0, x: 0 }}
+              transition={{
+                duration: 0.4,
+                delay: 0.3,
+              }}
+            >
+              <div className="sticky top-8">
+                <Suspense
+                  fallback={
+                    <div className="p-6 border border-border/50 rounded-xl bg-card/50 backdrop-blur-sm animate-pulse shadow-sm">
+                      <div className="h-12 bg-muted/50 rounded-lg mb-4"></div>
+                      <div className="h-48 bg-muted/50 rounded-lg mb-4"></div>
+                      <div className="h-6 bg-muted/50 rounded-md w-3/4 mb-3"></div>
+                      <div className="h-24 bg-muted/50 rounded-md"></div>
+                      <div className="h-10 bg-muted/50 rounded-md w-1/2 mt-4"></div>
+                    </div>
+                  }
+                >
+                  <RandomQuiz />
+                </Suspense>
+              </div>
+            </motion.aside>
+          )}
+        </motion.div>
+      </div>
     </div>
   )
 }
