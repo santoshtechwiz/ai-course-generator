@@ -5,7 +5,6 @@ import { Breadcrumb } from "@/components/common"
 interface PageHeaderProps {
   title: string
   description?: string
-  actions?: ReactNode
   breadcrumbs?: Array<{ title: string; href: string }>
   className?: string
 }
@@ -19,7 +18,6 @@ export const PageHeader = ({ title, description, actions, breadcrumbs, className
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
           {description && <p className="text-muted-foreground">{description}</p>}
         </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
     </div>
   )

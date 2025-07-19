@@ -104,7 +104,7 @@ export default function DashboardPage() {
   // Show Sign In if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 sm:p-8 text-center">
         <h2 className="text-2xl font-semibold mb-2">You are not authorized</h2>
         <p className="text-gray-600 mb-4">Please sign in to access your dashboard.</p>
         <Button onClick={() => signIn()} size="lg">
@@ -114,14 +114,12 @@ export default function DashboardPage() {
     )
   }
 
-
-
   // Handle critical data load error
   if (userDataError || userStatsError) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
             <p className="mb-2">Something went wrong fetching your data.</p>
             {userDataError && <p className="text-red-600 text-sm">User error: {userDataError.message}</p>}
@@ -194,14 +192,17 @@ export default function DashboardPage() {
   ], [safeUserData, safeUserStats])
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <DashboardSidebar
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        userData={safeUserData}
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
+    <div className="flex flex-col md:flex-row min-h-screen bg-background">
+      {/* Sidebar: collapses on mobile, visible on md+ */}
+      <div className={"w-full md:w-64 md:flex-shrink-0 " + (sidebarOpen ? "block" : "hidden md:block") + " z-20"}>
+        <DashboardSidebar
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          userData={safeUserData}
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+        />
+      </div>
 
       <div className="flex-1 flex flex-col">
         <DashboardHeader
@@ -210,9 +211,9 @@ export default function DashboardPage() {
           toggleSidebar={handleToggleSidebar}
         />
 
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="mb-6 bg-muted/60 p-1 w-full md:w-auto">
+            <TabsList className="mb-6 bg-muted/60 p-1 w-full md:w-auto overflow-x-auto whitespace-nowrap rounded-lg">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="courses">Courses</TabsTrigger>
               <TabsTrigger value="quizzes">Quizzes</TabsTrigger>

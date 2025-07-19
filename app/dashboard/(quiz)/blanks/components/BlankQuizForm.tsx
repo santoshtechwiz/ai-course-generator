@@ -22,13 +22,14 @@ import { Badge } from "@/components/ui/badge"
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
 import { blanksQuizSchema } from "@/schema/schema"
-import { GlobalLoader } from '@/components/ui/loader'
+import { GlobalLoader } from "@/components/ui/loader"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import PlanAwareButton from "../../components/PlanAwareButton"
+import FormContainer from "../../FormContainer"
 
 type BlankQuizFormData = z.infer<typeof blanksQuizSchema> & {}
 
@@ -111,10 +112,11 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
       }
 
       setSubmitError(null)
-      setIsConfirmDialogOpen(true)    },
+      setIsConfirmDialogOpen(true)
+    },
     [isLoading],
-  );
-  
+  )
+
   const handleConfirm = React.useCallback(async () => {
     setIsLoading(true)
 
@@ -189,12 +191,14 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full max-w-4xl mx-auto space-y-6 lg:space-y-8"
-    >
+    <FormContainer>
+      {submitError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
       <Card className="bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
         <CardContent className="space-y-8 lg:space-y-10 p-6 lg:p-8">
           {submitError && (
@@ -213,48 +217,72 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
               transition={{ delay: 0.2 }}
             >
               <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
+                <div className="p-1.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                </div>
                 Title *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help hover:text-blue-500 transition-colors" />
                     </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="w-[200px]">Enter a descriptive title for your fill-in-the-blanks quiz</p>
+                    <TooltipContent
+                      side="right"
+                      className="max-w-xs bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-blue-200/50 dark:border-blue-800/50"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-blue-500" />
+                        <span className="font-medium text-blue-900 dark:text-blue-100">AI Tip</span>
+                      </div>
+                      <p className="text-sm">
+                        Enter a descriptive title for your fill-in-the-blanks quiz. Our AI will generate relevant
+                        questions based on this topic.
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <div className="relative">
+              <div className="relative group">
                 <Input
                   id="title"
-                  placeholder="Enter the quiz title"
+                  placeholder="Enter the quiz title (e.g., Common English Idioms, Medical Terminology)"
                   className={cn(
-                    "w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg border border-input rounded-lg transition-all pr-12",
-                    "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-                    errors.title ? "border-red-300 focus-visible:ring-red-300" : "",
+                    "w-full p-3 lg:p-4 h-12 lg:h-14 text-base lg:text-lg rounded-xl transition-all duration-300 pr-12",
+                    "border-2 border-slate-200 dark:border-slate-700",
+                    "focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 dark:focus:ring-blue-400/20",
+                    "bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm",
+                    "hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg hover:shadow-blue-500/10",
+                    errors.title ? "border-red-300 focus:border-red-500 focus:ring-red-500/20" : "",
                   )}
                   {...register("title")}
                   aria-describedby="title-description"
                   aria-invalid={errors.title ? "true" : "false"}
                 />
-                <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="p-1.5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg group-focus-within:from-blue-500/20 group-focus-within:to-purple-500/20 transition-all duration-300">
+                    <Sparkles className="h-4 w-4 text-blue-500 group-focus-within:text-blue-600" />
+                  </div>
+                </div>
               </div>
               {errors.title && (
                 <motion.p
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-destructive mt-1"
+                  className="text-sm text-red-600 dark:text-red-400 mt-1 flex items-center gap-2"
                   id="title-error"
                   role="alert"
                 >
+                  <div className="w-1 h-1 bg-red-500 rounded-full"></div>
                   {errors.title.message}
                 </motion.p>
               )}
-              <p className="text-sm text-muted-foreground" id="title-description">
-                Examples: Common English Idioms, Medical Terminology, Scientific Concepts
-              </p>
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/50">
+                <p className="text-sm text-slate-700 dark:text-slate-300" id="title-description">
+                  <span className="font-medium text-blue-700 dark:text-blue-300">💡 Examples:</span> Common English
+                  Idioms, Medical Terminology, Scientific Concepts, Historical Events
+                </p>
+              </div>
             </motion.div>
 
             <motion.div
@@ -486,7 +514,8 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
             </motion.div>
           </form>
         </CardContent>
-      </Card>      <ConfirmDialog
+      </Card>{" "}
+      <ConfirmDialog
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
         onCancel={() => {
@@ -504,14 +533,14 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
           used: Math.max(0, maxQuestions - credits),
           available: maxQuestions,
           remaining: credits,
-          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100
+          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
         }}
         quizInfo={{
           type: "Fill-in-the-Blanks Quiz",
           topic: watch("title"),
           count: watch("amount"),
           difficulty: watch("difficulty"),
-          estimatedTokens: Math.min(watch("amount") || 1, 5) * 120
+          estimatedTokens: Math.min(watch("amount") || 1, 5) * 120,
         }}
       >
         <div className="py-2">
@@ -522,6 +551,6 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
           </p>
         </div>
       </ConfirmDialog>
-    </motion.div>
+    </FormContainer>
   )
 }

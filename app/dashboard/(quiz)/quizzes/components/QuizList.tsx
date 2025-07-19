@@ -1,20 +1,20 @@
 "use client"
 
-import React, { memo, useEffect, useMemo, useState } from "react"
+import { memo, useEffect, useMemo } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import NProgress from "nprogress"
 import { useInView } from "react-intersection-observer"
-import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, BookOpen, Code, Pen, FileText, FlaskConical, Trophy } from "lucide-react"
+import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Trophy, Grid3X3, List } from "lucide-react"
 import { CreateCard } from "@/components/CreateCard"
 import { QuizCard } from "./QuizCard"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/tailwindUtils"
-import { QuizListItem } from "@/app/actions/getQuizes"
+import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
-
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Card, CardContent } from "@/components/ui/card"
 
 NProgress.configure({
   minimum: 0.3,
@@ -42,6 +42,8 @@ interface QuizListProps {
     blanks: number
     flashcard: number
   }
+  viewMode?: "grid" | "list"
+  onViewModeChange?: (mode: "grid" | "list") => void
 }
 
 const containerVariants = {
@@ -49,21 +51,20 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
+      staggerChildren: 0.05,
     },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.98 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
       type: "spring",
-      stiffness: 180,
-      damping: 20,
+      stiffness: 300,
+      damping: 25,
     },
   },
 }
@@ -80,6 +81,8 @@ function QuizListComponent({
   activeFilter = "all",
   onFilterChange,
   quizCounts,
+  viewMode = "grid",
+  onViewModeChange,
 }: QuizListProps) {
   const [endMessageRef, endMessageInView] = useInView({
     triggerOnce: true,
@@ -97,7 +100,6 @@ function QuizListComponent({
     }
   }, [isFetchingNextPage])
 
-  // Helper functions
   const getEstimatedTime = (questionCount: number): string => {
     const minutes = Math.max(Math.ceil(questionCount * 0.5), 1)
     return `${minutes} min`
@@ -105,12 +107,8 @@ function QuizListComponent({
 
   const getQuestionCount = (quiz: { questionCount: number }): number => quiz.questionCount || 0
 
-  // Memoize filtered quizzes for performance
   const filteredQuizzes = useMemo(
-    () =>
-      activeFilter === "all"
-        ? quizzes
-        : quizzes.filter((quiz) => quiz.quizType === activeFilter),
+    () => (activeFilter === "all" ? quizzes : quizzes.filter((quiz) => quiz.quizType === activeFilter)),
     [quizzes, activeFilter],
   )
 
@@ -120,197 +118,126 @@ function QuizListComponent({
 
   if (isError) {
     return (
-      <div className="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800 flex flex-col items-center">
-        <AlertCircle className="w-10 h-10 mb-3 text-red-500 dark:text-red-400" />
-        <h3 className="font-semibold text-xl mb-2">Error loading quizzes</h3>
-        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-          We couldn't load your quizzes. Please try again later.
-        </p>
-        {onRetry && (
-          <Button
-            onClick={onRetry}
-            variant="outline"
-            className="mt-2 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Try Again
-          </Button>
-        )}
-      </div>
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+          <h3 className="font-semibold text-lg mb-2">Failed to load quizzes</h3>
+          <p className="text-sm text-muted-foreground mb-4 max-w-md">
+            We encountered an error while loading your quizzes. Please check your connection and try again.
+          </p>
+          {onRetry && (
+            <Button onClick={onRetry} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+          )}
+        </CardContent>
+      </Card>
     )
   }
 
   if (quizzes.length === 0) {
     return (
       <motion.div
-        className="text-center p-10 bg-muted/30 rounded-lg border border-muted"
-        initial={{ opacity: 0, scale: 0.98 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.3 }}
       >
-        {isSearching ? (
-          <div className="max-w-md mx-auto">
-            <motion.div
-              className="bg-primary/10 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center"
-              initial={{ scale: 0.8, opacity: 0.7 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Search className="h-8 w-8 text-primary" />
-            </motion.div>
-            <h3 className="text-2xl font-semibold mb-3">No matching quizzes found</h3>
-            <p className="text-muted-foreground mb-6">
-              Try adjusting your search terms or filters to find what you're looking for.
-            </p>
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              Reset Filters
-            </Button>
-          </div>
-        ) : (
-          <div className="max-w-md mx-auto">
-            <motion.div
-              className="bg-primary/10 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center"
-              initial={{ scale: 0.8, opacity: 0.7 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <FileQuestion className="h-8 w-8 text-primary" />
-            </motion.div>
-            <h3 className="text-2xl font-semibold mb-3">No quizzes available</h3>
-            <p className="text-muted-foreground mb-6">Be the first to create a quiz and share your knowledge!</p>
-            <CreateCard
-              title="Start Fresh"
-              description="Be the first to create a quiz on this topic! It's easy and fun."
-              animationDuration={2.0}
-            />
-          </div>
-        )}
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+            {isSearching ? (
+              <>
+                <Search className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="font-semibold text-xl mb-2">No quizzes found</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                  We couldn't find any quizzes matching your search criteria. Try adjusting your filters or search
+                  terms.
+                </p>
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  Clear Filters
+                </Button>
+              </>
+            ) : (
+              <>
+                <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="font-semibold text-xl mb-2">No quizzes yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                  Get started by creating your first quiz. It's quick and easy!
+                </p>
+                <CreateCard
+                  title="Create Your First Quiz"
+                  description="Start building engaging quizzes to test knowledge and skills."
+                  animationDuration={2.0}
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
       </motion.div>
     )
   }
-  // Icon mapping for quiz types
-  const quizTypeIcons = {
-    all: <BookOpen className="h-4 w-4" />,
-    mcq: <FileQuestion className="h-4 w-4" />,
-    openended: <Pen className="h-4 w-4" />,
-    code: <Code className="h-4 w-4" />,
-    blanks: <FileText className="h-4 w-4" />,
-    flashcard: <FlaskConical className="h-4 w-4" />,
-  };
-  
-  // Animation for the create quiz button
-  const createButtonVariants = {
-    initial: { scale: 0.95, opacity: 0 },
-    animate: { 
-      scale: 1, 
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 15
-      }
-    },
-    hover: { 
-      scale: 1.05,
-      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-      transition: { 
-        type: "spring",
-        stiffness: 400, 
-        damping: 10 
-      }
-    },
-    tap: { scale: 0.98 }
-  };
-  
-  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      
-      </div>      {/* Analytics summary - shows quiz type distribution */}
+    <div className="space-y-6">
+      {/* Header with View Toggle */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {activeFilter === "all" ? "All Quizzes" : `${activeFilter.toUpperCase()} Quizzes`}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {filteredQuizzes.length} quiz{filteredQuizzes.length !== 1 ? "es" : ""} available
+          </p>
+        </div>
+
+        {onViewModeChange && (
+          <ToggleGroup type="single" value={viewMode} onValueChange={onViewModeChange}>
+            <ToggleGroupItem value="grid" aria-label="Grid view">
+              <Grid3X3 className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" aria-label="List view">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        )}
+      </div>
+
+      {/* Quiz Distribution Stats */}
       {quizzes.length > 0 && (
-        <motion.div 
-          className="bg-card border rounded-xl p-4 shadow-sm mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
-            <h3 className="font-semibold text-base">Quiz Distribution</h3>
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium">{quizzes.length}</span> quizzes total
-            </p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {['mcq', 'openended', 'code', 'blanks', 'flashcard'].map((type) => (
-              <motion.div
-                key={type}
-                className={cn(
-                  "rounded-lg p-3 relative overflow-hidden",
-                  type === 'mcq' && "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300",
-                  type === 'openended' && "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300",
-                  type === 'code' && "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300",
-                  type === 'blanks' && "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
-                  type === 'flashcard' && "bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300",
-                )}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ 
-                  opacity: 1, 
-                  scale: 1,
-                  transition: { delay: 0.3 + (['mcq', 'openended', 'code', 'blanks', 'flashcard'].indexOf(type) * 0.1) }
-                }}
-                whileHover={{ scale: 1.03 }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {quizTypeIcons[type as keyof typeof quizTypeIcons]}
-                    <span className="font-medium capitalize">{
-                      type === 'openended' ? 'Open Ended' : type === 'flashcard' ? 'Flashcard' : type.toUpperCase()
-                    }</span>
-                  </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium">Quiz Distribution</h3>
+              <Badge variant="secondary">{quizzes.length} total</Badge>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {Object.entries(quizCounts)
+                .filter(([key]) => key !== "all")
+                .map(([type, count]) => (
                   <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.5 + (['mcq', 'openended', 'code', 'blanks', 'flashcard'].indexOf(type) * 0.1), type: "spring" }}
-                    className="text-lg font-bold"
+                    key={type}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-center p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    {quizCounts[type as keyof typeof quizCounts]}
+                    <div className="text-2xl font-bold text-primary">{count}</div>
+                    <div className="text-xs text-muted-foreground capitalize">
+                      {type === "openended" ? "Open Ended" : type}
+                    </div>
                   </motion.div>
-                </div>
-                
-                <motion.div 
-                  className="w-full h-1.5 bg-muted/30 rounded-full mt-3 overflow-hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                >
-                  <motion.div 
-                    className={cn(
-                      "h-full rounded-full",
-                      type === 'mcq' && "bg-blue-500",
-                      type === 'openended' && "bg-emerald-500",
-                      type === 'code' && "bg-purple-500",
-                      type === 'blanks' && "bg-amber-500",
-                      type === 'flashcard' && "bg-rose-500",
-                    )}
-                    initial={{ width: 0 }}
-                    animate={{ 
-                      width: quizCounts.all > 0 
-                        ? `${(quizCounts[type as keyof typeof quizCounts] / quizCounts.all) * 100}%` 
-                        : '0%' 
-                    }}
-                    transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
-                  />
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
-      
+
+      {/* Quiz Grid */}
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        className={cn(
+          "grid gap-6",
+          viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 max-w-4xl mx-auto space-y-4",
+        )}
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -323,16 +250,10 @@ function QuizListComponent({
                 variants={itemVariants}
                 layout
                 className="h-full"
-                whileHover={{ 
-                  y: -8, 
-                  scale: 1.02, 
-                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                  transition: { type: "spring", stiffness: 400, damping: 15 } 
-                }}
                 initial="hidden"
                 animate="visible"
-                exit={{ opacity: 0, y: 20, scale: 0.98, transition: { duration: 0.2 } }}
-                transition={{ delay: idx * 0.05 }}
+                exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+                transition={{ delay: idx * 0.03 }}
               >
                 <QuizCard
                   title={quiz.title}
@@ -350,46 +271,42 @@ function QuizListComponent({
         </LayoutGroup>
       </motion.div>
 
-      {isFetchingNextPage && <QuizzesSkeleton itemCount={3} />}      {!hasNextPage && quizzes.length > 0 && (
+      {/* Loading More */}
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-8">
+          <QuizzesSkeleton itemCount={3} />
+        </div>
+      )}
+
+      {/* End Message */}
+      {!hasNextPage && quizzes.length > 0 && (
         <motion.div
           ref={endMessageRef}
           initial={{ opacity: 0, y: 20 }}
           animate={endMessageInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="text-center mt-8 p-6 bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl border border-muted/50"
+          transition={{ duration: 0.5 }}
         >
-          <div className="inline-block p-3 rounded-full bg-primary/10 mb-3">
-            <motion.div
-              initial={{ rotate: 0 }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, ease: "easeInOut", repeat: 0 }}
-            >
-              <Trophy className="h-6 w-6 text-primary" />
-            </motion.div>
-          </div>
-          <h3 className="font-semibold text-lg mb-1">You've seen it all!</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            You've explored all available quizzes in this category. Why not create your own quiz to share with the community?
-          </p>
-          {onCreateQuiz && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, type: "spring" }}
-              className="mt-4"
-            >
-              <Button onClick={onCreateQuiz} variant="outline" className="gap-2">
-                <Plus className="h-4 w-4" /> Create New Quiz
-              </Button>
-            </motion.div>
-          )}
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+              <Trophy className="h-12 w-12 text-primary mb-4" />
+              <h3 className="font-semibold text-lg mb-2">You've seen them all!</h3>
+              <p className="text-muted-foreground mb-4 max-w-md">
+                You've explored all available quizzes. Ready to create something new?
+              </p>
+              {onCreateQuiz && (
+                <Button onClick={onCreateQuiz} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create New Quiz
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </motion.div>
       )}
     </div>
   )
 }
 
-// Memoize the component with a custom comparison function
 export const QuizList = memo(QuizListComponent, (prevProps, nextProps) => {
   return (
     prevProps.quizzes.length === nextProps.quizzes.length &&
@@ -397,6 +314,7 @@ export const QuizList = memo(QuizListComponent, (prevProps, nextProps) => {
     prevProps.isError === nextProps.isError &&
     prevProps.isFetchingNextPage === nextProps.isFetchingNextPage &&
     prevProps.hasNextPage === nextProps.hasNextPage &&
-    prevProps.activeFilter === nextProps.activeFilter
+    prevProps.activeFilter === nextProps.activeFilter &&
+    prevProps.viewMode === nextProps.viewMode
   )
 })

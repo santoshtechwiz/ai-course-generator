@@ -7,7 +7,6 @@ import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 import { ErrorBoundary } from "react-error-boundary"
-import { motion } from "framer-motion"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import type { QuizType } from "@/app/types/quiz-types"
 import type { QuizListItem } from "@/app/actions/getQuizes"
@@ -16,6 +15,7 @@ import { QuizSidebar } from "./QuizSidebar"
 import { QuizList } from "./QuizList"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -33,12 +33,13 @@ function extractQuizzes(data: any): QuizListItem[] {
 function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientProps) {
   const router = useRouter()
 
-  // ----- Filters -----
+  // State
   const [search, setSearch] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<QuizType[]>([])
   const [questionCountRange, setQuestionCountRange] = useState<[number, number]>([0, 50])
   const [showPublicOnly, setShowPublicOnly] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   const debouncedSearch = useDebounce(search, 500)
   const { ref, inView } = useInView({ threshold: 0.1 })
@@ -62,7 +63,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
       queryFn: async ({ pageParam = 1 }) => {
         const result = await getQuizzes({
           page: pageParam as number,
-          limit: 10,
+          limit: 12,
           searchTerm: debouncedSearch,
           userId,
           quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
@@ -103,7 +104,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, isError])
 
-  // ----- Event Handlers -----
+  // Event Handlers
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }, [])
@@ -132,6 +133,10 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     refetch()
   }, [refetch])
 
+  const handleViewModeChange = useCallback((mode: "grid" | "list") => {
+    if (mode) setViewMode(mode)
+  }, [])
+
   const quizzes = extractQuizzes(data)
 
   const isSearching =
@@ -153,7 +158,6 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     }
 
     for (const q of quizzes) {
-      // Handle the mapping between API types and UI types
       if (q.quizType === "mcq") {
         counts.mcq++
       } else if (q.quizType === "openended") {
@@ -170,118 +174,72 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     return counts
   }, [quizzes])
 
-  // Error fallback component for ErrorBoundary
-  const ErrorFallback = ({
-    error,
-    resetErrorBoundary,
-  }: {
-    error: Error
-    resetErrorBoundary: () => void
-  }) => (
-    <motion.div
-      className="rounded-xl border border-red-300 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20 p-6 shadow-lg flex flex-col items-center text-red-700 dark:text-red-300"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <AlertCircle className="h-10 w-10 text-red-600 dark:text-red-400 mb-3" />
-      <h3 className="text-lg font-semibold mb-2">Something went wrong</h3>
-      <p className="text-sm text-center mb-4">{error.message || "We had trouble loading the quiz filters"}</p>
-      <Button
-        onClick={resetErrorBoundary}
-        size="sm"
-        className="gap-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border-red-400 dark:border-red-700 hover:bg-red-200 dark:hover:bg-red-800"
-      >
-        <RefreshCw className="h-4 w-4" />
-        Try again
-      </Button>
-    </motion.div>
-  )
-
-  // Render function for the main error state (when query fails)
-  const renderErrorState = () => (
-    <div className="text-center p-6 bg-red-50/30 dark:bg-red-950/20 border border-red-300 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 flex flex-col items-center shadow-lg">
-      <AlertCircle className="w-8 h-8 mb-2 text-red-600 dark:text-red-400" />
-      <h3 className="font-semibold text-lg">Error loading quizzes</h3>
-      <p className="text-sm mb-4">Something went wrong. Please try again.</p>
-      <Button
-        onClick={handleRetry}
-        variant="outline"
-        className="flex items-center gap-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border-red-400 dark:border-red-700 hover:bg-red-200 dark:hover:bg-red-800"
-        disabled={isRefetching}
-      >
-        {isRefetching ? (
-          <>
-            <RefreshCw className="h-4 w-4 animate-spin" /> Retrying...
-          </>
-        ) : (
-          <>
-            <RefreshCw className="h-4 w-4" /> Try Again
-          </>
-        )}
-      </Button>
-    </div>
+  // Error fallback component
+  const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+    <Card className="border-destructive/50 bg-destructive/5">
+      <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="font-semibold text-lg mb-2">Something went wrong</h3>
+        <p className="text-sm text-muted-foreground mb-4 max-w-md">
+          {error.message || "We encountered an unexpected error. Please try again."}
+        </p>
+        <Button onClick={resetErrorBoundary} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Try Again
+        </Button>
+      </CardContent>
+    </Card>
   )
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 min-h-[50vh] p-4 md:p-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-950 dark:to-gray-900 rounded-xl shadow-inner">
-      <ErrorBoundary
-        fallbackRender={ErrorFallback}
-        onReset={handleRetry}
-        resetKeys={[debouncedSearch]} // Reset when search term changes
-      >
-        <QuizSidebar
-          search={search}
-          onSearchChange={handleSearchChange}
-          onClearSearch={handleClearSearch}
-          isSearching={isSearching}
-          selectedTypes={selectedTypes}
-          toggleQuizType={toggleQuizType}
-          questionCountRange={questionCountRange}
-          onQuestionCountChange={setQuestionCountRange}
-          showPublicOnly={showPublicOnly}
-          onPublicOnlyChange={setShowPublicOnly}
-        />
-      </ErrorBoundary>
-      <motion.div
-        className="lg:w-3/4 w-full space-y-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
-          {isLoading ? (
-            <QuizzesSkeleton />
-          ) : isError ? (
-            renderErrorState()
-          ) : (
-            <>
-              <QuizList
-                quizzes={quizzes}
-                isLoading={false}
-                isError={false}
-                isFetchingNextPage={isFetchingNextPage}
-                hasNextPage={!!hasNextPage}
-                isSearching={isSearching}
-                onCreateQuiz={handleCreateQuiz}
-                activeFilter={activeTab}
-                onFilterChange={handleTabChange}
-                onRetry={handleRetry}
-                quizCounts={quizCounts}
-              />
-              <div ref={ref} className="h-20 flex items-center justify-center">
-                {isFetchingNextPage && (
-                  <div className="animate-pulse text-purple-600 dark:text-purple-400 text-sm">
-                    Loading more quizzes...
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex flex-col lg:flex-row gap-8">
+        <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[debouncedSearch]}>
+          <QuizSidebar
+            search={search}
+            onSearchChange={handleSearchChange}
+            onClearSearch={handleClearSearch}
+            isSearching={isSearching}
+            selectedTypes={selectedTypes}
+            toggleQuizType={toggleQuizType}
+            questionCountRange={questionCountRange}
+            onQuestionCountChange={setQuestionCountRange}
+            showPublicOnly={showPublicOnly}
+            onPublicOnlyChange={setShowPublicOnly}
+          />
         </ErrorBoundary>
-      </motion.div>
+
+        <div className="flex-1 min-w-0">
+          <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
+            {isLoading ? (
+              <QuizzesSkeleton />
+            ) : (
+              <>
+                <QuizList
+                  quizzes={quizzes}
+                  isLoading={false}
+                  isError={isError}
+                  isFetchingNextPage={isFetchingNextPage}
+                  hasNextPage={!!hasNextPage}
+                  isSearching={isSearching}
+                  onCreateQuiz={handleCreateQuiz}
+                  activeFilter={activeTab}
+                  onFilterChange={handleTabChange}
+                  onRetry={handleRetry}
+                  quizCounts={quizCounts}
+                  viewMode={viewMode}
+                  onViewModeChange={handleViewModeChange}
+                />
+                <div ref={ref} className="h-20 flex items-center justify-center">
+                  {isFetchingNextPage && <div className="text-sm text-muted-foreground">Loading more quizzes...</div>}
+                </div>
+              </>
+            )}
+          </ErrorBoundary>
+        </div>
+      </div>
     </div>
   )
 }
 
-// Export the component with the correct name
 export const QuizzesClient = QuizzesClientComponent

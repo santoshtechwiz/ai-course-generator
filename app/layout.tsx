@@ -12,6 +12,9 @@ import { font } from "./font";
 import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
+import Footer from "@/components/shared/Footer";
+import { Providers } from "@/store/provider";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   ...defaultMetadata,
@@ -96,14 +99,14 @@ export default async function RootLayout({
           className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
         >
           <Providers session={session}>
-            <ClientLayoutWrapper>
+          
               <main className="flex-1 w-full">
                 <Suspense fallback={<SuspenseGlobalFallback />}>
                   {children}
                 </Suspense>
               </main>
               <Footer />
-            </ClientLayoutWrapper>
+            
           </Providers>
 
           <DefaultSEO currentPath="/" includeFAQ={true} />

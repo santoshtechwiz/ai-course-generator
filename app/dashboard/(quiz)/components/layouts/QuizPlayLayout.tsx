@@ -1,7 +1,9 @@
 "use client"
 
-import { useMediaQuery } from "@/hooks"
-import type React from "react"
+import { type ReactNode, useMemo } from "react"
+import { cn } from "@/lib/tailwindUtils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
 import { RandomQuiz } from "./RandomQuiz"
 import { Suspense, useMemo, useEffect, useState } from "react"
 import { JsonLD } from "@/lib/seo-manager-new"

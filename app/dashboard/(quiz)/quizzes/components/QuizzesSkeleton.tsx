@@ -1,8 +1,8 @@
 "use client"
 
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
-import { useGlobalLoader } from "@/store/global-loader"
-import { GlobalLoader } from "@/components/ui/loader"
 
 interface QuizzesSkeletonProps {
   itemCount?: number
@@ -10,39 +10,106 @@ interface QuizzesSkeletonProps {
 
 export function QuizzesSkeleton({ itemCount = 6 }: QuizzesSkeletonProps) {
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Filter skeleton */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <div className="h-10 w-20 bg-muted rounded animate-pulse" />
-          <div className="h-10 w-20 bg-muted rounded animate-pulse" />
-          <div className="h-10 w-20 bg-muted rounded animate-pulse" />
+    <div className="space-y-6">
+      {/* Header Skeleton */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-32" />
         </div>
-        <div className="flex gap-2">
-          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
-          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
-        </div>
+        <Skeleton className="h-10 w-24" />
       </div>
 
-      {/* Grid skeleton */}
+      {/* Stats Card Skeleton */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-6 w-16" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="text-center p-3 rounded-lg bg-muted/50">
+                <Skeleton className="h-8 w-8 mx-auto mb-2" />
+                <Skeleton className="h-3 w-16 mx-auto" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quiz Cards Grid Skeleton */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: itemCount }).map((_, i) => (
+        {Array.from({ length: itemCount }).map((_, index) => (
           <motion.div
-            key={i}
+            key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: i * 0.05 }}
+            transition={{ delay: index * 0.1, duration: 0.3 }}
           >
-            <GlobalLoader text={`Loading quiz ${i + 1}...`} theme="primary" />
+            <Card className="h-full overflow-hidden">
+              {/* Header */}
+              <div className="p-6 pb-4 bg-muted/30">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </div>
+
+              <CardContent className="p-6 pt-2 space-y-4">
+                {/* Title and Rating */}
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-8" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-3 w-8" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-3 w-8" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+              </CardContent>
+
+              <CardFooter className="p-6 pt-0">
+                <Skeleton className="h-12 w-full rounded-md" />
+              </CardFooter>
+            </Card>
           </motion.div>
         ))}
       </div>
     </div>
   )
 }
-
-export function QuizLoadingCard() {
-  return <GlobalLoader text="Loading quizzes..." subText="Fetching your quiz collection" theme="primary" />
-}
-
-export default QuizzesSkeleton
