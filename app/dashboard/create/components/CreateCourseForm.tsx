@@ -23,29 +23,23 @@ import { type CreateCourseInput, createCourseSchema } from "@/schema/schema"
 
 import type { QueryParams } from "@/app/types/types"
 import { useEffect } from "react"
-// ✅ UNIFIED: Use unified auth system
-import { useAuth, useSubscription } from "@/modules/auth"
+import { useAuth } from "@/modules/auth"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
-
-interface CourseCreationFormProps {
-  maxQuestions: number
-  params: QueryParams
-}
-
-export default function CourseCreationForm({ maxQuestions, params }: CourseCreationFormProps) {  const [step, setStep] = React.useState(1)
+export default function CourseCreationForm({ maxQuestions, params }: { 
+  maxQuestions: number 
+  params: QueryParams 
+}) {
+  const [step, setStep] = React.useState(1)
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
-  const totalSteps = 3  // ✅ UNIFIED: Using unified auth system
-  const { subscription, isAuthenticated, user, refreshSubscription } = useAuth()
+  const totalSteps = 3
+  const { subscription, user, refreshSubscription } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   
-  // Extract subscription status
   const isSubscribed = subscription?.isActive || false
-  
-  // Get available credits from user object
-  const availableCredits = React.useMemo(() => {
-    return user?.credits || 0
-  }, [user?.credits])
+  const availableCredits = user?.credits || 0
 
   const {
     control,
@@ -68,16 +62,18 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
       setValue("title", params.title)
     }
   }, [params.title, setValue])
+
   const createCourseMutation = useMutation({
     mutationFn: async (data: CreateCourseInput) => {
       const response = await axios.post("/api/course", data)
       return response.data
-    },    onSuccess: (data) => {
+    },
+    onSuccess: (data) => {
       toast({
         title: "Success",
         description: "Course created successfully",
       })
-      refreshSubscription() // Refresh subscription data to get updated credits
+      refreshSubscription()
       router.push(`/dashboard/create/${data.slug}`)
     },
     onError: () => {
@@ -90,8 +86,6 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
   })
 
   const onSubmit: SubmitHandler<CreateCourseInput> = async (data) => {
-    // PlanAwareButton handles authentication and credit checking, 
-    // so we just need to handle the confirmation dialog
     setShowConfirmDialog(true)
   }
 
@@ -102,6 +96,7 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
 
   const handleNext = () => setStep(step + 1)
   const handleBack = () => setStep(step - 1)
+  
   const isStepValid = () => {
     if (step === 1) {
       return !!watch("title") && !!watch("description") && !!watch("category")
@@ -111,7 +106,6 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
     return true
   }
 
-  // This is only used for regular buttons, not the PlanAwareButton which handles these checks internally
   const isCreateDisabled =
     step !== 3 ||
     isSubmitting ||
@@ -125,21 +119,32 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50/20 to-white">
       <div className="container mx-auto px-4 py-6 md:py-8 lg:py-10 max-w-3xl">
-        <div className="bg-card rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-muted/40 px-4 py-6 sm:px-6">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-foreground">
-              Create a New Course
-            </h1>
-            <p className="text-center text-sm sm:text-base text-muted-foreground mt-2">
-              Fill in the details for your new course. Progress is automatically saved.
-            </p>
-          </div>
+        <Card className="rounded-xl shadow-lg overflow-hidden border-0">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl sm:text-2xl font-bold">
+                  Create a New Course
+                </CardTitle>
+                <p className="text-blue-100 mt-2">
+                  Fill in the details for your new course. Progress is automatically saved.
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2 bg-blue-500/20 backdrop-blur-sm px-3 py-2 rounded-lg">
+                <span className="text-sm">Available Credits:</span>
+                <Badge variant="secondary" className="text-base px-3 py-1 bg-white text-blue-600">
+                  {availableCredits}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
 
           <Separator />
 
-          <div className="p-4 sm:p-6">
+          <CardContent className="p-4 sm:p-6">
             {/* Step Indicators */}
             <div className="relative mb-6 md:mb-8">
               <div className="flex justify-between items-center relative z-10">
@@ -147,56 +152,78 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
                   <div
                     key={i}
                     className={cn(
-                      "flex flex-col items-center",
+                      "flex flex-col items-center relative group",
                       i + 1 === step ? "text-primary" : "text-muted-foreground",
                     )}
                   >
                     <div
                       className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 transition-colors",
-                        i + 1 === step ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 transition-all",
+                        i + 1 === step 
+                          ? "bg-primary/10 border-2 border-primary text-primary shadow-md" 
+                          : "bg-muted text-muted-foreground border border-gray-200",
+                        i + 1 <= step ? "ring-2 ring-offset-2 ring-blue-300" : ""
                       )}
                     >
                       {s.icon}
                     </div>
                     <span className="text-xs sm:text-sm font-medium">{s.label}</span>
+                    
+                    {/* Step number badge */}
+                    <span className={cn(
+                      "absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                      i + 1 === step 
+                        ? "bg-primary text-white" 
+                        : "bg-gray-200 text-gray-700"
+                    )}>
+                      {i + 1}
+                    </span>
                   </div>
                 ))}
               </div>
 
               {/* Progress Bar */}
               <div className="mt-6 sm:mt-8">
-                <Progress value={((step - 1) / (totalSteps - 1)) * 100} className="h-2 transition-all duration-300" />
+                <div className="flex justify-between text-sm text-gray-500 mb-1">
+                  <span>Step {step} of {totalSteps}</span>
+                  <span>{Math.round(((step - 1) / (totalSteps - 1)) * 100)}% Complete</span>
+                </div>
+                <Progress 
+                  value={((step - 1) / (totalSteps - 1)) * 100} 
+                  className="h-3 transition-all duration-300 bg-gray-200" 
+                  indicatorClassName="bg-gradient-to-r from-blue-500 to-indigo-500"
+                />
               </div>
             </div>
 
             {/* Form Content */}
-            <div className="mt-6 md:mt-8 space-y-6">
+            <div className="mt-6 md:mt-8 space-y-8">
               {step === 1 && <BasicInfoStep control={control} errors={errors} params={params} />}
               {step === 2 && <ContentStep control={control} errors={errors} watch={watch} setValue={setValue} />}
               {step === 3 && <PreviewStep watch={watch} />}
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex flex-col sm:flex-row sm:justify-between mt-8 gap-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 mt-8 pt-6 border-t border-gray-100">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleBack}
                 disabled={step === 1}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto px-6 py-3 shadow-sm"
               >
                 Back
               </Button>
 
-              <div className="space-y-2 w-full sm:w-auto">                {step < totalSteps ? (
+              <div className="flex flex-col items-end gap-3">
+                {step < totalSteps ? (
                   <Button
                     type="button"
                     onClick={handleNext}
                     disabled={!isStepValid() || maxQuestions === 0}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg transition-all"
                   >
-                    Continue
+                    Continue to {steps[step].label} <span className="ml-2">→</span>
                   </Button>
                 ) : (
                   <PlanAwareButton
@@ -207,7 +234,7 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
                     isEnabled={step === 3 && !showConfirmDialog}
                     creditsRequired={1}
                     requiredPlan="FREE"
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto px-6 py-3 shadow-lg transition-transform hover:scale-[1.02]"
                     loadingLabel="Creating Course..."
                     customStates={{
                       noCredits: {
@@ -215,18 +242,21 @@ export default function CourseCreationForm({ maxQuestions, params }: CourseCreat
                         tooltip: "You need 1 credit to create a course"
                       }
                     }}
+                    buttonProps={{
+                      className: "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                    }}
                   />
                 )}
 
                 {availableCredits > 0 && !isSubscribed && (
-                  <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-right">
-                    Available credits: {availableCredits} (This action will deduct 1 credit)
+                  <p className="text-xs text-muted-foreground text-right max-w-xs">
+                    This action will deduct <Badge variant="outline" className="mx-1">1 credit</Badge> from your account
                   </p>
                 )}
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <ConfirmationDialog
