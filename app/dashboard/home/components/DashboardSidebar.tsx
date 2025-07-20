@@ -62,7 +62,7 @@ const DashboardSidebar = memo(function DashboardSidebar({
       <div className="flex items-center h-14 px-4 border-b">
         <div className="flex items-center gap-2">
           <GraduationCap className="h-6 w-6 text-primary" />
-          {isOpen && <span className="font-bold text-lg">EduDash</span>}
+          {isOpen && <span className="font-bold text-lg">Course AI</span>}
         </div>
         <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setIsOpen(!isOpen)}>
           <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "" : "rotate-180"}`} />
