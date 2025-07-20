@@ -16,6 +16,113 @@ interface CodeQuizEditorProps {
   [key: string]: any
 }
 
+const LANGUAGE_MAP: Record<string, string> = {
+  javascript: "javascript",
+  "JavaScript": "javascript",
+  "JAVASCRIPT": "javascript",
+  typescript: "typescript",
+  "TypeScript": "typescript",
+  "TYPESCRIPT": "typescript",
+  python: "python",
+  "Python": "python",
+  "PYTHON": "python",
+  java: "java",
+  "Java": "java",
+  "JAVA": "java",
+  csharp: "csharp",
+  "C#": "csharp",
+  "CSHARP": "csharp",
+  cpp: "cpp",
+  "C++": "cpp",
+  "CPP": "cpp",
+  go: "go",
+  "Go": "go",
+  "GO": "go",
+  rust: "rust",
+  "Rust": "rust",
+  "RUST": "rust",
+  php: "php",
+  "PHP": "php",
+  ruby: "ruby",
+  "Ruby": "ruby",
+  "RUBY": "ruby",
+  html: "html",
+  "HTML/CSS": "html",
+  "HTML": "html",
+  "CSS": "css",
+  css: "css",
+  sql: "sql",
+  "SQL": "sql",
+  bash: "shell",
+  "Bash/Shell": "shell",
+  "Bash Scripting": "shell",      // <-- Add this mapping
+  "Bash Scripting": "shell",      // <-- Add this mapping
+  "Bash script": "shell",
+  "Bash Script": "shell",
+  "BASH SCRIPT": "shell",
+  "BASH": "shell",
+  "SHELL": "shell",
+  shell: "shell",
+  "Shell": "shell",
+  powershell: "powershell",
+  "PowerShell": "powershell",
+  "POWERSHELL": "powershell",
+  r: "r",
+  "R": "r",
+  scala: "scala",
+  "Scala": "scala",
+  "SCALA": "scala",
+  dart: "dart",
+  "Dart": "dart",
+  "DART": "dart",
+  lua: "lua",
+  "Lua": "lua",
+  "LUA": "lua",
+  perl: "perl",
+  "Perl": "perl",
+  "PERL": "perl",
+  haskell: "haskell",
+  "Haskell": "haskell",
+  "HASKELL": "haskell",
+  clojure: "clojure",
+  "Clojure": "clojure",
+  "CLOJURE": "clojure",
+  fsharp: "fsharp",
+  "F#": "fsharp",
+  "FSHARP": "fsharp",
+  vb: "vb",
+  "VB.NET": "vb",
+  "VB": "vb",
+  objectivec: "objective-c",
+  "Objective-C": "objective-c",
+  "OBJECTIVE-C": "objective-c",
+  assembly: "assembly",
+  "Assembly": "assembly",
+  "ASSEMBLY": "assembly",
+  matlab: "matlab",
+  "MATLAB": "matlab",
+  groovy: "groovy",
+  "Groovy": "groovy",
+  "GROOVY": "groovy",
+  elixir: "elixir",
+  "Elixir": "elixir",
+  "ELIXIR": "elixir",
+  erlang: "erlang",
+  "Erlang": "erlang",
+  "ERLANG": "erlang",
+  crystal: "crystal",
+  "Crystal": "crystal",
+  "CRYSTAL": "crystal",
+  nim: "nim",
+  "Nim": "nim",
+  "NIM": "nim",
+  zig: "zig",
+  "Zig": "zig",
+  "ZIG": "zig",
+  // fallback
+  default: "plaintext",
+}
+
 export default function CodeQuizEditor({
   value,
   onChange,
@@ -58,6 +165,13 @@ export default function CodeQuizEditor({
       onChange(newValue)
     }
   }
+
+  // Normalize language for Monaco
+  const normalizedLanguage =
+    LANGUAGE_MAP[language.trim()] ||
+    LANGUAGE_MAP[language.trim().toLowerCase()] ||
+    LANGUAGE_MAP[language.trim().toUpperCase()] ||
+    LANGUAGE_MAP.default;
 
   if (!isMounted) {
     return (
@@ -106,7 +220,7 @@ export default function CodeQuizEditor({
       )}
       <Editor
         height={height}
-        language={language}
+        language={normalizedLanguage}
         value={value}
         onChange={handleEditorChange}
         theme="vs-dark"

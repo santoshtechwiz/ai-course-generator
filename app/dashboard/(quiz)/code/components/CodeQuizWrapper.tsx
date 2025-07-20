@@ -169,9 +169,11 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       text: questionText,
       question: questionText,
       options,
-      codeSnippet: currentQuestion.codeSnippet || '',
-      language: currentQuestion.language || 'javascript',
-      correctAnswer: currentQuestion.answer || '',
+      codeSnippet: currentQuestionAny.codeSnippet || '',
+      language: currentQuestionAny.language && currentQuestionAny.language.trim() !== "" 
+        ? currentQuestionAny.language 
+        : "JavaScript", // <-- Default to "JavaScript" only if not present
+      correctAnswer: currentQuestionAny.answer || '',
     }
   }, [currentQuestion])
 

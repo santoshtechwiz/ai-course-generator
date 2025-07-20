@@ -205,7 +205,7 @@ const CodeQuiz = ({
                 >
                   <Terminal className="w-3.5 h-3.5 text-slate-300" />
                   <span className="text-slate-300 text-xs font-mono font-medium">
-                    {question.language || "javascript"}
+                    {question.language && question.language.trim() !== "" ? question.language : "JavaScript"}
                   </span>
                 </motion.div>
               </div>
@@ -216,7 +216,7 @@ const CodeQuiz = ({
                   className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30 font-semibold text-xs"
                 >
                   <Code2 className="w-3 h-3 mr-1" />
-                  {(question.language || "javascript").toUpperCase()}
+                  {(question.language && question.language.trim() !== "" ? question.language : "JavaScript").toUpperCase()}
                 </Badge>
 
                 <Button
@@ -239,7 +239,7 @@ const CodeQuiz = ({
 
             <motion.div className="relative overflow-hidden">
               <SyntaxHighlighter
-                language={question.language || "javascript"}
+                language={question.language && question.language.trim() !== "" ? question.language : "JavaScript"}
                 style={vscDarkPlus}
                 showLineNumbers
                 customStyle={{

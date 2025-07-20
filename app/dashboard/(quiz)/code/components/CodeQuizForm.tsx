@@ -266,7 +266,7 @@ export default function CodeQuizForm({
   const { mutateAsync: createCodeQuizMutation } = useMutation({
     mutationFn: async (data: CodeQuizFormData) => {
       data.userType = subscriptionData?.subscriptionPlan;
-      const response = await axios.post("/api/code-quiz", data);
+      const response = await axios.post("/api/quizzes/code", data);
       return response.data;
     },
     onError: (error: any) => {
