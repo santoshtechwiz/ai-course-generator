@@ -1,5 +1,6 @@
+import { QuizType } from "@/app/types/quiz-types"
 import { prisma } from "@/lib/db"
-import { QuizType } from "@/types/quiz"
+
 
 export default async function createQuestions(
   questions: any[],

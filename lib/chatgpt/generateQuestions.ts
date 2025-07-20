@@ -18,7 +18,7 @@ export async function generateQuestions(req: unknown): Promise<{ questions: Ques
       await generateMcqForUserInput(title, amount, difficulty, type);
 
 
-    return questions
+    return { questions }
   } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
