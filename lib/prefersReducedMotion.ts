@@ -1,4 +1,4 @@
-// hooks/useDirectionalExitMotion.ts
+'use client';
 import { useReducedMotion } from "framer-motion";
 
 /** Expose raw prefersReducedMotion value */
