@@ -24,9 +24,6 @@ import { useGlobalLoader } from "@/store/global-loader"
 import dynamic from "next/dynamic"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 
-import type { DashboardUser, UserStats } from "@/app/types/types"
-import { useAuth } from "@/hooks"
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 
 import type { DashboardUser, UserStats } from "@/app/types/types"
 import { useAuth } from "@/hooks"
