@@ -553,19 +553,7 @@ const QuizCard: React.FC<{
     tap: { scale: 0.9 },
   }
 
-  const glowVariants = {
-    initial: { opacity: 0, scale: 0.8 },
-    hover: prefersReducedMotion
-      ? { opacity: 0.5 }
-      : {
-          opacity: 1,
-          scale: 1.1,
-          transition: {
-            duration: 0.6,
-            ease: "easeOut",
-          },
-        },
-  }
+
 
   return (
     <motion.div
