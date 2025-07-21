@@ -36,7 +36,8 @@ import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"; // Assuming this ho
 import { apiClient } from "@/lib/api-client"; // Assuming this client exists
 import type React from "react";
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"; // Assuming this component exists
-
+import { useDirectionalExitMotion } from "@/lib/prefersReducedMotion";
+const { getExitVariant, prefersReducedMotion } = useDirectionalExitMotion();
 // Enhanced color schemes for different quiz types
 const quizTypeColors = {
   blanks: {
