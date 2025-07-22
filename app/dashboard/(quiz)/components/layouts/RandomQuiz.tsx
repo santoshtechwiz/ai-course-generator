@@ -36,9 +36,7 @@ import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"; // Assuming this ho
 import { apiClient } from "@/lib/api-client"; // Assuming this client exists
 import type React from "react";
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"; // Assuming this component exists
-import { useDirectionalExitMotion } from "@/lib/prefersReducedMotion";
-const { getExitVariant, prefersReducedMotion } = useDirectionalExitMotion();
-// Enhanced color schemes for different quiz types
+
 const quizTypeColors = {
   blanks: {
     badge:
@@ -539,21 +537,7 @@ const QuizCard: React.FC<{
     },
   };
 
-  const iconVariants = {
-    initial: { scale: 1, rotate: 0 },
-    hover: prefersReducedMotion
-      ? { scale: 1.1 }
-      : {
-          scale: 1.2,
-          rotate: 12,
-          transition: {
-            duration: 0.5,
-            ease: "backOut",
-          },
-        },
-    tap: { scale: 0.9 },
-  }
-
+  
 
 
   return (
