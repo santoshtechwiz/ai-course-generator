@@ -8,7 +8,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import axios from "axios"
 import { signIn } from "next-auth/react"
-import { Layers, HelpCircle, Timer } from "lucide-react"
+import { Layers, HelpCircle, Timer, Sparkles, BookOpen, Brain, Target, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 
 import { usePersistentState } from "@/hooks/usePersistentState"
 import { cn } from "@/lib/tailwindUtils"
@@ -65,7 +66,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     user?.credits,
     user?.creditsUsed,
     subscriptionData?.credits,
-    subscriptionData?.tokensUsed
+    subscriptionData?.tokensUsed,
   )
 
   // Use a ref to track if component is mounted
@@ -120,9 +121,10 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
     })
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
+
   const { mutateAsync: createFlashCardsMutation } = useMutation({
     mutationFn: async (data: FlashCardFormData) => {
-      data.userType = subscriptionData?.plan || 'FREE'
+      data.userType = subscriptionData?.plan || "FREE"
       const response = await axios.post("/api/quizzes/flashcard", data)
       return response.data
     },
@@ -144,7 +146,8 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
       setSubmissionError(null)
       setIsSuccess(false)
 
-      if (!isLoggedIn) {
+      // Check if user is authenticated using the user object
+      if (!user?.id) {
         signIn("credentials", { callbackUrl: "/dashboard/flashcard" })
         return
       }
@@ -154,7 +157,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
         toast({
           title: "Insufficient Credits",
           description: "You don't have enough credits to generate flashcards. Please upgrade your plan.",
-          variant: "destructive"
+          variant: "destructive",
         })
         return
       }
@@ -162,64 +165,64 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
       // Update form data in persistent state
       setFormData({
         ...data,
-        userType: 'student'
+        userType: "student",
       })
 
       // Only open the dialog, don't set loading state yet
       setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn, credits, toast, setFormData]
+    [isLoading, user?.id, credits, toast, setFormData],
   )
 
   const handleConfirm = React.useCallback(async () => {
     // Set loading state when confirmation is explicitly confirmed
     setIsLoading(true)
-    
+
     // Reset states
     setSubmissionError(null)
     setIsSuccess(false)
 
     try {
-      const formData = watch();
-      const response = await createFlashCardsMutation(formData);
+      const formData = watch()
+      const response = await createFlashCardsMutation(formData)
 
       if (response?.success) {
         // Set success state
-        setIsSuccess(true);
-        
+        setIsSuccess(true)
+
         toast({
           title: "Success!",
           description: response.message || "Your flashcards have been created.",
-        });
+        })
 
         // Make sure to extract the slug from the response
-        const slug = response.slug;
+        const slug = response.slug
 
         if (slug && isMounted.current) {
           // Add a slight delay to ensure the toast is shown before redirecting
           setTimeout(() => {
-            router.push(`/dashboard/flashcard/${slug}`);
-          }, 1000); // Increased delay for better UX
+            router.push(`/dashboard/flashcard/${slug}`)
+          }, 1000) // Increased delay for better UX
         } else {
-          console.error("Missing slug in response:", response);
-          setSubmissionError("Missing quiz ID in response. Please try again.");
+          console.error("Missing slug in response:", response)
+          setSubmissionError("Missing quiz ID in response. Please try again.")
         }
       } else {
-        setSubmissionError(response?.message || "Failed to create flashcards. Please try again.");
+        setSubmissionError(response?.message || "Failed to create flashcards. Please try again.")
       }
     } catch (error: any) {
       // Error handling with user-friendly message
-      console.error("Error in handleConfirm:", error);
-      setSubmissionError(error?.message || "An unexpected error occurred. Please try again.");
-      
+      console.error("Error in handleConfirm:", error)
+      setSubmissionError(error?.message || "An unexpected error occurred. Please try again.")
+
       toast({
         title: "Error",
         description: error?.message || "Failed to create flashcards. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
       if (isMounted.current) {
-        setIsLoading(false);
+        setIsLoading(false)
       }
     }
   }, [createFlashCardsMutation, watch, toast, router])
@@ -242,11 +245,11 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
 
       switch (level) {
         case "easy":
-          return "bg-green-50 border-green-200 text-green-700"
+          return "bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-300"
         case "medium":
-          return "bg-blue-50 border-blue-200 text-blue-700"
+          return "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
         case "hard":
-          return "bg-red-50 border-red-200 text-red-700"
+          return "bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-300"
         default:
           return ""
       }
@@ -255,77 +258,95 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
   )
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full max-w-4xl mx-auto p-6 space-y-8 bg-card rounded-lg shadow-md"
-    >
-      <Card className="bg-background border border-border shadow-sm">
-        <CardHeader className="bg-primary/5 border-b border-border/60 pb-6">
-          <div className="flex justify-center mb-4">
-            <motion.div
-              className="p-3 bg-primary/10 rounded-xl"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Layers className="w-8 h-8 text-primary" />
-            </motion.div>
+    <div className="w-full max-w-4xl mx-auto p-6 space-y-8">
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
+        <CardHeader className="text-center space-y-4 pb-8">
+          <motion.div
+            className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Layers className="w-8 h-8 text-primary" />
+          </motion.div>
+
+          <div className="space-y-2">
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Create Flashcards
+            </CardTitle>
+            <p className="text-muted-foreground text-lg">Generate AI-powered flashcards to enhance your learning</p>
           </div>
-          <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">Create Flashcards</CardTitle>
-          <p className="text-center text-base md:text-lg text-muted-foreground mt-2">
-            Generate flashcards to help you study any topic
-          </p>
+
+          <div className="flex items-center justify-center gap-2">
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+              <Brain className="w-3 h-3 mr-1" />
+              AI-Powered
+            </Badge>
+            <Badge
+              variant="secondary"
+              className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+            >
+              <Target className="w-3 h-3 mr-1" />
+              Personalized
+            </Badge>
+          </div>
         </CardHeader>
 
-        <CardContent className="space-y-6 pt-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <CardContent className="space-y-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+            {/* Topic Input */}
             <motion.div
               className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
             >
-              <Label htmlFor="title" className="text-base font-medium text-foreground flex items-center gap-2">
-                Title
+              <Label htmlFor="title" className="text-base font-semibold flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Topic
+                <span className="text-destructive">*</span>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                      <p className="w-[200px]">Enter any title you'd like to create flashcards for</p>
+                      <p className="w-[200px]">Enter any topic you'd like to create flashcards for</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Label>
+
               <div className="relative">
                 <Input
                   id="title"
-                  placeholder="Enter the flashcard title"
-                  className="w-full p-3 h-12 border border-input rounded-md focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all"
+                  placeholder="e.g., JavaScript Fundamentals, World History, Biology..."
+                  className="h-12 text-base pr-12 border-2 focus:border-primary transition-colors"
                   {...register("title")}
                   aria-describedby="topic-description"
                   autoComplete="off"
                 />
+                <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               </div>
+
               {errors.title && (
-                <p className="text-sm text-destructive mt-1" id="topic-error">
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
                   {errors.title.message}
                 </p>
               )}
-              <p className="text-sm text-muted-foreground" id="topic-description">
-                Choose a specific title for more focused flashcards
-              </p>
+
+              <p className="text-sm text-muted-foreground">Choose a specific topic for more focused flashcards</p>
             </motion.div>
 
+            {/* Number of Cards */}
             <motion.div
-              className="space-y-4"
+              className="space-y-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.2 }}
             >
-              <Label className="text-base font-medium text-foreground flex items-center gap-2">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Timer className="w-4 h-4" />
                 Number of Flashcards
                 <TooltipProvider>
                   <Tooltip>
@@ -338,19 +359,21 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <div className="space-y-3 px-2">
-                <div className="flex items-center justify-between px-2">
-                  <Timer className="w-5 h-5 text-muted-foreground" />
+
+              <div className="bg-muted/30 rounded-xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Cards</span>
                   <motion.span
-                    className="text-2xl font-bold text-primary"
+                    className="text-3xl font-bold text-primary tabular-nums"
                     key={count}
-                    initial={{ scale: 1.2, color: "#00ff00" }}
-                    animate={{ scale: 1, color: "var(--primary)" }}
+                    initial={{ scale: 1.2 }}
+                    animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 300, damping: 10 }}
                   >
                     {count}
                   </motion.span>
                 </div>
+
                 <Controller
                   name="count"
                   control={control}
@@ -362,24 +385,29 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                     />
                   )}
                 />
+
                 <p className="text-sm text-muted-foreground text-center">Select between 1 and {maxCards} flashcards</p>
               </div>
-              {errors.count && <p className="text-sm text-destructive mt-1">{errors.count.message}</p>}
-              <p className="text-sm text-muted-foreground mt-2">
-                {isLoggedIn
-                  ? "Unlimited flashcard sets available"
-                  : `This set will use ${count} credit${count > 1 ? "s" : ""}`}
-              </p>
+
+              {errors.count && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.count.message}
+                </p>
+              )}
             </motion.div>
 
+            {/* Difficulty Selection */}
             <motion.div
               className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.3 }}
             >
-              <Label className="text-base font-medium text-foreground flex items-center gap-2">
-                Difficulty
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Difficulty Level
+                <span className="text-destructive">*</span>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -391,15 +419,17 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                   </Tooltip>
                 </TooltipProvider>
               </Label>
+
               <div className="grid grid-cols-3 gap-4">
                 {["easy", "medium", "hard"].map((level) => (
                   <Button
                     key={level}
                     type="button"
                     variant={difficulty === level ? "default" : "outline"}
+                    size="lg"
                     className={cn(
-                      "capitalize w-full h-12 font-medium transition-all",
-                      difficulty === level ? "border-primary shadow-sm" : "hover:border-primary/50",
+                      "capitalize h-14 font-semibold transition-all duration-200",
+                      difficulty === level && "shadow-lg",
                       getDifficultyColor(level),
                     )}
                     onClick={() => setValue("difficulty", level as "easy" | "medium" | "hard")}
@@ -409,25 +439,36 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                   </Button>
                 ))}
               </div>
-            </motion.div>            <motion.div
-              className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <h3 className="text-base font-semibold mb-2">Available Credits</h3>
-              <Progress value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                You have <span className="font-bold text-primary">{creditInfo.remainingCredits}</span> credits remaining 
-                out of <span className="font-medium">{creditInfo.totalCredits}</span> total.
-                {creditInfo.usedCredits > 0 && (
-                  <span className="block mt-1">
-                    ({creditInfo.usedCredits} used)
-                  </span>
-                )}
-              </p>
             </motion.div>
 
+            {/* Credits Display */}
+            <motion.div
+              className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6 space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Available Credits</h3>
+              </div>
+
+              <Progress
+                value={creditInfo.totalCredits > 0 ? (creditInfo.remainingCredits / creditInfo.totalCredits) * 100 : 0}
+                className="h-3"
+              />
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {creditInfo.usedCredits} used • {creditInfo.remainingCredits} remaining
+                </span>
+                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                  {creditInfo.totalCredits} total
+                </Badge>
+              </div>
+            </motion.div>
+
+            {/* Error Display */}
             <AnimatePresence>
               {errors.root && (
                 <motion.div
@@ -436,6 +477,7 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
                   exit={{ opacity: 0, y: -10 }}
                 >
                   <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{errors.root.message}</AlertDescription>
                   </Alert>
@@ -443,41 +485,34 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
               )}
             </AnimatePresence>
 
+            {/* Submit Button */}
             <motion.div
-              className="pt-4 border-t border-border/60"
+              className="pt-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-            >              <PlanAwareButton
+              transition={{ delay: 0.5 }}
+            >
+              <PlanAwareButton
                 label="Generate Flashcards"
                 onClick={handleSubmit(onSubmit)}
-                isLoggedIn={isLoggedIn}
-                isEnabled={!isDisabled}
+                isLoggedIn={!!user?.id}
+                isEnabled={isFormValid}
                 isLoading={isLoading}
-                hasCredits={creditInfo.hasEnoughCredits(1)}
+                hasCredits={creditInfo.remainingCredits > 0}
                 creditsRequired={1}
-                loadingLabel="Generating Flashcards..."
-                className="w-full h-12 text-base font-medium transition-all duration-300 hover:shadow-lg rounded-md"
-                showIcon={true}
+                loadingLabel="Creating Flashcards..."
+                className="w-full h-14 text-lg font-semibold"
                 customStates={{
                   default: {
                     tooltip: "Click to generate your flashcards",
                   },
                   notEnabled: {
-                    label: "Enter a topic to generate",
-                    tooltip: "Please enter a topic before generating flashcards",
+                    label: "Complete form to generate",
+                    tooltip: "Please fill in all required fields before generating flashcards",
                   },
                   noCredits: {
-                    label: "Out of credits",
+                    label: "Insufficient Credits",
                     tooltip: "You need credits to generate flashcards. Consider upgrading your plan.",
-                  },
-                  notLoggedIn: {
-                    label: "Sign in to generate",
-                    tooltip: "Please sign in to create flashcards",
-                  },
-                  alreadySubscribed: {
-                    label: "Processing subscription",
-                    tooltip: "Your subscription is being processed. Please wait a moment.",
                   },
                 }}
               />
@@ -506,24 +541,23 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
           used: Math.max(0, maxCards - credits),
           available: maxCards,
           remaining: credits,
-          percentage: (Math.max(0, maxCards - credits) / maxCards) * 100
+          percentage: (Math.max(0, maxCards - credits) / maxCards) * 100,
         }}
         quizInfo={{
           type: "Flashcards",
           topic: watch("title"),
           count: watch("count"),
           difficulty: watch("difficulty"),
-          estimatedTokens: Math.min(watch("count") || 1, 5) * 100 // Rough estimate
+         
         }}
       >
         <div className="py-2">
           <p className="text-sm">
-            Generating{" "}
-            <span className="font-medium capitalize">{watch("count")}</span> flashcards at{" "}
+            Generating <span className="font-medium capitalize">{watch("count")}</span> flashcards at{" "}
             <span className="font-medium capitalize">{watch("difficulty")}</span> difficulty level for topic:{" "}
             <span className="font-medium">{watch("title")}</span>
           </p>
-            {subscriptionData && subscriptionData.tokensUsed >= 1000 && (
+          {subscriptionData && subscriptionData.tokensUsed >= 1000 && (
             <Alert variant="destructive" className="mt-4">
               <AlertTitle>Token limit exceeded</AlertTitle>
               <AlertDescription>
@@ -533,6 +567,6 @@ export default function FlashCardCreate({ isLoggedIn, maxCards, credits, params 
           )}
         </div>
       </ConfirmDialog>
-    </motion.div>
+    </div>
   )
 }

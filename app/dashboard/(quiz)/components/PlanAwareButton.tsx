@@ -7,11 +7,11 @@ import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { Loader2, Check, Lock, AlertCircle } from "lucide-react"
-import { type PlanType } from "../../../../hooks/useQuizPlan"
+import { Loader2, Check, Lock, AlertCircle, Sparkles } from "lucide-react"
+import type { PlanType } from "../../../../hooks/useQuizPlan"
 // ✅ UNIFIED: Using unified auth system
 import { useAuth, useSubscription } from "@/modules/auth"
-import { calculateCreditInfo, getCreditMessage } from "@/utils/credit-utils"
+import { calculateCreditInfo } from "@/utils/credit-utils"
 
 interface CustomButtonStates {
   default?: {
@@ -80,43 +80,29 @@ export default function PlanAwareButton({
   const [isLoadingState, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
-  
+
   // ✅ UNIFIED: Get subscription details from unified auth system
   const { isAuthenticated, user } = useAuth()
   const { subscription } = useSubscription()
-  
-  // Auto-detect authentication if not explicitly provided
-  const effectiveIsLoggedIn = isLoggedIn !== undefined ? isLoggedIn : isAuthenticated
-    // Calculate remaining credits automatically using utility
+
+  // Auto-detect authentication - prioritize internal auth state over prop
+  const effectiveIsLoggedIn = isAuthenticated || (user?.id ? true : false)
+
+  // Calculate remaining credits automatically using utility
   const creditInfo = calculateCreditInfo(
     user?.credits,
     user?.creditsUsed,
     subscription?.credits,
-    subscription?.tokensUsed
+    subscription?.tokensUsed,
   )
-  
+
   // Use provided hasCredits or calculate automatically based on credits required
-  const effectiveHasCredits = hasCredits !== undefined 
-    ? hasCredits 
-    : creditInfo.hasEnoughCredits(creditsRequired)  // Debug info in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('PlanAwareButton Debug:', {
-      isLoggedIn,
-      effectiveIsLoggedIn,
-      isAuthenticated,
-      creditInfo,
-      creditsRequired,
-      effectiveHasCredits,
-      hasCredits,
-      userCredits: user?.credits,
-      userCreditsUsed: user?.creditsUsed,
-      subscriptionCredits: subscription?.credits,
-      subscriptionTokensUsed: subscription?.tokensUsed
-    })
-  }// Use provided plan or get from unified auth state if not provided
+  const effectiveHasCredits = hasCredits !== undefined ? hasCredits : creditInfo.hasEnoughCredits(creditsRequired)
+
+  // Use provided plan or get from unified auth state if not provided
   const effectivePlan = currentPlan || subscription?.plan || "FREE"
-  const isAlreadySubscribed = subscription?.status === 'ACTIVE' || false
-  
+  const isAlreadySubscribed = subscription?.status === "ACTIVE" || false
+
   // Check if the user's plan meets requirements
   const meetsRequirement = (): boolean => {
     // Plan hierarchy for comparison
@@ -140,18 +126,22 @@ export default function PlanAwareButton({
         tooltip: "Please wait while we process your request",
         disabled: true,
         icon: <Loader2 className="h-4 w-4 animate-spin" />,
+        variant: "default" as const,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           e.preventDefault()
         },
       }
-    }    // Authentication check - only show if definitely not logged in
-    if (effectiveIsLoggedIn === false) {
+    }
+
+    // Authentication check - only show if definitely not logged in
+    if (!effectiveIsLoggedIn) {
       const notLoggedInState = customStates?.notLoggedIn ?? {}
       return {
         label: notLoggedInState.label ?? "Sign in to continue",
         tooltip: notLoggedInState.tooltip ?? "You need to be signed in to use this feature",
         disabled: false,
         icon: <Lock className="h-4 w-4" />,
+        variant: "outline" as const,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           e.preventDefault()
           router.push("/api/auth/signin?callbackUrl=/dashboard")
@@ -167,18 +157,24 @@ export default function PlanAwareButton({
         tooltip: notEnabledState.tooltip ?? "This option is not available right now",
         disabled: true,
         icon: <AlertCircle className="h-4 w-4" />,
+        variant: "secondary" as const,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           e.preventDefault()
         },
       }
-    }    // Credit check - now uses calculated remaining credits
+    }
+
+    // Credit check - now uses calculated remaining credits
     if (!effectiveHasCredits) {
       const noCreditsState = customStates?.noCredits ?? {}
       return {
-        label: noCreditsState.label ?? `Need ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''}`,
-        tooltip: noCreditsState.tooltip ?? `You need ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''} to use this feature. You have ${creditInfo.remainingCredits} remaining.`,
+        label: noCreditsState.label ?? `Need ${creditsRequired} credit${creditsRequired > 1 ? "s" : ""}`,
+        tooltip:
+          noCreditsState.tooltip ??
+          `You need ${creditsRequired} credit${creditsRequired > 1 ? "s" : ""} to use this feature. You have ${creditInfo.remainingCredits} remaining.`,
         disabled: false,
-        icon: <AlertCircle className="h-4 w-4" />,
+        icon: <Sparkles className="h-4 w-4" />,
+        variant: "destructive" as const,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           e.preventDefault()
           if (onInsufficientCredits) {
@@ -186,7 +182,7 @@ export default function PlanAwareButton({
           } else {
             toast({
               title: "Insufficient Credits",
-              description: `You need ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''} for this action. You have ${creditInfo.remainingCredits} remaining.`,
+              description: `You need ${creditsRequired} credit${creditsRequired > 1 ? "s" : ""} for this action. You have ${creditInfo.remainingCredits} remaining.`,
               variant: "destructive",
             })
             router.push("/dashboard/subscription")
@@ -194,7 +190,7 @@ export default function PlanAwareButton({
         },
       }
     }
-    
+
     // Plan requirement check
     if (!meetsRequirement()) {
       // Check if already subscribed to prevent duplicate subscriptions
@@ -202,9 +198,12 @@ export default function PlanAwareButton({
         const alreadySubscribedState = customStates?.alreadySubscribed ?? {}
         return {
           label: alreadySubscribedState.label ?? "Already subscribed",
-          tooltip: alreadySubscribedState.tooltip ?? `You're already subscribed to ${effectivePlan}. Please wait for your subscription to be processed.`,
+          tooltip:
+            alreadySubscribedState.tooltip ??
+            `You're already subscribed to ${effectivePlan}. Please wait for your subscription to be processed.`,
           disabled: true,
           icon: <Check className="h-4 w-4" />,
+          variant: "secondary" as const,
           onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
             e.preventDefault()
           },
@@ -217,6 +216,7 @@ export default function PlanAwareButton({
         tooltip: insufficientPlanState.tooltip ?? `This feature requires the ${requiredPlan} plan or higher`,
         disabled: false,
         icon: <Lock className="h-4 w-4" />,
+        variant: "outline" as const,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           e.preventDefault()
           if (onPlanRequired) {
@@ -239,7 +239,8 @@ export default function PlanAwareButton({
       label: defaultState.label ?? label,
       tooltip: defaultState.tooltip ?? "Click to proceed",
       disabled: false,
-      icon: null,
+      icon: <Sparkles className="h-4 w-4" />,
+      variant: "default" as const,
       onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
         if (onClick) onClick(e)
       },
@@ -255,11 +256,12 @@ export default function PlanAwareButton({
           <Button
             onClick={state.onClick}
             disabled={state.disabled}
+            variant={state.variant}
             className={cn(
-              "relative min-w-[120px] transition-all duration-300 rounded-md",
+              "relative min-w-[120px] transition-all duration-200",
               (isLoading || isLoadingState) && "opacity-80 cursor-not-allowed",
               state.disabled && "opacity-70",
-              className
+              className,
             )}
             {...buttonProps}
           >

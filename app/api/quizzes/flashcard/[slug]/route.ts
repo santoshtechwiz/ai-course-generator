@@ -29,7 +29,7 @@ export async function GET(_: Request, props: { params: Promise<{ slug: string }>
                 { status: 404 }
             );
         }
-
+        console.log("Fetched flashcard quiz:", flashcardQuiz);
         return NextResponse.json(flashcardQuiz || {}, { status: 200 });
     } catch (error) {
         console.error("Error fetching flashcard quiz:", error);

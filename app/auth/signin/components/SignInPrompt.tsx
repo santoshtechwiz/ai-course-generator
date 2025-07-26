@@ -1,216 +1,16 @@
 "use client"
-
-import type { QuizType } from "@/app/types/quiz-types"
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
-import {
-  BookOpen,
-  LogIn,
-  RefreshCw,
-  ListChecks,
-  Code2,
-  FileText,
-  Trophy,
-  Star,
-  TrendingUp,
-  Users,
-  Crown,
-  Gift,
-  Zap,
-  Target,
-  Award,
-  ChevronRight,
-  Heart,
-  Shield,
-  Rocket,
-} from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useState, useEffect } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { LogIn, RotateCcw, Trophy, Target, Clock, BookOpen, Brain, Zap, Shield, Star } from "lucide-react"
+import type { QuizType } from "@/app/types/quiz-types"
 
-// Enhanced quiz type metadata with business-focused messaging
-const quizTypeMeta: Record<
-  QuizType,
-  {
-    icon: typeof ListChecks
-    title: string
-    feedback: string
-    businessValue: string
-    color: string
-    gradient: string
-  }
-> = {
-  mcq: {
-    icon: ListChecks,
-    title: "Knowledge Mastered!",
-    feedback: "Unlock detailed analytics and performance insights",
-    businessValue: "Track your learning journey with advanced metrics",
-    color: "text-blue-600",
-    gradient: "from-blue-500 to-cyan-500",
-  },
-  code: {
-    icon: Code2,
-    title: "Code Skills Elevated!",
-    feedback: "Access premium code analysis and improvement tips",
-    businessValue: "Accelerate your programming career with expert feedback",
-    color: "text-green-600",
-    gradient: "from-green-500 to-emerald-500",
-  },
-  blanks: {
-    icon: FileText,
-    title: "Comprehension Complete!",
-    feedback: "Get personalized learning recommendations",
-    businessValue: "Build stronger foundations with targeted practice",
-    color: "text-purple-600",
-    gradient: "from-purple-500 to-pink-500",
-  },
-  openended: {
-    icon: BookOpen,
-    title: "Critical Thinking Unlocked!",
-    feedback: "Receive AI-powered writing analysis and suggestions",
-    businessValue: "Enhance your communication skills with expert insights",
-    color: "text-orange-600",
-    gradient: "from-orange-500 to-red-500",
-  },
-  flashcard: {
-    icon: BookOpen,
-    title: "Memory Palace Built!",
-    feedback: "Access spaced repetition and retention analytics",
-    businessValue: "Maximize retention with scientifically-proven methods",
-    color: "text-indigo-600",
-    gradient: "from-indigo-500 to-purple-500",
-  },
-}
-
-const getQuizMeta = (quizType: QuizType = "flashcard") => quizTypeMeta[quizType] || quizTypeMeta.flashcard
-
-// Floating particles animation component
-const FloatingParticles = () => {
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([])
-
-  useEffect(() => {
-    const newParticles = Array.from({ length: 8 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      delay: Math.random() * 2,
-    }))
-    setParticles(newParticles)
-  }, [])
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((particle) => (
-        <motion.div
-          key={particle.id}
-          className="absolute w-1 h-1 bg-primary/20 rounded-full"
-          style={{
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-          }}
-          animate={{
-            y: [0, -20, 0],
-            opacity: [0.2, 0.8, 0.2],
-            scale: [1, 1.5, 1],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Number.POSITIVE_INFINITY,
-            delay: particle.delay,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-// Premium features showcase
-const PremiumFeatures = ({ quizType }: { quizType: QuizType }) => {
-  const features = [
-    { icon: Trophy, text: "Detailed Performance Analytics", premium: true },
-    { icon: TrendingUp, text: "Progress Tracking & Insights", premium: true },
-    { icon: Target, text: "Personalized Learning Path", premium: true },
-    { icon: Award, text: "Achievement Certificates", premium: true },
-  ]
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.6, duration: 0.5 }}
-      className="space-y-3"
-    >
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <Crown className="w-4 h-4 text-yellow-500" />
-        <span className="text-sm font-semibold text-muted-foreground">Premium Features</span>
-        <Crown className="w-4 h-4 text-yellow-500" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        {features.map((feature, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.8 + index * 0.1, duration: 0.3 }}
-            className="flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20"
-          >
-            <feature.icon className="w-3 h-3 text-primary" />
-            <span className="text-xs font-medium text-foreground">{feature.text}</span>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  )
-}
-
-// Social proof component
-const SocialProof = () => {
-  const stats = [
-    { icon: Users, value: "50K+", label: "Active Learners" },
-    { icon: Star, value: "4.9", label: "Rating" },
-    { icon: Trophy, value: "1M+", label: "Quizzes Completed" },
-  ]
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4, duration: 0.5 }}
-      className="flex justify-center gap-6 py-4 border-t border-border/50"
-    >
-      {stats.map((stat, index) => (
-        <motion.div
-          key={index}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.6 + index * 0.1, type: "spring", stiffness: 200 }}
-          className="text-center"
-        >
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <stat.icon className="w-3 h-3 text-primary" />
-            <span className="text-sm font-bold text-foreground">{stat.value}</span>
-          </div>
-          <span className="text-xs text-muted-foreground">{stat.label}</span>
-        </motion.div>
-      ))}
-    </motion.div>
-  )
-}
-
-// Enhanced Sign-In Prompt Component
-const SignInPrompt = ({
-  onSignIn,
-  onRetake,
-  quizType = "flashcard",
-  previewData,
-  isLoading = false,
-}: {
+interface SignInPromptProps {
   onSignIn: () => void
   onRetake: () => void
-  quizType?: QuizType
+  quizType: QuizType
   previewData?: {
     percentage?: number
     score?: number
@@ -220,292 +20,210 @@ const SignInPrompt = ({
     stillLearningAnswers?: number
     incorrectAnswers?: number
   }
-  isLoading?: boolean
-}) => {
-  const meta = getQuizMeta(quizType)
-  const Icon = meta.icon
-  const showScore = previewData && (previewData.score !== undefined || previewData.correctAnswers !== undefined)
+}
 
-  const correct = previewData?.correctAnswers ?? previewData?.score ?? 0
-  const total = previewData?.totalQuestions ?? previewData?.maxScore ?? 0
-  const percentage = previewData?.percentage ?? (total > 0 ? Math.round((correct / total) * 100) : 0)
+const quizTypeConfig = {
+  mcq: {
+    icon: Target,
+    title: "Multiple Choice Quiz",
+    color: "from-blue-500 to-cyan-500",
+    bgColor: "from-blue-50 to-cyan-50",
+  },
+  openended: {
+    icon: BookOpen,
+    title: "Open-Ended Quiz",
+    color: "from-green-500 to-emerald-500",
+    bgColor: "from-green-50 to-emerald-50",
+  },
+  flashcard: {
+    icon: Brain,
+    title: "Flashcard Study",
+    color: "from-purple-500 to-pink-500",
+    bgColor: "from-purple-50 to-pink-50",
+  },
+  blanks: {
+    icon: Zap,
+    title: "Fill in the Blanks",
+    color: "from-orange-500 to-red-500",
+    bgColor: "from-orange-50 to-red-50",
+  },
+  code: {
+    icon: Trophy,
+    title: "Code Quiz",
+    color: "from-indigo-500 to-purple-500",
+    bgColor: "from-indigo-50 to-purple-50",
+  },
+}
 
-  // Performance level with enhanced messaging
-  const getPerformanceLevel = (score: number) => {
-    if (score >= 90)
-      return { level: "Exceptional", emoji: "🏆", color: "text-yellow-600", message: "Outstanding mastery!" }
-    if (score >= 80) return { level: "Excellent", emoji: "⭐", color: "text-green-600", message: "Great job!" }
-    if (score >= 70) return { level: "Good", emoji: "👍", color: "text-blue-600", message: "Well done!" }
-    if (score >= 60) return { level: "Fair", emoji: "📈", color: "text-orange-600", message: "Keep improving!" }
-    return { level: "Needs Work", emoji: "💪", color: "text-red-600", message: "Practice makes perfect!" }
-  }
+export default function SignInPrompt({ onSignIn, onRetake, quizType, previewData }: SignInPromptProps) {
+  const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
+  const IconComponent = config.icon
 
-  const performance = getPerformanceLevel(percentage)
+  const renderPreviewStats = () => {
+    if (!previewData) return null
 
-  // Skeleton loading UI with enhanced animations
-  if (isLoading) {
+    if (quizType === "flashcard") {
+      return (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+            <div className="text-2xl font-bold text-green-700">{previewData.correctAnswers || 0}</div>
+            <div className="text-xs text-green-600 font-medium">Mastered</div>
+          </div>
+          <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="text-2xl font-bold text-yellow-700">{previewData.stillLearningAnswers || 0}</div>
+            <div className="text-xs text-yellow-600 font-medium">Learning</div>
+          </div>
+        </div>
+      )
+    }
+
     return (
-      <div className="max-w-lg mx-auto w-full px-4 sm:px-0">
-        <Card className="shadow-2xl border-primary/20 bg-gradient-to-br from-background via-background to-primary/5">
-          <CardHeader className="text-center pb-4 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse" />
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-              className="w-20 h-20 bg-gradient-to-r from-primary/20 to-primary/30 rounded-full flex items-center justify-center mx-auto mb-4"
-            >
-              <Skeleton className="h-10 w-10 rounded-full" />
-            </motion.div>
-            <Skeleton className="h-8 w-2/3 mx-auto mb-2" />
-            <div className="mt-6 p-6 bg-gradient-to-r from-muted/30 to-muted/50 rounded-xl">
-              <Skeleton className="h-8 w-1/3 mx-auto mb-4" />
-              <div className="space-y-3">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-4/6" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <div className="space-y-3">
-              <Skeleton className="h-12 w-full rounded-xl" />
-              <Skeleton className="h-12 w-full rounded-xl" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="text-2xl font-bold text-blue-700">{previewData.percentage || 0}%</div>
+          <div className="text-xs text-blue-600 font-medium">Score</div>
+        </div>
+        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+          <div className="text-2xl font-bold text-green-700">
+            {previewData.score || 0}/{previewData.maxScore || 0}
+          </div>
+          <div className="text-xs text-green-600 font-medium">Points</div>
+        </div>
       </div>
     )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -30, scale: 0.95 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="max-w-lg mx-auto w-full px-4 sm:px-0"
-    >
-      <Card className="shadow-2xl border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden relative">
-        <FloatingParticles />
-
-        {/* Header with enhanced animations */}
-        <CardHeader className="text-center pb-6 relative">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.8, type: "spring", stiffness: 200 }}
-            className={`w-20 h-20 bg-gradient-to-r ${meta.gradient} rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg relative`}
-          >
-            <Icon className="w-10 h-10 text-white" />
-            <motion.div
-              className="absolute inset-0 rounded-full bg-white/20"
-              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-          >
-            <CardTitle className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              {meta.title}
-            </CardTitle>
-            <p className={`text-sm font-semibold ${meta.color} mb-4`}>{meta.businessValue}</p>
-          </motion.div>
-
-          {/* Enhanced Score Display */}
-          {showScore && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6, type: "spring" }}
-              className="mt-6 p-6 bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl border border-border/50 backdrop-blur-sm relative overflow-hidden"
-            >
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="shadow-2xl border-0 overflow-hidden">
+          {/* Header with gradient background */}
+          <div className={`bg-gradient-to-r ${config.color} p-6 text-white relative overflow-hidden`}>
+            <div className="absolute inset-0 bg-black/10" />
+            <div className="relative z-10">
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-              />
+                className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto"
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <IconComponent className="w-8 h-8" />
+              </motion.div>
+              <h1 className="text-2xl font-bold text-center mb-2">Quiz Completed!</h1>
+              <p className="text-center text-white/90 text-sm">{config.title}</p>
+            </div>
+          </div>
 
-              <div className="relative">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
-                  className="flex items-center justify-center gap-3 mb-4"
-                >
-                  <span className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                    {correct}/{total}
-                  </span>
-                  <Badge className={`${performance.color} bg-transparent border-current`}>
-                    {performance.emoji} {performance.level}
-                  </Badge>
-                </motion.div>
+          <CardContent className="p-6 space-y-6">
+            {/* Preview Results */}
+            {previewData && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-4"
+              >
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg mb-3 flex items-center justify-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    Your Results Preview
+                  </h3>
+                </div>
+                {renderPreviewStats()}
+              </motion.div>
+            )}
 
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="text-sm text-muted-foreground mb-4 font-medium"
-                >
-                  {performance.message}
-                </motion.p>
+            <Separator />
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {quizType === "flashcard" ? (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.9 }}
-                        className="flex justify-between items-center p-2 rounded-lg bg-green-500/10"
-                      >
-                        <span className="text-muted-foreground">Mastered:</span>
-                        <span className="text-green-600 font-bold flex items-center gap-1">
-                          <Trophy className="w-3 h-3" />
-                          {previewData?.correctAnswers || 0}
-                        </span>
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 1.0 }}
-                        className="flex justify-between items-center p-2 rounded-lg bg-amber-500/10"
-                      >
-                        <span className="text-muted-foreground">Learning:</span>
-                        <span className="text-amber-600 font-bold flex items-center gap-1">
-                          <Zap className="w-3 h-3" />
-                          {previewData?.stillLearningAnswers || 0}
-                        </span>
-                      </motion.div>
-                    </>
-                  ) : (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.9 }}
-                        className="flex justify-between items-center p-2 rounded-lg bg-primary/10"
-                      >
-                        <span className="text-muted-foreground">Score:</span>
-                        <span className="font-bold text-primary">{percentage}%</span>
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 1.0 }}
-                        className="flex justify-between items-center p-2 rounded-lg bg-muted/50"
-                      >
-                        <span className="text-muted-foreground">Status:</span>
-                        <span className={`font-bold ${performance.color}`}>
-                          {percentage >= 70 ? "Passed" : "Retry"}
-                        </span>
-                      </motion.div>
-                    </>
-                  )}
+            {/* Sign In Benefits */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-center flex items-center justify-center gap-2">
+                <Shield className="w-5 h-5 text-blue-500" />
+                Sign In to Unlock
+              </h3>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Trophy className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">Detailed Results</div>
+                    <div className="text-xs text-muted-foreground">View complete analysis & explanations</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">Progress Tracking</div>
+                    <div className="text-xs text-muted-foreground">Save your quiz history & improvements</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Star className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">Personalized Learning</div>
+                    <div className="text-xs text-muted-foreground">Get recommendations & study plans</div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
-          )}
-        </CardHeader>
-
-        <CardContent className="text-center pb-6 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="space-y-3"
-          >
-            <p className="text-muted-foreground font-medium text-base">{meta.feedback}</p>
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Gift className="w-4 h-4 text-primary" />
-              <span>Join thousands of learners advancing their skills</span>
             </div>
-          </motion.div>
 
-          <PremiumFeatures quizType={quizType} />
+            <Separator />
 
-          {/* Enhanced Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
-            className="space-y-4"
-          >
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                onClick={onSignIn}
-                size="lg"
-                className="w-full gap-3 h-14 text-base font-semibold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
-              >
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  animate={{ x: ["-100%", "100%"] }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                />
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="p-1 bg-white/20 rounded-full">
-                    <LogIn className="w-4 h-4" />
-                  </div>
-                  <span>Unlock Full Results</span>
-                  <motion.div
-                    animate={{ x: [0, 4, 0] }}
-                    transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </motion.div>
-                </div>
-              </Button>
-            </motion.div>
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={onSignIn}
+                  className={`w-full h-12 bg-gradient-to-r ${config.color} hover:opacity-90 text-white font-semibold shadow-lg`}
+                  size="lg"
+                >
+                  <LogIn className="w-5 h-5 mr-2" />
+                  Sign In to View Results
+                </Button>
+              </motion.div>
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                onClick={onRetake}
-                variant="outline"
-                size="lg"
-                className="w-full gap-3 h-12 text-base font-semibold border-2 hover:bg-muted/50 transition-all duration-300 group bg-transparent"
-              >
-                <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
-                <span>Try Again</span>
-              </Button>
-            </motion.div>
-          </motion.div>
-
-          {/* Trust indicators */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.5 }}
-            className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-4"
-          >
-            <div className="flex items-center gap-1">
-              <Shield className="w-3 h-3 text-green-500" />
-              <span>Secure & Private</span>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={onRetake}
+                  variant="outline"
+                  className="w-full h-12 border-2 font-semibold bg-transparent"
+                  size="lg"
+                >
+                  <RotateCcw className="w-5 h-5 mr-2" />
+                  Retake Quiz
+                </Button>
+              </motion.div>
             </div>
-            <div className="flex items-center gap-1">
-              <Heart className="w-3 h-3 text-red-500" />
-              <span>Free Forever</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Rocket className="w-3 h-3 text-blue-500" />
-              <span>Instant Access</span>
-            </div>
-          </motion.div>
-        </CardContent>
 
-        <CardFooter className="bg-gradient-to-r from-muted/30 to-muted/50 border-t border-border/50 relative overflow-hidden">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5"
-            animate={{ x: ["-100%", "100%"] }}
-            transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-          />
-          <SocialProof />
-        </CardFooter>
-      </Card>
-    </motion.div>
+            {/* Footer */}
+            <div className="text-center pt-4">
+              <p className="text-xs text-muted-foreground">Free account • No credit card required</p>
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <Badge variant="secondary" className="text-xs">
+                  <Zap className="w-3 h-3 mr-1" />
+                  Instant Access
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  <Shield className="w-3 h-3 mr-1" />
+                  Secure
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   )
 }
-
-export default SignInPrompt
