@@ -1,12 +1,12 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
-import { signIn, useSession } from "next-auth/react";
+import * as React from "react"
+import { useRouter } from "next/navigation"
+import { useMutation } from "@tanstack/react-query"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import axios from "axios"
+import { signIn, useSession } from "next-auth/react"
 import {
   HelpCircle,
   Timer,
@@ -22,50 +22,39 @@ import {
   Terminal,
   Code,
   Plus,
-} from "lucide-react";
-import { motion } from "framer-motion";
+} from "lucide-react"
+import { motion } from "framer-motion"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { usePersistentState } from "@/hooks/usePersistentState";
-import { cn } from "@/lib/tailwindUtils";
-import { codeQuizSchema } from "@/schema/schema";
-import { GlobalLoader } from "@/components/ui/loader";
+import { usePersistentState } from "@/hooks/usePersistentState"
+import { cn } from "@/lib/tailwindUtils"
+import { codeQuizSchema } from "@/schema/schema"
+import { GlobalLoader } from "@/components/ui/loader"
 
-import type { z } from "zod";
-import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider";
-import { QueryParams } from "@/app/types/types";
-import { useSubscription } from "@/modules/auth";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import PlanAwareButton from "../../components/PlanAwareButton";
-import FormContainer from "@/app/dashboard/FormContainer";
+import type { z } from "zod"
+import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
+import type { QueryParams } from "@/app/types/types"
+import { useSubscription } from "@/modules/auth"
+import { ConfirmDialog } from "../../components/ConfirmDialog"
+import PlanAwareButton from "../../components/PlanAwareButton"
+import FormContainer from "@/app/dashboard/FormContainer"
 
 type CodeQuizFormData = z.infer<typeof codeQuizSchema> & {
-  userType?: string;
-};
+  userType?: string
+}
 
 interface CodeQuizFormProps {
-  credits: number;
-  isLoggedIn: boolean;
-  maxQuestions: number;
-  params?: QueryParams;
+  credits: number
+  isLoggedIn: boolean
+  maxQuestions: number
+  params?: QueryParams
 }
 
 const PROGRAMMING_LANGUAGES = [
@@ -104,7 +93,7 @@ const PROGRAMMING_LANGUAGES = [
   "Nim",
   "Zig",
   "Other/Custom",
-];
+]
 
 const LANGUAGE_GROUPS = {
   Popular: ["JavaScript", "Python", "Java", "TypeScript"],
@@ -115,7 +104,7 @@ const LANGUAGE_GROUPS = {
   Functional: ["Haskell", "Clojure", "F#", "Elixir", "Erlang"],
   Scripts: ["Bash/Shell", "PowerShell", "Perl", "Lua"],
   Other: ["Ruby", "Crystal", "Nim", "Zig", "Groovy"],
-};
+}
 
 const LANGUAGE_GROUP_CONFIG = {
   Popular: {
@@ -166,51 +155,35 @@ const LANGUAGE_GROUP_CONFIG = {
       "bg-gradient-to-r from-teal-400 to-cyan-500 text-white shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 border-0",
     hoverScale: "hover:scale-105",
   },
-};
-
-interface Subscription {
-  subscriptionPlan?: string;
 }
 
-export default function CodeQuizForm({
-  credits,
-  isLoggedIn,
-  maxQuestions,
-  params,
-}: CodeQuizFormProps) {
-  const router = useRouter();
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const { data: session, status } = useSession();
+interface Subscription {
+  subscriptionPlan?: string
+}
+
+export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params }: CodeQuizFormProps) {
+  const router = useRouter()
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const { data: session, status } = useSession()
 
   const { data: subscriptionData } = useSubscription() as {
-    data?: Subscription;
-    status?: string;
-  };
+    data?: Subscription
+    status?: string
+  }
 
-  const [selectedLanguageGroup, setSelectedLanguageGroup] =
-    React.useState<string>("Popular");
-  const [showCustomLanguage, setShowCustomLanguage] = React.useState(false);
-  const [customLanguage, setCustomLanguage] = React.useState("");
-  const [formData, setFormData] = usePersistentState<CodeQuizFormData>(
-    "codeQuizFormData",
-    {
-      title: (typeof params?.title === "string" ? params.title : "") || "",
-      amount:
-        (typeof params?.amount === "string"
-          ? Number.parseInt(params.amount, 10)
-          : maxQuestions) || maxQuestions,
-      difficulty: (typeof params?.difficulty === "string" &&
-      ["easy", "medium", "hard"].includes(params.difficulty)
-        ? params.difficulty
-        : "easy") as "easy" | "medium" | "hard",
-      language:
-        (typeof params?.language === "string"
-          ? params.language
-          : "JavaScript") || "JavaScript",
-    }
-  );
+  const [selectedLanguageGroup, setSelectedLanguageGroup] = React.useState<string>("Popular")
+  const [showCustomLanguage, setShowCustomLanguage] = React.useState(false)
+  const [customLanguage, setCustomLanguage] = React.useState("")
+  const [formData, setFormData] = usePersistentState<CodeQuizFormData>("codeQuizFormData", {
+    title: (typeof params?.title === "string" ? params.title : "") || "",
+    amount: (typeof params?.amount === "string" ? Number.parseInt(params.amount, 10) : maxQuestions) || maxQuestions,
+    difficulty: (typeof params?.difficulty === "string" && ["easy", "medium", "hard"].includes(params.difficulty)
+      ? params.difficulty
+      : "easy") as "easy" | "medium" | "hard",
+    language: (typeof params?.language === "string" ? params.language : "JavaScript") || "JavaScript",
+  })
 
   const {
     control,
@@ -223,176 +196,190 @@ export default function CodeQuizForm({
     resolver: zodResolver(codeQuizSchema),
     defaultValues: formData,
     mode: "onChange",
-  });
+  })
 
   React.useEffect(() => {
     if (typeof params?.title === "string") {
-      setValue("title", params.title);
+      setValue("title", params.title)
     }
     if (typeof params?.amount === "string") {
-      const amount = Number.parseInt(params.amount, 10);
+      const amount = Number.parseInt(params.amount, 10)
       if (amount !== maxQuestions) {
-        setValue("amount", Math.min(amount, maxQuestions));
+        setValue("amount", Math.min(amount, maxQuestions))
       }
     }
-    if (
-      typeof params?.difficulty === "string" &&
-      ["easy", "medium", "hard"].includes(params.difficulty)
-    ) {
-      setValue("difficulty", params.difficulty as "easy" | "medium" | "hard");
+    if (typeof params?.difficulty === "string" && ["easy", "medium", "hard"].includes(params.difficulty)) {
+      setValue("difficulty", params.difficulty as "easy" | "medium" | "hard")
     }
-    if (
-      typeof params?.language === "string" &&
-      PROGRAMMING_LANGUAGES.includes(params.language)
-    ) {
-      setValue("language", params.language);
+    if (typeof params?.language === "string" && PROGRAMMING_LANGUAGES.includes(params.language)) {
+      setValue("language", params.language)
     }
-  }, [
-    params?.title,
-    params?.amount,
-    params?.difficulty,
-    params?.language,
-    maxQuestions,
-    setValue,
-  ]);
+  }, [params?.title, params?.amount, params?.difficulty, params?.language, maxQuestions, setValue])
 
   React.useEffect(() => {
-    const subscription = watch((value) =>
-      setFormData(value as CodeQuizFormData)
-    );
-    return () => subscription.unsubscribe();
-  }, [watch, setFormData]);
+    const subscription = watch((value) => setFormData(value as CodeQuizFormData))
+    return () => subscription.unsubscribe()
+  }, [watch, setFormData])
 
   const { mutateAsync: createCodeQuizMutation } = useMutation({
     mutationFn: async (data: CodeQuizFormData) => {
-      data.userType = subscriptionData?.subscriptionPlan;
-      const response = await axios.post("/api/quizzes/code", data);
-      return response.data;
+      data.userType = subscriptionData?.subscriptionPlan
+      const response = await axios.post("/api/quizzes/code", data)
+      return response.data
     },
     onError: (error: any) => {
-      console.error("Error creating code quiz:", error);
-      setSubmitError(
-        error?.response?.data?.message ||
-          "Failed to create code quiz. Please try again."
-      );
+      console.error("Error creating code quiz:", error)
+      setSubmitError(error?.response?.data?.message || "Failed to create code quiz. Please try again.")
     },
-  });
+  })
 
   const onSubmit = React.useCallback(
     (data: CodeQuizFormData) => {
-      if (isLoading) return;
+      // Prevent multiple submissions
+      if (isLoading || isConfirmDialogOpen) return
 
-      if (!data.title || !data.amount || !data.difficulty || !data.language) {
-        setSubmitError("Please fill in all required fields");
-        return;
+      // Get current form values to ensure we have the latest data
+      const currentValues = watch()
+
+      // Validate required fields with current values
+      if (!currentValues.title?.trim()) {
+        setSubmitError("Please enter a topic/title")
+        return
       }
 
+      if (!currentValues.amount || currentValues.amount < 1 || currentValues.amount > maxQuestions) {
+        setSubmitError(`Please select between 1 and ${maxQuestions} questions`)
+        return
+      }
+
+      if (!currentValues.difficulty) {
+        setSubmitError("Please select a difficulty level")
+        return
+      }
+
+      if (!currentValues.language?.trim()) {
+        setSubmitError("Please select a programming language")
+        return
+      }
+
+      // Check authentication
       if (!isLoggedIn) {
-        signIn("credentials", { callbackUrl: "/dashboard/code" });
-        return;
+        signIn("credentials", { callbackUrl: "/dashboard/code" })
+        return
       }
 
-      setSubmitError(null);
-      setIsConfirmDialogOpen(true);
+      // Clear any previous errors
+      setSubmitError(null)
+
+      // Store current form values before opening dialog
+      setFormData(currentValues)
+
+      // Open confirmation dialog
+      setIsConfirmDialogOpen(true)
     },
-    [isLoading, isLoggedIn]
-  );
+    [isLoading, isConfirmDialogOpen, maxQuestions, isLoggedIn, watch, setFormData],
+  )
 
   const handleConfirm = React.useCallback(async () => {
-    setIsLoading(true);
+    // Prevent multiple confirmations
+    if (isLoading) return
+
+    setIsLoading(true)
+    setSubmitError(null)
 
     try {
-      const formValues = watch();
+      // Use stored form data to ensure consistency
+      const formValues = formData
+
+      // Final validation before submission
+      if (!formValues.title || !formValues.amount || !formValues.difficulty || !formValues.language) {
+        throw new Error("Please complete all required fields")
+      }
+
       const response = await createCodeQuizMutation({
-        title: formValues.title,
+        title: formValues.title.trim(),
         amount: formValues.amount,
         difficulty: formValues.difficulty,
-        language: formValues.language,
+        language: formValues.language.trim(),
         userType: subscriptionData?.subscriptionPlan,
-      });
-      const userQuizId = response?.userQuizId;
+      })
 
-      if (!userQuizId) throw new Error("Code Quiz ID not found");
+      if (!response?.userQuizId || !response?.slug) {
+        throw new Error("Invalid response from server")
+      }
 
-      router.push(`/dashboard/code/${response?.slug}`);
+      // Close dialog before navigation
+      setIsConfirmDialogOpen(false)
+
+      // Navigate to the quiz
+      router.push(`/dashboard/code/${response.slug}`)
     } catch (error) {
-      // Error is handled in the mutation's onError callback
+      console.error("Code quiz creation error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to create quiz"
+      setSubmitError(errorMessage)
+      // Keep dialog open to show error
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [
-    createCodeQuizMutation,
-    watch,
-    router,
-    subscriptionData?.subscriptionPlan,
-  ]);
+  }, [createCodeQuizMutation, formData, router, subscriptionData?.subscriptionPlan])
 
-  const amount = watch("amount");
-  const difficulty = watch("difficulty");
-  const title = watch("title");
-  const language = watch("language");
+  const amount = watch("amount")
+  const difficulty = watch("difficulty")
+  const title = watch("title")
+  const language = watch("language")
 
   const isFormValid = React.useMemo(() => {
-    return !!title && !!amount && !!difficulty && !!language && isValid;
-  }, [title, amount, difficulty, language, isValid]);
+    return !!title && !!amount && !!difficulty && !!language && isValid
+  }, [title, amount, difficulty, language, isValid])
 
-  const isDisabled = React.useMemo(
-    () => credits < 1 || !isFormValid || isLoading,
-    [credits, isFormValid, isLoading]
-  );
+  const isDisabled = React.useMemo(() => credits < 1 || !isFormValid || isLoading, [credits, isFormValid, isLoading])
 
   const difficultyOptions = React.useMemo(() => {
     return [
       {
         value: "easy",
         label: "Easy",
-        color:
-          "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/25",
+        color: "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/25",
       },
       {
         value: "medium",
         label: "Medium",
-        color:
-          "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25",
+        color: "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25",
       },
       {
         value: "hard",
         label: "Hard",
-        color:
-          "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-lg shadow-rose-500/25",
+        color: "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-lg shadow-rose-500/25",
       },
-    ];
-  }, []);
+    ]
+  }, [])
 
   const filteredLanguages = React.useMemo(() => {
     if (selectedLanguageGroup === "All") {
-      return PROGRAMMING_LANGUAGES;
+      return PROGRAMMING_LANGUAGES
     }
-    return (
-      LANGUAGE_GROUPS[selectedLanguageGroup as keyof typeof LANGUAGE_GROUPS] ||
-      PROGRAMMING_LANGUAGES
-    );
-  }, [selectedLanguageGroup]);
+    return LANGUAGE_GROUPS[selectedLanguageGroup as keyof typeof LANGUAGE_GROUPS] || PROGRAMMING_LANGUAGES
+  }, [selectedLanguageGroup])
 
   const creditPercentage = React.useMemo(() => {
     if (typeof credits !== "number" || isNaN(credits) || credits <= 0) {
-      return 0;
+      return 0
     }
-    const maxCreditDisplay = 100;
-    return Math.min((credits / maxCreditDisplay) * 100, 100);
-  }, [credits]);
+    const maxCreditDisplay = 100
+    return Math.min((credits / maxCreditDisplay) * 100, 100)
+  }, [credits])
 
-  if (isLoading) {
+  if (isLoading && !isConfirmDialogOpen) {
     return (
       <FormContainer>
         <GlobalLoader />
       </FormContainer>
-    );
+    )
   }
 
   return (
     <FormContainer>
-      {submitError && (
+      {submitError && !isConfirmDialogOpen && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -409,10 +396,7 @@ export default function CodeQuizForm({
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center gap-2">
-            <Label
-              htmlFor="language"
-              className="text-lg font-semibold text-slate-900 dark:text-slate-100"
-            >
+            <Label htmlFor="language" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Programming Language
             </Label>
             <span className="text-rose-500">*</span>
@@ -429,18 +413,13 @@ export default function CodeQuizForm({
           </div>
 
           <div className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Choose a category:
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Choose a category:</p>
 
             <div className="flex flex-wrap gap-3">
               {Object.keys(LANGUAGE_GROUPS).map((group) => {
-                const config =
-                  LANGUAGE_GROUP_CONFIG[
-                    group as keyof typeof LANGUAGE_GROUP_CONFIG
-                  ];
-                const IconComponent = config.icon;
-                const isSelected = selectedLanguageGroup === group;
+                const config = LANGUAGE_GROUP_CONFIG[group as keyof typeof LANGUAGE_GROUP_CONFIG]
+                const IconComponent = config.icon
+                const isSelected = selectedLanguageGroup === group
 
                 return (
                   <motion.button
@@ -453,14 +432,14 @@ export default function CodeQuizForm({
                       "flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-200",
                       isSelected
                         ? config.color
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700",
                     )}
                     onClick={() => setSelectedLanguageGroup(group)}
                   >
                     <IconComponent className="w-4 h-4" />
                     {group}
                   </motion.button>
-                );
+                )
               })}
 
               <motion.button
@@ -472,7 +451,7 @@ export default function CodeQuizForm({
                   "flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-200",
                   selectedLanguageGroup === "All"
                     ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 border-0"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700",
                 )}
                 onClick={() => setSelectedLanguageGroup("All")}
               >
@@ -491,10 +470,10 @@ export default function CodeQuizForm({
                       value={field.value}
                       onValueChange={(value) => {
                         if (value === "Other/Custom") {
-                          setShowCustomLanguage(true);
-                          field.onChange("");
+                          setShowCustomLanguage(true)
+                          field.onChange("")
                         } else {
-                          field.onChange(value);
+                          field.onChange(value)
                         }
                       }}
                     >
@@ -529,8 +508,8 @@ export default function CodeQuizForm({
                   placeholder="Enter custom programming language"
                   value={customLanguage}
                   onChange={(e) => {
-                    setCustomLanguage(e.target.value);
-                    setValue("language", e.target.value);
+                    setCustomLanguage(e.target.value)
+                    setValue("language", e.target.value)
                   }}
                   className="flex-1 h-12 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500/20 dark:focus:ring-blue-400/20"
                 />
@@ -538,9 +517,9 @@ export default function CodeQuizForm({
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setShowCustomLanguage(false);
-                    setValue("language", "JavaScript");
-                    setCustomLanguage("");
+                    setShowCustomLanguage(false)
+                    setValue("language", "JavaScript")
+                    setCustomLanguage("")
                   }}
                   className="h-12"
                 >
@@ -571,10 +550,7 @@ export default function CodeQuizForm({
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center gap-2">
-            <Label
-              htmlFor="title"
-              className="text-lg font-semibold text-slate-900 dark:text-slate-100"
-            >
+            <Label htmlFor="title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Topic/Title
             </Label>
             <span className="text-rose-500">*</span>
@@ -615,12 +591,8 @@ export default function CodeQuizForm({
             </motion.p>
           )}
 
-          <p
-            className="text-sm text-slate-600 dark:text-slate-400"
-            id="title-description"
-          >
-            Examples: React Hooks, Data Structures, Async/Await, OOP Concepts,
-            etc.
+          <p className="text-sm text-slate-600 dark:text-slate-400" id="title-description">
+            Examples: React Hooks, Data Structures, Async/Await, OOP Concepts, etc.
           </p>
         </motion.div>
 
@@ -721,20 +693,13 @@ export default function CodeQuizForm({
                   "capitalize w-full h-14 font-semibold transition-all duration-200 text-base",
                   difficulty === level.value
                     ? level.color + " border-0 hover:scale-105"
-                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600",
                 )}
-                onClick={() =>
-                  setValue(
-                    "difficulty",
-                    level.value as "easy" | "medium" | "hard"
-                  )
-                }
+                onClick={() => setValue("difficulty", level.value as "easy" | "medium" | "hard")}
                 aria-pressed={difficulty === level.value}
               >
                 {level.label}
-                {difficulty === level.value && (
-                  <Check className="ml-2 h-5 w-5" />
-                )}
+                {difficulty === level.value && <Check className="ml-2 h-5 w-5" />}
               </Button>
             ))}
           </div>
@@ -753,11 +718,7 @@ export default function CodeQuizForm({
           </h3>
           <Progress value={creditPercentage} className="h-3" />
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            You have{" "}
-            <span className="font-bold text-blue-600 dark:text-blue-400">
-              {credits}
-            </span>{" "}
-            credit
+            You have <span className="font-bold text-blue-600 dark:text-blue-400">{credits}</span> credit
             {credits !== 1 ? "s" : ""} remaining.
           </p>
         </motion.div>
@@ -788,8 +749,7 @@ export default function CodeQuizForm({
               },
               noCredits: {
                 label: "Out of credits",
-                tooltip:
-                  "You need credits to generate a quiz. Consider upgrading your plan.",
+                tooltip: "You need credits to generate a quiz. Consider upgrading your plan.",
               },
             }}
           />
@@ -800,8 +760,9 @@ export default function CodeQuizForm({
         isOpen={isConfirmDialogOpen}
         onConfirm={handleConfirm}
         onCancel={() => {
-          setIsConfirmDialogOpen(false);
-          setIsLoading(false);
+          setIsConfirmDialogOpen(false)
+          setIsLoading(false)
+          setSubmitError(null)
         }}
         title="Generate Code Quiz"
         description="You are about to use AI to generate a code quiz. This will use credits from your account."
@@ -814,29 +775,25 @@ export default function CodeQuizForm({
           used: Math.max(0, maxQuestions - credits),
           available: maxQuestions,
           remaining: credits,
-          percentage:
-            (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
+          percentage: (Math.max(0, maxQuestions - credits) / maxQuestions) * 100,
         }}
         quizInfo={{
           type: "Code Quiz",
-          topic: watch("title"),
-          count: watch("amount"),
-          difficulty: watch("difficulty"),
-          estimatedTokens: Math.min(watch("amount") || 1, 5) * 150,
+          topic: formData.title || "Not specified",
+          count: formData.amount || 1,
+          difficulty: formData.difficulty || "easy",
+          estimatedTokens: Math.min(formData.amount || 1, 5) * 150,
         }}
       >
         <div className="py-2">
           <p className="text-sm">
-            Generating {watch("amount")} code questions at{" "}
-            <span className="font-medium capitalize">
-              {watch("difficulty")}
-            </span>{" "}
-            difficulty level for{" "}
-            <span className="font-medium">{watch("language")}</span> programming
-            on topic: <span className="font-medium">{watch("title")}</span>
+            Generating {formData.amount || 1} code questions at{" "}
+            <span className="font-medium capitalize">{formData.difficulty || "easy"}</span> difficulty level for{" "}
+            <span className="font-medium">{formData.language || "JavaScript"}</span> programming on topic:{" "}
+            <span className="font-medium">{formData.title || "Not specified"}</span>
           </p>
         </div>
       </ConfirmDialog>
     </FormContainer>
-  );
+  )
 }
