@@ -3,7 +3,7 @@
 import { useMediaQuery } from "@/hooks"
 import type React from "react"
 import { RandomQuiz } from "./RandomQuiz"
-import { Suspense, useMemo, useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { JsonLD } from "@/lib/seo-manager-new"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -20,63 +20,62 @@ interface QuizPlayLayoutProps {
   isFavorite?: boolean
 }
 
-const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = "", quizType = "quiz" }) => {
+const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
+  children,
+  quizSlug = "",
+  quizType = "quiz",
+}) => {
   const isMobile = useMediaQuery("(max-width: 768px)")
   const pathname = usePathname()
   const [isLoaded, setIsLoaded] = useState(false)
   const { isLoading } = useGlobalLoading()
 
   const [quizMeta, setQuizMeta] = useState({
-    title:
-      typeof document !== "undefined"
-        ? document.title || "Interactive Programming Quiz"
-        : "Interactive Programming Quiz",
+    title: "Interactive Programming Quiz",
     description: "",
     type: quizType,
   })
 
-  // Extract quiz information from document head for structured data
   useEffect(() => {
     try {
       if (typeof document === "undefined") return
-
-      const pageTitle = document?.title || "Interactive Programming Quiz"
-      const metaDescription =
-        document?.querySelector('meta[name="description"]')?.getAttribute("content") ||
-        document?.querySelector('meta[property="og:description"]')?.getAttribute("content") ||
-        "Test your programming knowledge with this interactive quiz"
 
       const urlSegments = pathname?.split("/").filter(Boolean) || []
       const typeFromUrl = urlSegments[1] || quizType
       const slugFromUrl = urlSegments[2] || quizSlug
 
+      // === 🔥 Clean slug: remove ID like -43nn7u ===
+      const cleanedSlug = slugFromUrl.replace(/-[a-z0-9]{4,}$/i, "")
+
+      // Format title from cleaned slug
+      const formattedTitle = `${cleanedSlug
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")} Quiz`
+
+      // Force override <title>
+      if (document) {
+        document.title = formattedTitle
+      }
+
+      // Description fallback
+      const metaDescription =
+        document?.querySelector('meta[name="description"]')?.getAttribute("content") ||
+        document?.querySelector('meta[property="og:description"]')?.getAttribute("content") ||
+        "Test your programming knowledge with this interactive quiz"
+
       setQuizMeta({
-        title: pageTitle,
+        title: formattedTitle,
         description: metaDescription,
         type: typeFromUrl as any,
       })
-
-      if (slugFromUrl && !pageTitle.toLowerCase().includes("quiz")) {
-        const formattedTitle = `${slugFromUrl
-          .split("-")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ")} Quiz`
-
-        try {
-          if (document) {
-            document.title = formattedTitle
-          }
-        } catch (titleError) {
-          console.warn("Failed to update document title:", titleError)
-        }
-      }
 
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.target.nodeName === "TITLE") {
             setQuizMeta((prev) => ({
               ...prev,
-              title: document.title || "Interactive Programming Quiz",
+              title: document.title || formattedTitle,
             }))
           }
         })
@@ -102,14 +101,9 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
     }
   }, [pathname, quizType, quizSlug])
 
-
-
   const quizTypeLabel = getQuizTypeLabel(quizMeta.type)
 
-  // Don't render layout content if global loader is active
-  if (isLoading) {
-    return null
-  }
+  if (isLoading) return null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -139,7 +133,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
           transition={{ duration: 0.4, delay: 0.2 }}
           layout
         >
-          {/* Main Quiz Content */}
           <motion.main
             className="flex-1 min-w-0 max-w-none"
             layout
@@ -160,7 +153,6 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({ children, quizSlug = ""
             </motion.div>
           </motion.main>
 
-          {/* Sidebar - Hidden on mobile */}
           {!isMobile && (
             <motion.aside
               className="w-full lg:w-80 xl:w-96 shrink-0"
