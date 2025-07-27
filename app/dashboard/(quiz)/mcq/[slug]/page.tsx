@@ -43,7 +43,8 @@ export default function McqQuizPage({
       quizSlug={slug} 
       quizType="mcq"
       quizId={slug}
-      isPublic={true} 
+      ownerId={userId || ''}
+      isPublic={true}
       userId={userId}
       isFavorite={false}
     >

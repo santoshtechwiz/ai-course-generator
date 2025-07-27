@@ -3,30 +3,15 @@
 import type React from "react"
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Eye,
-  EyeOff,
-  Share2,
-  Trash2,
-  Download,
-  Heart,
-  Settings,
-  Loader2,
-  TrendingUp,
-  Lock,
-  MoreHorizontal,
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { Eye, EyeOff, Share2, Trash2, Download, Heart, BarChart2, Lock, Settings, Zap } from "lucide-react"
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/modules/auth"
 import { ConfirmDialog } from "./ConfirmDialog"
+import { Badge } from "@/components/ui/badge"
 
 interface QuizActionsProps {
   quizId: string
@@ -37,7 +22,6 @@ interface QuizActionsProps {
   userId: string
   ownerId: string
   className?: string
-  children?: React.ReactNode
 }
 
 interface ActionButton {
@@ -48,12 +32,10 @@ interface ActionButton {
   onClick: (() => void) | (() => Promise<void>)
   disabled: boolean
   active?: boolean
-  badge?: string
   color: string
   description: string
   premium?: boolean
   destructive?: boolean
-  ariaLabel: string
 }
 
 export function QuizActions({
@@ -63,7 +45,6 @@ export function QuizActions({
   initialIsFavorite,
   ownerId,
   className,
-  children,
 }: QuizActionsProps) {
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
@@ -71,14 +52,12 @@ export function QuizActions({
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isPdfGenerating, setIsPdfGenerating] = useState(false)
-  const [hoveredAction, setHoveredAction] = useState<string | null>(null)
-
   const router = useRouter()
   const { user, subscription, isAuthenticated } = useAuth()
+
   const currentUserId = user?.id
   const canDownloadPDF =
     subscription?.status?.toLowerCase() === "active" || subscription?.plan?.toLowerCase() !== "free"
-
   const isOwner = currentUserId === ownerId
 
   const promptLogin = () =>
@@ -100,6 +79,7 @@ export function QuizActions({
   const updateQuiz = async (field: "isPublic" | "isFavorite", value: boolean) => {
     const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
     if (!isAuthenticated || !currentUserId) return promptLogin()
+
     if (field === "isPublic" && !isOwner) {
       toast({
         title: "Permission denied",
@@ -117,6 +97,7 @@ export function QuizActions({
         body: JSON.stringify({ [field]: value }),
       })
       if (!res.ok) throw new Error("Update failed")
+
       field === "isPublic" ? setIsPublic(value) : setIsFavorite(value)
       toast({
         title:
@@ -161,13 +142,9 @@ export function QuizActions({
 
     try {
       setIsPdfGenerating(true)
-
-      // Call the PDF generation API
       const response = await fetch(`/api/quizzes/${quizSlug}/pdf`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quizData,
           includeAnswers: true,
@@ -175,22 +152,15 @@ export function QuizActions({
         }),
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to generate PDF")
-      }
+      if (!response.ok) throw new Error("Failed to generate PDF")
 
-      // Get the PDF blob
       const blob = await response.blob()
-
-      // Create download link
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
       link.download = `${quizSlug}-quiz.pdf`
       document.body.appendChild(link)
       link.click()
-
-      // Cleanup
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
@@ -213,16 +183,9 @@ export function QuizActions({
     try {
       setIsDeleting(true)
       const response = await fetch(`/api/quizzes/common/${quizSlug}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Failed to delete quiz")
 
-      if (!response.ok) {
-        throw new Error("Failed to delete quiz")
-      }
-
-      toast({
-        title: "Quiz deleted",
-        description: "Quiz deleted successfully",
-      })
-
+      toast({ title: "Quiz deleted", description: "Quiz deleted successfully" })
       setTimeout(() => router.push("/dashboard"), 500)
     } catch (error: any) {
       toast({
@@ -245,10 +208,8 @@ export function QuizActions({
         onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
         disabled: !isAuthenticated,
         active: isFavorite,
-        badge: !isAuthenticated ? "Sign In" : undefined,
         color: "pink",
         description: isFavorite ? "Remove from favorites" : "Add to favorites",
-        ariaLabel: isFavorite ? "Remove quiz from favorites" : "Add quiz to favorites",
       },
       {
         id: "share",
@@ -257,54 +218,46 @@ export function QuizActions({
         loading: false,
         onClick: handleShare,
         disabled: false,
-        badge: "Public",
         color: "blue",
         description: "Share this quiz with others",
-        ariaLabel: "Share quiz link",
       },
       {
         id: "download",
-        label: "PDF",
+        label: "Download PDF",
         icon: Download,
         loading: isPdfGenerating,
         onClick: handlePdfDownload,
         disabled: !isAuthenticated || !canDownloadPDF,
-        badge: !isAuthenticated ? "Sign In" : canDownloadPDF ? "Premium" : "Locked",
         color: "emerald",
-        description: "Download quiz as PDF",
+        description: !isAuthenticated
+          ? "Sign in to download"
+          : !canDownloadPDF
+            ? "Upgrade to download PDFs"
+            : "Download quiz as PDF",
         premium: !canDownloadPDF,
-        ariaLabel: "Download quiz as PDF",
       },
-      ...(isOwner && isAuthenticated
-        ? [
-            {
-              id: "visibility",
-              label: isPublic ? "Public" : "Private",
-              icon: isPublic ? Eye : EyeOff,
-              loading: isPublicLoading,
-              onClick: () => updateQuiz("isPublic", !isPublic),
-              disabled: false,
-              badge: isPublic ? "Live" : "Draft",
-              active: isPublic,
-              color: isPublic ? "green" : "yellow",
-              description: isPublic ? "Make quiz private" : "Make quiz public",
-              ariaLabel: isPublic ? "Make quiz private" : "Make quiz public",
-            },
-            {
-              id: "delete",
-              label: "Delete",
-              icon: Trash2,
-              loading: isDeleting,
-              onClick: handleDelete,
-              disabled: false,
-              badge: "Danger",
-              color: "red",
-              description: "Permanently delete this quiz",
-              destructive: true,
-              ariaLabel: "Delete quiz permanently",
-            },
-          ]
-        : []),
+      {
+        id: "visibility",
+        label: isPublic ? "Make Private" : "Make Public",
+        icon: isPublic ? Eye : EyeOff,
+        loading: isPublicLoading,
+        onClick: () => updateQuiz("isPublic", !isPublic),
+        disabled: !isOwner || isPublicLoading, // Disabled if not owner or loading
+        active: isPublic,
+        color: isPublic ? "green" : "amber",
+        description: isPublic ? "Make quiz private" : "Make quiz public",
+      },
+      {
+        id: "delete",
+        label: "Delete",
+        icon: Trash2,
+        loading: isDeleting,
+        onClick: handleDelete,
+        disabled: !isOwner || isDeleting, // Disabled if not owner or deleting
+        color: "red",
+        description: "Permanently delete this quiz",
+        destructive: true,
+      },
     ],
     [
       isAuthenticated,
@@ -319,291 +272,227 @@ export function QuizActions({
     ],
   )
 
-  const getButtonStyles = (color: string, active?: boolean, disabled?: boolean, premium?: boolean) => {
-    const base =
-      "group relative flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-xl border text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden"
-
-    if (disabled) {
-      return cn(base, "bg-muted/50 border-muted text-muted-foreground cursor-not-allowed")
-    }
-
-    const colorMap = {
-      pink: active
-        ? "bg-pink-500 border-pink-500 text-white hover:bg-pink-600"
-        : "bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100 dark:bg-pink-950/20 dark:border-pink-800 dark:text-pink-300",
-      blue: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300",
-      emerald: premium
-        ? "bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 text-yellow-700 hover:from-yellow-100 hover:to-amber-100 dark:from-yellow-950/20 dark:to-amber-950/20 dark:border-yellow-800 dark:text-yellow-300"
-        : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-300",
-      green:
-        "bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-950/20 dark:border-green-800 dark:text-green-300",
-      yellow:
-        "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-950/20 dark:border-yellow-800 dark:text-yellow-300",
-      red: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300",
-    }
-
-    return cn(base, colorMap[color as keyof typeof colorMap])
-  }
-
-  // Separate primary and secondary actions for better mobile UX
-  const primaryActions = actionButtons.slice(0, 3) // favorite, share, download
-  const secondaryActions = actionButtons.slice(3) // visibility, delete
-
-  const ActionButton = ({ action, showLabel = true }: { action: ActionButton; showLabel?: boolean }) => {
-    const IconComponent = action.icon
-
-    const buttonContent = (
-      <div className={getButtonStyles(action.color, action.active, action.disabled, action.premium)}>
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          initial={false}
-        />
-
-        {action.badge && (
-          <span className="absolute -top-1 -right-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white border shadow-sm font-bold z-10 dark:bg-gray-800 dark:border-gray-700">
-            {action.badge}
-          </span>
-        )}
-
-        {action.premium && action.disabled && <Lock className="absolute top-1 left-1 h-3 w-3 text-yellow-600" />}
-
-        <div className="relative z-10 flex items-center gap-2">
-          {action.loading ? (
-            <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-          ) : (
-            <IconComponent
-              className={cn("h-4 w-4 sm:h-5 sm:w-5", action.active && action.id === "favorite" && "fill-current")}
-            />
-          )}
-          {showLabel && <span className="hidden sm:inline font-medium">{action.label}</span>}
-        </div>
-      </div>
-    )
+  const getActionButtonStyles = (action: ActionButton) => {
+    const baseStyles = "h-9 w-9 rounded-md transition-all duration-200 relative overflow-hidden group"
 
     if (action.destructive) {
-      return (
-        <ConfirmDialog
-          onConfirm={action.onClick}
-          trigger={
-            <button
-              type="button"
-              disabled={action.disabled}
-              aria-label={action.ariaLabel}
-              className="focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded-xl"
-            >
-              {buttonContent}
-            </button>
-          }
-        >
-          <div className="text-center space-y-4">
-            <Trash2 className="mx-auto h-10 w-10 text-red-600" />
-            <h3 className="text-lg font-semibold">Delete Quiz</h3>
-            <p className="text-muted-foreground text-sm">This action is permanent and cannot be undone.</p>
-          </div>
-        </ConfirmDialog>
+      return cn(
+        baseStyles,
+        "hover:bg-red-50 hover:text-red-600 hover:border-red-200",
+        "dark:hover:bg-red-950/20 dark:hover:text-red-400 dark:hover:border-red-800",
       )
     }
+
+    if (action.premium && action.disabled) {
+      return cn(
+        baseStyles,
+        "bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200",
+        "dark:from-amber-950/20 dark:to-yellow-950/20 dark:border-amber-800",
+        "hover:from-amber-100 hover:to-yellow-100 dark:hover:from-amber-950/30 dark:hover:to-yellow-950/30",
+      )
+    }
+
+    const colorStyles = {
+      pink: action.active
+        ? "bg-pink-50 text-pink-600 border-pink-200 dark:bg-pink-950/20 dark:text-pink-400 dark:border-pink-800"
+        : "hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200 dark:hover:bg-pink-950/20 dark:hover:text-pink-400",
+      blue: "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:hover:bg-blue-950/20 dark:hover:text-blue-400",
+      emerald:
+        "hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-400",
+      green: action.active
+        ? "bg-green-50 text-green-600 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800"
+        : "hover:bg-green-50 hover:text-green-600 hover:border-green-200 dark:hover:bg-green-950/20 dark:hover:text-green-400",
+      amber: action.active
+        ? "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800"
+        : "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 dark:hover:bg-amber-950/20 dark:hover:text-amber-400",
+    }
+
+    return cn(baseStyles, colorStyles[action.color as keyof typeof colorStyles] || colorStyles.blue)
+  }
+
+  const ActionButton = ({ action }: { action: ActionButton }) => {
+    const IconComponent = action.icon
 
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
+          <Button
+            size="icon"
+            variant="ghost"
+            className={cn(
+              getActionButtonStyles(action),
+              "relative group overflow-hidden", // Ensure group and overflow for hover effect
+              action.disabled && "opacity-50 cursor-not-allowed"
+            )}
             onClick={!action.disabled ? action.onClick : undefined}
-            disabled={action.disabled}
-            aria-label={action.ariaLabel}
-            className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
-            onMouseEnter={() => setHoveredAction(action.id)}
-            onMouseLeave={() => setHoveredAction(null)}
+            disabled={action.disabled || action.loading}
+            aria-label={action.label}
           >
-            {buttonContent}
-          </button>
+            {/* Dynamic background for active/hover states */}
+            <motion.div
+              className={cn(
+                "absolute inset-0 rounded-md",
+                action.active && action.color === "pink" && "bg-pink-100 dark:bg-pink-900/30",
+                action.active && action.color === "green" && "bg-green-100 dark:bg-green-900/30",
+                action.active && action.color === "amber" && "bg-amber-100 dark:bg-amber-900/30",
+                "group-hover:bg-opacity-20 dark:group-hover:bg-opacity-20",
+                "transition-colors duration-200 ease-out"
+              )}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: action.active ? 1 : 0 }}
+              transition={{ duration: 0.2 }}
+            />
+
+            <div className="relative z-10 flex items-center justify-center w-full h-full">
+              {action.loading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                >
+                  <BarChart2 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                </motion.div>
+              ) : (
+                <IconComponent
+                  className={cn(
+                    "h-4 w-4 transition-transform group-hover:scale-110",
+                    action.active && action.id === "favorite" && "fill-pink-500 text-pink-500",
+                    action.active && action.id === "visibility" && (isPublic ? "text-green-500" : "text-amber-500"),
+                    action.premium && action.disabled && "text-amber-600 dark:text-amber-400",
+                    !action.active && action.color === "pink" && "text-pink-500",
+                    !action.active && action.color === "blue" && "text-blue-500",
+                    !action.active && action.color === "emerald" && "text-emerald-500",
+                    !action.active && action.color === "green" && "text-green-500",
+                    !action.active && action.color === "amber" && "text-amber-500",
+                    action.destructive && "text-red-500",
+                  )}
+                />
+              )}
+
+              {action.premium && action.disabled && (
+                <Lock className="absolute -top-0.5 -right-0.5 h-3 w-3 text-amber-600 dark:text-amber-400 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow-sm" />
+              )}
+            </div>
+          </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-center text-sm">{action.description}</p>
+        <TooltipContent
+          side="top"
+          className="border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-800 backdrop-blur-sm p-2"
+          sideOffset={8}
+        >
+          <div className="flex flex-col items-center px-2 py-1 max-w-[200px]">
+            <p className="font-semibold text-gray-900 dark:text-white text-sm">{action.label}</p>
+            <p className="text-xs text-muted-foreground text-center mt-1 leading-relaxed">{action.description}</p>
+            {action.premium && (
+              <Badge variant="secondary" className="mt-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+                Premium
+              </Badge>
+            )}
+          </div>
         </TooltipContent>
       </Tooltip>
     )
   }
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={300}>
       <motion.div
-        className={cn("w-full", className)}
+        className={cn("w-full max-w-2xl mx-auto", className)}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        <Card className="border-2 shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  className="p-2.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg"
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  <Settings className="w-5 h-5 text-white" />
-                </motion.div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground">Quiz Actions</h3>
-                  <p className="text-sm text-muted-foreground">Control your quiz from here</p>
-                </div>
+        <div className="flex flex-col">
+          {/* Toolbar Header */}
+          <div className="flex items-center justify-between px-6 py-3 bg-gradient-to-r from-slate-700 via-blue-700 to-indigo-800 dark:from-slate-800 dark:via-blue-800 dark:to-indigo-900 rounded-t-2xl border-b border-slate-500 dark:border-gray-700 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Settings className="h-5 w-5 text-white" />
               </div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Badge
-                  variant="secondary"
-                  className="text-xs px-3 py-1 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border-blue-200 dark:from-blue-950/20 dark:to-purple-950/20 dark:text-blue-300 dark:border-blue-800"
-                >
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Interactive
-                </Badge>
-              </motion.div>
+              <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">Quiz Actions</h3>
             </div>
-          </CardHeader>
-
-          <CardContent className="pt-0">
-            {/* Desktop Layout */}
-            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-              <AnimatePresence>
-                {actionButtons.map((action) => (
-                  <motion.div
-                    key={action.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.2 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <ActionButton action={action} showLabel={true} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-
-            {/* Mobile Layout */}
-            <div className="sm:hidden">
-              {/* Primary Actions - Always Visible */}
-              <div className="flex justify-center gap-2 mb-4">
-                <AnimatePresence>
-                  {primaryActions.map((action) => (
-                    <motion.div
-                      key={action.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.2 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex-1 max-w-[80px]"
-                    >
-                      <ActionButton action={action} showLabel={false} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-
-              {/* Secondary Actions - Dropdown Menu */}
-              {secondaryActions.length > 0 && (
-                <div className="flex justify-center">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+            <Zap className="h-5 w-5 text-yellow-300 animate-pulse" />
+          </div>
+          {/* Toolbar Actions Row */}
+          <div className="flex flex-row items-center justify-center gap-2 sm:gap-4 px-4 py-5 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 rounded-b-2xl border border-slate-200 dark:border-gray-700 shadow-xl backdrop-blur-md">
+            {actionButtons.map((action, index) => (
+              <motion.div
+                key={action.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                  duration: 0.3,
+                  delay: index * 0.05,
+                  ease: "easeOut",
+                }}
+                whileHover={{ scale: 1.08, boxShadow: "0 4px 16px rgba(0,0,0,0.10)" }}
+                whileTap={{ scale: 0.96 }}
+                className="flex-shrink-0"
+              >
+                {action.destructive ? (
+                  <ConfirmDialog
+                    onConfirm={action.onClick}
+                    trigger={
                       <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full max-w-[200px] justify-center gap-2 bg-transparent"
-                        aria-label="More quiz actions"
+                        size="icon"
+                        variant="ghost"
+                        className={cn(
+                          getActionButtonStyles(action),
+                          "relative group overflow-hidden w-12 h-12 flex items-center justify-center border border-red-200 dark:border-red-800",
+                          action.disabled && "opacity-50 cursor-not-allowed"
+                        )}
+                        disabled={action.disabled || action.loading}
+                        aria-label={action.label}
                       >
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span>More Actions</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-56">
-                      {secondaryActions.map((action, index) => {
-                        const IconComponent = action.icon
-
-                        if (action.destructive) {
-                          return (
-                            <ConfirmDialog
-                              key={action.id}
-                              onConfirm={action.onClick}
-                              trigger={
-                                <DropdownMenuItem
-                                  className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20 cursor-pointer"
-                                  onSelect={(e) => e.preventDefault()}
-                                >
-                                  {action.loading ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <IconComponent className="mr-2 h-4 w-4" />
-                                  )}
-                                  <span>{action.label}</span>
-                                  {action.badge && (
-                                    <Badge variant="destructive" className="ml-auto text-xs">
-                                      {action.badge}
-                                    </Badge>
-                                  )}
-                                </DropdownMenuItem>
-                              }
+                        <motion.div
+                          className={cn(
+                            "absolute inset-0 rounded-xl",
+                            "bg-red-100 dark:bg-red-900/30",
+                            "group-hover:bg-opacity-20 dark:group-hover:bg-opacity-20",
+                            "transition-colors duration-200 ease-out"
+                          )}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: action.active ? 1 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        />
+                        <div className="relative z-10 flex items-center justify-center">
+                          {action.loading ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                             >
-                              <div className="text-center space-y-4">
-                                <Trash2 className="mx-auto h-10 w-10 text-red-600" />
-                                <h3 className="text-lg font-semibold">Delete Quiz</h3>
-                                <p className="text-muted-foreground text-sm">
-                                  This action is permanent and cannot be undone.
-                                </p>
-                              </div>
-                            </ConfirmDialog>
-                          )
-                        }
-
-                        return (
-                          <DropdownMenuItem
-                            key={action.id}
-                            onClick={!action.disabled ? action.onClick : undefined}
-                            disabled={action.disabled}
-                            className="cursor-pointer"
-                          >
-                            {action.loading ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                              <IconComponent
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  action.active && action.id === "favorite" && "fill-current",
-                                )}
-                              />
-                            )}
-                            <span>{action.label}</span>
-                            {action.badge && (
-                              <Badge
-                                variant={action.color === "red" ? "destructive" : "secondary"}
-                                className="ml-auto text-xs"
-                              >
-                                {action.badge}
-                              </Badge>
-                            )}
-                          </DropdownMenuItem>
-                        )
-                      })}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
-            </div>
-
-            {children && (
-              <>
-                <Separator className="my-6" />
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
-                  {children}
-                </motion.div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+                              <BarChart2 className="h-6 w-6 text-red-500" />
+                            </motion.div>
+                          ) : (
+                            <action.icon className="h-6 w-6 text-red-500" />
+                          )}
+                        </div>
+                      </Button>
+                    }
+                  >
+                    <div className="text-center space-y-4">
+                      <div className="mx-auto h-14 w-14 rounded-full bg-red-100 dark:bg-red-950/20 flex items-center justify-center">
+                        <Trash2 className="h-7 w-7 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Delete Quiz</h3>
+                        <p className="text-sm text-muted-foreground">Are you sure you want to permanently delete this quiz? This action cannot be undone.</p>
+                      </div>
+                      <div className="flex justify-center gap-3">
+                        <Button variant="outline" onClick={() => { /* Close dialog */ }}>Cancel</Button>
+                        <Button variant="destructive" onClick={action.onClick}>Delete</Button>
+                      </div>
+                    </div>
+                  </ConfirmDialog>
+                ) : (
+                  <ActionButton action={action} />
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </motion.div>
     </TooltipProvider>
   )
 }
+
+

@@ -396,15 +396,7 @@ export default function FlashcardQuizWrapper({
         numberOfQuestions={currentQuestions?.length}
       />
       <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
-        <QuizActions
-          initialIsFavorite={false}
-          quizSlug={slug}
-          quizData={null}
-          userId={userId ?? ""}
-          quizId={quizId ?? ""}
-          initialIsPublic={false}
-          ownerId={quizOwnerId ?? ""}
-        ></QuizActions>
+        
         <FlashcardQuiz
           key={`${slug}-${isReviewMode ? "review" : "full"}`}
           cards={currentQuestions}

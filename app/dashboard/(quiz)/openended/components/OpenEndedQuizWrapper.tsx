@@ -173,7 +173,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }, [currentQuestion])
 
   if (isLoading) {
-    return <GlobalLoader size="sm" />
+    return <GlobalLoader  />
   }
 
   if (hasError) {
@@ -205,15 +205,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
 
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      <QuizActions
-        initialIsFavorite={false}
-        quizSlug={slug}
-        quizData={pdfData}
-        userId={userId || ''}
-        quizId={quizId}
-        initialIsPublic={false}
-        ownerId={quizOwnerId || ''}
-      ></QuizActions>
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
       <OpenEndedQuiz
         question={formattedQuestion}
         questionNumber={currentQuestionIndex + 1}

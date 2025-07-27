@@ -25,7 +25,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+import { GlobalLoader, LoadingSpinner } from "@/components/loaders/GlobalLoader"
 
 
 
@@ -51,27 +51,27 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
   const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
   const userId = user?.id // Get user ID from session-based auth
-  
+
   const pdfData = {
     title: quizTitle || title,
     description: "This is a code quiz. Solve the coding problems to complete the quiz.",
     questions: questions
   }  // Track initialization to prevent duplicate loads
   const isInitializedRef = useRef(false);
-  
+
   // Load the quiz
   useEffect(() => {
     // Store in variable to handle potential cleanup scenarios
     let isComponentMounted = true;
-    
+
     const loadQuiz = async () => {
       // Prevent double initialization
       if (isInitializedRef.current) return;
       isInitializedRef.current = true;
-      
+
       try {
         dispatch(resetQuiz());
-        
+
         // Only proceed if component is still mounted
         if (isComponentMounted) {
           await dispatch(fetchQuiz({ slug, quizType: "code" })).unwrap();
@@ -93,11 +93,11 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }, [slug, dispatch])// Navigate to result
   useEffect(() => {
     let isMounted = true;
-    
+
     // To prevent infinite loop, we track if we've already shown the loader for this completion    
     if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current && isMounted) {
       hasShownLoaderRef.current = true;
-      
+
       // Prevent navigation if component gets unmounted
       submissionTimeoutRef.current = setTimeout(() => {
         if (isMounted) {
@@ -137,7 +137,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const handleSubmitQuiz = useCallback(async () => {
     try {
       toast.success("Quiz submitted successfully!")
-       await dispatch(submitQuiz()).unwrap()
+      await dispatch(submitQuiz()).unwrap()
 
       setTimeout(() => {
         router.push(`/dashboard/code/${slug}/results`)
@@ -170,8 +170,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       question: questionText,
       options,
       codeSnippet: currentQuestionAny.codeSnippet || '',
-      language: currentQuestionAny.language && currentQuestionAny.language.trim() !== "" 
-        ? currentQuestionAny.language 
+      language: currentQuestionAny.language && currentQuestionAny.language.trim() !== ""
+        ? currentQuestionAny.language
         : "JavaScript", // <-- Default to "JavaScript" only if not present
       correctAnswer: currentQuestionAny.answer || '',
     }
@@ -187,8 +187,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   if (isLoading) {
-      return (
-      <LoadingSpinner/>
+    return (
+      <LoadingSpinner />
     )
   }
   if (hasError) {
@@ -207,22 +207,12 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   if (!formattedQuestion) {
     return (
       <GlobalLoader
-        fullScreen={true}
-        size="lg"        text="AI is generating your personalized quiz results"
-        subText="Crafting personalized content with advanced AI technology"
-        theme="primary"
+
       />
     )
-  }  return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      <QuizActions
-        initialIsFavorite={false}
-        quizSlug={slug}
-        quizData={pdfData}
-        userId={userId || ''}
-        quizId={quizId}
-        initialIsPublic={false}
-        ownerId={quizOwnerId || ''}
-      ></QuizActions>
+  } return (
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
+   
       <CodeQuiz
         question={formattedQuestion}
         questionNumber={currentQuestionIndex + 1}

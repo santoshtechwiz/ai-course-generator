@@ -210,15 +210,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      <QuizActions
-        initialIsFavorite={false}
-        quizSlug={slug}
-        quizData={pdfData}
-        userId={userId || ""}
-        quizId={quizId || ""}
-        initialIsPublic={false}
-        ownerId={quizOwnerId || ""}
-      ></QuizActions>
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
       <BlanksQuiz
         key={formattedQuestion.id} // ✅ forces component reset per question
         question={formattedQuestion}

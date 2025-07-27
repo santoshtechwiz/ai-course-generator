@@ -48,7 +48,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
   const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
   const userId = user?.id // Get user ID from session-based auth// Assuming quizId is stored in quiz slice
-   const pdfData = {
+  const pdfData = {
     title: quizTitle || title,
     description: "This is a multiple choice quiz. Select the correct answers for each question.",
     questions: questions
@@ -161,7 +161,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   }, [currentQuestion, answers])
   const canGoNext = currentQuestionIndex < questions.length - 1
   const isLastQuestion = currentQuestionIndex === questions.length - 1
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -184,7 +184,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         }}
       />
     )
-  }  if (!formattedQuestion) {
+  } if (!formattedQuestion) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
@@ -196,15 +196,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   return (
     <>
       <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
-        <QuizActions
-          initialIsFavorite={false}
-          quizSlug={slug}
-          quizData={pdfData}
-          userId={userId || ""}
-          quizId={quizId}
-          initialIsPublic={false}
-          ownerId={quizOwnerId || ""}
-        ></QuizActions>
+
         <McqQuiz
           question={formattedQuestion}
           questionNumber={currentQuestionIndex + 1}
@@ -214,7 +206,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
           onNext={handleNextQuestion}
           onSubmit={handleSubmitQuiz}
           isSubmitting={isSubmitting}
-          canGoNext={canGoNext}          isLastQuestion={isLastQuestion}
+          canGoNext={canGoNext} isLastQuestion={isLastQuestion}
           quizTitle={quizTitle || title || "Multiple Choice Quiz"}
         />
       </div>
