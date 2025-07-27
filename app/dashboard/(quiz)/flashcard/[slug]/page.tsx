@@ -7,6 +7,7 @@ import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 
 import { getQuizSlug } from "../../components/utils"
 import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
+import { GlobalLoader } from "@/components/loaders"
 
 
 export default function FlashCardPage({
@@ -16,7 +17,25 @@ export default function FlashCardPage({
 }) {
   const slug = getQuizSlug(params);
   const router = useRouter()
+  // Get quiz state from Redux
+  const quizState = typeof window !== "undefined" ? require("react-redux").useSelector((state: any) => state.quiz) : null;
+  const quizData = quizState;
+  const status = quizState?.status;
+  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
+  // Fetch quiz data if not already available
+  if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
+    // Dynamically import fetchQuiz thunk and dispatch it
+    console.log("Fetching quiz data for slug:", slug);
+    import("@/store/slices/flashcard-slice").then(({ fetchFlashCardQuiz }) => {
+      dispatch(fetchFlashCardQuiz(slug));
+    });
+  }
 
+  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
+    
+      <GlobalLoader  />
+
+  }
 
 
   if (!slug) {
@@ -34,8 +53,15 @@ export default function FlashCardPage({
   }
 
   return (
-    <QuizPlayLayout>
-      <FlashcardQuizWrapper slug={slug}  />
+    <QuizPlayLayout
+      quizSlug={slug}
+      quizType="flashcard"
+      quizId={slug}
+      isPublic={true}
+      isFavorite={false}
+      quizData={quizData || null}
+    >
+      <FlashcardQuizWrapper slug={slug} />
     </QuizPlayLayout>
   )
 }

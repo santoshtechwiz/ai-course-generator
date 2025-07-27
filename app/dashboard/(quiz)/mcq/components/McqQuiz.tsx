@@ -96,14 +96,10 @@ const handleOptionSelect = useCallback(async (optionId: string) => {
       onSuccess={(message) => toast.success(message || "Great job!")}
       globalLoading={isLastQuestion} // Use global loading for final submission
     >
-      {(stateManager) => (        <QuizContainer
-          questionNumber={questionNumber}
-          totalQuestions={totalQuestions}
-          quizType="mcq"
-          animationKey={question.id}
-          quizTitle={quizTitle}
-          quizSubtitle={quizSubtitle}
-          difficulty={difficulty as "easy" | "medium" | "hard"}
+      {(stateManager) => (        
+        
+        <QuizContainer
+        animationKey="mcq-quiz"
         >
           <div className="space-y-6">
             <motion.div

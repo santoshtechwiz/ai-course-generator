@@ -26,7 +26,6 @@ import { FlashcardBack } from "./FlashcardBack"
 import { FlashcardController } from "./FlashcardController"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, RefreshCw } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface FlashCard {
   id: string
@@ -121,7 +120,7 @@ export default function FlashCardQuiz({
   useEffect(() => {
     if (!initialized && cards?.length > 0) {
       const shouldReset = !searchParams.get("from") && storeQuizId === quizId.toString()
-      
+
       if (shouldReset) {
         dispatch(resetFlashCards())
       }
@@ -225,10 +224,8 @@ export default function FlashCardQuiz({
     if (!currentCard) return
     setSavedCardIds((prev) => {
       const id = currentCard.id.toString()
-      const newIds = prev.includes(id) 
-        ? prev.filter((cid) => cid !== id)
-        : [...prev, id]
-      
+      const newIds = prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+
       toast.success(prev.includes(id) ? "Removed from saved cards" : "Added to saved cards")
       return newIds
     })
@@ -238,24 +235,26 @@ export default function FlashCardQuiz({
   const moveToNextCard = useCallback(() => {
     if (!cards?.length || swipeDisabled) return
     const maxIndex = cards.length - 1
-    
+
     if (currentQuestionIndex < maxIndex) {
       setFlipped(false)
       setSwipeDisabled(true)
-      
+
       const animationPromise = animationsEnabled
-        ? cardControls.start({
-            x: -300,
-            opacity: 0,
-            transition: { duration: 0.3 },
-          }).then(() => {
-            if (isMountedRef.current) {
-              dispatch(nextFlashCard())
-              cardControls.set({ x: 0, opacity: 1 })
-            }
-          })
+        ? cardControls
+            .start({
+              x: -300,
+              opacity: 0,
+              transition: { duration: 0.3 },
+            })
+            .then(() => {
+              if (isMountedRef.current) {
+                dispatch(nextFlashCard())
+                cardControls.set({ x: 0, opacity: 1 })
+              }
+            })
         : Promise.resolve().then(() => dispatch(nextFlashCard()))
-      
+
       animationPromise.then(() => {
         if (isMountedRef.current) {
           setStartTime(Date.now())
@@ -280,7 +279,7 @@ export default function FlashCardQuiz({
   const handleSelfRating = useCallback(
     (cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
       if (!cardId || swipeDisabled) return
-      
+
       setSwipeDisabled(true)
       const endTime = Date.now()
       const timeSpent = Math.floor((endTime - startTime) / 1000)
@@ -292,7 +291,7 @@ export default function FlashCardQuiz({
       // Update streak
       const newStreak = rating === "correct" ? streak + 1 : 0
       setStreak(newStreak)
-      
+
       setRatingAnimation(rating)
       setCardTimes((prev) => ({
         ...prev,
@@ -362,7 +361,7 @@ export default function FlashCardQuiz({
             setShowCompletionFeedback(true)
           }
         }, 1200)
-        
+
         return () => clearTimeout(timer)
       }
 
@@ -376,7 +375,7 @@ export default function FlashCardQuiz({
           setSwipeDisabled(false)
         }
       }, 1000)
-      
+
       return () => clearTimeout(timer)
     },
     [
@@ -432,7 +431,7 @@ export default function FlashCardQuiz({
       const swipeThreshold = 100
       const swipeDirection = info.offset.x > 0 ? "right" : "left"
       const isEffectiveSwipe = Math.abs(info.offset.x) > swipeThreshold || Math.abs(info.velocity.x) > 500
-      
+
       if (isEffectiveSwipe) {
         if (window.navigator?.vibrate) window.navigator.vibrate(50)
         if (swipeDirection === "left") {
@@ -456,7 +455,7 @@ export default function FlashCardQuiz({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isLoading || isCompleted || swipeDisabled) return
       if (e.repeat) return
-      
+
       switch (e.key) {
         case "ArrowRight":
           moveToNextCard()
@@ -489,7 +488,7 @@ export default function FlashCardQuiz({
           break
       }
     }
-    
+
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [
@@ -529,14 +528,7 @@ export default function FlashCardQuiz({
 
   return (
     <>
-      <QuizContainer
-        quizTitle="Flashcard Quiz"
-        quizSubtitle="Test your knowledge with interactive flashcards"
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={cards?.length || 0}
-        quizType="flashcard"
-        animationKey={`card-${currentQuestionIndex}`}
-      >
+      <QuizContainer animationKey={`card-${currentQuestionIndex}`}>
         <div className="space-y-4 sm:space-y-6">
           {/* Controller - Mobile Optimized */}
           <div className="px-4 sm:px-6">
@@ -697,7 +689,7 @@ export default function FlashCardQuiz({
                   size="lg"
                 >
                   See Results
-                </Button>
+              </Button>
               </div>
             </motion.div>
           </motion.div>

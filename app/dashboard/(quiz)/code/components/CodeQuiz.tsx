@@ -76,11 +76,7 @@ const CodeQuiz = ({
               ]
             : []),
           ...(question.language === "python"
-            ? [
-                option.replace(/function/g, "def"),
-                option.replace(/print/g, "output"),
-                option.replace(/list/g, "array"),
-              ]
+            ? [option.replace(/function/g, "def"), option.replace(/print/g, "output"), option.replace(/list/g, "array")]
             : []),
         ]
         return {
@@ -88,7 +84,7 @@ const CodeQuiz = ({
           text: optionVariations[0],
         }
       }) || [],
-    [question.options, question.language]
+    [question.options, question.language],
   )
 
   const handleOptionSelect = useCallback(
@@ -111,7 +107,7 @@ const CodeQuiz = ({
         setIsAnswering(false)
       }
     },
-    [isAnswering, isSubmitting, options, onAnswer, dispatch, question.id]
+    [isAnswering, isSubmitting, options, onAnswer, dispatch, question.id],
   )
 
   const handleCopyCode = useCallback(async () => {
@@ -130,17 +126,7 @@ const CodeQuiz = ({
   const hasAnswer = !!selectedAnswer
 
   return (
-    <QuizContainer
-      questionNumber={questionNumber}
-      totalQuestions={totalQuestions}
-      quizType="code"
-      animationKey={question.id}
-      quizTitle={quizTitle}
-      quizSubtitle={quizSubtitle}
-      difficulty={difficulty.toLowerCase()}
-      category={category}
-      timeLimit={timeLimit}
-    >
+    <QuizContainer animationKey={question.id}>
       <div className="space-y-6">
         <motion.div
           className="text-center space-y-4 mb-6"
@@ -216,7 +202,10 @@ const CodeQuiz = ({
                   className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30 font-semibold text-xs"
                 >
                   <Code2 className="w-3 h-3 mr-1" />
-                  {(question.language && question.language.trim() !== "" ? question.language : "JavaScript").toUpperCase()}
+                  {(question.language && question.language.trim() !== ""
+                    ? question.language
+                    : "JavaScript"
+                  ).toUpperCase()}
                 </Badge>
 
                 <Button

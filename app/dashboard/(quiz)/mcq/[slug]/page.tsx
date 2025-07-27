@@ -1,6 +1,6 @@
 "use client"
 
-import { use } from "react"
+import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,21 +10,39 @@ import McqQuizWrapper from "../components/McqQuizWrapper"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
 import { getQuizSlug } from "../../components/utils"
-import { useSession } from "next-auth/react"
+import { useSelector } from "react-redux"
+import { GlobalLoader } from "@/components/loaders"
 
 
 export default function McqQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }> 
+  params: Promise<{ slug: string }>
 }) {
-  // Unwrap params for future compatibility
   const slug = getQuizSlug(params);
-  const userId = useSession()?.data?.user?.id || undefined;
+  const router = useRouter();
 
-  const router = useRouter()
+  // Get quiz state from Redux
+  const quizState = useSelector((state: any) => state.quiz);
+  const quizData = quizState;
+  const status = quizState?.status;
+  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
 
+  useEffect(() => {
+    if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
+      // Dynamically import fetchQuiz thunk and dispatch it
+      console.log("Fetching quiz data for slug:", slug);
+      import("@/store/slices/quiz/quiz-slice").then(({ fetchQuiz }) => {
+        dispatch(fetchQuiz({ slug, quizType: "mcq" }));
+      });
+    }
+  }, [slug, quizState, status, dispatch]);
 
+  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
+    
+      <GlobalLoader  />
+
+  }
   if (!slug) {
     return (
       <div className="container max-w-4xl py-6">
@@ -39,16 +57,18 @@ export default function McqQuizPage({
     )
   }
   return (
-    <QuizPlayLayout 
-      quizSlug={slug} 
+    <QuizPlayLayout
+      quizSlug={slug}
       quizType="mcq"
       quizId={slug}
-      ownerId={userId || ''}
+
       isPublic={true}
-      userId={userId}
+
       isFavorite={false}
+      quizData={quizData || null}
+      animationKey={slug}
     >
-      <QuizSEO 
+      <QuizSEO
         slug={slug}
         quizType="mcq"
         description={`Test your knowledge with this ${slug.replace(/-/g, ' ')} multiple choice quiz. Challenge yourself and learn something new!`}

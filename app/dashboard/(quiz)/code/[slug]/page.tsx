@@ -8,14 +8,31 @@ import CodeQuizWrapper from "../components/CodeQuizWrapper"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
 import { getQuizSlug } from "../../components/utils"
-
+import { useSelector } from "react-redux"
+import { useEffect } from "react"
+import { GlobalLoader } from "@/components/loaders"
 export default function CodeQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }> 
+  params: Promise<{ slug: string }>
 }) {
   const slug = getQuizSlug(params);
   const router = useRouter();
+  // Get quiz state from Redux
+  const quizState = useSelector((state: any) => state.quiz);
+  const quizData = quizState;
+  const status = quizState?.status;
+  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => {});
+
+  useEffect(() => {
+    if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
+      // Dynamically import fetchQuiz thunk and dispatch it
+      console.log("Fetching quiz data for slug:", slug);
+      import("@/store/slices/quiz/quiz-slice").then(({ fetchQuiz }) => {
+        dispatch(fetchQuiz({ slug, quizType: "code" }));
+      });
+    }
+  }, [slug, quizState, status, dispatch]);
 
   if (!slug) {
     return (
@@ -28,22 +45,30 @@ export default function CodeQuizPage({
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
+
+  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
+    
+      <GlobalLoader  />
+
+  }
+
   return (
-    <QuizPlayLayout 
-      quizSlug={slug} 
+    <QuizPlayLayout
+      quizSlug={slug}
       quizType="code"
       quizId={slug}
-      isPublic={true} 
+      isPublic={true}
       isFavorite={false}
+      quizData={quizData || null}
     >
-      <QuizSEO 
+      <QuizSEO
         slug={slug}
         quizType="code"
         description={`Test your programming skills with this ${slug.replace(/-/g, ' ')} coding challenge. Write code and improve your development abilities!`}
       />
       <CodeQuizWrapper slug={slug} />
     </QuizPlayLayout>
-  )
+  );
 }

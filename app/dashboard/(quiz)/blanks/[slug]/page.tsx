@@ -1,6 +1,6 @@
 "use client"
 
-import { use } from "react"
+import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,18 +8,39 @@ import { Button } from "@/components/ui/button"
 import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
-
+import { getQuizSlug } from "../../components/utils"
+import { useSelector } from "react-redux"
+import { GlobalLoader } from "@/components/loaders"
 
 export default function BlanksQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: Promise<{ slug: string }>
 }) {
-  // Unwrap params for future compatibility
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const slug = resolvedParams.slug
-  const { status: authStatus } = useSession()
-  const router = useRouter()
+  const slug = getQuizSlug(params);
+  const router = useRouter();
+
+  // Get quiz state from Redux
+  const quizState = useSelector((state: any) => state.quiz);
+  const quizData = quizState;
+  const status = quizState?.status;
+  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
+
+  useEffect(() => {
+    if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
+      // Dynamically import fetchQuiz thunk and dispatch it
+      console.log("Fetching quiz data for slug:", slug);
+      import("@/store/slices/quiz/quiz-slice").then(({ fetchQuiz }) => {
+        dispatch(fetchQuiz({ slug, quizType: "blanks" }));
+      });
+    }
+  }, [slug, quizState, status, dispatch]);
+
+  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
+    
+      <GlobalLoader  />
+
+  }
 
 
 
@@ -43,6 +64,7 @@ export default function BlanksQuizPage({
       quizId={slug}
       isPublic={true} 
       isFavorite={false}
+      quizData={quizData || null}
     >
       <QuizSEO 
         slug={slug}

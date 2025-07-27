@@ -293,16 +293,7 @@ export default function BlanksQuiz({
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full">
-      <QuizContainer
-        questionNumber={questionNumber}
-        totalQuestions={totalQuestions}
-        quizType="blanks"
-        animationKey={question.id}
-        quizTitle="Fill in the Blank"
-        quizSubtitle="Complete the sentence with the correct word or phrase"
-        timeSpent={timeSpent}
-        difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
-      >
+      <QuizContainer animationKey={question.id}>
         <div className="space-y-4 sm:space-y-6">
           {/* Info Card (Difficulty & Tips) - Matches the image's top card */}
           <motion.div
@@ -357,7 +348,6 @@ export default function BlanksQuiz({
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
                       <h3 className="font-semibold text-base sm:text-lg text-foreground">Complete the Statement</h3>
-                      {/* Removed "Learning Focused" badge */}
                     </div>
                     {/* Question with Blank Input */}
                     <div className="text-base sm:text-lg md:text-xl font-medium leading-relaxed mb-4">
