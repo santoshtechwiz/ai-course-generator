@@ -9,6 +9,10 @@ interface Quiz {
   quizType: QuizType;
 }
 
+// Simple in-memory cache (for serverless, use edge KV or Redis in prod)
+let cached: { data: any; timestamp: number } | null = null;
+const CACHE_TTL = 60 * 5 * 1000; // 5 minutes
+
 function generateDescription(item: any, type: "course" | "quiz"): string {
   const templates =
     type === "course"
@@ -31,16 +35,26 @@ function generateDescription(item: any, type: "course" | "quiz"): string {
 }
 
 function getQuizTypeDescription(quizType: QuizType): string {
-  const descriptions = {
+  const descriptions: Record<QuizType, string> = {
     mcq: "multiple-choice questions",
     openended: "open-ended questions",
-    "blanks": "fill-in-the-blank exercises",
+    blanks: "fill-in-the-blank exercises",
     code: "coding challenges",
+    flashcard: "flashcard reviews",
   }
   return descriptions[quizType] || "interactive questions"
 }
 
 export async function GET() {
+  // Check cache
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return NextResponse.json(cached.data, {
+      headers: {
+        "Cache-Control": `public, max-age=${CACHE_TTL / 1000}`,
+      },
+    })
+  }
+
   try {
     const [courses, quizzes] = await Promise.all([
       prisma.course.findMany({
@@ -86,7 +100,14 @@ export async function GET() {
       })),
     ]
 
-    return NextResponse.json(carouselItems)
+    // Store in cache
+    cached = { data: carouselItems, timestamp: Date.now() }
+
+    return NextResponse.json(carouselItems, {
+      headers: {
+        "Cache-Control": `public, max-age=${CACHE_TTL / 1000}`,
+      },
+    })
   } catch (error) {
     console.error("Error fetching carousel items:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })

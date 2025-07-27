@@ -20,14 +20,15 @@ export async function GET() {
   const items = quizzes
     .map((quiz) => {
       const cleanedSlug = quiz.slug.replace(/-[a-z0-9]{4,}$/i, "")
-      const url = `${baseUrl}/dashboard/${quiz.quizType}/${cleanedSlug}`
+      const url = `${baseUrl}/dashboard/${quiz.quizType}/${quiz.slug}`
+      const description = quiz.title || "Interactive coding quiz"
       return `
   <item>
     <title>${escapeXml(quiz.title || cleanedSlug)}</title>
-    <link>${escapeXml(url)}</link>
-    <guid>${escapeXml(url)}</guid>
-    <description>${escapeXml(quiz.description || "Interactive coding quiz")}</description>
-    <pubDate>${new Date(quiz.updatedAt).toUTCString()}</pubDate>
+    <link>${url}</link>
+    <guid>${url}</guid>
+    <description>${escapeXml(description)}</description>
+    <pubDate>${new Date(quiz.updatedAt).toISOString()}</pubDate>
   </item>`
     })
     .join("")
