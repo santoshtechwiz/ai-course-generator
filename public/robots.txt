@@ -1,0 +1,16 @@
+# robots.txt for courseai.io
+
+User-agent: *
+Allow: /
+Disallow: /dashboard/account
+Disallow: /api/
+Disallow: /api/*
+
+# Optional: Limit crawl rate for all bots
+# Crawl-delay: 10
+
+# Host
+Host: https://courseai.io
+
+# Sitemap
+Sitemap: https://courseai.io/sitemap.xml

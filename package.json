@@ -18,7 +18,7 @@
     "start": "next start",
     "lint": "next lint",
     "server": "node server",
-    "postbuild": "next-sitemap",
+   
     "postinstall": "prisma generate",
     "dev:migrate": "npx prisma migrate dev",
     "prod:migrate": "npx prisma migrate deploy",
