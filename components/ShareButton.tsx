@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 
 import { useToast } from "@/hooks";
 import { QuizType } from "@/app/types/quiz-types";
-import { buildQuizUrl } from "@/lib/utils/utils";
+import { buildQuizUrl } from "@/lib/utils";
 
 export function ShareButton({ slug, title, type }: { slug: string; title: string, type: QuizType }) {
   const [isLinkCopied, setIsLinkCopied] = useState(false);

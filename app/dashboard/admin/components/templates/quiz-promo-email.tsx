@@ -1,4 +1,6 @@
-import type { QuizType } from "@/app/types/types"
+
+import { QuizType } from "@/app/types/quiz-types"
+import { buildQuizUrl } from "@/lib/utils"
 
 import type * as React from "react"
 
