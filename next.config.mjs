@@ -2,7 +2,14 @@ const nextConfig = {
   reactStrictMode: false,
   distDir: ".next",
   poweredByHeader: false, // Remove X-Powered-By header for security
- 
+
+  // Modularize imports for smaller bundles (example for lodash)
+  modularizeImports: {
+    lodash: {
+      transform: "lodash/{{member}}",
+    },
+  },
+
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [320, 420, 640, 768, 1024, 1280, 1440, 1920],
@@ -29,7 +36,8 @@ const nextConfig = {
         pathname: "/**",
       },
     ],
-    minimumCacheTTL: 60, // Cache images for at least 60 seconds
+    minimumCacheTTL: 600, // Cache images for at least 10 minutes
+    dangerouslyAllowSVG: false,
   },
   // Rewrites
   async rewrites() {
@@ -42,8 +50,7 @@ const nextConfig = {
         source: "/rss.xml",
         destination: "/api/rss",
       },
-        
-    ]
+    ];
   },
   
   
@@ -64,12 +71,12 @@ const nextConfig = {
   // Performance optimizations
   compress: true,
 
-  // // Experimental features
-  // experimental: {
-  //   optimizeCss: true, // Optimize CSS
-  //   optimizePackageImports: [],
 
-  // },
+  // Experimental features
+  experimental: {
+    optimizeCss: true, // Optimize CSS
+    // Add more experimental flags as needed, see Next.js docs for valid options
+  },
 }
 
 export default nextConfig

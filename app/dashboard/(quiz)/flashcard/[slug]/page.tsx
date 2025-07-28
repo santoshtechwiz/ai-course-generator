@@ -8,6 +8,7 @@ import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { getQuizSlug } from "../../components/utils"
 import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
 import { GlobalLoader } from "@/components/loaders"
+import { useAuth } from "@/hooks"
 
 
 export default function FlashCardPage({
@@ -17,6 +18,7 @@ export default function FlashCardPage({
 }) {
   const slug = getQuizSlug(params);
   const router = useRouter()
+  const {user}=useAuth();
   // Get quiz state from Redux
   const quizState = typeof window !== "undefined" ? require("react-redux").useSelector((state: any) => state.quiz) : null;
   const quizData = quizState;
@@ -58,6 +60,7 @@ export default function FlashCardPage({
       quizType="flashcard"
       quizId={slug}
       isPublic={true}
+      userId={user?.id || ""}
       isFavorite={false}
       quizData={quizData || null}
     >

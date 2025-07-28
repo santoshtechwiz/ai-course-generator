@@ -1,19 +1,18 @@
 "use client"
 
 import type React from "react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Share2, Trash2, Download, Heart, BarChart2, Lock, MoreHorizontal, Sparkles } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { Eye, EyeOff, Share2, Trash2, Download, Heart, Settings, Users, Star, Crown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/modules/auth"
-import { ConfirmDialog } from "./ConfirmDialog"
+
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ConfirmDialog } from "./ConfirmDialog"
 
 interface QuizActionsProps {
   quizSlug: string
@@ -34,6 +33,7 @@ interface ActionButton {
   active?: boolean
   premium?: boolean
   destructive?: boolean
+  variant?: "default" | "outline" | "ghost"
 }
 
 export function QuizActions({
@@ -50,33 +50,43 @@ export function QuizActions({
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isPdfGenerating, setIsPdfGenerating] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
   const router = useRouter()
   const { user, subscription, isAuthenticated } = useAuth()
 
   const currentUserId = user?.id || null
   const canDownloadPDF = subscription?.status?.toLowerCase() === "active"
 
-  const promptLogin = () => toast({
-    title: "Authentication required",
-    description: "Please log in to perform this action",
-    variant: "destructive",
-    action: (
-      <Button variant="outline" size="sm" onClick={() => router.push("/signin")}>
-        Sign In
-      </Button>
-    ),
-  })
+  const promptLogin = useCallback(
+    () =>
+      toast({
+        title: "Authentication required",
+        description: "Please log in to perform this action",
+        variant: "destructive",
+        action: (
+          <Button variant="outline" size="sm" onClick={() => router.push("/signin")}>
+            Sign In
+          </Button>
+        ),
+      }),
+    [router],
+  )
 
-  const promptUpgrade = () => toast({
-    title: "Premium feature",
-    description: "Upgrade to Premium to download PDFs",
-    variant: "destructive",
-    action: (
-      <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/subscription")}>
-        Upgrade
-      </Button>
-    ),
-  })
+  const promptUpgrade = useCallback(
+    () =>
+      toast({
+        title: "Premium feature",
+        description: "Upgrade to Premium to download PDFs",
+        variant: "destructive",
+        action: (
+          <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/subscription")}>
+            Upgrade
+          </Button>
+        ),
+      }),
+    [router],
+  )
 
   const updateQuiz = async (field: "isPublic" | "isFavorite", value: boolean) => {
     const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
@@ -98,24 +108,34 @@ export function QuizActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: value }),
       })
-      
+
       if (!res.ok) throw new Error("Update failed")
 
       field === "isPublic" ? setIsPublic(value) : setIsFavorite(value)
-      
+
       toast({
-        title: field === "isPublic"
-          ? value ? "Quiz is now public" : "Quiz is now private"
-          : value ? "Added to favorites" : "Removed from favorites",
-        description: field === "isPublic"
-          ? value ? "Others can now discover your quiz" : "Only you can access this quiz"
-          : value ? "Quiz saved to favorites" : "Quiz removed from favorites"
+        title:
+          field === "isPublic"
+            ? value
+              ? "Quiz is now public"
+              : "Quiz is now private"
+            : value
+              ? "Added to favorites"
+              : "Removed from favorites",
+        description:
+          field === "isPublic"
+            ? value
+              ? "Others can now discover your quiz"
+              : "Only you can access this quiz"
+            : value
+              ? "Quiz saved to favorites"
+              : "Quiz removed from favorites",
       })
     } catch (err: any) {
-      toast({ 
-        title: "Error", 
-        description: err.message, 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
       })
     } finally {
       setLoading(false)
@@ -125,34 +145,25 @@ export function QuizActions({
   const handleShare = async () => {
     try {
       const shareUrl = `${window.location.origin}/quiz/${quizSlug}`
-      if (navigator.share) {
+      if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
         await navigator.share({
-          title: "Check out this quiz!",
+          title: quizData?.title || "Check out this quiz!",
           text: "Test your knowledge with this quiz",
           url: shareUrl,
         })
       } else {
         await navigator.clipboard.writeText(shareUrl)
-        toast({ 
-          title: "Link copied!", 
+        toast({
+          title: "Link copied!",
           description: "Quiz link copied to clipboard",
-          action: (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigator.clipboard.writeText(shareUrl)}
-            >
-              Copy Again
-            </Button>
-          )
         })
       }
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        toast({ 
-          title: "Sharing failed", 
-          description: "Please try again", 
-          variant: "destructive" 
+        toast({
+          title: "Sharing failed",
+          description: "Please try again",
+          variant: "destructive",
         })
       }
     }
@@ -207,8 +218,8 @@ export function QuizActions({
       const response = await fetch(`/api/quizzes/common/${quizSlug}`, { method: "DELETE" })
       if (!response.ok) throw new Error("Failed to delete quiz")
 
-      toast({ 
-        title: "Quiz deleted", 
+      toast({
+        title: "Quiz deleted",
         description: "Redirecting to dashboard...",
       })
       setTimeout(() => router.push("/dashboard"), 500)
@@ -220,27 +231,46 @@ export function QuizActions({
       })
     } finally {
       setIsDeleting(false)
+      setShowDeleteDialog(false)
     }
   }
 
-  const actionButtons = useMemo(
+  const primaryActions = useMemo(
     (): ActionButton[] => [
       {
+        id: "share",
+        label: "Share",
+        icon: Share2,
+        loading: false,
+        onClick: handleShare,
+        disabled: false,
+        variant: "outline",
+      },
+      {
         id: "favorite",
-        label: isFavorite ? "Remove favorite" : "Add to favorites",
+        label: isFavorite ? "Unfavorite" : "Favorite",
         icon: Heart,
         loading: isFavoriteLoading,
         onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
         disabled: !isAuthenticated,
         active: isFavorite,
+        variant: isFavorite ? "default" : "outline",
       },
+    ],
+    [isAuthenticated, isFavorite, isFavoriteLoading, promptLogin],
+  )
+
+  const ownerActions = useMemo(
+    (): ActionButton[] => [
       {
-        id: "share",
-        label: "Share quiz",
-        icon: Share2,
-        loading: false,
-        onClick: handleShare,
-        disabled: false,
+        id: "visibility",
+        label: isPublic ? "Make Private" : "Make Public",
+        icon: isPublic ? Eye : EyeOff,
+        loading: isPublicLoading,
+        onClick: () => updateQuiz("isPublic", !isPublic),
+        disabled: !isOwner || isPublicLoading,
+        active: isPublic,
+        variant: "outline",
       },
       {
         id: "download",
@@ -250,197 +280,153 @@ export function QuizActions({
         onClick: handlePdfDownload,
         disabled: !isAuthenticated || !canDownloadPDF,
         premium: !canDownloadPDF,
-      },
-      {
-        id: "visibility",
-        label: isPublic ? "Make private" : "Make public",
-        icon: isPublic ? Eye : EyeOff,
-        loading: isPublicLoading,
-        onClick: () => updateQuiz("isPublic", !isPublic),
-        disabled: !isOwner || isPublicLoading,
-        active: isPublic,
+        variant: "outline",
       },
       {
         id: "delete",
-        label: "Delete quiz",
+        label: "Delete",
         icon: Trash2,
         loading: isDeleting,
-        onClick: handleDelete,
+        onClick: () => setShowDeleteDialog(true),
         disabled: !isOwner || isDeleting,
         destructive: true,
+        variant: "outline",
       },
     ],
-    [
-      isAuthenticated,
-      isFavorite,
-      isFavoriteLoading,
-      isPublic,
-      isPublicLoading,
-      isDeleting,
-      isPdfGenerating,
-      canDownloadPDF,
-      isOwner,
-    ],
+    [isAuthenticated, isPublic, isPublicLoading, isDeleting, isPdfGenerating, canDownloadPDF, isOwner],
   )
 
-  const getButtonVariant = (action: ActionButton) => {
-    if (action.active) return "default"
-    if (action.destructive) return "destructive"
-    return "outline"
-  }
-
-  const getButtonClass = (action: ActionButton) => {
-    return cn(
-      "h-8 px-3 py-1 rounded-md transition-all",
-      "hover:scale-[1.03] active:scale-[0.98]",
-      "flex items-center gap-2",
-      action.active && "shadow-md",
-      action.premium && "border-amber-300 bg-amber-50 dark:bg-amber-900/20",
-      action.disabled && "opacity-60 cursor-not-allowed"
-    )
-  }
-
-  const getIconClass = (action: ActionButton) => {
-    return cn(
-      "h-4 w-4",
-      action.active && action.id === "favorite" && "fill-current text-pink-500",
-      action.active && action.id === "visibility" && isPublic && "text-green-500",
-      action.premium && "text-amber-500"
-    )
-  }
-
   return (
-    <TooltipProvider delayDuration={300}>
-      <div 
-        className={cn(
-          "w-full p-4 bg-card border rounded-xl shadow-sm",
-          "transition-all hover:shadow-md",
-          className
-        )}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              Quiz Actions
+    <TooltipProvider>
+      <Card className={cn("w-full", className)}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold text-sm">Quiz Actions</h3>
+            </div>
+
+            {/* Status Indicators */}
+            <div className="flex items-center gap-2">
               {isPublic && (
-                <Badge variant="secondary" className="px-2 py-0.5 text-xs">
-                  {isOwner ? "Public" : "Shared"}
+                <Badge variant="secondary" className="text-xs">
+                  <Eye className="h-3 w-3 mr-1" />
+                  Public
                 </Badge>
               )}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Manage and share your quiz
-            </p>
+              {isFavorite && (
+                <Badge variant="secondary" className="text-xs">
+                  <Heart className="h-3 w-3 mr-1 fill-current" />
+                  Favorite
+                </Badge>
+              )}
+            </div>
           </div>
-          
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {actionButtons.slice(0, 3).map((action) => (
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Primary Actions */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Actions</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {primaryActions.map((action) => (
                 <Tooltip key={action.id}>
                   <TooltipTrigger asChild>
                     <Button
-                      variant={getButtonVariant(action)}
-                      className={getButtonClass(action)}
+                      variant={action.variant as any}
+                      size="sm"
+                      className={cn(
+                        "w-full justify-start gap-2",
+                        action.active &&
+                          action.id === "favorite" &&
+                          "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
+                        action.disabled && "opacity-50",
+                      )}
                       onClick={!action.disabled ? action.onClick : undefined}
                       disabled={action.disabled || action.loading}
-                      aria-label={action.label}
                     >
-                      {action.loading ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        >
-                          <BarChart2 className="h-4 w-4" />
-                        </motion.div>
-                      ) : (
-                        <>
-                          <action.icon className={getIconClass(action)} />
-                          <span className="hidden sm:inline">{action.label}</span>
-                        </>
-                      )}
-                      
-                      {action.premium && (
-                        <Badge variant="premium" className="ml-1 px-1.5 py-0 text-xs">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          Premium
-                        </Badge>
-                      )}
+                      <action.icon
+                        className={cn("h-4 w-4", action.active && action.id === "favorite" && "fill-current")}
+                      />
+                      {action.label}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {action.label}
-                    {action.disabled && action.premium && " (Premium feature)"}
+                    <p>{action.label}</p>
                   </TooltipContent>
                 </Tooltip>
               ))}
             </div>
-
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      className="h-8 w-8 rounded-md"
-                      aria-label="More actions"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent>More actions</TooltipContent>
-              </Tooltip>
-              
-              <DropdownMenuContent align="end" className="min-w-[180px]">
-                {actionButtons.slice(3).map((action) => (
-                  <DropdownMenuItem
-                    key={action.id}
-                    onSelect={action.onClick}
-                    disabled={action.disabled || action.loading}
-                    className={cn(
-                      "flex items-center gap-2",
-                      action.destructive && "text-destructive focus:bg-destructive/10"
-                    )}
-                  >
-                    {action.loading ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="flex items-center"
-                      >
-                        <BarChart2 className="h-4 w-4 mr-2" />
-                      </motion.div>
-                    ) : (
-                      <action.icon className={getIconClass(action)} />
-                    )}
-                    <span>{action.label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
-        </div>
 
-        <AnimatePresence>
-          {isPublic && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 pt-3 border-t"
-            >
-              <div className="flex items-center gap-2 text-sm">
-                <Eye className="h-4 w-4 text-green-500" />
-                <span className="text-muted-foreground">
-                  This quiz is {isOwner ? "public" : "shared with you"}. 
-                  {isOwner && " Others can discover it."}
-                </span>
+          {/* Owner Actions */}
+          {isOwner && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Owner Actions</h4>
+              <div className="space-y-2">
+                {ownerActions.map((action) => (
+                  <Tooltip key={action.id}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={action.variant as any}
+                        size="sm"
+                        className={cn(
+                          "w-full justify-start gap-2",
+                          action.destructive && "text-destructive hover:text-destructive",
+                          action.premium && "border-amber-200 bg-amber-50 hover:bg-amber-100",
+                          action.disabled && "opacity-50",
+                        )}
+                        onClick={!action.disabled ? action.onClick : undefined}
+                        disabled={action.disabled || action.loading}
+                      >
+                        <action.icon className="h-4 w-4" />
+                        {action.label}
+                        {action.premium && <Crown className="h-3 w-3 ml-auto text-amber-500" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{action.label}</p>
+                      {action.premium && <p className="text-xs text-muted-foreground">Premium feature</p>}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
-      </div>
+
+          {/* Quiz Stats */}
+          {quizData && (
+            <div className="space-y-2 pt-2 border-t">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quiz Stats</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {quizData.rating && (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                    <span className="font-medium">{quizData.rating.toFixed(1)}</span>
+                  </div>
+                )}
+                {quizData.attempts && (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                    <Users className="h-4 w-4 text-blue-500" />
+                    <span className="font-medium">{quizData.attempts}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+
+        <ConfirmDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          title="Delete Quiz"
+          description="Are you sure you want to delete this quiz? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="destructive"
+        />
+      </Card>
     </TooltipProvider>
   )
 }

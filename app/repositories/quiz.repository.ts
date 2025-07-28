@@ -17,6 +17,13 @@ export class QuizRepository extends BaseRepository<any> {
     const quiz = await prisma.userQuiz.findUnique({
       where: { slug },
       include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
         questions: {
           include: {
             openEndedQuestion: true,

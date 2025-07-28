@@ -9,11 +9,12 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 import CodeQuizOptions from "./CodeQuizOptions"
-import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
-import { Code2, Terminal, Copy, Check } from "lucide-react"
+import { Code2, Terminal, Copy, Check, Play, Zap, Target } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 
 interface CodeQuizProps {
   question: CodeQuestion
@@ -35,6 +36,51 @@ interface CodeQuizProps {
   difficulty?: string
   category?: string
   timeLimit?: number
+}
+
+// Enhanced animation variants for consistency
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1,
+      duration: 0.6,
+      ease: "easeOut",
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    transition: {
+      when: "afterChildren",
+      staggerChildren: 0.05,
+      staggerDirection: -1,
+      duration: 0.4,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 250,
+      damping: 25,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.98,
+    transition: { duration: 0.2 },
+  },
 }
 
 const CodeQuiz = ({
@@ -124,174 +170,181 @@ const CodeQuiz = ({
 
   const progressPercentage = Math.round((questionNumber / totalQuestions) * 100)
   const hasAnswer = !!selectedAnswer
+  const language = question.language && question.language.trim() !== "" ? question.language : "JavaScript"
 
   return (
-    <QuizContainer animationKey={question.id}>
-      <div className="space-y-6">
-        <motion.div
-          className="text-center space-y-4 mb-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <motion.h2
-            className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground leading-relaxed max-w-4xl mx-auto px-4 break-words"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            style={{
-              wordWrap: "break-word",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-              hyphens: "auto",
-            }}
-          >
-            {question.text || question.question}
-          </motion.h2>
+    <motion.div
+      className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+    >
 
-          <motion.div
-            className="h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full mx-auto max-w-32"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
-          />
-        </motion.div>
 
-        {question.codeSnippet && (
-          <motion.div
-            className="max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-border/30 group"
-            initial={{ opacity: 0, scale: 0.98, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            whileHover={{
-              scale: 1.005,
-              transition: { duration: 0.2 },
-            }}
-          >
-            <motion.div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700/50">
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1.5">
-                  <motion.div
-                    className="w-3 h-3 rounded-full bg-red-500/80"
-                    whileHover={{ scale: 1.1, backgroundColor: "#ef4444" }}
-                  />
-                  <motion.div
-                    className="w-3 h-3 rounded-full bg-yellow-500/80"
-                    whileHover={{ scale: 1.1, backgroundColor: "#eab308" }}
-                  />
-                  <motion.div
-                    className="w-3 h-3 rounded-full bg-green-500/80"
-                    whileHover={{ scale: 1.1, backgroundColor: "#22c55e" }}
-                  />
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Question Section */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-l-4 border-l-green-500 bg-gradient-to-r from-background to-green-50/30 shadow-lg dark:to-green-950/20">
+              <CardHeader className="pb-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Target className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="font-semibold text-lg text-foreground">Question {questionNumber}</h3>
+                      <Badge
+                        variant="secondary"
+                        className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                      >
+                        Code Analysis
+                      </Badge>
+                    </div>
+                    <p className="text-base sm:text-lg leading-relaxed text-foreground break-words">
+                      {question.text || question.question}
+                    </p>
+                  </div>
                 </div>
+              </CardHeader>
+            </Card>
+          </motion.div>
 
+          {/* Code Display Section */}
+          {question.codeSnippet && (
+            <motion.div variants={itemVariants}>
+              <Card className="overflow-hidden shadow-xl border-2 border-border/30 group">
                 <motion.div
-                  className="flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg backdrop-blur-sm"
-                  whileHover={{ scale: 1.02, backgroundColor: "rgba(51, 65, 85, 0.7)" }}
+                  className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700/50"
+                  whileHover={{ backgroundColor: "rgba(51, 65, 85, 0.9)" }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <Terminal className="w-3.5 h-3.5 text-slate-300" />
-                  <span className="text-slate-300 text-xs font-mono font-medium">
-                    {question.language && question.language.trim() !== "" ? question.language : "JavaScript"}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1.5">
+                      <motion.div
+                        className="w-3 h-3 rounded-full bg-red-500/80"
+                        whileHover={{ scale: 1.1, backgroundColor: "#ef4444" }}
+                      />
+                      <motion.div
+                        className="w-3 h-3 rounded-full bg-yellow-500/80"
+                        whileHover={{ scale: 1.1, backgroundColor: "#eab308" }}
+                      />
+                      <motion.div
+                        className="w-3 h-3 rounded-full bg-green-500/80"
+                        whileHover={{ scale: 1.1, backgroundColor: "#22c55e" }}
+                      />
+                    </div>
+
+                    <motion.div
+                      className="flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg backdrop-blur-sm"
+                      whileHover={{ scale: 1.02, backgroundColor: "rgba(51, 65, 85, 0.7)" }}
+                    >
+                      <Terminal className="w-3.5 h-3.5 text-slate-300" />
+                      <span className="text-slate-300 text-xs font-mono font-medium">{language}</span>
+                    </motion.div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="bg-gradient-to-r from-green-500/20 to-emerald-500/10 text-green-300 border-green-500/30 font-semibold text-xs"
+                    >
+                      <Code2 className="w-3 h-3 mr-1" />
+                      {language.toUpperCase()}
+                    </Badge>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCopyCode}
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700/50"
+                    >
+                      <motion.div
+                        key={copied ? "check" : "copy"}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      </motion.div>
+                    </Button>
+                  </div>
                 </motion.div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant="secondary"
-                  className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30 font-semibold text-xs"
-                >
-                  <Code2 className="w-3 h-3 mr-1" />
-                  {(question.language && question.language.trim() !== ""
-                    ? question.language
-                    : "JavaScript"
-                  ).toUpperCase()}
-                </Badge>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyCode}
-                  className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700/50"
-                >
-                  <motion.div
-                    key={copied ? "check" : "copy"}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.2 }}
+                <CardContent className="p-0 relative overflow-hidden">
+                  <SyntaxHighlighter
+                    language={language.toLowerCase()}
+                    style={vscDarkPlus}
+                    showLineNumbers
+                    customStyle={{
+                      margin: 0,
+                      borderRadius: "0",
+                      fontSize: "0.875rem",
+                      padding: "1.5rem",
+                      background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+                      lineHeight: "1.6",
+                    }}
+                    lineNumberStyle={{
+                      color: "#64748b",
+                      paddingRight: "1rem",
+                      userSelect: "none",
+                      fontSize: "0.75rem",
+                    }}
                   >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  </motion.div>
-                </Button>
-              </div>
+                    {question.codeSnippet}
+                  </SyntaxHighlighter>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none" />
+                </CardContent>
+              </Card>
             </motion.div>
+          )}
 
-            <motion.div className="relative overflow-hidden">
-              <SyntaxHighlighter
-                language={question.language && question.language.trim() !== "" ? question.language : "JavaScript"}
-                style={vscDarkPlus}
-                showLineNumbers
-                customStyle={{
-                  margin: 0,
-                  borderRadius: "0",
-                  fontSize: "0.875rem",
-                  padding: "1.5rem",
-                  background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-                  lineHeight: "1.6",
-                }}
-                lineNumberStyle={{
-                  color: "#64748b",
-                  paddingRight: "1rem",
-                  userSelect: "none",
-                  fontSize: "0.75rem",
-                }}
-              >
-                {question.codeSnippet}
-              </SyntaxHighlighter>
+          {/* Options Section */}
+          <motion.div variants={itemVariants}>
+            <Card className="shadow-lg border border-border/50">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                    <Play className="h-4 w-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-lg text-foreground">Choose Your Answer</h3>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CodeQuizOptions
+                  options={options.map((o) => o.text)}
+                  selectedOption={selectedAnswer}
+                  onSelect={handleOptionSelect}
+                  disabled={isSubmitting || isAnswering}
+                  correctAnswer={question.correctAnswer}
+                  showCorrectAnswer={false}
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none" />
+          {/* Navigation Section */}
+          {showNavigation && (
+            <motion.div variants={itemVariants}>
+              <QuizFooter
+                onNext={onNext}
+                onSubmit={onSubmit}
+                onRetake={onRetake}
+                canGoNext={canGoNext && hasAnswer}
+                canGoPrevious={canGoPrevious}
+                isLastQuestion={isLastQuestion}
+                showRetake={showRetake}
+                isSubmitting={isSubmitting}
+                hasAnswer={hasAnswer}
+              />
             </motion.div>
-          </motion.div>
-        )}
-
-        <motion.div
-          className="max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
-          <CodeQuizOptions
-            options={options.map((o) => o.text)}
-            selectedOption={selectedAnswer}
-            onSelect={handleOptionSelect}
-            disabled={isSubmitting}
-            correctAnswer={question.correctAnswer}
-            showCorrectAnswer={false}
-          />
-        </motion.div>
-
-        {showNavigation && (
-          <motion.div
-            className="max-w-3xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            <QuizFooter
-              onNext={onNext}
-              onSubmit={onSubmit}
-              onRetake={onRetake}
-              canGoNext={canGoNext && hasAnswer}
-              canGoPrevious={canGoPrevious}
-              isLastQuestion={isLastQuestion}
-              showRetake={showRetake}
-              isSubmitting={isSubmitting}
-              hasAnswer={hasAnswer}
-            />
-          </motion.div>
-        )}
+          )}
+        </div>
       </div>
-    </QuizContainer>
+    </motion.div>
   )
 }
 
