@@ -1,13 +1,14 @@
 "use client"
 
 import { useAuth, useMediaQuery } from "@/hooks"
-import type React from "react"
+import React from "react"
 import { Suspense, useEffect, useState } from "react"
 import { JsonLD } from "@/lib/seo-manager-new"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   ChevronLeft,
   ChevronRight,
@@ -32,6 +33,8 @@ import { useSelector } from "react-redux"
 import { selectQuizUserId } from "@/store/slices/quiz"
 import { QuizActions } from "../QuizActions"
 import { RandomQuiz } from "./RandomQuiz"
+import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
+import { TagsDisplay } from "@/components/quiz/TagsDisplay"
 
 export const dynamic = "force-dynamic"
 
@@ -83,9 +86,9 @@ const quizTypeConfig = {
 }
 
 const difficultyConfig = {
-  easy: { color: "bg-green-100 text-green-800 border-green-200", label: "Easy" },
-  medium: { color: "bg-amber-100 text-amber-800 border-amber-200", label: "Medium" },
-  hard: { color: "bg-red-100 text-red-800 border-red-200", label: "Hard" },
+  easy: { color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800", label: "Easy" },
+  medium: { color: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800", label: "Medium" },
+  hard: { color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800", label: "Hard" },
 }
 
 const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
@@ -101,6 +104,7 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
   timeSpent = 0,
 }) => {
   const isMobile = useMediaQuery("(max-width: 768px)")
+  const isTablet = useMediaQuery("(max-width: 1024px)")
   const pathname = usePathname()
   const [isLoaded, setIsLoaded] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
@@ -157,8 +161,19 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
   const progressPercentage = Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100)))
   const displayedTimeSpent = timeSpent > 0 ? timeSpent : totalTimeSpent
 
+  // Ref for auto-focus
+  const mainContentRef = React.useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (mainContentRef.current) {
+      const firstInput = mainContentRef.current.querySelector(
+        'input, button, select, textarea, [tabindex]:not([tabindex="-1"])'
+      ) as HTMLElement | null
+      if (firstInput) firstInput.focus()
+    }
+  }, [])
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <JsonLD
         type="Quiz"
         data={{
@@ -174,128 +189,243 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50 shadow-sm" aria-label="Quiz Header">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between gap-4">
             {/* Left: Quiz Info */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className={cn("p-2 rounded-lg bg-gradient-to-r text-white", config.color)}>
-                <Icon className="h-5 w-5" />
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1" aria-label="Quiz Info">
+              <div className={cn(
+                "p-2.5 rounded-xl bg-gradient-to-r text-white shadow-lg",
+                "transform transition-transform hover:scale-105",
+                config.color
+              )}>
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="font-bold text-lg truncate">{quizTitle || "Quiz"}</h1>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="secondary" className="text-xs">
+              <div className="min-w-0 flex-1 space-y-1">
+                <h1 className="font-bold text-lg sm:text-xl lg:text-2xl truncate leading-tight" tabIndex={0}>
+                  {quizTitle || "Quiz"}
+                </h1>
+                <div className="flex items-center gap-2 flex-wrap" aria-label="Quiz Meta">
+                  <Badge variant="secondary" className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary border-primary/20">
                     {config.label}
                   </Badge>
-                  <Badge variant="outline" className={cn("text-xs", diffConfig.color)}>
+                  <Badge variant="outline" className={cn("text-xs font-medium px-2 py-1 border", diffConfig.color)}>
                     {diffConfig.label}
                   </Badge>
-                  <span className="text-muted-foreground">
-                    {questionNumber}/{totalQuestions}
+                  {quizData?.questions?.[questionNumber - 1]?.tags && (
+                    <div className="hidden sm:flex items-center">
+                      <TagsDisplay tags={quizData.questions[questionNumber - 1].tags || []} maxVisible={2} />
+                    </div>
+                  )}
+                  <span className="text-sm text-muted-foreground font-medium" aria-label="Question Progress">
+                    {questionNumber} of {totalQuestions}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Right: Stats & Controls */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-3" aria-label="Quiz Controls">
               {/* Stats */}
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-lg text-sm">
+              <div className="hidden sm:flex items-center gap-2 lg:gap-3">
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted/60 hover:bg-muted/80 rounded-lg text-sm font-medium transition-colors border border-border/50">
                   <Timer className="h-4 w-4 text-blue-500" />
-                  <span className="font-mono">{formatTime(displayedTimeSpent)}</span>
+                  <span className="font-mono tabular-nums">{formatTime(displayedTimeSpent)}</span>
                 </div>
-                <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-lg text-sm">
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted/60 hover:bg-muted/80 rounded-lg text-sm font-medium transition-colors border border-border/50">
                   <Trophy className="h-4 w-4 text-yellow-500" />
-                  <span>{progressPercentage}%</span>
+                  <span className="tabular-nums">{progressPercentage}%</span>
                 </div>
                 {quizData?.rating && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-lg text-sm">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/60 hover:bg-muted/80 rounded-lg text-sm font-medium transition-colors border border-border/50">
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span>{quizData.rating.toFixed(1)}</span>
+                    <span className="tabular-nums">{quizData.rating.toFixed(1)}</span>
                   </div>
                 )}
               </div>
 
+              {/* Mobile Stats */}
+              <div className="flex sm:hidden items-center gap-1">
+                <div className="flex items-center gap-1 px-2 py-1 bg-muted/60 rounded-md text-xs font-medium">
+                  <Timer className="h-3 w-3 text-blue-500" />
+                  <span className="font-mono tabular-nums">{formatTime(displayedTimeSpent)}</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 bg-muted/60 rounded-md text-xs font-medium">
+                  <Trophy className="h-3 w-3 text-yellow-500" />
+                  <span className="tabular-nums">{progressPercentage}%</span>
+                </div>
+              </div>
+
               {/* Focus Mode Toggle */}
-              <Button variant="ghost" size="sm" onClick={() => setFocusMode(!focusMode)} className="hidden md:flex">
-                {focusMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setFocusMode(!focusMode)} 
+                      className={cn(
+                        "hidden md:flex h-9 w-9 p-0 rounded-lg transition-all",
+                        "hover:bg-muted/80 hover:scale-105 active:scale-95",
+                        focusMode && "bg-primary/10 text-primary border border-primary/20"
+                      )}
+                      aria-label={focusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
+                    >
+                      {focusMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-medium">
+                    {focusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* Sidebar Toggle */}
-              <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden">
-                {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setSidebarOpen(!sidebarOpen)} 
+                      className={cn(
+                        "h-9 w-9 p-0 rounded-lg transition-all",
+                        "hover:bg-muted/80 hover:scale-105 active:scale-95",
+                        sidebarOpen && !focusMode && "bg-primary/10 text-primary border border-primary/20"
+                      )}
+                      aria-label={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
+                    >
+                      {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-medium">
+                    {sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-3 space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mt-4 space-y-2" aria-label="Quiz Progress">
+            <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground font-medium">
               <span>
                 Question {questionNumber} of {totalQuestions}
               </span>
-              <span>{progressPercentage}% Complete</span>
+              <span className="tabular-nums">{progressPercentage}% Complete</span>
             </div>
-            <Progress value={progressPercentage} className="h-2" />
+            <div className="relative">
+              <Progress 
+                value={progressPercentage} 
+                className="h-2.5 sm:h-3 transition-all duration-700 ease-out bg-muted/60" 
+                aria-valuenow={progressPercentage} 
+                aria-valuemin={0} 
+                aria-valuemax={100}
+              />
+              <div 
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary/20 to-transparent rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex gap-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className={cn(
+          "flex gap-6 lg:gap-8",
+          focusMode && "justify-center"
+        )}>
           {/* Quiz Content */}
-          <main className={cn("flex-1 min-w-0", focusMode && "mx-auto max-w-4xl")}>
-            <div className="min-h-[60vh]">{children}</div>
+          <main 
+            ref={mainContentRef} 
+            className={cn(
+              "flex-1 min-w-0 transition-all duration-300",
+              focusMode ? "max-w-4xl mx-auto" : "max-w-none"
+            )}
+          >
+            <div className={cn(
+              "min-h-[60vh] rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm",
+              "transition-all duration-300 hover:shadow-md hover:bg-card/60",
+              "p-6 sm:p-8 lg:p-10"
+            )}>
+              {children}
+            </div>
           </main>
 
           {/* Sidebar */}
           {!focusMode && (
             <aside
               className={cn(
-                "shrink-0 transition-all duration-200",
+                "shrink-0 transition-all duration-300 ease-in-out",
                 isMobile
                   ? sidebarOpen
-                    ? "fixed inset-y-0 right-0 z-40 w-80 bg-background border-l shadow-lg"
+                    ? "fixed inset-y-0 right-0 z-40 w-80 sm:w-96 bg-background/95 backdrop-blur-lg border-l border-border/50 shadow-2xl"
                     : "w-0 overflow-hidden"
                   : sidebarOpen
-                    ? "w-80"
+                    ? isTablet ? "w-72" : "w-80 xl:w-96"
                     : "w-0 overflow-hidden",
               )}
+              aria-label="Quiz Sidebar"
             >
               {/* Mobile Overlay */}
               {isMobile && sidebarOpen && (
-                <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
+                <div 
+                  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 transition-opacity duration-300" 
+                  onClick={() => setSidebarOpen(false)} 
+                  aria-modal="true" 
+                  role="dialog" 
+                  tabIndex={-1} 
+                />
               )}
 
-              <div className={cn("h-full space-y-4 relative z-40", isMobile ? "p-4 pt-20" : "sticky top-24")}>
+              <div className={cn(
+                "h-full space-y-4 sm:space-y-6 relative z-40",
+                isMobile ? "p-4 sm:p-6 pt-20" : "sticky top-24 p-4"
+              )}>
                 {/* Mobile Close Button */}
                 {isMobile && sidebarOpen && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSidebarOpen(false)}
-                    className="absolute top-4 right-4"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSidebarOpen(false)}
+                          className="absolute top-4 right-4 h-9 w-9 p-0 rounded-lg hover:bg-muted/80 transition-all"
+                          aria-label="Close Sidebar"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="font-medium">Close Sidebar</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
 
                 <Suspense fallback={<QuizSkeleton />}>
-                  <div className="space-y-4">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Quiz Actions */}
-                    <QuizActions
-                      quizSlug={quizSlug}
-                      quizData={quizData}
-                      initialIsFavorite={isFavorite}
-                      initialIsPublic={isPublic}
-                      isOwner={isOwner}
-                    />
+                    <div className="rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm transition-all hover:shadow-md hover:bg-card/60">
+                      <QuizActions
+                        quizSlug={quizSlug}
+                        quizData={quizData}
+                        initialIsFavorite={isFavorite}
+                        initialIsPublic={isPublic}
+                        isOwner={isOwner}
+                      />
+                    </div>
 
                     {/* Random Quiz Discovery */}
-                    <RandomQuiz stats={randomQuizStats} isVisible={true} showHeader={true} showShuffle={true} />
+                    <div className="rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm transition-all hover:shadow-md hover:bg-card/60">
+                      <RandomQuiz 
+                        stats={randomQuizStats} 
+                        isVisible={true} 
+                        showHeader={true} 
+                        showShuffle={true} 
+                      />
+                    </div>
                   </div>
                 </Suspense>
               </div>
@@ -308,3 +438,4 @@ const QuizPlayLayout: React.FC<QuizPlayLayoutProps> = ({
 }
 
 export default QuizPlayLayout
+

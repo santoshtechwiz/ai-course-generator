@@ -57,7 +57,6 @@ const McqQuiz = ({
   const [isAnswering, setIsAnswering] = useState(false)
 
   const options = useMemo(() => {
-    // Ensure unique keys by using both index and option text
     return (question?.options || []).map((option, index) => ({
       id: `${option}-${index}`,
       text: option,
@@ -65,28 +64,28 @@ const McqQuiz = ({
     }))
   }, [question?.options])
 
-const handleOptionSelect = useCallback(async (optionId: string) => {
-  if (isAnswering || isSubmitting) return
+  const handleOptionSelect = useCallback(
+    async (optionId: string) => {
+      if (isAnswering || isSubmitting) return
 
-  setIsAnswering(true)
+      setIsAnswering(true)
 
-  try {
-    await new Promise(resolve => setTimeout(resolve, 150))
-    setSelectedOption(optionId)
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 150))
+        setSelectedOption(optionId)
 
-    const selected = options.find((o) => o.id === optionId)
-    if (selected) {
-      onAnswer(selected.text) // ✅ Send actual answer text instead of index ID
-    }
-
-  
-  } catch (error) {
-    console.log("Failed to select answer")
-  } finally {
-    setIsAnswering(false)
-  }
-}, [onAnswer, isAnswering, isSubmitting, options])
-
+        const selected = options.find((o) => o.id === optionId)
+        if (selected) {
+          onAnswer(selected.text)
+        }
+      } catch (error) {
+        console.log("Failed to select answer")
+      } finally {
+        setIsAnswering(false)
+      }
+    },
+    [onAnswer, isAnswering, isSubmitting, options],
+  )
 
   const questionText = question.text || question.question || "Question not available"
 
@@ -94,22 +93,26 @@ const handleOptionSelect = useCallback(async (optionId: string) => {
     <QuizStateProvider
       onError={(error) => toast.error(error)}
       onSuccess={(message) => toast.success(message || "Great job!")}
-      globalLoading={isLastQuestion} // Use global loading for final submission
+      globalLoading={isLastQuestion}
     >
-      {(stateManager) => (        
-        
+      {(stateManager) => (
         <QuizContainer
-        animationKey="mcq-quiz"
+          questionNumber={questionNumber}
+          totalQuestions={totalQuestions}
+          quizType="mcq"
+          animationKey={`mcq-${question.id}`}
+          difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
         >
           <div className="space-y-6">
+            {/* Question Text */}
             <motion.div
-              className="text-center space-y-4 mb-6"
+              className="text-center space-y-4 mb-8"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
               <motion.h2
-                className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground leading-relaxed max-w-4xl mx-auto px-4 break-words"
+                className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed max-w-4xl mx-auto px-4 break-words"
                 transition={{ delay: 0.1, duration: 0.5 }}
               >
                 {questionText}
@@ -123,28 +126,31 @@ const handleOptionSelect = useCallback(async (optionId: string) => {
               />
             </motion.div>
 
+            {/* Options */}
             <div className="max-w-3xl mx-auto space-y-3">
               <AnimatePresence>
                 {options.map((option, index) => {
                   const isSelected = selectedOption === option.id
                   const isDisabled = isAnswering || isSubmitting || stateManager.isSubmitting
-                  
+
                   return (
                     <motion.div
                       key={option.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1, duration: 0.5 }}
                       whileHover={!isDisabled ? { scale: 1.01, x: 2 } : {}}
                       whileTap={!isDisabled ? { scale: 0.99 } : {}}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     >
                       <motion.label
                         htmlFor={`option-${option.id}`}
                         className={cn(
-                          "group relative flex items-start space-x-3 p-3 sm:p-4 overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300",
+                          "group relative flex items-start space-x-4 p-4 sm:p-5 overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300",
                           "hover:shadow-lg hover:shadow-primary/10",
                           isSelected
                             ? "border-primary bg-gradient-to-r from-primary/15 via-primary/8 to-primary/5 shadow-lg shadow-primary/20"
                             : "border-border/60 bg-gradient-to-r from-card/90 to-card/70 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/8 hover:to-primary/4",
-                          isDisabled && "opacity-60 cursor-not-allowed"
+                          isDisabled && "opacity-60 cursor-not-allowed",
                         )}
                         onClick={() => !isDisabled && handleOptionSelect(option.id)}
                       >
@@ -175,7 +181,7 @@ const handleOptionSelect = useCallback(async (optionId: string) => {
                         {/* Letter */}
                         <div
                           className={cn(
-                            "flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm flex-shrink-0 transition-all duration-300",
+                            "flex items-center justify-center w-10 h-10 rounded-lg font-bold text-sm flex-shrink-0 transition-all duration-300",
                             isSelected
                               ? "bg-primary text-primary-foreground shadow-md"
                               : "bg-muted/60 text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
@@ -187,9 +193,11 @@ const handleOptionSelect = useCallback(async (optionId: string) => {
                         {/* Option Text */}
                         <div
                           className={cn(
-                            "flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0",
+                            "flex-1 text-base sm:text-lg font-medium leading-relaxed min-w-0",
                             "break-words whitespace-normal",
-                            isSelected ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground",
+                            isSelected
+                              ? "text-foreground font-semibold"
+                              : "text-muted-foreground group-hover:text-foreground",
                           )}
                         >
                           <motion.span
@@ -223,7 +231,7 @@ const handleOptionSelect = useCallback(async (optionId: string) => {
               </AnimatePresence>
             </div>
 
-            {/* Enhanced Footer with State Management */}
+            {/* Footer */}
             <QuizFooter
               onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
               onPrevious={undefined}

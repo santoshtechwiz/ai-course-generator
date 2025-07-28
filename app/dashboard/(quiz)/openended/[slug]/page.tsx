@@ -1,39 +1,46 @@
 "use client"
 
-import { use } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
-
+import { useSelector } from "react-redux"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import QuizSEO from "../../components/QuizSEO"
 import { GlobalLoader } from "@/components/ui/loader"
+import { getQuizSlug } from "../../components/utils"
+import { useEffect } from "react"
 export default function OpenEndedQuizPage({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string }
+  params: Promise<{ slug: string }> 
 }) {
-  // Unwrap params for future compatibility
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const slug = resolvedParams.slug
-  const { status: authStatus } = useSession()
-  const router = useRouter()
+  const slug = getQuizSlug(params);
+  const router = useRouter();
 
-  // Check for loading state
-  if (authStatus === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] w-full">
-        <div className="flex flex-col items-center space-y-4">
-          <GlobalLoader />
-          <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
-            Initializing quiz...<br />Loading user session
-          </p>
-        </div>
-      </div>
-    )
+  // Get quiz state from Redux
+  const quizState = useSelector((state: any) => state.quiz);
+  const quizData = quizState;
+  const status = quizState?.status;
+  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
+
+  useEffect(() => {
+    if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
+      // Dynamically import fetchQuiz thunk and dispatch it
+      console.log("Fetching quiz data for slug:", slug);
+      import("@/store/slices/quiz/quiz-slice").then(({ fetchQuiz }) => {
+        dispatch(fetchQuiz({ slug, quizType: "openended" }));
+      });
+    }
+  }, [slug, quizState, status, dispatch]);
+
+  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
+    
+      <GlobalLoader  />
+
   }
+
+
 
   if (!slug) {
     return (
@@ -52,6 +59,7 @@ export default function OpenEndedQuizPage({
     <QuizPlayLayout 
       quizSlug={slug} 
       quizType="openended"
+      quizData={quizData || null}
       quizId={slug}
       isPublic={true} 
       isFavorite={false}

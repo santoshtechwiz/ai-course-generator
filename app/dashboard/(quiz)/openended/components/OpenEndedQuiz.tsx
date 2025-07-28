@@ -289,10 +289,7 @@ export default function OpenEndedQuiz({
                 <Brain className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <DifficultyBadge difficulty={questionData.difficulty} />
-                  <TagsDisplay tags={questionData.tags} maxVisible={3} />
-                </div>
+               
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   {hintsUsed > 0 && (
                     <Badge

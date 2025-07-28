@@ -52,7 +52,6 @@ interface FlashCardComponentProps {
   onComplete?: (results: any) => void
 }
 
-// Enhanced animation variants for consistency
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -596,7 +595,7 @@ export default function FlashCardQuiz({
         animate="visible"
         exit="exit"
       >
-        {/* Enhanced Header Section */}
+        {/* Simplified Header Section */}
         <motion.div
           className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm"
           variants={cardVariants}
