@@ -6,11 +6,11 @@
 import { 
   generateSocialImage as newGenerateSocialImage,
   SocialImageProps
-} from './seo-manager-new';
+} from './seo-manager';
 
 export { 
   SocialImageProps
-} from './seo-manager-new';
+} from './seo-manager';
 
 // Re-export
 export const generateSocialImage = newGenerateSocialImage;

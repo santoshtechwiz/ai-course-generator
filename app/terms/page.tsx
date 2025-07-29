@@ -1,6 +1,7 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { generateMetadata, JsonLD } from "@/lib/seo-manager-new"
+import { generateMetadata } from "@/lib/seo-manager"
+
 export const metadata: Metadata = generateMetadata({
   title: "Terms of Service | CourseAI Coding Education",
   description:

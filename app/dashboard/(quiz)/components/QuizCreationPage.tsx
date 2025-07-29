@@ -8,7 +8,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import RandomQuote from "@/components/RandomQuote"
 import { QuizCourseWrapper } from "./QuizCourseWrapper"
 import { RandomQuiz } from "./layouts/RandomQuiz"
-import { JsonLD } from "@/lib/seo-manager-new"
+import { JsonLD } from "@/lib/seo-manager"
+
 
 export default function QuizCreationPage({
   type,

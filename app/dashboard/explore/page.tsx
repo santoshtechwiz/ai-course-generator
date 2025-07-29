@@ -1,4 +1,4 @@
-import { JsonLD, generateMetadata } from "@/lib/seo-manager-new";
+import { JsonLD, generateMetadata } from "@/lib/seo-manager";
 import { CreateComponent } from "@/components/features/explore/CreateComponent";
 import type { Metadata } from "next";
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";

@@ -1,62 +1,27 @@
 /**
- * SEO Manager - Main export file
+ * SEO Manager - Centralized SEO utilities for CourseAI
  * 
- * This file exports all components, functions, and types from the SEO Manager.
- * It serves as the main entry point for the SEO Manager module.
+ * This module provides tools for managing metadata and structured data across the application.
  */
 
-// Export types
-export * from './types';
+// Export base configuration
+export {
+  BASE_URL,
+  defaultSiteInfo,
+  defaultFAQItems,
+  socialProfiles,
+  defaultMetadata
+} from './config';
 
-// Export constants and defaults
-export { 
-  defaultMetadata, 
-  defaultSiteInfo, 
-  defaultSocialProfiles,
-  defaultFAQItems
-} from './constants';
-
-// Export metadata functions
-export { 
-  generateMetadata, 
-  generatePageMetadata, 
+// Export metadata generators
+export {
+  generateMetadata,
+  generatePageMetadata,
   generateDynamicMetadata,
   generateQuizMetadata,
-  generateCourseMetadata
-} from './metadata';
-
-// Export schema generators
-export { 
-  generateWebsiteSchema,
-  generateWebApplicationSchema,
-  generateSoftwareApplicationSchema,
-  generateOrganizationSchema,
-  generateBreadcrumbSchema,
-  generateArticleSchema,
-  generateCourseSchema,
-  generateQuizSchema,
-  generateFAQSchema,
-  generateHowToSchema,
-  generatePricingSchema,
-  generatePersonSchema,
-  generateVideoSchema,
-  SchemaRegistry,
-  SchemaRegistryService,
-  schemaRegistry
-} from './schema';
-
-// Export React components
-export {
-  JsonLD,
-  JsonLd,
-  WebsiteSchema,
-  BreadcrumbListSchema,
-  OrganizationSchema,
-  FAQSchema,
-  CourseSchema,
-  CombinedSEOSchema,
-  DefaultSEO
-} from './components';
+  generateCourseMetadata,
+  generateSocialImage
+} from './meta-generators';
 
 // Export utility functions
 export {
@@ -65,8 +30,34 @@ export {
   optimizeImageAlt,
   generateJsonLd,
   getSocialImageUrl,
-  generateBreadcrumbItemsFromPath,
   createBreadcrumbItems,
+  generateBreadcrumbs,
   createSocialProfiles,
-  generateSocialImage
-} from './utils';
+  getQuizTypeLabel
+} from './helper-utils';
+
+// Export React components for structured data
+export {
+  JsonLD,
+  JsonLd,
+  WebsiteSchema,
+  BreadcrumbListSchema,
+  OrganizationSchema,
+  FAQSchema,
+  CombinedSEOSchema,
+  CourseSchema,
+  QuizSchema,
+  DynamicBreadcrumbSchema
+} from './structured-data/components';
+
+// Export schema generators
+export { SchemaRegistry } from './structured-data/generators';
+
+// Export types
+export * from './structured-data/types';
+
+/**
+ * Default SEO component for all pages
+ * Includes WebSite, BreadcrumbList, and Organization schemas
+ */
+export { DefaultSEO } from './seo-components';

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { generateCourseMetadata, JsonLD, CourseSchema } from "@/lib/seo-manager-new"
+import { generateCourseMetadata, JsonLD, CourseSchema } from "@/lib/seo-manager"
 import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"

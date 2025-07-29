@@ -33,10 +33,10 @@ import { motion } from "framer-motion";
 import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
-import { GlobalLoader, useLoader } from "@/components/ui/loader";
-import { QuizSchema } from "@/lib/seo-manager-new";
+
 import { QuizActions } from "../../components/QuizActions";
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
+import { QuizSchema } from "@/lib/seo-manager";
 
 interface FlashcardQuizWrapperProps {
   slug: string;

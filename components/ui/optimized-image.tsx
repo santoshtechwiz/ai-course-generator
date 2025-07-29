@@ -1,5 +1,6 @@
+import { optimizeImageAlt } from "@/lib/seo-manager"
 import Image from "next/image"
-import { optimizeImageAlt } from "@/lib/seo-manager-new"
+
 
 interface OptimizedImageProps {
   src: string

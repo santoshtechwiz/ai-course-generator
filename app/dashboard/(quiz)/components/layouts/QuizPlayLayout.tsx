@@ -3,7 +3,7 @@
 import { useAuth, useMediaQuery } from "@/hooks"
 import React from "react"
 import { Suspense, useEffect, useState } from "react"
-import { JsonLD } from "@/lib/seo-manager-new"
+
 import { usePathname } from "next/navigation"
 import { buildQuizUrl, cn } from "@/lib/utils"
 import Head from "next/head"
@@ -35,6 +35,7 @@ import { RandomQuiz } from "./RandomQuiz"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { TagsDisplay } from "@/components/quiz/TagsDisplay"
 import { QuizType } from "@/app/types/quiz-types"
+import { JsonLD } from "@/lib/seo-manager"
 
 export const dynamic = "force-dynamic"
 

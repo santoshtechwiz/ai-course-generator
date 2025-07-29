@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "../globals.css";
 
-import { DefaultSEO, defaultMetadata } from "@/lib/seo-manager-new";
+import { DefaultSEO, defaultMetadata } from "@/lib/seo-manager";
 import Footer from "@/components/shared/Footer";
 import { Providers } from "@/store/provider";
 import { getServerAuthSession } from "@/lib/server-auth";

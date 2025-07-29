@@ -2,12 +2,13 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
-import { JsonLD, generateMetadata } from "@/lib/seo-manager-new"
+
 import { QuizzesClient } from "./components/QuizzesClient"
 import ClientOnly from "@/components/ClientOnly"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
 import { BookOpen, Sparkles, Zap, Target } from "lucide-react"
+import { generateMetadata, JsonLD } from "@/lib/seo-manager"
 
 export const metadata: Metadata = generateMetadata({
   title: "Interactive Quizzes – Master Your Knowledge",

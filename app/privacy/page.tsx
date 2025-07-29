@@ -1,4 +1,4 @@
-import { generateMetadata, JsonLD } from "@/lib/seo-manager-new"
+import { generateMetadata, JsonLD } from "@/lib/seo-manager"
 import type { Metadata } from "next"
 import Link from "next/link"
 
