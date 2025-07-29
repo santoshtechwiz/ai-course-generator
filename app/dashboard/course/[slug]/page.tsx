@@ -72,7 +72,7 @@ export default async function Page({ params }: CoursePageParams) {
       />
       <CourseSchema
         name={course.title}
-        description={course.description}
+        description={course.description || ""}
         url={`${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`}
         provider={{ name: "AI Learning Platform", url: process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io" }}
         imageUrl={course.image || `/api/og?title=${encodeURIComponent(course.title)}`}

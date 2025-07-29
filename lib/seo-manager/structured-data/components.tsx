@@ -243,8 +243,22 @@ export function CombinedSEOSchema({
  * Use this on course pages
  */
 export function CourseSchema(props: Omit<CourseData, '@context' | '@type'>) {
-  const { name: courseName, description, url: courseUrl, provider, imageUrl, dateCreated, dateModified, author, educationalLevel, timeRequired, about, offers, hasCourseInstance } = props;
-  
+  const {
+    name: courseName,
+    description,
+    url: courseUrl,
+    provider,
+    imageUrl,
+    dateCreated,
+    dateModified,
+    author,
+    educationalLevel,
+    timeRequired,
+    about,
+    offers = {},
+    hasCourseInstance = {},
+  } = props;
+
   const schema = SchemaGenerators.generateCourseSchema({
     name: courseName,
     description,
