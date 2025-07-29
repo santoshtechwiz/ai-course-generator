@@ -12,7 +12,7 @@ import {
   PersonData,
   VideoData
 } from './types';
-import { BASE_URL } from '../config';
+import { BASE_URL } from './config';
 
 // Helper to get the base URL
 function getBaseUrl() {
@@ -168,17 +168,18 @@ export function generateArticleSchema(data: ArticleData): Schema {
 }
 
 export function generateCourseSchema(course: CourseData): Schema {
+  // Enhanced Course schema for SEO: more fields, better compliance, and rich data
   return {
     "@context": "https://schema.org",
     "@type": "Course",
     name: course.name,
     description: course.description,
+    url: course.url,
     provider: {
       "@type": "Organization",
       name: course.provider.name,
       ...(course.provider.url && { sameAs: course.provider.url }),
     },
-    url: course.url,
     ...(course.imageUrl && { image: course.imageUrl }),
     ...(course.dateCreated && { dateCreated: course.dateCreated }),
     ...(course.dateModified && { dateModified: course.dateModified }),

@@ -13,18 +13,11 @@ export {
   defaultMetadata
 } from './config';
 
-// Export metadata generators
+// Export metadata generators and utility functions (merged, no duplicates)
 export {
-  generateMetadata,
-  generatePageMetadata,
-  generateDynamicMetadata,
-  generateQuizMetadata,
-  generateCourseMetadata,
-  generateSocialImage
-} from './meta-generators';
-
-// Export utility functions
-export {
+  generateSeoMetadata,
+  generateCourseStructuredData,
+  generateQuizStructuredData,
   extractKeywords,
   generateMetaDescription,
   optimizeImageAlt,
@@ -35,6 +28,22 @@ export {
   createSocialProfiles,
   getQuizTypeLabel
 } from './helper-utils';
+export {
+  generateWebsiteSchema,
+  generateCourseSchema,
+  generateQuizSchema,
+  generateFAQSchema,
+  generateOrganizationSchema,
+  generateBreadcrumbSchema,
+  generateArticleSchema,
+  generateWebApplicationSchema,
+  generateSoftwareApplicationSchema,
+  generateHowToSchema,
+  generatePersonSchema,
+  generateVideoSchema,
+  SchemaRegistry
+} from './generators';
+export { generateSocialImage } from './social-image';
 
 // Export React components for structured data
 export {
@@ -46,18 +55,13 @@ export {
   FAQSchema,
   CombinedSEOSchema,
   CourseSchema,
-  QuizSchema,
-  DynamicBreadcrumbSchema
-} from './structured-data/components';
+  DefaultSEO
+} from './components';
 
 // Export schema generators
-export { SchemaRegistry } from './structured-data/generators';
+// (SchemaRegistry already exported above)
 
 // Export types
-export * from './structured-data/types';
+export * from './types';
 
-/**
- * Default SEO component for all pages
- * Includes WebSite, BreadcrumbList, and Organization schemas
- */
-export { DefaultSEO } from './seo-components';
+

@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "CourseAI - Programming Education Platform",
+    name: "CourseAI - AI-Powered Courses & Quizzes for Every Topic",
     short_name: "CourseAI",
     description:
-      "Revolutionize your coding education with our AI-powered course creation and personalized programming learning platform.",
+      "CourseAI empowers everyone to create, share, and discover interactive courses and quizzes on any topic with the power of AI. Learn, teach, and test knowledge in any field—education, hobbies, business, and more.",
     start_url: "/",
     display: "standalone",
     background_color: "#fff",
@@ -17,7 +17,7 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/x-icon",
       },
     ],
-    categories: ["education", "technology", "programming", "development"],
+    categories: ["education", "technology", "ai", "learning", "quiz", "course", "business", "science", "history", "language", "personal-development", "hobby"],
     related_applications: [
       {
         platform: "web",

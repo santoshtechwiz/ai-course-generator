@@ -2,7 +2,7 @@
  * Default configuration values for SEO
  */
 import { Metadata } from 'next';
-import { SiteInfo } from './structured-data/types';
+import { SiteInfo } from './types';
 
 // Base URL for the site
 export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://courseai.io';
@@ -53,10 +53,10 @@ export const socialProfiles = [
 // Default metadata values to be used across the application
 export const defaultMetadata: Metadata = {
   title: {
-    default: 'CourseAI - Interactive Programming Quizzes and Learning',
+    default: 'CourseAI - AI-Powered Courses & Quizzes for Every Topic',
     template: '%s | CourseAI',
   },
-  description: 'Enhance your programming skills with interactive quizzes, coding challenges, and learning resources designed for developers of all levels.',
+  description: 'CourseAI empowers everyone to create, share, and discover interactive courses and quizzes on any topic with the power of AI. Learn, teach, and test knowledge in any field—education, hobbies, business, and more.',
   applicationName: 'CourseAI',
   metadataBase: new URL(BASE_URL),
   openGraph: {
@@ -67,7 +67,7 @@ export const defaultMetadata: Metadata = {
       url: '/images/og/courseai-og.png',
       width: 1200,
       height: 630,
-      alt: 'CourseAI - Interactive Programming Learning Platform'
+      alt: 'CourseAI - AI-Powered Learning Platform for All Topics'
     }],
   },
   twitter: {

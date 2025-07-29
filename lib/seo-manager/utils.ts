@@ -1,3 +1,12 @@
+// --- Zod schema for quiz question requests (migrated from schema/schema.ts) ---
+import { z } from "zod";
+
+export const getQuestionsSchema = z.object({
+  title: z.string(),
+  amount: z.number().int().positive().min(1).max(20),
+  type: z.enum(["mcq"]),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+});
 import { Metadata } from 'next';
 import { SocialImageProps, BreadcrumbItem } from './types';
 

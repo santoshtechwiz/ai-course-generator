@@ -1,18 +1,41 @@
 "use client"
 
-import type React from "react"
+import React from "react"
+
+import type { ReactElement } from "react"
 import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Share2, Trash2, Download, Heart, Settings, Users, Star, Crown } from "lucide-react"
+import {
+  Eye,
+  EyeOff,
+  Share2,
+  Trash2,
+  Download,
+  Heart,
+  BarChart2,
+  MoreHorizontal,
+  Sparkles,
+  Copy,
+  Settings,
+  Users,
+  Star,
+  TrendingUp,
+} from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/modules/auth"
-
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { ConfirmDialog } from "./ConfirmDialog"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface QuizActionsProps {
   quizSlug: string
@@ -33,7 +56,43 @@ interface ActionButton {
   active?: boolean
   premium?: boolean
   destructive?: boolean
-  variant?: "default" | "outline" | "ghost"
+  category: "share" | "stats" | "personal" | "utility"
+  priority: "primary" | "secondary"
+}
+
+const categoryConfig = {
+  share: {
+    label: "Share & Export",
+    color: "blue",
+    bgColor: "bg-blue-50 dark:bg-blue-950/20",
+    borderColor: "border-blue-200 dark:border-blue-800",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    hoverColor: "hover:bg-blue-100 dark:hover:bg-blue-900/30",
+  },
+  stats: {
+    label: "Stats & Progress",
+    color: "green",
+    bgColor: "bg-green-50 dark:bg-green-950/20",
+    borderColor: "border-green-200 dark:border-green-800",
+    iconColor: "text-green-600 dark:text-green-400",
+    hoverColor: "hover:bg-green-100 dark:hover:bg-green-900/30",
+  },
+  personal: {
+    label: "Personal Tools",
+    color: "pink",
+    bgColor: "bg-pink-50 dark:bg-pink-950/20",
+    borderColor: "border-pink-200 dark:border-pink-800",
+    iconColor: "text-pink-600 dark:text-pink-400",
+    hoverColor: "hover:bg-pink-100 dark:hover:bg-pink-900/30",
+  },
+  utility: {
+    label: "Settings",
+    color: "gray",
+    bgColor: "bg-gray-50 dark:bg-gray-950/20",
+    borderColor: "border-gray-200 dark:border-gray-800",
+    iconColor: "text-gray-600 dark:text-gray-400",
+    hoverColor: "hover:bg-gray-100 dark:hover:bg-gray-900/30",
+  },
 }
 
 export function QuizActions({
@@ -43,7 +102,7 @@ export function QuizActions({
   initialIsFavorite,
   isOwner,
   className,
-}: QuizActionsProps) {
+}: QuizActionsProps): ReactElement {
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
   const [isPublicLoading, setIsPublicLoading] = useState(false)
@@ -51,9 +110,18 @@ export function QuizActions({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isPdfGenerating, setIsPdfGenerating] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   const router = useRouter()
   const { user, subscription, isAuthenticated } = useAuth()
+
+  // Check if mobile on mount
+  const checkMobile = () => setIsMobile(window.innerWidth < 768)
+  React.useEffect(() => {
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
 
   const currentUserId = user?.id || null
   const canDownloadPDF = subscription?.status?.toLowerCase() === "active"
@@ -145,7 +213,7 @@ export function QuizActions({
   const handleShare = async () => {
     try {
       const shareUrl = `${window.location.origin}/quiz/${quizSlug}`
-      if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      if (navigator.share && isMobile) {
         await navigator.share({
           title: quizData?.title || "Check out this quiz!",
           text: "Test your knowledge with this quiz",
@@ -156,6 +224,12 @@ export function QuizActions({
         toast({
           title: "Link copied!",
           description: "Quiz link copied to clipboard",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(shareUrl)}>
+              <Copy className="h-4 w-4 mr-1" />
+              Copy Again
+            </Button>
+          ),
         })
       }
     } catch (err: any) {
@@ -235,42 +309,18 @@ export function QuizActions({
     }
   }
 
-  const primaryActions = useMemo(
+  const actionButtons = useMemo(
     (): ActionButton[] => [
+      // Share & Export Actions
       {
         id: "share",
-        label: "Share",
+        label: "Share quiz",
         icon: Share2,
         loading: false,
         onClick: handleShare,
         disabled: false,
-        variant: "outline",
-      },
-      {
-        id: "favorite",
-        label: isFavorite ? "Unfavorite" : "Favorite",
-        icon: Heart,
-        loading: isFavoriteLoading,
-        onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
-        disabled: !isAuthenticated,
-        active: isFavorite,
-        variant: isFavorite ? "default" : "outline",
-      },
-    ],
-    [isAuthenticated, isFavorite, isFavoriteLoading, promptLogin],
-  )
-
-  const ownerActions = useMemo(
-    (): ActionButton[] => [
-      {
-        id: "visibility",
-        label: isPublic ? "Make Private" : "Make Public",
-        icon: isPublic ? Eye : EyeOff,
-        loading: isPublicLoading,
-        onClick: () => updateQuiz("isPublic", !isPublic),
-        disabled: !isOwner || isPublicLoading,
-        active: isPublic,
-        variant: "outline",
+        category: "share",
+        priority: "primary",
       },
       {
         id: "download",
@@ -280,178 +330,210 @@ export function QuizActions({
         onClick: handlePdfDownload,
         disabled: !isAuthenticated || !canDownloadPDF,
         premium: !canDownloadPDF,
-        variant: "outline",
+        category: "share",
+        priority: "secondary",
+      },
+      // Personal Tools
+      {
+        id: "favorite",
+        label: isFavorite ? "Remove from favorites" : "Add to favorites",
+        icon: Heart,
+        loading: isFavoriteLoading,
+        onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
+        disabled: !isAuthenticated,
+        active: isFavorite,
+        category: "personal",
+        priority: "primary",
+      },
+      // Utility Actions
+      {
+        id: "visibility",
+        label: isPublic ? "Make private" : "Make public",
+        icon: isPublic ? Eye : EyeOff,
+        loading: isPublicLoading,
+        onClick: () => updateQuiz("isPublic", !isPublic),
+        disabled: !isOwner || isPublicLoading,
+        active: isPublic,
+        category: "utility",
+        priority: "secondary",
       },
       {
         id: "delete",
-        label: "Delete",
+        label: "Delete quiz",
         icon: Trash2,
         loading: isDeleting,
         onClick: () => setShowDeleteDialog(true),
         disabled: !isOwner || isDeleting,
         destructive: true,
-        variant: "outline",
+        category: "utility",
+        priority: "secondary",
       },
     ],
-    [isAuthenticated, isPublic, isPublicLoading, isDeleting, isPdfGenerating, canDownloadPDF, isOwner],
+    [
+      isAuthenticated,
+      isFavorite,
+      isFavoriteLoading,
+      isPublic,
+      isPublicLoading,
+      isDeleting,
+      isPdfGenerating,
+      canDownloadPDF,
+      isOwner,
+      promptLogin,
+    ],
   )
 
-  return (
-    <TooltipProvider>
-      <Card className={cn("w-full relative", className)}>
-        {/* Add prominent status badge in top-right corner */}
-        <div className="absolute top-2 right-2">
-          <Badge 
-            variant={isPublic ? "default" : "secondary"}
-            className={cn(
-              "font-medium",
-              isPublic 
-                ? "bg-green-500/10 text-green-600 border-green-300" 
-                : "bg-yellow-500/10 text-yellow-600 border-yellow-300"
-            )}
-          >
-            {isPublic ? "Live" : "Draft"}
-          </Badge>
+  const groupedActions = useMemo(() => {
+    const groups: Record<string, ActionButton[]> = {}
+    actionButtons.forEach((action) => {
+      if (!groups[action.category]) {
+        groups[action.category] = []
+      }
+      groups[action.category].push(action)
+    })
+    return groups
+  }, [actionButtons])
+
+  const primaryActions = actionButtons.filter((action) => action.priority === "primary")
+  const secondaryActions = actionButtons.filter((action) => action.priority === "secondary")
+
+  const getButtonClass = (action: ActionButton, isCompact = false) => {
+    const config = categoryConfig[action.category]
+    return cn(
+      "relative group transition-all duration-200 overflow-hidden",
+      "focus:outline-none focus:ring-2 focus:ring-offset-2",
+      isCompact ? "h-12 w-12 p-0 rounded-full shadow-lg" : "h-10 px-4 py-2 rounded-lg",
+      config.hoverColor,
+      "hover:scale-[1.02] active:scale-[0.98]",
+      "hover:shadow-md active:shadow-sm",
+      action.active && "ring-2 ring-offset-2",
+      action.active && action.category === "personal" && "ring-pink-500",
+      action.active && action.category === "utility" && "ring-green-500",
+      action.disabled && "opacity-50 cursor-not-allowed hover:scale-100",
+      action.premium &&
+        "border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20",
+    )
+  }
+
+  const getIconClass = (action: ActionButton, isCompact = false) => {
+    const config = categoryConfig[action.category]
+    return cn(
+      "transition-all duration-200",
+      isCompact ? "h-6 w-6" : "h-4 w-4",
+      config.iconColor,
+      action.active && action.id === "favorite" && "fill-current text-pink-500 scale-110",
+      action.active && action.id === "visibility" && isPublic && "text-green-500 scale-110",
+      action.premium && "text-amber-600",
+      action.loading && "animate-pulse",
+      "group-hover:scale-110",
+    )
+  }
+
+  // Mobile Floating Action Bar
+  if (isMobile) {
+    return (
+      <TooltipProvider delayDuration={200}>
+        <div
+          className={cn(
+            "fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50",
+            "bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl",
+            "px-3 py-3 flex items-center gap-2",
+            className,
+          )}
+        >
+          {primaryActions.map((action) => (
+            <Tooltip key={action.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={getButtonClass(action, true)}
+                  onClick={!action.disabled ? action.onClick : undefined}
+                  disabled={action.disabled || action.loading}
+                  aria-label={action.label}
+                >
+                  {action.loading ? (
+                    <BarChart2 className={cn(getIconClass(action, true), "animate-spin")} />
+                  ) : (
+                    <action.icon className={getIconClass(action, true)} />
+                  )}
+
+                  {action.premium && (
+                    <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-1">
+                      <Sparkles className="h-3 w-3" />
+                    </div>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="font-medium">
+                {action.label}
+                {action.disabled && action.premium && " (Premium)"}
+              </TooltipContent>
+            </Tooltip>
+          ))}
+
+          {secondaryActions.length > 0 && (
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="h-12 w-12 p-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-lg"
+                      aria-label="More actions"
+                    >
+                      <MoreHorizontal className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="top">More actions</TooltipContent>
+              </Tooltip>
+
+              <DropdownMenuContent align="center" side="top" className="min-w-[220px] mb-2">
+                {Object.entries(groupedActions).map(([category, actions]) => {
+                  const secondaryCategoryActions = actions.filter((action) => action.priority === "secondary")
+                  if (secondaryCategoryActions.length === 0) return null
+
+                  const config = categoryConfig[category as keyof typeof categoryConfig]
+
+                  return (
+                    <div key={category}>
+                      <div className={cn("px-3 py-2 text-xs font-semibold uppercase tracking-wider", config.iconColor)}>
+                        {config.label}
+                      </div>
+                      {secondaryCategoryActions.map((action) => (
+                        <DropdownMenuItem
+                          key={action.id}
+                          onSelect={action.onClick}
+                          disabled={action.disabled || action.loading}
+                          className={cn(
+                            "flex items-center gap-3 py-3 px-3 mx-1 rounded-md",
+                            config.hoverColor,
+                            action.destructive && "text-destructive focus:bg-destructive/10",
+                          )}
+                        >
+                          {action.loading ? (
+                            <BarChart2 className={cn("h-4 w-4", "animate-spin")} />
+                          ) : (
+                            <action.icon className={getIconClass(action)} />
+                          )}
+                          <span className="font-medium">{action.label}</span>
+                          {action.premium && (
+                            <Badge variant="secondary" className="ml-auto px-1.5 py-0 text-xs">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Pro
+                            </Badge>
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator className="my-1" />
+                    </div>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-primary" />
-              <h3 className="font-semibold text-sm">Quiz Actions</h3>
-            </div>
-
-            {/* Status Indicators with enhanced styling */}
-            <div className="flex items-center gap-2">
-              {isFavorite && (
-                <Badge 
-                  variant="secondary" 
-                  className="text-xs bg-red-500/10 text-red-600 border-red-300"
-                >
-                  <Heart className="h-3 w-3 mr-1 fill-current text-red-500" />
-                  Favorite
-                </Badge>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Primary Actions with enhanced styling */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Actions</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {primaryActions.map((action) => (
-                <Tooltip key={action.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={action.variant as any}
-                      size="sm"
-                      className={cn(
-                        "w-full justify-start gap-2 transition-all",
-                        action.id === "favorite" && isFavorite && 
-                          "bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300",
-                        action.id === "share" && 
-                          "hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600",
-                        action.disabled && "opacity-50"
-                      )}
-                      onClick={!action.disabled ? action.onClick : undefined}
-                      disabled={action.disabled || action.loading}
-                    >
-                      <action.icon
-                        className={cn(
-                          "h-4 w-4",
-                          action.id === "favorite" && isFavorite && "fill-current text-red-500",
-                          action.id === "share" && "text-blue-500"
-                        )}
-                      />
-                      {action.label}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{action.label}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          </div>
-
-          {/* Owner Actions with enhanced styling */}
-          {isOwner && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Owner Actions</h4>
-              <div className="space-y-2">
-                {ownerActions.map((action) => (
-                  <Tooltip key={action.id}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={action.variant as any}
-                        size="sm"
-                        className={cn(
-                          "w-full justify-start gap-2 transition-all",
-                          action.id === "visibility" && isPublic && 
-                            "bg-green-50 border-green-200 text-green-600 hover:bg-green-100",
-                          action.id === "download" && 
-                            "hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600",
-                          action.premium && "border-amber-200 bg-amber-50 hover:bg-amber-100",
-                          action.destructive && "text-red-600 hover:bg-red-50 hover:border-red-200",
-                          action.disabled && "opacity-50"
-                        )}
-                        onClick={!action.disabled ? action.onClick : undefined}
-                        disabled={action.disabled || action.loading}
-                      >
-                        <action.icon className={cn(
-                          "h-4 w-4",
-                          action.id === "visibility" && isPublic && "text-green-500",
-                          action.id === "download" && "text-blue-500",
-                          action.destructive && "text-red-500"
-                        )} />
-                        {action.label}
-                        {action.premium && (
-                          <Crown className="h-3 w-3 ml-auto text-amber-500" />
-                        )}
-                        {action.loading && (
-                          <div className="ml-auto animate-spin">
-                            <Settings className="h-3 w-3" />
-                          </div>
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{action.label}</p>
-                      {action.premium && (
-                        <p className="text-xs text-muted-foreground">Premium feature</p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quiz Stats with enhanced styling */}
-          {quizData && (
-            <div className="space-y-2 pt-2 border-t">
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quiz Stats</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {quizData.rating && (
-                  <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span className="font-medium text-yellow-700">{quizData.rating.toFixed(1)}</span>
-                  </div>
-                )}
-                {quizData.attempts && (
-                  <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <Users className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium text-blue-700">{quizData.attempts}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </CardContent>
-
-        {/* Keep existing ConfirmDialog */}
         <ConfirmDialog
           open={showDeleteDialog}
           onOpenChange={setShowDeleteDialog}
@@ -462,7 +544,174 @@ export function QuizActions({
           cancelText="Cancel"
           variant="destructive"
         />
-      </Card>
+      </TooltipProvider>
+    )
+  }
+
+  // Desktop Toolbar Layout
+  return (
+    <TooltipProvider delayDuration={300}>
+      <div
+        className={cn(
+          "w-full bg-card/80 backdrop-blur-sm border rounded-xl shadow-sm",
+          "transition-all hover:shadow-md hover:bg-card/90",
+          className,
+        )}
+      >
+        {/* Toolbar Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Quiz Actions</h3>
+            </div>
+            
+            {/* Status Badges */}
+            <div className="flex items-center gap-2">
+              {isPublic && (
+                <Badge variant="secondary" className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                  <Eye className="h-3 w-3 mr-1" />
+                  {isOwner ? "Public" : "Shared"}
+                </Badge>
+              )}
+              {isFavorite && (
+                <Badge variant="secondary" className="px-2 py-1 text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                  <Heart className="h-3 w-3 mr-1 fill-current" />
+                  Favorite
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Quiz Stats */}
+          {quizData && (
+            <div className="flex items-center gap-3 text-sm">
+              {quizData.rating && (
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                  <span className="font-medium">{quizData.rating.toFixed(1)}</span>
+                </div>
+              )}
+              {quizData.attempts && (
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">{quizData.attempts}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Action Toolbar */}
+        <div className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* All Actions in Toolbar Format */}
+            {Object.entries(groupedActions).map(([category, actions]) => {
+              const config = categoryConfig[category as keyof typeof categoryConfig]
+
+              return (
+                <div key={category} className="flex items-center gap-2">
+                  {/* Category Indicator */}
+                  <div className={cn("w-1 h-8 rounded-full", config.iconColor.replace("text-", "bg-"))} />
+                  
+                  {/* Category Actions */}
+                  {actions.map((action) => (
+                    <Tooltip key={action.id}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={action.active ? "default" : action.destructive ? "destructive" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "h-9 px-3 gap-2 transition-all duration-200",
+                            config.hoverColor,
+                            action.active && "ring-2 ring-offset-1",
+                            action.active && action.category === "personal" && "ring-pink-400",
+                            action.active && action.category === "utility" && "ring-green-400",
+                            action.disabled && "opacity-50 cursor-not-allowed",
+                            action.premium && "border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20"
+                          )}
+                          onClick={!action.disabled ? action.onClick : undefined}
+                          disabled={action.disabled || action.loading}
+                          aria-label={action.label}
+                        >
+                          {action.loading ? (
+                            <BarChart2 className={cn("h-4 w-4", "animate-spin")} />
+                          ) : (
+                            <action.icon className={cn(
+                              "h-4 w-4",
+                              action.active && action.id === "favorite" && "fill-current text-pink-500",
+                              action.active && action.id === "visibility" && isPublic && "text-green-500",
+                              action.premium && "text-amber-600"
+                            )} />
+                          )}
+                          <span className="font-medium text-sm">{action.label}</span>
+
+                          {action.premium && (
+                            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                              <Sparkles className="h-3 w-3" />
+                            </Badge>
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="text-center">
+                          <div className="font-medium">{action.label}</div>
+                          {action.disabled && action.premium && (
+                            <div className="text-xs text-muted-foreground mt-1">Premium feature</div>
+                          )}
+                          {action.disabled && !action.premium && !isAuthenticated && (
+                            <div className="text-xs text-muted-foreground mt-1">Login required</div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Public Quiz Notice */}
+        {isPublic && (
+          <div className="mx-4 mb-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-full">
+                <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-green-800 dark:text-green-200 text-sm mb-1">
+                  {isOwner ? "Public Quiz" : "Shared Quiz"}
+                </h4>
+                <p className="text-xs text-green-700 dark:text-green-300">
+                  This quiz is {isOwner ? "public" : "shared with you"}.
+                  {isOwner && " Others can discover and take it."}
+                </p>
+              </div>
+              {isOwner && (
+                <Badge variant="outline" className="border-green-300 text-green-700 dark:text-green-300 text-xs">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Discoverable
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          
+
+          onConfirm={handleDelete}
+          title="Delete Quiz"
+          description="Are you sure you want to delete this quiz? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="destructive"
+        />
+      </div>
     </TooltipProvider>
   )
 }
+

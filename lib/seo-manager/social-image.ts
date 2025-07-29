@@ -2,7 +2,7 @@
  * Social media image and metadata generator
  */
 import { Metadata } from 'next';
-import { SocialImageProps } from './structured-data/types';
+import { SocialImageProps } from './types';
 import { BASE_URL } from './config';
 
 /**
