@@ -298,25 +298,37 @@ export function QuizActions({
 
   return (
     <TooltipProvider>
-      <Card className={cn("w-full", className)}>
+      <Card className={cn("w-full relative", className)}>
+        {/* Add prominent status badge in top-right corner */}
+        <div className="absolute top-2 right-2">
+          <Badge 
+            variant={isPublic ? "default" : "secondary"}
+            className={cn(
+              "font-medium",
+              isPublic 
+                ? "bg-green-500/10 text-green-600 border-green-300" 
+                : "bg-yellow-500/10 text-yellow-600 border-yellow-300"
+            )}
+          >
+            {isPublic ? "Live" : "Draft"}
+          </Badge>
+        </div>
+
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
+              <Settings className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-sm">Quiz Actions</h3>
             </div>
 
-            {/* Status Indicators */}
+            {/* Status Indicators with enhanced styling */}
             <div className="flex items-center gap-2">
-              {isPublic && (
-                <Badge variant="secondary" className="text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  Public
-                </Badge>
-              )}
               {isFavorite && (
-                <Badge variant="secondary" className="text-xs">
-                  <Heart className="h-3 w-3 mr-1 fill-current" />
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs bg-red-500/10 text-red-600 border-red-300"
+                >
+                  <Heart className="h-3 w-3 mr-1 fill-current text-red-500" />
                   Favorite
                 </Badge>
               )}
@@ -325,7 +337,7 @@ export function QuizActions({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Primary Actions */}
+          {/* Primary Actions with enhanced styling */}
           <div className="space-y-2">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Actions</h4>
             <div className="grid grid-cols-2 gap-2">
@@ -336,17 +348,22 @@ export function QuizActions({
                       variant={action.variant as any}
                       size="sm"
                       className={cn(
-                        "w-full justify-start gap-2",
-                        action.active &&
-                          action.id === "favorite" &&
-                          "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
-                        action.disabled && "opacity-50",
+                        "w-full justify-start gap-2 transition-all",
+                        action.id === "favorite" && isFavorite && 
+                          "bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300",
+                        action.id === "share" && 
+                          "hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600",
+                        action.disabled && "opacity-50"
                       )}
                       onClick={!action.disabled ? action.onClick : undefined}
                       disabled={action.disabled || action.loading}
                     >
                       <action.icon
-                        className={cn("h-4 w-4", action.active && action.id === "favorite" && "fill-current")}
+                        className={cn(
+                          "h-4 w-4",
+                          action.id === "favorite" && isFavorite && "fill-current text-red-500",
+                          action.id === "share" && "text-blue-500"
+                        )}
                       />
                       {action.label}
                     </Button>
@@ -359,7 +376,7 @@ export function QuizActions({
             </div>
           </div>
 
-          {/* Owner Actions */}
+          {/* Owner Actions with enhanced styling */}
           {isOwner && (
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Owner Actions</h4>
@@ -371,22 +388,40 @@ export function QuizActions({
                         variant={action.variant as any}
                         size="sm"
                         className={cn(
-                          "w-full justify-start gap-2",
-                          action.destructive && "text-destructive hover:text-destructive",
+                          "w-full justify-start gap-2 transition-all",
+                          action.id === "visibility" && isPublic && 
+                            "bg-green-50 border-green-200 text-green-600 hover:bg-green-100",
+                          action.id === "download" && 
+                            "hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600",
                           action.premium && "border-amber-200 bg-amber-50 hover:bg-amber-100",
-                          action.disabled && "opacity-50",
+                          action.destructive && "text-red-600 hover:bg-red-50 hover:border-red-200",
+                          action.disabled && "opacity-50"
                         )}
                         onClick={!action.disabled ? action.onClick : undefined}
                         disabled={action.disabled || action.loading}
                       >
-                        <action.icon className="h-4 w-4" />
+                        <action.icon className={cn(
+                          "h-4 w-4",
+                          action.id === "visibility" && isPublic && "text-green-500",
+                          action.id === "download" && "text-blue-500",
+                          action.destructive && "text-red-500"
+                        )} />
                         {action.label}
-                        {action.premium && <Crown className="h-3 w-3 ml-auto text-amber-500" />}
+                        {action.premium && (
+                          <Crown className="h-3 w-3 ml-auto text-amber-500" />
+                        )}
+                        {action.loading && (
+                          <div className="ml-auto animate-spin">
+                            <Settings className="h-3 w-3" />
+                          </div>
+                        )}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{action.label}</p>
-                      {action.premium && <p className="text-xs text-muted-foreground">Premium feature</p>}
+                      {action.premium && (
+                        <p className="text-xs text-muted-foreground">Premium feature</p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 ))}
@@ -394,21 +429,21 @@ export function QuizActions({
             </div>
           )}
 
-          {/* Quiz Stats */}
+          {/* Quiz Stats with enhanced styling */}
           {quizData && (
             <div className="space-y-2 pt-2 border-t">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quiz Stats</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {quizData.rating && (
-                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span className="font-medium">{quizData.rating.toFixed(1)}</span>
+                    <span className="font-medium text-yellow-700">{quizData.rating.toFixed(1)}</span>
                   </div>
                 )}
                 {quizData.attempts && (
-                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <Users className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium">{quizData.attempts}</span>
+                    <span className="font-medium text-blue-700">{quizData.attempts}</span>
                   </div>
                 )}
               </div>
@@ -416,6 +451,7 @@ export function QuizActions({
           )}
         </CardContent>
 
+        {/* Keep existing ConfirmDialog */}
         <ConfirmDialog
           open={showDeleteDialog}
           onOpenChange={setShowDeleteDialog}

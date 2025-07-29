@@ -25,6 +25,7 @@ import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
 import { useGlobalLoading } from "@/store/slices/global-loading-slice"
 import { QuizActions } from "../../components/QuizActions"
+import { GlobalLoader } from "@/components/loaders"
 
 
 interface McqQuizWrapperProps {
@@ -163,13 +164,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <p className="text-sm text-gray-600">Loading quiz...</p>
-        </div>
-      </div>
-    )
+   <GlobalLoader />
   }
 
   if (hasError) {

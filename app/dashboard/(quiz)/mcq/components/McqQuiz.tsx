@@ -94,6 +94,7 @@ const McqQuiz = ({
       onError={(error) => toast.error(error)}
       onSuccess={(message) => toast.success(message || "Great job!")}
       globalLoading={isLastQuestion}
+      
     >
       {(stateManager) => (
         <QuizContainer
@@ -102,6 +103,7 @@ const McqQuiz = ({
           quizType="mcq"
           animationKey={`mcq-${question.id}`}
           difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
+          fullWidth={true}
         >
           <div className="space-y-6">
             {/* Question Text */}
