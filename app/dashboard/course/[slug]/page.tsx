@@ -44,32 +44,7 @@ export default async function Page({ params }: CoursePageParams) {
 
   return (
     <>
-      <JsonLD
-        type="Course"
-        data={{
-          name: course.title,
-          description: course.description,
-          provider: {
-            "@type": "Organization",
-            name: "AI Learning Platform",
-            sameAs: process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"
-          },
-          audience: {
-            "@type": "Audience",
-            audienceType: course.difficulty || "All Levels"
-          },
-          educationalLevel: course.difficulty,
-          teaches: course.title,
-          inLanguage: "en",
-          dateCreated: course.createdAt,
-          dateModified: course.updatedAt,
-          timeRequired: `PT${course.estimatedTime || 5}H`,
-          image: course.image || `/api/og?title=${encodeURIComponent(course.title)}`,
-          about: course.category?.name || "",
-          learningResourceType: "Course",
-          courseCode: course.slug
-        }}
-      />
+  
       <CourseSchema
         name={course.title}
         description={course.description || ""}

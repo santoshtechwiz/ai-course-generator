@@ -259,6 +259,13 @@ export function CourseSchema(props: Omit<CourseData, '@context' | '@type'>) {
     hasCourseInstance = {},
   } = props;
 
+  // Ensure offers has required fields
+  const offersWithDefaults = {
+    price: "0",
+    priceCurrency: "USD",
+    ...offers,
+  };
+
   const schema = SchemaGenerators.generateCourseSchema({
     name: courseName,
     description,
@@ -277,7 +284,7 @@ export function CourseSchema(props: Omit<CourseData, '@context' | '@type'>) {
     educationalLevel,
     timeRequired,
     about,
-    offers,
+    offers: offersWithDefaults,
     hasCourseInstance,
   });
 
