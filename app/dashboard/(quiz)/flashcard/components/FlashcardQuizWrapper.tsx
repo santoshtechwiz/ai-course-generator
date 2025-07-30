@@ -36,7 +36,7 @@ import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 
 import { QuizActions } from "../../components/QuizActions";
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
-import { QuizSchema } from "@/lib/seo-manager";
+import { QuizSchema } from "@/lib/seo-manager/components";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -392,6 +392,7 @@ export default function FlashcardQuizWrapper({
       <QuizSchema
         name={quizTitle || title || "Flashcard Quiz"}
         url={`https://courseai.io/dashboard/flashcard/${slug}`}
+        questions={currentQuestions}
         description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
         numberOfQuestions={currentQuestions?.length}
       />

@@ -256,3 +256,12 @@ export interface SchemaProps{
   scriptProps?: React.HTMLAttributes<HTMLScriptElement>;
 
 }
+
+export interface QuizSchemaProps {
+  name: string;
+   url: string;
+  description: string;
+  questions: any;
+  numberOfQuestions?: number;
+ 
+}

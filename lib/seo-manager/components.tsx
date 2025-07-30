@@ -8,6 +8,7 @@ import type {
   BreadcrumbListProps,
   OrganizationProps,
   FaqItem,
+  QuizSchemaProps,
 } from './types';
 
 
@@ -263,5 +264,37 @@ export function DefaultSEO(props: CombinedSchemaProps) {
       <OrganizationSchema {...orgProps} />
       {includeFAQ && <FAQSchema items={faqs} />}
     </>
+  );
+}
+
+
+export function QuizSchema({
+  name,
+  url: quizUrl,
+  description,
+  questions,
+  numberOfQuestions
+}: QuizSchemaProps) {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Quiz',
+    name: name,
+    description,
+    url: quizUrl,
+    numberOfQuestions: numberOfQuestions || questions.length,
+    mainEntity: questions.map((question) => ({
+      '@type': 'Question',
+      name: question.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: question.answer,
+      },
+    })),
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 2) }}
+    />
   );
 }
