@@ -1,65 +1,59 @@
-// ...existing code...
-import React from 'react';
-import { 
-  JsonLDProps, 
-  SchemaProps, 
-  BreadcrumbListProps, 
-  FAQItem, 
-  FAQProps, 
+
+import { defaultSiteInfo, defaultFAQItems, defaultSocialProfiles } from './config';
+import type {
   CombinedSchemaProps,
-  OrganizationProps,
   CourseSchemaProps,
-  DefaultSEOProps
+  FAQProps,
+  JsonLdProps,
+  BreadcrumbListProps,
+  OrganizationProps,
+  FaqItem,
 } from './types';
-import { defaultSiteInfo, defaultFAQItems, defaultSocialProfiles } from './constants';
-import { generateBreadcrumbItemsFromPath } from './utils';
+
 
 /**
- * SEO Manager - React Components
- * 
- * This file contains React components for rendering SEO-related elements
- * including JSON-LD structured data.
+ * Renders a JSON-LD script tag for structured data.
  */
-
-/**
- * JsonLD Component for adding structured data to pages
- * This is the canonical implementation to use across the application
- */
-export function JsonLD({ type, data = {} }: JsonLDProps) {
-  // Create the schema based on the type and data
+export function JsonLD({ type, data = {} }: JsonLdProps) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': type.charAt(0).toUpperCase() + type.slice(1),
     ...data,
   };
-
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 2) }}
     />
   );
 }
 
-// Export named alias for backward compatibility
+// Backward compatibility alias
 export { JsonLD as JsonLd };
 
+
+export interface WebsiteSchemaProps {
+  siteName?: string;
+  siteUrl?: string;
+  logoUrl?: string;
+}
+
 /**
- * WebSite Schema component for SEO
- * Implements search functionality with potentialAction
+ * WebsiteSchema - Renders WebSite structured data.
  */
-export function WebsiteSchema({ 
+export function WebsiteSchema({
   siteName = defaultSiteInfo.name,
   siteUrl = defaultSiteInfo.url,
-  logoUrl = defaultSiteInfo.logoUrl 
-}: SchemaProps) {
+  logoUrl = defaultSiteInfo.logoUrl,
+}: WebsiteSchemaProps) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': `${siteUrl}/#website`,
     url: siteUrl,
     name: siteName,
-    description: 'AI-powered coding education platform with interactive courses, quizzes, and learning tools',
+    description:
+      'AI-powered coding education platform with interactive courses, quizzes, and learning tools',
     publisher: {
       '@type': 'Organization',
       name: siteName,
@@ -73,67 +67,61 @@ export function WebsiteSchema({
     potentialAction: {
       '@type': 'SearchAction',
       target: `${siteUrl}/search?q={search_term_string}`,
-      'query-input': 'required name=search_term_string'
-    }
+      'query-input': 'required name=search_term_string',
+    },
   };
-
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 2) }}
     />
   );
 }
 
+export interface BreadcrumbListSchemaProps extends BreadcrumbListProps {
+  siteUrl?: string;
+}
+
 /**
- * BreadcrumbList Schema component for SEO
+ * BreadcrumbListSchema - Renders BreadcrumbList structured data.
  */
-export function BreadcrumbListSchema({ 
+export function BreadcrumbListSchema({
   items,
-  siteUrl = defaultSiteInfo.url 
-}: BreadcrumbListProps) {
-  // Default breadcrumbs if none provided
+  siteUrl = defaultSiteInfo.url,
+}: BreadcrumbListSchemaProps) {
   const defaultItems = [
-    {
-      position: 1,
-      name: 'Home',
-      url: `${siteUrl}/`,
-    },
-    {
-      position: 2,
-      name: 'Courses',
-      url: `${siteUrl}/courses`,
-    },
-    {
-      position: 3,
-      name: 'About',
-      url: `${siteUrl}/about`,
-    },
+    { position: 1, name: 'Home', url: '/' },
+    { position: 2, name: 'Courses', url: '/courses' },
+    { position: 3, name: 'About', url: '/about' },
   ];
-
-  const breadcrumbItems = items || defaultItems;
-
+  const breadcrumbItems = items && items.length > 0 ? items : defaultItems;
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
-    itemListElement: breadcrumbItems.map(item => ({
+    itemListElement: breadcrumbItems.map((item) => ({
       '@type': 'ListItem',
       position: item.position,
       name: item.name,
-      item: item.url.startsWith('http') ? item.url : `${siteUrl}${item.url}`,
+      item: item.url.startsWith('http') ? item.url : `${siteUrl}${item.url.startsWith('/') ? item.url : '/' + item.url}`,
     })),
   };
-
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 2) }}
     />
   );
 }
 
+export interface OrganizationSchemaProps extends OrganizationProps {
+  logoUrl?: string;
+  email?: string;
+  telephone?: string;
+  address?: Record<string, any>;
+}
+
 /**
- * Organization Schema component for SEO
+ * OrganizationSchema - Renders Organization structured data.
  */
 export function OrganizationSchema({
   name = defaultSiteInfo.name,
@@ -145,7 +133,7 @@ export function OrganizationSchema({
   email = 'support@courseai.io',
   telephone,
   address,
-}: OrganizationProps) {
+}: OrganizationSchemaProps) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -160,7 +148,7 @@ export function OrganizationSchema({
     },
     description,
     foundingDate,
-    ...(sameAs.length > 0 && { sameAs }),
+    ...(sameAs && sameAs.length > 0 && { sameAs }),
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
@@ -175,23 +163,22 @@ export function OrganizationSchema({
       },
     }),
   };
-
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 2) }}
     />
   );
 }
 
 /**
- * FAQ Schema component for SEO
+ * FAQSchema - Renders FAQPage structured data.
  */
-export function FAQSchema({ items }: FAQProps) {
+export function FAQSchema({ items = [] }: FAQProps) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: items.map(item => ({
+    mainEntity: (items || []).map((item: FaqItem) => ({
       '@type': 'Question',
       name: item.question,
       acceptedAnswer: {
@@ -200,18 +187,16 @@ export function FAQSchema({ items }: FAQProps) {
       },
     })),
   };
-
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 2) }}
     />
   );
 }
 
 /**
- * Course Schema component for SEO
- * Use this on course pages
+ * CourseSchema - Renders Course structured data for course pages.
  */
 export function CourseSchema({
   courseName,
@@ -223,18 +208,18 @@ export function CourseSchema({
   dateCreated = new Date().toISOString(),
   dateModified = new Date().toISOString(),
   authorName,
-  authorUrl
+  authorUrl,
 }: CourseSchemaProps) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Course',
     name: courseName,
-    description: description,
+    description,
     url: courseUrl,
     provider: {
       '@type': 'Organization',
       name: provider,
-      sameAs: providerUrl
+      sameAs: providerUrl,
     },
     ...(imageUrl && { image: imageUrl }),
     dateCreated,
@@ -243,70 +228,40 @@ export function CourseSchema({
       author: {
         '@type': 'Person',
         name: authorName,
-        ...(authorUrl && { url: authorUrl })
-      }
-    })
+        ...(authorUrl && { url: authorUrl }),
+      },
+    }),
   };
-
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 2) }}
     />
   );
 }
-
 /**
- * Combined SEO Schema component that renders multiple schemas at once
+ * DefaultSEO - Renders all default SEO schemas for a page.
  */
-export function CombinedSEOSchema({
-  website = true,
-  breadcrumbs = true,
-  organization = true,
-  faq,
-  siteInfo = defaultSiteInfo,
-}: CombinedSchemaProps) {
+export function DefaultSEO(props: CombinedSchemaProps) {
+  const {
+    siteInfo = defaultSiteInfo,
+    organization,
+    faqItems,
+    includeFAQ,
+  } = props;
+  // Defensive: ensure organization is always an object
+  const orgProps = organization && typeof organization === 'object' ? organization : {};
+  const faqs = Array.isArray(faqItems) ? faqItems : defaultFAQItems;
   return (
     <>
-      {website && <WebsiteSchema {...siteInfo} />}
-      
-      {breadcrumbs && (
-        typeof breadcrumbs === 'boolean' 
-          ? <BreadcrumbListSchema siteUrl={siteInfo.url} />
-          : <BreadcrumbListSchema {...breadcrumbs} siteUrl={siteInfo.url} />
-      )}
-      
-      {organization && (
-        typeof organization === 'boolean'
-          ? <OrganizationSchema {...siteInfo} />
-          : <OrganizationSchema {...siteInfo} {...organization} />
-      )}
-      
-      {faq && <FAQSchema {...faq} />}
+      <WebsiteSchema
+        siteName={siteInfo.name}
+        siteUrl={siteInfo.url}
+        logoUrl={siteInfo.logoUrl}
+      />
+      <BreadcrumbListSchema siteUrl={siteInfo.url} />
+      <OrganizationSchema {...orgProps} />
+      {includeFAQ && <FAQSchema items={faqs} />}
     </>
-  );
-}
-
-/**
- * Default SEO component for all pages
- * Includes WebSite, BreadcrumbList, and Organization schemas
- */
-export function DefaultSEO({ currentPath = '/', includeFAQ = false, customFAQItems }: DefaultSEOProps) {
-  const breadcrumbs = currentPath ? generateBreadcrumbItemsFromPath(currentPath) : undefined;
-  
-  return (
-    <CombinedSEOSchema
-      breadcrumbs={
-        breadcrumbs ? { items: breadcrumbs } : true
-      }
-      organization={{
-        sameAs: defaultSocialProfiles
-      }}
-      faq={
-        includeFAQ ? {
-          items: customFAQItems || defaultFAQItems
-        } : undefined
-      }
-    />
   );
 }

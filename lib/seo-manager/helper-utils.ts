@@ -246,6 +246,10 @@ export function generateSeoMetadata(options: SeoOptions): Metadata {
 }
 
 // --- Structured Data Generators ---
+
+// Alias for Next.js pages: generateMetadata
+export const generateMetadata = generateSeoMetadata;
+
 export function generateCourseStructuredData(course: any) {
   const websiteUrl = BASE_URL;
   // Always include offers and hasCourseInstance, even if empty

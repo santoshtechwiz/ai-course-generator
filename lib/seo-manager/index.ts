@@ -9,11 +9,11 @@ export {
   BASE_URL,
   defaultSiteInfo,
   defaultFAQItems,
-  socialProfiles,
+  defaultSocialProfiles,
   defaultMetadata
 } from './config';
 
-// Export metadata generators and utility functions (merged, no duplicates)
+// Export SEO utility functions
 export {
   generateSeoMetadata,
   generateCourseStructuredData,
@@ -26,26 +26,12 @@ export {
   createBreadcrumbItems,
   generateBreadcrumbs,
   createSocialProfiles,
-  getQuizTypeLabel
+  getQuizTypeLabel,
 } from './helper-utils';
-export {
-  generateWebsiteSchema,
-  generateCourseSchema,
-  generateQuizSchema,
-  generateFAQSchema,
-  generateOrganizationSchema,
-  generateBreadcrumbSchema,
-  generateArticleSchema,
-  generateWebApplicationSchema,
-  generateSoftwareApplicationSchema,
-  generateHowToSchema,
-  generatePersonSchema,
-  generateVideoSchema,
-  SchemaRegistry
-} from './generators';
-export { generateSocialImage } from './social-image';
 
-// Export React components for structured data
+// Export generateMetadata for Next.js pages
+export { generateMetadata } from './helper-utils';
+
 export {
   JsonLD,
   JsonLd,
@@ -53,15 +39,12 @@ export {
   BreadcrumbListSchema,
   OrganizationSchema,
   FAQSchema,
-  CombinedSEOSchema,
+
   CourseSchema,
   DefaultSEO
 } from './components';
 
-// Export schema generators
-// (SchemaRegistry already exported above)
-
-// Export types
+// Export all types
 export * from './types';
 
 

@@ -7,7 +7,7 @@ import {
   CourseData,
   QuizData,
   BreadcrumbItem,
-  FAQItem,
+  FaqItem,
   HowToData,
   PersonData,
   VideoData
@@ -272,7 +272,7 @@ export function generateQuizSchema(data: QuizData): Schema {
   };
 }
 
-export function generateFAQSchema(items: FAQItem[]): Schema {
+export function generateFAQSchema(items: FaqItem[]): Schema {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",

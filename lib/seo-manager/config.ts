@@ -1,21 +1,22 @@
 /**
  * Default configuration values for SEO
  */
-import { Metadata } from 'next';
-import { SiteInfo } from './types';
+
+import { Metadata } from 'next'; 
+import { SiteInfo, FaqItem } from './types';
 
 // Base URL for the site
 export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://courseai.io';
 
 // Default site information for schema.org structured data
-export const defaultSiteInfo: SiteInfo = {
+export const defaultSiteInfo: SiteInfo = { 
   name: 'CourseAI',
   url: BASE_URL,
   logoUrl: `${BASE_URL}/logo.png`,
 };
 
 // Default FAQ items for the CourseAI platform
-export const defaultFAQItems = [
+export const defaultFAQItems: FaqItem[] = [ 
   {
     question: 'What is CourseAI?',
     answer: 'CourseAI is an AI-powered education platform that helps you learn programming concepts through interactive courses, quizzes, and flashcards.'
@@ -43,7 +44,7 @@ export const defaultFAQItems = [
 ];
 
 // Standard social media profiles for CourseAI
-export const socialProfiles = [
+export const defaultSocialProfiles: string[] = [ 
   'https://twitter.com/courseai',
   'https://github.com/courseai',
   'https://linkedin.com/company/courseai',
@@ -51,12 +52,12 @@ export const socialProfiles = [
 ];
 
 // Default metadata values to be used across the application
-export const defaultMetadata: Metadata = {
+export const defaultMetadata: Metadata = { 
   title: {
-    default: 'CourseAI - AI-Powered Courses & Quizzes for Every Topic',
+    default: 'CourseAI - Interactive Programming Quizzes and Learning',
     template: '%s | CourseAI',
   },
-  description: 'CourseAI empowers everyone to create, share, and discover interactive courses and quizzes on any topic with the power of AI. Learn, teach, and test knowledge in any field—education, hobbies, business, and more.',
+  description: 'Enhance your programming skills with interactive quizzes, coding challenges, and learning resources designed for developers of all levels.',
   applicationName: 'CourseAI',
   metadataBase: new URL(BASE_URL),
   openGraph: {
@@ -67,7 +68,7 @@ export const defaultMetadata: Metadata = {
       url: '/images/og/courseai-og.png',
       width: 1200,
       height: 630,
-      alt: 'CourseAI - AI-Powered Learning Platform for All Topics'
+      alt: 'CourseAI - Interactive Programming Learning Platform'
     }],
   },
   twitter: {
@@ -100,3 +101,5 @@ export const defaultMetadata: Metadata = {
     },
   },
 };
+
+

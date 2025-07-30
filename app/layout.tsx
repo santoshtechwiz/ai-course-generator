@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import "../globals.css";
 
-import { DefaultSEO, defaultMetadata } from "@/lib/seo-manager";
 import Footer from "@/components/shared/Footer";
 import { Providers } from "@/store/provider";
 import { getServerAuthSession } from "@/lib/server-auth";
-import ClientLayoutWrapper from "./client-layout-wrapper";
+
 import { Suspense } from "react";
 import { font } from "./font";
 
 import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
+import { defaultMetadata, DefaultSEO } from "@/lib/seo-manager";
 
 
 export const metadata: Metadata = {
@@ -108,14 +108,14 @@ export default async function RootLayout({
           className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
         >
           <Providers session={session}>
-          
-              <main className="flex-1 w-full">
-                <Suspense fallback={<SuspenseGlobalFallback />}>
-                  {children}
-                </Suspense>
-              </main>
-              <Footer />
-            
+
+            <main className="flex-1 w-full">
+              <Suspense fallback={<SuspenseGlobalFallback />}>
+                {children}
+              </Suspense>
+            </main>
+            <Footer />
+
           </Providers>
 
           <DefaultSEO currentPath="/" includeFAQ={true} />

@@ -8,7 +8,7 @@ import Link from "next/link";
 import type { QueryParams } from "@/app/types/types";
 import PopularCourses from "@/app/dashboard/course/components/PopularCourses";
 import { QuizCourseWrapper } from "../(quiz)/components/QuizCourseWrapper";
-import { generateSeoMetadata } from "@/lib/seo-manager/helper-utils";
+import { generateSeoMetadata } from "@/lib/seo-manager";
 import NavigationDebugger from "@/components/debug/NavigationDebugger";
 import { JsonLD } from "@/lib/seo-manager";
 

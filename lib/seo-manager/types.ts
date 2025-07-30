@@ -31,9 +31,9 @@ export interface BreadcrumbItem {
 }
 
 /**
- * FAQ Item for structured data
+ * FAQ item for structured data (use PascalCase for interface)
  */
-export interface FAQItem {
+export interface FaqItem {
   question: string;
   answer: string;
 }
@@ -222,7 +222,7 @@ export interface BreadcrumbListProps {
 }
 
 export interface FAQProps {
-  items: FAQItem[];
+  items: FaqItem[];
 }
 
 export interface CombinedSchemaProps {
@@ -231,4 +231,28 @@ export interface CombinedSchemaProps {
   organization?: boolean | OrganizationProps;
   faq?: FAQProps;
   siteInfo?: SiteInfo;
+}
+export interface CourseSchemaProps{
+
+  courseName: string;
+  description: string;
+  courseUrl: string;
+  provider: string;
+  providerUrl?: string;
+  imageUrl?: string;
+  dateCreated?: string;
+  dateModified?: string;
+  authorName?: string;
+  authorUrl?: string;
+}
+export interface JsonLdProps {
+  type: JsonLdType;
+  data: Record<string, any>;
+  scriptProps?: React.HTMLAttributes<HTMLScriptElement>;
+}
+export interface SchemaProps{
+  type: JsonLdType;
+  data: Record<string, any>;
+  scriptProps?: React.HTMLAttributes<HTMLScriptElement>;
+
 }

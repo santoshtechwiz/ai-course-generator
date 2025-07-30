@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { generateCourseMetadata, JsonLD, CourseSchema } from "@/lib/seo-manager"
+import { generateSeoMetadata, JsonLD, CourseSchema } from "@/lib/seo-manager";
 import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
@@ -13,7 +13,16 @@ type CoursePageParams = {
 export async function generateMetadata({ params }: CoursePageParams): Promise<Metadata> {
   const { slug } = await params
   const course = (await getCourseData(slug)) as FullCourseType | null
-  return generateCourseMetadata(course, slug)
+  // You may want to adjust the fields passed to generateSeoMetadata as needed
+  return generateSeoMetadata({
+    title: course?.title || 'Course Not Found',
+    description: course?.description || 'No description available.',
+    image: course?.image,
+    type: 'course',
+    publishedAt: course?.createdAt,
+    updatedAt: course?.updatedAt,
+    noIndex: !course,
+  });
 }
 
 export default async function Page({ params }: CoursePageParams) {
@@ -46,18 +55,13 @@ export default async function Page({ params }: CoursePageParams) {
     <>
   
       <CourseSchema
-        name={course.title}
+        courseName={course.title}
         description={course.description || ""}
-        url={`${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`}
-        provider={{ name: "AI Learning Platform", url: process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io" }}
+        courseUrl={`${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`}
+        provider="AI Learning Platform"
         imageUrl={course.image || `/api/og?title=${encodeURIComponent(course.title)}`}
         dateCreated={course.createdAt}
         dateModified={course.updatedAt}
-        educationalLevel={course.difficulty}
-        timeRequired={`PT${course.estimatedTime || 5}H`}
-        about={course.category?.name ? { name: course.category.name } : undefined}
-        offers={offers}
-        hasCourseInstance={hasCourseInstance}
       />
       <EnhancedCourseLayout 
         course={course} 
