@@ -1,28 +1,17 @@
+'use client'
 
-// ...removed 'use client' to allow metadata export...
-import { generateMetadata } from "@/lib/seo";
-export const metadata = generateMetadata({
-  title: "Create Code Quiz | CourseAI",
-  description: "Create programming challenges or learn with our pre-built coding exercises. Perfect for technical interviews, developer training, and practice.",
-  keywords: [
-    "code quiz",
-    "coding quiz",
-    "programming quiz",
-    "developer quiz",
-    "CourseAI code quiz"
-  ],
-  type: "website",
-});
+
 
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
-import { GlobalLoader } from "@/components/loaders";
-import { useQuizPlan } from "@/modules/auth";
+import { useQuizPlan } from "../../../../hooks/useQuizPlan"
+import { GlobalLoader } from "@/components/loaders"
+
 
 const CodePage = () => {
   // Use our standardized hook for all quiz pages
   const quizPlan = useQuizPlan();
-  
+
   return (
     <QuizCreateLayout
       title="Code Quiz"
@@ -34,6 +23,7 @@ const CodePage = () => {
       {quizPlan.isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
           <GlobalLoader />
+          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
         </div>
       ) : (
         <CodeQuizForm 

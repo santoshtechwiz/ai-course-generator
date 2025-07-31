@@ -36,6 +36,7 @@ export abstract class BaseQuizService {
       title: quiz.title,
       questions: this.formatQuestions(quiz.questions),
       userId: quiz.userId,
+      language: quiz.language,
     };
   }
 

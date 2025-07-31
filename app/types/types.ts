@@ -194,4 +194,5 @@ export interface CodeChallenge {
   options: string[];
   language: string;
   correctAnswer: string;
+  questionType: "standard" | "fill-in-the-blank";
 }

@@ -28,6 +28,8 @@ model User {
   updatedAt             DateTime               @updatedAt
   lastLogin             DateTime               @default(now())
   lastActiveAt          DateTime               @default(now())
+  language              String?
+  metadata              Json?
   accounts              Account[]
   courses               Course[]
   courseProgress        CourseProgress[]
@@ -99,6 +101,8 @@ model Course {
   slug           String?          @unique
   difficulty     String?
   estimatedHours Float?
+  language       String?
+  metadata       Json?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   category       Category?        @relation(fields: [categoryId], references: [id])
@@ -314,6 +318,8 @@ model UserQuiz {
   difficulty         String?
   timeStarted        DateTime
   timeEnded          DateTime?
+  language           String?
+  metadata           Json?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   flashCards         FlashCard[]

@@ -1,3 +1,4 @@
+'use client'
 import { useMemo } from "react"
 import { useAuth } from "../providers/AuthProvider"
 import { SUBSCRIPTION_PLANS } from "@/app/dashboard/subscription/components/subscription-plans"
@@ -9,18 +10,23 @@ interface QuizPlanConfig {
   maxQuizzes: Record<PlanType, number>
 }
 
+const getPlanLimit = (planId: string, key: keyof (typeof SUBSCRIPTION_PLANS)[number]["limits"], fallback: number) => {
+  const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId)
+  return plan && plan.limits && typeof plan.limits[key] === 'number' ? plan.limits[key] : fallback
+}
+
 const DEFAULT_CONFIG: QuizPlanConfig = {
   maxQuestions: {
-    FREE: SUBSCRIPTION_PLANS.find(plan => plan.id === "FREE")?.limits.maxQuestionsPerQuiz || 10,
-    BASIC: SUBSCRIPTION_PLANS.find(plan => plan.id === "BASIC")?.limits.maxQuestionsPerQuiz || 15,
-    PREMIUM: SUBSCRIPTION_PLANS.find(plan => plan.id === "PREMIUM")?.limits.maxQuestionsPerQuiz || 30,
-    ULTIMATE: SUBSCRIPTION_PLANS.find(plan => plan.id === "ULTIMATE")?.limits.maxQuestionsPerQuiz || 50,
+    FREE: getPlanLimit("FREE", "maxQuestionsPerQuiz", 10),
+    BASIC: getPlanLimit("BASIC", "maxQuestionsPerQuiz", 15),
+    PREMIUM: getPlanLimit("PREMIUM", "maxQuestionsPerQuiz", 30),
+    ULTIMATE: getPlanLimit("ULTIMATE", "maxQuestionsPerQuiz", 50),
   },
   maxQuizzes: {
-    FREE: SUBSCRIPTION_PLANS.find(plan => plan.id === "FREE")?.limits.maxCoursesPerMonth || 2,
-    BASIC: SUBSCRIPTION_PLANS.find(plan => plan.id === "BASIC")?.limits.maxCoursesPerMonth || 10,
-    PREMIUM: SUBSCRIPTION_PLANS.find(plan => plan.id === "PREMIUM")?.limits.maxCoursesPerMonth || 30,
-    ULTIMATE: SUBSCRIPTION_PLANS.find(plan => plan.id === "ULTIMATE")?.limits.maxCoursesPerMonth || 100,
+    FREE: getPlanLimit("FREE", "maxCoursesPerMonth", 2),
+    BASIC: getPlanLimit("BASIC", "maxCoursesPerMonth", 10),
+    PREMIUM: getPlanLimit("PREMIUM", "maxCoursesPerMonth", 30),
+    ULTIMATE: getPlanLimit("ULTIMATE", "maxCoursesPerMonth", 100),
   },
 }
 
@@ -51,21 +57,36 @@ const FEATURE_PLAN_REQUIREMENTS: Record<string, PlanType> = {
 }
 
 export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPlanConfig>): QuizPlanData {
-  const { user, subscription, isAuthenticated, isLoading } = useAuth()
-  
-  const mergedConfig = useMemo(() => ({
-    ...DEFAULT_CONFIG,
-    ...config,
-  }), [config])
+  const { user, subscription, isAuthenticated, isLoading } = useAuth() || {}
+
+  // Defensive: fallback to empty object if undefined
+  const mergedConfig = useMemo(() => {
+    return {
+      maxQuestions: {
+        ...DEFAULT_CONFIG.maxQuestions,
+        ...(config?.maxQuestions || {}),
+      },
+      maxQuizzes: {
+        ...DEFAULT_CONFIG.maxQuizzes,
+        ...(config?.maxQuizzes || {}),
+      },
+    }
+  }, [config])
 
   return useMemo(() => {
-    const currentPlan = subscription?.plan || "FREE"
-    const isSubscribed = subscription?.isSubscribed || false
-    const credits = user?.credits || subscription?.credits || 0
+    const currentPlan: PlanType = (subscription?.plan && ["FREE","BASIC","PREMIUM","ULTIMATE"].includes(subscription.plan))
+      ? subscription.plan as PlanType
+      : "FREE"
+    // Use subscription.status or similar property if isSubscribed does not exist
+    // Fallback: treat as subscribed if plan is not FREE
+    const isSubscribed: boolean = typeof subscription?.isSubscribed === 'boolean'
+      ? subscription.isSubscribed
+      : !!(subscription?.plan && subscription.plan !== 'FREE')
+    const credits = typeof user?.credits === 'number' ? user.credits : (typeof subscription?.credits === 'number' ? subscription.credits : 0)
     const hasCredits = credits >= requiredCredits
 
-    const maxQuestions = mergedConfig.maxQuestions[currentPlan] || DEFAULT_CONFIG.maxQuestions.FREE
-    const maxQuizzes = mergedConfig.maxQuizzes[currentPlan] || DEFAULT_CONFIG.maxQuizzes.FREE
+    const maxQuestions = mergedConfig.maxQuestions[currentPlan] ?? DEFAULT_CONFIG.maxQuestions.FREE
+    const maxQuizzes = mergedConfig.maxQuizzes[currentPlan] ?? DEFAULT_CONFIG.maxQuizzes.FREE
 
     const planHierarchy: Record<PlanType, number> = {
       FREE: 0,
@@ -76,9 +97,9 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
 
     const availableFeatures = Object.entries(FEATURE_PLAN_REQUIREMENTS)
       .filter(([_, requiredPlan]) => planHierarchy[currentPlan] >= planHierarchy[requiredPlan])
-      .map(([featureId, _]) => featureId)
+      .map(([featureId]) => featureId)
 
-    const canCreateQuiz = isAuthenticated && hasCredits && !isLoading
+    const canCreateQuiz = !!isAuthenticated && hasCredits && !isLoading
 
     const getRequiredPlanForAction = (action: 'create' | 'edit' | 'advanced'): PlanType => {
       switch (action) {
@@ -97,8 +118,8 @@ export function useQuizPlan(requiredCredits: number = 1, config?: Partial<QuizPl
     }
 
     return {
-      isLoggedIn: isAuthenticated,
-      isLoading,
+      isLoggedIn: !!isAuthenticated,
+      isLoading: !!isLoading,
       currentPlan,
       isSubscribed,
       credits,

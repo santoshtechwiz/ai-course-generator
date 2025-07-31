@@ -37,6 +37,7 @@ export interface Subscription {
   tokensUsed: number;
   currentPeriodEnd?: string | null;
   cancelAtPeriodEnd?: boolean;
+  isSubscribed?: boolean; // Optional, depends on your backend
 }
 
 export interface AuthState {

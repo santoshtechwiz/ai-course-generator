@@ -117,7 +117,7 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
   const isUserAuthenticated = accessLevels.isAuthenticated || !!session
   const effectiveChapterId = chapterId || chapter?.id?.toString()
 
-  const [quizState, dispatch] = useReducer(quizReducer, {
+  const initialQuizState: QuizState = {
     answers: {},
     currentQuestionIndex: 0,
     quizCompleted: false,
@@ -125,7 +125,14 @@ export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, cha
     showResults: false,
     quizStarted: false,
     quizProgress: {},
-  })
+  }
+
+  const [quizState, dispatch] = useReducer(quizReducer, initialQuizState)
+
+  // Reset quiz state when chapter changes
+  useEffect(() => {
+    dispatch({ type: "RESET_QUIZ" })
+  }, [effectiveChapterId])
 
   const demoQuestions = useMemo(
     () => [
