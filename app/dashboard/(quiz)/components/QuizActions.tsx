@@ -345,29 +345,33 @@ export function QuizActions({
         category: "personal",
         priority: "primary",
       },
-      // Utility Actions
-      {
-        id: "visibility",
-        label: isPublic ? "Make private" : "Make public",
-        icon: isPublic ? Eye : EyeOff,
-        loading: isPublicLoading,
-        onClick: () => updateQuiz("isPublic", !isPublic),
-        disabled: !isOwner || isPublicLoading,
-        active: isPublic,
-        category: "utility",
-        priority: "secondary",
-      },
-      {
-        id: "delete",
-        label: "Delete quiz",
-        icon: Trash2,
-        loading: isDeleting,
-        onClick: () => setShowDeleteDialog(true),
-        disabled: !isOwner || isDeleting,
-        destructive: true,
-        category: "utility",
-        priority: "secondary",
-      },
+      // Utility Actions (only for owner)
+      ...(isOwner
+        ? ([
+            {
+              id: "visibility",
+              label: isPublic ? "Make private" : "Make public",
+              icon: isPublic ? Eye : EyeOff,
+              loading: isPublicLoading,
+              onClick: () => updateQuiz("isPublic", !isPublic),
+              disabled: isPublicLoading,
+              active: isPublic,
+              category: "utility" as const,
+              priority: "secondary" as const,
+            },
+            {
+              id: "delete",
+              label: "Delete quiz",
+              icon: Trash2,
+              loading: isDeleting,
+              onClick: () => setShowDeleteDialog(true),
+              disabled: isDeleting,
+              destructive: true,
+              category: "utility" as const,
+              priority: "secondary" as const,
+            },
+          ])
+        : []),
     ],
     [
       isAuthenticated,
@@ -534,16 +538,17 @@ export function QuizActions({
           )}
         </div>
 
-        <ConfirmDialog
-          open={showDeleteDialog}
-          onOpenChange={setShowDeleteDialog}
-          onConfirm={handleDelete}
-          title="Delete Quiz"
-          description="Are you sure you want to delete this quiz? This action cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
-          variant="destructive"
-        />
+        {isOwner && (
+          <ConfirmDialog
+            isOpen={showDeleteDialog}
+            onCancel={() => setShowDeleteDialog(false)}
+            onConfirm={handleDelete}
+            title="Delete Quiz"
+            description="Are you sure you want to delete this quiz? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+          />
+        )}
       </TooltipProvider>
     )
   }
@@ -698,18 +703,17 @@ export function QuizActions({
           </div>
         )}
 
-        <ConfirmDialog
-          isOpen={showDeleteDialog}
-          onOpenChange={setShowDeleteDialog}
-          
-
-          onConfirm={handleDelete}
-          title="Delete Quiz"
-          description="Are you sure you want to delete this quiz? This action cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
-          variant="destructive"
-        />
+        {isOwner && (
+          <ConfirmDialog
+            isOpen={showDeleteDialog}
+            onCancel={() => setShowDeleteDialog(false)}
+            onConfirm={handleDelete}
+            title="Delete Quiz"
+            description="Are you sure you want to delete this quiz? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+          />
+        )}
       </div>
     </TooltipProvider>
   )
