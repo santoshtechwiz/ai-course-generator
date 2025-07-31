@@ -44,30 +44,35 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
   // Local state
   const [summary, setSummary] = useState<string>(existingSummary || "")
 
+  // Reset summary when chapterId changes
+  useEffect(() => {
+    setSummary(existingSummary || "")
+  }, [normalizedChapterId, existingSummary])
+
   // Get authorized admin status - require both prop and user verification
   const hasAdminAccess = useMemo(() => isAdmin && isUserAdmin, [isAdmin, isUserAdmin])
 
   // Use the optimized hook from useChapterSummary.ts
   const { data: summaryResponse, refetch, isLoading, isError, isRefetching } = useChapterSummary(normalizedChapterId)
 
-  // Update summary from API or props
+  // Always update summary from API when new data arrives
   useEffect(() => {
-    if (summaryResponse?.data && !summary) {
-      setSummary(summaryResponse.data)
-    } else if (existingSummary && !summary) {
-      setSummary(existingSummary)
+    if (summaryResponse && typeof summaryResponse === 'object' && 'data' in summaryResponse) {
+      setSummary(summaryResponse.data as string)
     }
-  }, [summaryResponse, existingSummary, summary])
+  }, [summaryResponse])
 
   // Handle refresh
   const handleGenerateSummary = () => {
     refetch()
       .then((result) => {
-        if (result.data?.data) {
-          setSummary(result.data.data)
-          toast.success("Summary refreshed successfully!")
-        } else if (result.data?.message) {
-          toast.error(`Failed to refresh: ${result.data.message}`)
+        if (result && typeof result === 'object' && result.data && typeof result.data === 'object') {
+          if ('data' in result.data && result.data.data) {
+            setSummary(result.data.data as string)
+            toast.success("Summary refreshed successfully!")
+          } else if ('message' in result.data && result.data.message) {
+            toast.error(`Failed to refresh: ${result.data.message}`)
+          }
         }
       })
       .catch((err) => {
