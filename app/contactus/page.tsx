@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 import ImprovedContactForm from "./ContactForm"
-import { generateMetadata, JsonLD } from "@/lib/seo-manager"
+import { generateMetadata, JsonLD } from "@/lib/seo"
 
 export const metadata: Metadata = generateMetadata({
   title: "Contact CourseAI | Get Support for AI Coding Education Platform",
