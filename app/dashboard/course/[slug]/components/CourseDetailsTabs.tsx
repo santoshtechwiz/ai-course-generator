@@ -60,21 +60,6 @@ export default function CourseDetailsTabs({
       : `${m}:${s.toString().padStart(2, "0")}`
   }, [])
 
-  const handleAddBookmark = useCallback(
-    (time: number, title?: string) => {
-      if (currentVideoId) {
-        dispatch(
-          addBookmark({
-            videoId: currentVideoId,
-            time,
-            title: title || `Bookmark at ${formatTime(time)}`,
-            id: `${currentVideoId}-${time}-${Date.now()}`,
-          }),
-        )
-      }
-    },
-    [currentVideoId, dispatch, formatTime],
-  )
 
   const handleRemoveBookmark = useCallback(
     (bookmarkId: string) => {
@@ -150,6 +135,7 @@ export default function CourseDetailsTabs({
         <TabsContent value="quiz" className="h-full overflow-auto p-4">
           {currentChapter ? (
             <CourseDetailsQuiz
+              key={currentChapter.id}
               course={course}
               chapter={currentChapter}
               accessLevels={accessLevels!}
