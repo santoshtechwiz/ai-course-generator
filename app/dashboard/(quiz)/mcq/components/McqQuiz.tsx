@@ -4,10 +4,10 @@ import { useMemo, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
-import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 import { cn } from "@/lib/utils"
 import { CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
+import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 
 interface McqQuizProps {
   question: {
