@@ -4,7 +4,7 @@ import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
-import { generateMetadata } from "@/lib/seo/helper-utils"
+
 import { CourseSchema } from "@/lib/seo"
 
 type CoursePageParams = {
@@ -15,16 +15,17 @@ type CoursePageParams = {
 export async function generateMetadata({ params }: CoursePageParams): Promise<Metadata> {
   const { slug } = await params
   const course = (await getCourseData(slug)) as FullCourseType | null
-  // You may want to adjust the fields passed to generateSeoMetadata as needed
-  return generateMetadata({
+  return {
     title: course?.title || 'Course Not Found',
     description: course?.description || 'No description available.',
-    image: course?.image,
-    type: 'course',
-    publishedAt: course?.createdAt,
-    updatedAt: course?.updatedAt,
-    noIndex: !course,
-  });
+    openGraph: {
+      images: course?.image ? [course.image] : [],
+      type: 'website',
+      title: course?.title || 'Course Not Found',
+      description: course?.description || 'No description available.',
+    },
+    robots: !course ? { index: false, follow: false } : undefined,
+  };
 }
 
 export default async function Page({ params }: CoursePageParams) {
