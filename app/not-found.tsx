@@ -10,9 +10,10 @@ import {
   getStaggeredContainerAnimation,
   getStaggeredAnimation,
 } from "@/components/ui/animations/animation-presets"
-import { JsonLD } from "@/app/schema/components/json-ld"
+
 import { notFoundStructuredData } from "@/app/utils/not-found-utils"
 import AsyncNavLink from "@/components/loaders/AsyncNavLink"
+import { JsonLD } from "@/lib/seo"
 
 export default function NotFound() {
   return (
