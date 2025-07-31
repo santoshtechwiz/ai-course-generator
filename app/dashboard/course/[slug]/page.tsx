@@ -1,9 +1,11 @@
 import type { Metadata } from "next"
-import { generateSeoMetadata, JsonLD, CourseSchema } from "@/lib/seo-manager";
+
 import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
+import { generateMetadata } from "@/lib/seo/helper-utils"
+import { CourseSchema } from "@/lib/seo"
 
 type CoursePageParams = {
   params: Promise<{ slug: string }>
@@ -14,7 +16,7 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
   const { slug } = await params
   const course = (await getCourseData(slug)) as FullCourseType | null
   // You may want to adjust the fields passed to generateSeoMetadata as needed
-  return generateSeoMetadata({
+  return generateMetadata({
     title: course?.title || 'Course Not Found',
     description: course?.description || 'No description available.',
     image: course?.image,

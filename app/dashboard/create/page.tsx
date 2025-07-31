@@ -8,13 +8,15 @@ import Link from "next/link";
 import type { QueryParams } from "@/app/types/types";
 import PopularCourses from "@/app/dashboard/course/components/PopularCourses";
 import { QuizCourseWrapper } from "../(quiz)/components/QuizCourseWrapper";
-import { generateSeoMetadata } from "@/lib/seo-manager";
+
 import NavigationDebugger from "@/components/debug/NavigationDebugger";
-import { JsonLD } from "@/lib/seo-manager";
+import { JsonLD } from "@/lib/seo";
+import { generateMetadata } from "@/lib/seo/helper-utils";
+
 
 export const dynamic = "force-dynamic";
 
-export const metadata = generateSeoMetadata({
+export const metadata = generateMetadata({
   title: "Create Free Video Course Using AI",
   description:
     "Design and build your own interactive course with our intuitive course creation tools. Share your expertise and engage learners effectively.",

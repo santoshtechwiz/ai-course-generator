@@ -24,7 +24,7 @@ import { FlashcardFront } from "./FlashcardFront"
 import { FlashcardBack } from "./FlashcardBack"
 import { FlashcardController } from "./FlashcardController"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, RefreshCw, ArrowRight, RotateCcw } from "lucide-react"
+import { CheckCircle, RefreshCw, ArrowRight, RotateCcw, Zap, Target, BookOpen, Heart, Star } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -100,6 +100,17 @@ const ratingFeedbackVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
   visible: { opacity: 1, y: 0, scale: 1 },
   exit: { opacity: 0, y: -20, scale: 0.95 },
+}
+
+const pulseVariants = {
+  pulse: {
+    scale: [1, 1.05, 1],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
 }
 
 export default function FlashCardQuiz({
@@ -595,76 +606,145 @@ export default function FlashCardQuiz({
         animate="visible"
         exit="exit"
       >
-        {/* Simplified Header Section */}
+        {/* Enhanced Minimal Header Section - Removed Progress Bar and Buttons */}
         <motion.div
-          className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm"
+          className="sticky top-0 z-40 bg-gradient-to-r from-background/95 via-background/98 to-background/95 backdrop-blur-xl border-b border-border/30 shadow-lg"
           variants={cardVariants}
         >
-          <div className="container mx-auto px-4 py-4">
+          <div className="container mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">📚</span>
+                <motion.div 
+                  className="flex items-center gap-4"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <div className="relative">
+                    <motion.div 
+                      className="w-14 h-14 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-xl"
+                      variants={pulseVariants}
+                      animate="pulse"
+                    >
+                      <BookOpen className="w-7 h-7 text-white" />
+                    </motion.div>
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Zap className="w-3 h-3 text-white" />
+                    </motion.div>
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold text-foreground">{title}</h1>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Badge variant="secondary" className="text-xs">
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
+                      {title}
+                    </h1>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                      <Badge 
+                        variant="secondary" 
+                        className="text-xs bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 border-orange-200"
+                      >
+                        <Target className="w-3 h-3 mr-1" />
                         Flashcards
                       </Badge>
                       {isReviewMode && (
-                        <Badge variant="outline" className="text-xs border-orange-200 text-orange-700">
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs border-amber-300 bg-amber-50 text-amber-700 animate-pulse"
+                        >
+                          <Star className="w-3 h-3 mr-1" />
                           Review Mode
                         </Badge>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
+                {/* Enhanced Streak Display */}
                 {streak > 0 && (
                   <motion.div
-                    className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 rounded-full border border-green-200 dark:border-green-800"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 0.5, repeat: streak > 5 ? Number.POSITIVE_INFINITY : 0, repeatDelay: 2 }}
+                    className="relative"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <span className="text-lg">🔥</span>
-                    <span className="text-sm font-bold text-green-700 dark:text-green-300">{streak} streak</span>
+                    <motion.div
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 dark:from-green-900/30 dark:via-emerald-900/30 dark:to-teal-900/30 rounded-2xl border-2 border-green-200 dark:border-green-800 shadow-lg"
+                      animate={{ 
+                        scale: streak > 5 ? [1, 1.05, 1] : 1,
+                        boxShadow: streak > 10 ? [
+                          "0 4px 20px rgba(34, 197, 94, 0.3)",
+                          "0 8px 30px rgba(34, 197, 94, 0.5)",
+                          "0 4px 20px rgba(34, 197, 94, 0.3)"
+                        ] : "0 4px 20px rgba(34, 197, 94, 0.3)"
+                      }}
+                      transition={{ 
+                        duration: 2, 
+                        repeat: streak > 5 ? Infinity : 0, 
+                        repeatDelay: 1 
+                      }}
+                    >
+                      <motion.span 
+                        className="text-2xl"
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
+                      >
+                        🔥
+                      </motion.span>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-700 dark:text-green-300">
+                          {streak}
+                        </div>
+                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                          streak
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    {/* Streak milestone celebration */}
+                    {streak % 5 === 0 && streak > 0 && (
+                      <motion.div
+                        className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: [0, 1.2, 1] }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <Star className="w-4 h-4 text-white fill-current" />
+                      </motion.div>
+                    )}
                   </motion.div>
                 )}
 
-                <div className="text-sm font-medium text-muted-foreground">
-                  {currentQuestionIndex + 1} / {cards.length}
-                </div>
+                {/* Enhanced Card Counter */}
+                <motion.div 
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 shadow-md"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">{currentQuestionIndex + 1}</span>
+                  </div>
+                  <div className="text-sm">
+                    <div className="font-bold text-blue-700 dark:text-blue-300">
+                      of {cards.length}
+                    </div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400">
+                      cards
+                    </div>
+                  </div>
+                </motion.div>
               </div>
             </div>
-
-            {/* Progress Bar */}
-            <motion.div className="mt-4" variants={cardVariants}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">Progress</span>
-                <span className="text-xs font-bold text-primary">{progress}%</span>
-              </div>
-              <div className="relative">
-                <Progress value={progress} className="h-2" />
-                <motion.div
-                  className="absolute top-0 left-0 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                />
-              </div>
-            </motion.div>
           </div>
         </motion.div>
 
         {/* Main Content Area */}
-        <div className="container mx-auto px-4 py-6">
-          <div className="max-w-4xl mx-auto">
-            {/* Controller Section */}
-            <motion.div className="mb-6" variants={cardVariants}>
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-5xl mx-auto">
+            {/* Enhanced Controller Section */}
+            <motion.div className="mb-8" variants={cardVariants}>
               <FlashcardController
                 title={title}
                 currentIndex={currentQuestionIndex}
@@ -684,16 +764,16 @@ export default function FlashCardQuiz({
               />
             </motion.div>
 
-            {/* Flashcard Content Area */}
+            {/* Enhanced Flashcard Content Area */}
             <motion.div
-              className="relative min-h-[400px] sm:min-h-[450px] md:min-h-[500px] w-full perspective-1000"
+              className="relative min-h-[450px] sm:min-h-[500px] md:min-h-[550px] w-full perspective-1000 mb-8"
               variants={cardVariants}
             >
               <motion.div
                 key={`card-${currentQuestionIndex}`}
                 drag={!swipeDisabled && !isCompleted ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.12}
+                dragElastic={0.15}
                 onDragEnd={handleDragEnd}
                 animate={cardControls}
                 layoutId={`card-${currentQuestionIndex}`}
@@ -701,7 +781,7 @@ export default function FlashCardQuiz({
                 ref={cardRef}
                 tabIndex={0}
                 aria-label="Flashcard"
-                whileHover={{ scale: 1.01 }}
+                whileHover={{ scale: 1.01, rotateY: flipped ? 0 : 2 }}
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
               >
                 <AnimatePresence mode="wait">
@@ -737,53 +817,97 @@ export default function FlashCardQuiz({
               </motion.div>
             </motion.div>
 
-            {/* Navigation Controls */}
-            <motion.div className="flex items-center justify-center gap-4 mt-6" variants={cardVariants}>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={toggleFlip}
-                disabled={swipeDisabled}
-                className="flex items-center gap-2 bg-background/80 backdrop-blur-sm hover:bg-muted/80 transition-all duration-200"
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span className="hidden sm:inline">Flip Card</span>
-              </Button>
+            {/* Enhanced Navigation Controls */}
+            <motion.div className="flex items-center justify-center gap-6 mb-6" variants={cardVariants}>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={toggleFlip}
+                  disabled={swipeDisabled}
+                  className="flex items-center gap-3 bg-gradient-to-r from-background/90 to-muted/50 backdrop-blur-sm hover:from-muted/80 hover:to-background/80 border-2 border-border/50 hover:border-primary/30 shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-3"
+                >
+                  <motion.div
+                    animate={{ rotate: flipped ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                  </motion.div>
+                  <span className="font-semibold">Flip Card</span>
+                </Button>
+              </motion.div>
 
               {currentQuestionIndex < cards.length - 1 && (
-                <Button
-                  onClick={moveToNextCard}
-                  disabled={swipeDisabled}
-                  size="lg"
-                  className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <span>Next Card</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    onClick={moveToNextCard}
+                    disabled={swipeDisabled}
+                    size="lg"
+                    className="flex items-center gap-3 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 px-8 py-3 border-0"
+                  >
+                    <span className="font-bold">Next Card</span>
+                    <motion.div
+                      animate={{ x: [0, 4, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <ArrowRight className="h-5 w-5" />
+                    </motion.div>
+                  </Button>
+                </motion.div>
               )}
 
-              {currentQuestionIndex === cards.length - 1 && (
+              {/* Enhanced Save Button */}
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
-                  onClick={handleFinishQuiz}
-                  disabled={swipeDisabled}
+                  variant="outline"
                   size="lg"
-                  className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  onClick={handleSaveCard}
+                  disabled={swipeDisabled}
+                  className={cn(
+                    "flex items-center gap-3 border-2 shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-3",
+                    isSaved
+                      ? "bg-gradient-to-r from-rose-100 to-pink-100 border-rose-300 text-rose-700 hover:from-rose-200 hover:to-pink-200"
+                      : "bg-gradient-to-r from-background/90 to-muted/50 border-border/50 hover:border-rose-300"
+                  )}
                 >
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Finish Quiz</span>
+                  <motion.div
+                    animate={isSaved ? { scale: [1, 1.2, 1] } : {}}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Heart className={cn("h-5 w-5", isSaved && "fill-current text-rose-500")} />
+                  </motion.div>
+                  <span className="font-semibold">
+                    {isSaved ? "Saved" : "Save"}
+                  </span>
                 </Button>
-              )}
+              </motion.div>
             </motion.div>
 
-            {/* Mobile Swipe Hint */}
-            <motion.div className="block sm:hidden text-center mt-4" variants={cardVariants}>
-              <p className="text-xs text-muted-foreground">Swipe left: Next • Swipe right: Flip • Tap: Flip</p>
+            {/* Enhanced Mobile Swipe Hint */}
+            <motion.div 
+              className="block sm:hidden text-center"
+              variants={cardVariants}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-muted/80 to-background/80 rounded-full border border-border/50 shadow-md">
+                <motion.div
+                  animate={{ x: [-2, 2, -2] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <span className="text-sm">👆</span>
+                </motion.div>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Swipe left: Next • Swipe right: Flip • Tap: Flip
+                </p>
+              </div>
             </motion.div>
           </div>
         </div>
       </motion.div>
 
-      {/* Rating feedback overlay */}
+      {/* Enhanced Rating feedback overlay */}
       <AnimatePresence>
         {ratingAnimation && (
           <motion.div
@@ -795,20 +919,25 @@ export default function FlashCardQuiz({
           >
             <motion.div
               className={cn(
-                "px-6 sm:px-8 md:px-12 py-4 sm:py-6 md:py-8 rounded-2xl sm:rounded-3xl md:rounded-[2rem] text-white font-bold text-xl sm:text-2xl md:text-3xl shadow-2xl border-4 max-w-[90vw] text-center",
-                ratingAnimation === "correct" && "bg-green-500 border-green-400",
-                ratingAnimation === "still_learning" && "bg-amber-500 border-amber-400",
-                ratingAnimation === "incorrect" && "bg-red-500 border-red-400",
+                "px-8 sm:px-12 md:px-16 py-6 sm:py-8 md:py-10 rounded-3xl sm:rounded-[2rem] md:rounded-[3rem] text-white font-bold text-2xl sm:text-3xl md:text-4xl shadow-2xl border-4 max-w-[90vw] text-center backdrop-blur-sm",
+                ratingAnimation === "correct" && "bg-gradient-to-r from-green-500 to-emerald-500 border-green-300",
+                ratingAnimation === "still_learning" && "bg-gradient-to-r from-amber-500 to-orange-500 border-amber-300",
+                ratingAnimation === "incorrect" && "bg-gradient-to-r from-red-500 to-rose-500 border-red-300",
               )}
               animate={{
-                scale: [1, 1.1, 1],
-                rotate: [0, 2, -2, 0],
+                scale: [0.8, 1.1, 1],
+                rotate: [0, 3, -3, 0],
               }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              {ratingAnimation === "correct" && "✅ I knew it!"}
-              {ratingAnimation === "still_learning" && "📚 Still learning"}
-              {ratingAnimation === "incorrect" && "❌ Need to study"}
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                {ratingAnimation === "correct" && "🎉 I knew it!"}
+                {ratingAnimation === "still_learning" && "📚 Still learning"}
+                {ratingAnimation === "incorrect" && "🤔 Need to study"}
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
@@ -816,61 +945,74 @@ export default function FlashCardQuiz({
 
       {showConfetti && <Confetti isActive={showConfetti} />}
 
-      {/* Completion feedback modal */}
+      {/* Enhanced Completion feedback modal */}
       <AnimatePresence>
         {showCompletionFeedback && (
           <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4"
+            className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-background rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full text-center border border-border/50"
-              initial={{ scale: 0.8, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: 20 }}
-              transition={{ type: "spring", damping: 15 }}
+              className="bg-gradient-to-br from-background via-background to-muted/20 rounded-3xl shadow-2xl p-8 sm:p-10 max-w-md w-full text-center border-2 border-border/50"
+              initial={{ scale: 0.8, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.8, y: 50, opacity: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
             >
               {completionFeedbackType === "success" ? (
                 <>
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
                     transition={{ delay: 0.2, type: "spring", damping: 10 }}
+                    className="mb-6"
                   >
-                    <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-xl">
+                      <CheckCircle className="h-10 w-10 text-white" />
+                    </div>
                   </motion.div>
-                  <h2 className="text-2xl font-bold mb-2">Great progress!</h2>
-                  <p className="text-muted-foreground mb-6">
-                    You've improved your knowledge of these cards. Keep up the good work!
+                  <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    Great progress!
+                  </h2>
+                  <p className="text-muted-foreground mb-8 leading-relaxed">
+                    You've improved your knowledge of these cards. Keep up the excellent work!
                   </p>
                 </>
               ) : (
                 <>
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
                     transition={{ delay: 0.2, type: "spring", damping: 10 }}
+                    className="mb-6"
                   >
-                    <RefreshCw className="h-16 w-16 mx-auto text-blue-500 mb-4" />
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shadow-xl">
+                      <RefreshCw className="h-10 w-10 text-white" />
+                    </div>
                   </motion.div>
-                  <h2 className="text-2xl font-bold mb-2">Review Complete</h2>
-                  <p className="text-muted-foreground mb-6">
-                    You've gone through all the review cards. Want to see your progress?
+                  <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    Review Complete
+                  </h2>
+                  <p className="text-muted-foreground mb-8 leading-relaxed">
+                    You've gone through all the review cards. Ready to see your progress?
                   </p>
                 </>
               )}
-              <Button
-                onClick={() => {
-                  setShowCompletionFeedback(false)
-                  handleFinishQuiz()
-                }}
-                className="w-full"
-                size="lg"
-              >
-                See Results
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={() => {
+                    setShowCompletionFeedback(false)
+                    handleFinishQuiz()
+                  }}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300"
+                  size="lg"
+                >
+                  <Star className="w-5 h-5 mr-2" />
+                  See Results
+                </Button>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
@@ -878,3 +1020,4 @@ export default function FlashCardQuiz({
     </>
   )
 }
+

@@ -231,6 +231,8 @@ export interface CombinedSchemaProps {
   organization?: boolean | OrganizationProps;
   faq?: FAQProps;
   siteInfo?: SiteInfo;
+  faqItems?: FaqItem[];
+  includeFAQ?: boolean;
 }
 export interface CourseSchemaProps{
 

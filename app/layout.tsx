@@ -11,9 +11,9 @@ import { font } from "./font";
 import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
-import { defaultMetadata, DefaultSEO } from "@/lib/seo-manager";
+import { defaultMetadata, DefaultSEO } from "@/lib/seo";
 
-
+import { GoogleAnalytics } from '@next/third-parties/google'
 export const metadata: Metadata = {
   ...defaultMetadata,
   metadataBase: new URL(
@@ -118,8 +118,9 @@ export default async function RootLayout({
 
           </Providers>
 
-          <DefaultSEO currentPath="/" includeFAQ={true} />
+          <DefaultSEO  includeFAQ={true} />
         </body>
+        <GoogleAnalytics gaId="G-8E6345HNS4" />
       </html>
       <GlobalLoader />
     </GlobalLoaderProvider>

@@ -1,4 +1,18 @@
-"use client"
+
+// ...removed 'use client' to allow metadata export...
+import { generateMetadata } from "@/lib/seo";
+export const metadata = generateMetadata({
+  title: "Create Code Quiz | CourseAI",
+  description: "Create programming challenges or learn with our pre-built coding exercises. Perfect for technical interviews, developer training, and practice.",
+  keywords: [
+    "code quiz",
+    "coding quiz",
+    "programming quiz",
+    "developer quiz",
+    "CourseAI code quiz"
+  ],
+  type: "website",
+});
 
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"

@@ -1,33 +1,40 @@
 import QuizCreationPage from "../components/QuizCreationPage"
 
 export const metadata = {
-  title: "Create Free Flashcards Quiz ",
+  title: "Interactive Flashcard Quiz – Free Coding Flashcards | CourseAI",
   description:
-    "Create and study with interactive flashcards to reinforce your programming knowledge and improve retention of key concepts.",
+    "Create, study, and master programming concepts with interactive flashcard quizzes. Practice coding, reinforce knowledge, and boost retention using AI-powered flashcards.",
   keywords: [
-    "flashcards",
+    "interactive flashcard quiz",
+    "AI flashcards",
+    "coding flashcard practice",
+    "free flashcard generator",
+    "programming flashcards",
     "spaced repetition",
-    "programming study",
-    "coding concepts",
+    "learn to code",
     "memory techniques",
-    "learning tools",
+    "study tools",
+    "quiz for programmers",
+    "developer learning",
+    "computer science revision",
+    "CourseAI flashcards"
   ],
   openGraph: {
-    title: "Flashcards ",
+    title: "Interactive Flashcard Quiz | CourseAI",
     description:
-      "Create and study with interactive flashcards to reinforce your programming knowledge and improve retention of key concepts.",
+      "Create, study, and master programming concepts with interactive flashcard quizzes. Practice coding, reinforce knowledge, and boost retention using AI-powered flashcards.",
     url: "https://courseai.io/dashboard/flashcard",
     type: "website",
     images: [{ url: "/og-image-flashcards.jpg" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Flashcards ",
+    title: "Interactive Flashcard Quiz | CourseAI",
     description:
-      "Create and study with interactive flashcards to reinforce your programming knowledge and improve retention of key concepts.",
+      "Create, study, and master programming concepts with interactive flashcard quizzes. Practice coding, reinforce knowledge, and boost retention using AI-powered flashcards.",
     images: ["/twitter-image-flashcards.jpg"],
   },
-}
+};
 
 const Page = async () => {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"

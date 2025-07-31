@@ -1,8 +1,23 @@
-"use client";
 
 import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
+import { generateMetadata } from "@/lib/seo";
+
+export const metadata = generateMetadata({
+  title: "Create Multiple Choice Quiz | CourseAI",
+  description: "Create customized multiple choice questions or practice with our pre-built quizzes. Perfect for exam prep, coding interviews, and self-assessment.",
+  keywords: [
+    "multiple choice quiz",
+    "MCQ quiz",
+    "quiz builder",
+    "exam practice",
+    "coding MCQ",
+    "test your knowledge",
+    "CourseAI MCQ"
+  ],
+  type: "website",
+});
 
 const McqPage = () => {
   // Use our custom hook that already handles session, auth, and subscription data

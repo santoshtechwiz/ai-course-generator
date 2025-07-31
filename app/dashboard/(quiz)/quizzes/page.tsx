@@ -8,13 +8,13 @@ import ClientOnly from "@/components/ClientOnly"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
 import { BookOpen, Sparkles, Zap, Target } from "lucide-react"
-import { generateMetadata, JsonLD } from "@/lib/seo-manager";
+import { generateMetadata, JsonLD } from "@/lib/seo";
 
 export const metadata: Metadata = generateMetadata({
-  title: "Interactive Quizzes – Master Your Knowledge",
+  title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
   description:
     "Discover our comprehensive collection of interactive quizzes including multiple choice, coding challenges, flashcards, and more. Test your knowledge and enhance your learning journey.",
-  path: "/dashboard/quizzes",
+
   keywords: [
     "interactive quizzes",
     "knowledge testing",
@@ -29,8 +29,12 @@ export const metadata: Metadata = generateMetadata({
     "flashcards",
     "multiple choice",
     "open ended questions",
+    "quiz app",
+    "online quiz platform",
+    "quiz builder",
+    "CourseAI quizzes"
   ],
-  ogType: "website",
+
 })
 
 export const dynamic = "force-dynamic"

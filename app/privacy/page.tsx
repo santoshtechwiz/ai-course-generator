@@ -1,4 +1,4 @@
-import { generateMetadata, JsonLD } from "@/lib/seo-manager"
+import { generateMetadata, JsonLD } from "@/lib/seo"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -6,7 +6,6 @@ export const metadata: Metadata = generateMetadata({
   title: "Privacy Policy | CourseAI Coding Education",
   description:
     "Learn how CourseAI protects your data while providing programming education services. Our commitment to your privacy and security.",
-  path: "/privacy",
   keywords: [
     "coding education privacy",
     "programming learning data protection",

@@ -1,4 +1,4 @@
-import { optimizeImageAlt } from "@/lib/seo-manager"
+import { optimizeImageAlt } from "@/lib/seo"
 import Image from "next/image"
 
 

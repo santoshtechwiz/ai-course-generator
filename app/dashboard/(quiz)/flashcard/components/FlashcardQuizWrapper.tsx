@@ -36,7 +36,7 @@ import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 
 import { QuizActions } from "../../components/QuizActions";
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
-import { QuizSchema } from "@/lib/seo-manager/components";
+import { QuizSchema } from "@/lib/seo";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -277,18 +277,10 @@ export default function FlashcardQuizWrapper({
 
     dispatch(completeFlashCardQuiz(results));
   };
+
   // Loading Skeletons
   if (quizStatus === "loading" || isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <LoadingSpinner />
-        <p className="mt-4 text-muted-foreground">
-          {isReviewMode
-            ? "Loading your review cards..."
-            : "Loading flashcards..."}
-        </p>
-      </div>
-    );
+    return <LoadingSpinner size={48} />;
   }
 
   // Error State with Retry
@@ -334,7 +326,6 @@ export default function FlashcardQuizWrapper({
   if (isReviewMode && questions.length > 0 && reviewQuestions.length === 0) {
     // Get cards parameter for debugging
     const cardsParam = searchParams?.get("cards");
-
     return (
       <NoResults
         variant="empty"
@@ -381,6 +372,7 @@ export default function FlashcardQuizWrapper({
     );
   }
   // Main Quiz Component
+  // Only render one progress bar and one main action button (handled inside FlashcardQuiz)
   return (
     <motion.div
       className="space-y-6 px-4"
@@ -388,7 +380,6 @@ export default function FlashcardQuizWrapper({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-    
       <QuizSchema
         name={quizTitle || title || "Flashcard Quiz"}
         url={`https://courseai.io/dashboard/flashcard/${slug}`}
@@ -396,8 +387,7 @@ export default function FlashcardQuizWrapper({
         description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
         numberOfQuestions={currentQuestions?.length}
       />
-      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
-        
+      <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto px-2 sm:px-4">
         <FlashcardQuiz
           key={`${slug}-${isReviewMode ? "review" : "full"}`}
           cards={currentQuestions}

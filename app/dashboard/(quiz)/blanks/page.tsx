@@ -1,4 +1,18 @@
-"use client"
+
+// ...removed 'use client' to allow metadata export...
+import { generateMetadata } from "@/lib/seo";
+export const metadata = generateMetadata({
+  title: "Create Fill in the Blanks Quiz | CourseAI",
+  description: "Create customized fill-in-the-blank exercises or practice with our pre-built quizzes. Ideal for language learning, vocabulary, and coding practice.",
+  keywords: [
+    "fill in the blanks quiz",
+    "cloze quiz",
+    "vocabulary quiz",
+    "language learning quiz",
+    "CourseAI blanks quiz"
+  ],
+  type: "website",
+});
 
 import BlankQuizForm from "./components/BlankQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"

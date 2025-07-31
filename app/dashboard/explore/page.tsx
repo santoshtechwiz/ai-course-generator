@@ -1,4 +1,4 @@
-import { JsonLD, generateMetadata } from "@/lib/seo-manager";
+import { JsonLD, generateMetadata } from "@/lib/seo";
 import { CreateComponent } from "@/components/features/explore/CreateComponent";
 import type { Metadata } from "next";
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
@@ -8,7 +8,7 @@ export const metadata: Metadata = generateMetadata({
   title: "Explore AI-Powered Quizzes | Create and Learn",
   description:
     "Create professional-quality educational content in minutes with our AI tools. Generate MCQs, open-ended questions, fill-in-the-blank exercises, and complete courses for any subject.",
-  path: "/dashboard/explore",
+  // path: "/dashboard/explore",
   keywords: [
     "AI course creation",
     "MCQ generator",
@@ -21,12 +21,12 @@ export const metadata: Metadata = generateMetadata({
     "course authoring tool",
     "automated question generation",
   ],
-  ogImage: {
-    url: "/og-image-explore.jpg",
-    width: 1200,
-    height: 630,
-    alt: "CourseAI Content Creation Tools",
-  },
+  // ogImage: {
+  //   url: "/og-image-explore.jpg",
+  //   width: 1200,
+  //   height: 630,
+  //   alt: "CourseAI Content Creation Tools",
+  // },
 });
 
 export default function ExplorePage() {

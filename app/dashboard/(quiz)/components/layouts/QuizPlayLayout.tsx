@@ -35,7 +35,7 @@ import { RandomQuiz } from "./RandomQuiz"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { TagsDisplay } from "@/components/quiz/TagsDisplay"
 import { QuizType } from "@/app/types/quiz-types"
-import { JsonLD } from "@/lib/seo-manager";
+import { JsonLD } from "@/lib/seo";
 
 export const dynamic = "force-dynamic"
 

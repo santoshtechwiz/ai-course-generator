@@ -12,7 +12,7 @@ import ClientOnly from "@/components/ClientOnly"
 import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-found-utils"
 
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
-import { JsonLD } from "./lib/seo-manager"
+import { JsonLD } from "./lib/seo"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = notFoundMetadata
