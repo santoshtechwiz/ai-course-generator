@@ -1,8 +1,9 @@
-import { Metadata } from "next"
+import { Metadata } from "next";
 
 export const notFoundMetadata: Metadata = {
   title: "Page Not Found | CourseAI",
-  description: "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
+  description:
+    "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
   robots: {
     index: false,
     follow: false,
@@ -17,12 +18,13 @@ export const notFoundMetadata: Metadata = {
   },
   openGraph: {
     title: "Page Not Found | CourseAI",
-    description: "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
+    description:
+      "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
     url: "https://courseai.com/404",
     siteName: "CourseAI",
     images: [
       {
-        url: "/images/og-image-404.jpg", 
+        url: "/images/og-image-404.jpg",
         width: 1200,
         height: 630,
         alt: "CourseAI - Page Not Found",
@@ -34,8 +36,9 @@ export const notFoundMetadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Page Not Found | CourseAI",
-    description: "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
+    description:
+      "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
     images: ["/images/og-image-404.jpg"],
     creator: "@courseai",
   },
-}
+};
