@@ -1,44 +1,21 @@
-import { Metadata } from "next";
+import { Metadata } from "next"
+import { generateOptimizedMetadata } from "@/lib/seo"
 
-export const notFoundMetadata: Metadata = {
-  title: "Page Not Found | CourseAI",
-  description:
-    "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
-  robots: {
-    index: false,
-    follow: false,
-    nocache: true,
-    googleBot: {
-      index: false,
-      follow: false,
-    },
-  },
-  alternates: {
-    canonical: "https://courseai.com/404",
-  },
-  openGraph: {
-    title: "Page Not Found | CourseAI",
-    description:
-      "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
-    url: "https://courseai.com/404",
-    siteName: "CourseAI",
-    images: [
-      {
-        url: "/images/og/og-image-404.jpg", 
-        width: 1200,
-        height: 630,
-        alt: "CourseAI - Page Not Found",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Page Not Found | CourseAI",
-    description:
-      "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
-    images: ["/images/og/og-image-404.jpg"],
-    creator: "@courseai",
-  },
-};
+export const notFoundMetadata: Metadata = generateOptimizedMetadata({
+  title: '404 - Page Not Found | CourseAI',
+  description: 'The page you were looking for does not exist. Explore our comprehensive AI-powered educational courses, interactive quizzes, and learning materials.',
+  keywords: [
+    'page not found',
+    'ai courses',
+    'online learning',
+    'educational content',
+    'interactive courses',
+    'courseai',
+    'learning platform',
+    '404 error'
+  ],
+  noIndex: true,
+  noFollow: true,
+  type: 'website',
+  canonicalPath: '/404'
+});

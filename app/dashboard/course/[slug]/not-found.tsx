@@ -1,49 +1,35 @@
 import Link from "next/link"
-import { FileQuestion, Search, ArrowLeft } from "lucide-react"
+import { FileQuestion, Search, ArrowLeft, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Metadata } from "next"
-import { notFoundMetadata } from "@/app/metadata/not-found-metadata"
-import { notFoundStructuredData } from "@/app/utils/not-found-utils"
-import { JsonLD } from "@/lib/seo";
 
-// Use the app's standard not-found metadata
-export const metadata: Metadata = {
-  ...notFoundMetadata,
-  title: "Course Not Found | CourseAI",
-  description: "We couldn't find the course you're looking for. Explore our other courses instead.",
-}
+import { generateCourseNotFoundStructuredData } from "@/app/utils/not-found-utils"
+import { JsonLD, generateOptimizedMetadata } from "@/lib/seo";
+
+// Enhanced metadata for course not found page
+export const metadata: Metadata = generateOptimizedMetadata({
+  title: 'Course Not Found - Discover Alternative AI Courses',
+  description: 'The course you were looking for could not be found. Explore our comprehensive collection of AI-powered educational courses and interactive learning materials.',
+  keywords: [
+    'course not found',
+    'ai courses',
+    'online learning',
+    'educational content',
+    'interactive courses',
+    'alternative courses',
+    'courseai',
+    'learning platform'
+  ],
+  noIndex: true,
+  noFollow: true,
+  type: 'website',
+  canonicalPath: '/dashboard/course/not-found'
+});
 
 // Next.js will use this to set the correct HTTP status code
 export default function CourseNotFound() {
-  // Customized structured data for course not found
-  const courseNotFoundStructuredData = {
-    ...notFoundStructuredData,
-    name: "Course Not Found",
-    description: "The requested course could not be found.",
-    breadcrumb: {
-      ...notFoundStructuredData.breadcrumb,
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Home",
-          "item": "https://courseai.com",
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "Dashboard",
-          "item": "https://courseai.com/dashboard",
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": "Course Not Found",
-          "item": "https://courseai.com/dashboard/course",
-        },
-      ],
-    },
-  }
+  // Use the enhanced course-specific structured data
+  const courseNotFoundStructuredData = generateCourseNotFoundStructuredData()
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -54,16 +40,16 @@ export default function CourseNotFound() {
         <FileQuestion className="mx-auto h-24 w-24 text-muted-foreground" />
         <h1 className="text-4xl font-bold text-foreground">404 - Course Not Found</h1>
         <p className="text-lg text-muted-foreground">
-          Oops! The course you're looking for seems to have gone on an adventure of its own.
+          We couldn't locate the course you're looking for. It may have been moved, renamed, or is no longer available.
         </p>
 
         <div className="py-2 space-y-2">
-          <h2 className="text-lg font-semibold">What can you do now?</h2>
-          <ul className="text-left pl-6 list-disc text-muted-foreground">
-            <li>Check the URL for typos</li>
-            <li>Search for available courses</li>
-            <li>Return to dashboard</li>
-            <li>Browse our course categories</li>
+          <h2 className="text-lg font-semibold text-foreground">What can you do now?</h2>
+          <ul className="text-left pl-6 list-disc text-muted-foreground space-y-1">
+            <li>Double-check the URL for any typos</li>
+            <li>Browse our available courses</li>
+            <li>Create your own course with AI</li>
+            <li>Return to your dashboard</li>
           </ul>
         </div>
 
@@ -80,8 +66,16 @@ export default function CourseNotFound() {
               Explore Courses
             </Link>
           </Button>
+          <Button asChild variant="secondary">
+            <Link href="/">
+              <Home className="mr-2 h-4 w-4" />
+              Go Home
+            </Link>
+          </Button>
         </div>
-        <p className="text-sm text-muted-foreground">If you believe this is an error, please contact support.</p>
+        <p className="text-sm text-muted-foreground">
+          Need help? <a href="/contactus" className="text-primary hover:underline">Contact our support team</a> for assistance.
+        </p>
       </div>
     </div>
   )

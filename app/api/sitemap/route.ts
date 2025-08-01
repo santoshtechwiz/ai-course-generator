@@ -15,33 +15,43 @@ export async function GET() {
 
   const courses = await prisma.course.findMany({
     where: { isPublic: true },
-    select: { slug: true, updatedAt: true },
+    select: { slug: true, updatedAt: true, createdAt: true },
+    orderBy: { updatedAt: 'desc' },
+    take: 1000, // Limit for performance
   })
 
   const quizzes = await prisma.userQuiz.findMany({
     where: { isPublic: true },
-    select: { slug: true, updatedAt: true, quizType: true },
+    select: { slug: true, updatedAt: true, quizType: true, createdAt: true },
+    orderBy: { updatedAt: 'desc' },
+    take: 1000, // Limit for performance
   })
 
   const staticPages = [
     { url: "/", priority: 1.0, changefreq: "weekly" },
-    { url: "/dashboard", priority: 0.9, changefreq: "daily" },
-    { url: "/dashboard/explore", priority: 0.8, changefreq: "daily" },
-    { url: "/dashboard/quizzes", priority: 0.8, changefreq: "daily" },
-    { url: "/dashboard/account", priority: 0.7, changefreq: "weekly" },
-    { url: "/dashboard/subscription", priority: 0.7, changefreq: "weekly" },
+    { url: "/dashboard/explore", priority: 0.95, changefreq: "daily" },
+    { url: "/dashboard/quizzes", priority: 0.9, changefreq: "daily" },
+    { url: "/dashboard/courses", priority: 0.9, changefreq: "daily" },
+    { url: "/dashboard/create", priority: 0.8, changefreq: "daily" },
+    { url: "/dashboard/flashcard", priority: 0.7, changefreq: "weekly" },
     { url: "/contactus", priority: 0.6, changefreq: "monthly" },
-    { url: "/privacy", priority: 0.5, changefreq: "monthly" },
-    { url: "/terms", priority: 0.5, changefreq: "monthly" },
+    { url: "/privacy", priority: 0.4, changefreq: "yearly" },
+    { url: "/terms", priority: 0.4, changefreq: "yearly" },
+    { url: "/about", priority: 0.6, changefreq: "monthly" },
   ]
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   ${staticPages
     .map(
       (page) => `
   <url>
     <loc>${escapeXml(baseUrl + page.url)}</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`,
@@ -52,7 +62,7 @@ export async function GET() {
       (course) => `
   <url>
     <loc>${escapeXml(`${baseUrl}/dashboard/course/${course.slug}`)}</loc>
-    <lastmod>${new Date(course.updatedAt || new Date()).toISOString()}</lastmod>
+    <lastmod>${new Date(course.updatedAt || course.createdAt || new Date()).toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`,
@@ -64,7 +74,7 @@ export async function GET() {
       return `
   <url>
     <loc>${escapeXml(`${baseUrl}/dashboard/${quiz.quizType}/${cleanedSlug}`)}</loc>
-    <lastmod>${new Date(quiz.updatedAt || new Date()).toISOString()}</lastmod>
+    <lastmod>${new Date(quiz.updatedAt || quiz.createdAt || new Date()).toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`

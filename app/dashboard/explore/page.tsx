@@ -2,28 +2,34 @@
 import { CreateComponent } from "@/components/features/explore/CreateComponent";
 import type { Metadata } from "next";
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
-import { generateMetadata } from "@/lib/seo/seo-helper";
+import { generateOptimizedMetadata } from "@/lib/seo";
 import { JsonLD } from "@/lib/seo";
 
 // Enhanced metadata for better SEO
-export const metadata: Metadata = generateMetadata({
-  title: "Explore AI-Powered Quizzes | Create and Learn",
+export const metadata: Metadata = generateOptimizedMetadata({
+  title: "AI Content Creator - Generate Courses, Quizzes & Assessments",
   description:
-    "Create professional-quality educational content in minutes with our AI tools. Generate MCQs, open-ended questions, fill-in-the-blank exercises, and complete courses for any subject.",
-  // path: "/dashboard/explore",
+    "Create professional educational content instantly with AI. Generate interactive courses, multiple-choice questions, open-ended assessments, and fill-in-the-blank exercises for any subject. Perfect for educators, trainers, and content creators.",
   keywords: [
-    "AI course creation",
-    "MCQ generator",
-    "open-ended questions",
-    "fill in the blank exercises",
+    "AI content generator",
+    "course creation tool",
+    "quiz generator",
+    "MCQ creator",
+    "educational content AI",
+    "assessment builder",
     "e-learning tools",
-    "AI teaching assistant",
-    "educational content creator",
-    "quiz maker",
-    "course authoring tool",
     "automated question generation",
+    "teaching materials creator",
+    "educational technology",
+    "AI-powered education",
+    "content authoring",
+    "quiz maker",
+    "exam creator",
+    "learning material generator",
+    "courseai"
   ],
-
+  canonicalPath: '/dashboard/explore',
+  type: 'website',
 });
 
 export default function ExplorePage() {

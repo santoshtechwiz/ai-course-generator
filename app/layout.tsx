@@ -12,71 +12,39 @@ import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
 import { defaultMetadata, DefaultSEO } from "@/lib/seo";
+import { generateOptimizedMetadata } from "@/lib/seo";
 
 import { GoogleAnalytics } from '@next/third-parties/google'
-export const metadata: Metadata = {
-  ...defaultMetadata,
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"
-  ),
-  title: {
-    default: "CourseAI - AI-Powered Courses & Quizzes for Every Topic",
-    template: "%s | CourseAI",
-  },
+
+export const metadata: Metadata = generateOptimizedMetadata({
+  title: "CourseAI - AI-Powered Educational Content Creator",
   description:
-    "CourseAI empowers everyone to create, share, and discover interactive courses and quizzes on any topic with the power of AI. Learn, teach, and test knowledge in any field—education, hobbies, business, and more.",
+    "Create professional courses, quizzes, and educational content with AI. Empower educators, trainers, and learners with intelligent content generation tools for any subject.",
   keywords: [
-    "CourseAI",
-    "AI quizzes",
-    "AI courses",
+    "AI course creator",
+    "AI quiz generator", 
+    "educational content creation",
+    "e-learning platform",
+    "course builder",
+    "quiz maker",
+    "AI education tools",
     "interactive learning",
-    "quiz builder",
-    "course creator",
-    "education platform",
-    "learn anything",
-    "teach online",
-    "knowledge testing",
-    "AI education",
-    "online quizzes",
-    "online courses",
-    "community learning",
-    "personal development",
-    "business training",
-    "school resources",
-    "hobby learning",
-    "language learning",
-    "science quizzes",
-    "history courses"
+    "assessment creation",
+    "training materials",
+    "online education",
+    "educational technology",
+    "automated content generation",
+    "learning management",
+    "course authoring",
+    "educational AI",
+    "teaching tools",
+    "exam creator",
+    "knowledge assessment",
+    "courseai"
   ],
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://courseai.io",
-    siteName: "CourseAI",
-    title: "CourseAI - AI-Powered Courses & Quizzes for Every Topic",
-    description:
-      "CourseAI empowers everyone to create, share, and discover interactive courses and quizzes on any topic with the power of AI. Learn, teach, and test knowledge in any field—education, hobbies, business, and more.",
-    images: [
-      {
-        url: "/images/og/courseai-og.png",
-        width: 1200,
-        height: 630,
-        alt: "CourseAI - AI-Powered Learning Platform for All Topics",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "CourseAI - AI-Powered Courses & Quizzes for Every Topic",
-    description:
-      "CourseAI empowers everyone to create, share, and discover interactive courses and quizzes on any topic with the power of AI. Learn, teach, and test knowledge in any field—education, hobbies, business, and more.",
-    creator: "@courseai",
-    images: ["/images/og/courseai-og.png"],
-  },
-};
+  canonicalPath: "/",
+  type: "website",
+});
 
 export default async function RootLayout({
   children,
@@ -102,6 +70,9 @@ export default async function RootLayout({
             name="google-site-verification"
             content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
           />
+          <link rel="canonical" href={process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"} />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         </head>
 
         <body

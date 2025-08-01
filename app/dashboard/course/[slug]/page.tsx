@@ -5,26 +5,52 @@ import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
 import { CourseSchema } from "@/lib/seo/components"
+import { generateOptimizedMetadata } from "@/lib/seo"
 
 type CoursePageParams = {
   params: Promise<{ slug: string }>
 }
 
-// Generate metadata for the course page with improved typing
+// Generate enhanced metadata for the course page with better SEO
 export async function generateMetadata({ params }: CoursePageParams): Promise<Metadata> {
   const { slug } = await params
   const course = (await getCourseData(slug)) as FullCourseType | null
-  return {
-    title: course?.title || 'Course Not Found',
-    description: course?.description || 'No description available.',
-    openGraph: {
-      images: course?.image ? [course.image] : [],
-      type: 'website',
-      title: course?.title || 'Course Not Found',
-      description: course?.description || 'No description available.',
-    },
-    robots: !course ? { index: false, follow: false } : undefined,
-  };
+  
+  if (!course) {
+    return generateOptimizedMetadata({
+      title: 'Course Not Found',
+      description: 'The requested course could not be found. Explore our other AI-powered educational content.',
+      noIndex: true,
+      noFollow: true,
+    });
+  }
+
+  // Extract keywords from course content
+  const categoryName = course.category && typeof course.category === 'object' && 'name' in course.category 
+    ? course.category.name 
+    : (typeof course.category === 'string' ? course.category : 'programming');
+    
+  const keywords = [
+    'ai course',
+    'online learning',
+    'educational content',
+    course.title.toLowerCase(),
+    ...(course.description ? course.description.split(' ').slice(0, 3) : []),
+    categoryName.toLowerCase(),
+    'interactive quiz',
+    'courseai'
+  ].filter(Boolean);
+
+  return generateOptimizedMetadata({
+    title: course.title,
+    description: course.description || `Learn ${course.title} with interactive AI-powered course content, quizzes, and assessments.`,
+    keywords,
+    canonicalPath: `/dashboard/course/${course.slug}`,
+    type: 'course',
+    image: course.image,
+    publishedAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  });
 }
 
 export default async function Page({ params }: CoursePageParams) {
