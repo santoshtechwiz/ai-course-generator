@@ -4,8 +4,7 @@ import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
-
-import { CourseSchema } from "@/lib/seo"
+import { CourseSchema } from "@/lib/seo/components"
 
 type CoursePageParams = {
   params: Promise<{ slug: string }>

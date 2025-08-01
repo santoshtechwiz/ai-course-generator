@@ -1,4 +1,5 @@
-import { generateMetadata } from "@/lib/seo"
+
+import { generateMetadata } from "@/lib/seo/seo-helper"
 import SubscriptionPageClient from "./components/SubscriptionPageClient"
 import type { Metadata } from "next"
 

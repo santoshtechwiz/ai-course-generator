@@ -36,7 +36,8 @@ import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 
 import { QuizActions } from "../../components/QuizActions";
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
-import { QuizSchema } from "@/lib/seo";
+import { QuizSchema } from "@/lib/seo/components";
+
 
 interface FlashcardQuizWrapperProps {
   slug: string;

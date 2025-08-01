@@ -1,7 +1,9 @@
-import { JsonLD, generateMetadata } from "@/lib/seo";
+
 import { CreateComponent } from "@/components/features/explore/CreateComponent";
 import type { Metadata } from "next";
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
+import { generateMetadata } from "@/lib/seo/seo-helper";
+import { JsonLD } from "@/lib/seo";
 
 // Enhanced metadata for better SEO
 export const metadata: Metadata = generateMetadata({
@@ -21,12 +23,7 @@ export const metadata: Metadata = generateMetadata({
     "course authoring tool",
     "automated question generation",
   ],
-  // ogImage: {
-  //   url: "/og-image-explore.jpg",
-  //   width: 1200,
-  //   height: 630,
-  //   alt: "CourseAI Content Creation Tools",
-  // },
+
 });
 
 export default function ExplorePage() {

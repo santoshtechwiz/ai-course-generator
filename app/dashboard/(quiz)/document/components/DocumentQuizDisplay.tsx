@@ -1,11 +1,24 @@
 "use client"
 
-import { Download, FileText } from "lucide-react"
+import { useState, useCallback, useMemo, lazy, Suspense } from "react"
+import { FileText, Plus, Trash2, Edit3, Save, X, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { memo } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { motion, AnimatePresence } from "framer-motion"
 
-// Define the component props
+// Lazy load PDF components for better performance
+const PDFDownloadButton = lazy(() =>
+  import("./DocumentQuizPdf").then((module) => ({ default: module.PDFDownloadButton })),
+)
+const EnhancedPDFDownloadButton = lazy(() =>
+  import("./DocumentQuizPdf").then((module) => ({ default: module.EnhancedPDFDownloadButton })),
+)
+
 interface Question {
   id: string
   question: string
@@ -14,401 +27,449 @@ interface Question {
   explanation?: string
 }
 
-interface QuizPDFProps {
+interface DocumentQuizDisplayProps {
   questions: Question[]
+  onSave?: (questions: Question[]) => void
+  onUpdate?: (questions: Question[]) => void
   title?: string
+  isEditable?: boolean
 }
 
-// Simple PDF generation using HTML and print
-const generatePDFContent = (questions: Question[], title: string) => {
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>${title}</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          line-height: 1.6;
-          margin: 40px;
-          color: #333;
-        }
-        .header {
-          text-align: center;
-          margin-bottom: 40px;
-          border-bottom: 2px solid #333;
-          padding-bottom: 20px;
-        }
-        .title {
-          font-size: 28px;
-          font-weight: bold;
-          margin-bottom: 10px;
-        }
-        .subtitle {
-          font-size: 16px;
-          color: #666;
-        }
-        .question {
-          margin-bottom: 30px;
-          page-break-inside: avoid;
-        }
-        .question-number {
-          font-size: 18px;
-          font-weight: bold;
-          margin-bottom: 10px;
-          color: #2563eb;
-        }
-        .question-text {
-          font-size: 16px;
-          margin-bottom: 15px;
-          font-weight: 500;
-        }
-        .options {
-          margin-left: 20px;
-        }
-        .option {
-          margin-bottom: 8px;
-          font-size: 14px;
-        }
-        .correct-answer {
-          background-color: #dcfce7;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-weight: bold;
-          color: #166534;
-        }
-        .answer-key {
-          page-break-before: always;
-          margin-top: 40px;
-        }
-        .answer-key-title {
-          font-size: 24px;
-          font-weight: bold;
-          text-align: center;
-          margin-bottom: 30px;
-          border-bottom: 2px solid #333;
-          padding-bottom: 15px;
-        }
-        .answer-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          border-bottom: 1px solid #eee;
-        }
-        .footer {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          font-size: 12px;
-          color: #666;
-        }
-        @media print {
-          body { margin: 20px; }
-          .no-print { display: none; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <div class="title">${title}</div>
-        <div class="subtitle">${questions.length} Questions • Generated Quiz</div>
-      </div>
+const QuestionEditor = ({
+  question,
+  index,
+  onUpdate,
+  onDelete,
+  isEditing,
+  onToggleEdit,
+}: {
+  question: Question
+  index: number
+  onUpdate: (question: Question) => void
+  onDelete: () => void
+  isEditing: boolean
+  onToggleEdit: () => void
+}) => {
+  const [editedQuestion, setEditedQuestion] = useState(question)
 
-      ${questions
-        .map(
-          (question, index) => `
-        <div class="question">
-          <div class="question-number">Question ${index + 1}</div>
-          <div class="question-text">${question.question}</div>
-          <div class="options">
-            ${question.options
-              .map(
-                (option, optionIndex) => `
-              <div class="option">
-                <strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${option}
-                ${optionIndex === question.correctAnswer ? '<span class="correct-answer">✓ Correct Answer</span>' : ""}
-              </div>
-            `,
-              )
-              .join("")}
-          </div>
-        </div>
-      `,
-        )
-        .join("")}
-
-      <div class="answer-key">
-        <div class="answer-key-title">Answer Key</div>
-        ${questions
-          .map(
-            (question, index) => `
-          <div class="answer-item">
-            <span><strong>${index + 1}.</strong> ${question.question.substring(0, 50)}${question.question.length > 50 ? "..." : ""}</span>
-            <span><strong>${String.fromCharCode(65 + question.correctAnswer)}</strong> - ${question.options[question.correctAnswer]}</span>
-          </div>
-        `,
-          )
-          .join("")}
-      </div>
-
-      <div class="footer">
-        Generated by CourseAI • ${new Date().toLocaleDateString()}
-      </div>
-    </body>
-    </html>
-  `
-  return htmlContent
-}
-
-const downloadPDF = async (questions: Question[], title: string) => {
-  try {
-    const htmlContent = generatePDFContent(questions, title)
-
-    // Create a new window for printing
-    const printWindow = window.open("", "_blank")
-    if (!printWindow) {
-      throw new Error("Popup blocked. Please allow popups for this site.")
+  const handleSave = useCallback(() => {
+    // Validate question
+    if (!editedQuestion.question.trim()) {
+      toast({
+        title: "Question required",
+        description: "Please enter a question before saving.",
+        variant: "destructive",
+      })
+      return
     }
 
-    printWindow.document.write(htmlContent)
-    printWindow.document.close()
-
-    // Wait for content to load
-    printWindow.onload = () => {
-      setTimeout(() => {
-        printWindow.print()
-        // Close the window after printing (optional)
-        setTimeout(() => {
-          printWindow.close()
-        }, 1000)
-      }, 500)
+    if (editedQuestion.options.some((opt) => !opt.trim())) {
+      toast({
+        title: "All options required",
+        description: "Please fill in all answer options.",
+        variant: "destructive",
+      })
+      return
     }
 
+    onUpdate(editedQuestion)
+    onToggleEdit()
     toast({
-      title: "PDF Ready",
-      description: "Print dialog opened. Choose 'Save as PDF' to download.",
+      title: "Question updated",
+      description: "Your changes have been saved.",
     })
-  } catch (error) {
-    console.error("PDF generation error:", error)
-    toast({
-      title: "PDF Generation Failed",
-      description: "Could not generate PDF. Please try again.",
-      variant: "destructive",
-    })
-  }
-}
+  }, [editedQuestion, onUpdate, onToggleEdit])
 
-// Alternative: Download as HTML file
-const downloadHTML = (questions: Question[], title: string) => {
-  try {
-    const htmlContent = generatePDFContent(questions, title)
-    const blob = new Blob([htmlContent], { type: "text/html" })
-    const url = URL.createObjectURL(blob)
+  const handleCancel = useCallback(() => {
+    setEditedQuestion(question)
+    onToggleEdit()
+  }, [question, onToggleEdit])
 
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.html`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+  const updateOption = useCallback((optionIndex: number, value: string) => {
+    setEditedQuestion((prev) => ({
+      ...prev,
+      options: prev.options.map((opt, i) => (i === optionIndex ? value : opt)),
+    }))
+  }, [])
 
-    toast({
-      title: "Quiz Downloaded",
-      description: "HTML file downloaded successfully. Open in browser and print to PDF.",
-    })
-  } catch (error) {
-    console.error("HTML download error:", error)
-    toast({
-      title: "Download Failed",
-      description: "Could not download quiz. Please try again.",
-      variant: "destructive",
-    })
-  }
-}
+  const addOption = useCallback(() => {
+    if (editedQuestion.options.length >= 6) {
+      toast({
+        title: "Maximum options reached",
+        description: "You can have up to 6 answer options.",
+        variant: "destructive",
+      })
+      return
+    }
+    setEditedQuestion((prev) => ({
+      ...prev,
+      options: [...prev.options, ""],
+    }))
+  }, [editedQuestion.options.length])
 
-interface PDFDownloadButtonProps {
-  questions: Question[]
-  title: string
-  className?: string
-  variant?: "default" | "outline" | "secondary"
-  size?: "sm" | "default" | "lg"
-}
-
-export const PDFDownloadButton = memo(function PDFDownloadButton({
-  questions,
-  title,
-  className = "",
-  variant = "outline",
-  size = "default",
-}: PDFDownloadButtonProps) {
-  if (questions.length === 0) {
-    return (
-      <Button disabled variant={variant} size={size} className={className}>
-        <Download className="mr-2 h-4 w-4" />
-        No Questions to Export
-      </Button>
-    )
-  }
-
-  const handleDownload = () => {
-    // Try PDF print first, fallback to HTML download
-    downloadPDF(questions, title)
-  }
-
-  const handleHTMLDownload = () => {
-    downloadHTML(questions, title)
-  }
+  const removeOption = useCallback(
+    (optionIndex: number) => {
+      if (editedQuestion.options.length <= 2) {
+        toast({
+          title: "Minimum options required",
+          description: "You need at least 2 answer options.",
+          variant: "destructive",
+        })
+        return
+      }
+      setEditedQuestion((prev) => ({
+        ...prev,
+        options: prev.options.filter((_, i) => i !== optionIndex),
+        correctAnswer:
+          prev.correctAnswer >= optionIndex && prev.correctAnswer > 0 ? prev.correctAnswer - 1 : prev.correctAnswer,
+      }))
+    },
+    [editedQuestion.options.length],
+  )
 
   return (
-    <div className="flex gap-2">
-      <Button onClick={handleDownload} variant={variant} size={size} className={className}>
-        <Download className="mr-2 h-4 w-4" />
-        Print PDF
-      </Button>
-      <Button onClick={handleHTMLDownload} variant="ghost" size={size} className="text-xs">
-        <FileText className="mr-1 h-3 w-3" />
-        HTML
-      </Button>
-    </div>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card
+        className={`transition-all duration-200 ${isEditing ? "ring-2 ring-primary/50 shadow-lg" : "hover:shadow-md"}`}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <span className="flex items-center justify-center w-8 h-8 bg-primary/10 text-primary rounded-full text-sm font-bold">
+                {index + 1}
+              </span>
+              Question {index + 1}
+            </CardTitle>
+            <div className="flex items-center gap-1">
+              {isEditing ? (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleSave}
+                          className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Save changes</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCancel}
+                          className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Cancel editing</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              ) : (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={onToggleEdit}
+                          className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit question</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={onDelete}
+                          className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete question</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isEditing ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Question</label>
+                <Textarea
+                  value={editedQuestion.question}
+                  onChange={(e) => setEditedQuestion((prev) => ({ ...prev, question: e.target.value }))}
+                  placeholder="Enter your question..."
+                  className="min-h-[80px] resize-none"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Answer Options</label>
+                  <Button variant="outline" size="sm" onClick={addOption} disabled={editedQuestion.options.length >= 6}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Option
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {editedQuestion.options.map((option, optionIndex) => (
+                    <div key={optionIndex} className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-xs font-medium shrink-0">
+                        {String.fromCharCode(65 + optionIndex)}
+                      </span>
+                      <Input
+                        value={option}
+                        onChange={(e) => updateOption(optionIndex, e.target.value)}
+                        placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                        className="flex-1"
+                      />
+                      {editedQuestion.options.length > 2 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeOption(optionIndex)}
+                          className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 shrink-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Correct Answer</label>
+                  <Select
+                    value={editedQuestion.correctAnswer.toString()}
+                    onValueChange={(value) =>
+                      setEditedQuestion((prev) => ({ ...prev, correctAnswer: Number.parseInt(value) }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select correct answer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {editedQuestion.options.map((option, index) => (
+                        <SelectItem key={index} value={index.toString()}>
+                          {String.fromCharCode(65 + index)}. {option || `Option ${String.fromCharCode(65 + index)}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-base leading-relaxed">{question.question}</p>
+              <div className="grid gap-2">
+                {question.options.map((option, optionIndex) => (
+                  <div
+                    key={optionIndex}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      optionIndex === question.correctAnswer
+                        ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center justify-center w-6 h-6 bg-muted rounded-full text-sm font-medium">
+                        {String.fromCharCode(65 + optionIndex)}
+                      </span>
+                      <span className="flex-1">{option}</span>
+                      {optionIndex === question.correctAnswer && (
+                        <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                          ✓ Correct
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   )
-})
+}
 
-// Enhanced version with more options
-export const EnhancedPDFDownloadButton = memo(function EnhancedPDFDownloadButton({
+export default function DocumentQuizDisplay({
   questions,
-  title,
-  className = "",
-  variant = "outline",
-  size = "default",
-}: PDFDownloadButtonProps) {
-  if (questions.length === 0) {
-    return (
-      <Button disabled variant={variant} size={size} className={className}>
-        <Download className="mr-2 h-4 w-4" />
-        No Questions to Export
-      </Button>
-    )
-  }
+  onSave,
+  onUpdate,
+  title = "Generated Quiz",
+  isEditable = true,
+}: DocumentQuizDisplayProps) {
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
+  const [localQuestions, setLocalQuestions] = useState(questions)
 
-  const handleJSONDownload = () => {
-    try {
-      const quizData = {
-        title,
-        questions,
-        generatedAt: new Date().toISOString(),
-        totalQuestions: questions.length,
+  // Memoize expensive calculations
+  const validQuestions = useMemo(
+    () => localQuestions.filter((q) => q.question.trim() && q.options.every((opt) => opt.trim())),
+    [localQuestions],
+  )
+
+  const handleUpdateQuestion = useCallback(
+    (updatedQuestion: Question) => {
+      const newQuestions = localQuestions.map((q) => (q.id === updatedQuestion.id ? updatedQuestion : q))
+      setLocalQuestions(newQuestions)
+      onUpdate?.(newQuestions)
+    },
+    [localQuestions, onUpdate],
+  )
+
+  const handleDeleteQuestion = useCallback(
+    (questionId: string) => {
+      if (localQuestions.length <= 1) {
+        toast({
+          title: "Cannot delete",
+          description: "You need at least one question in your quiz.",
+          variant: "destructive",
+        })
+        return
       }
 
-      const blob = new Blob([JSON.stringify(quizData, null, 2)], { type: "application/json" })
-      const url = URL.createObjectURL(blob)
-
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
+      const newQuestions = localQuestions.filter((q) => q.id !== questionId)
+      setLocalQuestions(newQuestions)
+      onUpdate?.(newQuestions)
       toast({
-        title: "Quiz Data Downloaded",
-        description: "JSON file downloaded successfully.",
+        title: "Question deleted",
+        description: "The question has been removed from your quiz.",
       })
-    } catch (error) {
-      toast({
-        title: "Download Failed",
-        description: "Could not download quiz data.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleCSVDownload = () => {
-    try {
-      const csvContent = [
-        ["Question", "Option A", "Option B", "Option C", "Option D", "Correct Answer"],
-        ...questions.map((q) => [
-          q.question,
-          q.options[0] || "",
-          q.options[1] || "",
-          q.options[2] || "",
-          q.options[3] || "",
-          String.fromCharCode(65 + q.correctAnswer),
-        ]),
-      ]
-        .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
-        .join("\n")
-
-      const blob = new Blob([csvContent], { type: "text/csv" })
-      const url = URL.createObjectURL(blob)
-
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_quiz.csv`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      toast({
-        title: "CSV Downloaded",
-        description: "Quiz exported as CSV file successfully.",
-      })
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Could not export quiz as CSV.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  return (
-    <div className="flex gap-1">
-      <Button onClick={() => downloadPDF(questions, title)} variant={variant} size={size} className={className}>
-        <Download className="mr-2 h-4 w-4" />
-        PDF
-      </Button>
-      <Button onClick={() => downloadHTML(questions, title)} variant="ghost" size="sm" title="Download as HTML">
-        HTML
-      </Button>
-      <Button onClick={handleCSVDownload} variant="ghost" size="sm" title="Download as CSV">
-        CSV
-      </Button>
-      <Button onClick={handleJSONDownload} variant="ghost" size="sm" title="Download as JSON">
-        JSON
-      </Button>
-    </div>
+    },
+    [localQuestions, onUpdate],
   )
-})
 
-export default function DocumentQuizPDF({ questions, title = "Generated Quiz" }: QuizPDFProps) {
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">{title}</h1>
-      <p className="text-gray-600 mb-6">{questions.length} Questions</p>
+  const handleAddQuestion = useCallback(() => {
+    const newQuestion: Question = {
+      id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      question: "",
+      options: ["", ""],
+      correctAnswer: 0,
+    }
+    const newQuestions = [...localQuestions, newQuestion]
+    setLocalQuestions(newQuestions)
+    onUpdate?.(newQuestions)
+    setEditingQuestionId(newQuestion.id)
+    toast({
+      title: "Question added",
+      description: "A new question has been added to your quiz.",
+    })
+  }, [localQuestions, onUpdate])
 
-      {questions.map((question, index) => (
-        <div key={question.id} className="mb-6 p-4 border rounded-lg">
-          <h3 className="font-semibold mb-2">Question {index + 1}</h3>
-          <p className="mb-3">{question.question}</p>
-          <div className="space-y-1">
-            {question.options.map((option, optionIndex) => (
-              <div
-                key={optionIndex}
-                className={`p-2 rounded ${
-                  optionIndex === question.correctAnswer ? "bg-green-100 font-semibold" : "bg-gray-50"
-                }`}
-              >
-                {String.fromCharCode(65 + optionIndex)}. {option}
-                {optionIndex === question.correctAnswer && <span className="ml-2 text-green-600">✓</span>}
-              </div>
-            ))}
-          </div>
+  const toggleEdit = useCallback(
+    (questionId: string) => {
+      setEditingQuestionId(editingQuestionId === questionId ? null : questionId)
+    },
+    [editingQuestionId],
+  )
+
+  if (!localQuestions.length) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
+          <FileText className="h-8 w-8 text-muted-foreground" />
         </div>
-      ))}
+        <div>
+          <h3 className="text-lg font-medium mb-2">No Questions Yet</h3>
+          <p className="text-muted-foreground mb-4">Upload a document and generate questions, or add them manually.</p>
+          {isEditable && (
+            <Button onClick={handleAddQuestion} variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Question Manually
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <p className="text-sm text-muted-foreground">
+            {validQuestions.length} of {localQuestions.length} questions complete
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isEditable && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleAddQuestion}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Question
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Add a new question to your quiz</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Suspense
+            fallback={
+              <Button variant="outline" size="sm" disabled>
+                Loading...
+              </Button>
+            }
+          >
+            <EnhancedPDFDownloadButton questions={validQuestions} title={title} variant="outline" size="sm" />
+          </Suspense>
+        </div>
+      </div>
+
+      <AnimatePresence mode="popLayout">
+        {localQuestions.map((question, index) => (
+          <QuestionEditor
+            key={question.id}
+            question={question}
+            index={index}
+            onUpdate={handleUpdateQuestion}
+            onDelete={() => handleDeleteQuestion(question.id)}
+            isEditing={editingQuestionId === question.id}
+            onToggleEdit={() => toggleEdit(question.id)}
+          />
+        ))}
+      </AnimatePresence>
+
+      {validQuestions.length > 0 && onSave && (
+        <div className="flex justify-center pt-4">
+          <Button onClick={() => onSave(validQuestions)} size="lg" className="min-w-[200px]">
+            <Save className="mr-2 h-5 w-5" />
+            Save Quiz ({validQuestions.length} questions)
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

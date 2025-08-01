@@ -1,7 +1,9 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
 
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
-import { generateMetadata, JsonLD } from "@/lib/seo"
+import { JsonLD } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo/seo-helper"
+
 
 export const metadata = generateMetadata({
   title: 'Home',

@@ -14,10 +14,12 @@ import { Quiz, quizStore } from "@/lib/quiz-store"
 import { useQuizPlan } from "@/modules/auth"
 import { ConfirmDialog } from "../components/ConfirmDialog"
 import PlanAwareButton from "../components/PlanAwareButton"
-import DocumentQuizDisplay, { EnhancedPDFDownloadButton } from "./components/DocumentQuizDisplay"
+
 import { DocumentQuizOptions } from "./components/DocumentQuizOptions"
 import { FileUpload } from "./components/FileUpload"
 import { SavedQuizList } from "./components/SavedQuizList"
+import DocumentQuizDisplay from "./components/DocumentQuizDisplay"
+import { PDFDownloadButton } from "./components/DocumentQuizPdf"
 
 interface QuizOptionsType {
   numberOfQuestions: number
@@ -448,7 +450,7 @@ export default function DocumentQuizPage() {
                     <div className="flex gap-2">
                       {canSave && (
                         <>
-                          <EnhancedPDFDownloadButton questions={quiz} title={quizTitle} variant="ghost" size="sm" />
+                          <PDFDownloadButton questions={quiz} title={quizTitle} variant="ghost" size="sm" />
                           <Button onClick={() => handleSaveQuiz()} disabled={isSaving} size="sm" className="gap-2">
                             <Save className="h-4 w-4" />
                             {isSaving ? "Saving..." : "Save Quiz"}

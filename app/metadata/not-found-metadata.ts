@@ -24,7 +24,7 @@ export const notFoundMetadata: Metadata = {
     siteName: "CourseAI",
     images: [
       {
-        url: "/images/og-image-404.jpg",
+        url: "/images/og/og-image-404.jpg", 
         width: 1200,
         height: 630,
         alt: "CourseAI - Page Not Found",
@@ -38,7 +38,7 @@ export const notFoundMetadata: Metadata = {
     title: "Page Not Found | CourseAI",
     description:
       "We couldn't find the page you're looking for. Explore our recommended courses and quizzes instead.",
-    images: ["/images/og-image-404.jpg"],
+    images: ["/images/og/og-image-404.jpg"],
     creator: "@courseai",
   },
 };
