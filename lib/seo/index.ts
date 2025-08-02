@@ -1,43 +1,60 @@
 /**
- * SEO Manager - Clean, optimized SEO utilities for CourseAI
- * Streamlined for better performance and maintainability
+ * SEO Module - Streamlined and Efficient
+ * 
+ * Consolidated SEO utilities for the CourseAI platform.
+ * This module provides all essential SEO functionality in a clean, maintainable way.
  */
 
-// Core SEO components and utilities
+// ============================================================================
+// CORE EXPORTS
+// ============================================================================
+
+// Constants and configuration
+export { BASE_URL, defaultSiteInfo, defaultFAQItems } from "./constants";
+
+// Core utility functions
+export {
+  extractKeywords,
+  generateMetaDescription,
+  optimizeImageAlt,
+  getSocialImageUrl,
+  getQuizTypeLabel,
+  getCourseDifficultyLabel,
+  validateMetadata,
+} from "./core-utils";
+
+// Unified metadata generation (primary)
+export {
+  generateMetadata,
+  generateCourseMetadata,
+  generateQuizMetadata,
+  type MetadataConfig,
+} from "./unified-metadata";
+
+// React components
 export { JsonLD, DefaultSEO } from "./components";
-export { defaultMetadata, BASE_URL, defaultSiteInfo } from "./constants";
 
-// Primary SEO utilities (recommended)
-export {
-  generateOptimizedMetadata,
-  cleanTitle,
-  cleanDescription,
-  optimizeKeywords,
-  generateCleanStructuredData,
-  validateMetadata
-} from './optimized-seo-manager';
-
-// Enhanced SEO utilities (advanced features)
-export {
-  generateEnhancedMetadata,
-  optimizeTitle,
-  optimizeDescription,
-  generateEnhancedStructuredData,
-  validateAndOptimizeMetadata,
-  generateSitemapMetadata
-} from './enhanced-seo-manager';
-
-// Additional SEO components
+// Structured data components
 export {
   WebsiteSchema,
   BreadcrumbListSchema,
   OrganizationSchema,
   FAQSchema,
   CourseSchema,
-  QuizSchema
-} from './components';
+  QuizSchema,
+} from "./components";
 
-// Essential types for TypeScript support
+// ============================================================================
+// LEGACY SUPPORT (for backward compatibility)
+// ============================================================================
+
+// Re-export some functions with their original names
+export { generateMetadata as generateOptimizedMetadata } from "./unified-metadata";
+
+// ============================================================================
+// TYPE EXPORTS
+// ============================================================================
+
 export type {
   SiteInfo,
   BreadcrumbItem,
@@ -48,10 +65,17 @@ export type {
   FAQProps,
   CourseSchemaProps,
   QuizSchemaProps,
-  CombinedSchemaProps,
-  MetadataOptions,
-} from './seo-schema';
+} from "./seo-schema";
 
-// SEO option types
-export type { OptimizedSEOOptions } from './optimized-seo-manager';
-export type { EnhancedSEOOptions } from './enhanced-seo-manager';
+// ============================================================================
+// DEFAULT METADATA
+// ============================================================================
+
+import { generateMetadata } from "./unified-metadata";
+import { defaultSiteInfo } from "./constants";
+
+export const defaultMetadata = generateMetadata({
+  title: defaultSiteInfo.name || "CourseAI",
+  description: "AI-powered learning platform with interactive courses, quizzes, and personalized education tools",
+  keywords: ["AI", "learning", "education", "courses", "quizzes", "programming", "coding"],
+});

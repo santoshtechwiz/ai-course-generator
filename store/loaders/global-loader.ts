@@ -133,30 +133,3 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
     }
   )
 );
-
-// Compatibility layer for legacy imports
-export const useGlobalLoading = () => {
-  const store = useGlobalLoader();
-
-  return {
-    showLoading: (options: any) => {
-      store.startLoading({
-        message: options.message || "Loading...",
-        subMessage: options.subMessage,
-        progress: options.progress,
-        isBlocking: options.isBlocking || false,
-      });
-      // Return a fake ID for compatibility
-      return Math.random().toString(36).substr(2, 9);
-    },
-    hideLoading: (id?: string) => {
-      // Simplified to prevent infinite loops - just a no-op
-      // Components should not be managing global loader state directly
-    },
-    updateLoading: (id: string, options: any) => {
-      if (options.progress !== undefined) {
-        store.setProgress(options.progress);
-      }
-    },
-  };
-};

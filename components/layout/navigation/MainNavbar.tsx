@@ -17,7 +17,7 @@ import { useAuth, useSubscription } from "@/modules/auth"
 import NotificationsMenu from "@/components/Navbar/NotificationsMenu"
 import { cn } from "@/lib/utils"
 import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
-import { useGlobalLoader } from '@/store/global-loader'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
 
 import { motion, AnimatePresence } from "framer-motion"
 import Logo from "@/components/shared/Logo"

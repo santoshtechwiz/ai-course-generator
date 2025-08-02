@@ -10,7 +10,7 @@ import ProgressiveText from "@/components/animations/ProgressiveText"
 import CountUp from "@/components/animations/CountUp"
 import CTASVG from "../svg/CTASVG"
 import { FeedbackButton } from "@/components/ui/feedback-button"
-import { useGlobalLoader } from '@/store/global-loader'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
 
 const CTASection = () => {
   const containerRef = useRef<HTMLDivElement>(null)

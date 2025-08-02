@@ -9,7 +9,7 @@ import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
 import { BookOpen, Sparkles, Zap, Target } from "lucide-react"
 import { JsonLD } from "@/lib/seo"
-import { generateMetadata } from "@/lib/seo/seo-helper"
+import { generateMetadata } from "@/lib/seo"
 
 export const metadata: Metadata = generateMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",

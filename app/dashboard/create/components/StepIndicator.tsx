@@ -1,5 +1,5 @@
 import { Check, FileText, Eye, Pencil } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 interface StepIndicatorProps {
   currentStep: number

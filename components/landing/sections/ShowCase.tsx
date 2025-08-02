@@ -15,11 +15,11 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { FeedbackButton } from "@/components/ui/feedback-button"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks"
 import { useGlobalLoader } from '@/store/global-loader'
 
 // Types based on the API response

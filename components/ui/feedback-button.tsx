@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 
 import { CheckCircle, XCircle, MessageSquarePlus } from "lucide-react"
 import { GlobalLoader } from "@/components/ui/loader"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 export type FeedbackState = "idle" | "loading" | "success" | "error"
 

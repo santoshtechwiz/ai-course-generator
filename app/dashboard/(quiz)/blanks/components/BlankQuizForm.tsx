@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from "@/components/ui/badge"
 
 import { usePersistentState } from "@/hooks/usePersistentState"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { blanksQuizSchema } from "@/schema/schema"
 import { GlobalLoader } from "@/components/ui/loader"
 

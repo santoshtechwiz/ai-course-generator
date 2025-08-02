@@ -16,7 +16,7 @@ import {
   Save,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 const STORAGE_KEY = "dragdrop-tutorial-completed"
 

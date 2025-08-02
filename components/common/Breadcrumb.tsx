@@ -16,7 +16,7 @@ import {
   Bell,
   Bookmark,
 } from "lucide-react"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 export type BreadcrumbIconType =

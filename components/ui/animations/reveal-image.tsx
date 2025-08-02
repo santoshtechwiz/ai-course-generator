@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
 import Image from "next/image"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 interface RevealImageProps extends React.HTMLAttributes<HTMLDivElement> {
   src: string

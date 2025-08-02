@@ -20,7 +20,7 @@ export const metadata: Metadata = generateOptimizedMetadata({
     "programming quiz privacy",
     "AI learning data security",
   ],
-  canonicalPath: "/privacy",
+  canonical: "/privacy",
   type: "article",
 })
 

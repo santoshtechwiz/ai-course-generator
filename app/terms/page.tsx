@@ -19,7 +19,7 @@ export const metadata: Metadata = generateOptimizedMetadata({
     "platform guidelines",
     "service conditions",
   ],
-  canonicalPath: "/terms",
+  canonical: "/terms",
   type: "article",
 })
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { Breadcrumb } from "@/components/common"
 
 interface PageHeaderProps {

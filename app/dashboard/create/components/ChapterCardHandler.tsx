@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import React, { useEffect, useMemo, useState } from "react"
 import { Loader2, CheckCircle, PlayCircle, Edit, Video, Eye } from "lucide-react"
 import type { Chapter } from "@prisma/client"

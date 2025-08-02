@@ -18,5 +18,5 @@ export * from "./toast"
 export * from "./tooltip"
 
 // Enhanced Components
-// Centralized Loader System
-export * from "./async-nav-link"
+// Centralized Loader System - AsyncNavLink is in components/loaders/
+// export * from "./async-nav-link"

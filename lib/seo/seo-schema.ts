@@ -1,3 +1,16 @@
+// Minimal schemaFactory implementation for JSON-LD schema creation
+export const schemaFactory = {
+  createSchema({ type, data, validation, minify }: SchemaFactoryConfig) {
+    // Basic schema creation logic; extend as needed
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': type,
+      ...data,
+    };
+    // Optionally validate or minify here
+    return schema;
+  },
+};
 import type React from "react"
 
 // ============================================================================

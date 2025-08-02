@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import Logo from "@/components/shared/Logo"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks"
 import { useSession } from "next-auth/react"
 import { AccessControl } from "@/components/ui/access-control"
 import { AlertCircle, CheckCircle, BookOpen, Lightbulb, XCircle, Award } from "lucide-react" // Added Award
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 
 import type { CourseQuestion, FullChapterType, FullCourseType } from "@/app/types/types"
 import type { AccessLevels } from "./CourseDetailsTabs"

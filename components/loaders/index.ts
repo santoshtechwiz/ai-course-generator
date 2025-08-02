@@ -1,2 +1,2 @@
-export { GlobalLoader } from "./GlobalLoader"
-export * from "./types"
+export { GlobalLoader } from "./GlobalLoader";
+export * from "./types";

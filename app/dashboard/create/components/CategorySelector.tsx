@@ -1,6 +1,6 @@
 "use client"
 import { motion } from "framer-motion"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { categories } from "@/config/categories"
 
 interface CategorySelectorProps {

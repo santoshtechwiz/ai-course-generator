@@ -7,7 +7,7 @@ import { motion, useInView } from "framer-motion"
 import { Play, Pause, Volume2, VolumeX, Maximize, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import RevealAnimation from "../RevealAnimation"
 
 const VideoSection = () => {

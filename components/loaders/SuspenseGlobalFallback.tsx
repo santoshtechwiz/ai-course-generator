@@ -1,6 +1,7 @@
 "use client";
+import { useGlobalLoader } from "@/store/loaders/global-loader";
 import { useEffect } from "react";
-import { useGlobalLoader } from "@/store/global-loader";
+
 
 /**
  * Suspense fallback that triggers the global loader (blocking) and returns null.

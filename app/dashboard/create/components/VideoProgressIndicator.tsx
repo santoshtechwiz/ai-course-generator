@@ -4,7 +4,7 @@ import React from "react"
 import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import type { VideoStatus } from "../hooks/useVideoProcessing"
 
 interface VideoProgressIndicatorProps {

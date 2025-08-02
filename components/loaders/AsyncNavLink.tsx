@@ -2,7 +2,8 @@
 import React from "react";
 import Link, { LinkProps } from "next/link";
 import { useRouter } from "next/navigation";
-import { useGlobalLoader } from "@/store/global-loader";
+import { useGlobalLoader } from "@/store/loaders/global-loader";
+
 
 interface AsyncNavLinkProps extends LinkProps {
   children: React.ReactNode;

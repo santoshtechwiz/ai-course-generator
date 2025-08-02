@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import { quizSchema } from "@/schema/schema"
 import { usePersistentState } from "@/hooks/usePersistentState"
-import { cn } from "@/lib/tailwindUtils"
+import { cn } from "@/lib/utils"
 import { useSubscription } from "@/modules/auth"
 
 import type { z } from "zod"

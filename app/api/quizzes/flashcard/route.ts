@@ -5,8 +5,8 @@ import prisma from "@/lib/db"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import type { User } from "@prisma/client"
-import { titleToSlug } from "@/lib/slug"
-import { generateUniqueSlug } from "@/lib/utils/utils"
+import { generateUniqueSlug } from "@/lib/utils/string"
+
 
 // Input validation schema
 const createFlashcardSchema = z.object({

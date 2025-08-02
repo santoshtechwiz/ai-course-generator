@@ -1,8 +1,9 @@
 "use client"
 
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
-import { useGlobalLoader } from "@/store/global-loader"
+
 
 interface SummaryResponse {
   success: boolean

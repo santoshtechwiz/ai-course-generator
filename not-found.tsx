@@ -10,9 +10,9 @@ import { motion } from "framer-motion"
 import MainNavbar from "@/components/layout/navigation/MainNavbar"
 import ClientOnly from "@/components/ClientOnly"
 import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-found-utils"
-
+import AsyncNavLink from "@/components/loaders/AsyncNavLink"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
-import { JsonLD } from "./lib/seo"
+import { JsonLD } from "@/lib/seo"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = notFoundMetadata

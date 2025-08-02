@@ -1,11 +1,14 @@
 // Add this to your existing types/quiz.ts file or create it if it doesn't exist
 
+// Define proper answer types
+export type QuizAnswerValue = string | number | boolean | string[] | Record<string, unknown>
+
 // Define the structure for the quiz state that will be persisted
 export interface PersistableQuizState {
   currentQuestion: number
-  userAnswers: Array<any> // Replace with proper answer type
+  userAnswers: Array<QuizAnswerValue>
   currentQuizId?: string | null
-  quizData?: any | null // Replace with proper quiz data type
+  quizData?: QuizData | null
   timeRemaining?: number
   timerActive?: boolean
 }
@@ -15,11 +18,30 @@ export interface AuthRedirectState {
   slug?: string
   quizId?: string
   type?: string
-  userAnswers?: Array<any> // Replace with proper answer type
+  userAnswers?: Array<QuizAnswerValue>
   currentQuestion?: number
   fromSubmission?: boolean
   path?: string
   timestamp?: number
+}
+
+// Define base question interface
+export interface BaseQuestion {
+  id: string | number
+  question: string
+  type: string
+  difficulty?: string
+  tags?: string[]
+}
+
+// Define quiz data interface
+export interface QuizData {
+  id: string
+  title: string
+  slug: string
+  questions: BaseQuestion[]
+  type: string
+  userId?: string
 }
 
 // Define the structure for the text quiz state
@@ -28,8 +50,8 @@ export interface TextQuizState {
   title: string | null
   slug: string | null
   currentQuestionIndex: number
-  questions: Array<any> // Replace with proper question type
-  answers: Array<any> // Replace with proper answer type
+  questions: Array<BaseQuestion>
+  answers: Array<QuizAnswerValue>
   status: "idle" | "active" | "answering" | "completed" | "error"
   error: string | null
   startTime: string | null
@@ -76,7 +98,7 @@ export interface QuizResult {
   quizId: string
   slug: string
   answers: QuizAnswer[]
-  questions: any[] // Replace with proper question type
+  questions: BaseQuestion[]
   totalQuestions: number
   completedAt: string
 }

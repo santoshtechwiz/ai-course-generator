@@ -11,7 +11,7 @@ import { BookOpen, ChevronDown, Loader2, LayoutGrid, List, Filter, Search, Trend
 // Add import for missing icons
 import { AlertCircle, RefreshCw, Sparkles, Award, Target } from "lucide-react"
 import { CreateCard } from "@/components/CreateCard"
-import { useDebounce } from "@/hooks/useDebounce"
+import { useDebounce } from "@/lib/utils/hooks"
 import { CourseCard } from "./CourseCard"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"

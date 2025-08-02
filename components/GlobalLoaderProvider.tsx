@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { GlobalLoader } from "@/components/loaders/GlobalLoader"
-import { useGlobalLoader } from "@/store/global-loader"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 export function GlobalLoaderProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

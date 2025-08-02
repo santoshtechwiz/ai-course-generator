@@ -2,10 +2,11 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { Session } from 'next-auth';
 
 export async function requireAuth(
   req: NextRequest,
-  handler: (session: any) => Promise<NextResponse>
+  handler: (session: Session) => Promise<NextResponse>
 ): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   
@@ -20,7 +21,7 @@ export async function requireResourceOwnership(
   req: NextRequest,
   resourceType: 'quiz' | 'course' | 'flashcard',
   resourceId: string,
-  handler: (session: any, resource: any) => Promise<NextResponse>
+  handler: (session: Session, resource: any) => Promise<NextResponse>
 ): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   

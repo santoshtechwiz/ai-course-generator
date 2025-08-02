@@ -6,7 +6,7 @@
  */
 
 import React from "react"
-import { schemaFactory } from "./schema-factory"
+
 import { defaultSiteInfo, defaultFAQItems, defaultSocialProfiles, DEFAULT_ORGANIZATION_DATA } from "./constants"
 import type {
   CombinedSchemaProps,
@@ -18,6 +18,7 @@ import type {
   FaqItem,
   QuizSchemaProps,
 } from "./seo-schema"
+import { schemaFactory } from "./seo-schema"
 
 // ============================================================================
 // CORE JSON-LD COMPONENT

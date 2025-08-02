@@ -4,8 +4,9 @@ import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { HashLoader } from "react-spinners"
 import { AlertCircle } from "lucide-react"
-import { useGlobalLoader } from "@/store/global-loader"
+
 import { cn } from "@/lib/utils"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 const COLORS = {
   primary: '#3B82F6', // blue-500
