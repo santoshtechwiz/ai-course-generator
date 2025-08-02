@@ -89,7 +89,7 @@ export default async function RootLayout({
 
           </Providers>
 
-          <DefaultSEO  includeFAQ={true} />
+          <DefaultSEO enableFAQ={false} />
         </body>
         <GoogleAnalytics gaId="G-8E6345HNS4" />
       </html>

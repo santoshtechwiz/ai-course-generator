@@ -35,6 +35,7 @@ export default function HomePage() {
           enableWebsite={true}
           enableOrganization={true}
           enableBreadcrumbs={false}
+          enableFAQ={false}
           currentPath="/"
         />
         <JsonLD
