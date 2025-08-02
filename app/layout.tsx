@@ -11,12 +11,11 @@ import { font } from "./font";
 import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
-import { defaultMetadata, DefaultSEO } from "@/lib/seo";
-import { generateOptimizedMetadata } from "@/lib/seo";
+import { defaultMetadata, DefaultSEO, generateMetadata } from "@/lib/seo";
 
 import { GoogleAnalytics } from '@next/third-parties/google'
 
-export const metadata: Metadata = generateOptimizedMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "CourseAI - AI-Powered Educational Content Creator",
   description:
     "Create professional courses, quizzes, and educational content with AI. Empower educators, trainers, and learners with intelligent content generation tools for any subject.",
