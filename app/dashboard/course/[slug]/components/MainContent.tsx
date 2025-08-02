@@ -73,7 +73,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
-
+  const isOwner = user?.id === course.userId;
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
@@ -545,7 +545,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       {/* Mobile header */}
       <div className="flex">
         {/* Main content */}        <main className="flex-1 min-w-0">
-             <CourseActions slug={course.slug} />
+             <CourseActions slug={course.slug} isOwner={isOwner}/>
    
           <div className="max-w-6xl mx-auto p-4 lg:p-6">            {/* Video Generation Section */}
             <VideoGenerationSection 

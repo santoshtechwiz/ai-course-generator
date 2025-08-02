@@ -1,11 +1,16 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
 
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
-import { JsonLD, DefaultSEO } from "@/lib/seo"
-import { generateOptimizedMetadata } from "@/lib/seo"
+import { 
+  generateEnhancedMetadata,
+  EnhancedSEOProvider,
+  EnhancedWebsiteSchemaComponent,
+  EnhancedOrganizationSchemaComponent,
+  EnhancedFAQSchemaComponent
+} from "@/lib/seo"
 
-export const metadata = generateOptimizedMetadata({
-  title: 'AI-Powered Course & Quiz Creator - Learn, Teach, Test Anything',
+export const metadata = generateEnhancedMetadata({
+  title: 'CourseAI - AI-Powered Course & Quiz Creator',
   description: 'Create professional educational content with AI. Generate interactive courses, MCQ quizzes, and assessments for any topic. Perfect for educators, trainers, and lifelong learners.',
   keywords: [
     'AI course creator',
@@ -31,34 +36,16 @@ export default function HomePage() {
   return (
     <PageWrapper>
       <PageHeader title={""} description={""}>
-        <DefaultSEO 
+        {/* Enhanced SEO with all required schemas including optimized FAQ */}
+        <EnhancedSEOProvider
           enableWebsite={true}
           enableOrganization={true}
+          enableFAQ={true}
           enableBreadcrumbs={false}
-          enableFAQ={false}
           currentPath="/"
-        />
-        <JsonLD
-          type="WebSite"
-          data={{
-            "@type": "WebSite",
-            "name": "CourseAI",
-            "alternateName": ["Course AI", "AI Learning Platform"],
-            "url": "https://courseai.io",
-            "description": "AI-powered educational content creation platform for courses and quizzes",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://courseai.io/search?q={search_term_string}",
-              "query-input": "required name=search_term_string"
-            },
-            "publisher": {
-              "@type": "Organization",
-              "name": "CourseAI",
-              "logo": "https://courseai.io/logo.png"
-            }
-          }}
-        />
-        <CourseAILandingPage />
+        >
+          <CourseAILandingPage />
+        </EnhancedSEOProvider>
       </PageHeader>
     </PageWrapper>
   )

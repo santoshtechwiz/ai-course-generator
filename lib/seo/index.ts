@@ -1,8 +1,8 @@
 /**
- * SEO Module - Streamlined and Efficient
+ * Enhanced SEO Module for CourseAI Platform
  * 
- * Consolidated SEO utilities for the CourseAI platform.
- * This module provides all essential SEO functionality in a clean, maintainable way.
+ * Comprehensive SEO system that addresses Google Search Console issues
+ * and provides complete schema.org compliance for better search visibility.
  */
 
 // ============================================================================
@@ -23,7 +23,29 @@ export {
   validateMetadata,
 } from "./core-utils";
 
-// Unified metadata generation (primary)
+// Enhanced SEO system (primary - fixes Google Search Console issues)
+export {
+  generateEnhancedMetadata,
+  generateEnhancedCourseSchema,
+  generateEnhancedQuizSchema,
+  generateEnhancedFAQSchema,
+  generateEnhancedWebsiteSchema,
+  generateEnhancedOrganizationSchema,
+  generateEnhancedBreadcrumbSchema,
+  EnhancedSEOProvider,
+  EnhancedCourseSchemaComponent,
+  EnhancedQuizSchemaComponent,
+  EnhancedWebsiteSchemaComponent,
+  EnhancedOrganizationSchemaComponent,
+  EnhancedFAQSchemaComponent,
+  EnhancedBreadcrumbSchemaComponent,
+  validateSchemaCompliance,
+  type EnhancedCourseData,
+  type EnhancedQuizData,
+  type EnhancedMetadataConfig,
+} from "./enhanced-seo-system";
+
+// Unified metadata generation (legacy support)
 export {
   generateMetadata,
   generateCourseMetadata,
@@ -31,10 +53,10 @@ export {
   type MetadataConfig,
 } from "./unified-metadata";
 
-// React components
+// React components (legacy support)
 export { JsonLD, DefaultSEO } from "./components";
 
-// Structured data components
+// Structured data components (legacy support)
 export {
   WebsiteSchema,
   BreadcrumbListSchema,
@@ -48,8 +70,8 @@ export {
 // LEGACY SUPPORT (for backward compatibility)
 // ============================================================================
 
-// Re-export some functions with their original names
-export { generateMetadata as generateOptimizedMetadata } from "./unified-metadata";
+// Re-export enhanced functions with legacy names
+export { generateEnhancedMetadata as generateOptimizedMetadata } from "./enhanced-seo-system";
 
 // ============================================================================
 // TYPE EXPORTS
@@ -79,3 +101,10 @@ export const defaultMetadata = generateMetadata({
   description: "AI-powered learning platform with interactive courses, quizzes, and personalized education tools",
   keywords: ["AI", "learning", "education", "courses", "quizzes", "programming", "coding"],
 });
+
+// ============================================================================
+// ENHANCED SEO SYSTEM
+// ============================================================================
+
+// Enhanced SEO System for Google Search Console compliance
+export * from "./enhanced-seo-system-v2";

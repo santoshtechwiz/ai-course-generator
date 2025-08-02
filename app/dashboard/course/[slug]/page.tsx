@@ -4,8 +4,13 @@ import { getCourseData } from "@/app/actions/getCourseData"
 import { notFound } from "next/navigation"
 import type { FullCourseType } from "@/app/types/types"
 import EnhancedCourseLayout from "./components/EnhancedCourseLayout"
-import { CourseSchema } from "@/lib/seo/components"
-import { generateOptimizedMetadata } from "@/lib/seo"
+import { 
+  generateEnhancedMetadata, 
+  EnhancedCourseSchemaComponent,
+  EnhancedBreadcrumbSchemaComponent,
+  type EnhancedCourseData
+} from "@/lib/seo/enhanced-seo-system-v2"
+import type { BreadcrumbItem } from "@/lib/seo/seo-schema"
 
 type CoursePageParams = {
   params: Promise<{ slug: string }>
@@ -17,7 +22,7 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
   const course = (await getCourseData(slug)) as FullCourseType | null
   
   if (!course) {
-    return generateOptimizedMetadata({
+    return generateEnhancedMetadata({
       title: 'Course Not Found | AI Learning Platform',
       description: 'The requested course could not be found. Explore our other AI-powered educational content and interactive learning experiences.',
       noIndex: true,
@@ -54,7 +59,7 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
     ? `${course.description} | Interactive AI-powered learning with video tutorials, quizzes, and hands-on exercises. Join thousands of learners advancing their skills in ${categoryName}.`
     : `Master ${course.title} with our comprehensive AI-powered course featuring interactive content, video tutorials, and practical exercises. Perfect for ${categoryName} enthusiasts and professionals.`;
 
-  return generateOptimizedMetadata({
+  return generateEnhancedMetadata({
     title: `${course.title} | AI Learning Platform - Interactive Course`,
     description: enhancedDescription,
     keywords,
@@ -79,182 +84,56 @@ export default async function Page({ params }: CoursePageParams) {
     ? course.category.name 
     : (typeof course.category === 'string' ? course.category : 'programming');
 
-  // Enhanced offers and course instance data for better SEO
-  const offers = {
-    price: "0",
-    priceCurrency: "USD",
-    url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`,
-    availability: "https://schema.org/InStock",
-    validFrom: course.createdAt,
-    category: categoryName
-  };
-  
-  const hasCourseInstance = {
-    name: course.title,
-    description: course.description || `Comprehensive ${categoryName} course with interactive content`,
-    courseMode: "online",
-    startDate: course.createdAt,
-    endDate: course.updatedAt,
-    duration: "PT10H", // Estimated 10 hours
-    instructor: {
-      name: "AI Learning Platform",
-      description: "Expert AI-powered educational content"
-    },
-    location: {
-      url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`
-    },
-    courseWorkload: "Self-paced learning with interactive exercises"
+  // Prepare enhanced course data for schema with proper hasCourseInstance
+  const enhancedCourseData: EnhancedCourseData = {
+    title: course.title,
+    description: course.description || `Comprehensive ${categoryName} course with interactive AI-powered content, video tutorials, and hands-on exercises.`,
+    slug: course.slug,
+    image: course.image || `/api/og?title=${encodeURIComponent(course.title)}&category=${encodeURIComponent(categoryName)}`,
+    difficulty: 'Beginner' as const,
+    category: categoryName,
+    createdAt: course.createdAt || new Date().toISOString(),
+    updatedAt: course.updatedAt,
+    estimatedHours: 10,
+    price: 0,
+    currency: 'USD',
+    chapters: course.courseUnits?.map((unit: any, index: number) => ({
+      title: unit.title || `Module ${index + 1}`,
+      description: unit.description || `Learn about ${unit.title || 'this module'}`
+    })) || [
+      { title: `Introduction to ${course.title}`, description: `Getting started with ${course.title}` },
+      { title: `Core Concepts`, description: `Understanding the fundamentals` },
+      { title: `Practical Applications`, description: `Hands-on exercises and projects` },
+      { title: `Advanced Topics`, description: `Deep dive into advanced concepts` }
+    ],
+    skills: [
+      `${course.title} fundamentals`,
+      `${categoryName} best practices`,
+      'Practical implementation skills',
+      'Real-world project development'
+    ],
+    prerequisites: ['Basic computer knowledge', 'Internet access'],
+    authorName: 'CourseAI Instructor',
+    authorUrl: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/instructors`,
   };
 
   return (
     <>
-      {/* Enhanced structured data for better SEO */}
-      <CourseSchema
-        courseName={course.title}
-        courseUrl={`${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`}
-        description={course.description || `Comprehensive ${categoryName} course with interactive AI-powered content, video tutorials, and hands-on exercises.`}
-        provider="AI Learning Platform"
-        providerUrl={process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}
-        imageUrl={course.image || `/api/og?title=${encodeURIComponent(course.title)}&category=${encodeURIComponent(categoryName)}`}
-        dateCreated={course.createdAt}
-        dateModified={course.updatedAt}
-        category={categoryName}
-        difficulty="Beginner"
-        duration="PT10H"
-        language="en"
-        price={0}
-        currency="USD"
-        learningOutcomes={[
-          `Master ${course.title} fundamentals`,
-          `Apply practical ${categoryName} skills`,
-          'Complete hands-on projects',
-          'Earn completion certificate'
+      {/* Enhanced structured data with REQUIRED hasCourseInstance field */}
+      <EnhancedCourseSchemaComponent course={enhancedCourseData} />
+      
+      {/* Breadcrumb Schema for better navigation */}
+      <EnhancedBreadcrumbSchemaComponent
+        path={`/dashboard/course/${course.slug}`}
+        customItems={[
+          { position: 1, name: "Home", url: process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io" },
+          { position: 2, name: "Dashboard", url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard` },
+          { position: 3, name: "Courses", url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/courses` },
+          { position: 4, name: course.title, url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}` }
         ]}
-        offers={[{
-          price: "0",
-          priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
-          url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`
-        }]}
       />
       
-      {/* Breadcrumb Schema */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": {
-                  "@type": "WebPage",
-                  "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/`,
-                  "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/`
-                }
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Dashboard",
-                "item": {
-                  "@type": "WebPage",
-                  "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard`,
-                  "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard`
-                }
-              },
-              {
-                "@type": "ListItem",
-                "position": 3,
-                "name": "Courses",
-                "item": {
-                  "@type": "WebPage",
-                  "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/courses`,
-                  "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/courses`
-                }
-              },
-              {
-                "@type": "ListItem",
-                "position": 4,
-                "name": categoryName,
-                "item": {
-                  "@type": "WebPage",
-                  "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/category/${course.category || ""}`,
-                  "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/category/${course.category || ""}`
-                }
-              },
-              {
-                "@type": "ListItem",
-                "position": 5,
-                "name": course.title,
-                "item": {
-                  "@type": "WebPage",
-                  "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`,
-                  "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/dashboard/course/${course.slug}`
-                }
-              }
-            ]
-          }, null, 0)
-        }}
-      />
-
-      {/* Organization Schema */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/#organization`,
-            "name": "AI Learning Platform",
-            "url": process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io",
-            "logo": {
-              "@type": "ImageObject",
-              "url": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/logo.png`
-            },
-            "description": "Advanced AI-powered learning platform offering interactive courses and educational content",
-            "foundingDate": "2024",
-            "areaServed": "Worldwide",
-            "serviceType": "Educational Technology"
-          }, null, 0)
-        }}
-      />
-
-      {/* WebSite Schema */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/#website`,
-            "name": "AI Learning Platform",
-            "url": process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io",
-            "description": "Learn with AI-powered interactive courses",
-            "publisher": {
-              "@id": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/#organization`
-            },
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": `${process.env.NEXT_PUBLIC_BASE_URL || "https://courseai.io"}/search?q={search_term_string}`,
-              "query-input": "required name=search_term_string"
-            }
-          }, null, 0)
-        }}
-      />
-
-      <EnhancedCourseLayout 
-        course={course} 
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Courses', href: '/dashboard/courses' },
-          { label: course.category?.name || "Category", href: `/dashboard/category/${course.category || ""}` },
-          { label: course.title, href: `/dashboard/course/${course.slug}` }
-        ]}
-      />
+      <EnhancedCourseLayout course={course as FullCourseType} />
     </>
   )
 }

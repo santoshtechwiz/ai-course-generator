@@ -51,7 +51,7 @@ export interface CourseState {
   videoProgress: Record<string, VideoProgress>
   autoplayEnabled: boolean
   bookmarks: Record<string, BookmarkItem[]>
-  courseProgress: Record<number, CourseProgress> // Legacy - keep for backward compatibility
+  courseProgress: Record<number | string, CourseProgress> // Legacy - keep for backward compatibility
   userProgress: Record<string, Record<number | string, CourseProgress>> // Per-user progress
   guestProgress: Record<number | string, CourseProgress> // Guest-only progress
   currentCourseId: number | null
