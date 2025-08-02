@@ -1,13 +1,15 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
+import { createSelector } from "@reduxjs/toolkit"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, MessageSquare, BarChart3, Award, TrendingUp, BookmarkIcon, File } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { addBookmark, removeBookmark } from "@/store/slices/course-slice"
+import { type RootState } from "@/store"
+import { addBookmark, removeBookmark, type BookmarkItem, type CourseProgress } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsQuiz from "./CourseQuiz"
 import CourseAISummary from "./CourseSummary"
@@ -35,8 +37,36 @@ export default function CourseDetailsTabs({
   const [activeTab, setActiveTab] = useState("summary")
 
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const bookmarks = useAppSelector((state) => state.course.bookmarks[currentVideoId || ""] || [])
-  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
+  
+  // Memoized selectors to prevent unnecessary re-renders caused by new object references
+  // Previously: state.course.bookmarks[currentVideoId || ""] || [] would create a new array on each render
+  const selectBookmarks = useMemo(
+    () => createSelector(
+      [(state: RootState) => state.course.bookmarks, (state: RootState) => currentVideoId],
+      (bookmarks: Record<string, BookmarkItem[]>, videoId: string | null): BookmarkItem[] => {
+        if (!videoId || !bookmarks[videoId]) {
+          return []
+        }
+        return bookmarks[videoId]
+      }
+    ),
+    [currentVideoId]
+  )
+  
+  const bookmarks = useAppSelector(selectBookmarks)
+  
+  // Create memoized selector for course progress to prevent unnecessary re-renders
+  const selectCourseProgress = useMemo(
+    () => createSelector(
+      [(state: RootState) => state.course.courseProgress, () => course.id],
+      (courseProgressMap: Record<string | number, CourseProgress>, courseId: string | number): CourseProgress | undefined => {
+        return courseProgressMap[courseId]
+      }
+    ),
+    [course.id]
+  )
+  
+  const courseProgress = useAppSelector(selectCourseProgress)
 
   const courseStats = useMemo(() => {
     const totalChapters = course.courseUnits?.reduce((acc, unit) => acc + unit.chapters.length, 0) || 0
@@ -48,7 +78,7 @@ export default function CourseDetailsTabs({
       completedChapters,
       progressPercentage,
     }
-  }, [course.courseUnits, courseProgress?.completedChapters?.length])
+  }, [course.courseUnits, courseProgress?.completedChapters])
 
   const formatTime = useCallback((seconds: number): string => {
     if (isNaN(seconds)) return "0:00"

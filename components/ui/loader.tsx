@@ -1,2 +1,2 @@
-export { GlobalLoader } from "../loaders/GlobalLoader";
+export { GlobalLoader, LoadingSpinner, InlineSpinner } from "../loaders/GlobalLoader";
 export * from "../loaders/types";

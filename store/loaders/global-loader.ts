@@ -8,7 +8,6 @@ export interface LoaderOptions {
   subMessage?: string;
   progress?: number;
   isBlocking?: boolean;
-  priority?: number;
 }
 
 interface GlobalLoaderStore {
@@ -20,6 +19,7 @@ interface GlobalLoaderStore {
   progress?: number;
   isBlocking: boolean;
   error?: string;
+  autoResetTimeoutId?: NodeJS.Timeout;
 
   // Actions
   startLoading: (options?: LoaderOptions) => void;
@@ -49,8 +49,15 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
       progress: undefined,
       isBlocking: false,
       error: undefined,
+      autoResetTimeoutId: undefined,
 
       startLoading: (options = {}) => {
+        // Clear any existing timeout
+        const currentState = get();
+        if (currentState.autoResetTimeoutId) {
+          clearTimeout(currentState.autoResetTimeoutId);
+        }
+
         set({
           state: "loading",
           isLoading: true,
@@ -59,10 +66,18 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           progress: options.progress,
           isBlocking: options.isBlocking || false,
           error: undefined,
+          autoResetTimeoutId: undefined,
         });
       },
+
       stopLoading: () => {
-        // Force reset the state to idle regardless of current state
+        const currentState = get();
+        
+        // Clear any existing timeout
+        if (currentState.autoResetTimeoutId) {
+          clearTimeout(currentState.autoResetTimeoutId);
+        }
+
         set({
           state: "idle",
           isLoading: false,
@@ -71,37 +86,58 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           progress: undefined,
           isBlocking: false,
           error: undefined,
+          autoResetTimeoutId: undefined,
         });
       },
 
       setSuccess: (message) => {
-        set({
-          state: "success",
-          isLoading: false,
-          message: message || "Success!",
-          error: undefined,
-        });
-        // Auto-reset after 2 seconds, but only if still in success state
-        setTimeout(() => {
-          if (get().state === "success") {
+        const currentState = get();
+        
+        // Clear any existing timeout
+        if (currentState.autoResetTimeoutId) {
+          clearTimeout(currentState.autoResetTimeoutId);
+        }
+
+        const timeoutId = setTimeout(() => {
+          // Only reset if still in success state and this is the same timeout
+          const newState = get();
+          if (newState.state === "success" && newState.autoResetTimeoutId === timeoutId) {
             get().stopLoading();
           }
         }, 2000);
+
+        set({
+          state: "success",
+          isLoading: false,
+          message: message || "Operation completed successfully!",
+          error: undefined,
+          autoResetTimeoutId: timeoutId,
+        });
       },
 
       setError: (error) => {
+        const currentState = get();
+        
+        // Clear any existing timeout
+        if (currentState.autoResetTimeoutId) {
+          clearTimeout(currentState.autoResetTimeoutId);
+        }
+
+        const timeoutId = setTimeout(() => {
+          // Only reset if still in error state and this is the same timeout
+          const newState = get();
+          if (newState.state === "error" && newState.autoResetTimeoutId === timeoutId) {
+            get().stopLoading();
+          }
+        }, 3000);
+
         set({
           state: "error",
           isLoading: false,
           error,
-          message: "Error occurred",
+          message: undefined,
+          autoResetTimeoutId: timeoutId,
         });
-        // Auto-reset after 3 seconds, but only if still in error state
-        setTimeout(() => {
-          if (get().state === "error") {
-            get().stopLoading();
-          }
-        }, 3000);
       },
 
       setProgress: (progress) => {

@@ -3,20 +3,34 @@
 import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { HashLoader } from "react-spinners"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, CheckCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useGlobalLoader } from "@/store/loaders/global-loader"
 
-const COLORS = {
-  primary: '#3B82F6', // blue-500
-  success: '#10B981', // emerald-500
-  error: '#EF4444',   // red-500
-  background: 'rgba(255, 255, 255, 0.95)',
-  backgroundDark: 'rgba(17, 24, 39, 0.95)'
+interface IconProps {
+  size?: number
 }
 
-export function LoadingSpinner({ size = 40 }: { size?: number }) {
+interface InlineSpinnerProps {
+  size?: number
+  className?: string
+}
+
+export function InlineSpinner({ size = 16, className = "" }: InlineSpinnerProps) {
+  return (
+    <HashLoader
+      color="#3B82F6"
+      size={size}
+      cssOverride={{
+        display: 'inline-block',
+      }}
+      className={className}
+    />
+  )
+}
+
+export function LoadingSpinner({ size = 40 }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
@@ -25,7 +39,7 @@ export function LoadingSpinner({ size = 40 }: { size?: number }) {
       transition={{ duration: 0.2 }}
     >
       <HashLoader 
-        color={COLORS.primary}
+        color="#3B82F6"
         size={size}
         cssOverride={{
           display: 'block',
@@ -36,7 +50,7 @@ export function LoadingSpinner({ size = 40 }: { size?: number }) {
   )
 }
 
-function SuccessIcon({ size = 40 }: { size?: number }) {
+function SuccessIcon({ size = 40 }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
@@ -45,7 +59,7 @@ function SuccessIcon({ size = 40 }: { size?: number }) {
       transition={{ duration: 0.3, type: "spring" }}
       className="flex items-center justify-center"
     >
-      <HashLoader  
+      <CheckCircle 
         size={size} 
         className="text-emerald-500"
       />
@@ -53,7 +67,7 @@ function SuccessIcon({ size = 40 }: { size?: number }) {
   )
 }
 
-function ErrorIcon({ size = 40 }: { size?: number }) {
+function ErrorIcon({ size = 40 }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0, rotate: -180 }}
@@ -129,13 +143,15 @@ export function GlobalLoader() {
   }
 
   const getSubMessage = () => {
+    if (subMessage) return subMessage
+    
     switch (state) {
       case 'success':
         return 'Your request has been processed'
       case 'error':
         return 'Please try again or contact support'
       default:
-        return subMessage
+        return undefined
     }
   }
 

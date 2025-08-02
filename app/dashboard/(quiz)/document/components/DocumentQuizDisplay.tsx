@@ -16,7 +16,7 @@ const PDFDownloadButton = lazy(() =>
   import("./DocumentQuizPdf").then((module) => ({ default: module.PDFDownloadButton })),
 )
 const EnhancedPDFDownloadButton = lazy(() =>
-  import("./DocumentQuizPdf").then((module) => ({ default: module.EnhancedPDFDownloadButton })),
+  import("./DocumentQuizPdf").then((module) => ({ default: module.PDFDownloadButton })),
 )
 
 interface Question {

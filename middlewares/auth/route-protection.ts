@@ -9,10 +9,7 @@ import { getToken } from "next-auth/jwt"
 const PROTECTED_ROUTES = {
   admin: ["/admin"],
   authenticated: [
-    "/course", 
-    "/dashboard/course", 
-    "/dashboard/profile", 
-    "/dashboard/subscription"
+   
   ]
 } as const
 

@@ -8,7 +8,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/modules/auth'
 import { AnimationProvider } from './animation-provider'
 import GlobalLoaderProvider from '@/components/GlobalLoaderProvider'
-import { useGlobalLoader } from "@/store/global-loader"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 interface AppProvidersProps {
   children: ReactNode

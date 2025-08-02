@@ -108,6 +108,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   nextVideoTitle,
   courseName,
   chapterTitle,
+  theatreMode = false,
+  isFullscreen = false,
+  onTheaterModeToggle,
+  onPictureInPictureToggle,
 }) => {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -126,8 +130,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [playerReady, setPlayerReady] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
   const [showControlsState, setShowControlsState] = useState(showControls)
-  const [isPiPSupported, setIsPiPSupported] = useState(false)
-  const [isPiPActive, setIsPiPActive] = useState(false)
   const [certificateState, setCertificateState] = useState<CertificateState>("idle")
   const [isMounted, setIsMounted] = useState(false)
 
@@ -151,14 +153,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Check PiP support on mount with proper error handling
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      try {
-        setIsPiPSupported("pictureInPictureEnabled" in document && document.pictureInPictureEnabled)
-      } catch (error) {
-        console.warn("Error checking PiP support:", error)
-        setIsPiPSupported(false)
-      }
-    }
+    // PiP support is now handled by the useVideoPlayer hook
   }, [])
 
   // Enhanced authentication check with memoization
@@ -204,6 +199,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     onVideoLoad,
     onCertificateClick,
   })
+
+  // Handle Picture-in-Picture
+  const handlePictureInPicture = useCallback(() => {
+    if (handlers.handlePictureInPictureToggle) {
+      handlers.handlePictureInPictureToggle()
+    } else if (onPictureInPictureToggle) {
+      onPictureInPictureToggle()
+    }
+  }, [handlers.handlePictureInPictureToggle, onPictureInPictureToggle])
+
+  // Handle Theater Mode
+  const handleTheaterMode = useCallback(() => {
+    if (handlers.handleTheaterModeToggle) {
+      handlers.handleTheaterModeToggle()
+    } else if (onTheaterModeToggle) {
+      onTheaterModeToggle()
+    }
+  }, [handlers.handleTheaterModeToggle, onTheaterModeToggle])
 
   // Memoized format time helper
   const formatTime = useCallback((seconds: number): string => {
@@ -369,54 +382,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowBookmarkPanel((prev) => !prev)
   }, [isAuthenticated, toast])
 
-  // Enhanced Picture-in-Picture handler with proper error handling
-  const handlePictureInPicture = useCallback(async () => {
-    if (!isPiPSupported) {
-      toast({
-        title: "Picture-in-Picture not supported",
-        description: "Your browser doesn't support Picture-in-Picture mode.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      const videoElement = getVideoElement()
-
-      if (!videoElement) {
-        throw new Error("Video element not found")
-      }
-
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture()
-        setIsPiPActive(false)
-      } else {
-        await videoElement.requestPictureInPicture()
-        setIsPiPActive(true)
-
-        // Listen for PiP events with proper cleanup
-        const handleEnterPiP = () => setIsPiPActive(true)
-        const handleLeavePiP = () => setIsPiPActive(false)
-
-        videoElement.addEventListener("enterpictureinpicture", handleEnterPiP)
-        videoElement.addEventListener("leavepictureinpicture", handleLeavePiP)
-
-        // Cleanup listeners when component unmounts or video changes
-        return () => {
-          videoElement.removeEventListener("enterpictureinpicture", handleEnterPiP)
-          videoElement.removeEventListener("leavepictureinpicture", handleLeavePiP)
-        }
-      }
-    } catch (error) {
-      console.error("Picture-in-Picture error:", error)
-      toast({
-        title: "Picture-in-Picture Error",
-        description: "Could not enter Picture-in-Picture mode. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }, [isPiPSupported, toast, getVideoElement])
-
   // Enhanced certificate download handler with proper state management
   const handleCertificateDownload = useCallback(async () => {
     if (certificateState !== "idle") return
@@ -504,15 +469,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsLoadingDuration(true)
     setCertificateState("idle")
 
-    if(isLoading){
-      return <LoadingSpinner />
-    }
-
     // Clear any pending timeouts
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current)
     }
-  }, [videoId, startLoading])
+  }, [videoId])
 
   // Enhanced overlay handlers with better state management
   const handleChapterStartComplete = useCallback(() => {
@@ -586,7 +547,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           handlers.handleTheaterModeToggle()
           break
         case "p":
-          if (isPiPSupported) {
+          if (state.isPiPSupported) {
             event.preventDefault()
             handlePictureInPicture()
           }
@@ -614,7 +575,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     state.lastPlayedTime,
     state.isFullscreen,
     state.theaterMode,
-    isPiPSupported,
+    state.isPiPSupported,
     handlePictureInPicture,
   ])
 
@@ -784,14 +745,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             playerConfig={playerConfig}
             show={showControlsState}
             onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
-            onTheaterMode={handlers.handleTheaterModeToggle}
+            onTheaterMode={handleTheaterMode}
             onNextVideo={onNextVideo}
             onToggleBookmarkPanel={handleToggleBookmarkPanel}
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             onPictureInPicture={handlePictureInPicture}
-            isPiPSupported={isPiPSupported}
-            isPiPActive={isPiPActive}
+            isPiPSupported={state.isPiPSupported}
+            isPiPActive={state.isPictureInPicture}
           />
         </div>
       )}

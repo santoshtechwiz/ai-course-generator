@@ -43,6 +43,9 @@ export interface VideoPlayerState {
   theaterMode: boolean
   userInteracted: boolean
   autoPlayNext: boolean
+  isPictureInPicture: boolean
+  isPiPSupported: boolean
+  isNearingCompletion: boolean
 }
 
 export interface ProgressState {
@@ -84,6 +87,10 @@ export interface VideoPlayerProps {
   prevVideoTitle?: string
   hasNextVideo?: boolean
   hasPrevVideo?: boolean
+  theatreMode?: boolean
+  isFullscreen?: boolean
+  onTheaterModeToggle?: () => void
+  onPictureInPictureToggle?: () => void
 }
 
 export interface PlayerControlsProps {
@@ -269,6 +276,7 @@ export interface UseVideoPlayerReturn {
     handleShowKeyboardShortcuts: VideoEventHandler
     handleHideKeyboardShortcuts: VideoEventHandler
     handleTheaterModeToggle: VideoEventHandler
+    handlePictureInPictureToggle: VideoEventHandler
     handleShowControls: VideoEventHandler
     toggleAutoPlayNext: VideoEventHandler
   }

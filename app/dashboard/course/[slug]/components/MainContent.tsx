@@ -30,6 +30,9 @@ import CourseActions from "./CourseActions"
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
+  theatreMode?: boolean
+  isFullscreen?: boolean
+  onTheaterModeToggle?: () => void
 }
 
 function validateChapter(chapter: any): boolean {
@@ -41,7 +44,13 @@ function validateChapter(chapter: any): boolean {
   );
 }
 
-const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId }) => {
+const MainContent: React.FC<ModernCoursePageProps> = ({ 
+  course, 
+  initialChapterId,
+  theatreMode = false,
+  isFullscreen = false,
+  onTheaterModeToggle
+}) => {
   // Always define all hooks at the top level - no early returns or conditions before hooks
   console.log(course);
   const router = useRouter()
@@ -579,6 +588,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
                       prevVideoTitle={prevChapter?.chapter?.title || ''}
                       hasNextVideo={!!nextChapter}
                       hasPrevVideo={!!prevChapter}
+                      theatreMode={theatreMode}
+                      isFullscreen={isFullscreen}
+                      onTheaterModeToggle={onTheaterModeToggle}
                       className="h-full w-full"
                     />
                     {/* CourseAI Logo Overlay */}

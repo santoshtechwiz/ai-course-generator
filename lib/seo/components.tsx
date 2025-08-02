@@ -172,18 +172,35 @@ export const BreadcrumbListSchema = React.memo(function BreadcrumbListSchema({
 
   const schemaData = React.useMemo(
     () => ({
-      items: breadcrumbItems.map((item) => ({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: breadcrumbItems.map((item) => ({
+        "@type": "ListItem",
         position: item.position,
         name: item.name,
-        url: item.url.startsWith("http")
-          ? item.url
-          : `${siteUrl}${item.url.startsWith("/") ? item.url : "/" + item.url}`,
+        item: {
+          "@type": "WebPage",
+          "@id": item.url.startsWith("http")
+            ? item.url
+            : `${siteUrl}${item.url.startsWith("/") ? item.url : "/" + item.url}`,
+          name: item.name,
+          url: item.url.startsWith("http")
+            ? item.url
+            : `${siteUrl}${item.url.startsWith("/") ? item.url : "/" + item.url}`,
+        },
       })),
     }),
     [breadcrumbItems, siteUrl],
   )
 
-  return <JsonLD type="BreadcrumbList" data={schemaData} />
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(schemaData, null, process.env.NODE_ENV === "development" ? 2 : 0),
+      }}
+    />
+  )
 })
 
 // ============================================================================
@@ -352,20 +369,60 @@ export const CourseSchema = React.memo(function CourseSchema({
 }: EnhancedCourseSchemaProps) {
   const schemaData = React.useMemo(() => {
     const data: any = {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "@id": courseUrl,
+      mainEntity: {
+        "@type": "Course",
+        name: courseName,
+        description,
+        url: courseUrl,
+        provider: {
+          "@type": "Organization",
+          name: provider,
+          url: providerUrl,
+        },
+        image: imageUrl ? {
+          "@type": "ImageObject",
+          url: imageUrl,
+        } : undefined,
+        dateCreated,
+        dateModified,
+        inLanguage: language,
+        educationalLevel: difficulty,
+        timeRequired: duration,
+        about: category ? {
+          "@type": "Thing", 
+          name: category
+        } : undefined,
+        teaches: learningOutcomes,
+        coursePrerequisites: prerequisites?.map((prereq) => ({
+          "@type": "AlignmentObject",
+          alignmentType: "prerequisite",
+          targetName: prereq,
+        })),
+      },
       name: courseName,
       description,
       url: courseUrl,
-      provider: provider,
-      providerUrl,
+      provider: {
+        "@type": "Organization",
+        name: provider,
+        url: providerUrl,
+      },
       image: imageUrl,
       dateCreated,
       dateModified,
       inLanguage: language,
       educationalLevel: difficulty,
       timeRequired: duration,
-      about: category ? { name: category } : undefined,
+      about: category ? { 
+        "@type": "Thing",
+        name: category 
+      } : undefined,
       teaches: learningOutcomes,
       coursePrerequisites: prerequisites?.map((prereq) => ({
+        "@type": "AlignmentObject",
         alignmentType: "prerequisite",
         targetName: prereq,
       })),
@@ -373,31 +430,45 @@ export const CourseSchema = React.memo(function CourseSchema({
 
     if (authorName) {
       data.author = {
+        "@type": "Person",
+        name: authorName,
+        url: authorUrl,
+      }
+      data.mainEntity.author = {
+        "@type": "Person",
         name: authorName,
         url: authorUrl,
       }
     }
 
     if (offers) {
-      data.offers = offers
+      data.offers = offers.map(offer => ({
+        "@type": "Offer",
+        ...offer
+      }))
+      data.mainEntity.offers = data.offers
     } else if (typeof price === "number") {
-      data.offers = [
-        {
-          price: price.toString(),
-          priceCurrency: currency,
-          availability: "https://schema.org/InStock",
-          url: courseUrl,
-        },
-      ]
+      const offerData = {
+        "@type": "Offer",
+        price: price.toString(),
+        priceCurrency: currency,
+        availability: "https://schema.org/InStock",
+        url: courseUrl,
+      }
+      data.offers = [offerData]
+      data.mainEntity.offers = [offerData]
     }
 
     if (rating && rating.value && rating.count) {
-      data.aggregateRating = {
+      const ratingData = {
+        "@type": "AggregateRating",
         ratingValue: rating.value,
         reviewCount: rating.count,
         bestRating: 5,
         worstRating: 1,
       }
+      data.aggregateRating = ratingData
+      data.mainEntity.aggregateRating = ratingData
     }
 
     return data
@@ -424,7 +495,14 @@ export const CourseSchema = React.memo(function CourseSchema({
     offers,
   ])
 
-  return <JsonLD type="Course" data={schemaData} />
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(schemaData, null, process.env.NODE_ENV === "development" ? 2 : 0),
+      }}
+    />
+  )
 })
 
 // ============================================================================

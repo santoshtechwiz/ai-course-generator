@@ -56,6 +56,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     theaterMode: false,
     userInteracted: !!options.autoPlay,
     autoPlayNext: savedPreferences.autoPlayNext ?? true,
+    isPictureInPicture: false,
+    isPiPSupported: false,
     isNearingCompletion: false, // Add state for preloading detection
   })
 
@@ -276,6 +278,63 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }
   }, [state.theaterMode])
 
+  // Picture-in-Picture handlers
+  const handlePictureInPictureToggle = useCallback(async () => {
+    if (!playerRef.current) return
+
+    try {
+      const player = playerRef.current.getInternalPlayer()
+      
+      if (player && player.requestPictureInPicture) {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture()
+          setState(prev => ({ ...prev, isPictureInPicture: false }))
+        } else {
+          await player.requestPictureInPicture()
+          setState(prev => ({ ...prev, isPictureInPicture: true }))
+        }
+      }
+    } catch (error) {
+      console.warn('Picture-in-Picture not supported or failed:', error)
+      toast({
+        title: "Picture-in-Picture not available",
+        description: "Your browser doesn't support Picture-in-Picture mode.",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
+  // Check PIP support
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      setState(prev => ({
+        ...prev,
+        isPiPSupported: 'pictureInPictureEnabled' in document
+      }))
+    }
+  }, [])
+
+  // Handle PIP events
+  useEffect(() => {
+    const handleEnterPiP = () => {
+      setState(prev => ({ ...prev, isPictureInPicture: true }))
+    }
+
+    const handleLeavePiP = () => {
+      setState(prev => ({ ...prev, isPictureInPicture: false }))
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener('enterpictureinpicture', handleEnterPiP)
+      document.addEventListener('leavepictureinpicture', handleLeavePiP)
+
+      return () => {
+        document.removeEventListener('enterpictureinpicture', handleEnterPiP)
+        document.removeEventListener('leavepictureinpicture', handleLeavePiP)
+      }
+    }
+  }, [])
+
   // Keyboard shortcuts handlers
   const handleShowKeyboardShortcuts = useCallback(() => {
     setState((prev) => ({ ...prev, showKeyboardShortcuts: true }))
@@ -487,14 +546,9 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       handleShowKeyboardShortcuts,
       handleHideKeyboardShortcuts,
       handleTheaterModeToggle,
+      handlePictureInPictureToggle,
       handleShowControls,
       toggleAutoPlayNext,
-    },
-    // Add next video info
-    nextVideo: options.nextVideoId ? { 
-      id: options.nextVideoId,
-      isPreloading: state.isNearingCompletion 
-    } : null,
-    progressTracking // Add progress tracking info
+    }
   }
 }

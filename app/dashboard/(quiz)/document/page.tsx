@@ -720,7 +720,7 @@ export default function DocumentQuizPage() {
                 <Button onClick={() => setShowShareDialog(false)} variant="outline" className="flex-1">
                   Close
                 </Button>
-                <EnhancedPDFDownloadButton
+                <PDFDownloadButton
                   questions={quiz}
                   title={quizTitle}
                   variant="outline"

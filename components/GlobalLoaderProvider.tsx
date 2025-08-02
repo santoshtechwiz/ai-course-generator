@@ -9,32 +9,53 @@ export function GlobalLoaderProvider({ children }: { children: React.ReactNode }
   const pathname = usePathname()
   const { startLoading, stopLoading } = useGlobalLoader()
   const previousPath = useRef<string | null>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const finishTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    // Only act if pathname actually changed
+    // Only act if pathname actually changed and it's not the initial render
     if (previousPath.current !== null && previousPath.current !== pathname) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-
-      // Small delay to avoid flicker on fast routes
-      timeoutRef.current = setTimeout(() => {
-        startLoading({ message: "Loading...", isBlocking: true })
-      }, 100)
-
-      // Simulate load finish
-      const finish = () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current)
-          timeoutRef.current = null
-        }
-        stopLoading()
+      // Clear any existing timeouts
+      if (delayTimeoutRef.current) {
+        clearTimeout(delayTimeoutRef.current)
+        delayTimeoutRef.current = null
+      }
+      if (finishTimeoutRef.current) {
+        clearTimeout(finishTimeoutRef.current)
+        finishTimeoutRef.current = null
       }
 
-      // Add artificial delay to allow user to see loading (optional)
-      setTimeout(finish, 500)
+      // Small delay to avoid flicker on fast routes
+      delayTimeoutRef.current = setTimeout(() => {
+        startLoading({ 
+          message: "Loading page...", 
+          isBlocking: true 
+        })
+        
+        // Clear the delay timeout as it's no longer needed
+        delayTimeoutRef.current = null
+        
+        // Set finish timeout
+        finishTimeoutRef.current = setTimeout(() => {
+          stopLoading()
+          finishTimeoutRef.current = null
+        }, 500)
+      }, 100)
     }
 
     previousPath.current = pathname
+
+    // Cleanup function
+    return () => {
+      if (delayTimeoutRef.current) {
+        clearTimeout(delayTimeoutRef.current)
+        delayTimeoutRef.current = null
+      }
+      if (finishTimeoutRef.current) {
+        clearTimeout(finishTimeoutRef.current)
+        finishTimeoutRef.current = null
+      }
+    }
   }, [pathname, startLoading, stopLoading])
 
   return (
