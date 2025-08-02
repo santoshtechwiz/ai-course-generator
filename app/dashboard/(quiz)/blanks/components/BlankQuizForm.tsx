@@ -19,7 +19,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 
-import { usePersistentState } from "@/hooks/usePersistentState"
+import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { blanksQuizSchema } from "@/schema/schema"
 import { GlobalLoader } from "@/components/ui/loader"

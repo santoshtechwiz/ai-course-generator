@@ -23,7 +23,7 @@ export const metadata = generateOptimizedMetadata({
     'courseai',
     'automated content generation'
   ],
-  canonicalPath: '/',
+  canonical: '/',
   type: 'website',
 })
 

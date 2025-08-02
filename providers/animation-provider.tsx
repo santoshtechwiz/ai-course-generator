@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, type ReactNode, useEffect } from "react"
+import { migratedStorage } from "@/lib/storage"
 
 interface AnimationContextType {
   animationsEnabled: boolean
@@ -51,30 +52,18 @@ export function AnimationProvider({ children, initialState = true }: AnimationPr
       const newState = !animationsEnabled
       setAnimationsEnabled(newState)
 
-      // Save preference to localStorage
-      try {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("animationsEnabled", newState.toString())
-        }
-      } catch (error) {
-        console.error("Failed to save animation preference:", error)
-      }
+      // Save preference to storage
+      migratedStorage.setPreference("animations_enabled", newState)
     }
   }
 
-  // Load preference from localStorage on mount
+  // Load preference from storage on mount
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        const savedPreference = localStorage.getItem("animationsEnabled")
-        if (savedPreference !== null) {
-          setAnimationsEnabled(savedPreference === "true")
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load animation preference:", error)
+    const savedPreference = migratedStorage.getPreference("animations_enabled", !reducedMotion)
+    if (typeof savedPreference === "boolean") {
+      setAnimationsEnabled(savedPreference)
     }
-  }, [])
+  }, [reducedMotion])
 
   return (
     <AnimationContext.Provider

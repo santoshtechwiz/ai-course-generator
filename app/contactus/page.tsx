@@ -24,7 +24,7 @@ export const metadata: Metadata = generateOptimizedMetadata({
     "educational software help",
     "courseai"
   ],
-  canonicalPath: "/contactus",
+  canonical: "/contactus",
   type: "website",
 })
 

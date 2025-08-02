@@ -28,7 +28,7 @@ export const metadata: Metadata = generateOptimizedMetadata({
     "learning material generator",
     "courseai"
   ],
-  canonicalPath: '/dashboard/explore',
+  canonical: '/dashboard/explore',
   type: 'website',
 });
 

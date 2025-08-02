@@ -33,7 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { usePersistentState } from "@/hooks/usePersistentState"
+import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { codeQuizSchema } from "@/schema/schema"
 import { GlobalLoader } from "@/components/ui/loader"

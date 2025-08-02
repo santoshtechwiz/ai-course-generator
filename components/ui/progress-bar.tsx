@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
+import { migratedStorage } from "@/lib/storage"
 
 interface ProgressBarProps {
   value: number
@@ -10,10 +11,7 @@ interface ProgressBarProps {
 
 export function ProgressBar({ value, streak = 0, className }: ProgressBarProps) {
   const [bestStreak, setBestStreak] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      return Number(localStorage.getItem("flashcard_best_streak") || 0)
-    }
-    return 0
+    return migratedStorage.getPreference("flashcard_best_streak", 0) || 0
   })
   const prevStreak = useRef(streak)
   const [streakAnim, setStreakAnim] = useState(false)
@@ -21,7 +19,7 @@ export function ProgressBar({ value, streak = 0, className }: ProgressBarProps) 
   useEffect(() => {
     if (streak > bestStreak) {
       setBestStreak(streak)
-      localStorage.setItem("flashcard_best_streak", String(streak))
+      migratedStorage.setPreference("flashcard_best_streak", streak)
     }
     if (streak > prevStreak.current) {
       setStreakAnim(true)

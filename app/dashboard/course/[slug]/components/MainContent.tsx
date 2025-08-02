@@ -13,6 +13,7 @@ import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
 import VideoPlayer from "./video/components/VideoPlayer"
 import VideoNavigationSidebar from "./video/components/VideoNavigationSidebar"
+import { migratedStorage } from "@/lib/storage"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
 import VideoGenerationSection from "./VideoGenerationSection"
@@ -81,8 +82,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
   // Check free video status on mount
   useEffect(() => {
-    const freeVideoPlayed = localStorage.getItem("hasPlayedFreeVideo")
-    setHasPlayedFreeVideo(freeVideoPlayed === "true")
+    const freeVideoPlayed = migratedStorage.getPreference("played_free_video", false)
+    setHasPlayedFreeVideo(Boolean(freeVideoPlayed))
   }, [])
 
   // Memoized video playlist
@@ -313,7 +314,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
 
       // Mark free video as played if not authenticated
       if (!user && !hasPlayedFreeVideo) {
-        localStorage.setItem("hasPlayedFreeVideo", "true")
+        migratedStorage.setPreference("played_free_video", true)
         setHasPlayedFreeVideo(true)
       }
 

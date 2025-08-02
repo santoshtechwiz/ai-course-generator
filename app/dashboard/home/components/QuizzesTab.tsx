@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation"
 import type { DashboardUser, UserQuiz, UserQuizAttempt } from "@/app/types/types"
 import QuizResultsDialog from "./QuizResultsDialog"
 import type { QuizType } from "@/app/types/quiz-types"
-import { useGlobalLoader } from "@/store/global-loader" // Import useGlobalLoader
+import { useGlobalLoader } from "@/store/loaders/global-loader" // Import useGlobalLoader
 
 interface QuizzesTabProps {
   userData: DashboardUser

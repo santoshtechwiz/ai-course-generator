@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { ConfirmDialog } from "../../components/ConfirmDialog"
 import { quizSchema } from "@/schema/schema"
-import { usePersistentState } from "@/hooks/usePersistentState"
+import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { useSubscription } from "@/modules/auth"
 

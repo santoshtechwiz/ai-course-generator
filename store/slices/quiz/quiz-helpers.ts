@@ -11,7 +11,7 @@
  * @version 2.0.0
  */
 
-import { hydrateFromStorage } from "../../middlewares/persist-middleware"
+import { hydrateFromStorage } from "../../../middlewares/store/persistence"
 import { STORAGE_KEYS } from "@/constants/global"
 import type { QuizState, QuizAnswer, QuizQuestion, QuizResults, QuestionResult } from "./quiz-types"
 import type { QuizType } from "@/app/types/quiz-types"

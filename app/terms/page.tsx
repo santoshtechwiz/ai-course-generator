@@ -1,9 +1,9 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { generateOptimizedMetadata } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
 import { JsonLD } from "@/lib/seo"
 
-export const metadata: Metadata = generateOptimizedMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "Terms of Service | CourseAI Educational Platform",
   description:
     "Review the terms and conditions for using CourseAI's AI-powered educational platform. Understanding our policies for a better learning experience.",
@@ -22,6 +22,7 @@ export const metadata: Metadata = generateOptimizedMetadata({
   canonical: "/terms",
   type: "article",
 })
+
 
 export default function TermsOfService() {
   // Terms of service schema

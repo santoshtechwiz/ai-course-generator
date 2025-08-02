@@ -2,7 +2,11 @@
  * Client-side Utilities
  * 
  * Safe client-side operations that handle SSR/client differences.
+ * 
+ * @deprecated Use the unified storage service from @/lib/storage instead
  */
+
+import { safeStorage, safeSessionStorage } from '@/lib/storage'
 
 // ============================================================================
 // SAFE CLIENT-SIDE EXECUTION
@@ -25,74 +29,18 @@ export function safeClientSide<T>(fn: () => T, fallback: T): T {
 }
 
 // ============================================================================
-// SAFE STORAGE OPERATIONS
+// LEGACY STORAGE OPERATIONS (DEPRECATED)
 // ============================================================================
 
 /**
- * Safe local storage operations
+ * @deprecated Use safeStorage from @/lib/storage instead
  */
-export const safeStorage = {
-  getItem<T>(key: string, defaultValue: T | null = null): T | null {
-    return safeClientSide(() => {
-      const item = localStorage.getItem(key)
-      return item ? JSON.parse(item) as T : defaultValue
-    }, defaultValue)
-  },
-  
-  setItem(key: string, value: any): boolean {
-    return safeClientSide(() => {
-      localStorage.setItem(key, JSON.stringify(value))
-      return true
-    }, false)
-  },
-  
-  removeItem(key: string): boolean {
-    return safeClientSide(() => {
-      localStorage.removeItem(key)
-      return true
-    }, false)
-  },
-  
-  clear(): boolean {
-    return safeClientSide(() => {
-      localStorage.clear()
-      return true
-    }, false)
-  }
-}
+export { safeStorage }
 
 /**
- * Safe session storage operations
+ * @deprecated Use safeSessionStorage from @/lib/storage instead  
  */
-export const safeSessionStorage = {
-  getItem<T>(key: string, defaultValue: T | null = null): T | null {
-    return safeClientSide(() => {
-      const item = sessionStorage.getItem(key)
-      return item ? JSON.parse(item) as T : defaultValue
-    }, defaultValue)
-  },
-  
-  setItem(key: string, value: any): boolean {
-    return safeClientSide(() => {
-      sessionStorage.setItem(key, JSON.stringify(value))
-      return true
-    }, false)
-  },
-  
-  removeItem(key: string): boolean {
-    return safeClientSide(() => {
-      sessionStorage.removeItem(key)
-      return true
-    }, false)
-  },
-  
-  clear(): boolean {
-    return safeClientSide(() => {
-      sessionStorage.clear()
-      return true
-    }, false)
-  }
-}
+export { safeSessionStorage }
 
 // ============================================================================
 // BROWSER AND DEVICE DETECTION

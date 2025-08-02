@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 
-import { usePersistentState } from "@/hooks/usePersistentState"
+import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { useSubscription } from "@/modules/auth"
 

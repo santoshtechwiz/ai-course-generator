@@ -42,7 +42,7 @@ export const metadata: Metadata = generateOptimizedMetadata({
     "knowledge assessment",
     "courseai"
   ],
-  canonicalPath: "/",
+  canonical: "/",
   type: "website",
 });
 

@@ -23,7 +23,7 @@ export const metadata: Metadata = generateOptimizedMetadata({
   noIndex: true,
   noFollow: true,
   type: 'website',
-  canonicalPath: '/dashboard/course/not-found'
+  canonical: '/dashboard/course/not-found'
 });
 
 // Next.js will use this to set the correct HTTP status code

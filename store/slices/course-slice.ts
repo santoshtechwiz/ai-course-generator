@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction, createAsyncThunk } from "@reduxjs/toolkit"
 import { courseApiClient } from '@/app/dashboard/course/services/course-api-client';
+import { migratedStorage } from '@/lib/storage';
 
 // --- Improved TypeScript interfaces ---
 export interface VideoProgress {
@@ -429,10 +430,10 @@ export const setCurrentVideoApi = (videoId: string, userId?: string) => (dispatc
     // Dispatch the action to update current video
     dispatch(courseSlice.actions.setCurrentVideo(videoId));
 
-    // Persist to local storage for recovery
+    // Persist to storage for recovery
     try {
       const storageKey = userId ? `currentVideoId_${userId}` : "currentVideoId_guest";
-      localStorage.setItem(storageKey, videoId);
+      migratedStorage.setItem(storageKey, videoId, { temporary: true });
     } catch (storageError) {
       // Silent fail for storage errors
     }

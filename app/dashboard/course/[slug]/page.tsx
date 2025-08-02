@@ -45,11 +45,11 @@ export async function generateMetadata({ params }: CoursePageParams): Promise<Me
     title: course.title,
     description: course.description || `Learn ${course.title} with interactive AI-powered course content, quizzes, and assessments.`,
     keywords,
-    canonicalPath: `/dashboard/course/${course.slug}`,
-    type: 'course',
+    canonical: `/dashboard/course/${course.slug}`,
+    type: 'article',
     image: course.image,
-    publishedAt: course.createdAt,
-    updatedAt: course.updatedAt,
+    publishedTime: course.createdAt,
+    modifiedTime: course.updatedAt,
   });
 }
 

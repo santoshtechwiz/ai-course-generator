@@ -13,6 +13,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { migratedStorage } from "@/lib/storage"
 
 import { useSession } from "next-auth/react"
 import useSubscription from "@/hooks/use-subscription"
@@ -33,7 +34,7 @@ export default function TrialModal() {
   const currentMonth = new Date().toLocaleString("default", { month: "long" })
 
   useEffect(() => {
-    const hasSeenTrialModal = localStorage.getItem("hasSeenTrialModal") === "true"
+    const hasSeenTrialModal = migratedStorage.getPreference("seen_trial_modal", false)
     if (!hasSeenTrialModal && (!isSubscribed || totalTokens === 0)) {
       const timer = setTimeout(() => setIsOpen(true), 3000)
       return () => clearTimeout(timer)
@@ -44,7 +45,7 @@ export default function TrialModal() {
 
   const handleClose = () => {
     setIsOpen(false)
-    localStorage.setItem("hasSeenTrialModal", "true")
+    migratedStorage.setPreference("seen_trial_modal", true)
   }
 
   const handleStartTrial = () => {
