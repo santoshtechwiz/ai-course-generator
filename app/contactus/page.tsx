@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
 
 import ImprovedContactForm from "./ContactForm"
-import { generateOptimizedMetadata } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
 import { JsonLD } from "@/lib/seo"
 
 
-export const metadata: Metadata = generateOptimizedMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "Contact CourseAI - Get Support & Partnership Inquiries",
   description:
     "Get support for CourseAI's AI-powered educational content creation platform. Contact us for technical help, partnerships, enterprise solutions, or general inquiries about our course and quiz generation tools.",

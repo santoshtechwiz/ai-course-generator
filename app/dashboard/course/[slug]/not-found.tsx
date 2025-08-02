@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button"
 import { Metadata } from "next"
 
 import { generateCourseNotFoundStructuredData } from "@/app/utils/not-found-utils"
-import { JsonLD, generateOptimizedMetadata } from "@/lib/seo";
+import { JsonLD, generateMetadata } from "@/lib/seo";
 
 // Enhanced metadata for course not found page
-export const metadata: Metadata = generateOptimizedMetadata({
+export const metadata: Metadata = generateMetadata({
   title: 'Course Not Found - Discover Alternative AI Courses',
   description: 'The course you were looking for could not be found. Explore our comprehensive collection of AI-powered educational courses and interactive learning materials.',
   keywords: [

@@ -1,7 +1,7 @@
 import { Metadata } from "next"
-import { generateOptimizedMetadata } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
 
-export const notFoundMetadata: Metadata = generateOptimizedMetadata({
+export const notFoundMetadata: Metadata = generateMetadata({
   title: '404 - Page Not Found | CourseAI',
   description: 'The page you were looking for does not exist. Explore our comprehensive AI-powered educational courses, interactive quizzes, and learning materials.',
   keywords: [

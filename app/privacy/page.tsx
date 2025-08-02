@@ -1,9 +1,9 @@
-import { generateOptimizedMetadata } from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { JsonLD } from "@/lib/seo"
 
-export const metadata: Metadata = generateOptimizedMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "Privacy Policy | CourseAI Educational Platform",
   description:
     "Learn how CourseAI protects your data while providing AI-powered educational services. Our commitment to your privacy and security in online learning.",

@@ -2,11 +2,11 @@
 import { CreateComponent } from "@/components/features/explore/CreateComponent";
 import type { Metadata } from "next";
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
-import { generateOptimizedMetadata } from "@/lib/seo";
+import { generateMetadata } from "@/lib/seo";
 import { FAQSchema } from "@/lib/seo";
 
 // Enhanced metadata for better SEO
-export const metadata: Metadata = generateOptimizedMetadata({
+export const metadata: Metadata = generateMetadata({
   title: "AI Content Creator - Generate Courses, Quizzes & Assessments",
   description:
     "Create professional educational content instantly with AI. Generate interactive courses, multiple-choice questions, open-ended assessments, and fill-in-the-blank exercises for any subject. Perfect for educators, trainers, and content creators.",
