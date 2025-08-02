@@ -7,6 +7,6 @@ export const getUnsplashImage = async (query: string) => {
     //   return data.results[0].urls.small_s3;
   } catch (error) {
     console.log(`Error in fetching image ${error}`)
-    return "/not.png"
+    return "/images/not.png"
   }
 }

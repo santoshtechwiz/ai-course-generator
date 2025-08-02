@@ -17,7 +17,11 @@ interface ClientLayoutWrapperProps {
  */
 export function ClientLayoutWrapper({ children, session }: ClientLayoutWrapperProps) {
   return (
-    <SessionProvider session={session}>
+    <SessionProvider 
+      session={session}
+      refetchInterval={5 * 60} // 5 minutes
+      refetchOnWindowFocus={false}
+    >
       <Provider store={store}>
         {children}
       </Provider>

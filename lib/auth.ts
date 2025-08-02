@@ -44,12 +44,9 @@ declare module "next-auth/jwt" {
     subscriptionPlan: string | null
     subscriptionStatus: string | null
     updatedAt?: number
-    refreshCount?: number // Track refresh attempts
   }
 }
 
-// Track active refreshes to prevent duplicates
-const activeRefreshes = new Map<string, number>()
 // Cache to reduce DB load
 const userCache = new Map<string, { data: any; timestamp: number }>()
 const USER_CACHE_TTL = 2 * 60 * 1000 // 2 minutes
@@ -99,110 +96,63 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = user.isAdmin || false
         token.userType = user.userType || "FREE"
         token.updatedAt = Date.now()
-        token.refreshCount = 0
         return token
       }
 
       // Force refresh token on session update, but only if explicitly requested
       if (trigger === "update") {
-        // Reset refresh count on explicit update
-        token.refreshCount = 0
         token.updatedAt = 0 // Force refresh by setting updatedAt to 0
       }
 
-      // On every JWT refresh, get the latest user data
-      // Only refresh user data if token is older than 15 minutes to reduce DB load
+      // Only refresh user data when explicitly triggered or token is very old (1 hour)
       const now = Date.now()
       const tokenUpdatedAt = (token.updatedAt as number) || 0
-      const refreshInterval = 15 * 60 * 1000 // 15 minutes
+      const refreshInterval = 60 * 60 * 1000 // 1 hour instead of 15 minutes
       const shouldRefreshToken = !tokenUpdatedAt || now - tokenUpdatedAt > refreshInterval
 
-      // Add refresh throttling to prevent loops
-      const refreshCount = token.refreshCount || 0
-      const userId = token.id as string
-
-      // Check if this user already has an active refresh
-      if (userId && activeRefreshes.has(userId)) {
-        const lastRefresh = activeRefreshes.get(userId) || 0
-        // If last refresh was less than 5 seconds ago, skip this one
-        if (now - lastRefresh < 5000) {
-          return token
-        }
-      }      if (token.id && shouldRefreshToken && refreshCount < 3) {
+      if (token.id && shouldRefreshToken) {
         try {
-          // Mark this user as having an active refresh
-          if (userId) {
-            activeRefreshes.set(userId, now)
-          }
+          // Simple user query without complex subscription logic
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id },
+            select: {
+              credits: true,
+              creditsUsed: true,
+              isAdmin: true,
+              userType: true,
+              subscription: {
+                select: {
+                  planId: true,
+                  status: true
+                }
+              }
+            },
+          })
 
-          // Increment refresh count to prevent infinite loops
-          token.refreshCount = refreshCount + 1          // Use consistent subscription service to get user data
-          const userData = await SubscriptionService.getUserSubscriptionData(token.id)
-            if (userData) {
-            token.credits = userData.credits
-            token.creditsUsed = userData.creditsUsed
-            token.isAdmin = false // We'll need to get this from user table separately if needed
-            token.userType = userData.userType // This now comes from subscription data
-            token.subscriptionPlan = userData.subscription?.planId || null
-            token.subscriptionStatus = userData.subscription?.status || null
+          if (dbUser) {
+            token.credits = dbUser.credits
+            token.creditsUsed = dbUser.creditsUsed
+            token.isAdmin = dbUser.isAdmin
+            token.userType = dbUser.userType
+            token.subscriptionPlan = dbUser.subscription?.planId || null
+            token.subscriptionStatus = dbUser.subscription?.status || null
             token.updatedAt = now
-            token.refreshCount = 0 // Reset count after successful refresh
-          } else {
-            // Fallback to direct user query if subscription service fails
-            const dbUser = await prisma.user.findUnique({
-              where: { id: token.id },
-              include: {
-                subscription: true,
-              },
-            })
-
-            if (dbUser) {
-              token.credits = dbUser.credits
-              token.creditsUsed = dbUser.creditsUsed
-              token.isAdmin = dbUser.isAdmin
-              // Use subscription data as source of truth for userType
-              token.userType = dbUser.subscription?.status === "ACTIVE" 
-                ? dbUser.subscription.planId 
-                : "FREE"
-              token.subscriptionPlan = dbUser.subscription?.planId || null
-              token.subscriptionStatus = dbUser.subscription?.status || null
-              token.updatedAt = now
-              token.refreshCount = 0
-            }
-          }
-
-          // Clear the active refresh marker
-          if (userId) {
-            setTimeout(() => {
-              activeRefreshes.delete(userId)
-            }, 5000)
           }
         } catch (error) {
           console.error("Error fetching user data for JWT:", error)
-          // Don't update the token.updatedAt if there was an error
         }
       }
 
       return token
     },    async session({ session, token }) {
-      if (token && session.user) {        // Only update session if necessary
-        if (
-          session.user.id !== token.id ||
-          session.user.credits !== token.credits ||
-          session.user.creditsUsed !== token.creditsUsed ||
-          session.user.isAdmin !== token.isAdmin ||
-          session.user.userType !== token.userType ||
-          session.user.subscriptionPlan !== token.subscriptionPlan ||
-          session.user.subscriptionStatus !== token.subscriptionStatus
-        ) {
-          session.user.id = token.id
-          session.user.credits = token.credits || 0
-          session.user.creditsUsed = token.creditsUsed || 0
-          session.user.isAdmin = token.isAdmin || false
-          session.user.userType = token.userType || "FREE"
-          session.user.subscriptionPlan = token.subscriptionPlan || null
-          session.user.subscriptionStatus = token.subscriptionStatus || null
-        }
+      if (token && session.user) {
+        session.user.id = token.id
+        session.user.credits = token.credits || 0
+        session.user.creditsUsed = token.creditsUsed || 0
+        session.user.isAdmin = token.isAdmin || false
+        session.user.userType = token.userType || "FREE"
+        session.user.subscriptionPlan = token.subscriptionPlan || null
+        session.user.subscriptionStatus = token.subscriptionStatus || null
       }
       
       return session
@@ -324,9 +274,9 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development",
 }
 
-// Improved session caching with proper invalidation
+// Session caching with proper invalidation
 const SESSION_CACHE = new Map<string, { session: any; timestamp: number }>()
-const SESSION_CACHE_MAX_AGE = 30 * 1000 // 30 seconds cache for sessions
+const SESSION_CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes cache for sessions
 
 // Function to clear caches periodically
 const clearCaches = () => {

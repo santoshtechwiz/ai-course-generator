@@ -33,7 +33,11 @@ export function AppProviders({ children, session }: AppProvidersProps) {
   )
 
   return (
-    <SessionProvider session={session}>
+    <SessionProvider 
+      session={session}
+      refetchInterval={5 * 60} // 5 minutes instead of default 60 seconds
+      refetchOnWindowFocus={false} // Don't refetch on every window focus
+    >
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <AnimationProvider>
