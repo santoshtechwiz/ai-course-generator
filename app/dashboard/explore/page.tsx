@@ -37,33 +37,43 @@ export default function ExplorePage() {
   const faqSchema = {
     mainEntity: [
       {
-        question: "How does CourseAI generate educational content?",
-        answer:
-          "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses.",
+        "@type": "Question",
+        name: "How does CourseAI generate educational content?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "CourseAI uses advanced artificial intelligence to analyze your topic and generate high-quality educational content including multiple-choice questions, open-ended questions, fill-in-the-blank exercises, and complete courses."
+        }
       },
       {
-        question: "Can I create programming quizzes with CourseAI?",
-        answer:
-          "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others.",
+        "@type": "Question",
+        name: "Can I create programming quizzes with CourseAI?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes! CourseAI specializes in creating programming-related educational content. You can generate coding MCQs, algorithm challenges, code completion exercises, and debugging questions for languages including JavaScript, Python, Java, C++, and many others."
+        }
       },
       {
-        question: "How accurate is the AI-generated content?",
-
-        answer:
-          "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements.",
+        "@type": "Question",
+        name: "How accurate is the AI-generated content?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "CourseAI's content generation is highly accurate, especially for technical and programming topics. However, we always recommend reviewing AI-generated content before publishing. Our tools allow you to easily edit and refine the generated content to ensure it meets your specific requirements."
+        }
       },
       {
+        "@type": "Question",
         name: "Can I customize the difficulty level of generated questions?",
-
-        answer:
-          "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives.",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "CourseAI allows you to specify the difficulty level (beginner, intermediate, advanced) for all generated content. This ensures the questions and exercises match your audience's knowledge level and learning objectives."
+        }
       },
     ],
   };
 
   return (
     <>
-      <JsonLD type="faq" data={faqSchema} />
+      <JsonLD type="FAQPage" data={faqSchema} />
       <PageWrapper>
         <PageHeader
           title="Explore AI-Powered Content Creation"

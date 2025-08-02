@@ -305,9 +305,13 @@ export const FAQSchema = React.memo(function FAQSchema({ items = [] }: FAQProps)
 
   const schemaData = React.useMemo(
     () => ({
-      items: validItems.map((item: FaqItem) => ({
-        question: item.question.trim(),
-        answer: item.answer.trim(),
+      mainEntity: validItems.map((item: FaqItem) => ({
+        "@type": "Question",
+        name: item.question.trim(),
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer.trim(),
+        },
       })),
     }),
     [validItems],
