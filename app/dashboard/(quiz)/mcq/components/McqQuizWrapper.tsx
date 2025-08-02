@@ -12,7 +12,6 @@ import {
   selectQuizStatus,
   selectQuizTitle,
   selectIsQuizComplete,
-  selectQuizUserId,
   setCurrentQuestionIndex,
   saveAnswer,
   resetQuiz,
@@ -23,9 +22,9 @@ import {
 import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
-import { useGlobalLoading } from "@/store/slices/global-loading-slice"
-import { QuizActions } from "../../components/QuizActions"
+
 import { GlobalLoader } from "@/components/loaders"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 
 interface McqQuizWrapperProps {
@@ -37,7 +36,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { user } = useAuth()
-  const { showLoading, hideLoading } = useGlobalLoading()
+  const { startLoading, stopLoading } = useGlobalLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
   const questions = useSelector(selectQuizQuestions)
@@ -46,14 +45,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const quizStatus = useSelector(selectQuizStatus)
   const quizTitle = useSelector(selectQuizTitle)
   const isCompleted = useSelector(selectIsQuizComplete)
-  const quizId = useSelector((state: any) => state.quiz.quizId) // Assuming quizId is stored in quiz slice
-  const quizOwnerId = useSelector(selectQuizUserId) // Get the actual quiz owner ID
-  const userId = user?.id // Get user ID from session-based auth// Assuming quizId is stored in quiz slice
-  const pdfData = {
-    title: quizTitle || title,
-    description: "This is a multiple choice quiz. Select the correct answers for each question.",
-    questions: questions
-  }
+  
   // Load the quiz
   useEffect(() => {
     const loadQuiz = async () => {
@@ -76,11 +68,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   useEffect(() => {    // To prevent infinite loop, we track if we've already shown the loader for this completion    
     if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current) {
       hasShownLoaderRef.current = true;
-      showLoading({
+      startLoading({
         message: "🎉 Quiz completed! Calculating your results...",
-        theme: 'primary',
-        isBlocking: true,
-        priority: 8
+        isBlocking: true
       })
 
       submissionTimeoutRef.current = setTimeout(() => {
@@ -91,7 +81,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     return () => {
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
-  }, [isCompleted, quizStatus, router, slug, showLoading])
+  }, [isCompleted, quizStatus, router, slug, startLoading])
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex] || null
@@ -117,11 +107,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const handleSubmitQuiz = useCallback(async () => {
     try {
       toast.success("Quiz submitted successfully!")
-      showLoading({
+      startLoading({
         message: "🎉 Quiz completed! Calculating your results...",
-        theme: 'primary',
-        isBlocking: true,
-        priority: 8
+        isBlocking: true
       })
 
       await dispatch(submitQuiz()).unwrap()
@@ -133,7 +121,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     }
-  }, [dispatch, router, slug, showLoading])
+  }, [dispatch, router, slug, startLoading])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -143,7 +131,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const formattedQuestion = useMemo(() => {
     if (!currentQuestion) return null
 
-    const questionText = currentQuestion.question || currentQuestion.text || ''
+    const questionText = currentQuestion.question || ''
     const options = Array.isArray(currentQuestion.options)
       ? currentQuestion.options.map((opt: any) => typeof opt === "string" ? opt : opt.text || '')
       : []
@@ -164,7 +152,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-   <GlobalLoader />
+    return <GlobalLoader />
   }
 
   if (hasError) {
@@ -179,7 +167,9 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
         }}
       />
     )
-  } if (!formattedQuestion) {
+  }
+  
+  if (!formattedQuestion) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
