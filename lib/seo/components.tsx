@@ -405,6 +405,32 @@ export const CourseSchema = React.memo(function CourseSchema({
           alignmentType: "prerequisite",
           targetName: prereq,
         })),
+        // CRITICAL: Add hasCourseInstance to mainEntity - REQUIRED by Google
+        hasCourseInstance: [
+          {
+            "@type": "CourseInstance",
+            "@id": `${courseUrl}#instance-main`,
+            name: courseName,
+            description,
+            courseMode: "online",
+            location: {
+              "@type": "VirtualLocation",
+              url: courseUrl,
+              name: "CourseAI Online Platform",
+            },
+            startDate: dateCreated,
+            endDate: dateModified,
+            instructor: authorName ? {
+              "@type": "Person",
+              name: authorName,
+              url: authorUrl || providerUrl,
+            } : {
+              "@type": "Organization",
+              name: provider,
+              url: providerUrl,
+            },
+          }
+        ],
       },
       name: courseName,
       description,
@@ -430,6 +456,32 @@ export const CourseSchema = React.memo(function CourseSchema({
         alignmentType: "prerequisite",
         targetName: prereq,
       })),
+      // CRITICAL: Add hasCourseInstance - REQUIRED by Google Search Console
+      hasCourseInstance: [
+        {
+          "@type": "CourseInstance",
+          "@id": `${courseUrl}#instance-1`,
+          name: courseName,
+          description,
+          courseMode: "online",
+          location: {
+            "@type": "VirtualLocation",
+            url: courseUrl,
+            name: "CourseAI Online Platform",
+          },
+          startDate: dateCreated,
+          endDate: dateModified,
+          instructor: authorName ? {
+            "@type": "Person",
+            name: authorName,
+            url: authorUrl || providerUrl,
+          } : {
+            "@type": "Organization",
+            name: provider,
+            url: providerUrl,
+          },
+        }
+      ],
     }
 
     if (authorName) {

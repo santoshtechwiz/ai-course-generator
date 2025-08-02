@@ -1,20 +1,14 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
 
 import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
-import { 
-  generateEnhancedMetadata,
-  EnhancedSEOProvider,
-  EnhancedWebsiteSchemaComponent,
-  EnhancedOrganizationSchemaComponent,
-  EnhancedFAQSchemaComponent
-} from "@/lib/seo"
+import { generateMetadata } from "@/lib/seo"
 
-export const metadata = generateEnhancedMetadata({
+export const metadata = generateMetadata({
   title: 'CourseAI - AI-Powered Course & Quiz Creator',
   description: 'Create professional educational content with AI. Generate interactive courses, MCQ quizzes, and assessments for any topic. Perfect for educators, trainers, and lifelong learners.',
   keywords: [
     'AI course creator',
-    'AI quiz generator',
+    'AI quiz generator', 
     'educational content creator',
     'interactive learning platform',
     'course builder',
@@ -36,16 +30,7 @@ export default function HomePage() {
   return (
     <PageWrapper>
       <PageHeader title={""} description={""}>
-        {/* Enhanced SEO with all required schemas including optimized FAQ */}
-        <EnhancedSEOProvider
-          enableWebsite={true}
-          enableOrganization={true}
-          enableFAQ={true}
-          enableBreadcrumbs={false}
-          currentPath="/"
-        >
-          <CourseAILandingPage />
-        </EnhancedSEOProvider>
+        <CourseAILandingPage />
       </PageHeader>
     </PageWrapper>
   )

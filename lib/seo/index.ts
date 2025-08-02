@@ -23,29 +23,7 @@ export {
   validateMetadata,
 } from "./core-utils";
 
-// Enhanced SEO system (primary - fixes Google Search Console issues)
-export {
-  generateEnhancedMetadata,
-  generateEnhancedCourseSchema,
-  generateEnhancedQuizSchema,
-  generateEnhancedFAQSchema,
-  generateEnhancedWebsiteSchema,
-  generateEnhancedOrganizationSchema,
-  generateEnhancedBreadcrumbSchema,
-  EnhancedSEOProvider,
-  EnhancedCourseSchemaComponent,
-  EnhancedQuizSchemaComponent,
-  EnhancedWebsiteSchemaComponent,
-  EnhancedOrganizationSchemaComponent,
-  EnhancedFAQSchemaComponent,
-  EnhancedBreadcrumbSchemaComponent,
-  validateSchemaCompliance,
-  type EnhancedCourseData,
-  type EnhancedQuizData,
-  type EnhancedMetadataConfig,
-} from "./enhanced-seo-system";
-
-// Unified metadata generation (legacy support)
+// Unified metadata generation
 export {
   generateMetadata,
   generateCourseMetadata,
@@ -53,10 +31,10 @@ export {
   type MetadataConfig,
 } from "./unified-metadata";
 
-// React components (legacy support)
+// React components
 export { JsonLD, DefaultSEO } from "./components";
 
-// Structured data components (legacy support)
+// Structured data components
 export {
   WebsiteSchema,
   BreadcrumbListSchema,
@@ -65,13 +43,6 @@ export {
   CourseSchema,
   QuizSchema,
 } from "./components";
-
-// ============================================================================
-// LEGACY SUPPORT (for backward compatibility)
-// ============================================================================
-
-// Re-export enhanced functions with legacy names
-export { generateEnhancedMetadata as generateOptimizedMetadata } from "./enhanced-seo-system";
 
 // ============================================================================
 // TYPE EXPORTS
@@ -101,10 +72,3 @@ export const defaultMetadata = generateMetadata({
   description: "AI-powered learning platform with interactive courses, quizzes, and personalized education tools",
   keywords: ["AI", "learning", "education", "courses", "quizzes", "programming", "coding"],
 });
-
-// ============================================================================
-// ENHANCED SEO SYSTEM
-// ============================================================================
-
-// Enhanced SEO System for Google Search Console compliance
-export * from "./enhanced-seo-system-v2";
