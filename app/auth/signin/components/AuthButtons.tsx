@@ -3,10 +3,19 @@
 import { motion } from "framer-motion"
 import { signIn } from "next-auth/react"
 import { AuthButton } from "./authButton"
-import githubLogo from "../public/github.png"
-import googleLogo from "../public/google.png"
-import facebookLogo from "../public/facebook.png"
 import { Loader2 } from "lucide-react"
+
+// Social provider logos from public/images/icons/
+const githubLogo = "/github.png"
+const googleLogo = "/google.png"
+const facebookLogo = "/facebook.png"
+
+// Fallback to ensure images load - you can also use data URLs or inline SVGs
+const logoPaths = {
+  github: githubLogo,
+  google: googleLogo,
+  facebook: facebookLogo,
+} as const
 
 const buttonVariants = {
   hidden: { opacity: 0, y: 20 },
