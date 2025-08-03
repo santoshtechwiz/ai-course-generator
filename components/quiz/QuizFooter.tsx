@@ -82,13 +82,13 @@ export function QuizFooter({
 
   return (
     <motion.div
-      className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border/50 p-4 sm:p-6"
+      className="mt-6 bg-background/95 backdrop-blur-sm border-t border-border/20 p-4 shadow-sm"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.5 }}
     >
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Previous Button */}
           <motion.div
             variants={buttonVariants}
@@ -103,18 +103,18 @@ export function QuizFooter({
               onClick={onPrevious}
               disabled={!canGoPrevious || isLoading}
               className={cn(
-                "gap-2 min-w-[120px] bg-background/80 backdrop-blur-sm border-border/50 hover:border-primary/50",
+                "gap-1.5 min-w-[100px] h-9 bg-background/80 backdrop-blur-sm border-border/50 hover:border-primary/50",
                 !canGoPrevious && "opacity-0 pointer-events-none"
               )}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               Previous
             </Button>
           </motion.div>
 
           {/* Center Status */}
           <motion.div
-            className="flex items-center gap-3 text-sm text-muted-foreground"
+            className="flex items-center gap-2 text-sm text-muted-foreground"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
@@ -144,7 +144,7 @@ export function QuizFooter({
           </motion.div>
 
           {/* Next/Submit Button */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {showRetake && onRetake && (
               <motion.div
                 variants={buttonVariants}
@@ -174,7 +174,7 @@ export function QuizFooter({
                   onClick={onSubmit}
                   disabled={!hasAnswer || isLoading}
                   className={cn(
-                    "gap-2 min-w-[140px] relative overflow-hidden",
+                    "gap-1.5 min-w-[120px] h-9 relative overflow-hidden",
                     "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700",
                     "shadow-lg hover:shadow-xl transition-all duration-200",
                     isSuccess && "from-emerald-500 to-green-500",
@@ -203,7 +203,7 @@ export function QuizFooter({
                   onClick={onNext}
                   disabled={!canGoNext || isLoading}
                   className={cn(
-                    "gap-2 min-w-[140px] relative overflow-hidden",
+                    "gap-1.5 min-w-[120px] h-9 relative overflow-hidden",
                     "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary",
                     "shadow-lg hover:shadow-xl transition-all duration-200",
                     isSuccess && "from-blue-500 to-primary",

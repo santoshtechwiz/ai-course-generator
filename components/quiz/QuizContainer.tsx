@@ -97,14 +97,8 @@ export function QuizContainer({
             className
           )}
         >
-          <Card
-            className={cn(
-              "border-l-4 shadow-md w-full transition-all",
-              config.borderColor,
-              config.bgColor
-            )}
-          >
-            <CardContent className="w-full p-4 sm:p-6">
+          <Card className="border-0 shadow-none bg-transparent">
+            <CardContent className="w-full p-0">
               <div className="w-full flex flex-col space-y-4">
                 {children}
               </div>
