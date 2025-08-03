@@ -3,13 +3,14 @@ import type { Metadata } from "next"
 import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
 
-import { QuizzesClient } from "./components/QuizzesClient"
+
 import ClientOnly from "@/components/ClientOnly"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
 import { BookOpen, Sparkles, Zap, Target } from "lucide-react"
 import { JsonLD } from "@/lib/seo"
 import { generateMetadata } from "@/lib/seo"
+import { QuizzesClient } from "./components/QuizzesClient"
 
 export const metadata: Metadata = generateMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -33,9 +34,8 @@ export const metadata: Metadata = generateMetadata({
     "quiz app",
     "online quiz platform",
     "quiz builder",
-    "CourseAI quizzes"
+    "CourseAI quizzes",
   ],
-
 })
 
 export const dynamic = "force-dynamic"

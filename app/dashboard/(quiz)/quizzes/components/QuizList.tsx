@@ -1,8 +1,7 @@
 "use client"
 
-import { memo, useEffect, useMemo } from "react"
+import { memo, useMemo } from "react"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
-import NProgress from "nprogress"
 import { useInView } from "react-intersection-observer"
 import { AlertCircle, FileQuestion, Search, Plus, RefreshCw, Trophy, Grid3X3, List } from "lucide-react"
 import { CreateCard } from "@/components/CreateCard"
@@ -15,13 +14,6 @@ import type { QuizListItem } from "@/app/actions/getQuizes"
 import type { QuizType } from "@/app/types/quiz-types"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Card, CardContent } from "@/components/ui/card"
-
-NProgress.configure({
-  minimum: 0.3,
-  easing: "ease",
-  speed: 500,
-  showSpinner: false,
-})
 
 interface QuizListProps {
   quizzes: QuizListItem[]
@@ -50,9 +42,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-    },
+    transition: { staggerChildren: 0.03 },
   },
 }
 
@@ -61,11 +51,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 25,
-    },
+    transition: { type: "spring", stiffness: 400, damping: 25 },
   },
 }
 
@@ -79,7 +65,6 @@ function QuizListComponent({
   onRetry,
   onCreateQuiz,
   activeFilter = "all",
-  onFilterChange,
   quizCounts,
   viewMode = "grid",
   onViewModeChange,
@@ -89,23 +74,10 @@ function QuizListComponent({
     threshold: 0.1,
   })
 
-  useEffect(() => {
-    if (isFetchingNextPage) {
-      NProgress.start()
-    } else {
-      NProgress.done()
-    }
-    return () => {
-      NProgress.done()
-    }
-  }, [isFetchingNextPage])
-
   const getEstimatedTime = (questionCount: number): string => {
     const minutes = Math.max(Math.ceil(questionCount * 0.5), 1)
     return `${minutes} min`
   }
-
-  const getQuestionCount = (quiz: { questionCount: number }): number => quiz.questionCount || 0
 
   const filteredQuizzes = useMemo(
     () => (activeFilter === "all" ? quizzes : quizzes.filter((quiz) => quiz.quizType === activeFilter)),
@@ -150,8 +122,7 @@ function QuizListComponent({
                 <Search className="h-16 w-16 text-muted-foreground mb-4" />
                 <h3 className="font-semibold text-xl mb-2">No quizzes found</h3>
                 <p className="text-muted-foreground mb-6 max-w-md">
-                  We couldn't find any quizzes matching your search criteria. Try adjusting your filters or search
-                  terms.
+                  We couldn't find any quizzes matching your search criteria. Try adjusting your filters.
                 </p>
                 <Button variant="outline" onClick={() => window.location.reload()}>
                   Clear Filters
@@ -179,7 +150,7 @@ function QuizListComponent({
 
   return (
     <div className="space-y-6">
-      {/* Header with View Toggle */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-semibold tracking-tight">
@@ -236,7 +207,7 @@ function QuizListComponent({
       <motion.div
         className={cn(
           "grid gap-6",
-          viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 max-w-4xl mx-auto space-y-4",
+          viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 max-w-4xl mx-auto",
         )}
         variants={containerVariants}
         initial="hidden"
@@ -253,16 +224,16 @@ function QuizListComponent({
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
-                transition={{ delay: idx * 0.03 }}
+                transition={{ delay: idx * 0.02 }}
               >
                 <QuizCard
                   title={quiz.title}
                   description={quiz.title}
-                  questionCount={getQuestionCount(quiz)}
+                  questionCount={quiz.questionCount || 0}
                   isPublic={quiz.isPublic}
                   slug={quiz.slug}
                   quizType={quiz.quizType as QuizType}
-                  estimatedTime={getEstimatedTime(quiz.questionCount)}
+                  estimatedTime={getEstimatedTime(quiz.questionCount || 0)}
                   completionRate={Math.min(Math.max(quiz.bestScore || 0, 0), 100)}
                 />
               </motion.div>
@@ -274,7 +245,7 @@ function QuizListComponent({
       {/* Loading More */}
       {isFetchingNextPage && (
         <div className="flex justify-center py-8">
-          <QuizzesSkeleton itemCount={3} />
+          <div className="text-sm text-muted-foreground">Loading more quizzes...</div>
         </div>
       )}
 

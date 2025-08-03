@@ -41,7 +41,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
-  const debouncedSearch = useDebounce(search, 500)
+  const debouncedSearch = useDebounce(search, 300)
   const { ref, inView } = useInView({ threshold: 0.1 })
 
   const queryKey = useMemo(
@@ -57,45 +57,44 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     [debouncedSearch, selectedTypes, userId, questionCountRange, showPublicOnly, activeTab],
   )
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, isRefetching } =
-    useInfiniteQuery({
-      queryKey,
-      queryFn: async ({ pageParam = 1 }) => {
-        const result = await getQuizzes({
-          page: pageParam as number,
-          limit: 12,
-          searchTerm: debouncedSearch,
-          userId,
-          quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
-          minQuestions: questionCountRange[0],
-          maxQuestions: questionCountRange[1],
-          publicOnly: showPublicOnly,
-          tab: activeTab,
-        })
-        if (result.error) throw new Error(result.error)
-        return {
-          quizzes: result?.quizzes || [],
-          nextCursor: result?.nextCursor ?? null,
-        }
-      },
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-      initialPageParam: 1,
-      initialData: () => {
-        if (
-          search === "" &&
-          selectedTypes.length === 0 &&
-          questionCountRange[0] === 0 &&
-          questionCountRange[1] === 50 &&
-          activeTab === "all"
-        ) {
-          return { pages: [initialQuizzesData], pageParams: [1] }
-        }
-        return undefined
-      },
-      staleTime: 1000 * 60 * 5,
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    })
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
+    queryKey,
+    queryFn: async ({ pageParam = 1 }) => {
+      const result = await getQuizzes({
+        page: pageParam as number,
+        limit: 12,
+        searchTerm: debouncedSearch,
+        userId,
+        quizTypes: selectedTypes.length > 0 ? selectedTypes : null,
+        minQuestions: questionCountRange[0],
+        maxQuestions: questionCountRange[1],
+        publicOnly: showPublicOnly,
+        tab: activeTab,
+      })
+      if (result.error) throw new Error(result.error)
+      return {
+        quizzes: result?.quizzes || [],
+        nextCursor: result?.nextCursor ?? null,
+      }
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: 1,
+    initialData: () => {
+      if (
+        search === "" &&
+        selectedTypes.length === 0 &&
+        questionCountRange[0] === 0 &&
+        questionCountRange[1] === 50 &&
+        activeTab === "all"
+      ) {
+        return { pages: [initialQuizzesData], pageParams: [1] }
+      }
+      return undefined
+    },
+    staleTime: 1000 * 60 * 5,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  })
 
   // Load more when in view
   useEffect(() => {
@@ -158,17 +157,11 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     }
 
     for (const q of quizzes) {
-      if (q.quizType === "mcq") {
-        counts.mcq++
-      } else if (q.quizType === "openended") {
-        counts.openended++
-      } else if (q.quizType === "code") {
-        counts.code++
-      } else if (q.quizType === "blanks") {
-        counts.blanks++
-      } else if (q.quizType === "flashcard") {
-        counts.flashcard++
-      }
+      if (q.quizType === "mcq") counts.mcq++
+      else if (q.quizType === "openended") counts.openended++
+      else if (q.quizType === "code") counts.code++
+      else if (q.quizType === "blanks") counts.blanks++
+      else if (q.quizType === "flashcard") counts.flashcard++
     }
 
     return counts

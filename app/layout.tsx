@@ -75,17 +75,17 @@ export default async function RootLayout({
         </head>
 
         <body
-          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen flex flex-col`}
+          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen`}
         >
           <Providers session={session}>
-
-            <main className="flex-1 w-full">
-              <Suspense fallback={<SuspenseGlobalFallback />}>
-                {children}
-              </Suspense>
-            </main>
-            <Footer />
-
+            <div className="min-h-screen flex flex-col">
+              <main className="flex-1 w-full">
+                <Suspense fallback={<SuspenseGlobalFallback />}>
+                  {children}
+                </Suspense>
+              </main>
+              <Footer />
+            </div>
           </Providers>
 
           <DefaultSEO enableFAQ={false} />

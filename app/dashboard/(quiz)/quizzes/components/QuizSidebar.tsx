@@ -24,7 +24,7 @@ const quizTypes = [
     icon: AlignJustify,
     color: "text-emerald-600 dark:text-emerald-400",
   },
-  { id: "blanks" as const, label: "Fill in the Blanks", icon: PenTool, color: "text-amber-600 dark:text-amber-400" },
+  { id: "blanks" as const, label: "Fill Blanks", icon: PenTool, color: "text-amber-600 dark:text-amber-400" },
   { id: "code" as const, label: "Code", icon: Code, color: "text-purple-600 dark:text-purple-400" },
   { id: "flashcard" as const, label: "Flash Cards", icon: Flashlight, color: "text-pink-600 dark:text-pink-400" },
 ]
@@ -46,7 +46,6 @@ function QuizSidebarComponent({
   search,
   onSearchChange,
   onClearSearch,
-  isSearching,
   selectedTypes,
   toggleQuizType,
   questionCountRange = [0, 50],
@@ -57,7 +56,6 @@ function QuizSidebarComponent({
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
   const [localQuestionCount, setLocalQuestionCount] = useState<[number, number]>(questionCountRange)
-  const [isFiltersOpen, setIsFiltersOpen] = useState(true)
 
   useEffect(() => {
     const handleResize = () => {
@@ -140,7 +138,7 @@ function QuizSidebarComponent({
                 variant={isSelected ? "default" : "outline"}
                 size="sm"
                 onClick={() => toggleQuizType(type.id)}
-                className={cn("justify-start gap-2 h-9", !isSelected && "hover:bg-muted", isSelected && "shadow-sm")}
+                className={cn("justify-start gap-2 h-9", !isSelected && "hover:bg-muted")}
               >
                 <type.icon className={cn("h-4 w-4", isSelected ? "text-primary-foreground" : type.color)} />
                 <span className="text-sm">{type.label}</span>

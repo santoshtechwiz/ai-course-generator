@@ -27,12 +27,13 @@ export default async function DashboardLayout({
 
   return (
     <GlobalLoaderProvider>
-      <div className="min-h-screen flex flex-col font-body">
+      <div className="flex flex-col font-body flex-1">
         <DashboardShell>
           <GlobalLoader />
-          <main className="flex-1 pt-16 ">
+          <main className="flex-1 pt-16">
             {children}
-          </main>          <Toaster />
+          </main>          
+          <Toaster />
           <Chatbot userId={session?.user?.id} />
           {process.env.NODE_ENV !== "production" && <CourseAIState />}
         </DashboardShell>

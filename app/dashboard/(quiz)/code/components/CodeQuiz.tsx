@@ -11,10 +11,10 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import CodeQuizOptions from "./CodeQuizOptions"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
-import { Code2, Terminal, Copy, Check, Play, Target } from "lucide-react"
+import { Code2, Terminal, Copy, Check, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface CodeQuizProps {
   question: CodeQuestion
@@ -38,19 +38,13 @@ interface CodeQuizProps {
   timeLimit?: number
 }
 
-// Enhanced animation variants
 const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 250,
-      damping: 25,
-    },
-  },
+    transition: { duration: 0.4, ease: "easeOut" }
+  }
 }
 
 const CodeQuiz = ({
@@ -68,40 +62,19 @@ const CodeQuiz = ({
   isLastQuestion = false,
   showNavigation = true,
   showRetake = false,
-  quizTitle = "Code Challenge",
-  quizSubtitle = "Analyze the code and choose the correct answer",
   difficulty = "Medium",
-  category = "Programming",
-  timeLimit,
 }: CodeQuizProps) => {
   const dispatch = useAppDispatch()
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(existingAnswer || null)
   const [copied, setCopied] = useState(false)
   const [isAnswering, setIsAnswering] = useState(false)
 
-  const options = useMemo(
-    () =>
-      question.options?.map((option) => {
-        const optionVariations = [
-          option,
-          ...(question.language === "javascript"
-            ? [
-                option.replace(/function/g, "method"),
-                option.replace(/variable/g, "identifier"),
-                option.replace(/returns/g, "outputs"),
-              ]
-            : []),
-          ...(question.language === "python"
-            ? [option.replace(/function/g, "def"), option.replace(/print/g, "output"), option.replace(/list/g, "array")]
-            : []),
-        ]
-        return {
-          id: option,
-          text: optionVariations[0],
-        }
-      }) || [],
-    [question.options, question.language],
-  )
+  const options = useMemo(() => {
+    return question.options?.map((option) => ({ 
+      id: option, 
+      text: option 
+    })) || []
+  }, [question.options])
 
   const handleOptionSelect = useCallback(
     async (optionId: string) => {
@@ -109,16 +82,15 @@ const CodeQuiz = ({
 
       setIsAnswering(true)
       try {
-        await new Promise((resolve) => setTimeout(resolve, 150))
-
-        const selected = options.find((o) => o.id === optionId)
+        const selected = options.find(o => o.id === optionId)
         if (selected) {
           setSelectedAnswer(selected.text)
-          dispatch(saveAnswer({ questionId: String(question.id), userAnswer: selected.text }))
+          dispatch(saveAnswer({ 
+            questionId: String(question.id), 
+            answer: selected.text 
+          }))
           onAnswer(selected.text)
         }
-      } catch (error) {
-        console.error("Failed to select answer:", error)
       } finally {
         setIsAnswering(false)
       }
@@ -139,7 +111,7 @@ const CodeQuiz = ({
   }, [question.codeSnippet])
 
   const hasAnswer = !!selectedAnswer
-  const language = question.language && question.language.trim() !== "" ? question.language : "JavaScript"
+  const language = question.language?.trim() || "javascript"
 
   return (
     <QuizContainer
@@ -148,132 +120,96 @@ const CodeQuiz = ({
       quizType="code"
       animationKey={`code-${question.id}`}
       difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
+      fullWidth={true}
     >
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Question Section */}
-        <motion.div variants={itemVariants} initial="hidden" animate="visible">
-          <div className="text-center space-y-4 mb-6">
-            <div className="flex items-center gap-3 justify-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Target className="h-4 w-4 text-white" />
-              </div>
-              <Badge
-                variant="secondary"
-                className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-              >
-                Code Analysis
-              </Badge>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-relaxed break-words max-w-4xl mx-auto">
-              {question.text || question.question}
-            </h2>
-          </div>
+        <motion.div 
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          className="text-center"
+        >
+          <h2 className="text-2xl md:text-3xl font-semibold leading-tight tracking-tight text-foreground mx-auto max-w-3xl px-4">
+            {question.text || question.question}
+          </h2>
+          
+          <div className="h-1 w-24 bg-green-500 rounded-full mx-auto mt-6 mb-8" />
         </motion.div>
 
         {/* Code Display Section */}
         {question.codeSnippet && (
-          <motion.div variants={itemVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
-            <Card className="overflow-hidden shadow-xl border-2 border-border/30 group">
-              <motion.div
-                className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700/50"
-                whileHover={{ backgroundColor: "rgba(51, 65, 85, 0.9)" }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1.5">
-                    <motion.div
-                      className="w-3 h-3 rounded-full bg-red-500/80"
-                      whileHover={{ scale: 1.1, backgroundColor: "#ef4444" }}
-                    />
-                    <motion.div
-                      className="w-3 h-3 rounded-full bg-yellow-500/80"
-                      whileHover={{ scale: 1.1, backgroundColor: "#eab308" }}
-                    />
-                    <motion.div
-                      className="w-3 h-3 rounded-full bg-green-500/80"
-                      whileHover={{ scale: 1.1, backgroundColor: "#22c55e" }}
-                    />
-                  </div>
-
-                  <motion.div
-                    className="flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg backdrop-blur-sm"
-                    whileHover={{ scale: 1.02, backgroundColor: "rgba(51, 65, 85, 0.7)" }}
-                  >
-                    <Terminal className="w-3.5 h-3.5 text-slate-300" />
-                    <span className="text-slate-300 text-xs font-mono font-medium">{language}</span>
-                  </motion.div>
+          <motion.div 
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.1 }}
+            className="overflow-hidden rounded-lg border border-border shadow-lg"
+          >
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="bg-gradient-to-r from-green-500/20 to-emerald-500/10 text-green-300 border-green-500/30 font-semibold text-xs"
-                  >
-                    <Code2 className="w-3 h-3 mr-1" />
-                    {language.toUpperCase()}
-                  </Badge>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyCode}
-                    className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700/50"
-                  >
-                    <motion.div
-                      key={copied ? "check" : "copy"}
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    </motion.div>
-                  </Button>
+                <div className="flex items-center gap-2 bg-slate-700 px-3 py-1 rounded-md">
+                  <Terminal className="w-4 h-4 text-slate-300" />
+                  <span className="text-slate-300 text-sm font-mono">{language}</span>
                 </div>
-              </motion.div>
+              </div>
 
-              <CardContent className="p-0 relative overflow-hidden">
-                <SyntaxHighlighter
-                  language={language.toLowerCase()}
-                  style={vscDarkPlus}
-                  showLineNumbers
-                  customStyle={{
-                    margin: 0,
-                    borderRadius: "0",
-                    fontSize: "0.875rem",
-                    padding: "1.5rem",
-                    background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-                    lineHeight: "1.6",
-                  }}
-                  lineNumberStyle={{
-                    color: "#64748b",
-                    paddingRight: "1rem",
-                    userSelect: "none",
-                    fontSize: "0.75rem",
-                  }}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCopyCode}
+                  className="h-8 w-8 text-slate-300 hover:text-white"
                 >
-                  {question.codeSnippet}
-                </SyntaxHighlighter>
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
 
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none" />
-              </CardContent>
-            </Card>
+            <div className="relative overflow-hidden max-h-[500px] overflow-y-auto">
+              <SyntaxHighlighter
+                language={language.toLowerCase()}
+                style={vscDarkPlus}
+                showLineNumbers
+                customStyle={{
+                  margin: 0,
+                  padding: "1.5rem",
+                  fontSize: "0.875rem",
+                  background: "#0f172a",
+                  lineHeight: "1.6",
+                }}
+                lineNumberStyle={{
+                  color: "#64748b",
+                  paddingRight: "1rem",
+                  minWidth: "2.5em"
+                }}
+              >
+                {question.codeSnippet}
+              </SyntaxHighlighter>
+            </div>
           </motion.div>
         )}
 
         {/* Options Section */}
-        <motion.div variants={itemVariants} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
-          <Card className="shadow-lg border border-border/50">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                  <Play className="h-4 w-4 text-white" />
-                </div>
-                <h3 className="font-semibold text-lg text-foreground">Choose Your Answer</h3>
-              </div>
-            </CardHeader>
-            <CardContent>
+        <motion.div 
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.2 }}
+          className="max-w-3xl mx-auto"
+        >
+         
+          
+          <Card className="border border-border bg-card">
+            <CardContent className="p-4 sm:p-6">
               <CodeQuizOptions
-                options={options.map((o) => o.text)}
+                options={options.map(o => o.text)}
                 selectedOption={selectedAnswer}
                 onSelect={handleOptionSelect}
                 disabled={isSubmitting || isAnswering}
