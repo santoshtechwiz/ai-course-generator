@@ -593,7 +593,7 @@ export default function FlashCardQuiz({
         exit="exit"
       >
         {/* Main Content Area */}
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="container mx-auto px-6 py-8 max-w-4xl">
           {/* Progress and Streak Header */}
           <motion.div
             className="flex items-center justify-between mb-8"

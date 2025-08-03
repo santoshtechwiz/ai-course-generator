@@ -375,12 +375,7 @@ export default function FlashcardQuizWrapper({
   // Main Quiz Component
   // Only render one progress bar and one main action button (handled inside FlashcardQuiz)
   return (
-    <motion.div
-      className="space-y-6 px-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <QuizSchema
         name={quizTitle || title || "Flashcard Quiz"}
         url={`https://courseai.io/dashboard/flashcard/${slug}`}
@@ -388,7 +383,7 @@ export default function FlashcardQuizWrapper({
         description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
         numberOfQuestions={currentQuestions?.length}
       />
-      <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto px-2 sm:px-4">
+      <div className="space-y-6">
         <FlashcardQuiz
           key={`${slug}-${isReviewMode ? "review" : "full"}`}
           cards={currentQuestions}
@@ -406,6 +401,6 @@ export default function FlashcardQuizWrapper({
           isReviewMode={isReviewMode}
         />
       </div>
-    </motion.div>
+    </div>
   );
 }

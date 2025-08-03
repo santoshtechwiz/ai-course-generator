@@ -45,7 +45,7 @@ export default function BlanksQuizPage({
 
   if (!slug) {
     return (
-      <div className="container max-w-4xl py-6">
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Card>
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-4">Error</h2>

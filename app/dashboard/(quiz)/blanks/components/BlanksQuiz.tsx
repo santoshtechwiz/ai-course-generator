@@ -294,7 +294,7 @@ export default function BlanksQuiz({
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full">
       <QuizContainer animationKey={String(question.id)}>
-        <div className="space-y-6 lg:space-y-8">
+        <div className="space-y-8">
           {/* Enhanced Header Card with Quiz Context */}
           <motion.div
             variants={itemVariants}
@@ -314,7 +314,7 @@ export default function BlanksQuiz({
                     </div>
                   )}
                 </div>
-                <p className="text-cyan-700 dark:text-cyan-300 text-sm leading-relaxed">
+                <p className="text-cyan-700 dark:text-cyan-300 text-sm leading-relaxed mb-4">
                   Complete the statement with the most accurate answer. Focus on precision and context.
                 </p>
               </div>
@@ -332,12 +332,12 @@ export default function BlanksQuiz({
                   </div>
                   <div className="flex-1 min-w-0 space-y-6">
                     <div>
-                      <h3 className="text-2xl font-bold text-foreground mb-2">Complete the Statement</h3>
+                      <h3 className="text-2xl font-bold text-foreground mb-3">Complete the Statement</h3>
                       <div className="w-16 h-1 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full"></div>
                     </div>
                     
                     {/* Enhanced Question Display */}
-                    <div className="text-lg md:text-xl font-medium leading-relaxed">
+                    <div className="text-lg md:text-xl font-medium leading-relaxed mb-6">
                       {questionParts.hasBlank ? (
                         <div className="flex flex-col lg:flex-row lg:flex-wrap items-center gap-3 text-center justify-center">
                           <span className="text-foreground break-words">{questionParts.before}</span>

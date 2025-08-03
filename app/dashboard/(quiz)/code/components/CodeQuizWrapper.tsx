@@ -121,7 +121,7 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 
     dispatch(saveAnswer({
       questionId: String(currentQuestion.id),
-      userAnswer: selectedOptionId,
+      answer: selectedOptionId,
       selectedOptionId
     }))
 
@@ -206,26 +206,27 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
   if (!formattedQuestion) {
     return (
-      <GlobalLoader
-
-      />
+      <GlobalLoader />
     )
-  } return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
-   
-      <CodeQuiz
-        question={formattedQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={existingAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNextQuestion}
-        onSubmit={handleSubmitQuiz}
-        isSubmitting={isSubmitting}
-        canGoNext={canGoNext}
-        isLastQuestion={isLastQuestion}
-        quizTitle={quizTitle || title || "Code Quiz"}
-      />
+  } 
+  
+  return (
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <CodeQuiz
+          question={formattedQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer}
+          onAnswer={handleAnswer}
+          onNext={handleNextQuestion}
+          onSubmit={handleSubmitQuiz}
+          isSubmitting={isSubmitting}
+          canGoNext={canGoNext}
+          isLastQuestion={isLastQuestion}
+          quizTitle={quizTitle || title || "Code Quiz"}
+        />
+      </div>
     </div>
   )
 }

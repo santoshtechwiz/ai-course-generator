@@ -179,9 +179,8 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     )
   }
   return (
-    <>
-      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">
-
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
         <McqQuiz
           question={formattedQuestion}
           questionNumber={currentQuestionIndex + 1}
@@ -191,10 +190,11 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
           onNext={handleNextQuestion}
           onSubmit={handleSubmitQuiz}
           isSubmitting={isSubmitting}
-          canGoNext={canGoNext} isLastQuestion={isLastQuestion}
+          canGoNext={canGoNext} 
+          isLastQuestion={isLastQuestion}
           quizTitle={quizTitle || title || "Multiple Choice Quiz"}
         />
       </div>
-    </>
+    </div>
   )
 }

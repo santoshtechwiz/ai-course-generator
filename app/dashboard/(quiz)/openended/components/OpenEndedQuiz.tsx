@@ -271,17 +271,17 @@ export default function OpenEndedQuiz({
       questionNumber={questionNumber}
       totalQuestions={totalQuestions}
       quizType="openended"
-      animationKey={question.id}
+      animationKey={String(question.id)}
       quizTitle="Open-Ended Question"
       quizSubtitle="Provide a detailed answer explaining your understanding"
       timeSpent={timeSpent}
       difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
     >
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-8">
         {/* Info Card (Difficulty & Tips) */}
         <motion.div
           variants={itemVariants}
-          className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 shadow-sm"
+          className="bg-white rounded-2xl p-6 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 shadow-sm"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
@@ -306,7 +306,7 @@ export default function OpenEndedQuiz({
                     </Badge>
                   )}
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-4">
                   <span className="hidden sm:inline">Think critically • Explain thoroughly • Address key concepts</span>
                   <span className="sm:hidden">Think critically and explain thoroughly</span>
                 </div>
@@ -323,7 +323,7 @@ export default function OpenEndedQuiz({
           transition={{ delay: 0.1 }}
         >
           <Card className="border-l-4 border-l-violet-500 bg-gradient-to-r from-background to-violet-50/30 shadow-lg dark:to-violet-950/20">
-            <CardContent className="p-4 sm:p-6">
+            <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -349,7 +349,7 @@ export default function OpenEndedQuiz({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="space-y-3"
+          className="space-y-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <label htmlFor="answer" className="text-sm font-medium text-foreground flex items-center gap-1">

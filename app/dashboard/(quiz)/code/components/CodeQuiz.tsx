@@ -207,7 +207,7 @@ const CodeQuiz = ({
          
           
           <Card className="border border-border bg-card">
-            <CardContent className="p-4 sm:p-6">
+            <CardContent className="p-6">
               <CodeQuizOptions
                 options={options.map(o => o.text)}
                 selectedOption={selectedAnswer}

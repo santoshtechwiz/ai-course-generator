@@ -161,7 +161,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     if (!currentQuestion) return null
     const cq = currentQuestion as OpenEndedQuestion
     return {
-      id: String(cq.id),
+      id: Number(cq.id) || cq.id,
       text: cq.text || cq.question || "",
       question: cq.question || cq.text || "",
      
@@ -203,22 +203,23 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
     )
   }
 
-
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
-      <OpenEndedQuiz
-        question={formattedQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={existingAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNextQuestion}
-        onPrevious={handlePrevQuestion}
-        onSubmit={handleSubmitQuiz}
-        canGoNext={canGoNext}
-        canGoPrevious={canGoPrevious}
-        isLastQuestion={isLastQuestion}
-      />
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <OpenEndedQuiz
+          question={formattedQuestion!}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer}
+          onAnswer={handleAnswer}
+          onNext={handleNextQuestion}
+          onPrevious={handlePrevQuestion}
+          onSubmit={handleSubmitQuiz}
+          canGoNext={canGoNext}
+          canGoPrevious={canGoPrevious}
+          isLastQuestion={isLastQuestion}
+        />
+      </div>
     </div>
   )
 }

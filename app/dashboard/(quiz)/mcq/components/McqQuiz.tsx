@@ -105,10 +105,10 @@ const McqQuiz = ({
           difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
           fullWidth={true}
         >
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Question Text */}
             <motion.div
-              className="text-center space-y-4 mb-8"
+              className="text-center space-y-6 mb-8"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -129,7 +129,7 @@ const McqQuiz = ({
             </motion.div>
 
             {/* Options */}
-            <div className="max-w-3xl mx-auto space-y-3">
+            <div className="max-w-3xl mx-auto space-y-4">
               <AnimatePresence>
                 {options.map((option, index) => {
                   const isSelected = selectedOption === option.id

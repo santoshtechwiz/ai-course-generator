@@ -194,22 +194,23 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-2 sm:px-4">      
-      <BlanksQuiz
-        key={formattedQuestion.id} // ✅ forces component reset per question
-        question={formattedQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        existingAnswer={existingAnswer}
-        onAnswer={handleAnswer}
-        onNext={handleNextQuestion}
-        onPrevious={handlePrevQuestion}
-        onSubmit={handleSubmitQuiz}
-        canGoNext={canGoNext}
-        canGoPrevious={canGoPrevious}
-        isLastQuestion={isLastQuestion}
-      />
-
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <BlanksQuiz
+          key={formattedQuestion.id} // ✅ forces component reset per question
+          question={formattedQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          existingAnswer={existingAnswer}
+          onAnswer={handleAnswer}
+          onNext={handleNextQuestion}
+          onPrevious={handlePrevQuestion}
+          onSubmit={handleSubmitQuiz}
+          canGoNext={canGoNext}
+          canGoPrevious={canGoPrevious}
+          isLastQuestion={isLastQuestion}
+        />
+      </div>
     </div>
   )
 }
