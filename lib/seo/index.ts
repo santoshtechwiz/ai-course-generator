@@ -31,6 +31,14 @@ export {
   type MetadataConfig,
 } from "./unified-metadata";
 
+// Quiz title utilities (SEO improvements)
+export {
+  generateQuizTitle,
+  generateQuizDescription,
+  getQuizTypeDescription,
+  QUIZ_TYPE_DESCRIPTIONS,
+} from "./quiz-title-utils";
+
 // React components
 export { JsonLD, DefaultSEO } from "./components";
 

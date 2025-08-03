@@ -5,7 +5,7 @@
 
 import type { Metadata } from "next";
 import { BASE_URL, defaultSiteInfo, SEO_CONFIG } from "./constants";
-import { extractKeywords, generateMetaDescription, getSocialImageUrl } from "./core-utils";
+import { extractKeywords, generateMetaDescription, getSocialImageUrl, getQuizTypeLabel } from "./core-utils";
 
 export interface MetadataConfig {
   title: string;
@@ -173,8 +173,11 @@ export function generateQuizMetadata(quiz: {
   author?: string;
   createdAt?: string;
 }): Metadata {
-  const title = `${quiz.title} - ${quiz.quizType || 'Practice'} Quiz`;
-  const description = quiz.description || `Test your knowledge with our ${quiz.title} quiz. ${quiz.questionsCount ? `${quiz.questionsCount} questions` : ''} ${quiz.difficulty ? `at ${quiz.difficulty} level` : ''}.`;
+  // Create clean, SEO-friendly title without using slug
+  const quizTypeLabel = quiz.quizType ? getQuizTypeLabel(quiz.quizType) : "Learning Assessment";
+  const title = quiz.title ? `${quiz.title} | CourseAI` : `${quizTypeLabel} | CourseAI`;
+  
+  const description = quiz.description || `Take this ${quizTypeLabel.toLowerCase()} to test and improve your knowledge. ${quiz.questionsCount ? `${quiz.questionsCount} interactive questions` : ''} ${quiz.difficulty ? `at ${quiz.difficulty} level` : ''} with instant feedback and detailed explanations.`;
   
   return generateMetadata({
     title,
@@ -184,12 +187,15 @@ export function generateQuizMetadata(quiz: {
     author: quiz.author,
     publishedTime: quiz.createdAt,
     keywords: [
-      quiz.title,
-      "quiz",
+      ...(quiz.title ? [quiz.title] : []),
+      "online quiz",
       "practice test",
-      "assessment",
-      ...(quiz.quizType ? [quiz.quizType] : []),
-      ...(quiz.difficulty ? [quiz.difficulty] : []),
-    ],
+      "learning assessment",
+      "educational quiz",
+      "skill test",
+      "knowledge check",
+      ...(quiz.quizType ? [quiz.quizType, quizTypeLabel.toLowerCase()] : []),
+      ...(quiz.difficulty ? [quiz.difficulty, `${quiz.difficulty} level`] : []),
+    ].filter(Boolean),
   });
 }

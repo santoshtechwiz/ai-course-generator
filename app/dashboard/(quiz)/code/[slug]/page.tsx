@@ -66,7 +66,8 @@ export default function CodeQuizPage({
       <QuizSEO
         slug={slug}
         quizType="code"
-        description={`Test your programming skills with this ${slug.replace(/-/g, ' ')} coding challenge. Write code and improve your development abilities!`}
+        quizData={quizData}
+        description="Solve coding challenges and programming problems to improve your development skills. Practice algorithms, data structures, and coding techniques with real-time feedback."
       />
       <CodeQuizWrapper slug={slug} />
     </QuizPlayLayout>

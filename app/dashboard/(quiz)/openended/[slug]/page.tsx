@@ -67,7 +67,8 @@ export default function OpenEndedQuizPage({
       <QuizSEO 
         slug={slug}
         quizType="openended"
-        description={`Challenge yourself with this ${slug.replace(/-/g, ' ')} open-ended quiz. Provide your own answers and test your knowledge!`}
+        quizData={quizData}
+        description="Practice with open-ended questions that test your understanding and critical thinking skills. Write detailed answers and get comprehensive feedback on your responses."
       />
       <OpenEndedQuizWrapper slug={slug} />
     </QuizPlayLayout>

@@ -68,7 +68,8 @@ export default function BlanksQuizPage({
       <QuizSEO 
         slug={slug}
         quizType="blanks"
-        description={`Improve your knowledge with this ${slug.replace(/-/g, ' ')} fill-in-the-blanks exercise. Complete the missing words and enhance your understanding!`}
+        quizData={quizData}
+        description="Complete fill-in-the-blank exercises to reinforce your learning. Practice key concepts by filling in missing words and phrases with instant feedback."
       />
       <BlanksQuizWrapper
       slug={slug}

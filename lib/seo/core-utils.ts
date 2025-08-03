@@ -153,20 +153,25 @@ export function getSocialImageUrl(
  */
 export function getQuizTypeLabel(quizType?: string): string {
   const typeMap: Record<string, string> = {
-    mcq: "Multiple Choice",
-    "multiple-choice": "Multiple Choice",
-    open: "Open-Ended",
-    "open-ended": "Open-Ended",
-    "fill-in-blank": "Fill-in-the-Blank",
-    fillinblank: "Fill-in-the-Blank",
+    mcq: "Multiple Choice Quiz",
+    "multiple-choice": "Multiple Choice Quiz",
+    open: "Open-Ended Quiz",
+    "open-ended": "Open-Ended Quiz",
+    openended: "Open-Ended Quiz",
+    "fill-in-blank": "Fill in the Blanks Quiz",
+    fillinblank: "Fill in the Blanks Quiz",
+    blanks: "Fill in the Blanks Quiz",
     coding: "Coding Challenge",
-    "true-false": "True/False",
-    matching: "Matching",
-    ordering: "Ordering",
-    "drag-drop": "Drag & Drop",
+    code: "Coding Challenge",
+    flashcard: "Flashcard Study Session",
+    flashcards: "Flashcard Study Session",
+    "true-false": "True or False Quiz",
+    matching: "Matching Exercise",
+    ordering: "Ordering Exercise",
+    "drag-drop": "Interactive Learning Quiz",
   };
 
-  return typeMap[quizType?.toLowerCase() || ""] || quizType || "Practice Quiz";
+  return typeMap[quizType?.toLowerCase() || ""] || "Learning Assessment";
 }
 
 /**

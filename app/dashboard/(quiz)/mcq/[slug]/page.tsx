@@ -71,7 +71,8 @@ export default function McqQuizPage({
       <QuizSEO
         slug={slug}
         quizType="mcq"
-        description={`Test your knowledge with this ${slug.replace(/-/g, ' ')} multiple choice quiz. Challenge yourself and learn something new!`}
+        quizData={quizData}
+        description="Take this multiple choice quiz to test your knowledge and improve your skills. Interactive questions with instant feedback and detailed explanations."
       />
       <McqQuizWrapper slug={slug} />
     </QuizPlayLayout>

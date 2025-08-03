@@ -2,12 +2,14 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { useSelector } from 'react-redux'
 
 interface QuizSEOProps {
   title?: string
   description?: string
   quizType?: string
   slug?: string
+  quizData?: any
 }
 
 export default function QuizSEO({
@@ -15,20 +17,55 @@ export default function QuizSEO({
   description,
   quizType = "quiz",
   slug,
+  quizData,
 }: QuizSEOProps) {
   const pathname = usePathname()
   
+  // Get quiz data from Redux store if not provided
+  const quizState = useSelector((state: any) => state.quiz);
+  const quizFromStore = quizData || quizState;
+  
   useEffect(() => {
-    // Generate title if not provided
-    const pageTitle = title || generateTitleFromSlug(slug || getSlugFromPath(pathname))
+    // Use actual quiz title from data or provided title - NO SLUG IN TITLE
+    const actualTitle = quizFromStore?.title || title;
     const quizTypeLabel = getQuizTypeLabel(quizType)
     
+    // Simple title: use actual title or fallback to quiz type only
+    const finalTitle = actualTitle 
+      ? `${actualTitle} | CourseAI` 
+      : `${quizTypeLabel} | CourseAI`
+    
     // Update document title
-    document.title = `${pageTitle} ${quizTypeLabel} Quiz | CourseAI`
+    document.title = finalTitle
+    
+    // Add SEO keywords to page
+    let keywordsTag = document.querySelector('meta[name="keywords"]')
+    if (!keywordsTag) {
+      keywordsTag = document.createElement('meta')
+      keywordsTag.setAttribute('name', 'keywords')
+      document.head.appendChild(keywordsTag)
+    }
+    
+    // Generate SEO keywords based on quiz type and title
+    const keywords = [
+      actualTitle || '',
+      'online quiz',
+      'practice test',
+      'learning assessment',
+      'educational quiz',
+      quizType === 'mcq' ? 'multiple choice quiz' : '',
+      quizType === 'code' ? 'coding challenge, programming practice' : '',
+      quizType === 'blanks' ? 'fill in the blanks, learning exercise' : '',
+      quizType === 'openended' ? 'open ended quiz, critical thinking' : '',
+      'skill test',
+      'knowledge check',
+      'interactive learning'
+    ].filter(Boolean).join(', ')
+    
+    keywordsTag.setAttribute('content', keywords)
     
     // Update meta description if provided
     if (description) {
-      // Find or create meta description tag
       let metaDescription = document.querySelector('meta[name="description"]')
       if (!metaDescription) {
         metaDescription = document.createElement('meta')
@@ -48,25 +85,14 @@ export default function QuizSEO({
   return null
 }
 
-// Helper functions
-function getSlugFromPath(path: string): string {
-  const segments = path.split('/')
-  // The slug is typically the last segment in the URL
-  return segments[segments.length - 1] || ''
-}
-
-function generateTitleFromSlug(slug: string): string {
-  return slug
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
+// Helper function
 function getQuizTypeLabel(quizType: string): string {
   switch (quizType) {
-    case "mcq": return "Multiple Choice";
-    case "code": return "Coding";
-    case "blanks": return "Fill in the Blanks";
-    default: return "";
+    case "mcq": return "Multiple Choice Quiz";
+    case "code": return "Coding Challenge";
+    case "blanks": return "Fill in the Blanks Quiz";
+    case "openended": return "Open-Ended Quiz";
+    case "flashcard": return "Flashcard Study";
+    default: return "Interactive Quiz";
   }
 }
