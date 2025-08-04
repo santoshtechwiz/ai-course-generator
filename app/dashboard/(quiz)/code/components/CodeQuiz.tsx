@@ -15,6 +15,7 @@ import { Code2, Terminal, Copy, Check, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils/styling"
 
 interface CodeQuizProps {
   question: CodeQuestion
@@ -70,9 +71,9 @@ const CodeQuiz = ({
   const [isAnswering, setIsAnswering] = useState(false)
 
   const options = useMemo(() => {
-    return question.options?.map((option) => ({ 
-      id: option, 
-      text: option 
+    return question.options?.map((option) => ({
+      id: option,
+      text: option
     })) || []
   }, [question.options])
 
@@ -85,9 +86,9 @@ const CodeQuiz = ({
         const selected = options.find(o => o.id === optionId)
         if (selected) {
           setSelectedAnswer(selected.text)
-          dispatch(saveAnswer({ 
-            questionId: String(question.id), 
-            answer: selected.text 
+          dispatch(saveAnswer({
+            questionId: String(question.id),
+            answer: selected.text
           }))
           onAnswer(selected.text)
         }
@@ -111,7 +112,54 @@ const CodeQuiz = ({
   }, [question.codeSnippet])
 
   const hasAnswer = !!selectedAnswer
-  const language = question.language?.trim() || "javascript"
+
+  // Enhanced language handling with better fallbacks
+  const getLanguageDisplay = () => {
+    const lang = question.language?.trim() || 'Code'
+
+    // Language display mapping for better UX
+    const languageMap: Record<string, string> = {
+      'javascript': 'JavaScript',
+      'typescript': 'TypeScript',
+      'python': 'Python',
+      'java': 'Java',
+      'cpp': 'C++',
+      'c++': 'C++',
+      'csharp': 'C#',
+      'c#': 'C#',
+      'php': 'PHP',
+      'ruby': 'Ruby',
+      'go': 'Go',
+      'rust': 'Rust',
+      'swift': 'Swift',
+      'kotlin': 'Kotlin',
+      'scala': 'Scala',
+      'html': 'HTML',
+      'css': 'CSS',
+      'sql': 'SQL',
+      'bash': 'Bash',
+      'shell': 'Shell',
+      'powershell': 'PowerShell'
+    }
+
+    return languageMap[lang.toLowerCase()] || lang
+  }
+
+  const getSyntaxHighlightLanguage = () => {
+    const lang = question.language?.trim() || 'text'
+
+    // Syntax highlighter language mapping
+    const syntaxMap: Record<string, string> = {
+      'c++': 'cpp',
+      'c#': 'csharp',
+      'shell': 'bash'
+    }
+
+    return syntaxMap[lang.toLowerCase()] || lang.toLowerCase()
+  }
+
+  const language = getLanguageDisplay()
+  const syntaxLanguage = getSyntaxHighlightLanguage()
 
   return (
     <QuizContainer
@@ -124,7 +172,7 @@ const CodeQuiz = ({
     >
       <div className="space-y-8">
         {/* Question Section */}
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           initial="hidden"
           animate="visible"
@@ -133,13 +181,23 @@ const CodeQuiz = ({
           <h2 className="text-2xl md:text-3xl font-semibold leading-tight tracking-tight text-foreground mx-auto max-w-3xl px-4">
             {question.text || question.question}
           </h2>
-          
-          <div className="h-1 w-24 bg-green-500 rounded-full mx-auto mt-6 mb-8" />
+
+          {/* Dynamic color based on language */}
+          <div className={cn(
+            "h-1 w-24 rounded-full mx-auto mt-6 mb-8",
+            language === 'JavaScript' || language === 'TypeScript' ? 'bg-yellow-500' :
+              language === 'Python' ? 'bg-blue-500' :
+                language === 'Java' ? 'bg-red-500' :
+                  language === 'C++' || language === 'C#' ? 'bg-purple-500' :
+                    language === 'Go' ? 'bg-cyan-500' :
+                      language === 'Rust' ? 'bg-orange-500' :
+                        'bg-green-500' // Default
+          )} />
         </motion.div>
 
         {/* Code Display Section */}
         {question.codeSnippet && (
-          <motion.div 
+          <motion.div
             variants={itemVariants}
             initial="hidden"
             animate="visible"
@@ -155,8 +213,8 @@ const CodeQuiz = ({
                 </div>
 
                 <div className="flex items-center gap-2 bg-slate-700 px-3 py-1 rounded-md">
-                  <Terminal className="w-4 h-4 text-slate-300" />
-                  <span className="text-slate-300 text-sm font-mono">{language}</span>
+                  <Code2 className="w-4 h-4 text-slate-300" />
+                  <span className="text-slate-300 text-sm font-medium">Code Snippet</span>
                 </div>
               </div>
 
@@ -165,7 +223,8 @@ const CodeQuiz = ({
                   variant="ghost"
                   size="icon"
                   onClick={handleCopyCode}
-                  className="h-8 w-8 text-slate-300 hover:text-white"
+                  className="h-8 w-8 text-slate-300 hover:text-white transition-colors"
+                  title="Copy code"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
@@ -174,7 +233,7 @@ const CodeQuiz = ({
 
             <div className="relative overflow-hidden max-h-[500px] overflow-y-auto">
               <SyntaxHighlighter
-                language={language.toLowerCase()}
+                language={syntaxLanguage}
                 style={vscDarkPlus}
                 showLineNumbers
                 customStyle={{
@@ -196,16 +255,39 @@ const CodeQuiz = ({
           </motion.div>
         )}
 
+        {/* Fallback for questions without code snippets */}
+        {!question.codeSnippet && language !== 'Code' && (
+          <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.1 }}
+            className="max-w-3xl mx-auto"
+          >
+            <Card className="border border-border bg-muted/30">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Code2 className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">{language} Programming</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This question tests your understanding of {language} concepts and best practices.
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Options Section */}
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           initial="hidden"
           animate="visible"
           transition={{ delay: 0.2 }}
           className="max-w-3xl mx-auto"
         >
-         
-          
+
+
           <Card className="border border-border bg-card">
             <CardContent className="p-6">
               <CodeQuizOptions

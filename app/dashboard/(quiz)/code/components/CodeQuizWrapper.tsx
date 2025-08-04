@@ -164,15 +164,35 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       )
       : []
 
+    // Determine language with better fallback logic
+    let detectedLanguage = currentQuestionAny.language?.trim() || ''
+    
+    // If no language is provided, try to detect from code snippet or use neutral fallback
+    if (!detectedLanguage && currentQuestionAny.codeSnippet) {
+      // Simple language detection based on common patterns
+      const codeSnippet = currentQuestionAny.codeSnippet.toLowerCase()
+      if (codeSnippet.includes('function') || codeSnippet.includes('const') || codeSnippet.includes('let')) {
+        detectedLanguage = 'JavaScript'
+      } else if (codeSnippet.includes('def ') || codeSnippet.includes('import ')) {
+        detectedLanguage = 'Python'
+      } else if (codeSnippet.includes('public class') || codeSnippet.includes('System.out')) {
+        detectedLanguage = 'Java'
+      } else if (codeSnippet.includes('#include') || codeSnippet.includes('cout <<')) {
+        detectedLanguage = 'C++'
+      } else {
+        detectedLanguage = 'Code' // Neutral fallback
+      }
+    } else if (!detectedLanguage) {
+      detectedLanguage = 'Code' // Neutral fallback when no code snippet
+    }
+
     return {
       id: String(currentQuestion.id),
       text: questionText,
       question: questionText,
       options,
       codeSnippet: currentQuestionAny.codeSnippet || '',
-      language: currentQuestionAny.language && currentQuestionAny.language.trim() !== ""
-        ? currentQuestionAny.language
-        : "JavaScript", // <-- Default to "JavaScript" only if not present
+      language: detectedLanguage,
       correctAnswer: currentQuestionAny.answer || '',
     }
   }, [currentQuestion])
