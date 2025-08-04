@@ -69,6 +69,27 @@ export abstract class BaseQuizService {
   }
 
   /**
+   * Add quiz to favorites
+   */
+  async addToFavorite(slug: string, userId: string) {
+    return this.quizRepository.addToFavorite(slug, userId);
+  }
+
+  /**
+   * Remove quiz from favorites
+   */
+  async removeFromFavorite(slug: string, userId: string) {
+    return this.quizRepository.removeFromFavorite(slug, userId);
+  }
+
+  /**
+   * Toggle quiz visibility
+   */
+  async toggleVisibility(slug: string, userId: string) {
+    return this.quizRepository.toggleVisibility(slug, userId);
+  }
+
+  /**
    * Format questions based on quiz type (implemented by child classes)
    */
   protected abstract formatQuestions(questions: any[]): any[];

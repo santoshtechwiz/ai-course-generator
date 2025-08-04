@@ -55,13 +55,26 @@ export const fetchQuiz = createAsyncThunk(
       if (!slug || !type) {
         return rejectWithValue({ error: "Missing slug or quizType" })
       }
-
-      const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS]
-      if (!endpoint) {
-        return rejectWithValue({ error: `Invalid quiz type: ${type}` })
+      
+      // Always use the unified API approach with type and slug for consistency
+      let url: string;
+      
+      // Use the unified approach with byTypeAndSlug helper
+      if (API_ENDPOINTS.byTypeAndSlug) {
+        // Use the unified API pattern
+        url = API_ENDPOINTS.byTypeAndSlug(type, slug);
+        console.log(`Using unified API endpoint: ${url}`);
+      } else {
+        // Fallback to legacy approach only if unified approach isn't available
+        const endpoint = API_ENDPOINTS[type as keyof typeof API_ENDPOINTS];
+        if (!endpoint) {
+          return rejectWithValue({ error: `Invalid quiz type: ${type}` });
+        }
+        url = `${endpoint}/${slug}`;
+        console.log(`Using legacy API endpoint: ${url}`);
       }
-
-      const response = await fetch(`${endpoint}/${slug}`)
+      
+      const response = await fetch(url)
       if (!response.ok) {
         const errorText = await response.text()
         return rejectWithValue({

@@ -24,6 +24,9 @@ import {
   Search,
   Grid,
   List,
+  Save,
+  Lock,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Confetti } from "@/components/ui/confetti"
@@ -39,6 +42,8 @@ import { QuestionCard } from "./QuestionCard"
 import { QuestionNavigation } from "./QuestionNavigation"
 import type { BaseQuizResultProps, ProcessedAnswer } from "./quiz-result-types"
 import { getPerformanceLevel } from "@/lib/utils/text-similarity"
+import { useAuth } from "@/modules/auth"
+import { toast } from "@/components/ui/use-toast"
 
 // Performance level configurations with enhanced styling
 const PERFORMANCE_LEVELS = {
@@ -96,6 +101,9 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   renderInsightsTab: (performance: any, stats: any) => React.ReactNode
 }) {
   const router = useRouter()
+  const { user, subscription, isAuthenticated } = useAuth()
+  // Properly check for active subscription status
+  const hasActiveSubscription = subscription?.status !== null;
   const [showConfetti, setShowConfetti] = useState(false)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [showAllQuestions, setShowAllQuestions] = useState(true)
@@ -104,7 +112,11 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   const [activeTab, setActiveTab] = useState("overview")
   const [showInlineReview, setShowInlineReview] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
+  const [isSaving, setIsSaving] = useState(false)
   const hasShownConfettiRef = useRef(false)
+  
+  // Use the same variable for consistency
+  const isSubscribed = hasActiveSubscription;
 
   // Format dates for display
   const formatDate = (dateString: string) => {
@@ -204,12 +216,112 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   const handleGoHome = useCallback(() => {
     router.push("/dashboard/quizzes")
   }, [router])
+  
+  // Function to save quiz results to database (premium feature)
+  const handleSaveResult = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save your quiz results.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!isSubscribed) {
+      toast({
+        title: "Premium Feature",
+        description: "Saving quiz results requires an active subscription.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    try {
+      setIsSaving(true)
+      
+      // Get the quiz type from the URL
+      const path = window.location.pathname
+      const quizType = 
+        path.includes("/code/") ? "code" : 
+        path.includes("/mcq/") ? "mcq" : 
+        path.includes("/openended/") ? "openended" : 
+        path.includes("/blanks/") ? "blanks" : "mcq"
+      
+      // Get quiz slug from result or URL
+      const quizSlug = result.slug || path.split('/').pop()
+      
+      if (!quizSlug) {
+        throw new Error("Could not determine quiz identifier")
+      }
+      
+      // Make sure processedAnswers is an array and prepare it for API submission
+      const answersToSubmit = Array.isArray(processedAnswers) && processedAnswers.length > 0 
+        ? processedAnswers 
+        : [{
+            questionId: "1",
+            timeSpent: stats.totalTime || 0,
+            isCorrect: percentage > 50,
+            answer: "Auto-generated answer"
+          }];
+      
+      // Call the API to save the quiz result using the existing submit endpoint
+      const response = await fetch(`/api/quizzes/${quizType}/${quizSlug}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // Always use the slug as the quiz identifier
+          quizId: quizSlug,
+          score: percentage,
+          answers: answersToSubmit,
+          totalTime: stats.totalTime || 0,
+          type: quizType,
+          completedAt: result.completedAt || new Date().toISOString(),
+        }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("API Error Response:", errorData);
+        throw new Error(errorData.error || "Failed to save result")
+      }
+      
+      // If we get here, the request was successful
+      const responseData = await response.json();
+      console.log("Quiz saved successfully:", responseData);
+      
+      toast({
+        title: "Results Saved!",
+        description: "Your quiz results have been saved to your profile.",
+      })
+    } catch (error) {
+      console.error("Error saving quiz result:", error)
+      
+      // Get more specific error message if possible
+      let errorMessage = "Could not save quiz results. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
+      toast({
+        title: "Save Failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const handleShare = async () => {
     try {
       const shareData = {
         title: `${title} - Results`,
-        text: `I scored ${percentage}% (${performance.level}) on the ${title} quiz! ${performanceConfig.emoji}`,
+        text: `I scored ${percentage}% (${performance}) on the ${title} quiz! ${performanceConfig.emoji}`,
         url: window.location.href,
       }
       if (navigator.share) {
@@ -348,6 +460,38 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             <RotateCcw className="h-4 w-4" />
             Retake Quiz
           </Button>
+          {user ? (
+            hasActiveSubscription ? (
+              <Button 
+                onClick={handleSaveResult} 
+                disabled={isSaving} 
+                variant="outline" 
+                size="lg" 
+                className="flex items-center gap-2 bg-transparent"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Save Result
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => toast({
+                  title: "Premium Feature",
+                  description: "You need an active subscription to save quiz results.",
+                  variant: "destructive"
+                })} 
+                variant="outline" 
+                size="lg" 
+                className="flex items-center gap-2 bg-transparent"
+              >
+                <Lock className="h-4 w-4" />
+                Save Result (Premium)
+              </Button>
+            )
+          ) : null}
           <Button onClick={handleShare} variant="outline" size="lg" className="flex items-center gap-2 bg-transparent">
             <Share2 className="h-4 w-4" />
             Share Results

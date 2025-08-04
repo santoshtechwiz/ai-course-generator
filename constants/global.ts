@@ -69,11 +69,24 @@ export const QUIZ_STATUS = {
 
 // API endpoint paths
 export const API_PATHS = {
+  // Unified API paths
+  UNIFIED: "/api/quizzes",
+  // Legacy paths (maintained for backward compatibility)
   MCQ: "/api/quizzes/mcq",
   CODE: "/api/quizzes/code", 
   BLANKS: "/api/quizzes/blanks",
   OPENENDED: "/api/quizzes/openended",
-  COMMON: "/api/quizzes/common"
+  COMMON: "/api/quizzes/common",
+  // Dynamic type-based paths
+  byType: (quizType: string): string => `/api/quizzes/${quizType}`,
+  // Dynamic type and slug paths
+  byTypeAndSlug: (quizType: string, slug: string): string => `/api/quizzes/${quizType}/${slug}`,
+  // Helper functions for specific quiz types with slugs
+  getMcqQuiz: (slug: string): string => `/api/quizzes/mcq/${slug}`,
+  getCodeQuiz: (slug: string): string => `/api/quizzes/code/${slug}`,
+  getBlanksQuiz: (slug: string): string => `/api/quizzes/blanks/${slug}`,
+  getOpenEndedQuiz: (slug: string): string => `/api/quizzes/openended/${slug}`,
+  getFlashcardQuiz: (slug: string): string => `/api/quizzes/flashcard/${slug}`
 };
 
 // Default values

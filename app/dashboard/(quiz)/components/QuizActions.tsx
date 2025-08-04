@@ -24,7 +24,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/modules/auth"
 import { ConfirmDialog } from "./ConfirmDialog"
@@ -132,11 +132,6 @@ export function QuizActions({
         title: "Authentication required",
         description: "Please log in to perform this action",
         variant: "destructive",
-        action: (
-          <Button variant="outline" size="sm" onClick={() => router.push("/signin")}>
-            Sign In
-          </Button>
-        ),
       }),
     [router],
   )
@@ -147,11 +142,6 @@ export function QuizActions({
         title: "Premium feature",
         description: "Upgrade to Premium to download PDFs",
         variant: "destructive",
-        action: (
-          <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/subscription")}>
-            Upgrade
-          </Button>
-        ),
       }),
     [router],
   )
@@ -171,16 +161,25 @@ export function QuizActions({
 
     try {
       setLoading(true)
-      const res = await fetch(`/api/quizzes/common/${quizSlug}`, {
+      
+      // Update optimistically for better UX
+      field === "isPublic" ? setIsPublic(value) : setIsFavorite(value)
+      
+      const res = await fetch(`/api/quizzes/${quizData.quizType}/${quizSlug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: value }),
       })
 
-      if (!res.ok) throw new Error("Update failed")
-
-      field === "isPublic" ? setIsPublic(value) : setIsFavorite(value)
-
+      const data = await res.json()
+      
+      if (!res.ok) {
+        // Revert state if API call fails
+        field === "isPublic" ? setIsPublic(!value) : setIsFavorite(!value)
+        throw new Error(data.error || "Update failed")
+      }
+      
+      // Show success toast
       toast({
         title:
           field === "isPublic"
@@ -212,7 +211,7 @@ export function QuizActions({
 
   const handleShare = async () => {
     try {
-      const shareUrl = `${window.location.origin}/quiz/${quizSlug}`
+      const shareUrl = `${window.location.origin}/${quizData.quizType}/${quizSlug}`
       if (navigator.share && isMobile) {
         await navigator.share({
           title: quizData?.title || "Check out this quiz!",
@@ -224,12 +223,6 @@ export function QuizActions({
         toast({
           title: "Link copied!",
           description: "Quiz link copied to clipboard",
-          action: (
-            <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(shareUrl)}>
-              <Copy className="h-4 w-4 mr-1" />
-              Copy Again
-            </Button>
-          ),
         })
       }
     } catch (err: any) {
@@ -289,7 +282,7 @@ export function QuizActions({
   const handleDelete = async () => {
     try {
       setIsDeleting(true)
-      const response = await fetch(`/api/quizzes/common/${quizSlug}`, { method: "DELETE" })
+      const response = await fetch(`/api/quizzes/${quizData.quizType}/${quizSlug}`, { method: "DELETE" })
       if (!response.ok) throw new Error("Failed to delete quiz")
 
       toast({

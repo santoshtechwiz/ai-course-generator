@@ -1,7 +1,8 @@
 import { QuizType } from "../types/quiz-types";
 import { titleSubTopicToSlug } from "@/lib/slug";
-import { generateCodingMCQs } from "../api/quizzes/code/generator";
+
 import { BaseQuizService } from "./base-quiz.service";
+import { generateCodingMCQs } from "./generator";
 
 /**
  * Service for handling code quiz operations
