@@ -37,6 +37,7 @@ interface FlashCard {
   codeSnippet?: string
   language?: string
   type?: "mcq" | "code" | "text"
+  saved?: boolean
 }
 
 interface FlashCardComponentProps {
@@ -228,8 +229,12 @@ export default function FlashCardQuiz({
 
   // Card saved status
   const isSaved = useMemo(
-    () => (currentCard?.id ? savedCardIds.includes(currentCard.id.toString()) : false),
-    [currentCard?.id, savedCardIds],
+    () => {
+      if (!currentCard?.id) return false
+      // Check both the database state and local state for immediate feedback
+      return currentCard.saved || savedCardIds.includes(currentCard.id.toString())
+    },
+    [currentCard?.id, currentCard?.saved, savedCardIds],
   )
 
   // Progress calculation
@@ -271,6 +276,13 @@ export default function FlashCardQuiz({
   // Save card
   const handleSaveCard = useCallback(() => {
     if (!currentCard) return
+    
+    // Call the parent callback to save to database
+    if (onSaveCard) {
+      onSaveCard(currentCard)
+    }
+    
+    // Update local state for immediate UI feedback
     setSavedCardIds((prev) => {
       const id = currentCard.id.toString()
       const newIds = prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
@@ -278,7 +290,7 @@ export default function FlashCardQuiz({
       toast.success(prev.includes(id) ? "Removed from saved cards" : "Added to saved cards")
       return newIds
     })
-  }, [currentCard])
+  }, [currentCard, onSaveCard])
 
   // Move to next card
   const moveToNextCard = useCallback(() => {

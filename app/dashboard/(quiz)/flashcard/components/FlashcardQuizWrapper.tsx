@@ -9,6 +9,7 @@ import {
   clearQuizState,
   completeFlashCardQuiz,
   saveFlashCardResults,
+  saveFlashCard,
   selectQuizQuestions,
   selectQuizAnswers,
   selectCurrentQuestionIndex,
@@ -48,7 +49,8 @@ export default function FlashcardQuizWrapper({
   slug,
   title,
 }: FlashcardQuizWrapperProps) {
-  const initRef = useRef(false);
+  const hasInitialized = useRef(false);
+  const lastSlug = useRef<string>("");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,41 +76,50 @@ export default function FlashcardQuizWrapper({
   useEffect(() => {
     if (!slug || isLoading) return;
 
-    // In review mode, only clear state if we don't have questions yet
-    if (isResetMode || (isReviewMode && questions.length === 0)) {
-      dispatch(clearQuizState());
+    // Reset initialization when slug changes
+    if (lastSlug.current !== slug) {
+      hasInitialized.current = false;
+      lastSlug.current = slug;
     }
 
-    if (!questions.length) {
+    // Prevent multiple initializations
+    if (hasInitialized.current) return;
+
+    // Handle reset mode - clear state and mark as initialized
+    if (isResetMode) {
+      dispatch(clearQuizState());
+      hasInitialized.current = true;
+      return;
+    }
+
+    // Handle review mode - clear only if needed
+    if (isReviewMode && questions.length === 0 && quizStatus !== "idle" && quizStatus !== "loading") {
+      dispatch(clearQuizState());
+      hasInitialized.current = true;
+      return;
+    }
+
+    // Only fetch if we're in idle state, have no questions, and haven't initialized yet
+    if (quizStatus === "idle" && questions.length === 0) {
+      hasInitialized.current = true;
       dispatch(fetchFlashCardQuiz(slug))
         .unwrap()
-        .then(() => {
-          // After successfully loading questions, log for debugging
-          console.log(
-            `Loaded ${questions.length} questions for ${slug}, review mode: ${isReviewMode}`
-          );
-
-          // If in review mode with cards parameter, log the filtered questions
-          if (isReviewMode && searchParams?.get("cards")) {
-            const cardsParam = searchParams.get("cards");
-            console.log(`Review mode with cards: ${cardsParam}`);
-          }
-        })
         .catch((err) => {
+          console.error(`Error loading flashcards for ${slug}:`, err);
           const message =
             err instanceof Error ? err.message : "Failed to load flashcards";
           toast.error(message);
+          hasInitialized.current = false; // Allow retry on error
         });
     }
-  }, [
-    dispatch,
-    isResetMode,
-    isReviewMode,
-    questions.length,
-    slug,
-    !isLoading,
-    searchParams,
-  ]);
+  }, [dispatch, slug, isResetMode, isReviewMode, quizStatus, questions.length, isLoading]);
+
+  // Reset initialization flag when component unmounts or slug changes
+  useEffect(() => {
+    return () => {
+      hasInitialized.current = false;
+    };
+  }, [slug]);
 
   // Redirect if auth required
   useEffect(() => {
@@ -139,12 +150,6 @@ export default function FlashcardQuizWrapper({
         .split(",")
         .map((id) => id.trim());
 
-      // Log for debugging
-      console.log(`Filtering for cards: ${specificCardIds.join(", ")}`);
-      console.log(
-        `Available question IDs: ${questions.map((q) => q.id).join(", ")}`
-      );
-
       const filteredQuestions = questions.filter((q) => {
         if (!q.id) return false;
 
@@ -158,13 +163,9 @@ export default function FlashcardQuizWrapper({
           !isNaN(questionIdNum) &&
           specificCardIds.includes(questionIdNum.toString());
 
-        console.log(
-          `Question ${questionIdStr}: ${isIncludedStr || isIncludedNum ? "included" : "excluded"}`
-        );
         return isIncludedStr || isIncludedNum;
       });
 
-      console.log(`Found ${filteredQuestions.length} matching questions`);
       return filteredQuestions;
     } else if (answers.length) {
       // Fall back to filtering by answer status
@@ -191,7 +192,7 @@ export default function FlashcardQuizWrapper({
     }
 
     return questions;
-  }, [answers, questions, isReviewMode, searchParams]);
+  }, [answers, questions, isReviewMode, searchParams?.get("cards"), searchParams?.get("type")]);
 
   const currentQuestions = isReviewMode ? reviewQuestions : questions;
   const onComplete = () => {
@@ -390,8 +391,11 @@ export default function FlashcardQuizWrapper({
           quizId={slug}
           slug={slug}
           onComplete={onComplete}
-          onSaveCard={(saveData) => {
-            dispatch(saveFlashCardResults({ slug, data: [saveData] }));
+          onSaveCard={(card) => {
+            dispatch(saveFlashCard({ 
+              cardId: parseInt(card.id), 
+              saved: !card.saved 
+            }));
           }}
           title={
             isReviewMode

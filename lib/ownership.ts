@@ -143,15 +143,6 @@ export function detectOwnership(
     } : undefined
   }
 
-  // Debug logging
-  if (cfg.DEBUG) {
-    console.log('🏠 Ownership Detection Result:', {
-      content: content,
-      result,
-      config: cfg
-    })
-  }
-
   return result
 }
 
@@ -227,6 +218,3 @@ export function hasOwnershipInfo(content: any): content is OwnableContent {
     content[field] && typeof content[field] === 'string'
   )
 }
-
-// Export types for use in other modules
-export type { OwnableContent, OwnershipResult, OwnershipConfig }

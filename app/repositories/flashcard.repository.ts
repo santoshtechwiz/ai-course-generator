@@ -65,11 +65,11 @@ export class FlashcardRepository extends BaseRepository<any> {
       throw new Error("Quiz not found");
     }
 
-    // Check access permission for private quizzes
-    if (!quiz.isPublic && quiz.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
-
+    // // Check access permission for private quizzes
+    // if (!quiz.isPublic && quiz.userId !== userId) {
+    //   throw new Error("Unauthorized");
+    // }
+    console.log(quiz);
     return quiz.flashCards;
   }
 

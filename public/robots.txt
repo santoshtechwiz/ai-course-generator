@@ -1,0 +1,14 @@
+# robots.txt for AI Learning Platform
+
+User-agent: *
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/*
+Disallow: /auth/
+Disallow: /_next/
+Disallow: /server/
+Disallow: /private/
+Allow: /
+
+Sitemap: https://courseai.io/sitemap.xml

@@ -300,8 +300,9 @@ export const canDownloadPdfSelector = (state: RootState) => {
   const subscriptionData = state.subscription.data
   if (!subscriptionData) return false
   return (
-    subscriptionData.subscriptionPlan === "PREMIUM" || 
-    subscriptionData.subscriptionPlan === "ULTIMATE"
+    // subscriptionData.subscriptionPlan === "PREMIUM" || 
+    // subscriptionData.subscriptionPlan === "ULTIMATE"
+    true // Always allow PDF downloads for now
   )
 }
 

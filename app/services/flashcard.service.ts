@@ -1,5 +1,6 @@
 import { FlashcardRepository } from "../repositories/flashcard.repository";
 import { BaseQuizService } from "./base-quiz.service";
+import prisma from "@/lib/db";
 
 /**
  * Service for handling flashcard operations
@@ -10,6 +11,35 @@ export class FlashcardService extends BaseQuizService {
   constructor() {
     super("flashcard");
     this.flashcardRepository = new FlashcardRepository();
+  }
+
+  /**
+   * Override getQuizBySlug to handle flashcards properly
+   */
+  async getQuizBySlug(slug: string, userId: string) {
+    const quiz = await prisma.userQuiz.findUnique({
+      where: { slug },
+      include: {
+        flashCards: {
+          orderBy: { id: "asc" },
+        },
+      },
+    });
+
+    if (!quiz) {
+      return null;
+    }
+
+    return {
+      isPublic: quiz.isPublic,
+      isFavorite: quiz.isFavorite,
+      id: quiz.id,
+      title: quiz.title,
+      questions: this.formatQuestions(quiz.flashCards || []),
+      flashCards: quiz.flashCards || [], // Include both for backward compatibility
+      userId: quiz.userId,
+      language: quiz.language,
+    };
   }
 
   /**
@@ -29,7 +59,7 @@ export class FlashcardService extends BaseQuizService {
   /**
    * Get flashcards by quiz slug
    */
-  async getCardsByQuizSlug(slug: string, userId?: string) {
+  async findBySlug(slug: string, userId?: string) {
     return this.flashcardRepository.getCardsByQuizSlug(slug, userId);
   }
 

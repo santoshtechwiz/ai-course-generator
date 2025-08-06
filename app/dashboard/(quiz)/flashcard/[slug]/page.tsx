@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { useSelector } from "react-redux"
+import { RootState } from "@/store"
 
 import { getQuizSlug } from "../../components/utils"
 import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
@@ -18,27 +20,20 @@ export default function FlashCardPage({
 }) {
   const slug = getQuizSlug(params);
   const router = useRouter()
-  const {user}=useAuth();
-  // Get quiz state from Redux
-  const quizState = typeof window !== "undefined" ? require("react-redux").useSelector((state: any) => state.quiz) : null;
-  const quizData = quizState;
-  const status = quizState?.status;
-  const dispatch = (typeof window !== "undefined" ? require("react-redux").useDispatch() : () => { });
-  // Fetch quiz data if not already available
-  if (slug && (!quizState || !quizState.questions || quizState.questions.length === 0) && status !== "loading") {
-    // Dynamically import fetchQuiz thunk and dispatch it
-    console.log("Fetching quiz data for slug:", slug);
-    import("@/store/slices/flashcard-slice").then(({ fetchFlashCardQuiz }) => {
-      dispatch(fetchFlashCardQuiz(slug));
-    });
-  }
-
-  if (status === "loading" || !quizState || !quizState.questions || quizState.questions.length === 0) {
-    
-      <GlobalLoader  />
-
-  }
-
+  const { user } = useAuth();
+  
+  // Get quiz data from Redux store
+  const quizTitle = useSelector((state: RootState) => state.flashcard.title);
+  const questions = useSelector((state: RootState) => state.flashcard.questions);
+  const quizStatus = useSelector((state: RootState) => state.flashcard.status);
+  
+  // Create quiz data object for QuizPlayLayout
+  const quizData = quizStatus !== "idle" ? {
+    title: quizTitle || "Flashcard Quiz",
+    questions: questions || [],
+    currentQuestionIndex: 0,
+    quizType: "flashcard" as const
+  } : null;
 
   if (!slug) {
     return (
@@ -62,7 +57,7 @@ export default function FlashCardPage({
       isPublic={true}
       userId={user?.id || ""}
       isFavorite={false}
-      quizData={quizData || null}
+      quizData={quizData}
     >
       <FlashcardQuizWrapper slug={slug} />
     </QuizPlayLayout>

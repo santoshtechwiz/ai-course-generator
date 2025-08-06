@@ -38,7 +38,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import UnifiedPdfGenerator from "@/components/shared/UnifiedPdfGenerator"
 import type { PdfData, PdfConfig } from "@/components/shared/UnifiedPdfGenerator"
-import { useOwnership } from "@/lib/ownership"
 
 interface QuizActionsProps {
   quizSlug: string
@@ -123,11 +122,9 @@ export function QuizActions({
   const router = useRouter()
   const { user, subscription, isAuthenticated } = useAuth()
   
-  // Centralized ownership detection - auto-detects ownership from quiz data
-  const ownership = useOwnership(quizData)
-  
-  // Use detected ownership or fallback to prop (for backward compatibility)
-  const finalIsOwner = ownership.isOwner || isOwner
+  // Simple ownership check: current user ID matches quiz owner user ID OR isOwner prop is true
+  const currentUserId = user?.id || null
+  const isUserOwner = isOwner || (currentUserId && quizData?.userId && currentUserId === quizData.userId)
 
   // Check if mobile on mount
   const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -136,20 +133,6 @@ export function QuizActions({
     window.addEventListener("resize", checkMobile)
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
-
-  const currentUserId = user?.id || null
-
-  // Debug current state
-  React.useEffect(() => {
-    console.log('QuizActions state:', {
-      isOwner,
-      finalIsOwner,
-      currentUserId,
-      isAuthenticated,
-      ownershipDetection: ownership,
-      quizData: quizData ? { id: quizData.id, quizType: quizData.quizType, userId: quizData.userId } : null
-    })
-  }, [isOwner, finalIsOwner, currentUserId, isAuthenticated, ownership, quizData])
 
   const promptLogin = useCallback(
     () =>
@@ -175,7 +158,7 @@ export function QuizActions({
     const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
     if (!isAuthenticated || !currentUserId) return promptLogin()
 
-    if (field === "isPublic" && !finalIsOwner) {
+    if (field === "isPublic" && !isUserOwner) {
       toast({
         title: "Permission denied",
         description: "Only the quiz owner can change visibility",
@@ -345,7 +328,7 @@ export function QuizActions({
   }
 
   const handleDelete = async () => {
-    if (!finalIsOwner) {
+    if (!isUserOwner) {
       toast({
         title: "Permission denied",
         description: "Only the quiz owner can delete this quiz",
@@ -397,8 +380,6 @@ export function QuizActions({
 
   const actionButtons = useMemo(
     (): ActionButton[] => {
-      console.log('Building action buttons. finalIsOwner:', finalIsOwner, 'user:', currentUserId, 'quizData:', quizData) // Debug log
-      
       const baseActions: ActionButton[] = [
         // Share & Export Actions
         {
@@ -426,8 +407,7 @@ export function QuizActions({
       ]
 
       // Owner-only actions
-      if (finalIsOwner && currentUserId) {
-        console.log('Adding owner actions for user:', currentUserId) // Debug log
+      if (isUserOwner && currentUserId) {
         baseActions.push(
           {
             id: "visibility",
@@ -454,7 +434,6 @@ export function QuizActions({
         )
       }
 
-      console.log('Final action buttons:', baseActions.map(a => a.id)) // Debug log
       return baseActions
     },
     [
@@ -464,7 +443,7 @@ export function QuizActions({
       isPublic,
       isPublicLoading,
       isDeleting,
-      finalIsOwner,
+      isUserOwner,
       currentUserId,
       promptLogin,
       handleShare,
@@ -585,7 +564,7 @@ export function QuizActions({
                     >
                       <MoreHorizontal className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                       {/* Show dot indicator if there are owner actions */}
-                      {finalIsOwner && (
+                      {isUserOwner && (
                         <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                           {secondaryActions.length}
                         </div>
@@ -594,7 +573,7 @@ export function QuizActions({
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  More actions {finalIsOwner && "(Owner)"}
+                  More actions {isUserOwner && "(Owner)"}
                 </TooltipContent>
               </Tooltip>
 
@@ -609,7 +588,7 @@ export function QuizActions({
                     <div key={category}>
                       <div className={cn("px-3 py-2 text-xs font-semibold uppercase tracking-wider", config.iconColor)}>
                         {config.label}
-                        {category === "utility" && finalIsOwner && (
+                        {category === "utility" && isUserOwner && (
                           <Badge variant="outline" className="ml-2 text-xs">Owner</Badge>
                         )}
                       </div>
@@ -647,7 +626,7 @@ export function QuizActions({
           )}
         </div>
 
-        {finalIsOwner && (
+        {isUserOwner && (
           <ConfirmDialog
             isOpen={showDeleteDialog}
             onCancel={() => setShowDeleteDialog(false)}
@@ -685,7 +664,7 @@ export function QuizActions({
               {isPublic && (
                 <Badge variant="secondary" className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
                   <Eye className="h-3 w-3 mr-1" />
-                  {finalIsOwner ? "Public" : "Shared"}
+                  {isUserOwner ? "Public" : "Shared"}
                 </Badge>
               )}
               {isFavorite && (
@@ -810,14 +789,14 @@ export function QuizActions({
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-green-800 dark:text-green-200 text-sm mb-1">
-                  {finalIsOwner ? "Public Quiz" : "Shared Quiz"}
+                  {isUserOwner ? "Public Quiz" : "Shared Quiz"}
                 </h4>
                 <p className="text-xs text-green-700 dark:text-green-300">
-                  This quiz is {finalIsOwner ? "public" : "shared with you"}.
-                  {finalIsOwner && " Others can discover and take it."}
+                  This quiz is {isUserOwner ? "public" : "shared with you"}.
+                  {isUserOwner && " Others can discover and take it."}
                 </p>
               </div>
-              {finalIsOwner && (
+              {isUserOwner && (
                 <Badge variant="outline" className="border-green-300 text-green-700 dark:text-green-300 text-xs">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   Discoverable
@@ -832,7 +811,8 @@ export function QuizActions({
           <div className="mx-4 mb-4 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <div className="text-xs font-mono text-yellow-800 dark:text-yellow-200">
               <div><strong>Debug Info:</strong></div>
-              <div>isOwner: {String(isOwner)}</div>
+              <div>isOwner (prop): {String(isOwner)}</div>
+              <div>isUserOwner (calculated): {String(isUserOwner)}</div>
               <div>currentUserId: {currentUserId || 'null'}</div>
               <div>quizData.userId: {quizData?.userId || 'null'}</div>
               <div>isAuthenticated: {String(isAuthenticated)}</div>
@@ -842,7 +822,7 @@ export function QuizActions({
           </div>
         )}
 
-        {finalIsOwner && (
+        {isUserOwner && (
           <ConfirmDialog
             isOpen={showDeleteDialog}
             onCancel={() => setShowDeleteDialog(false)}

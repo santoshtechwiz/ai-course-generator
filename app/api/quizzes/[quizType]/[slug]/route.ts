@@ -107,8 +107,8 @@ export async function DELETE(
     }
     
     // Delete the quiz using the appropriate service
-    await quizService.deleteQuiz(slug, session.user.id)
-    
+    await quizService.delete(slug, session.user.id)
+
     return NextResponse.json({ message: "Quiz deleted successfully" })
   } catch (error) {
     console.error(`Error deleting ${params.quizType} quiz:`, error)

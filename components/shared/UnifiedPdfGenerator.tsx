@@ -6,31 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Download, Lock, Loader2 } from "lucide-react"
 import useSubscription from "@/hooks/use-subscription"
-import { useOwnership } from "@/lib/ownership"
 import { marked } from "marked"
 
-// Register fonts
-Font.register({
-  family: "Roboto",
-  fonts: [
-    { 
-      src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf", 
-      fontWeight: 300 
-    },
-    {
-      src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf",
-      fontWeight: 400,
-    },
-    {
-      src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf",
-      fontWeight: 500,
-    },
-    { 
-      src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf", 
-      fontWeight: 700 
-    },
-  ],
-})
+// Note: Using system fonts to avoid CSP issues with external font loading
+// React-PDF will fall back to system fonts if no fonts are registered
 
 // Base styles for all PDF types
 const createStyles = (config: PdfConfig = {}) => StyleSheet.create({
@@ -38,7 +17,7 @@ const createStyles = (config: PdfConfig = {}) => StyleSheet.create({
     flexDirection: "column",
     backgroundColor: config.backgroundColor || "#FFFFFF",
     padding: config.padding || 30,
-    fontFamily: config.fontFamily || "Roboto",
+    fontFamily: "Helvetica", // Use built-in font to avoid CSP issues
     position: "relative",
   },
   title: {
@@ -84,10 +63,9 @@ const createStyles = (config: PdfConfig = {}) => StyleSheet.create({
     color: config.answerColor || "#10B981",
     marginTop: 5,
     fontWeight: "bold",
-    fontStyle: "italic",
   },
   codeBlock: {
-    fontFamily: "Courier",
+    fontFamily: "Courier", // Built-in monospace font
     fontSize: 11,
     backgroundColor: config.codeBackground || "#F3F4F6",
     padding: 10,
@@ -265,7 +243,7 @@ const renderInlineStyles = (text: string, style: any) => {
       )
     } else if (part.startsWith("*") && part.endsWith("*")) {
       return (
-        <Text key={index} style={[style, { fontStyle: "italic" }]}>
+        <Text key={index} style={[style, { fontWeight: "bold" }]}>
           {part.slice(1, -1)}
         </Text>
       )
@@ -371,7 +349,7 @@ const QuizPDF = memo(({ data, config }: { data: PdfData; config: PdfConfig }) =>
               )}
               
               {config.showExplanations && question.explanation && (
-                <Text style={[styles.paragraph, { fontStyle: "italic", marginTop: 5 }]}>
+                <Text style={[styles.paragraph, { marginTop: 5, fontSize: 11, color: "#6B7280" }]}>
                   Explanation: {question.explanation}
                 </Text>
               )}
@@ -526,12 +504,6 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
   const [isClient, setIsClient] = useState(false)
   const { canDownloadPdf } = useSubscription()
   
-  // Centralized ownership detection - automatically detects if user owns the content
-  const ownership = useOwnership(data)
-  
-  // Use detected ownership or fallback to prop (for backward compatibility)
-  const finalIsOwner = ownership.isOwner || isOwner
-  
   React.useEffect(() => {
     setIsClient(true)
   }, [])
@@ -561,7 +533,7 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
   const finalButtonText = buttonText || "Download PDF"
   
   // Allow download if user has subscription OR is the owner of the content
-  const canDownload = canDownloadPdf || finalIsOwner
+  const canDownload = canDownloadPdf || isOwner
   const isDisabled = !canDownload || !isDataReady || isDownloading || !isClient
 
   const handleBlobDownload = async () => {
@@ -571,8 +543,9 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
     let url = ""
 
     try {
-      const blob = await pdf(<UnifiedPDF data={data} type={type} config={config} />).toBlob()
-      url = URL.createObjectURL(blob)
+      // Create PDF with retries for better reliability
+      const pdfBlob = await pdf(<UnifiedPDF data={data} type={type} config={config} />).toBlob()
+      url = URL.createObjectURL(pdfBlob)
 
       const link = document.createElement("a")
       link.href = url
@@ -582,7 +555,17 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
       document.body.removeChild(link)
     } catch (error) {
       console.error("PDF download error:", error)
-      alert("Failed to download the PDF. Please try again.")
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to download the PDF. Please try again."
+      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
+        errorMessage = "PDF generation failed due to network restrictions. Please check your internet connection or try again later."
+      } else if (error instanceof Error) {
+        errorMessage = `PDF generation failed: ${error.message}`
+      }
+      
+      // You could replace this with a toast notification if you have one
+      alert(errorMessage)
     } finally {
       if (url) URL.revokeObjectURL(url)
       setIsDownloading(false)
@@ -610,11 +593,9 @@ const UnifiedPdfGenerator: React.FC<UnifiedPdfGeneratorProps> = ({
 
   const tooltipContent = canDownload
     ? `Download this ${type} as a PDF file`
-    : finalIsOwner 
-      ? "Download available for content owners (auto-detected)"
-      : ownership.detectionMethod === 'not_authenticated'
-        ? "Sign in to access downloads"
-        : "Upgrade your subscription to enable PDF downloads"
+    : isOwner 
+      ? "Download available for content owners"
+      : "Upgrade your subscription to enable PDF downloads"
 
   if (downloadMethod === "link" && canDownload && isDataReady) {
     return (

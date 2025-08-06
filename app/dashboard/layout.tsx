@@ -36,8 +36,8 @@ export default async function DashboardLayout({
           </main>          
           <Toaster />
           <Chatbot userId={session?.user?.id} />
-          {/* {process.env.NODE_ENV !== "production" && <CourseAIState />} */}
-          {process.env.NODE_ENV !== "production" && <SubscriptionTestPanel />}
+          {process.env.NODE_ENV !== "production" && <CourseAIState />}
+        
         </DashboardShell>
       </div>
     </GlobalLoaderProvider>
