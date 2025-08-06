@@ -37,7 +37,6 @@ import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 import { QuizActions } from "../../components/QuizActions";
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
 import { QuizSchema } from "@/lib/seo/components";
-import OwnershipDebugPanel from "@/components/debug/OwnershipDebugPanel";
 
 
 interface FlashcardQuizWrapperProps {
@@ -80,16 +79,22 @@ export default function FlashcardQuizWrapper({
       dispatch(clearQuizState());
     }
 
-    if (!questions.length && quizStatus !== "loading") {
-      console.log(`Fetching flashcards for slug: ${slug}, current status: ${quizStatus}`);
+    if (!questions.length) {
       dispatch(fetchFlashCardQuiz(slug))
         .unwrap()
-        .then((data) => {
-          console.log(`Successfully loaded flashcards for ${slug}:`, data);
-          console.log(`Questions received: ${data.questions?.length || 0}`);
+        .then(() => {
+          // After successfully loading questions, log for debugging
+          console.log(
+            `Loaded ${questions.length} questions for ${slug}, review mode: ${isReviewMode}`
+          );
+
+          // If in review mode with cards parameter, log the filtered questions
+          if (isReviewMode && searchParams?.get("cards")) {
+            const cardsParam = searchParams.get("cards");
+            console.log(`Review mode with cards: ${cardsParam}`);
+          }
         })
         .catch((err) => {
-          console.error(`Error loading flashcards for ${slug}:`, err);
           const message =
             err instanceof Error ? err.message : "Failed to load flashcards";
           toast.error(message);
@@ -97,10 +102,12 @@ export default function FlashcardQuizWrapper({
     }
   }, [
     dispatch,
-    slug,
     isResetMode,
     isReviewMode,
-    quizStatus
+    questions.length,
+    slug,
+    !isLoading,
+    searchParams,
   ]);
 
   // Redirect if auth required
@@ -392,12 +399,6 @@ export default function FlashcardQuizWrapper({
               : quizTitle || title || "Flashcard Quiz"
           }
           isReviewMode={isReviewMode}
-        />
-        
-        {/* Ownership Debug Panel - Development Only */}
-        <OwnershipDebugPanel 
-          content={quizData || { slug, title: quizTitle }} 
-          title="Flashcard Quiz"
         />
       </div>
     </div>
