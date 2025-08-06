@@ -5,6 +5,7 @@ import {
   useContext,
   useCallback,
   useEffect,
+  useMemo,
   type ReactNode,
 } from "react";
 import { useSession } from "next-auth/react";
@@ -61,10 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load fresh subscription on session load
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user?.id && status === 'authenticated') {
       dispatch(fetchSubscription({ forceRefresh: true }));
     }
-  }, [session?.user, dispatch]);
+  }, [session?.user?.id, status, dispatch]); // More specific dependencies
 
   const refreshUserData = useCallback(async () => {
     try {
@@ -91,36 +92,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [dispatch, update]);
 
-  const user: User | null = session?.user
-    ? {
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-        image: session.user.image,
-        credits: session.user.credits || 0,
-        creditsUsed: session.user.creditsUsed || 0,
-        isAdmin: session.user.isAdmin || false,
-        userType: session.user.userType || "FREE",
-        subscriptionPlan:
-          reduxSubscription?.subscriptionPlan || session.user.subscriptionPlan,
-        subscriptionStatus:
-          reduxSubscription?.status || session.user.subscriptionStatus,
-      }
-    : null;
+  const user: User | null = useMemo(() => {
+    if (!session?.user) return null;
+    
+    return {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      image: session.user.image,
+      credits: session.user.credits || 0,
+      creditsUsed: session.user.creditsUsed || 0,
+      isAdmin: session.user.isAdmin || false,
+      userType: session.user.userType || "FREE",
+      subscriptionPlan:
+        reduxSubscription?.subscriptionPlan || session.user.subscriptionPlan,
+      subscriptionStatus:
+        reduxSubscription?.status || session.user.subscriptionStatus,
+    };
+  }, [session?.user, reduxSubscription?.subscriptionPlan, reduxSubscription?.status]);
 
-  const subscription: Subscription | null = reduxSubscription
-    ? {
-        plan: reduxSubscription.subscriptionPlan ?? "",
-        status: reduxSubscription.status ?? "",
-        isActive: reduxSubscription.status === "ACTIVE",
-        credits: reduxSubscription.credits ?? 0,
-        tokensUsed: reduxSubscription.tokensUsed ?? 0,
-        currentPeriodEnd: reduxSubscription.expirationDate ?? null,
-        cancelAtPeriodEnd: reduxSubscription.cancelAtPeriodEnd ?? false,
-      }
-    : null;
+  const subscription: Subscription | null = useMemo(() => {
+    if (!reduxSubscription) return null;
+    
+    return {
+      plan: reduxSubscription.subscriptionPlan ?? "",
+      status: reduxSubscription.status ?? "",
+      isActive: reduxSubscription.status === "ACTIVE",
+      credits: reduxSubscription.credits ?? 0,
+      tokensUsed: reduxSubscription.tokensUsed ?? 0,
+      currentPeriodEnd: reduxSubscription.expirationDate ?? null,
+      cancelAtPeriodEnd: reduxSubscription.cancelAtPeriodEnd ?? false,
+    };
+  }, [reduxSubscription]);
 
-  const authState: AuthState = {
+  const authState: AuthState = useMemo(() => ({
     user,
     subscription,
     isAuthenticated: !!session?.user,
@@ -128,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUserData,
     refreshSubscription,
     syncWithBackend,
-  };
+  }), [user, subscription, session?.user, status, refreshUserData, refreshSubscription, syncWithBackend]);
 
   return (
     <AuthContext.Provider value={authState}>{children}</AuthContext.Provider>

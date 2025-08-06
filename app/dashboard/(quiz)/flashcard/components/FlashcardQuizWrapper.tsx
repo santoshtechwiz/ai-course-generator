@@ -112,7 +112,7 @@ export default function FlashcardQuizWrapper({
           hasInitialized.current = false; // Allow retry on error
         });
     }
-  }, [dispatch, slug, isResetMode, isReviewMode, quizStatus, questions.length, isLoading]);
+  }, [dispatch, slug, isResetMode, isReviewMode]); // Removed quizStatus, questions.length, isLoading
 
   // Reset initialization flag when component unmounts or slug changes
   useEffect(() => {
