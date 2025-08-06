@@ -102,16 +102,10 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
 
   const handleCourseClick = useCallback(
     (courseId: string, slug: string) => {
-      startLoading({
-        message: "Loading course...",
-        isBlocking: false,
-        id: `course-load-${courseId}`,
-      })
-      requestAnimationFrame(() => {
-        router.push(`/dashboard/course/${slug}`)
-      })
+      // Remove global loader since navigation already handles loading
+      router.push(`/dashboard/course/${slug}`)
     },
-    [router, startLoading],
+    [router],
   )
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,8 +244,6 @@ interface CourseGridProps {
 }
 
 function CourseGrid({ courses, viewMode, showProgress = false, onCourseClick, userData }: CourseGridProps) {
-  const { isLoading: isGlobalLoading, loadingId } = useGlobalLoader()
-
   if (courses.length === 0) {
     return <EmptyState showProgress={showProgress} />
   }
@@ -259,7 +251,6 @@ function CourseGrid({ courses, viewMode, showProgress = false, onCourseClick, us
   return (
     <div className={cn(viewMode === "grid" ? "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" : "space-y-4")}>
       {courses.map((course, index) => {
-        const isLoadingThisCourse = isGlobalLoading && loadingId === `course-load-${course.id}`
         const progress = userData.courseProgress?.find((p) => p.course.id === course.id)?.progress || 0
 
         return (
@@ -268,14 +259,14 @@ function CourseGrid({ courses, viewMode, showProgress = false, onCourseClick, us
               <CourseCard
                 course={course}
                 progress={showProgress ? progress : undefined}
-                isLoading={isLoadingThisCourse}
+                isLoading={false}
                 onClick={() => onCourseClick(course.id, course.slug)}
               />
             ) : (
               <CourseListItem
                 course={course}
                 progress={showProgress ? progress : undefined}
-                isLoading={isLoadingThisCourse}
+                isLoading={false}
                 onClick={() => onCourseClick(course.id, course.slug)}
               />
             )}

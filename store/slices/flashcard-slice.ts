@@ -101,7 +101,7 @@ export const fetchFlashCardQuiz = createAsyncThunk(
   "flashcard/fetchQuiz",
   async (slug: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/quizzes/flashcard/${slug}`)
+      const response = await fetch(`/api/quizzes/flashcard/flashcard/${slug}`)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         return rejectWithValue(errorData.message || `Failed to fetch flashcard quiz: ${response.status}`)

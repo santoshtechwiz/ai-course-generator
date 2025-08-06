@@ -461,7 +461,7 @@ model FlashCard {
   question   String
   answer     String
   userId     String
-  slug       String?   @default("default-slug")
+  slug       String?
   userQuizId Int?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

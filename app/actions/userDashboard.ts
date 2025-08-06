@@ -47,48 +47,30 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
             title: true,
             slug: true,
             quizType: true,
+            timeEnded: true,
+            timeStarted: true,
+            _count: {
+              select: {
+                questions: true,
+              },
+            },
           },
           take: 5,
         },
-      },
-    })
-
-    if (!user) {
-      console.log('getUserData: No user found in database for userId:', userId)
-      return null
-    }
-
-    console.log('getUserData: Found user:', user.name, 'with id:', user.id)
-
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email ?? "",
-      image: user.image ?? "",
-      credits: user.credits ?? 0,
-      courses: user.courses as unknown as Course[],
-      courseProgress: user.courseProgress as unknown as CourseProgress[],
-      userQuizzes: user.userQuizzes as unknown as UserQuiz[],
-      streakDays: user.streakDays ?? 0,
-    }
-  } catch (error) {
-    console.error("Error fetching user data:", error)
-    return null
-  }
-}
-
-export async function getUserStats(userId: string): Promise<UserStats> {
-  try {
-    const stats = await prisma.$transaction(async (tx) => {
-      const [quizAttempts, completedCourses, totalCourses] = await Promise.all([
-        tx.userQuizAttempt.findMany({
-          where: { userId },
-          include: {
+        userQuizAttempts: {
+          select: {
+            id: true,
+            score: true,
+            accuracy: true,
+            timeSpent: true,
+            createdAt: true,
+            updatedAt: true,
             userQuiz: {
               select: {
                 id: true,
                 title: true,
-                questions: { select: { id: true, question: true, answer: true } },
+                quizType: true,
+                difficulty: true,
               },
             },
             attemptQuestions: {
@@ -101,72 +83,167 @@ export async function getUserStats(userId: string): Promise<UserStats> {
               },
             },
           },
-          orderBy: { createdAt: "asc" },
-        }),
-        tx.courseProgress.count({
-          where: { userId, isCompleted: true },
-        }),
-        tx.courseProgress.count({
-          where: { userId },
-        }),
-      ])
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 10,
+        },
+        favorites: {
+          select: {
+            id: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+              },
+            },
+          },
+          take: 5,
+        },
+      },
+    })
 
-      const userQuizIds = new Set<number>()
-      quizAttempts.forEach((a) => userQuizIds.add(a.userQuizId))
-      const totalQuizzes = userQuizIds.size
-      const totalAttempts = quizAttempts.length
+    if (!user) {
+      console.log('getUserData: No user found in database for userId:', userId)
+      return null
+    }
 
-      let totalTimeSpent = 0
-      const scores = quizAttempts.map((attempt) => {
-        const timeSpent = attempt.timeSpent ?? 0
-        totalTimeSpent += timeSpent
-        return {
-          score: parseFloat((attempt.score ?? 0).toFixed(2)),
-          totalQuestions: attempt.userQuiz.questions.length,
-          percentageCorrect: parseFloat((attempt.score ?? 0).toFixed(2)),
+    console.log('getUserData: Found user:', user.name, 'with id:', user.id)
+    console.log('getUserData: Quiz attempts count:', user.userQuizAttempts.length)
+    
+    // Log recent quiz attempts for debugging
+    if (user.userQuizAttempts.length > 0) {
+      const recentAttempts = user.userQuizAttempts.slice(0, 3).map(attempt => ({
+        id: attempt.id,
+        score: attempt.score,
+        quizTitle: attempt.userQuiz?.title,
+        createdAt: attempt.createdAt
+      }))
+      console.log('getUserData: Recent quiz attempts:', JSON.stringify(recentAttempts, null, 2))
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email ?? "",
+      image: user.image ?? "",
+      credits: user.credits ?? 0,
+      isAdmin: user.isAdmin ?? false,
+      courses: user.courses as unknown as Course[],
+      courseProgress: user.courseProgress as unknown as CourseProgress[],
+      userQuizzes: user.userQuizzes as unknown as UserQuiz[],
+      quizAttempts: user.userQuizAttempts.map(attempt => ({
+        ...attempt,
+        id: attempt.id.toString(), // Convert number to string
+        userQuiz: attempt.userQuiz ? {
+          ...attempt.userQuiz,
+          id: attempt.userQuiz.id,
           title: attempt.userQuiz.title,
-          timeSpent,
-        }
-      })
+          quizType: attempt.userQuiz.quizType,
+          difficulty: attempt.userQuiz.difficulty,
+        } : undefined,
+      })) as unknown as UserQuizAttempt[],
+      favorites: user.favorites as unknown as Favorite[],
+      streakDays: user.streakDays ?? 0,
+    }
+  } catch (error) {
+    console.error("Error fetching user data:", error)
+    return null
+  }
+}
 
-      const scoresLength = scores.length
-      const averageScore =
-        scoresLength > 0 ? parseFloat((scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scoresLength).toFixed(2)) : 0
+export async function getUserStats(userId: string): Promise<UserStats> {
+  try {
+    // Remove the complex transaction and use separate, optimized queries
+    const [quizAttempts, completedCourses, totalCourses] = await Promise.all([
+      // Simplified quiz attempts query - only get essential data
+      prisma.userQuizAttempt.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          score: true,
+          timeSpent: true,
+          createdAt: true,
+          userQuizId: true,
+          userQuiz: {
+            select: {
+              id: true,
+              title: true,
+              _count: {
+                select: { questions: true } // Count questions instead of loading them
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+        take: 100, // Limit to recent attempts for performance
+      }),
+      
+      // Separate, fast course progress queries
+      prisma.courseProgress.count({
+        where: { userId, isCompleted: true },
+      }),
+      
+      prisma.courseProgress.count({
+        where: { userId },
+      }),
+    ])
 
-      const highestScore = scoresLength > 0 ? parseFloat(Math.max(...scores.map((quiz) => quiz.percentageCorrect)).toFixed(2)) : 0
+    const userQuizIds = new Set<number>()
+    quizAttempts.forEach((a) => userQuizIds.add(a.userQuizId))
+    const totalQuizzes = userQuizIds.size
+    const totalAttempts = quizAttempts.length
 
-      const topicPerformance = calculateTopicPerformance(scores)
-      const topPerformingTopics = getTopPerformingTopics(topicPerformance)
-
-      const recentAttempts = quizAttempts.slice(-10)
-      const recentImprovement = parseFloat(calculateRecentImprovement(recentAttempts).toFixed(2))
-
-      const monthsSinceFirstQuiz =
-        quizAttempts.length > 0
-          ? (Date.now() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)
-          : 1
-
-      const quizzesPerMonth = parseFloat((totalQuizzes / Math.max(monthsSinceFirstQuiz, 0.1)).toFixed(2))
-
+    let totalTimeSpent = 0
+    const scores = quizAttempts.map((attempt) => {
+      const timeSpent = attempt.timeSpent ?? 0
+      totalTimeSpent += timeSpent
       return {
-        totalQuizzes,
-        totalAttempts,
-        averageScore,
-        highestScore,
-        completedCourses,
-        totalTimeSpent,
-        averageTimePerQuiz: totalAttempts > 0 ? parseFloat((totalTimeSpent / totalAttempts).toFixed(2)) : 0,
-        topPerformingTopics,
-        recentImprovement,
-        quizzesPerMonth,
-        courseCompletionRate: totalCourses > 0 ? parseFloat(((completedCourses / totalCourses) * 100).toFixed(2)) : 0,
-        consistencyScore: parseFloat(calculateConsistencyScore(quizAttempts).toFixed(2)),
-        learningEfficiency: parseFloat(calculateLearningEfficiency(scores).toFixed(2)),
-        difficultyProgression: parseFloat(calculateDifficultyProgression(scores).toFixed(2)),
+        score: parseFloat((attempt.score ?? 0).toFixed(2)),
+        totalQuestions: attempt.userQuiz._count.questions || 1, // Use question count
+        percentageCorrect: parseFloat((attempt.score ?? 0).toFixed(2)),
+        title: attempt.userQuiz.title,
+        timeSpent,
       }
     })
 
-    return stats
+    const scoresLength = scores.length
+    const averageScore =
+      scoresLength > 0 ? parseFloat((scores.reduce((acc, quiz) => acc + quiz.percentageCorrect, 0) / scoresLength).toFixed(2)) : 0
+
+    const highestScore = scoresLength > 0 ? parseFloat(Math.max(...scores.map((quiz) => quiz.percentageCorrect)).toFixed(2)) : 0
+
+    // Simplified calculations for better performance
+    const topicPerformance = calculateTopicPerformance(scores)
+    const topPerformingTopics = getTopPerformingTopics(topicPerformance)
+
+    const recentAttempts = quizAttempts.slice(-10)
+    const recentImprovement = parseFloat(calculateRecentImprovement(recentAttempts).toFixed(2))
+
+    const monthsSinceFirstQuiz =
+      quizAttempts.length > 0
+        ? (Date.now() - new Date(quizAttempts[0].createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)
+        : 1
+
+    const quizzesPerMonth = parseFloat((totalQuizzes / Math.max(monthsSinceFirstQuiz, 0.1)).toFixed(2))
+
+    return {
+      totalQuizzes,
+      totalAttempts,
+      averageScore,
+      highestScore,
+      completedCourses,
+      totalTimeSpent,
+      averageTimePerQuiz: totalAttempts > 0 ? parseFloat((totalTimeSpent / totalAttempts).toFixed(2)) : 0,
+      topPerformingTopics,
+      recentImprovement,
+      quizzesPerMonth,
+      courseCompletionRate: totalCourses > 0 ? parseFloat(((completedCourses / totalCourses) * 100).toFixed(2)) : 0,
+      consistencyScore: parseFloat(calculateConsistencyScore(quizAttempts).toFixed(2)),
+      learningEfficiency: parseFloat(calculateLearningEfficiency(scores).toFixed(2)),
+      difficultyProgression: parseFloat(calculateDifficultyProgression(scores).toFixed(2)),
+    }
   } catch (error) {
     console.error("Error fetching user stats:", error)
     throw new Error("Failed to fetch user stats")

@@ -77,6 +77,16 @@ export const fetchQuiz = createAsyncThunk(
       const response = await fetch(url)
       if (!response.ok) {
         const errorText = await response.text()
+        
+        // Handle 404 specifically as not found
+        if (response.status === 404) {
+          return rejectWithValue({
+            error: `Quiz not found`,
+            status: 'not-found',
+            details: `Quiz with slug "${slug}" and type "${type}" does not exist.`,
+          })
+        }
+        
         return rejectWithValue({
           error: `Error loading quiz: ${response.status}`,
           details: errorText,
@@ -86,7 +96,11 @@ export const fetchQuiz = createAsyncThunk(
       const data = await response.json()
 
       if (!data || !Array.isArray(data.questions)) {
-        return rejectWithValue({ error: "Invalid quiz data" })
+        return rejectWithValue({ 
+          error: "Quiz not found or invalid data",
+          status: 'not-found',
+          details: "The quiz exists but contains no valid questions."
+        })
       }
 
       const questions = data.questions.map((q: any) => {
@@ -427,8 +441,24 @@ const quizSlice = createSlice({
         state.userId = action.payload.userId ?? null
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
-        state.status = 'failed'
-        state.error = action.error.message || 'Quiz loading failed'
+        const payload = action.payload as any
+        
+        // Check if this is a "not found" error
+        if (payload?.status === 'not-found') {
+          state.status = 'not-found'
+          state.error = payload.error || 'Quiz not found'
+        } else {
+          state.status = 'failed'
+          state.error = payload?.error || action.error.message || 'Quiz loading failed'
+        }
+        
+        // Clear quiz data when fetch fails
+        state.questions = []
+        state.answers = {}
+        state.results = null
+        state.slug = null
+        state.quizType = null
+        state.title = ''
       })
   },
 })
@@ -453,6 +483,9 @@ export const selectQuizResults = (state: RootState) => (state.quiz as unknown as
 export const selectQuizQuestions = (state: RootState) => (state.quiz as unknown as QuizState).questions
 export const selectQuizAnswers = (state: RootState) => (state.quiz as unknown as QuizState).answers
 export const selectQuizStatus = (state: RootState) => (state.quiz as unknown as QuizState).status
+export const selectQuizError = (state: RootState) => (state.quiz as unknown as QuizState).error
+export const selectIsQuizNotFound = (state: RootState) => (state.quiz as unknown as QuizState).status === 'not-found'
+export const selectIsQuizLoading = (state: RootState) => (state.quiz as unknown as QuizState).status === 'loading'
 export const selectIsQuizComplete = (state: RootState) => (state.quiz as unknown as QuizState).isCompleted
 export const selectRequiresAuth = (state: RootState) => (state.quiz as unknown as QuizState).requiresAuth
 export const selectRedirectAfterLogin = (state: RootState) => (state.quiz as unknown as QuizState).redirectAfterLogin

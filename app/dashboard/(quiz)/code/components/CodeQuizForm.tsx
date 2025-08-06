@@ -224,7 +224,7 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   const { mutateAsync: createCodeQuizMutation } = useMutation({
     mutationFn: async (data: CodeQuizFormData) => {
       data.userType = subscriptionData?.subscriptionPlan
-      const response = await axios.post("/api/quizzes/code", data)
+      const response = await axios.post("/api/quizzes/code/create", data)
       return response.data
     },
     onError: (error: any) => {

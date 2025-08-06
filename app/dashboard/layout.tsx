@@ -4,6 +4,7 @@ import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
 
 import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 import CourseAIState from "@/components/development/CourseAIState"
+import SubscriptionTestPanel from "@/components/debug/SubscriptionTestPanel"
 
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
@@ -35,7 +36,8 @@ export default async function DashboardLayout({
           </main>          
           <Toaster />
           <Chatbot userId={session?.user?.id} />
-          {process.env.NODE_ENV !== "production" && <CourseAIState />}
+          {/* {process.env.NODE_ENV !== "production" && <CourseAIState />} */}
+          {process.env.NODE_ENV !== "production" && <SubscriptionTestPanel />}
         </DashboardShell>
       </div>
     </GlobalLoaderProvider>

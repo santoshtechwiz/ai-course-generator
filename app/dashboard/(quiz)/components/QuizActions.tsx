@@ -36,6 +36,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import UnifiedPdfGenerator from "@/components/shared/UnifiedPdfGenerator"
+import type { PdfData, PdfConfig } from "@/components/shared/UnifiedPdfGenerator"
+import { useOwnership } from "@/lib/ownership"
 
 interface QuizActionsProps {
   quizSlug: string
@@ -103,17 +106,28 @@ export function QuizActions({
   isOwner,
   className,
 }: QuizActionsProps): ReactElement {
+  // Validate required props
+  if (!quizSlug) {
+    console.error('QuizActions: quizSlug is required')
+    return <div className="text-red-500 text-sm">Error: Invalid quiz slug</div>
+  }
+
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite)
   const [isPublicLoading, setIsPublicLoading] = useState(false)
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isPdfGenerating, setIsPdfGenerating] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
   const router = useRouter()
   const { user, subscription, isAuthenticated } = useAuth()
+  
+  // Centralized ownership detection - auto-detects ownership from quiz data
+  const ownership = useOwnership(quizData)
+  
+  // Use detected ownership or fallback to prop (for backward compatibility)
+  const finalIsOwner = ownership.isOwner || isOwner
 
   // Check if mobile on mount
   const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -124,7 +138,18 @@ export function QuizActions({
   }, [])
 
   const currentUserId = user?.id || null
-  const canDownloadPDF = subscription?.status?.toLowerCase() === "active"
+
+  // Debug current state
+  React.useEffect(() => {
+    console.log('QuizActions state:', {
+      isOwner,
+      finalIsOwner,
+      currentUserId,
+      isAuthenticated,
+      ownershipDetection: ownership,
+      quizData: quizData ? { id: quizData.id, quizType: quizData.quizType, userId: quizData.userId } : null
+    })
+  }, [isOwner, finalIsOwner, currentUserId, isAuthenticated, ownership, quizData])
 
   const promptLogin = useCallback(
     () =>
@@ -150,7 +175,7 @@ export function QuizActions({
     const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
     if (!isAuthenticated || !currentUserId) return promptLogin()
 
-    if (field === "isPublic" && !isOwner) {
+    if (field === "isPublic" && !finalIsOwner) {
       toast({
         title: "Permission denied",
         description: "Only the quiz owner can change visibility",
@@ -165,9 +190,17 @@ export function QuizActions({
       // Update optimistically for better UX
       field === "isPublic" ? setIsPublic(value) : setIsFavorite(value)
       
-      const res = await fetch(`/api/quizzes/${quizData.quizType}/${quizSlug}`, {
+      // Construct the correct API endpoint
+      const updateEndpoint = `/api/quizzes/${quizData?.quizType || 'common'}/${quizSlug}`
+      
+      console.log('Updating quiz via:', updateEndpoint, 'with data:', { [field]: value }) // Debug log
+      
+      const res = await fetch(updateEndpoint, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${currentUserId}` // Add auth if needed
+        },
         body: JSON.stringify({ [field]: value }),
       })
 
@@ -176,7 +209,7 @@ export function QuizActions({
       if (!res.ok) {
         // Revert state if API call fails
         field === "isPublic" ? setIsPublic(!value) : setIsFavorite(!value)
-        throw new Error(data.error || "Update failed")
+        throw new Error(data.error || data.message || `Server error: ${res.status}`)
       }
       
       // Show success toast
@@ -199,9 +232,10 @@ export function QuizActions({
               : "Quiz removed from favorites",
       })
     } catch (err: any) {
+      console.error('Update error:', err) // Debug log
       toast({
         title: "Error",
-        description: err.message,
+        description: err.message || "Failed to update quiz. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -211,12 +245,22 @@ export function QuizActions({
 
   const handleShare = async () => {
     try {
-      const shareUrl = `${window.location.origin}/${quizData.quizType}/${quizSlug}`
+      // Construct the correct share URL based on quiz type
+      const quizType = quizData?.quizType || 'quiz'
+      const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
+      
+      console.log('Sharing URL:', shareUrl) // Debug log
+      
       if (navigator.share && isMobile) {
         await navigator.share({
           title: quizData?.title || "Check out this quiz!",
-          text: "Test your knowledge with this quiz",
+          text: `Test your knowledge with this ${quizType} quiz`,
           url: shareUrl,
+        })
+        
+        toast({
+          title: "Shared successfully!",
+          description: "Quiz shared via native sharing",
         })
       } else {
         await navigator.clipboard.writeText(shareUrl)
@@ -226,74 +270,123 @@ export function QuizActions({
         })
       }
     } catch (err: any) {
+      console.error('Share error:', err) // Debug log
+      
       if (err.name !== "AbortError") {
-        toast({
-          title: "Sharing failed",
-          description: "Please try again",
-          variant: "destructive",
-        })
+        // Fallback: try to copy to clipboard
+        try {
+          const quizType = quizData?.quizType || 'quiz'
+          const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
+          await navigator.clipboard.writeText(shareUrl)
+          
+          toast({
+            title: "Link copied!",
+            description: "Quiz link copied to clipboard",
+          })
+        } catch (clipboardErr) {
+          toast({
+            title: "Sharing failed",
+            description: "Unable to share or copy link. Please try again.",
+            variant: "destructive",
+          })
+        }
       }
     }
   }
 
-  const handlePdfDownload = async () => {
-    if (!isAuthenticated) return promptLogin()
-    if (!canDownloadPDF) return promptUpgrade()
+  // Prepare PDF data based on quiz type
+  const pdfData = useMemo((): PdfData => {
+    if (!quizData) return { title: "Quiz", questions: [] }
 
-    try {
-      setIsPdfGenerating(true)
-      const response = await fetch(`/api/quizzes/${quizSlug}/pdf`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quizData,
-          includeAnswers: true,
-          format: "A4",
-        }),
-      })
-
-      if (!response.ok) throw new Error("Failed to generate PDF")
-
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `${quizSlug}-quiz.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-
-      toast({
-        title: "PDF Downloaded!",
-        description: "Quiz PDF downloaded successfully",
-      })
-    } catch (error: any) {
-      toast({
-        title: "Download failed",
-        description: error.message || "Failed to download PDF",
-        variant: "destructive",
-      })
-    } finally {
-      setIsPdfGenerating(false)
+    const quizType = quizData.quizType?.toLowerCase() || "mcq"
+    
+    if (quizType === "flashcard") {
+      return {
+        title: quizData.title || "Flashcard Quiz",
+        description: quizData.description,
+        flashCards: quizData.flashCards || quizData.questions?.map((q: any) => ({
+          id: q.id,
+          question: q.question,
+          answer: q.answer
+        })) || []
+      }
     }
+
+    // For MCQ, open-ended, and other quiz types
+    return {
+      title: quizData.title || "Quiz",
+      description: quizData.description,
+      questions: quizData.questions?.map((q: any) => ({
+        id: q.id,
+        question: q.question,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        answer: q.answer,
+        explanation: q.explanation
+      })) || []
+    }
+  }, [quizData])
+
+  const pdfConfig: PdfConfig = {
+    showAnswers: true,
+    highlightCorrectAnswers: true,
+    showExplanations: true,
+    includeAnswerKey: true,
+    showCopyright: true,
+    copyrightText: `© CourseAI ${new Date().getFullYear()}`,
+    questionsPerPage: 8,
+    primaryColor: "#1F2937",
+    highlightColor: "#10B981",
+  }
+
+  const getPdfType = () => {
+    const quizType = quizData?.quizType?.toLowerCase()
+    return quizType === "flashcard" ? "flashcards" : "quiz"
   }
 
   const handleDelete = async () => {
+    if (!finalIsOwner) {
+      toast({
+        title: "Permission denied",
+        description: "Only the quiz owner can delete this quiz",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setIsDeleting(true)
-      const response = await fetch(`/api/quizzes/${quizData.quizType}/${quizSlug}`, { method: "DELETE" })
-      if (!response.ok) throw new Error("Failed to delete quiz")
+      
+      // Construct the correct API endpoint with quizType
+      const deleteEndpoint = `/api/quizzes/${quizData?.quizType || 'common'}/${quizSlug}`
+      
+      console.log('Deleting quiz via:', deleteEndpoint) // Debug log
+      
+      const response = await fetch(deleteEndpoint, { 
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.id}` // Add auth if needed
+        }
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Server error: ${response.status}`)
+      }
 
       toast({
         title: "Quiz deleted",
         description: "Redirecting to dashboard...",
       })
-      setTimeout(() => router.push("/dashboard"), 500)
+      
+      // Add a delay to let the user see the success message
+      setTimeout(() => router.push("/dashboard"), 1000)
     } catch (error: any) {
+      console.error('Delete error:', error) // Debug log
       toast({
         title: "Delete failed",
-        description: error.message || "Failed to delete quiz",
+        description: error.message || "Failed to delete quiz. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -303,69 +396,67 @@ export function QuizActions({
   }
 
   const actionButtons = useMemo(
-    (): ActionButton[] => [
-      // Share & Export Actions
-      {
-        id: "share",
-        label: "Share quiz",
-        icon: Share2,
-        loading: false,
-        onClick: handleShare,
-        disabled: false,
-        category: "share",
-        priority: "primary",
-      },
-      {
-        id: "download",
-        label: "Download PDF",
-        icon: Download,
-        loading: isPdfGenerating,
-        onClick: handlePdfDownload,
-        disabled: !isAuthenticated || !canDownloadPDF,
-        premium: !canDownloadPDF,
-        category: "share",
-        priority: "secondary",
-      },
-      // Personal Tools
-      {
-        id: "favorite",
-        label: isFavorite ? "Remove from favorites" : "Add to favorites",
-        icon: Heart,
-        loading: isFavoriteLoading,
-        onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
-        disabled: !isAuthenticated,
-        active: isFavorite,
-        category: "personal",
-        priority: "primary",
-      },
-      // Utility Actions (only for owner)
-      ...(isOwner
-        ? ([
-            {
-              id: "visibility",
-              label: isPublic ? "Make private" : "Make public",
-              icon: isPublic ? Eye : EyeOff,
-              loading: isPublicLoading,
-              onClick: () => updateQuiz("isPublic", !isPublic),
-              disabled: isPublicLoading,
-              active: isPublic,
-              category: "utility" as const,
-              priority: "secondary" as const,
-            },
-            {
-              id: "delete",
-              label: "Delete quiz",
-              icon: Trash2,
-              loading: isDeleting,
-              onClick: () => setShowDeleteDialog(true),
-              disabled: isDeleting,
-              destructive: true,
-              category: "utility" as const,
-              priority: "secondary" as const,
-            },
-          ])
-        : []),
-    ],
+    (): ActionButton[] => {
+      console.log('Building action buttons. finalIsOwner:', finalIsOwner, 'user:', currentUserId, 'quizData:', quizData) // Debug log
+      
+      const baseActions: ActionButton[] = [
+        // Share & Export Actions
+        {
+          id: "share",
+          label: "Share quiz",
+          icon: Share2,
+          loading: false,
+          onClick: handleShare,
+          disabled: false,
+          category: "share",
+          priority: "primary",
+        },
+        // Personal Tools
+        {
+          id: "favorite",
+          label: isFavorite ? "Remove from favorites" : "Add to favorites",
+          icon: Heart,
+          loading: isFavoriteLoading,
+          onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
+          disabled: !isAuthenticated,
+          active: isFavorite,
+          category: "personal",
+          priority: "primary",
+        },
+      ]
+
+      // Owner-only actions
+      if (finalIsOwner && currentUserId) {
+        console.log('Adding owner actions for user:', currentUserId) // Debug log
+        baseActions.push(
+          {
+            id: "visibility",
+            label: isPublic ? "Make private" : "Make public",
+            icon: isPublic ? Eye : EyeOff,
+            loading: isPublicLoading,
+            onClick: () => updateQuiz("isPublic", !isPublic),
+            disabled: isPublicLoading,
+            active: isPublic,
+            category: "utility",
+            priority: "secondary",
+          },
+          {
+            id: "delete",
+            label: "Delete quiz",
+            icon: Trash2,
+            loading: isDeleting,
+            onClick: () => setShowDeleteDialog(true),
+            disabled: isDeleting,
+            destructive: true,
+            category: "utility",
+            priority: "secondary",
+          }
+        )
+      }
+
+      console.log('Final action buttons:', baseActions.map(a => a.id)) // Debug log
+      return baseActions
+    },
     [
       isAuthenticated,
       isFavorite,
@@ -373,10 +464,11 @@ export function QuizActions({
       isPublic,
       isPublicLoading,
       isDeleting,
-      isPdfGenerating,
-      canDownloadPDF,
-      isOwner,
+      finalIsOwner,
+      currentUserId,
       promptLogin,
+      handleShare,
+      updateQuiz,
     ],
   )
 
@@ -464,9 +556,22 @@ export function QuizActions({
               <TooltipContent side="top" className="font-medium">
                 {action.label}
                 {action.disabled && action.premium && " (Premium)"}
+                {action.disabled && !action.premium && !isAuthenticated && " (Login required)"}
               </TooltipContent>
             </Tooltip>
           ))}
+
+          {/* PDF Download Component for Mobile */}
+          <UnifiedPdfGenerator
+            data={pdfData}
+            type={getPdfType()}
+            config={pdfConfig}
+            fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
+            buttonText=""
+            variant="ghost"
+            size="default"
+            className="h-12 w-12 p-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-lg"
+          />
 
           {secondaryActions.length > 0 && (
             <DropdownMenu>
@@ -479,10 +584,18 @@ export function QuizActions({
                       aria-label="More actions"
                     >
                       <MoreHorizontal className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                      {/* Show dot indicator if there are owner actions */}
+                      {finalIsOwner && (
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                          {secondaryActions.length}
+                        </div>
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="top">More actions</TooltipContent>
+                <TooltipContent side="top">
+                  More actions {finalIsOwner && "(Owner)"}
+                </TooltipContent>
               </Tooltip>
 
               <DropdownMenuContent align="center" side="top" className="min-w-[220px] mb-2">
@@ -496,6 +609,9 @@ export function QuizActions({
                     <div key={category}>
                       <div className={cn("px-3 py-2 text-xs font-semibold uppercase tracking-wider", config.iconColor)}>
                         {config.label}
+                        {category === "utility" && finalIsOwner && (
+                          <Badge variant="outline" className="ml-2 text-xs">Owner</Badge>
+                        )}
                       </div>
                       {secondaryCategoryActions.map((action) => (
                         <DropdownMenuItem
@@ -531,7 +647,7 @@ export function QuizActions({
           )}
         </div>
 
-        {isOwner && (
+        {finalIsOwner && (
           <ConfirmDialog
             isOpen={showDeleteDialog}
             onCancel={() => setShowDeleteDialog(false)}
@@ -569,7 +685,7 @@ export function QuizActions({
               {isPublic && (
                 <Badge variant="secondary" className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
                   <Eye className="h-3 w-3 mr-1" />
-                  {isOwner ? "Public" : "Shared"}
+                  {finalIsOwner ? "Public" : "Shared"}
                 </Badge>
               )}
               {isFavorite && (
@@ -667,6 +783,21 @@ export function QuizActions({
                 </div>
               )
             })}
+            
+            {/* PDF Download Component */}
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-8 rounded-full bg-blue-500" />
+              <UnifiedPdfGenerator
+                data={pdfData}
+                type={getPdfType()}
+                config={pdfConfig}
+                fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
+                buttonText="Download PDF"
+                variant="outline"
+                size="sm"
+                className="h-9 px-3 gap-2 transition-all duration-200"
+              />
+            </div>
           </div>
         </div>
 
@@ -679,14 +810,14 @@ export function QuizActions({
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-green-800 dark:text-green-200 text-sm mb-1">
-                  {isOwner ? "Public Quiz" : "Shared Quiz"}
+                  {finalIsOwner ? "Public Quiz" : "Shared Quiz"}
                 </h4>
                 <p className="text-xs text-green-700 dark:text-green-300">
-                  This quiz is {isOwner ? "public" : "shared with you"}.
-                  {isOwner && " Others can discover and take it."}
+                  This quiz is {finalIsOwner ? "public" : "shared with you"}.
+                  {finalIsOwner && " Others can discover and take it."}
                 </p>
               </div>
-              {isOwner && (
+              {finalIsOwner && (
                 <Badge variant="outline" className="border-green-300 text-green-700 dark:text-green-300 text-xs">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   Discoverable
@@ -696,7 +827,22 @@ export function QuizActions({
           </div>
         )}
 
-        {isOwner && (
+        {/* Debug Panel (Development Only) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mx-4 mb-4 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <div className="text-xs font-mono text-yellow-800 dark:text-yellow-200">
+              <div><strong>Debug Info:</strong></div>
+              <div>isOwner: {String(isOwner)}</div>
+              <div>currentUserId: {currentUserId || 'null'}</div>
+              <div>quizData.userId: {quizData?.userId || 'null'}</div>
+              <div>isAuthenticated: {String(isAuthenticated)}</div>
+              <div>quizType: {quizData?.quizType || 'unknown'}</div>
+              <div>Actions: {actionButtons.map(a => a.id).join(', ')}</div>
+            </div>
+          </div>
+        )}
+
+        {finalIsOwner && (
           <ConfirmDialog
             isOpen={showDeleteDialog}
             onCancel={() => setShowDeleteDialog(false)}

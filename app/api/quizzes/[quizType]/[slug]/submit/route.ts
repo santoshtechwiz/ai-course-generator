@@ -235,16 +235,183 @@ function validateAnswersFormat(
   return { isValid: true }
 }
 
+// Calculate accuracy based on correct answers
+function calculateAccuracy(answers: QuizAnswerUnion[], totalQuestions: number): number {
+  if (totalQuestions <= 0 || answers.length === 0) return 0
+  
+  // Count correct answers
+  let correctAnswers = 0
+  answers.forEach(answer => {
+    if ('isCorrect' in answer && answer.isCorrect === true) {
+      correctAnswers++
+    }
+  })
+  
+  const accuracy = (correctAnswers / totalQuestions) * 100
+  return Math.min(100, Math.max(0, Math.round(accuracy)))
+}
+
 // Optimize the calculatePercentageScore function
 function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
-  // For open-ended and blanks quizzes, the score is already a percentage
+  console.log(`Calculating percentage score: score=${score}, totalQuestions=${totalQuestions}, type=${type}`)
+  
+  // Ensure we have valid inputs
+  if (totalQuestions <= 0) {
+    console.warn('Invalid totalQuestions:', totalQuestions)
+    return 0
+  }
+  
+  // For open-ended and blanks quizzes, the score might already be a percentage or raw count
   if (type === "openended" || type === "blanks") {
-    // Ensure the score is within 0-100 range
-    return Math.min(100, Math.max(0, score))
+    // If score is already a percentage (> 1), cap it at 100
+    if (score > 1) {
+      return Math.min(100, Math.max(0, score))
+    }
+    // If score is a ratio (0-1), convert to percentage
+    return Math.min(100, Math.max(0, score * 100))
   }
 
-  // For other quiz types, calculate percentage based on correct answers
-  return (score / Math.max(1, totalQuestions)) * 100
+  // For MCQ and code quizzes, score should be the number of correct answers
+  // Convert to percentage: (correct answers / total questions) * 100
+  const percentage = (score / totalQuestions) * 100
+  return Math.min(100, Math.max(0, percentage))
+}
+
+// Separate function to handle course progress updates (outside main transaction)
+async function updateCourseProgress(userId: string, quiz: any, totalTime: number) {
+  try {
+    console.log(`Looking for course association for quiz: ${quiz.id}, slug: ${quiz.slug}`);
+    
+    // Try to find a course quiz linked to this user quiz
+    // The connection between userQuiz and courseQuiz is based on matching content
+    // Since there's no direct foreign key relationship, we need to use text matching
+    let courseQuiz = await prisma.courseQuiz.findFirst({
+      where: {
+        OR: [
+          // Try matching by quiz slug in the question or answer field
+          { question: { contains: quiz.slug } },
+          { answer: { contains: quiz.slug } },
+          
+          // Try matching by quiz ID (as string) in the question or answer field
+          { question: { contains: String(quiz.id) } },
+          { answer: { contains: String(quiz.id) } }
+        ]
+      },
+      include: {
+        chapter: {
+          include: {
+            unit: {
+              include: {
+                course: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    console.log(courseQuiz ? 
+      `Found associated course quiz: ${JSON.stringify({
+        chapterId: courseQuiz.chapterId,
+        questionId: courseQuiz.id
+      })}` : 
+      "No associated course quiz found");
+    
+    if (courseQuiz?.chapter) {
+      // Update course progress in a separate transaction
+      await prisma.$transaction(async (tx) => {
+        const chapter = courseQuiz.chapter;
+        const courseId = chapter.unit?.courseId;
+        
+        if (!courseId) {
+          console.log(`Missing course info for chapter ${chapter.id}`);
+          return;
+        }
+        
+        console.log(`Found associated chapter ${chapter.id} for course ${courseId}`);
+        
+        // Mark the chapter as completed
+        await tx.chapter.update({
+          where: { id: chapter.id },
+          data: { isCompleted: true }
+        });
+        
+        // Get existing course progress
+        const courseProgress = await tx.courseProgress.findFirst({
+          where: {
+            userId: userId,
+            courseId: courseId
+          }
+        });
+        
+        if (courseProgress) {
+          // Add this chapter to completed chapters if not already there
+          let completedChapterIds = [];
+          try {
+            completedChapterIds = courseProgress.completedChapters ? 
+              JSON.parse(courseProgress.completedChapters) : [];
+          } catch (e) {
+            console.warn("Invalid JSON in completedChapters:", courseProgress.completedChapters);
+            console.error("JSON parse error:", e);
+            completedChapterIds = [];
+          }
+          
+          if (!completedChapterIds.includes(chapter.id)) {
+            completedChapterIds.push(chapter.id);
+          }
+          
+          // Recalculate progress
+          const allChapters = await tx.chapter.findMany({
+            where: {
+              unit: {
+                courseId: courseId
+              }
+            }
+          });
+          
+          const progress = allChapters.length > 0 ? 
+            Math.round((completedChapterIds.length / allChapters.length) * 100) : 0;
+          
+          // Update course progress
+          await tx.courseProgress.update({
+            where: {
+              id: courseProgress.id
+            },
+            data: {
+              completedChapters: JSON.stringify(completedChapterIds),
+              progress: progress,
+              isCompleted: progress === 100, // Mark as completed if 100%
+              completionDate: progress === 100 ? new Date() : courseProgress.completionDate
+            }
+          });
+        } else {
+          // Create new course progress if it doesn't exist
+          await tx.courseProgress.create({
+            data: {
+              userId: userId,
+              courseId: courseId,
+              currentChapterId: chapter.id,
+              completedChapters: JSON.stringify([chapter.id]),
+              progress: 1, // Start with some progress
+              timeSpent: Math.round(totalTime || 0),
+              isCompleted: false
+            }
+          });
+        }
+      }, {
+        timeout: 15000, // Separate timeout for course progress
+      });
+    }
+  } catch (error) {
+    console.error("Error in updateCourseProgress:", error);
+    console.error("Error details:", JSON.stringify({
+      quizId: quiz.id,
+      quizSlug: quiz.slug,
+      userId: userId,
+      error: error instanceof Error ? error.message : String(error)
+    }));
+    throw error; // Re-throw to be caught by the calling function
+  }
 }
 
 // Database operations
@@ -293,7 +460,8 @@ async function processQuizSubmission(
   userId: string, 
   submission: QuizSubmission, 
   quiz: QuizWithQuestions, 
-  percentageScore: number
+  percentageScore: number,
+  accuracyScore: number
 ): Promise<QuizSubmissionResult> {
   try {
     // Move update outside transaction to avoid deadlocks
@@ -308,7 +476,7 @@ async function processQuizSubmission(
       },
     })
 
-    // Continue rest inside transaction
+    // Continue with core quiz submission transaction (optimized for speed)
     const result = await prisma.$transaction(
       async (tx) => {
         await tx.user.update({
@@ -329,8 +497,6 @@ async function processQuizSubmission(
           throw new Error(`Quiz not found with slug: ${submission.quizId}`);
         }
         
-        // Finding associated chapter will be done in course progress section below
-        
         const quizAttempt = await tx.userQuizAttempt.upsert({
           where: {
             userId_userQuizId: {
@@ -339,191 +505,42 @@ async function processQuizSubmission(
             },
           },
           update: {
-            score: percentageScore,
+            score: Math.round(percentageScore),
             timeSpent: Math.round(submission.totalTime),
-            accuracy: percentageScore,
+            accuracy: accuracyScore,
           },
           create: {
             userId,
             userQuizId: quizRecord.id,
-            score: percentageScore,
+            score: Math.round(percentageScore),
             timeSpent: Math.round(submission.totalTime),
-            accuracy: percentageScore,
+            accuracy: accuracyScore,
           },
         })
 
         await processQuestionAnswers(tx, quiz.questions, submission.answers, quizAttempt.id, submission.type)
         
-        // Check if this quiz is associated with a course chapter and update course progress
-        // Define result first to ensure it's always returned
-        const result = {
+        return {
           updatedUserQuiz,
           quizAttempt,
           percentageScore,
           totalQuestions: quiz.questions ? quiz.questions.length : 0,
         };
-        
-        try {
-          console.log(`Looking for course association for quiz: ${quiz.id}, slug: ${quiz.slug}`);
-          
-          // Try to find a course quiz linked to this user quiz
-          // The connection between userQuiz and courseQuiz is based on matching content
-          // Since there's no direct foreign key relationship, we need to use text matching
-          let courseQuiz = await tx.courseQuiz.findFirst({
-            where: {
-              OR: [
-                // Try matching by quiz slug in the question or answer field
-                { question: { contains: quiz.slug } },
-                { answer: { contains: quiz.slug } },
-                
-                // Try matching by quiz ID (as string) in the question or answer field
-                { question: { contains: String(quiz.id) } },
-                { answer: { contains: String(quiz.id) } }
-              ]
-            },
-            include: {
-              chapter: true
-            }
-          });
-          
-          // If course quiz found, get the full chapter info with course details
-          if (courseQuiz) {
-            const chapterWithCourse = await tx.chapter.findUnique({
-              where: { id: courseQuiz.chapterId },
-              include: {
-                unit: {
-                  include: {
-                    course: true
-                  }
-                }
-              }
-            });
-            
-            // Enhance courseQuiz with full chapter data
-            if (chapterWithCourse) {
-              courseQuiz.chapter = chapterWithCourse;
-            }
-          }
-          
-          console.log(courseQuiz ? 
-            `Found associated course quiz: ${JSON.stringify({
-              chapterId: courseQuiz.chapterId,
-              questionId: courseQuiz.id
-            })}` : 
-            "No associated course quiz found");
-          
-          if (courseQuiz?.chapter) {
-            // Update course progress
-            const chapter = courseQuiz.chapter;
-            
-            // Get the unit associated with this chapter
-            const unit = await tx.courseUnit.findUnique({
-              where: { id: chapter.unitId },
-              include: { course: true }
-            });
-            
-            if (!unit || !unit.courseId) {
-              console.log(`Missing unit or course info for chapter ${chapter.id}`);
-              // Don't return, continue with the result
-              return result;
-            }
-            
-            const courseId = unit.courseId;
-            
-            console.log(`Found associated chapter ${chapter.id} for course ${courseId}`);
-            
-            // Mark the chapter as completed
-            await tx.chapter.update({
-              where: { id: chapter.id },
-              data: { isCompleted: true }
-            });
-            
-            // Get existing course progress
-            const courseProgress = await tx.courseProgress.findFirst({
-              where: {
-                userId: userId,
-                courseId: courseId
-              }
-            });
-            
-            if (courseProgress) {
-              // Add this chapter to completed chapters if not already there
-              let completedChapterIds = [];
-              try {
-                completedChapterIds = courseProgress.completedChapters ? 
-                  JSON.parse(courseProgress.completedChapters) : [];
-              } catch (e) {
-                console.warn("Invalid JSON in completedChapters:", courseProgress.completedChapters);
-                console.error("JSON parse error:", e);
-                completedChapterIds = [];
-              }
-              
-              if (!completedChapterIds.includes(chapter.id)) {
-                completedChapterIds.push(chapter.id);
-              }
-              
-              // Recalculate progress
-              const allChapters = await tx.chapter.findMany({
-                where: {
-                  unit: {
-                    courseId: courseId
-                  }
-                }
-              });
-              
-              const progress = allChapters.length > 0 ? 
-                Math.round((completedChapterIds.length / allChapters.length) * 100) : 0;
-              
-              // Update course progress
-              await tx.courseProgress.update({
-                where: {
-                  id: courseProgress.id
-                },
-                data: {
-                  completedChapters: JSON.stringify(completedChapterIds),
-                  progress: progress,
-                  isCompleted: progress === 100, // Mark as completed if 100%
-                  completionDate: progress === 100 ? new Date() : courseProgress.completionDate
-                }
-              });
-            } else {
-              // Create new course progress if it doesn't exist
-              await tx.courseProgress.create({
-                data: {
-                  userId: userId,
-                  courseId: courseId,
-                  currentChapterId: chapter.id,
-                  completedChapters: JSON.stringify([chapter.id]),
-                  progress: 1, // Start with some progress
-                  timeSpent: Math.round(submission.totalTime || 0),
-                  isCompleted: false
-                }
-              });
-            }
-          }
-        } catch (error) {
-          // Log but don't fail the transaction if course progress update fails
-          console.error("Error updating course progress:", error);
-          console.error("Error details:", JSON.stringify({
-            quizId: quiz.id,
-            quizSlug: quiz.slug,
-            userId: userId,
-            error: error instanceof Error ? error.message : String(error)
-          }));
-          
-          // We need to continue with the result rather than letting the error propagate
-          // to ensure the quiz submission is recorded even if course progress update fails
-        }
-
-        // Return the predefined result
-        return result;
       },
       {
-        isolationLevel: "Serializable",
-        maxWait: 5000,
-        timeout: 10000,
+        isolationLevel: "ReadCommitted", // Less restrictive for better performance
+        maxWait: 10000, // Increased wait time
+        timeout: 20000, // Increased timeout to 20 seconds
       },
     )
+
+    // Handle course progress update separately (outside transaction to avoid timeout)
+    try {
+      await updateCourseProgress(userId, quiz, submission.totalTime);
+    } catch (error) {
+      // Log but don't fail the quiz submission if course progress update fails
+      console.error("Error updating course progress (non-blocking):", error);
+    }
 
     return result
   } catch (error) {
@@ -822,9 +839,18 @@ export async function POST(request: Request): Promise<NextResponse<QuizCompletio
 
     const totalQuestions = quiz.questions ? quiz.questions.length : 0
     const percentageScore = calculatePercentageScore(submission.score, totalQuestions, submission.type)
+    const accuracyScore = calculateAccuracy(submission.answers, totalQuestions)
+
+    console.log('Quiz calculation results:', {
+      totalQuestions,
+      originalScore: submission.score,
+      percentageScore,
+      accuracyScore,
+      quizType: submission.type
+    })
 
     try {
-      const result = await retryTransaction(() => processQuizSubmission(userId, submission, quiz, percentageScore))
+      const result = await retryTransaction(() => processQuizSubmission(userId, submission, quiz, percentageScore, accuracyScore))
 
       // Ensure all required fields are included in the response
       return NextResponse.json({

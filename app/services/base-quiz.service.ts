@@ -26,7 +26,7 @@ export abstract class BaseQuizService {
     const quiz = await this.quizRepository.findBySlug(slug);
 
     if (!quiz) {
-      throw new Error("Quiz not found");
+      return null;
     }
     console.log("Quiz found:", quiz);
     return {
@@ -89,6 +89,19 @@ export abstract class BaseQuizService {
     return this.quizRepository.toggleVisibility(slug, userId);
   }
 
+  async delete(slug: string, userId: string) {
+    const quiz = await this.quizRepository.findBySlug(slug);
+    
+    if (!quiz) {
+      throw new Error("Quiz not found");
+    }
+    
+    if (quiz.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+    
+    return this.quizRepository.delete(quiz.id);
+  }
   /**
    * Format questions based on quiz type (implemented by child classes)
    */

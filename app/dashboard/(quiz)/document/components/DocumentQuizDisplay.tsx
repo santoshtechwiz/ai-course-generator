@@ -33,6 +33,7 @@ interface DocumentQuizDisplayProps {
   onUpdate?: (questions: Question[]) => void
   title?: string
   isEditable?: boolean
+  isOwner?: boolean
 }
 
 const QuestionEditor = ({
@@ -321,13 +322,14 @@ const QuestionEditor = ({
     </motion.div>
   )
 }
-
 export default function DocumentQuizDisplay({
   questions,
   onSave,
   onUpdate,
   title = "Generated Quiz",
   isEditable = true,
+  isOwner = false,
+}: DocumentQuizDisplayProps) {
 }: DocumentQuizDisplayProps) {
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
   const [localQuestions, setLocalQuestions] = useState(questions)
@@ -441,7 +443,13 @@ export default function DocumentQuizDisplay({
               <Button variant="outline" size="sm" disabled>
                 Loading...
               </Button>
-            }
+            <EnhancedPDFDownloadButton 
+              questions={validQuestions} 
+              title={title} 
+              variant="outline" 
+              size="sm" 
+              isOwner={isOwner}
+            />
           >
             <EnhancedPDFDownloadButton questions={validQuestions} title={title} variant="outline" size="sm" />
           </Suspense>

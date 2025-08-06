@@ -107,7 +107,26 @@ export default function QuizPlayLayout({
   // Auth and ownership
   const authUser = useAuth().user;
   userId = userId || authUser?.id || "";
-  const isOwner = quizOwnerId === userId;
+  
+  // Check ownership from multiple sources for better reliability
+  const isOwner = quizOwnerId === userId || 
+                 quizData?.userId === userId || 
+                 quizData?.createdBy === userId ||
+                 quizData?.ownerId === userId;
+
+  // Debug logging for ownership
+  if (process.env.NODE_ENV !== "production") {
+    console.log("QuizPlayLayout ownership debug:", {
+      currentUserId: userId,
+      authUserId: authUser?.id,
+      quizOwnerId,
+      quizDataUserId: quizData?.userId,
+      quizDataCreatedBy: quizData?.createdBy,
+      quizDataOwnerId: quizData?.ownerId,
+      calculatedIsOwner: isOwner,
+      quizSlug
+    });
+  }
 
   // Timer
   useEffect(() => {

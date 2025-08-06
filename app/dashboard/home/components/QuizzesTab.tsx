@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation"
 import type { DashboardUser, UserQuiz, UserQuizAttempt } from "@/app/types/types"
 import QuizResultsDialog from "./QuizResultsDialog"
 import type { QuizType } from "@/app/types/quiz-types"
-import { useGlobalLoader } from "@/store/loaders/global-loader" // Import useGlobalLoader
 
 interface QuizzesTabProps {
   userData: DashboardUser
@@ -23,7 +22,6 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
   const [activeTab, setActiveTab] = useState("quizzes")
   const [selectedAttempt, setSelectedAttempt] = useState<UserQuizAttempt | null>(null)
   const router = useRouter()
-  const { startLoading, stopLoading } = useGlobalLoader() // Use global loader
 
   // Use useMemo to calculate filtered data only when dependencies change
   const { filteredAllQuizzes, filteredCompletedQuizzes, filteredInProgressQuizzes, filteredAttempts } = useMemo(() => {
@@ -87,13 +85,10 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
   // Use useCallback to memoize this function
   const handleQuizClick = useCallback(
     (quizId: string, quizType: string, slug: string) => {
-      startLoading({ message: "Loading quiz...", isBlocking: false, id: `quiz-load-${quizId}` })
-      // Use requestAnimationFrame to ensure this happens after render
-      requestAnimationFrame(() => {
-        router.push(`/dashboard/${quizType}/${slug}`)
-      })
+      // Remove global loader since navigation already handles loading
+      router.push(`/dashboard/${quizType}/${slug}`)
     },
-    [router, startLoading],
+    [router],
   )
 
   return (
@@ -178,8 +173,6 @@ interface QuizGridProps {
 }
 
 function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, onQuizClick }: QuizGridProps) {
-  const { isLoading: isGlobalLoading, loadingId } = useGlobalLoader() // Use global loader to check loading state
-
   if (quizzes.length === 0) {
     return (
       <Card>
@@ -201,13 +194,10 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, onQuizClick }: 
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {quizzes.map((quiz) => {
         if (!quiz) return null
-        const isLoadingThisQuiz = isGlobalLoading && loadingId === `quiz-load-${quiz.id}`
         return (
           <Card
             key={quiz.id}
-            className={`overflow-hidden transition-all duration-300 ${
-              isLoadingThisQuiz ? "opacity-70 scale-[0.98] shadow-sm" : "hover:shadow-md hover:scale-[1.01]"
-            }`}
+            className="overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer"
             onClick={() =>
               quiz &&
               quiz.id &&
@@ -217,12 +207,6 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, onQuizClick }: 
             }
           >
             <CardContent className="p-4 relative cursor-pointer">
-              {isLoadingThisQuiz && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              )}
-
               <div className="flex items-center justify-between mb-2">
                 <Badge className={getQuizTypeColor(quiz.quizType as QuizType)}>
                   {getQuizTypeLabel(quiz.quizType as QuizType)}
@@ -253,7 +237,7 @@ function QuizGrid({ quizzes, getQuizTypeLabel, getQuizTypeColor, onQuizClick }: 
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center text-sm text-muted-foreground">
                   <BookOpen className="mr-1 h-4 w-4" />
-                  <span>{quiz.questions?.length || 0} questions</span>
+                  <span>{quiz._count?.questions || quiz.questions?.length || 0} questions</span>
                 </div>
 
                 {quiz.timeEnded && (

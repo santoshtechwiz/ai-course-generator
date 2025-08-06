@@ -111,6 +111,9 @@ export interface UserQuiz {
       hints?: string[];
     };
   }>;
+  _count?: {
+    questions: number;
+  };
   timeStarted: string;
   timeEnded: string | null;
   progress?: number;

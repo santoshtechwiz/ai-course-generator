@@ -95,7 +95,7 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   const { mutateAsync: createBlankQuizMutation } = useMutation({
     mutationFn: async (data: BlankQuizFormData) => {
-      const response = await axios.post("/api/blanks", data)
+      const response = await axios.post("/api/quizzes/blanks/create", data)
       return response.data
     },
     onError: (error: any) => {

@@ -90,4 +90,12 @@ export class CodeQuizService extends BaseQuizService {
   async completeCodeQuiz(slug: string, userId: string, score: number) {
     return this.completeQuiz(slug, userId, score);
   }
+
+  async delete(slug: string, userId: string) {
+    const quiz = await this.quizRepository.findBySlug(slug);
+    if (!quiz || quiz.userId !== userId) {
+      throw new Error("Unauthorized or quiz not found");
+    }
+    return this.quizRepository.delete(quiz.id);
+  }
 }

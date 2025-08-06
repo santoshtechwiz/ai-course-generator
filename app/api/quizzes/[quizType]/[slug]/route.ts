@@ -4,11 +4,11 @@ import { getAuthSession } from "@/lib/auth"
 
 export async function GET(
   req: NextRequest, 
-  { params }: { params: { quizType: string; slug: string } }
+  { params }: { params: Promise<{ quizType: string; slug: string }> }
 ): Promise<NextResponse> {
   try {
-    // Extract parameters
-    const { quizType, slug } = params
+    // Extract parameters - await params first
+    const { quizType, slug } = await params
     
     // Get the user session for authorization if needed
     const session = await getAuthSession()
@@ -30,7 +30,13 @@ export async function GET(
     
     return NextResponse.json(quiz)
   } catch (error) {
-    console.error(`Error fetching ${params.quizType} quiz:`, error)
+    // Await params before using its properties in error logging
+    let quizType = "unknown"
+    try {
+      const awaitedParams = await params
+      quizType = awaitedParams.quizType
+    } catch {}
+    console.error(`Error fetching ${quizType} quiz:`, error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -68,7 +74,13 @@ export async function PATCH(
     
     return NextResponse.json(updatedQuiz)
   } catch (error) {
-    console.error(`Error updating ${params.quizType} quiz:`, error)
+    // Await params before using its properties in error logging
+    let quizType = "unknown"
+    try {
+      const awaitedParams = await params
+      quizType = awaitedParams.quizType
+    } catch {}
+    console.error(`Error updating ${quizType} quiz:`, error)
     return NextResponse.json({ error: "Failed to update quiz" }, { status: 500 })
   }
 }
