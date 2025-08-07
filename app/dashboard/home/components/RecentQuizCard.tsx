@@ -92,7 +92,7 @@ const RecentQuizCard = memo(function RecentQuizCard({ quiz }: RecentQuizCardProp
         )}
 
         <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-muted-foreground">{quiz.questions?.length || 0} questions</div>
+          <div className="text-sm text-muted-foreground">{(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions</div>
 
           {quiz.timeEnded && (
             <div className="text-lg font-bold text-green-600 dark:text-green-400">{quiz.bestScore || 0}%</div>

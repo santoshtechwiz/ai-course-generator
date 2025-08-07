@@ -6,8 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Search, GraduationCap, Clock, CheckCircle, AlertCircle, BookOpen, Loader2, RotateCcw, Eye, Award } from "lucide-react"
+import { Search, GraduationCap, Clock, CheckCircle, AlertCircle, BookOpen, Loader2, RotateCcw, Eye, Award, Trophy, Target, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { DashboardUser, UserQuiz, UserQuizAttempt } from "@/app/types/types"
@@ -18,13 +20,15 @@ import { toast } from "sonner"
 
 interface QuizzesTabProps {
   userData: DashboardUser
+  isLoading?: boolean
 }
 
-export default function QuizzesTab({ userData }: QuizzesTabProps) {
+export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("quizzes")
   const [selectedAttempt, setSelectedAttempt] = useState<UserQuizAttempt | null>(null)
   const [isResetting, setIsResetting] = useState(false)
+  const [navigatingQuizId, setNavigatingQuizId] = useState<string | null>(null)
   const router = useRouter()
 
   const { attempts, isLoading: attemptsLoading, resetAttempts } = useQuizAttempts(20)
@@ -92,15 +96,50 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
   }, [])
 
   const getScoreColor = useCallback((score: number) => {
+    if (score >= 90) return "text-emerald-600 dark:text-emerald-400"
     if (score >= 80) return "text-green-600 dark:text-green-400"
+    if (score >= 70) return "text-lime-600 dark:text-lime-400"
     if (score >= 60) return "text-yellow-600 dark:text-yellow-400"
+    if (score >= 50) return "text-orange-600 dark:text-orange-400"
     return "text-red-600 dark:text-red-400"
+  }, [])
+
+  const getScoreIcon = useCallback((score: number) => {
+    if (score >= 90) return <Trophy className="h-4 w-4 text-emerald-500" />
+    if (score >= 80) return <Target className="h-4 w-4 text-green-500" />
+    if (score >= 60) return <TrendingUp className="h-4 w-4 text-yellow-500" />
+    return <AlertCircle className="h-4 w-4 text-red-500" />
+  }, [])
+
+  const getGradeLabel = useCallback((score: number) => {
+    if (score >= 90) return "Excellent"
+    if (score >= 80) return "Good"
+    if (score >= 70) return "Fair"
+    if (score >= 60) return "Pass"
+    return "Needs Improvement"
+  }, [])
+
+  const formatScore = useCallback((score: number | null | undefined) => {
+    if (score === null || score === undefined) return "N/A"
+    return `${Math.round(score)}%`
+  }, [])
+
+  const calculateProgress = useCallback((quiz: UserQuiz) => {
+    if (quiz.timeEnded) return 100
+    // For in-progress quizzes, we could calculate based on attempts or other metrics
+    // For now, return a base progress value
+    return 0
   }, [])
 
   // Use useCallback to memoize this function
   const handleQuizClick = useCallback(
-    (quizId: string, quizType: string, slug: string) => {
-      router.push(`/dashboard/${quizType}/${slug}`)
+    (quizId: string, quizType: string, slug: string | undefined) => {
+      if (slug) {
+        setNavigatingQuizId(quizId)
+        router.push(`/dashboard/${quizType}/${slug}`)
+        // Reset after navigation (in case user goes back)
+        setTimeout(() => setNavigatingQuizId(null), 2000)
+      }
     },
     [router],
   )
@@ -119,6 +158,54 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
     } finally {
       setIsResetting(false)
     }
+  }
+
+  // Loading skeleton component
+  const QuizCardSkeleton = () => (
+    <Card className="animate-pulse">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+          <Skeleton className="h-6 w-16" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  // If main data is loading, show skeletons
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-64" />
+        </div>
+        
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <QuizCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -186,7 +273,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <BookOpen className="h-4 w-4" />
-                          <span>{quiz.questions?.length || 0} questions</span>
+                          <span>{(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
@@ -208,8 +295,16 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
+                          disabled={navigatingQuizId === quiz.id.toString()}
                         >
-                          {quiz.timeEnded ? "Review" : "Continue"}
+                          {navigatingQuizId === quiz.id.toString() ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            quiz.timeEnded ? "Review" : "Continue"
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -250,7 +345,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <BookOpen className="h-4 w-4" />
-                          <span>{quiz.questions?.length || 0} questions</span>
+                          <span>{(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
@@ -261,18 +356,54 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-green-500" />
                           <span className="text-sm font-medium">Completed</span>
-                          {quiz.bestScore && (
-                            <span className={`text-sm font-bold ${getScoreColor(quiz.bestScore)}`}>
-                              {Math.round(quiz.bestScore)}%
-                            </span>
-                          )}
                         </div>
+                        {quiz.bestScore !== null && quiz.bestScore !== undefined ? (
+                          <div className="flex items-center gap-2">
+                            {getScoreIcon(quiz.bestScore)}
+                            <div className="text-right">
+                              <div className={`text-lg font-bold ${getScoreColor(quiz.bestScore)}`}>
+                                {formatScore(quiz.bestScore)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {getGradeLabel(quiz.bestScore)}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            No Score
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                          <span>Performance</span>
+                          <span>{formatScore(quiz.bestScore)}</span>
+                        </div>
+                        <Progress 
+                          value={quiz.bestScore || 0} 
+                          className={`h-2 ${
+                            quiz.bestScore && quiz.bestScore >= 80 ? 'bg-green-100' : 
+                            quiz.bestScore && quiz.bestScore >= 60 ? 'bg-yellow-100' : 
+                            'bg-red-100'
+                          }`}
+                        />
+                      </div>
+                      <div className="mt-3">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
+                          disabled={navigatingQuizId === quiz.id.toString()}
                         >
-                          Review
+                          {navigatingQuizId === quiz.id.toString() ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Review"
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -313,7 +444,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <BookOpen className="h-4 w-4" />
-                          <span>{quiz.questions?.length || 0} questions</span>
+                          <span>{(quiz as any)?._count?.questions || quiz.questions?.length || 0} questions</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
@@ -328,8 +459,16 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                         <Button
                           size="sm"
                           onClick={() => handleQuizClick(quiz.id.toString(), quiz.quizType, quiz.slug)}
+                          disabled={navigatingQuizId === quiz.id.toString()}
                         >
-                          Continue
+                          {navigatingQuizId === quiz.id.toString() ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Continue"
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -415,22 +554,47 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className={`text-lg font-bold ${getScoreColor(attempt.score)}`}>
-                            {attempt.score}%
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {attempt.correctAnswers}/{attempt.totalQuestions} correct
+                        <div className="flex items-center gap-3">
+                          {getScoreIcon(attempt.score)}
+                          <div className="text-right">
+                            <div className={`text-xl font-bold ${getScoreColor(attempt.score)}`}>
+                              {formatScore(attempt.score)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {getGradeLabel(attempt.score)}
+                            </div>
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedAttempt(attempt)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Results
-                        </Button>
+                        <div className="text-center">
+                          <div className="text-sm font-medium">
+                            {attempt.correctAnswers || 0}/{attempt.totalQuestions || 0}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            correct
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedAttempt(attempt)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          {attempt.timeSpent && (
+                            <div className="text-xs text-muted-foreground text-center">
+                              {Math.round(attempt.timeSpent / 60)}m
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Progress bar for visual score representation */}
+                      <div className="mt-3">
+                        <Progress 
+                          value={attempt.score || 0} 
+                          className="h-2"
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -444,7 +608,7 @@ export default function QuizzesTab({ userData }: QuizzesTabProps) {
       {selectedAttempt && (
         <QuizResultsDialog
           attempt={selectedAttempt}
-          open={!!selectedAttempt}
+          open={true}
           onClose={() => setSelectedAttempt(null)}
         />
       )}
