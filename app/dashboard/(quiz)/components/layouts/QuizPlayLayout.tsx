@@ -5,14 +5,7 @@ import { usePathname } from "next/navigation"
 import { buildQuizUrl, cn } from "@/lib/utils"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback, memo } from "react"
 import { useSelector } from "react-redux"
-im  const RandomQuizComponent = useMemo(() => (
-    <div className="bg-card rounded-lg border p-3 shadow-sm">
-      <h3 className="font-medium text-sm mb-2 text-gray-900 dark:text-gray-100">More Quizzes</h3>
-      <Suspense fallback={<QuizSkeleton />}>
-        <RandomQuiz showStats={true} autoRotate={true} />
-      </Suspense>
-    </div>
-  ), []);electQuizUserId } from "@/store/slices/quiz"
+import { selectQuizUserId } from "@/store/slices/quiz"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
