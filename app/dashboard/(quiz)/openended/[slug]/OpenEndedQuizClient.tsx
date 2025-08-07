@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 import { useSelector } from "react-redux"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 
 interface OpenEndedQuizClientProps {
   params: Promise<{ slug: string }>
@@ -24,12 +25,12 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
 
   if (!slug) {
     return (
-      <div className="container max-w-4xl py-6">
-        <Card>
+      <div className="flex items-center justify-center min-h-screen w-full bg-background">
+        <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+            <h2 className="text-xl font-bold mb-3">Error</h2>
+            <p className="text-muted-foreground mb-4">Quiz slug is missing. Please check the URL.</p>
+            <Button size="lg" onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
       </div>
@@ -37,15 +38,18 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
   }
 
   return (
-    <QuizPlayLayout 
-      quizSlug={slug} 
-      quizType="openended"
-      quizData={quizData || null}
-      quizId={slug}
-      isPublic={true} 
-      isFavorite={false}
-    >
-      <OpenEndedQuizWrapper slug={slug} />
-    </QuizPlayLayout>
+    <>
+      <QuizGlobalLoader quizType="Open-Ended Quiz" />
+      <QuizPlayLayout 
+        quizSlug={slug} 
+        quizType="openended"
+        quizData={quizData || null}
+        quizId={slug}
+        isPublic={true} 
+        isFavorite={false}
+      >
+        <OpenEndedQuizWrapper slug={slug} />
+      </QuizPlayLayout>
+    </>
   );
 }

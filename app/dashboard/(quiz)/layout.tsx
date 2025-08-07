@@ -42,7 +42,7 @@ export default function QuizLayout({
   children: React.ReactNode
 }) {
   return (
-    <ModuleLayout variant="flush" suspense={true} className="quiz-module-layout">
+    <ModuleLayout variant="flush" suspense={true} className="quiz-module-layout w-full min-h-screen p-0 m-0">
       {children}
     </ModuleLayout>
   )

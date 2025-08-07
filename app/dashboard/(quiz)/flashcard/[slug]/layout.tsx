@@ -42,7 +42,7 @@ export default async function FlashcardSlugLayout({
     <ModuleLayout 
       variant="flush" 
       suspense={true} 
-      className="flashcard-quiz-instance-layout"
+      className="flashcard-quiz-instance-layout w-full min-h-screen p-0 m-0"
     >
       {children}
     </ModuleLayout>

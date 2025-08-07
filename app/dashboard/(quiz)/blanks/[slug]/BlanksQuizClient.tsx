@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 
 interface BlanksQuizClientProps {
@@ -24,12 +25,12 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
 
   if (!slug) {
     return (
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Card>
+      <div className="flex items-center justify-center min-h-screen w-full bg-background">
+        <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+            <h2 className="text-xl font-bold mb-3">Error</h2>
+            <p className="text-muted-foreground mb-4">Quiz slug is missing. Please check the URL.</p>
+            <Button size="lg" onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
       </div>
@@ -37,15 +38,18 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
   }
 
   return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="blanks"
-      quizId={slug}
-      isPublic={true}
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <BlanksQuizWrapper slug={slug} title="Fill in the Blanks Quiz" />
-    </QuizPlayLayout>
+    <>
+      <QuizGlobalLoader quizType="Fill in the Blanks Quiz" />
+      <QuizPlayLayout
+        quizSlug={slug}
+        quizType="blanks"
+        quizId={slug}
+        isPublic={true}
+        isFavorite={false}
+        quizData={quizData || null}
+      >
+        <BlanksQuizWrapper slug={slug} title="Fill in the Blanks Quiz" />
+      </QuizPlayLayout>
+    </>
   )
 }

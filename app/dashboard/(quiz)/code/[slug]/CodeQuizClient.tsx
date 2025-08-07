@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
-
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 
 interface CodeQuizClientProps {
@@ -25,12 +25,12 @@ export default function CodeQuizClient({ params }: CodeQuizClientProps) {
 
   if (!slug) {
     return (
-      <div className="container max-w-4xl py-6">
-        <Card>
+      <div className="flex items-center justify-center min-h-screen w-full bg-background">
+        <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+            <h2 className="text-xl font-bold mb-3">Error</h2>
+            <p className="text-muted-foreground mb-4">Quiz slug is missing. Please check the URL.</p>
+            <Button size="lg" onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
       </div>
@@ -38,15 +38,18 @@ export default function CodeQuizClient({ params }: CodeQuizClientProps) {
   }
 
   return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="code"
-      quizId={slug}
-      isPublic={true}
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <CodeQuizWrapper slug={slug} />
-    </QuizPlayLayout>
+    <>
+      <QuizGlobalLoader quizType="Code Challenge" />
+      <QuizPlayLayout
+        quizSlug={slug}
+        quizType="code"
+        quizId={slug}
+        isPublic={true}
+        isFavorite={false}
+        quizData={quizData || null}
+      >
+        <CodeQuizWrapper slug={slug} />
+      </QuizPlayLayout>
+    </>
   );
 }

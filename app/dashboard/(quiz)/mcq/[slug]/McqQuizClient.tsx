@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import McqQuizWrapper from "../components/McqQuizWrapper"
-
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 
 interface McqQuizClientProps {
@@ -26,12 +26,12 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
 
   if (!slug) {
     return (
-      <div className="container max-w-4xl py-6">
-        <Card>
+      <div className="flex items-center justify-center min-h-screen w-full bg-background">
+        <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">Quiz slug is missing. Please check the URL.</p>
-            <Button onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+            <h2 className="text-xl font-bold mb-3">Error</h2>
+            <p className="text-muted-foreground mb-4">Quiz slug is missing. Please check the URL.</p>
+            <Button size="lg" onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
       </div>
@@ -39,15 +39,18 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
   }
 
   return (
-    <QuizPlayLayout
-      quizSlug={slug}
-      quizType="mcq"
-      quizId={slug}
-      isPublic={true}
-      isFavorite={false}
-      quizData={quizData || null}
-    >
-      <McqQuizWrapper slug={slug} />
-    </QuizPlayLayout>
+    <>
+      <QuizGlobalLoader quizType="Multiple Choice Quiz" />
+      <QuizPlayLayout
+        quizSlug={slug}
+        quizType="mcq"
+        quizId={slug}
+        isPublic={true}
+        isFavorite={false}
+        quizData={quizData || null}
+      >
+        <McqQuizWrapper slug={slug} />
+      </QuizPlayLayout>
+    </>
   )
 }

@@ -5,7 +5,14 @@ import { usePathname } from "next/navigation"
 import { buildQuizUrl, cn } from "@/lib/utils"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback, memo } from "react"
 import { useSelector } from "react-redux"
-import { selectQuizUserId } from "@/store/slices/quiz"
+im  const RandomQuizComponent = useMemo(() => (
+    <div className="bg-card rounded-lg border p-3 shadow-sm">
+      <h3 className="font-medium text-sm mb-2 text-gray-900 dark:text-gray-100">More Quizzes</h3>
+      <Suspense fallback={<QuizSkeleton />}>
+        <RandomQuiz showStats={true} autoRotate={true} />
+      </Suspense>
+    </div>
+  ), []);electQuizUserId } from "@/store/slices/quiz"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -54,23 +61,65 @@ interface QuizPlayLayoutProps {
 }
 
 const quizTypeConfig = {
-  mcq: { icon: Target, label: "Multiple Choice", color: "text-blue-500" },
-  code: { icon: Code2, label: "Code Quiz", color: "text-green-500" },
-  blanks: { icon: Focus, label: "Fill Blanks", color: "text-cyan-500" },
-  openended: { icon: FileText, label: "Open Ended", color: "text-violet-500" },
-  flashcard: { icon: CreditCard, label: "Flashcards", color: "text-orange-500" },
-  quiz: { icon: BookOpen, label: "General Quiz", color: "text-indigo-500" },
-  others: { icon: Play, label: "Mixed Quiz", color: "text-gray-500" },
+  mcq: { 
+    icon: Target, 
+    label: "Multiple Choice", 
+    color: "text-blue-600", 
+    bgColor: "bg-blue-50 dark:bg-blue-950",
+    badgeColor: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+  },
+  code: { 
+    icon: Code2, 
+    label: "Code Quiz", 
+    color: "text-green-600", 
+    bgColor: "bg-green-50 dark:bg-green-950",
+    badgeColor: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+  },
+  blanks: { 
+    icon: Focus, 
+    label: "Fill Blanks", 
+    color: "text-cyan-600", 
+    bgColor: "bg-cyan-50 dark:bg-cyan-950",
+    badgeColor: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200"
+  },
+  openended: { 
+    icon: FileText, 
+    label: "Open Ended", 
+    color: "text-violet-600", 
+    bgColor: "bg-violet-50 dark:bg-violet-950",
+    badgeColor: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200"
+  },
+  flashcard: { 
+    icon: CreditCard, 
+    label: "Flashcards", 
+    color: "text-orange-600", 
+    bgColor: "bg-orange-50 dark:bg-orange-950",
+    badgeColor: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+  },
+  quiz: { 
+    icon: BookOpen, 
+    label: "General Quiz", 
+    color: "text-indigo-600", 
+    bgColor: "bg-indigo-50 dark:bg-indigo-950",
+    badgeColor: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+  },
+  others: { 
+    icon: Play, 
+    label: "Mixed Quiz", 
+    color: "text-gray-600", 
+    bgColor: "bg-gray-50 dark:bg-gray-950",
+    badgeColor: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  },
 };
 
 const QuizSkeleton = () => (
-  <div className="w-full p-6 space-y-4 bg-card rounded-xl border">
+  <div className="w-full p-4 space-y-3 bg-card rounded-lg border shadow-sm">
     <div className="flex justify-between">
-      <Skeleton className="h-6 w-32" />
-      <Skeleton className="h-6 w-16" />
+      <Skeleton className="h-5 w-28" />
+      <Skeleton className="h-5 w-14" />
     </div>
-    <Skeleton className="h-4 w-full" />
-    <Skeleton className="h-48 w-full" />
+    <Skeleton className="h-3 w-full" />
+    <Skeleton className="h-36 w-full" />
   </div>
 )
 
@@ -125,8 +174,8 @@ export default function QuizPlayLayout({
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Quiz metadata
-  const quizTitle = quizData?.title || "Interactive Quiz";
-  const quizSubtitle = quizData?.subtitle || "Test your knowledge";
+  const quizTitle = quizData?.title || "";
+  const quizSubtitle = quizData?.subtitle || "";
   const difficulty = quizData?.difficulty || "medium";
   const totalQuestions = Math.max(1, quizData?.questions?.length || 1);
   const questionNumber = Math.max(
@@ -180,20 +229,24 @@ export default function QuizPlayLayout({
 
   // Memoized header component
   const HeaderComponent = useMemo(() => (
-    <header className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b p-4">
+    <header className={`sticky top-0 z-50 backdrop-blur border-b p-3 ${config.bgColor}`}>
       <div className="max-w-screen-2xl mx-auto">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
           {/* Quiz Info */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className={`p-2 rounded-lg ${config.color} bg-muted`}>
+            <div className={`p-2 rounded-lg ${config.color} bg-white dark:bg-gray-800 shadow-sm border`}>
               <Icon className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
-              <h1 className="font-semibold truncate">{quizTitle}</h1>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-semibold text-base truncate leading-tight text-gray-900 dark:text-gray-100">
+                {quizTitle || `${config.label}`}
+              </h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary">{config.label}</Badge>
+                <Badge className={`text-xs px-2 py-0.5 font-medium ${config.badgeColor} border-0`}>
+                  {config.label}
+                </Badge>
                 <DifficultyBadge difficulty={difficulty} />
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   {questionNumber}/{totalQuestions}
                 </span>
               </div>
@@ -202,32 +255,35 @@ export default function QuizPlayLayout({
 
           {/* Controls */}
           <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-3">
-              <TimerDisplay initialTime={timeSpent} />
-              <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm">
-                <Trophy className="h-4 w-4 text-yellow-500" />
-                <span>{progressPercentage}%</span>
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg text-sm shadow-sm border">
+                <Timer className="h-4 w-4 text-blue-600" />
+                <span className="font-medium">{timeSpent > 0 ? Math.floor(timeSpent/60) + ':' + (timeSpent%60).toString().padStart(2,'0') : '0:00'}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg text-sm shadow-sm border">
+                <Trophy className="h-4 w-4 text-yellow-600" />
+                <span className="font-medium">{progressPercentage}%</span>
               </div>
             </div>
 
             <Button 
               variant="outline" 
-              size="icon"
+              size="sm"
               onClick={toggleSidebar}
-              className="shrink-0"
+              className="shrink-0 h-8 w-8 p-0 bg-white dark:bg-gray-800 shadow-sm"
             >
-              {sidebarOpen ? <ChevronRight /> : <ChevronLeft />}
+              {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mt-4">
-          <div className="flex justify-between text-sm text-muted-foreground mb-1">
+        {/* Enhanced Progress Bar */}
+        <div className="mt-3">
+          <Progress value={progressPercentage} className="h-2" />
+          <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
             <span>Progress</span>
             <span>{progressPercentage}%</span>
           </div>
-          <Progress value={progressPercentage} />
         </div>
       </div>
     </header>
@@ -235,7 +291,7 @@ export default function QuizPlayLayout({
 
   // Memoized sidebar component
   const SidebarComponent = useMemo(() => (
-    <div className="bg-card rounded-xl border p-4">
+    <div className="bg-card rounded-lg border p-2">
       <QuizActions
         quizSlug={quizSlug}
         quizData={quizData}
@@ -247,8 +303,8 @@ export default function QuizPlayLayout({
   ), [quizSlug, quizData, isFavorite, isPublic, isOwner]);
 
   const RandomQuizComponent = useMemo(() => (
-    <div className="bg-card rounded-xl border p-4">
-      <h3 className="font-semibold mb-3">More Quizzes</h3>
+    <div className="bg-card rounded-lg border p-2">
+      <h3 className="font-medium text-sm mb-2">More Quizzes</h3>
       <Suspense fallback={<QuizSkeleton />}>
         <RandomQuiz showStats={true} autoRotate={true} />
       </Suspense>
@@ -261,19 +317,19 @@ export default function QuizPlayLayout({
       {HeaderComponent}
 
       {/* Main Content */}
-      <main className="flex-1 flex max-w-screen-2xl mx-auto w-full p-4">
-        <div className="flex w-full gap-6">
+      <main className="flex-1 flex max-w-screen-2xl mx-auto w-full p-2 sm:p-3">
+        <div className="flex w-full gap-3 sm:gap-4">
           {/* Question Area */}
           <div 
             ref={mainContentRef}
-            className="flex-1 bg-card rounded-xl border p-6"
+            className="flex-1 bg-card rounded-lg border p-4 sm:p-5 overflow-auto shadow-sm"
           >
             {children}
           </div>
 
           {/* Sidebar */}
           {sidebarOpen && (
-            <aside className="hidden lg:block w-80 xl:w-96 shrink-0 space-y-6">
+            <aside className="hidden lg:block w-72 xl:w-80 shrink-0 space-y-3">
               {SidebarComponent}
               {RandomQuizComponent}
             </aside>
@@ -285,20 +341,21 @@ export default function QuizPlayLayout({
       {sidebarOpen && isMobile && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={closeSidebar}>
           <div 
-            className="absolute right-0 top-0 h-full w-4/5 bg-background border-l p-4"
+            className="absolute right-0 top-0 h-full w-4/5 bg-background border-l p-3"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end mb-3">
               <Button 
                 variant="ghost" 
-                size="icon"
+                size="sm"
                 onClick={closeSidebar}
+                className="h-7 w-7 p-0"
               >
-                <ChevronRight />
+                <ChevronRight className="h-3 w-3" />
               </Button>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-3">
               {SidebarComponent}
               {RandomQuizComponent}
             </div>
