@@ -22,6 +22,7 @@ export interface QuizAnswer {
   isCorrect: boolean
   type: string
   timestamp: number
+  timeSpent?: number
 }
 
 export interface QuestionResult {
@@ -42,6 +43,8 @@ export interface QuizResults {
   completedAt: string
   answers: QuizAnswer[]
   results: QuestionResult[]
+  totalTime?: number
+  accuracy?: number
 }
 
 export interface QuizState {
@@ -58,6 +61,7 @@ export interface QuizState {
   requiresAuth: boolean
   redirectAfterLogin: string | null
   userId: string | null
+  questionStartTimes: Record<string, number>
 }
 
 // Type aliases for better readability

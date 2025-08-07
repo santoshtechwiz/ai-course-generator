@@ -6,103 +6,108 @@ import type {
   Course,
   CourseProgress,
   UserQuiz,
-
   Favorite,
   UserQuizAttempt,
-
 } from "../types/types"
+
+// Add missing type
+interface TopicPerformance {
+  topic: string
+  averageScore: number
+  attempts: number
+  averageTimeSpent: number
+}
 
 export async function getUserData(userId: string): Promise<DashboardUser | null> {
   try {
     console.log('getUserData: Fetching data for userId:', userId)
     
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        courses: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
+    // Use parallel queries for better performance
+    const [user, userQuizAttempts] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          courses: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
+            take: 3, // Reduced for faster loading
+            orderBy: { createdAt: 'desc' },
           },
-          take: 5,
-        },
-        courseProgress: {
-          select: {
-            id: true,
-            progress: true,
-            course: {
-              select: {
-                slug: true,
-                id: true,
-                title: true,
+          courseProgress: {
+            select: {
+              id: true,
+              progress: true,
+              course: {
+                select: {
+                  slug: true,
+                  id: true,
+                  title: true,
+                },
               },
             },
+            take: 3, // Reduced for faster loading
+            orderBy: { updatedAt: 'desc' },
           },
-          take: 5,
-        },
-        userQuizzes: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            quizType: true,
-            timeEnded: true,
-            timeStarted: true,
-            _count: {
-              select: {
-                questions: true,
+          userQuizzes: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              quizType: true,
+              timeEnded: true,
+              timeStarted: true,
+              _count: {
+                select: {
+                  questions: true,
+                },
               },
             },
+            take: 3, // Reduced for faster loading
+            orderBy: { createdAt: 'desc' },
           },
-          take: 5,
-        },
-        userQuizAttempts: {
-          select: {
-            id: true,
-            score: true,
-            accuracy: true,
-            timeSpent: true,
-            createdAt: true,
-            updatedAt: true,
-            userQuiz: {
-              select: {
-                id: true,
-                title: true,
-                quizType: true,
-                difficulty: true,
+          favorites: {
+            select: {
+              id: true,
+              course: {
+                select: {
+                  id: true,
+                  title: true,
+                  slug: true,
+                },
               },
             },
-            attemptQuestions: {
-              select: {
-                id: true,
-                questionId: true,
-                userAnswer: true,
-                isCorrect: true,
-                timeSpent: true,
-              },
+            take: 3, // Reduced for faster loading
+          },
+        },
+      }),
+      // Separate query for quiz attempts with optimized selection
+      prisma.userQuizAttempt.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          score: true,
+          accuracy: true,
+          timeSpent: true,
+          createdAt: true,
+          userQuiz: {
+            select: {
+              id: true,
+              title: true,
+              quizType: true,
+              difficulty: true,
             },
           },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 10,
+          // Remove attemptQuestions for faster loading - load on demand
         },
-        favorites: {
-          select: {
-            id: true,
-            course: {
-              select: {
-                id: true,
-                title: true,
-                slug: true,
-              },
-            },
-          },
-          take: 5,
+        orderBy: {
+          createdAt: 'desc',
         },
-      },
-    })
+        take: 5, // Reduced for faster loading
+      })
+    ])
 
     if (!user) {
       console.log('getUserData: No user found in database for userId:', userId)
@@ -110,11 +115,11 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
     }
 
     console.log('getUserData: Found user:', user.name, 'with id:', user.id)
-    console.log('getUserData: Quiz attempts count:', user.userQuizAttempts.length)
+    console.log('getUserData: Quiz attempts count:', userQuizAttempts.length)
     
     // Log recent quiz attempts for debugging
-    if (user.userQuizAttempts.length > 0) {
-      const recentAttempts = user.userQuizAttempts.slice(0, 3).map(attempt => ({
+    if (userQuizAttempts.length > 0) {
+      const recentAttempts = userQuizAttempts.slice(0, 3).map((attempt: any) => ({
         id: attempt.id,
         score: attempt.score,
         quizTitle: attempt.userQuiz?.title,
@@ -133,7 +138,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
       courses: user.courses as unknown as Course[],
       courseProgress: user.courseProgress as unknown as CourseProgress[],
       userQuizzes: user.userQuizzes as unknown as UserQuiz[],
-      quizAttempts: user.userQuizAttempts.map(attempt => ({
+      quizAttempts: userQuizAttempts.map((attempt: any) => ({
         ...attempt,
         id: attempt.id.toString(), // Convert number to string
         userQuiz: attempt.userQuiz ? {
@@ -143,6 +148,7 @@ export async function getUserData(userId: string): Promise<DashboardUser | null>
           quizType: attempt.userQuiz.quizType,
           difficulty: attempt.userQuiz.difficulty,
         } : undefined,
+        attemptQuestions: [], // Empty array for performance, load on demand
       })) as unknown as UserQuizAttempt[],
       favorites: user.favorites as unknown as Favorite[],
       streakDays: user.streakDays ?? 0,
@@ -219,7 +225,8 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     const topPerformingTopics = getTopPerformingTopics(topicPerformance)
 
     const recentAttempts = quizAttempts.slice(-10)
-    const recentImprovement = parseFloat(calculateRecentImprovement(recentAttempts).toFixed(2))
+    const recentImprovement = recentAttempts.length >= 10 ? 
+      parseFloat(calculateRecentImprovementSimple(recentAttempts).toFixed(2)) : 0
 
     const monthsSinceFirstQuiz =
       quizAttempts.length > 0
@@ -228,21 +235,26 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 
     const quizzesPerMonth = parseFloat((totalQuizzes / Math.max(monthsSinceFirstQuiz, 0.1)).toFixed(2))
 
+    // Convert quizAttempts to proper format for consistency calculation
+    const formattedAttempts = quizAttempts.map(attempt => ({
+      ...attempt,
+      id: attempt.id.toString(),
+    }))
+
     return {
       totalQuizzes,
-      totalAttempts,
       averageScore,
       highestScore,
-      completedCourses,
       totalTimeSpent,
-      averageTimePerQuiz: totalAttempts > 0 ? parseFloat((totalTimeSpent / totalAttempts).toFixed(2)) : 0,
-      topPerformingTopics,
-      recentImprovement,
       quizzesPerMonth,
-      courseCompletionRate: totalCourses > 0 ? parseFloat(((completedCourses / totalCourses) * 100).toFixed(2)) : 0,
-      consistencyScore: parseFloat(calculateConsistencyScore(quizAttempts).toFixed(2)),
-      learningEfficiency: parseFloat(calculateLearningEfficiency(scores).toFixed(2)),
-      difficultyProgression: parseFloat(calculateDifficultyProgression(scores).toFixed(2)),
+      recentImprovement,
+      topPerformingTopics: topPerformingTopics.map(topic => ({
+        topic: topic.topic,
+        title: topic.topic, // Map topic to title for compatibility
+        averageScore: topic.averageScore,
+        attempts: topic.attempts,
+        averageTimeSpent: topic.averageTimeSpent,
+      })),
     }
   } catch (error) {
     console.error("Error fetching user stats:", error)
@@ -289,7 +301,14 @@ export async function getRecommendedCourses(userId: string): Promise<Course[]> {
       },
     })
 
-    return recommendedCourses as Course[]
+    return recommendedCourses.map(course => ({
+      ...course,
+      id: course.id.toString(),
+      category: course.category ? {
+        ...course.category,
+        id: course.category.id.toString()
+      } : undefined
+    })) as unknown as Course[]
   } catch (error) {
     console.error("Error fetching recommended courses:", error)
     return []
@@ -368,6 +387,18 @@ function getTopPerformingTopics(
     }))
     .sort((a, b) => parseFloat(b.averageScore.toFixed(2)) - parseFloat(a.averageScore.toFixed(2)))
     .slice(0, 5)
+}
+
+function calculateRecentImprovementSimple(recentAttempts: any[]): number {
+  if (recentAttempts.length < 10) return 0
+
+  const firstHalf = recentAttempts.slice(5, 10)
+  const secondHalf = recentAttempts.slice(0, 5)
+
+  const firstHalfAvg = firstHalf.reduce((sum, attempt) => sum + (attempt.score ?? 0), 0) / 5
+  const secondHalfAvg = secondHalf.reduce((sum, attempt) => sum + (attempt.score ?? 0), 0) / 5
+
+  return parseFloat((secondHalfAvg - firstHalfAvg).toFixed(2))
 }
 
 function calculateRecentImprovement(recentAttempts: UserQuizAttempt[]): number {

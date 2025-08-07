@@ -251,7 +251,7 @@ function calculateAccuracy(answers: QuizAnswerUnion[], totalQuestions: number): 
   return Math.min(100, Math.max(0, Math.round(accuracy)))
 }
 
-// Optimize the calculatePercentageScore function
+// Fixed calculatePercentageScore function
 function calculatePercentageScore(score: number, totalQuestions: number, type: QuizType): number {
   console.log(`Calculating percentage score: score=${score}, totalQuestions=${totalQuestions}, type=${type}`)
   
@@ -261,20 +261,15 @@ function calculatePercentageScore(score: number, totalQuestions: number, type: Q
     return 0
   }
   
-  // For open-ended and blanks quizzes, the score might already be a percentage or raw count
-  if (type === "openended" || type === "blanks") {
-    // If score is already a percentage (> 1), cap it at 100
-    if (score > 1) {
-      return Math.min(100, Math.max(0, score))
-    }
-    // If score is a ratio (0-1), convert to percentage
-    return Math.min(100, Math.max(0, score * 100))
+  // For all quiz types, if score represents the number of correct answers,
+  // convert to percentage: (correct answers / total questions) * 100
+  if (score <= totalQuestions) {
+    const percentage = (score / totalQuestions) * 100
+    return Math.min(100, Math.max(0, Math.round(percentage)))
   }
-
-  // For MCQ and code quizzes, score should be the number of correct answers
-  // Convert to percentage: (correct answers / total questions) * 100
-  const percentage = (score / totalQuestions) * 100
-  return Math.min(100, Math.max(0, percentage))
+  
+  // If score is already a percentage (> totalQuestions), cap it at 100
+  return Math.min(100, Math.max(0, Math.round(score)))
 }
 
 // Separate function to handle course progress updates (outside main transaction)

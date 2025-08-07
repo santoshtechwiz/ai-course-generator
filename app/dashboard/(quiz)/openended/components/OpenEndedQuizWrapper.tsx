@@ -17,6 +17,7 @@ import {
   resetQuiz,
   submitQuiz,
   fetchQuiz,
+  startQuestionTimer,
   resetSubmissionState,
   selectQuizType,
 } from "@/store/slices/quiz/quiz-slice"
@@ -98,6 +99,13 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex] || null
   }, [questions, currentQuestionIndex])
+
+  // Start timing when question changes
+  useEffect(() => {
+    if (currentQuestion) {
+      dispatch(startQuestionTimer({ questionId: String(currentQuestion.id) }))
+    }
+  }, [currentQuestion, dispatch])
 
   // Save answer
   const handleAnswer = useCallback(

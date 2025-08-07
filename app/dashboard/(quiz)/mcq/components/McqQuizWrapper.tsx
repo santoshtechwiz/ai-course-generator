@@ -17,6 +17,7 @@ import {
   resetQuiz,
   submitQuiz,
   fetchQuiz,
+  startQuestionTimer,
 } from "@/store/slices/quiz/quiz-slice"
 
 import { toast } from "sonner"
@@ -86,6 +87,13 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex] || null
   }, [questions, currentQuestionIndex])
+
+  // Start timing when question changes
+  useEffect(() => {
+    if (currentQuestion) {
+      dispatch(startQuestionTimer({ questionId: String(currentQuestion.id) }))
+    }
+  }, [currentQuestion, dispatch])
 
   const handleAnswer = useCallback((selectedOptionId: string) => {
     if (!currentQuestion) return false

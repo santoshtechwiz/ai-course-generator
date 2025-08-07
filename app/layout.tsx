@@ -7,6 +7,7 @@ import { getServerAuthSession } from "@/lib/server-auth";
 
 import { Suspense } from "react";
 import { font } from "./font";
+import { Toaster } from "sonner";
 
 import { GlobalLoader } from "@/components/loaders";
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
@@ -44,7 +45,6 @@ export const metadata: Metadata = generateMetadata({
   canonical: "/",
   type: "website",
 });
-
 export default async function RootLayout({
   children,
 }: {
@@ -79,7 +79,7 @@ export default async function RootLayout({
         >
           <Providers session={session}>
             <div className="min-h-screen flex flex-col">
-              <main className="flex-1 w-full">
+              <main className="flex-1 w-full pb-24">
                 <Suspense fallback={<SuspenseGlobalFallback />}>
                   {children}
                 </Suspense>
@@ -89,10 +89,10 @@ export default async function RootLayout({
           </Providers>
 
           <DefaultSEO enableFAQ={false} />
+          <GlobalLoader />
         </body>
         <GoogleAnalytics gaId="G-8E6345HNS4" />
       </html>
-      <GlobalLoader />
     </GlobalLoaderProvider>
   );
 }

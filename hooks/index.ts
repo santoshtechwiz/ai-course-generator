@@ -19,6 +19,9 @@ export {
   usePersistentState,
 } from "@/lib/utils/hooks"
 
+// Quiz-specific hooks
+export { useQuizAttempts } from "./useQuizAttempts"
+
 // ============================================================================
 // TOAST UTILITIES
 // ============================================================================

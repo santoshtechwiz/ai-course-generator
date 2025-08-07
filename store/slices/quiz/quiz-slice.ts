@@ -15,9 +15,11 @@ const initialState: QuizState = {
   results: null,
   isCompleted: false,
   status: 'idle',
-  error: null,  requiresAuth: false,
+  error: null,
+  requiresAuth: false,
   redirectAfterLogin: null,
   userId: null,
+  questionStartTimes: {},
 }
 
 // Async Thunks
@@ -166,18 +168,29 @@ export const fetchQuiz = createAsyncThunk(
 )
 
 /**
- * Submit and calculate quiz result
+ * Submit quiz to backend and save results
  */
 export const submitQuiz = createAsyncThunk(
   'quiz/submit',
-  async (_, { getState }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState
       const quiz = state.quiz as unknown as QuizState
       const { questions, answers, slug, quizType } = quiz
 
+      if (!slug || !quizType) {
+        throw new Error("Missing quiz slug or type")
+      }
+
+      // Calculate client-side results first
       let score = 0
       const tempResults: QuizResults['results'] = []
+      const totalTimeSpent = Object.values(answers).reduce((total, answer) => {
+        return total + (answer?.timeSpent || 0)
+      }, 0)
+
+      // Prepare answers for API submission
+      const answersForAPI: any[] = []
 
       for (const question of questions) {
         const answer = answers[question.id]
@@ -193,6 +206,14 @@ export const submitQuiz = createAsyncThunk(
             const selected = String(answer?.selectedOptionId ?? '').trim()
             userAnswer = selected || null
             isCorrect = answer?.isCorrect === true || selected === correctAnswer
+            
+            // Format for API
+            answersForAPI.push({
+              questionId: String(question.id),
+              answer: selected,
+              timeSpent: answer?.timeSpent || 0,
+              isCorrect: isCorrect
+            })
             break
           }
 
@@ -201,6 +222,14 @@ export const submitQuiz = createAsyncThunk(
             const filled = String(answer?.userAnswer ?? '').trim().toLowerCase()
             userAnswer = filled || null
             isCorrect = filled === correctAnswer
+            
+            // Format for API
+            answersForAPI.push({
+              questionId: String(question.id),
+              userAnswer: answer?.userAnswer || '',
+              timeSpent: answer?.timeSpent || 0,
+              isCorrect: isCorrect
+            })
             break
           }
 
@@ -208,6 +237,28 @@ export const submitQuiz = createAsyncThunk(
             correctAnswer = String(question.answer ?? '')
             userAnswer = answer?.userAnswer ?? null
             isCorrect = answer?.isCorrect === true
+            
+            // Format for API
+            answersForAPI.push({
+              questionId: String(question.id),
+              answer: answer?.userAnswer || '',
+              timeSpent: answer?.timeSpent || 0,
+              isCorrect: isCorrect
+            })
+            break
+          }
+
+          case 'flashcard': {
+            // For flashcards, we track time spent and basic correctness
+            isCorrect = answer?.isCorrect === true
+            userAnswer = answer?.userAnswer || null
+            
+            answersForAPI.push({
+              questionId: String(question.id),
+              answer: userAnswer || '',
+              timeSpent: answer?.timeSpent || 0,
+              isCorrect: isCorrect
+            })
             break
           }
 
@@ -215,6 +266,13 @@ export const submitQuiz = createAsyncThunk(
             correctAnswer = ''
             userAnswer = null
             isCorrect = false
+            
+            answersForAPI.push({
+              questionId: String(question.id),
+              answer: '',
+              timeSpent: 0,
+              isCorrect: false
+            })
         }
 
         if (isCorrect) score++
@@ -230,21 +288,63 @@ export const submitQuiz = createAsyncThunk(
 
       const total = questions.length
 
+      // Submit to backend API
+      console.log('Submitting quiz to backend:', {
+        quizId: slug,
+        score,
+        totalTime: totalTimeSpent,
+        type: quizType,
+        answersCount: answersForAPI.length
+      })
+
+      const response = await fetch(`/api/quizzes/${quizType}/${slug}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quizId: slug,
+          answers: answersForAPI,
+          totalTime: totalTimeSpent,
+          score: score,
+          type: quizType,
+          totalQuestions: total,
+          correctAnswers: score,
+          completedAt: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Quiz submission failed:', errorData)
+        throw new Error(errorData.error || 'Failed to submit quiz')
+      }
+
+      const responseData = await response.json()
+      console.log('Quiz submitted successfully:', responseData)
+
+      // Return client-side calculated results for immediate UI feedback
       const results: QuizResults = {
         slug: slug!,
         quizType: quizType!,
         score,
         maxScore: total,
-        percentage: total > 0 ? Math.round((score / total) * 100) : 0,
+        percentage: responseData.result?.percentageScore || (total > 0 ? Math.round((score / total) * 100) : 0),
         submittedAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
         answers: Object.values(answers),
         results: tempResults,
+        // Include additional data from API response
+        totalTime: totalTimeSpent,
+        accuracy: responseData.result?.accuracy,
       }
 
       return results
-    } catch (error) {
-      throw error
+    } catch (error: any) {
+      console.error('Quiz submission error:', error)
+      return rejectWithValue({
+        error: error.message || 'Failed to submit quiz',
+      })
     }
   }
 )
@@ -254,30 +354,62 @@ export const submitQuiz = createAsyncThunk(
  */
 export const checkAuthAndLoadResults = createAsyncThunk(
   'quiz/checkAuthAndLoadResults',
-  async (_, { getState, dispatch }) => {
+  async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState
     const quiz = state.quiz as unknown as QuizState
 
     // If results already loaded, no need to check auth
-    if (quiz.results) return
+    if (quiz.results) return quiz.results
 
     // If auth is required, mark it and return
     if (quiz.requiresAuth) {
-      return { requiresAuth: true, redirectUrl: quiz.redirectAfterLogin }
+      return rejectWithValue({ requiresAuth: true, redirectUrl: quiz.redirectAfterLogin })
     }
 
-    // Otherwise, load results directly
+    // Try to fetch saved results from the API
     if (quiz.slug && quiz.quizType) {
       try {
-        const results = await dispatch(submitQuiz()).unwrap()
-        return { requiresAuth: false, results }
+        console.log('Fetching saved quiz results for:', quiz.slug, quiz.quizType)
+        
+        // First, try to get the quiz data to check if it's been completed
+        const quizResponse = await fetch(`/api/quizzes/${quiz.quizType}/${quiz.slug}`)
+        if (quizResponse.ok) {
+          const quizData = await quizResponse.json()
+          
+          // Check if quiz has been completed (has timeEnded)
+          if (quizData.timeEnded && quizData.bestScore !== null) {
+            // Create results object from saved quiz data
+            const savedResults: QuizResults = {
+              slug: quiz.slug,
+              quizType: quiz.quizType,
+              score: quizData.bestScore || 0,
+              maxScore: quizData.questions?.length || 0,
+              percentage: quizData.bestScore || 0, // Already a percentage from calculatePercentageScore
+              submittedAt: quizData.timeEnded,
+              completedAt: quizData.timeEnded,
+              answers: [], // We don't have the detailed answers, but that's OK for results display
+              results: [], // We don't have detailed results, but that's OK for basic display
+              totalTime: 0, // We don't have this saved
+              accuracy: 0, // We don't have this saved
+            }
+            
+            console.log('Found saved quiz results:', savedResults)
+            return savedResults
+          } else {
+            console.log('Quiz not completed yet, no results to load')
+            return rejectWithValue({ error: 'Quiz not completed' })
+          }
+        } else {
+          console.log('Failed to fetch quiz data:', quizResponse.status)
+          return rejectWithValue({ error: 'Failed to fetch quiz data' })
+        }
       } catch (error) {
-        console.error("Failed to submit quiz:", error)
-        throw error
+        console.error("Failed to load quiz results:", error)
+        return rejectWithValue({ error: 'Failed to load results' })
       }
     }
 
-    throw new Error("No quiz data available")
+    return rejectWithValue({ error: "No quiz data available" })
   }
 )
 
@@ -319,7 +451,8 @@ const quizSlice = createSlice({
     saveAnswer(state, action: PayloadAction<{
       questionId: string;
       answer: string | Record<string, any>;
-      selectedOptionId?: string
+      selectedOptionId?: string;
+      timeSpent?: number;
     }>) {
       const question = state.questions.find((q) => String(q.id) === action.payload.questionId)
       if (!question) return
@@ -339,13 +472,19 @@ const quizSlice = createSlice({
         : typeof userAnswer === 'string' &&
         userAnswer.trim().toLowerCase() === String(correctAnswer).trim().toLowerCase()
 
+      // Calculate time spent for this question
+      const currentTime = Date.now()
+      const startTime = state.questionStartTimes[action.payload.questionId] || currentTime
+      const timeSpent = action.payload.timeSpent || Math.max(1, Math.round((currentTime - startTime) / 1000))
+
       state.answers[action.payload.questionId] = {
         questionId: action.payload.questionId,
         userAnswer: typeof action.payload.answer === 'object' ? '' : action.payload.answer,
         selectedOptionId,
         isCorrect,
         type: question.type,
-        timestamp: Date.now(),
+        timestamp: currentTime,
+        timeSpent: timeSpent, // Already in seconds
       }
     },
 
@@ -353,6 +492,12 @@ const quizSlice = createSlice({
       const index = action.payload
       if (index >= 0 && index < state.questions.length) {
         state.currentQuestionIndex = index
+        
+        // Automatically start timing for the new question
+        const currentQuestion = state.questions[index]
+        if (currentQuestion && !state.questionStartTimes[String(currentQuestion.id)]) {
+          state.questionStartTimes[String(currentQuestion.id)] = Date.now()
+        }
       }
     },
 
@@ -366,6 +511,7 @@ const quizSlice = createSlice({
       state.isCompleted = keep
       state.slug = null
       state.quizType = null
+      state.questionStartTimes = {}
       if (!keep) state.results = null
       state.requiresAuth = false
       state.redirectAfterLogin = null
@@ -406,7 +552,24 @@ const quizSlice = createSlice({
     setQuizResults(state, action: PayloadAction<QuizResults>) {
       state.results = action.payload
       state.isCompleted = true
-    }
+    },
+
+    /**
+     * Track when a question is first viewed to calculate time spent
+     */
+    startQuestionTimer(state, action: PayloadAction<{ questionId: string }>) {
+      const questionId = action.payload.questionId
+      if (!state.questionStartTimes[questionId]) {
+        state.questionStartTimes[questionId] = Date.now()
+      }
+    },
+
+    /**
+     * Reset question timers (useful when retaking quiz)
+     */
+    resetQuestionTimers(state) {
+      state.questionStartTimes = {}
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -460,6 +623,26 @@ const quizSlice = createSlice({
         state.quizType = null
         state.title = ''
       })
+      .addCase(checkAuthAndLoadResults.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(checkAuthAndLoadResults.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        state.results = action.payload
+        state.isCompleted = true
+        state.error = null
+      })
+      .addCase(checkAuthAndLoadResults.rejected, (state, action) => {
+        const payload = action.payload as any
+        if (payload?.requiresAuth) {
+          state.requiresAuth = true
+          state.redirectAfterLogin = payload.redirectUrl
+        } else {
+          state.status = 'failed'
+          state.error = payload?.error || action.error.message || 'Failed to load results'
+        }
+      })
   },
 })
 
@@ -474,7 +657,9 @@ export const {
   markRequiresAuth,
   clearRequiresAuth,
   setQuizCompleted,
-  setQuizResults
+  setQuizResults,
+  startQuestionTimer,
+  resetQuestionTimers
 } = quizSlice.actions
 
 // Selectors
