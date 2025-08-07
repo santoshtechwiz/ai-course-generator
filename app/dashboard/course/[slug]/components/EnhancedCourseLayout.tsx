@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button"
 import { FullCourseType } from "@/app/types/types"
 import MainContent from "./MainContent"
 import { cn } from "@/lib/utils"
+import { ModuleLayout } from "@/components/layout/ModuleLayout"
 
 import { motion, AnimatePresence } from "framer-motion"
 import { Monitor, MonitorX, Maximize2, Minimize2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { JsonLD } from "@/lib/seo"
 
 interface EnhancedCourseLayoutProps {
   course: FullCourseType

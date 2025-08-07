@@ -1,12 +1,9 @@
 'use client'
 
-
-
 import CodeQuizForm from "./components/CodeQuizForm"
 import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
 import { GlobalLoader } from "@/components/loaders"
-
 
 const CodePage = () => {
   // Use our standardized hook for all quiz pages

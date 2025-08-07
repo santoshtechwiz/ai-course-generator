@@ -2,8 +2,6 @@
 import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
-import { generateMetadata } from "@/lib/seo";
-
 
 const McqPage = () => {
   // Use our custom hook that already handles session, auth, and subscription data

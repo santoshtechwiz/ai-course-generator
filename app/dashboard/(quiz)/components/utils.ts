@@ -1,7 +1,3 @@
-import { use } from "react";
-
-export const getQuizSlug  = 
-(params: Promise<{ slug: string }> ) => {
- const {slug}=use(params);
- return slug;
-}
+// Quiz utility functions
+// Note: getQuizSlug function removed to prevent infinite API calls
+// Components now handle params directly using React.use() hook

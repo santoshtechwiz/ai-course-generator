@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizResult from "../../../components/QuizResult"
 import GenericQuizResultHandler from "../../../components/QuizResultHandler"
-import { getQuizSlug } from "../../../components/utils"
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }>
@@ -14,8 +13,9 @@ interface ResultsPageProps {
 
 export default function CodeResultsPage({ params }: ResultsPageProps) {
   const router = useRouter()
-
-  const slugString = getQuizSlug(params);
+  
+  // Properly unwrap the params Promise once at the top level
+  const { slug: slugString } = use(params);
 
   // Handle retake quiz
   const handleRetakeQuiz = () => {

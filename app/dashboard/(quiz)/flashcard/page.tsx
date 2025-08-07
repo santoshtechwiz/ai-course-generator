@@ -1,40 +1,15 @@
+import { generateQuizMetadata } from "@/lib/quiz-metadata"
+import type { Metadata } from "next"
 import QuizCreationPage from "../components/QuizCreationPage"
 
-export const metadata = {
-  title: "Interactive Flashcard Quiz – Free Coding Flashcards | CourseAI",
-  description:
-    "Create, study, and master programming concepts with interactive flashcard quizzes. Practice coding, reinforce knowledge, and boost retention using AI-powered flashcards.",
-  keywords: [
-    "interactive flashcard quiz",
-    "AI flashcards",
-    "coding flashcard practice",
-    "free flashcard generator",
-    "programming flashcards",
-    "spaced repetition",
-    "learn to code",
-    "memory techniques",
-    "study tools",
-    "quiz for programmers",
-    "developer learning",
-    "computer science revision",
-    "CourseAI flashcards"
-  ],
-  openGraph: {
-    title: "Interactive Flashcard Quiz | CourseAI",
-    description:
-      "Create, study, and master programming concepts with interactive flashcard quizzes. Practice coding, reinforce knowledge, and boost retention using AI-powered flashcards.",
-    url: "https://courseai.io/dashboard/flashcard",
-    type: "website",
-    images: [{ url: "/og-image-flashcards.jpg" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Interactive Flashcard Quiz | CourseAI",
-    description:
-      "Create, study, and master programming concepts with interactive flashcard quizzes. Practice coding, reinforce knowledge, and boost retention using AI-powered flashcards.",
-    images: ["/twitter-image-flashcards.jpg"],
-  },
-};
+// Generate dynamic SEO metadata for flashcard page
+export const metadata: Metadata = generateQuizMetadata({
+  quizType: "flashcard",
+  title: "Interactive Flashcard Quiz Creator",
+  description: "Create, study, and master programming concepts with interactive flashcard quizzes. Practice coding, reinforce knowledge, and boost retention using AI-powered flashcards.",
+  topic: "Programming",
+  difficulty: "medium"
+});
 
 const Page = async () => {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"

@@ -1,7 +1,8 @@
 import CourseAILandingPage from "@/components/landing/CourseAILandingPage"
-
-import { PageWrapper, PageHeader } from "@/components/layout/PageWrapper"
+import { ModuleLayout } from "@/components/layout/ModuleLayout"
+import { PageHeader } from "@/components/layout/PageWrapper"
 import { generateMetadata } from "@/lib/seo"
+import { JsonLD } from "@/lib/seo"
 
 export const metadata = generateMetadata({
   title: 'CourseAI - AI-Powered Course & Quiz Creator',
@@ -28,10 +29,27 @@ export const metadata = generateMetadata({
 
 export default function HomePage() {
   return (
-    <PageWrapper>
+    <ModuleLayout>
       <PageHeader title={""} description={""}>
         <CourseAILandingPage />
       </PageHeader>
-    </PageWrapper>
+      
+      {/* Add structured data for better SEO */}
+      <JsonLD
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "CourseAI",
+          "description": "AI-powered educational content creator for courses and quizzes",
+          "applicationCategory": "EducationalApplication",
+          "operatingSystem": "All",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          }
+        }}
+      />
+    </ModuleLayout>
   )
 }

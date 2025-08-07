@@ -1,5 +1,5 @@
 import { ModuleLoading } from "@/components/layout/ModuleLoading"
 
-export default function CourseLoading() {
+export default function QuizzesLoading() {
   return <ModuleLoading />
 }

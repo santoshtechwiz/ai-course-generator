@@ -5,9 +5,6 @@ import { QuizCreateLayout } from "../components/QuizCreateLayout"
 import { useQuizPlan } from "../../../../hooks/useQuizPlan"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 
-
-
-
 const BlankPage = () => {
   // Use our standardized hook for all quiz pages
   const quizPlan = useQuizPlan();
