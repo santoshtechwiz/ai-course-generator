@@ -13,7 +13,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
 
   return (
-    <div className="flex bg-black-500 min-h-screen flex-col">
+    <div className="flex  min-h-screen flex-col">
       <ClientLayoutWrapper>
         <MainNavbar />
         {children}
