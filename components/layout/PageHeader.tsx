@@ -9,17 +9,29 @@ interface PageHeaderProps {
   className?: string
 }
 
-export const PageHeader = ({ title, description, actions, breadcrumbs, className }: PageHeaderProps) => {
+export const PageHeader = ({ title, description, breadcrumbs, className }: PageHeaderProps) => {
+  // Transform breadcrumbs to match Breadcrumb component's expected format
+  const breadcrumbPaths = breadcrumbs?.map(item => ({
+    name: item.title,
+    href: item.href
+  }))
+
   return (
-    <div className={cn("space-y-2 pb-8", className)}>
-      {breadcrumbs && <Breadcrumb items={breadcrumbs} />}
+    <header className={cn("space-y-2 pb-8", className)} role="banner">
+      {breadcrumbPaths && <Breadcrumb paths={breadcrumbPaths} />}
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
-          {description && <p className="text-muted-foreground">{description}</p>}
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl" id="page-title">
+            {title}
+          </h1>
+          {description && (
+            <p className="text-muted-foreground" role="doc-subtitle" aria-describedby="page-title">
+              {description}
+            </p>
+          )}
         </div>
       </div>
-    </div>
+    </header>
   )
 }
 

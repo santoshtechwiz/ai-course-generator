@@ -90,10 +90,11 @@ export const RandomQuote = () => {
   return (
     <Card className="relative overflow-hidden bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-primary/20 shadow-sm">
       {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-transparent" />
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-16 translate-x-16" />
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-transparent" aria-hidden="true" />
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-16 translate-x-16" aria-hidden="true" />
       
-      <div className="relative p-4">
+      <section className="relative p-4" role="region" aria-labelledby="quote-heading" aria-live="polite">
+        <h2 id="quote-heading" className="sr-only">Inspirational Quotes</h2>
         <div className="flex items-center justify-between gap-4">
           {/* Quote Icon and Content */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -216,7 +217,7 @@ export const RandomQuote = () => {
             </span>
           </div>
         </div>
-      </div>
+      </section>
     </Card>
   )
 }

@@ -107,6 +107,8 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
                     size="sm"
                     onClick={toggleTheaterMode}
                     className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                    aria-label="Toggle theater mode for focused learning"
+                    title="Theater Mode (Ctrl+T)"
                   >
                     <Monitor className="h-4 w-4" />
                     <span className="hidden sm:inline">Theater Mode</span>
@@ -117,6 +119,8 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
                     size="sm"
                     onClick={toggleFullscreen}
                     className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                    aria-label="Toggle fullscreen mode"
+                    title="Fullscreen (Ctrl+F)"
                   >
                     <Maximize2 className="h-4 w-4" />
                     <span className="hidden sm:inline">Fullscreen</span>
@@ -162,6 +166,8 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
                 size="sm"
                 onClick={toggleTheaterMode}
                 className="bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white border-white/20"
+                aria-label="Exit theater mode"
+                title="Exit Theater Mode (Ctrl+T)"
               >
                 <MonitorX className="h-4 w-4 mr-2" />
                 Exit Theater
@@ -173,6 +179,8 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
                   size="sm"
                   onClick={toggleFullscreen}
                   className="bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white border-white/20"
+                  aria-label="Exit fullscreen mode"
+                  title="Exit Fullscreen (Ctrl+F)"
                 >
                   <Minimize2 className="h-4 w-4 mr-2" />
                   Exit Fullscreen

@@ -145,14 +145,16 @@ const FeatureShowcase = () => {
   }
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef}>
-      <div className="text-center mb-16">
+    <section className="container max-w-6xl mx-auto px-4 md:px-6" ref={containerRef} aria-labelledby="features-heading">
+      <header className="text-center mb-16">
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={textVariants}
           custom={0}
           className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
+          role="text"
+          aria-label="Features section tag"
         >
           Powerful Features
         </motion.div>
@@ -163,6 +165,7 @@ const FeatureShowcase = () => {
           variants={textVariants}
           custom={0.1}
           className="text-3xl md:text-5xl font-bold mb-6"
+          id="features-heading"
         >
           Create Engaging Content with AI
         </motion.h2>
@@ -173,15 +176,16 @@ const FeatureShowcase = () => {
           variants={textVariants}
           custom={0.2}
           className="text-xl text-muted-foreground max-w-2xl mx-auto"
+          role="doc-subtitle"
         >
           CourseAI empowers you to create dynamic, personalized content—automatically. From interactive experiences to
           complete learning journeys, build and share faster than ever.
         </motion.p>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" role="list">
         {features.map((feature, index) => (
-          <motion.div
+          <motion.article
             key={index}
             initial="hidden"
             animate={isInView ? "visible" : "hidden"}
@@ -192,6 +196,9 @@ const FeatureShowcase = () => {
               willChange: "transform, opacity",
               perspective: "800px",
             }}
+            role="listitem"
+            aria-labelledby={`feature-${index}-title`}
+            aria-describedby={`feature-${index}-description`}
           >
             <div className="h-full bg-card/30 backdrop-blur-sm rounded-2xl p-8 border border-border/10 transition-all duration-300 relative overflow-hidden group">
               {/* Background gradient */}
@@ -201,6 +208,7 @@ const FeatureShowcase = () => {
                 animate={{ opacity: 0 }}
                 whileHover={{ opacity: 0.06 }}
                 transition={{ duration: 0.3, ease: APPLE_EASING }}
+                aria-hidden="true"
               />
 
               {/* Icon */}
@@ -214,13 +222,19 @@ const FeatureShowcase = () => {
                     ease: APPLE_EASING,
                   },
                 }}
+                role="img"
+                aria-label={`${feature.title} icon`}
               >
                 <FeatureIcon type={feature.icon} />
               </motion.div>
 
               {/* Content */}
-              <h3 className="text-xl font-semibold mb-3 tracking-tight">{feature.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+              <h3 className="text-xl font-semibold mb-3 tracking-tight" id={`feature-${index}-title`}>
+                {feature.title}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed" id={`feature-${index}-description`}>
+                {feature.description}
+              </p>
 
               {/* Arrow indicator */}
               <motion.div
@@ -231,10 +245,10 @@ const FeatureShowcase = () => {
                 <ArrowRight className="h-5 w-5 text-primary/70" />
               </motion.div>
             </div>
-          </motion.div>
+          </motion.article>
         ))}
       </div>
-    </div>
+    </section>
   )
 }
 

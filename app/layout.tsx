@@ -62,24 +62,43 @@ export default async function RootLayout({
         <head>
           <meta
             name="viewport"
-            content="width=device-width, initial-scale=1, maximum-scale=5"
+            content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover"
           />
           <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
           <meta
             name="google-site-verification"
             content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
           />
+          {/* Enhanced SEO and UX Meta Tags */}
+          <meta name="theme-color" content="#0066cc" media="(prefers-color-scheme: light)" />
+          <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="format-detection" content="telephone=no" />
+          {/* Performance and Security Enhancements */}
+          <meta name="referrer" content="strict-origin-when-cross-origin" />
+          <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+          <meta httpEquiv="X-Frame-Options" content="DENY" />
+          <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
           <link rel="canonical" href={process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"} />
+          {/* Font and Resource Preloading */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+          <link rel="dns-prefetch" href="https://api.openai.com" />
         </head>
 
         <body
           className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen`}
+          role="document"
         >
+          <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg">
+            Skip to main content
+          </a>
           <Providers session={session}>
             <div className="min-h-screen flex flex-col">
-              <main className="flex-1 w-full pb-24">
+              <main id="main-content" className="flex-1 w-full pb-24" role="main" tabIndex={-1}>
                 <Suspense fallback={<SuspenseGlobalFallback />}>
                   {children}
                 </Suspense>
