@@ -503,9 +503,9 @@ export function QuizActions({
       <TooltipProvider delayDuration={200}>
         <div
           className={cn(
-            "fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50",
+            "fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 max-w-[90vw]",
             "bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl",
-            "px-3 py-3 flex items-center gap-2",
+            "px-2 py-2 flex items-center gap-1 overflow-x-auto scrollbar-none",
             className,
           )}
         >
@@ -514,7 +514,10 @@ export function QuizActions({
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  className={getButtonClass(action, true)}
+                  className={cn(
+                    getButtonClass(action, true),
+                    "h-11 w-11 p-0 rounded-xl flex-shrink-0"
+                  )}
                   onClick={!action.disabled ? action.onClick : undefined}
                   disabled={action.disabled || action.loading}
                   aria-label={action.label}
@@ -527,7 +530,7 @@ export function QuizActions({
 
                   {action.premium && (
                     <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-1">
-                      <Sparkles className="h-3 w-3" />
+                      <Sparkles className="h-2 w-2" />
                     </div>
                   )}
                 </Button>
@@ -541,16 +544,23 @@ export function QuizActions({
           ))}
 
           {/* PDF Download Component for Mobile */}
-          <UnifiedPdfGenerator
-            data={pdfData}
-            type={getPdfType()}
-            config={pdfConfig}
-            fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
-            buttonText=""
-            variant="ghost"
-            size="default"
-            className="h-12 w-12 p-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-lg"
-          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex-shrink-0">
+                <UnifiedPdfGenerator
+                  data={pdfData}
+                  type={getPdfType()}
+                  config={pdfConfig}
+                  fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
+                  buttonText=""
+                  variant="ghost"
+                  size="default"
+                  className="h-11 w-11 p-0 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">Download PDF</TooltipContent>
+          </Tooltip>
 
           {secondaryActions.length > 0 && (
             <DropdownMenu>
@@ -652,131 +662,132 @@ export function QuizActions({
         )}
       >
         {/* Toolbar Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border/50">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold text-foreground">Quiz Actions</h3>
+        <div className="flex flex-col gap-4 p-4 border-b border-border/50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Settings className="h-5 w-5 text-primary flex-shrink-0" />
+                <h3 className="text-lg font-semibold text-foreground">Quiz Actions</h3>
+              </div>
             </div>
-            
-            {/* Status Badges */}
-            <div className="flex items-center gap-2">
+
+            {/* Quiz Stats */}
+            {quizData && (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                {quizData.rating && (
+                  <div className="flex items-center gap-1 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg whitespace-nowrap">
+                    <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />
+                    <span className="font-medium">{quizData.rating.toFixed(1)}</span>
+                  </div>
+                )}
+                {quizData.attempts && (
+                  <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg whitespace-nowrap">
+                    <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                    <span className="font-medium">{quizData.attempts}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Status Badges Row */}
+          {(isPublic || isFavorite) && (
+            <div className="flex flex-wrap items-center gap-2">
               {isPublic && (
-                <Badge variant="secondary" className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                  <Eye className="h-3 w-3 mr-1" />
+                <Badge variant="secondary" className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 whitespace-nowrap">
+                  <Eye className="h-3 w-3 mr-1 flex-shrink-0" />
                   {isUserOwner ? "Public" : "Shared"}
                 </Badge>
               )}
               {isFavorite && (
-                <Badge variant="secondary" className="px-2 py-1 text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
-                  <Heart className="h-3 w-3 mr-1 fill-current" />
+                <Badge variant="secondary" className="px-2 py-1 text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300 whitespace-nowrap">
+                  <Heart className="h-3 w-3 mr-1 fill-current flex-shrink-0" />
                   Favorite
                 </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Quiz Stats */}
-          {quizData && (
-            <div className="flex items-center gap-3 text-sm">
-              {quizData.rating && (
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                  <span className="font-medium">{quizData.rating.toFixed(1)}</span>
-                </div>
-              )}
-              {quizData.attempts && (
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <Users className="h-4 w-4 text-blue-500" />
-                  <span className="font-medium">{quizData.attempts}</span>
-                </div>
               )}
             </div>
           )}
         </div>
 
         {/* Action Toolbar */}
-        <div className="p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* All Actions in Toolbar Format */}
+        <div className="p-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full">
+            {/* All Actions in Grid Format */}
             {Object.entries(groupedActions).map(([category, actions]) => {
               const config = categoryConfig[category as keyof typeof categoryConfig]
 
-              return (
-                <div key={category} className="flex items-center gap-2">
-                  {/* Category Indicator */}
-                  <div className={cn("w-1 h-8 rounded-full", config.iconColor.replace("text-", "bg-"))} />
-                  
-                  {/* Category Actions */}
-                  {actions.map((action) => (
-                    <Tooltip key={action.id}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={action.active ? "default" : action.destructive ? "destructive" : "outline"}
-                          size="sm"
-                          className={cn(
-                            "h-9 px-3 gap-2 transition-all duration-200",
-                            config.hoverColor,
-                            action.active && "ring-2 ring-offset-1",
-                            action.active && action.category === "personal" && "ring-pink-400",
-                            action.active && action.category === "utility" && "ring-green-400",
-                            action.disabled && "opacity-50 cursor-not-allowed",
-                            action.premium && "border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20"
-                          )}
-                          onClick={!action.disabled ? action.onClick : undefined}
-                          disabled={action.disabled || action.loading}
-                          aria-label={action.label}
-                        >
-                          {action.loading ? (
-                            <BarChart2 className={cn("h-4 w-4", "animate-spin")} />
-                          ) : (
-                            <action.icon className={cn(
-                              "h-4 w-4",
-                              action.active && action.id === "favorite" && "fill-current text-pink-500",
-                              action.active && action.id === "visibility" && isPublic && "text-green-500",
-                              action.premium && "text-amber-600"
-                            )} />
-                          )}
-                          <span className="font-medium text-sm">{action.label}</span>
+              return actions.map((action) => (
+                <Tooltip key={action.id}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={action.active ? "default" : action.destructive ? "destructive" : "outline"}
+                      size="sm"
+                      className={cn(
+                        "h-10 px-3 gap-2 transition-all duration-200 w-full justify-start",
+                        config.hoverColor,
+                        action.active && "ring-2 ring-offset-1",
+                        action.active && action.category === "personal" && "ring-pink-400",
+                        action.active && action.category === "utility" && "ring-green-400",
+                        action.disabled && "opacity-50 cursor-not-allowed",
+                        action.premium && "border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20"
+                      )}
+                      onClick={!action.disabled ? action.onClick : undefined}
+                      disabled={action.disabled || action.loading}
+                      aria-label={action.label}
+                    >
+                      <div className={cn("w-1 h-6 rounded-full mr-1 flex-shrink-0", config.iconColor.replace("text-", "bg-"))} />
+                      {action.loading ? (
+                        <BarChart2 className={cn("h-4 w-4 flex-shrink-0", "animate-spin")} />
+                      ) : (
+                        <action.icon className={cn(
+                          "h-4 w-4 flex-shrink-0",
+                          action.active && action.id === "favorite" && "fill-current text-pink-500",
+                          action.active && action.id === "visibility" && isPublic && "text-green-500",
+                          action.premium && "text-amber-600"
+                        )} />
+                      )}
+                      <span className="font-medium text-sm truncate">{action.label}</span>
 
-                          {action.premium && (
-                            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
-                              <Sparkles className="h-3 w-3" />
-                            </Badge>
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="text-center">
-                          <div className="font-medium">{action.label}</div>
-                          {action.disabled && action.premium && (
-                            <div className="text-xs text-muted-foreground mt-1">Premium feature</div>
-                          )}
-                          {action.disabled && !action.premium && !isAuthenticated && (
-                            <div className="text-xs text-muted-foreground mt-1">Login required</div>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
-              )
+                      {action.premium && (
+                        <Badge variant="secondary" className="ml-auto px-1.5 py-0 text-xs flex-shrink-0">
+                          <Sparkles className="h-3 w-3" />
+                        </Badge>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-center">
+                      <div className="font-medium">{action.label}</div>
+                      {action.disabled && action.premium && (
+                        <div className="text-xs text-muted-foreground mt-1">Premium feature</div>
+                      )}
+                      {action.disabled && !action.premium && !isAuthenticated && (
+                        <div className="text-xs text-muted-foreground mt-1">Login required</div>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ))
             })}
             
             {/* PDF Download Component */}
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-8 rounded-full bg-blue-500" />
-              <UnifiedPdfGenerator
-                data={pdfData}
-                type={getPdfType()}
-                config={pdfConfig}
-                fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
-                buttonText="Download PDF"
-                variant="outline"
-                size="sm"
-                className="h-9 px-3 gap-2 transition-all duration-200"
-              />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-full">
+                  <UnifiedPdfGenerator
+                    data={pdfData}
+                    type={getPdfType()}
+                    config={pdfConfig}
+                    fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
+                    buttonText="Download PDF"
+                    variant="outline"
+                    size="sm"
+                    className="h-10 px-3 gap-2 transition-all duration-200 w-full justify-start"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Download quiz as PDF</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 

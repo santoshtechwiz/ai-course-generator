@@ -20,7 +20,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useRandomQuizzes, type RandomQuiz } from "@/hooks/useRandomQuizzes"
+import { useRandomQuizzes, type RandomQuiz as RandomQuizType } from "@/hooks/useRandomQuizzes"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface RandomQuizProps {
@@ -41,7 +41,7 @@ const getQuizRoute = (quizType: string) => {
   return routes[quizType] || "dashboard/mcq"
 }
 
-const QuizCard = ({ quiz, isActive }: { quiz: RandomQuiz; isActive: boolean }) => {
+const QuizCard = ({ quiz, isActive }: { quiz: RandomQuizType; isActive: boolean }) => {
   if (!isActive) return null
 
   return (
@@ -119,42 +119,43 @@ const QuizCard = ({ quiz, isActive }: { quiz: RandomQuiz; isActive: boolean }) =
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-4">
             <motion.div 
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 justify-center sm:justify-start"
               whileHover={{ scale: 1.05 }}
             >
-              <Clock className="h-4 w-4 text-blue-500" />
+              <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />
               <span className="font-medium">{quiz.duration} min</span>
             </motion.div>
             
             <motion.div 
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 justify-center sm:justify-start"
               whileHover={{ scale: 1.05 }}
             >
-              <Target className="h-4 w-4 text-green-500" />
+              <Target className="h-4 w-4 text-green-500 flex-shrink-0" />
               <span className="font-medium">{quiz.completionRate}%</span>
             </motion.div>
             
             {quiz.bestScore && (
               <motion.div 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 justify-center sm:justify-start sm:col-span-2"
                 whileHover={{ scale: 1.05 }}
               >
-                <Star className="h-4 w-4 text-amber-500 fill-current" />
+                <Star className="h-4 w-4 text-amber-500 fill-current flex-shrink-0" />
                 <span className="font-medium">{quiz.bestScore}%</span>
               </motion.div>
             )}
           </div>
 
           {quiz.tags && quiz.tags.length > 0 && (
-            <div className="flex items-center gap-1 mb-2">
-              <Tag className="h-3 w-3 text-muted-foreground" />
-              <div className="flex flex-wrap gap-1">
+            <div className="flex items-start gap-1 mb-2">
+              <Tag className="h-3 w-3 text-muted-foreground mt-1 flex-shrink-0" />
+              <div className="flex flex-wrap gap-1 min-w-0">
                 {quiz.tags.slice(0, 3).map((tag, index) => (
                   <span 
                     key={index}
-                    className="text-xs px-2 py-1 bg-muted/60 text-muted-foreground rounded-md"
+                    className="text-xs px-2 py-1 bg-muted/60 text-muted-foreground rounded-md truncate max-w-[80px]"
+                    title={tag}
                   >
                     {tag}
                   </span>
@@ -223,8 +224,8 @@ export const RandomQuiz = ({
 
   if (isLoading && quizzes.length === 0) {
     return (
-      <Card className={cn("w-full h-full flex items-center justify-center", className)}>
-        <div className="flex flex-col items-center gap-3">
+      <Card className={cn("w-full h-full flex items-center justify-center min-h-[300px]", className)}>
+        <div className="flex flex-col items-center gap-3 p-4 text-center">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -239,11 +240,11 @@ export const RandomQuiz = ({
 
   if (error && quizzes.length === 0) {
     return (
-      <Card className={cn("w-full h-full flex items-center justify-center", className)}>
-        <div className="flex flex-col items-center gap-3 text-center">
+      <Card className={cn("w-full h-full flex items-center justify-center min-h-[300px]", className)}>
+        <div className="flex flex-col items-center gap-3 text-center p-4">
           <div className="text-2xl">😅</div>
           <p className="text-sm text-muted-foreground">Couldn't load quizzes right now</p>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
+          <Button variant="outline" size="sm" onClick={handleRefresh} className="mt-2">
             Try Again
           </Button>
         </div>
@@ -253,8 +254,8 @@ export const RandomQuiz = ({
 
   if (quizzes.length === 0) {
     return (
-      <Card className={cn("w-full h-full flex items-center justify-center", className)}>
-        <div className="flex flex-col items-center gap-3 text-center">
+      <Card className={cn("w-full h-full flex items-center justify-center min-h-[300px]", className)}>
+        <div className="flex flex-col items-center gap-3 text-center p-4">
           <div className="text-4xl">📚</div>
           <p className="text-sm text-muted-foreground">No quizzes available at the moment</p>
         </div>
@@ -268,30 +269,30 @@ export const RandomQuiz = ({
     <Card className={cn("w-full h-full flex flex-col", className)}>
       {/* Enhanced Header */}
       <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <motion.div 
-            className="flex items-center gap-3"
+            className="flex items-center gap-3 min-w-0 flex-1"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
             <motion.div
               whileHover={{ scale: 1.1, rotate: 10 }}
-              className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-md"
+              className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-md flex-shrink-0"
             >
               <Target className="h-4 w-4 text-primary-foreground" />
             </motion.div>
-            <div>
-              <h3 className="font-semibold text-sm">Discover Quizzes</h3>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-sm truncate">Discover Quizzes</h3>
               {showStats && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   {stats.totalQuizzes} available • {stats.newQuizzesCount} new
                 </p>
               )}
             </div>
           </motion.div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {isCached && (
               <motion.div
                 initial={{ scale: 0 }}
@@ -340,26 +341,26 @@ export const RandomQuiz = ({
 
       {/* Enhanced Navigation */}
       {quizzes.length > 1 && (
-        <CardFooter className="flex items-center justify-center gap-4 pt-0">
+        <CardFooter className="flex items-center justify-center gap-2 sm:gap-4 pt-0 px-2 sm:px-4">
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={prevQuiz} 
-              className="h-8 w-8 p-0 hover:bg-primary/10"
+              className="h-8 w-8 p-0 hover:bg-primary/10 flex-shrink-0"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
           </motion.div>
 
-          <div className="flex items-center gap-1">
-            {quizzes.map((_, index) => (
+          <div className="flex items-center gap-1 overflow-hidden">
+            {quizzes.slice(0, 5).map((_, index) => (
               <motion.button
                 key={index}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-300",
+                  "w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0",
                   index === activeIndex 
-                    ? "bg-primary w-6" 
+                    ? "bg-primary w-4 sm:w-6" 
                     : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                 )}
                 onClick={() => setActiveIndex(index)}
@@ -367,6 +368,9 @@ export const RandomQuiz = ({
                 whileTap={{ scale: 0.8 }}
               />
             ))}
+            {quizzes.length > 5 && (
+              <span className="text-xs text-muted-foreground ml-1">+{quizzes.length - 5}</span>
+            )}
           </div>
 
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
@@ -374,7 +378,7 @@ export const RandomQuiz = ({
               variant="outline" 
               size="sm" 
               onClick={nextQuiz} 
-              className="h-8 w-8 p-0 hover:bg-primary/10"
+              className="h-8 w-8 p-0 hover:bg-primary/10 flex-shrink-0"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

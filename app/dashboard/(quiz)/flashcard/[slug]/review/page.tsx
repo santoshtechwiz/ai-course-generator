@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { GlobalLoader } from "@/components/ui/loader"
-import QuizPlayLayout from "../../../components/layouts/QuizPlayLayout"
+import QuizPlayLayout from "../../../components/layouts/layout"
 
 interface FlashCardReviewPageProps {
   params: Promise<{ slug?: string }>

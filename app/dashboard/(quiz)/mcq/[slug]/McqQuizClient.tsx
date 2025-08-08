@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import McqQuizWrapper from "../components/McqQuizWrapper"
-import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+
 import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
+import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+
 
 interface McqQuizClientProps {
   params: Promise<{ slug: string }>

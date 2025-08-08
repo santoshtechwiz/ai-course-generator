@@ -28,7 +28,7 @@ export default async function DashboardLayout({
   const session = await getAuthSession()
 
   return (
-    <div className="flex flex-col font-body flex-1">
+    <div className="flex flex-col font-body bg-red-500 flex-1">
       <DashboardShell>
         <GlobalLoader />
         <main className="flex-1 pt-16">

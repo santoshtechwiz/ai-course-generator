@@ -32,7 +32,7 @@ export function ModuleLayout({
   const content = (
     <div
       className={cn(
-        "flex flex-col w-full min-h-screen",
+        "flex flex-col bg-yellow-500 w-full min-h-screen",
         variant === "default" && "px-4 sm:px-6 lg:px-8 py-6",
         variant === "contained" && "px-4 sm:px-6 lg:px-8 py-6 border rounded-lg shadow-sm max-w-7xl mx-auto",
         variant === "flush" && "p-0",

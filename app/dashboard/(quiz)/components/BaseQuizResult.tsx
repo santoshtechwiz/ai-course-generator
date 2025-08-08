@@ -4,30 +4,7 @@ import type React from "react"
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import {
-  Target,
-  Award,
-  Eye,
-  EyeOff,
-  Sparkles,
-  Trophy,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  TrendingUp,
-  BarChart3,
-  Share2,
-  RotateCcw,
-  Home,
-  Medal,
-  Crown,
-  Search,
-  Grid,
-  List,
-  Save,
-  Lock,
-  Loader2,
-} from "lucide-react"
+import { Target, Award, Eye, EyeOff, Sparkles, Trophy, Clock, CheckCircle2, XCircle, TrendingUp, BarChart3, Share2, RotateCcw, Home, Medal, Crown, Search, Grid, List, Save, Lock, Loader2, Zap, Star, Brain, Flame } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Confetti } from "@/components/ui/confetti"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -45,51 +22,52 @@ import { getPerformanceLevel } from "@/lib/utils/text-similarity"
 import { useAuth } from "@/modules/auth"
 import { toast } from "@/components/ui/use-toast"
 
-// Performance level configurations with enhanced styling
+// Enhanced performance level configurations with modern styling
 const PERFORMANCE_LEVELS = {
   excellent: {
-    gradient: "from-emerald-500 via-green-500 to-teal-500",
-    bgGradient:
-      "from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-950/20 dark:via-green-950/20 dark:to-teal-950/20",
-    border: "border-emerald-200 dark:border-emerald-800",
+    gradient: "from-emerald-400 via-green-400 to-teal-400",
+    bgGradient: "from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-950/30 dark:via-green-950/30 dark:to-teal-950/30",
+    border: "border-emerald-300 dark:border-emerald-700",
     icon: Crown,
-    emoji: "👑",
-    title: "Outstanding!",
-    message: "You've mastered this topic with exceptional performance!",
+    emoji: "🏆",
+    title: "Outstanding Performance!",
+    message: "You've mastered this topic with exceptional skill!",
+    celebration: "🎉✨🌟",
   },
   good: {
-    gradient: "from-blue-500 via-indigo-500 to-purple-500",
-    bgGradient:
-      "from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20",
-    border: "border-blue-200 dark:border-blue-800",
+    gradient: "from-blue-400 via-indigo-400 to-purple-400",
+    bgGradient: "from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30",
+    border: "border-blue-300 dark:border-blue-700",
     icon: Trophy,
-    emoji: "🏆",
-    title: "Great Job!",
-    message: "Solid performance! You're on the right track.",
+    emoji: "🎯",
+    title: "Great Achievement!",
+    message: "Excellent work! You're on the right track.",
+    celebration: "🎊🎈",
   },
   average: {
-    gradient: "from-amber-500 via-orange-500 to-yellow-500",
-    bgGradient:
-      "from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-yellow-950/20",
-    border: "border-amber-200 dark:border-amber-800",
+    gradient: "from-amber-400 via-orange-400 to-yellow-400",
+    bgGradient: "from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30",
+    border: "border-amber-300 dark:border-amber-700",
     icon: Medal,
-    emoji: "🥉",
-    title: "Good Effort!",
-    message: "You're making progress. Keep practicing to improve!",
+    emoji: "⚡",
+    title: "Good Progress!",
+    message: "You're improving! Keep up the momentum.",
+    celebration: "💪📚",
   },
   poor: {
-    gradient: "from-rose-500 via-red-500 to-pink-500",
-    bgGradient: "from-rose-50 via-red-50 to-pink-50 dark:from-rose-950/20 dark:via-red-950/20 dark:to-pink-950/20",
-    border: "border-rose-200 dark:border-rose-800",
+    gradient: "from-rose-400 via-red-400 to-pink-400",
+    bgGradient: "from-rose-50 via-red-50 to-pink-50 dark:from-rose-950/30 dark:via-red-950/30 dark:to-pink-950/30",
+    border: "border-rose-300 dark:border-rose-700",
     icon: Target,
     emoji: "🎯",
     title: "Keep Learning!",
     message: "Every expert was once a beginner. You've got this!",
+    celebration: "🌱💡",
   },
 }
 
 /**
- * World-class BaseQuizResult component with modern design and dark mode support
+ * Enhanced BaseQuizResult component with world-class UX and responsive design
  */
 export function BaseQuizResult<T extends BaseQuizResultProps>({
   result,
@@ -102,8 +80,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
 }) {
   const router = useRouter()
   const { user, subscription, isAuthenticated } = useAuth()
-  // Properly check for active subscription status
-  const hasActiveSubscription = subscription?.status !== null;
+  const hasActiveSubscription = subscription?.status !== null
   const [showConfetti, setShowConfetti] = useState(false)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [showAllQuestions, setShowAllQuestions] = useState(true)
@@ -113,33 +90,39 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   const [showInlineReview, setShowInlineReview] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [isSaving, setIsSaving] = useState(false)
+  const [celebrationPhase, setCelebrationPhase] = useState(0)
   const hasShownConfettiRef = useRef(false)
   
-  // Use the same variable for consistency
-  const isSubscribed = hasActiveSubscription;
+  const isSubscribed = hasActiveSubscription
 
-  // Format dates for display
+  // Enhanced date formatting
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A"
     const date = new Date(dateString)
     return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
+      dateStyle: "full",
       timeStyle: "short",
     }).format(date)
   }
 
-  // Process and validate data
-  const processedAnswers = useMemo(() => processAnswers(result), [processAnswers, result])
+  // Process and validate data with enhanced error handling
+  const processedAnswers = useMemo(() => {
+    try {
+      return processAnswers(result)
+    } catch (error) {
+      console.error("Error processing answers:", error)
+      return []
+    }
+  }, [processAnswers, result])
 
   const title = result?.title || "Quiz Results"
   const score = typeof result?.score === "number" ? result.score : 0
   const maxScore = typeof result?.maxScore === "number" ? result.maxScore : processedAnswers.length
-  const percentage =
-    typeof result?.percentage === "number" ? result.percentage : Math.round((score / Math.max(maxScore, 1)) * 100)
+  const percentage = typeof result?.percentage === "number" ? result.percentage : Math.round((score / Math.max(maxScore, 1)) * 100)
 
   const performance = useMemo(() => getPerformanceLevel(percentage), [percentage])
 
-  // Get performance level configuration
+  // Get enhanced performance level configuration
   const performanceConfig = useMemo(() => {
     if (percentage >= 90) return PERFORMANCE_LEVELS.excellent
     if (percentage >= 75) return PERFORMANCE_LEVELS.good
@@ -147,7 +130,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     return PERFORMANCE_LEVELS.poor
   }, [percentage])
 
-  // Filter questions based on current filter and search
+  // Enhanced filter questions with better search
   const filteredQuestions = useMemo(() => {
     let filtered = processedAnswers
 
@@ -170,14 +153,25 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     return filtered
   }, [processedAnswers, filterType, searchQuery])
 
-  // Enhanced statistics
+  // Enhanced statistics with more insights
   const stats = useMemo(() => {
-    const correct =
-      typeof result?.score === "number" ? result.score : processedAnswers.filter((q) => q.isCorrect).length
+    const correct = typeof result?.score === "number" ? result.score : processedAnswers.filter((q) => q.isCorrect).length
     const total = typeof result?.maxScore === "number" ? result.maxScore : processedAnswers.length
     const incorrect = total - correct
     const totalTime = processedAnswers.reduce((sum, q) => sum + (q.timeSpent || 0), 0)
     const avgTime = totalTime / Math.max(total, 1) || 0
+
+    // Calculate streak and difficulty insights
+    let longestStreak = 0
+    let currentStreak = 0
+    processedAnswers.forEach((q) => {
+      if (q.isCorrect) {
+        currentStreak++
+        longestStreak = Math.max(longestStreak, currentStreak)
+      } else {
+        currentStreak = 0
+      }
+    })
 
     return {
       correct,
@@ -185,24 +179,37 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
       total,
       totalTime,
       avgTime,
-      accuracy:
-        typeof result?.percentage === "number" ? result.percentage : Math.round((correct / Math.max(total, 1)) * 100),
+      accuracy: typeof result?.percentage === "number" ? result.percentage : Math.round((correct / Math.max(total, 1)) * 100),
       timePerQuestion: avgTime,
       completionRate: Math.round((correct / Math.max(total, 1)) * 100),
+      longestStreak,
+      improvementAreas: processedAnswers.filter((q) => !q.isCorrect).length,
     }
   }, [result?.score, result?.maxScore, result?.percentage, processedAnswers])
 
-  // Effects
+  // Enhanced celebration effects
   useEffect(() => {
     if (result && !hasShownConfettiRef.current && percentage >= 70) {
       hasShownConfettiRef.current = true
       setShowConfetti(true)
-      const timer = setTimeout(() => setShowConfetti(false), 4000)
+      
+      // Multi-phase celebration
+      const celebrations = [
+        () => setCelebrationPhase(1),
+        () => setCelebrationPhase(2),
+        () => setCelebrationPhase(0),
+      ]
+      
+      celebrations.forEach((celebration, index) => {
+        setTimeout(celebration, index * 1500)
+      })
+      
+      const timer = setTimeout(() => setShowConfetti(false), 5000)
       return () => clearTimeout(timer)
     }
   }, [result, percentage])
 
-  // Event handlers
+  // Event handlers with enhanced UX
   const handleRetry = useCallback(() => {
     if (onRetake) {
       onRetake()
@@ -217,12 +224,12 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     router.push("/dashboard/quizzes")
   }, [router])
   
-  // Function to save quiz results to database (premium feature)
+  // Enhanced save functionality with better feedback
   const handleSaveResult = async () => {
     if (!isAuthenticated) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to save your quiz results.",
+        title: "Sign In Required",
+        description: "Please sign in to save your amazing results!",
         variant: "destructive",
       })
       return
@@ -230,8 +237,8 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     
     if (!isSubscribed) {
       toast({
-        title: "Premium Feature",
-        description: "Saving quiz results requires an active subscription.",
+        title: "Upgrade to Premium",
+        description: "Save unlimited quiz results with our Premium plan!",
         variant: "destructive",
       })
       return
@@ -240,7 +247,6 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     try {
       setIsSaving(true)
       
-      // Get the quiz type from the URL
       const path = window.location.pathname
       const quizType = 
         path.includes("/code/") ? "code" : 
@@ -248,14 +254,12 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
         path.includes("/openended/") ? "openended" : 
         path.includes("/blanks/") ? "blanks" : "mcq"
       
-      // Get quiz slug from result or URL
       const quizSlug = result.slug || path.split('/').pop()
       
       if (!quizSlug) {
         throw new Error("Could not determine quiz identifier")
       }
       
-      // Make sure processedAnswers is an array and prepare it for API submission
       const answersToSubmit = Array.isArray(processedAnswers) && processedAnswers.length > 0 
         ? processedAnswers 
         : [{
@@ -263,16 +267,14 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             timeSpent: stats.totalTime || 0,
             isCorrect: percentage > 50,
             answer: "Auto-generated answer"
-          }];
+          }]
       
-      // Call the API to save the quiz result using the existing submit endpoint
       const response = await fetch(`/api/quizzes/${quizType}/${quizSlug}/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          // Always use the slug as the quiz identifier
           quizId: quizSlug,
           score: percentage,
           answers: answersToSubmit,
@@ -284,27 +286,21 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
       
       if (!response.ok) {
         const errorData = await response.json()
-        console.error("API Error Response:", errorData);
         throw new Error(errorData.error || "Failed to save result")
       }
       
-      // If we get here, the request was successful
-      const responseData = await response.json();
-      console.log("Quiz saved successfully:", responseData);
+      const responseData = await response.json()
       
       toast({
-        title: "Results Saved!",
-        description: "Your quiz results have been saved to your profile.",
+        title: "🎉 Results Saved Successfully!",
+        description: "Your quiz results are now safely stored in your profile.",
       })
     } catch (error) {
       console.error("Error saving quiz result:", error)
       
-      // Get more specific error message if possible
-      let errorMessage = "Could not save quiz results. Please try again.";
+      let errorMessage = "Could not save quiz results. Please try again."
       if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null && 'message' in error) {
-        errorMessage = String(error.message);
+        errorMessage = error.message
       }
       
       toast({
@@ -320,14 +316,19 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   const handleShare = async () => {
     try {
       const shareData = {
-        title: `${title} - Results`,
-        text: `I scored ${percentage}% (${performance}) on the ${title} quiz! ${performanceConfig.emoji}`,
+        title: `${title} - Quiz Results`,
+        text: `I just scored ${percentage}% on "${title}"! ${performanceConfig.emoji} ${performanceConfig.celebration}`,
         url: window.location.href,
       }
+      
       if (navigator.share) {
         await navigator.share(shareData)
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
+        toast({
+          title: "Link Copied!",
+          description: "Share your amazing results with friends!",
+        })
       }
     } catch (error) {
       console.warn("Share failed:", error)
@@ -347,106 +348,187 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     const PerformanceIcon = performanceConfig.icon
 
     return (
-      <div className="space-y-6">
-        {/* Hero Performance Card */}
+      <div className="space-y-8">
+        {/* Hero Performance Card with enhanced animations */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
           className={cn(
-            "relative overflow-hidden rounded-2xl p-8 text-center",
+            "relative overflow-hidden rounded-3xl p-8 md:p-12 text-center",
             performanceConfig.bgGradient,
             performanceConfig.border,
-            "border-2 shadow-xl",
+            "border-2 shadow-2xl backdrop-blur-sm",
           )}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5" />
+          {/* Animated background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10" />
+            <motion.div
+              className="absolute inset-0"
+              animate={{
+                background: [
+                  "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%)",
+                  "radial-gradient(circle at 80% 50%, rgba(255,255,255,0.1) 0%, transparent 50%)",
+                  "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%)",
+                ],
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
 
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="relative z-10"
-          >
-            <div className="flex justify-center mb-4">
-              <div className={cn("p-4 rounded-full bg-gradient-to-r shadow-lg", performanceConfig.gradient)}>
-                <PerformanceIcon className="h-8 w-8 text-white" />
+          <div className="relative z-10">
+            {/* Celebration animation */}
+            <AnimatePresence>
+              {celebrationPhase > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-4xl"
+                >
+                  {performanceConfig.celebration}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Performance icon with enhanced animation */}
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
+              className="flex justify-center mb-6"
+            >
+              <div className={cn(
+                "p-6 rounded-full bg-gradient-to-r shadow-2xl",
+                performanceConfig.gradient,
+                "ring-4 ring-white/20"
+              )}>
+                <PerformanceIcon className="h-12 w-12 md:h-16 md:w-16 text-white" />
               </div>
-            </div>
+            </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-              <h2 className="text-3xl font-bold mb-2">{performanceConfig.title}</h2>
-              <p className="text-lg text-muted-foreground mb-6">{performanceConfig.message}</p>
+            {/* Title and message with staggered animation */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
+                {performanceConfig.title}
+              </h2>
+              <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+                {performanceConfig.message}
+              </p>
 
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              {/* Score display with enhanced styling */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mb-8">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6, type: "spring", stiffness: 150 }}
+                  className="text-center"
+                >
+                  <div className="text-6xl md:text-7xl lg:text-8xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-2">
                     {percentage}%
                   </div>
-                  <div className="text-sm text-muted-foreground">Score</div>
-                </div>
-                <Separator orientation="vertical" className="h-12" />
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-foreground">
-                    {stats.correct}/{stats.total}
+                  <div className="text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium">Your Score</div>
+                </motion.div>
+                
+                <div className="hidden sm:block w-px h-20 bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
+                
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.8, type: "spring", stiffness: 150 }}
+                  className="text-center"
+                >
+                  <div className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
+                    {stats.correct}<span className="text-2xl md:text-3xl text-gray-500">/{stats.total}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground">Correct</div>
-                </div>
+                  <div className="text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium">Questions Correct</div>
+                </motion.div>
               </div>
 
-              <Progress value={percentage} className="h-3 mb-4" />
+              {/* Enhanced progress bar */}
+              <div className="max-w-md mx-auto mb-8">
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 1, duration: 1.5, ease: "easeOut" }}
+                  className="origin-left"
+                >
+                  <Progress value={percentage} className="h-4 rounded-full shadow-inner" />
+                </motion.div>
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+              </div>
             </motion.div>
-          </motion.div>
+          </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Enhanced Stats Grid with better responsive design */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[
             {
               icon: CheckCircle2,
-              label: "Correct Answers",
+              label: "Correct",
               value: stats.correct,
-              color: "text-green-600 dark:text-green-400",
-              bg: "bg-green-50 dark:bg-green-950/20",
+              color: "emerald",
+              description: "Questions answered correctly",
             },
             {
               icon: XCircle,
-              label: "Incorrect Answers",
+              label: "Incorrect",
               value: stats.incorrect,
-              color: "text-red-600 dark:text-red-400",
-              bg: "bg-red-50 dark:bg-red-950/20",
+              color: "red",
+              description: "Questions to review",
             },
             {
               icon: Clock,
               label: "Avg. Time",
               value: `${Math.round(stats.avgTime)}s`,
-              color: "text-blue-600 dark:text-blue-400",
-              bg: "bg-blue-50 dark:bg-blue-950/20",
+              color: "blue",
+              description: "Per question",
             },
             {
-              icon: TrendingUp,
-              label: "Accuracy",
-              value: `${stats.accuracy}%`,
-              color: "text-purple-600 dark:text-purple-400",
-              bg: "bg-purple-50 dark:bg-purple-950/20",
+              icon: Flame,
+              label: "Best Streak",
+              value: stats.longestStreak,
+              color: "orange",
+              description: "Consecutive correct",
             },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index }}
+              transition={{ delay: 0.1 * index, duration: 0.5 }}
+              whileHover={{ scale: 1.05, y: -4 }}
+              className="group"
             >
-              <Card className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-lg", stat.bg)}>
-                      <stat.icon className={cn("h-5 w-5", stat.color)} />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">{stat.value}</div>
-                      <div className="text-sm text-muted-foreground">{stat.label}</div>
-                    </div>
+              <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+                <CardContent className="p-6 text-center">
+                  <div className={cn(
+                    "w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110",
+                    stat.color === "emerald" && "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+                    stat.color === "red" && "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+                    stat.color === "blue" && "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
+                    stat.color === "orange" && "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
+                  )}>
+                    <stat.icon className="h-6 w-6" />
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {stat.value}
+                  </div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {stat.label}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {stat.description}
                   </div>
                 </CardContent>
               </Card>
@@ -454,50 +536,61 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={handleRetry} size="lg" className="flex items-center gap-2">
-            <RotateCcw className="h-4 w-4" />
+        {/* Enhanced Action Buttons with better mobile layout */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <Button 
+            onClick={handleRetry} 
+            size="lg" 
+            className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <RotateCcw className="h-5 w-5 mr-2" />
             Retake Quiz
           </Button>
-          {user ? (
-            hasActiveSubscription ? (
-              <Button 
-                onClick={handleSaveResult} 
-                disabled={isSaving} 
-                variant="outline" 
-                size="lg" 
-                className="flex items-center gap-2 bg-transparent"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                Save Result
-              </Button>
-            ) : (
-              <Button 
-                onClick={() => toast({
-                  title: "Premium Feature",
-                  description: "You need an active subscription to save quiz results.",
-                  variant: "destructive"
-                })} 
-                variant="outline" 
-                size="lg" 
-                className="flex items-center gap-2 bg-transparent"
-              >
-                <Lock className="h-4 w-4" />
-                Save Result (Premium)
-              </Button>
-            )
-          ) : null}
-          <Button onClick={handleShare} variant="outline" size="lg" className="flex items-center gap-2 bg-transparent">
-            <Share2 className="h-4 w-4" />
+          
+          {user && (
+            <Button 
+              onClick={handleSaveResult} 
+              disabled={isSaving} 
+              variant="outline" 
+              size="lg" 
+              className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : hasActiveSubscription ? (
+                <>
+                  <Save className="h-5 w-5 mr-2" />
+                  Save Result
+                </>
+              ) : (
+                <>
+                  <Lock className="h-5 w-5 mr-2" />
+                  Save (Premium)
+                </>
+              )
+            </Button>
+          )}
+          
+          <Button 
+            onClick={handleShare} 
+            variant="outline" 
+            size="lg" 
+            className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Share2 className="h-5 w-5 mr-2" />
             Share Results
           </Button>
-          <Button onClick={handleGoHome} variant="outline" size="lg" className="flex items-center gap-2 bg-transparent">
-            <Home className="h-4 w-4" />
+          
+          <Button 
+            onClick={handleGoHome} 
+            variant="ghost" 
+            size="lg" 
+            className="w-full sm:w-auto min-w-[200px] h-12 text-base font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
+          >
+            <Home className="h-5 w-5 mr-2" />
             Dashboard
           </Button>
         </div>
@@ -505,7 +598,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     )
   }
 
-  // Enhanced Quick Review Component
+  // Enhanced Quick Review Component with better mobile experience
   const QuickReviewCard = () => {
     if (!showInlineReview || filteredQuestions.length === 0) return null
 
@@ -516,18 +609,18 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 rounded-xl p-6 mb-6"
+          className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 mb-6"
         >
           <div className="text-center">
             <motion.div
-              className="text-4xl mb-3"
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 0.5, repeat: 2 }}
+              className="text-6xl mb-4"
+              animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: 2 }}
             >
               🎉
             </motion.div>
-            <h3 className="text-xl font-bold text-green-700 dark:text-green-300 mb-2">Perfect Score!</h3>
-            <p className="text-green-600 dark:text-green-400">
+            <h3 className="text-2xl font-bold text-green-700 dark:text-green-300 mb-2">Perfect Score!</h3>
+            <p className="text-green-600 dark:text-green-400 text-lg">
               You got all questions correct. Outstanding performance! 🌟
             </p>
           </div>
@@ -539,52 +632,59 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-6 mb-6"
+        className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-6 mb-6"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
+            <h3 className="text-xl md:text-2xl font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2 mb-2">
+              <Sparkles className="w-6 h-6" />
               Quick Review
             </h3>
-            <p className="text-sm text-amber-600 dark:text-amber-400">
+            <p className="text-amber-600 dark:text-amber-400">
               {incorrectQuestions.length} question{incorrectQuestions.length !== 1 ? "s" : ""} to master
             </p>
           </div>
           <Badge
             variant="outline"
-            className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-600"
+            className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-600 text-sm px-3 py-1"
           >
             {incorrectQuestions.length} to review
           </Badge>
         </div>
 
-        <div className="space-y-3 max-h-80 overflow-y-auto">
+        <div className="space-y-4 max-h-96 overflow-y-auto">
           {incorrectQuestions.slice(0, 3).map((question, index) => (
             <motion.div
               key={question.questionId}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-amber-200 dark:border-amber-700 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-amber-200 dark:border-amber-700 hover:shadow-md transition-all duration-300"
             >
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 line-clamp-2 leading-relaxed">
                 {question.question}
               </div>
-              <div className="space-y-1">
-                <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                  Your answer: {question.userAnswer}
+              <div className="space-y-2">
+                <div className="text-xs text-red-600 dark:text-red-400 flex items-start gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                  <div>
+                    <span className="font-medium">Your answer:</span>
+                    <div className="mt-1 text-sm">{question.userAnswer}</div>
+                  </div>
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  Correct: {question.correctAnswer}
+                <div className="text-xs text-green-600 dark:text-green-400 flex items-start gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                  <div>
+                    <span className="font-medium">Correct answer:</span>
+                    <div className="mt-1 text-sm">{question.correctAnswer}</div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           ))}
+          
           {incorrectQuestions.length > 3 && (
-            <div className="text-center pt-2">
+            <div className="text-center pt-4">
               <Button
                 variant="outline"
                 size="sm"
@@ -600,11 +700,11 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     )
   }
 
-  // Enhanced Review Controls
+  // Enhanced Review Controls with better mobile UX
   const EnhancedReviewControls = () => (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <Button
             variant={showInlineReview ? "default" : "outline"}
             onClick={() => setShowInlineReview(!showInlineReview)}
@@ -622,11 +722,23 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant={viewMode === "list" ? "default" : "outline"} size="sm" onClick={() => setViewMode("list")}>
+          <Button 
+            variant={viewMode === "list" ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setViewMode("list")}
+            className="flex items-center gap-1"
+          >
             <List className="w-4 h-4" />
+            <span className="hidden sm:inline">List</span>
           </Button>
-          <Button variant={viewMode === "grid" ? "default" : "outline"} size="sm" onClick={() => setViewMode("grid")}>
+          <Button 
+            variant={viewMode === "grid" ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setViewMode("grid")}
+            className="flex items-center gap-1"
+          >
             <Grid className="w-4 h-4" />
+            <span className="hidden sm:inline">Grid</span>
           </Button>
         </div>
       </div>
@@ -638,11 +750,11 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             placeholder="Search questions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-10"
           />
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-48 h-10">
             <SelectValue placeholder="Filter questions" />
           </SelectTrigger>
           <SelectContent>
@@ -655,7 +767,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
     </div>
   )
 
-  // Single question view
+  // Single question view with enhanced navigation
   const renderSingleQuestionView = () => {
     if (filteredQuestions.length === 0) {
       return (
@@ -683,36 +795,40 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   return (
     <>
       <motion.div
-        className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20"
+        className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-          {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          {/* Enhanced Header with better mobile layout */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="text-center mb-8"
+          >
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
               {title}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-base md:text-lg">
               Quiz completed on {formatDate(result?.completedAt || new Date().toISOString())}
             </p>
           </motion.div>
 
-          {/* Main Content */}
+          {/* Enhanced Tabs with better mobile experience */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50">
-              <TabsTrigger value="overview" className="flex items-center gap-2 text-sm">
+            <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50 rounded-xl p-1">
+              <TabsTrigger value="overview" className="flex items-center gap-2 text-sm font-medium rounded-lg">
                 <BarChart3 className="w-4 h-4" />
-                Overview
+                <span className="hidden sm:inline">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="review" className="flex items-center gap-2 text-sm">
+              <TabsTrigger value="review" className="flex items-center gap-2 text-sm font-medium rounded-lg">
                 <Target className="w-4 h-4" />
-                Review
+                <span className="hidden sm:inline">Review</span>
               </TabsTrigger>
-              <TabsTrigger value="insights" className="flex items-center gap-2 text-sm">
+              <TabsTrigger value="insights" className="flex items-center gap-2 text-sm font-medium rounded-lg">
                 <Award className="w-4 h-4" />
-                Insights
+                <span className="hidden sm:inline">Insights</span>
               </TabsTrigger>
             </TabsList>
 
@@ -726,9 +842,9 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
               <EnhancedReviewControls />
               <QuickReviewCard />
 
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden shadow-xl border-0">
                 <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b">
-                  <CardTitle className="flex items-center gap-3">
+                  <CardTitle className="flex items-center gap-3 text-xl">
                     <Target className="w-6 h-6 text-primary" />
                     Answer Review
                     <Badge variant="secondary" className="ml-2">
@@ -738,7 +854,12 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
                 </CardHeader>
                 <CardContent className="p-6">
                   {showAllQuestions ? (
-                    <div className={cn(viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-6")}>
+                    <div className={cn(
+                      "gap-6",
+                      viewMode === "grid" 
+                        ? "grid grid-cols-1 lg:grid-cols-2" 
+                        : "space-y-6"
+                    )}>
                       <AnimatePresence>
                         {filteredQuestions.map((question, index) => (
                           <motion.div
