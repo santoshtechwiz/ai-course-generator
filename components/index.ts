@@ -10,3 +10,6 @@ export * from "./features/subscription"
 export * from "./forms"
 export * from "./animations"
 
+// Standalone components
+export { ClientLayoutWrapper } from "./ClientLayoutWrapper"
+

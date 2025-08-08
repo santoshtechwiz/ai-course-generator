@@ -1,13 +1,13 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { ModuleLayout } from "@/components/layout/ModuleLayout"
 import { generateQuizMetadata } from "@/lib/quiz-metadata"
 
 /**
  * Dynamic Flashcard Instance Layout
  * 
- * Provides dynamic SEO for individual flashcard quiz instances
- * using the unified quiz metadata system
+ * Provides dynamic SEO for individual flashcard quiz instances.
+ * This layout is intentionally minimal to avoid nesting with DashboardShell
+ * since QuizPlayLayout provides its own complete UI structure.
  */
 
 type FlashcardSlugLayoutParams = {
@@ -38,13 +38,7 @@ export default async function FlashcardSlugLayout({
   params,
   children,
 }: FlashcardSlugLayoutParams) {
-  return (
-    <ModuleLayout 
-      variant="flush" 
-      suspense={true} 
-      className="flashcard-quiz-instance-layout w-full min-h-screen p-0 m-0"
-    >
-      {children}
-    </ModuleLayout>
-  )
+  // Minimal layout that doesn't interfere with QuizPlayLayout
+  // QuizPlayLayout provides its own complete UI structure
+  return <>{children}</>
 }

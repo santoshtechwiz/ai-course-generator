@@ -16,7 +16,6 @@ import { RandomQuiz } from "./RandomQuiz"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { TagsDisplay } from "@/components/quiz/TagsDisplay"
 import { QuizType } from "@/app/types/quiz-types"
-import Footer from "@/components/shared/Footer"
 
 import {
   ChevronLeft,
@@ -600,8 +599,7 @@ export default function QuizPlayLayout({
         </div>
       )}
 
-      {/* Footer */}
-      {!isFullscreen && <Footer />}
+    
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import QuizPlayLayout from "../../../components/layouts/layout"
+import QuizPlayLayout from "../../../components/layouts/QuizPlayLayout"
 import FlashcardResultHandler from "../../components/FlashcardResultHandler"
 
 interface FlashCardPageProps {
