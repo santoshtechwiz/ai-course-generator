@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { GlobalLoader, useLoader } from "@/components/ui/loader"
+import { GlobalLoader } from "@/components/ui/loader"
 import QuizPlayLayout from "../../../components/layouts/QuizPlayLayout"
 
 interface FlashCardReviewPageProps {
@@ -40,7 +40,7 @@ export default function FlashCardReviewPage({ params }: FlashCardReviewPageProps
 
   if (!slug) {
     return (
-      <QuizPlayLayout>
+      <QuizPlayLayout quizSlug={slug} quizType="flashcard">
         <div className="container max-w-4xl py-6">
           <Card>
             <CardContent className="p-6 text-center">
@@ -56,7 +56,7 @@ export default function FlashCardReviewPage({ params }: FlashCardReviewPageProps
 
   if (!cardsParam) {
     return (
-      <QuizPlayLayout>
+      <QuizPlayLayout quizSlug={slug} quizType="flashcard">
         <div className="container max-w-4xl py-6">
           <Card>
             <CardContent className="p-6 text-center">
@@ -76,9 +76,9 @@ export default function FlashCardReviewPage({ params }: FlashCardReviewPageProps
 
   // Show loading state while redirecting
   return (
-    <QuizPlayLayout>
+    <QuizPlayLayout quizSlug={slug} quizType="flashcard">
       <div className="container max-w-4xl py-6 flex items-center justify-center min-h-[300px]">
-        <GlobalLoader size="sm" />
+        <GlobalLoader />
         <span className="ml-2 text-muted-foreground">Loading review...</span>
       </div>
     </QuizPlayLayout>

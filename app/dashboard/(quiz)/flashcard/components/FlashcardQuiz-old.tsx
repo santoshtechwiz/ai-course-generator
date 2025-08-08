@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
 import { useAnimation as useAnimationContext } from "@/providers/animation-provider"
+import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -49,17 +50,22 @@ const containerVariants = {
   },
 }
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 400, damping: 30 },
+  },
+}
+
 export default function FlashCardQuiz({
   cards,
-  quizId,
-  slug,
-  title,
   onSaveCard,
-  isReviewMode = false,
   onComplete,
 }: FlashCardComponentProps) {
   const dispatch = useAppDispatch()
-  const router = useRouter()
+  const { data: session } = useSession()
 
   const {
     currentQuestion: currentQuestionIndex,
@@ -72,7 +78,6 @@ export default function FlashCardQuiz({
   const [streak, setStreak] = useState(0)
   const [showHint, setShowHint] = useState(false)
   const [savedCardIds, setSavedCardIds] = useState<string[]>([])
-  const [isFinishing, setIsFinishing] = useState(false)
 
   // Animation controls
   const cardControls = useAnimation()
@@ -121,30 +126,10 @@ export default function FlashCardQuiz({
     if (currentQuestionIndex < maxIndex) {
       setFlipped(false)
       dispatch(nextFlashCard())
-    } else {
-      // Quiz completed - show completion feedback
-      handleQuizCompletion()
+    } else if (onComplete) {
+      onComplete({ totalCount: cards.length })
     }
-  }, [currentQuestionIndex, cards, dispatch])
-
-  // Handle quiz completion with proper feedback
-  const handleQuizCompletion = useCallback(() => {
-    setIsFinishing(true)
-    
-    // Show completion toast
-    toast.success("🎉 Quiz completed! Great job!", {
-      duration: 3000,
-      description: `You've finished all ${cards.length} flashcards!`
-    })
-
-    // Call completion callback after a short delay to show the toast
-    setTimeout(() => {
-      if (onComplete) {
-        onComplete({ totalCount: cards.length })
-      }
-      setIsFinishing(false)
-    }, 1500)
-  }, [cards.length, onComplete])
+  }, [currentQuestionIndex, cards, dispatch, onComplete])
 
   // Handle self rating
   const handleSelfRating = useCallback((cardId: string, rating: "correct" | "incorrect" | "still_learning") => {
@@ -202,7 +187,7 @@ export default function FlashCardQuiz({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isCompleted || isFinishing) return
+      if (isCompleted) return
 
       switch (e.key) {
         case "ArrowRight":
@@ -233,7 +218,7 @@ export default function FlashCardQuiz({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isCompleted, isFinishing, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating, ratingAnimation])
+  }, [isCompleted, moveToNextCard, toggleFlip, currentCard, flipped, handleSelfRating, ratingAnimation])
 
   if (!cards || cards.length === 0) {
     return (
@@ -242,25 +227,6 @@ export default function FlashCardQuiz({
           <div className="text-6xl">📚</div>
           <h3 className="text-xl font-semibold">No flashcards available</h3>
           <p className="text-muted-foreground">Please check back later or create your own flashcards</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show completion loader
-  if (isFinishing) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] text-center">
-        <div className="space-y-4">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="text-6xl mx-auto"
-          >
-            🎯
-          </motion.div>
-          <h3 className="text-xl font-semibold">Completing Quiz...</h3>
-          <p className="text-muted-foreground">Calculating your results</p>
         </div>
       </div>
     )
@@ -385,31 +351,6 @@ export default function FlashCardQuiz({
             >
               <span className="font-medium mr-2">Next Card</span>
               <ArrowRight className="h-4 w-4" />
-            </Button>
-          </motion.div>
-        )}
-
-        {/* Finish Button for Last Card */}
-        {currentQuestionIndex === cards.length - 1 && (
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={handleQuizCompletion}
-              size="lg"
-              disabled={isFinishing}
-              className="h-12 px-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <span className="font-medium mr-2">
-                {isFinishing ? "Finishing..." : "Complete Quiz"}
-              </span>
-              {isFinishing ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="h-4 w-4 border-2 border-white border-t-transparent rounded-full"
-                />
-              ) : (
-                <ArrowRight className="h-4 w-4" />
-              )}
             </Button>
           </motion.div>
         )}

@@ -17,7 +17,7 @@ export default function FlashCardPage({ params }: FlashCardPageProps) {
 
   if (!slug) {
     return (
-      <QuizPlayLayout>
+      <QuizPlayLayout quizSlug={slug} quizType="flashcard">
         <div className="container max-w-4xl py-6">
           <Card>
             <CardContent className="p-6 text-center">
@@ -31,7 +31,7 @@ export default function FlashCardPage({ params }: FlashCardPageProps) {
     )
   }
   return (
-    <QuizPlayLayout>
+    <QuizPlayLayout quizSlug={slug} quizType="flashcard">
       <div className="container max-w-4xl py-6">        
         <FlashcardResultHandler
         slug={slug}
