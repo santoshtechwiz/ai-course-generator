@@ -1,4 +1,5 @@
-import { getUserDataLight, getQuickStats } from "@/app/actions/userDashboard-light"
+
+import { getUserData, getUserStats } from "@/app/actions/userDashboard"
 import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
@@ -21,9 +22,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Get light user data and quick stats in parallel
-    const [userData, quickStats] = await Promise.all([
-      getUserDataLight(id),
-      getQuickStats(id)
+    const [userData, userStats] = await Promise.all([
+      getUserData(id),
+      getUserStats(id)
     ])
 
     if (!userData) {
@@ -36,7 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({ 
       userData, 
-      quickStats 
+      userStats 
     }, {
       headers: {
         "Cache-Control": headers.get("Cache-Control") || "no-cache",

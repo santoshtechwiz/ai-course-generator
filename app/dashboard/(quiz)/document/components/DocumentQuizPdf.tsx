@@ -29,17 +29,16 @@ export const PDFDownloadButton = memo(function PDFDownloadButton({
   size = "default",
   isOwner = false,
 }: PDFDownloadButtonProps) {
-}: PDFDownloadButtonProps) {
   const pdfData: PdfData = {
     title: title,
-    questions: questions.map(question => ({
+    questions: questions.map((question) => ({
       id: question.id,
       question: question.question,
       options: question.options,
       correctAnswer: question.correctAnswer,
-      explanation: question.explanation
-    }))
-  }
+      explanation: question.explanation,
+    })),
+  };
 
   const pdfConfig: PdfConfig = {
     showAnswers: true,
@@ -53,6 +52,8 @@ export const PDFDownloadButton = memo(function PDFDownloadButton({
     secondaryColor: "#222222",
     highlightColor: "#1976D2",
     highlightBackground: "#E3F2FD",
+  };
+
   return (
     <UnifiedPdfGenerator
       data={pdfData}
@@ -66,10 +67,8 @@ export const PDFDownloadButton = memo(function PDFDownloadButton({
       downloadMethod="link"
       isOwner={isOwner}
     />
-  )   downloadMethod="link"
-    />
-  )
-})
+  );
+});
 
 // Keep the old DocumentQuizPDF component for backward compatibility (legacy)
 const DocumentQuizPDF = memo(function DocumentQuizPDF() {

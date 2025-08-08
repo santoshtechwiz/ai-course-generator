@@ -12,9 +12,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { motion, AnimatePresence } from "framer-motion"
 
 // Lazy load PDF components for better performance
-const PDFDownloadButton = lazy(() =>
-  import("./DocumentQuizPdf").then((module) => ({ default: module.PDFDownloadButton })),
-)
 const EnhancedPDFDownloadButton = lazy(() =>
   import("./DocumentQuizPdf").then((module) => ({ default: module.PDFDownloadButton })),
 )
@@ -330,7 +327,7 @@ export default function DocumentQuizDisplay({
   isEditable = true,
   isOwner = false,
 }: DocumentQuizDisplayProps) {
-}: DocumentQuizDisplayProps) {
+
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
   const [localQuestions, setLocalQuestions] = useState(questions)
 
@@ -373,7 +370,7 @@ export default function DocumentQuizDisplay({
 
   const handleAddQuestion = useCallback(() => {
     const newQuestion: Question = {
-      id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       question: "",
       options: ["", ""],
       correctAnswer: 0,
@@ -388,12 +385,9 @@ export default function DocumentQuizDisplay({
     })
   }, [localQuestions, onUpdate])
 
-  const toggleEdit = useCallback(
-    (questionId: string) => {
-      setEditingQuestionId(editingQuestionId === questionId ? null : questionId)
-    },
-    [editingQuestionId],
-  )
+  const toggleEdit = useCallback((questionId: string) => {
+    setEditingQuestionId((prev) => (prev === questionId ? null : questionId))
+  }, [])
 
   if (!localQuestions.length) {
     return (
@@ -440,18 +434,20 @@ export default function DocumentQuizDisplay({
           )}
           <Suspense
             fallback={
-              <Button variant="outline" size="sm" disabled>
-                Loading...
-              </Button>
-            <EnhancedPDFDownloadButton 
-              questions={validQuestions} 
-              title={title} 
-              variant="outline" 
-              size="sm" 
+              <div>
+                <Button variant="outline" size="sm" disabled>
+                  Loading...
+                </Button>
+              </div>
+            }
+          >
+            <EnhancedPDFDownloadButton
+              questions={validQuestions}
+              title={title}
+              variant="outline"
+              size="sm"
               isOwner={isOwner}
             />
-          >
-            <EnhancedPDFDownloadButton questions={validQuestions} title={title} variant="outline" size="sm" />
           </Suspense>
         </div>
       </div>
