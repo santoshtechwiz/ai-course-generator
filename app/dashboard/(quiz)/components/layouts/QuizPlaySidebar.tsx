@@ -2,14 +2,13 @@
 
 import { memo, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Settings } from "lucide-react"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import { QuizActions } from "../QuizActions"
 import { RandomQuiz } from "./RandomQuiz"
+import { QuizActions } from "../QuizActions"
 
 interface QuizPlaySidebarProps {
   isOpen: boolean
@@ -102,23 +101,22 @@ export const QuizPlaySidebar = memo<QuizPlaySidebarProps>((props) => {
 
               <Suspense fallback={<QuizSkeleton />}>
                 <div className="space-y-4 w-full">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="w-full bg-card/60 backdrop-blur-sm border border-border/30 rounded-xl shadow-sm"
-                  >
-                    <QuizActions
-                      quizSlug={quizSlug}
-                      quizData={quizData}
-                      initialIsFavorite={isFavorite}
-                      initialIsPublic={isPublic}
-                      isOwner={isOwner}
-                      className="w-full"
-                    />
-                  </motion.div>
-
-                  {/* ...RandomQuiz + Shortcuts same */}
+                  {/* Quiz Actions - Clean and accessible */}
+                  {quizSlug && (
+                    <div className="space-y-3">
+                      <QuizActions
+                        quizSlug={quizSlug}
+                        quizData={quizData}
+                        initialIsPublic={isPublic}
+                        initialIsFavorite={isFavorite}
+                        isOwner={isOwner}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Random Quiz Recommendations */}
+                  <RandomQuiz />
                 </div>
               </Suspense>
             </div>

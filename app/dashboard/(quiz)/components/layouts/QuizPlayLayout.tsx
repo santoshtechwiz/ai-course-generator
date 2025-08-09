@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { QuizActions } from "../QuizActions"
 import { RandomQuiz } from "./RandomQuiz"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
 import { TagsDisplay } from "@/components/quiz/TagsDisplay"
@@ -29,7 +28,6 @@ import {
   FileText,
   CreditCard,
   Play,
-  Star,
   Menu,
   X,
   ArrowLeft,
@@ -38,7 +36,6 @@ import {
   CheckCircle,
   HelpCircle,
   Zap,
-  Sparkles,
   Brain,
   Lightbulb,
 } from "lucide-react"
@@ -354,10 +351,10 @@ export default function QuizPlayLayout({
     [questionNumber, totalQuestions]
   )
 
-  // Enhanced header component with vibrant colors
+  // Enhanced header component with clean styling
   const HeaderComponent = useMemo(() => (
     <header 
-      className={`sticky top-0 z-50 backdrop-blur-2xl border-b border-white/20 dark:border-gray-700/30 ${config.bgColor} transition-all duration-500 shadow-xl shadow-black/5`}
+      className="sticky top-0 z-50 backdrop-blur-xl border-b border-white/20 dark:border-gray-700/30 bg-white/80 dark:bg-gray-900/80 transition-all duration-500 shadow-lg"
       role="banner"
     >
       <div className="max-w-screen-2xl mx-auto px-4 py-4">
@@ -419,15 +416,6 @@ export default function QuizPlayLayout({
           </div>
         </div>
 
-        {/* Enhanced Progress Section */}
-        <div className="mt-5">
-          <ProgressIndicator 
-            current={questionNumber} 
-            total={totalQuestions} 
-            percentage={progressPercentage} 
-          />
-        </div>
-
         {/* Mobile Stats */}
         {isMobile && (
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/20 dark:border-gray-700/30">
@@ -446,41 +434,12 @@ export default function QuizPlayLayout({
     </header>
   ), [quizTitle, config, Icon, difficulty, questionNumber, totalQuestions, progressPercentage, timeSpent, sidebarOpen, toggleSidebar, isMobile])
 
-  // Enhanced sidebar component with vibrant colors
-  const SidebarComponent = useMemo(() => (
-    <div className="space-y-4">
-      <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl rounded-2xl border border-white/20 dark:border-gray-700/30 p-6 shadow-2xl shadow-black/10">
-        <h3 className="font-bold text-base mb-4 flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl">
-            <Star className="h-4 w-4 text-white" />
-          </div>
-          <span className="bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-            Quiz Actions
-          </span>
-        </h3>
-        <QuizActions
-          quizSlug={quizSlug}
-          quizData={quizData}
-          initialIsFavorite={isFavorite}
-          initialIsPublic={isPublic}
-          isOwner={isOwner}
-        />
-      </div>
-    </div>
-  ), [quizSlug, quizData, isFavorite, isPublic, isOwner])
+  // Removed empty SidebarComponent - Quiz Actions now only in QuizPlaySidebar
 
   const RandomQuizComponent = useMemo(() => (
-    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl rounded-2xl border border-white/20 dark:border-gray-700/30 p-6 shadow-2xl shadow-black/10">
-      <h3 className="font-bold text-base mb-4 flex items-center gap-3">
-        <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl">
-          <Sparkles className="h-4 w-4 text-white" />
-        </div>
-        <span className="bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-          Discover More
-        </span>
-      </h3>
+    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl rounded-2xl border border-white/20 dark:border-gray-700/30 p-4 shadow-lg">
       <Suspense fallback={<QuizSkeleton />}>
-        <RandomQuiz showStats={true} autoRotate={true} />
+        <RandomQuiz showStats={false} autoRotate={true} />
       </Suspense>
     </div>
   ), [])
@@ -544,6 +503,15 @@ export default function QuizPlayLayout({
                 </Button>
               </div>
             )}
+
+            {/* Progress Section */}
+            <div className="mb-6">
+              <ProgressIndicator 
+                current={questionNumber} 
+                total={totalQuestions} 
+                percentage={progressPercentage} 
+              />
+            </div>
             
             {children}
           </div>
@@ -553,7 +521,6 @@ export default function QuizPlayLayout({
             <aside className={`hidden lg:block shrink-0 space-y-6 transition-all duration-500 ${
               isTablet ? 'w-72' : 'w-80'
             }`}>
-              {SidebarComponent}
               {RandomQuizComponent}
             </aside>
           )}
@@ -592,7 +559,6 @@ export default function QuizPlayLayout({
             </div>
             
             <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-10rem)]">
-              {SidebarComponent}
               {RandomQuizComponent}
             </div>
           </div>

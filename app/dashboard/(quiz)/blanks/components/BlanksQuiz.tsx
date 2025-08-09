@@ -306,7 +306,7 @@ export default function BlanksQuiz({
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full">
       <QuizContainer animationKey={String(question.id)}>
-        <div className="space-y-8 md:space-y-10">
+        <div className="space-y-6 sm:space-y-8">
           {/* Enhanced Header Card with better mobile layout */}
           <motion.div
             variants={itemVariants}

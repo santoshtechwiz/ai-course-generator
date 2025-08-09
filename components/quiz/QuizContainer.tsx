@@ -114,13 +114,13 @@ export function QuizContainer({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="w-full flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-6"
+          className="w-full flex-1 flex flex-col px-2 sm:px-4 py-4 sm:py-6"
         >
-          {/* Full-width container with consistent padding */}
-          <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col">
+          {/* Full-width container with minimal padding */}
+          <div className="w-full flex-1 flex flex-col">
             <Card className="border-0 shadow-none bg-transparent flex-1">
               <CardContent className="w-full p-0 flex-1 flex flex-col">
-                <div className="w-full flex-1 flex flex-col space-y-6">
+                <div className="w-full flex-1 flex flex-col space-y-4 sm:space-y-6">
                   {children}
                 </div>
               </CardContent>

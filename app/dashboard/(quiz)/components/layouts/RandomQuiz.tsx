@@ -267,63 +267,8 @@ export const RandomQuiz = ({
 
   return (
     <Card className={cn("w-full h-full flex flex-col", className)}>
-      {/* Enhanced Header */}
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <motion.div 
-            className="flex items-center gap-3 min-w-0 flex-1"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: 10 }}
-              className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-md flex-shrink-0"
-            >
-              <Target className="h-4 w-4 text-primary-foreground" />
-            </motion.div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-sm truncate">Discover Quizzes</h3>
-              {showStats && (
-                <p className="text-xs text-muted-foreground truncate">
-                  {stats.totalQuizzes} available • {stats.newQuizzesCount} new
-                </p>
-              )}
-            </div>
-          </motion.div>
-          
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {isCached && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded-full"
-              >
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                <span className="text-xs text-blue-700">Cached</span>
-              </motion.div>
-            )}
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleShuffle}
-              disabled={isLoading}
-              className="h-8 w-8 p-0 hover:bg-primary/10"
-            >
-              <motion.div
-                whileHover={{ rotate: 180 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Shuffle className="h-4 w-4" />
-              </motion.div>
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-
-      {/* Quiz Content */}
-      <CardContent className="p-4 flex-1 min-h-0">
+      {/* Quiz Content - Simplified without header */}
+      <CardContent className="p-3 flex-1 min-h-0">
         <div 
           className="relative h-full"
           onMouseEnter={() => setIsPaused(true)}

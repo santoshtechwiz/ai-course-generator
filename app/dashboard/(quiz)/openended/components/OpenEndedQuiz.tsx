@@ -276,17 +276,18 @@ export default function OpenEndedQuiz({
       quizSubtitle="Provide a detailed answer explaining your understanding"
       timeSpent={timeSpent}
       difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
+      fullWidth={true}
     >
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Info Card (Difficulty & Tips) */}
         <motion.div
           variants={itemVariants}
-          className="bg-white rounded-2xl p-6 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 shadow-sm"
+          className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 shadow-sm mx-2 sm:mx-4"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Brain className="w-6 h-6 text-white" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                

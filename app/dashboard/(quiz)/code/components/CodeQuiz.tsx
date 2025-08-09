@@ -70,7 +70,6 @@ const CodeQuiz = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(existingAnswer || null)
   const [copied, setCopied] = useState(false)
   const [isAnswering, setIsAnswering] = useState(false)
-  const [hoveredOption, setHoveredOption] = useState<string | null>(null)
 
   const options = useMemo(() => {
     return question.options?.map((option) => ({
@@ -204,33 +203,19 @@ const CodeQuiz = ({
       difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
       fullWidth={true}
     >
-      <div className="space-y-8 md:space-y-12">
+      <div className="space-y-6 sm:space-y-8">
         {/* Enhanced Header */}
         <motion.div
           variants={itemVariants}
           initial="hidden"
           animate="visible"
-          className="text-center space-y-6"
+          className="text-center space-y-4 sm:space-y-6 px-2 sm:px-4"
         >
-          {/* Language Badge */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="flex justify-center mb-4"
-          >
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl shadow-lg border border-gray-700">
-              <Code2 className="w-5 h-5" />
-              <span className="font-semibold text-lg">{language}</span>
-              <Badge className={`bg-gradient-to-r ${languageGradient} text-white border-0`}>
-                Challenge
-              </Badge>
-            </div>
-          </motion.div>
+        
 
           {/* Question Text */}
           <motion.h2 
-            className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold leading-tight tracking-tight text-foreground mx-auto max-w-5xl px-4"
+            className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold leading-tight tracking-tight text-foreground"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
@@ -264,66 +249,66 @@ const CodeQuiz = ({
             initial="hidden"
             animate="visible"
             transition={{ delay: 0.1 }}
-            className="overflow-hidden rounded-2xl border border-border shadow-2xl"
+            className="mx-2 sm:mx-4 overflow-hidden rounded-xl sm:rounded-2xl border border-border shadow-lg sm:shadow-2xl"
           >
-            <div className="bg-gradient-to-r from-slate-900 via-gray-900 to-slate-900 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+            <div className="bg-gradient-to-r from-slate-900 via-gray-900 to-slate-900 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex gap-1.5 sm:gap-2">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 shadow-sm"></div>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500 shadow-sm"></div>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500 shadow-sm"></div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-slate-800 px-4 py-2 rounded-lg border border-slate-600">
-                  <Code2 className="w-4 h-4 text-slate-300" />
-                  <span className="text-slate-300 text-sm font-medium">{language} Code</span>
+                <div className="flex items-center gap-2 sm:gap-3 bg-slate-800 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg border border-slate-600">
+                  <Code2 className="w-3 h-3 sm:w-4 sm:h-4 text-slate-300" />
+                  <span className="text-slate-300 text-xs sm:text-sm font-medium">{language} Code</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleCopyCode}
-                  className="h-8 px-3 text-slate-300 hover:text-white hover:bg-slate-700 transition-all duration-200"
+                  className="h-7 sm:h-8 px-2 sm:px-3 text-slate-300 hover:text-white hover:bg-slate-700 transition-all duration-200"
                   title="Copy code"
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Copied!
+                      <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Copied!</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy
+                      <Copy className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Copy</span>
                     </>
                   )}
                 </Button>
                 
-                <div className="flex items-center gap-2 px-3 py-1 bg-slate-700 rounded-md">
-                  <Terminal className="w-3 h-3 text-slate-400" />
+                <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 bg-slate-700 rounded-md">
+                  <Terminal className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-400" />
                   <span className="text-xs text-slate-400 font-mono">{syntaxLanguage}</span>
                 </div>
               </div>
             </div>
 
-            <div className="relative overflow-hidden max-h-[600px] overflow-y-auto">
+            <div className="relative overflow-hidden max-h-[400px] sm:max-h-[600px] overflow-y-auto">
               <SyntaxHighlighter
                 language={syntaxLanguage}
                 style={vscDarkPlus}
                 showLineNumbers
                 customStyle={{
                   margin: 0,
-                  padding: "2rem",
-                  fontSize: "0.9rem",
+                  padding: "1rem",
+                  fontSize: "0.8rem",
                   background: "#0f172a",
-                  lineHeight: "1.7",
+                  lineHeight: "1.6",
                 }}
                 lineNumberStyle={{
                   color: "#64748b",
-                  paddingRight: "1.5rem",
-                  minWidth: "3em",
+                  paddingRight: "1rem",
+                  minWidth: "2.5em",
                   userSelect: "none"
                 }}
                 wrapLines={true}
@@ -345,20 +330,20 @@ const CodeQuiz = ({
             initial="hidden"
             animate="visible"
             transition={{ delay: 0.1 }}
-            className="max-w-4xl mx-auto"
+            className="mx-2 sm:mx-4"
           >
-            <Card className="border-2 border-border bg-gradient-to-br from-muted/30 to-muted/10 shadow-xl">
-              <CardContent className="p-8 text-center">
-                <div className="flex items-center justify-center gap-3 mb-6">
-                  <div className={`p-3 rounded-xl bg-gradient-to-r ${languageGradient} shadow-lg`}>
-                    <Brain className="w-6 h-6 text-white" />
+            <Card className="border-2 border-border bg-gradient-to-br from-muted/30 to-muted/10 shadow-lg sm:shadow-xl">
+              <CardContent className="p-4 sm:p-8 text-center">
+                <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r ${languageGradient} shadow-lg`}>
+                    <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-foreground">{language} Challenge</h3>
-                    <p className="text-sm text-muted-foreground">Test your programming knowledge</p>
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground">{language}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Test your programming knowledge</p>
                   </div>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   This question tests your understanding of {language} concepts, best practices, and problem-solving skills.
                 </p>
               </CardContent>
@@ -372,18 +357,18 @@ const CodeQuiz = ({
           initial="hidden"
           animate="visible"
           transition={{ delay: 0.2 }}
-          className="max-w-4xl mx-auto"
+          className="mx-2 sm:mx-4"
         >
-          <Card className="border-0 shadow-2xl bg-gradient-to-br from-card to-card/80 overflow-hidden">
+          <Card className="border-0 shadow-lg sm:shadow-2xl bg-gradient-to-br from-card to-card/80 overflow-hidden">
             <div className={`h-1 bg-gradient-to-r ${languageGradient}`}></div>
-            <CardContent className="p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${languageGradient}`}>
-                  <Target className="w-5 h-5 text-white" />
+            <CardContent className="p-4 sm:p-6 md:p-8">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-gradient-to-r ${languageGradient}`}>
+                  <Target className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground">Choose Your Answer</h3>
-                  <p className="text-sm text-muted-foreground">Select the most appropriate option</p>
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">Choose Your Answer</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Select the most appropriate option</p>
                 </div>
               </div>
 
@@ -394,8 +379,6 @@ const CodeQuiz = ({
                 disabled={isSubmitting || isAnswering}
                 correctAnswer={question.correctAnswer}
                 showCorrectAnswer={false}
-                hoveredOption={hoveredOption}
-                onHover={setHoveredOption}
               />
             </CardContent>
           </Card>

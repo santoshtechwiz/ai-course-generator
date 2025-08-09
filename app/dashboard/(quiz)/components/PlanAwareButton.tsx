@@ -102,6 +102,11 @@ export default function PlanAwareButton({
   // Use provided plan or get from unified auth state if not provided
   const effectivePlan = currentPlan || subscription?.plan || "FREE"
   const isAlreadySubscribed = subscription?.status === "ACTIVE" || false
+  
+  // Check if subscription is expired or in a problematic state
+  const hasExpiredSubscription = subscription?.status && 
+    !["ACTIVE", "TRIALING"].includes(subscription.status) && 
+    subscription.status !== "INACTIVE" // INACTIVE means no subscription, expired means had one but lost it
 
   // Check if the user's plan meets requirements
   const meetsRequirement = (): boolean => {
@@ -133,18 +138,26 @@ export default function PlanAwareButton({
       }
     }
 
-    // Authentication check - only show if definitely not logged in
-    if (!effectiveIsLoggedIn) {
+    // Authentication check - show sign in for unauthenticated users OR users with expired subscriptions who lost access
+    if (!effectiveIsLoggedIn || (hasExpiredSubscription && !effectiveHasCredits)) {
       const notLoggedInState = customStates?.notLoggedIn ?? {}
+      const isExpiredCase = effectiveIsLoggedIn && hasExpiredSubscription
+      
       return {
-        label: notLoggedInState.label ?? "Sign in to continue",
-        tooltip: notLoggedInState.tooltip ?? "You need to be signed in to use this feature",
+        label: notLoggedInState.label ?? (isExpiredCase ? "Reactivate subscription" : "Sign in to continue"),
+        tooltip: notLoggedInState.tooltip ?? (isExpiredCase 
+          ? "Your subscription has expired. Please reactivate to continue using this feature." 
+          : "You need to be signed in to use this feature"),
         disabled: false,
         icon: <Lock className="h-4 w-4" />,
         variant: "outline" as const,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           e.preventDefault()
-          router.push("/api/auth/signin?callbackUrl=/dashboard")
+          if (isExpiredCase) {
+            router.push("/dashboard/subscription")
+          } else {
+            router.push("/api/auth/signin?callbackUrl=/dashboard")
+          }
         },
       }
     }
