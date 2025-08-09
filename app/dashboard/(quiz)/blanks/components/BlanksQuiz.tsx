@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, AlertCircle, Target, Zap, BookOpen, Lightbulb, Trophy, Clock, Eye, Focus, Sparkles, PenTool, Brain } from 'lucide-react'
+import { CheckCircle, AlertCircle, Target, BookOpen, Lightbulb, Trophy, Focus, Brain } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
@@ -300,60 +300,14 @@ export default function BlanksQuiz({
     return { label, message, color, bgColor, borderColor, icon, level, emoji, celebration }
   }, [answer, similarity])
 
-  const canProceed = Boolean(answer.trim() && similarity >= 0.7)
+  const canProceed = Boolean(answer.trim() && similarity >= 0.6)  // Reduced from 0.7 to 0.6 for better UX
   const minimumSimilarityThreshold = 0.7
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full">
       <QuizContainer animationKey={String(question.id)}>
         <div className="space-y-6 sm:space-y-8">
-          {/* Enhanced Header Card with better mobile layout */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 rounded-3xl p-6 md:p-8 border-2 border-cyan-200/50 dark:border-cyan-800/50 shadow-xl"
-          >
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                <Focus className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-cyan-900 dark:text-cyan-100">
-                    Fill in the Blanks
-                  </h2>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700">
-                      <PenTool className="w-3 h-3 mr-1" />
-                      Precision Challenge
-                    </Badge>
-                    {hintsUsed > 0 && (
-                      <Badge
-                        variant="outline"
-                        className="text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 animate-pulse"
-                      >
-                        <Lightbulb className="w-3 h-3 mr-1" />
-                        {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300">
-                    <Target className="w-4 h-4" />
-                    <span>Focus on precision</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300">
-                    <Brain className="w-4 h-4" />
-                    <span>Consider context clues</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300">
-                    <Sparkles className="w-4 h-4" />
-                    <span>Think critically</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+       
 
           {/* Enhanced Question Display with better responsive design */}
           <motion.div variants={itemVariants}>
@@ -475,25 +429,13 @@ export default function BlanksQuiz({
                       )}
                     </div>
                     
-                    {/* Enhanced Stats Display */}
-                    {answer.trim() && (
-                      <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground pt-6 border-t border-gray-100 dark:border-gray-800">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium">
-                            {Math.floor(typingTime / 60)}:{(typingTime % 60).toString().padStart(2, "0")}
-                          </span>
+                    {/* Simple Success Indicator */}
+                    {answer.trim() && similarity >= 0.6 && (
+                      <div className="flex items-center justify-center pt-4">
+                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 px-3 py-1 rounded-full">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">Good answer!</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Eye className="w-4 h-4 text-gray-500" />
-                          <span className="font-medium">{answer.length} characters</span>
-                        </div>
-                        {similarity > 0 && (
-                          <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-cyan-500" />
-                            <span className="font-medium">{Math.round(similarity * 100)}% match</span>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -518,87 +460,7 @@ export default function BlanksQuiz({
             )}
           </motion.div>
 
-          {/* Enhanced Answer Feedback */}
-          <AnimatePresence mode="wait">
-            {feedback && answer.trim() && (
-              <motion.div variants={feedbackVariants} initial="hidden" animate="visible" exit="exit" layout>
-                <Card className={cn("border-2 shadow-2xl overflow-hidden", feedback.borderColor, feedback.bgColor)}>
-                  <CardContent className="p-6 md:p-8">
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-                      <motion.div
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
-                        className={cn(
-                          "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0",
-                          feedback.color.replace("text-", "bg-").replace("-600", "-500"),
-                          "text-white",
-                        )}
-                      >
-                        <feedback.icon className="w-8 h-8" />
-                      </motion.div>
-                      <div className="flex-1 space-y-4 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                          <h4 className={cn("text-2xl font-bold", feedback.color)}>
-                            {feedback.emoji} {feedback.level}
-                          </h4>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="secondary" className="text-sm">
-                              <Zap className="w-3 h-3 mr-1" />
-                              {Math.round(similarity * 100)}% accuracy
-                            </Badge>
-                            {similarity < minimumSimilarityThreshold && (
-                              <Badge variant="outline" className="text-sm text-cyan-600 border-cyan-300">
-                                Need {Math.round(minimumSimilarityThreshold * 100)}%+ to proceed
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <motion.p
-                          className={cn("text-base leading-relaxed break-words", feedback.color)}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
-                        >
-                          {feedback.message}
-                        </motion.p>
-                        
-                        {/* Enhanced Progress Display */}
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-muted-foreground">Answer Accuracy</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-bold text-primary">{Math.round(similarity * 100)}%</span>
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <Progress value={similarity * 100} className="h-3 shadow-inner" />
-                            <div 
-                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-white/30 to-transparent rounded-full transition-all duration-700"
-                              style={{ width: `${similarity * 100}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Celebration for high scores */}
-                        {similarity >= 0.9 && (
-                          <motion.div
-                            className="text-center text-2xl"
-                            initial={{ opacity: 0, scale: 0 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-                          >
-                            {feedback.celebration}
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Removed detailed feedback to prevent answer revelation and save space */}
 
           {/* Enhanced Hint System */}
           <motion.div variants={itemVariants}>
@@ -606,9 +468,8 @@ export default function BlanksQuiz({
               hints={hints}
               onHintUsed={handleHintUsed}
               userInput={answer}
-              correctAnswer={questionData.answer}
               questionText={questionData.text}
-              maxHints={5}
+              maxHints={3}
             />
           </motion.div>
 
