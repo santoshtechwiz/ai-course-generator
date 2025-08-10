@@ -250,11 +250,14 @@ export default function GenericQuizResultHandler({ slug, quizType, children }: P
             result.userAnswer === null || result.userAnswer === undefined
               ? '(No answer selected)'
               : result.userAnswer || '',
-          correctAnswer: result.correctAnswer || '',
+          correctAnswer: result.correctAnswer || questionData?.answer || '',
           isCorrect: result.isCorrect,
           type: answerDetail?.type || 'mcq',
           selectedOptionId: answerDetail?.selectedOptionId || '',
           options: questionData?.options || [],
+          explanation: (questionData as any)?.explanation || (result as any)?.explanation || '',
+          difficulty: (result as any)?.difficulty || '',
+          category: (questionData as any)?.category || (result as any)?.category || '',
         }
       }) || [],
     }

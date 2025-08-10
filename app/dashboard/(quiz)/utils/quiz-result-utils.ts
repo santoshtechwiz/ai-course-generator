@@ -38,6 +38,16 @@ export function processQuizAnswers(result: any): ProcessedAnswer[] {
       opt.text === q.correctAnswer
     )?.id || ''
 
+    // For MCQ questions, ensure we have the correct answer text
+    let correctAnswerText = q.correctAnswer || ''
+    if (!correctAnswerText && q.type === 'mcq') {
+      // Try to find from options if not directly provided
+      const correctOption = normalizedOptions.find((opt: QuestionOption) => 
+        opt.id === correctAnswerId || opt.value === correctAnswerId
+      )
+      correctAnswerText = correctOption?.text || correctAnswerText
+    }
+
     // For code questions, include code snippet
     const hasCodeSnippet = q.type === 'code' || q.codeSnippet
 
@@ -45,7 +55,7 @@ export function processQuizAnswers(result: any): ProcessedAnswer[] {
       questionId: q.questionId || q.id || `q-${Math.random().toString(36).substring(2, 9)}`,
       question: q.question || q.text || '',
       userAnswer: q.userAnswer || '(No answer selected)',
-      correctAnswer: q.correctAnswer || '',
+      correctAnswer: correctAnswerText,
       isCorrect: q.isCorrect || false,
       type: q.type || 'mcq',
       options: normalizedOptions,
@@ -59,7 +69,7 @@ export function processQuizAnswers(result: any): ProcessedAnswer[] {
       difficulty: q.difficulty || '',
       category: q.category || '',
       // Calculate time spent if available
-      timeSpent: q.timeSpent || (result.totalTime ? result.totalTime / Math.max(result.questionResults.length, 1) : 0)
+      timeSpent: q.timeSpent || (result.totalTime ? result.totalTime / Math.max(result.questionResults?.length || resultsArray.length, 1) : 0)
     }
   })
 }

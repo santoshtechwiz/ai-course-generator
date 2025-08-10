@@ -139,33 +139,20 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
               </div>
             )}
 
-            {/* Explanation */}
-            {question.explanation && (
-              <>
-                <Separator className="my-4" />
-                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-semibold text-foreground">Explanation:</span>
-                  </div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">{question.explanation}</p>
+          {/* Explanation */}
+          {question.explanation && (
+            <>
+              <Separator className="my-4" />
+              <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-semibold text-foreground">Explanation:</span>
                 </div>
-              </>
-            )}
-          </div>
-
-          {/* Study Tip for Incorrect Answers */}
-          {!question.isCorrect && (
-            <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">Study Tip:</span>
+                <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">{question.explanation}</p>
               </div>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
-                Review this concept and try similar questions to strengthen your understanding.
-              </p>
-            </div>
+            </>
           )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>
