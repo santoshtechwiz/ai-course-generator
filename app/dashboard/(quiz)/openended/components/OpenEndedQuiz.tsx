@@ -278,139 +278,158 @@ export default function OpenEndedQuiz({
       difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
       fullWidth={true}
     >
-      <div className="space-y-6 sm:space-y-8">
-        {/* Info Card (Difficulty & Tips) */}
+      <motion.div 
+        variants={containerVariants} 
+        initial="hidden" 
+        animate="visible" 
+        exit="exit" 
+        className="w-full h-full max-w-screen-lg mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div className="w-full h-full space-y-4 sm:space-y-6">
 
-
-        {/* Enhanced Question Display */}
-        <motion.div
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="border-l-4 border-l-violet-500 bg-gradient-to-r from-background to-violet-50/30 shadow-lg dark:to-violet-950/20">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                    <h3 className="font-semibold text-base sm:text-lg text-foreground">Question</h3>
-                    {/* Removed "Critical Thinking" badge */}
+          {/* Enhanced Question Display */}
+          <motion.div
+            variants={itemVariants}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="w-full"
+          >
+            <Card className="w-full h-full border-0 shadow-lg bg-white dark:bg-gray-900">
+              <div className="bg-gradient-to-r from-violet-500 to-purple-500 h-1"></div>
+              <CardContent className="w-full h-full p-4 sm:p-6">
+                <div className="w-full space-y-6">
+                  {/* Header Section */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                      <BookOpen className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-foreground">Open-Ended Question</h3>
+                      {hintsUsed > 0 && (
+                        <Badge variant="outline" className="mt-1 text-xs text-amber-600 border-amber-300">
+                          <Lightbulb className="w-3 h-3 mr-1" />
+                          {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-base sm:text-lg leading-relaxed text-foreground break-words">
-                    {questionData.text}
-                  </p>
-                  {/* Removed "Writing Tip" section */}
+                  
+                  {/* Question Content */}
+                  <div className="w-full text-center">
+                    <p className="text-lg leading-relaxed text-foreground break-words max-w-4xl mx-auto">
+                      {questionData.text}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-        {/* Answer Input */}
-        <motion.div
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-4"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <label htmlFor="answer" className="text-sm font-medium text-foreground flex items-center gap-1">
-              Your Answer
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs text-sm p-2">
-                    Provide a comprehensive answer with clear explanations and relevant examples.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </label>
-            {/* Removed word/char count to focus on content */}
-          </div>
-          <Textarea
-            id="answer"
-            value={answer}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Share your understanding and reasoning..."
-            className={cn(
-              "min-h-[120px] resize-y transition-all w-full border-2 bg-background",
-              isAnswered
-                ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
-                : showValidation
-                  ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                  : "hover:border-violet-400 focus:border-violet-500 focus:shadow-violet-200/30",
-            )}
-            autoFocus
-            aria-label="Enter your detailed answer"
-          />
-          {showValidation && answer.trim().length < minLength && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center gap-2 text-sm text-red-600 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
-              role="alert"
-              aria-live="polite"
-            >
-              <AlertCircle className="w-4 h-4 animate-bounce flex-shrink-0" />
-              <span className="font-medium text-center">
-                Please provide at least {minLength} characters for a meaningful answer
-              </span>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Simple success indicator - no detailed feedback to prevent answer revelation */}
-        {answer.trim() && similarity >= 0.3 && (
-          <div className="flex items-center justify-center pt-4">
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 px-3 py-1 rounded-full">
-              <CheckCircle className="w-4 h-4" />
-              <span className="text-sm font-medium">Good response!</span>
+          {/* Answer Input */}
+          <motion.div
+            variants={itemVariants}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="w-full space-y-4 sm:space-y-6"
+          >
+            <div className="flex flex-col gap-2">
+              <label htmlFor="answer" className="text-sm font-medium text-foreground flex items-center gap-1">
+                Your Answer
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-sm p-2">
+                      Provide a comprehensive answer with clear explanations and relevant examples.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </label>
             </div>
-          </div>
-        )}
+            <Textarea
+              id="answer"
+              value={answer}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Share your understanding and reasoning..."
+              className={cn(
+                "w-full min-h-[120px] sm:min-h-[140px] resize-y transition-all border-2 bg-background text-sm sm:text-base",
+                "focus:outline-none focus:ring-0 p-3 sm:p-4 rounded-lg",
+                isAnswered
+                  ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
+                  : showValidation
+                    ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
+                    : "border-gray-300 hover:border-violet-400 focus:border-violet-500 focus:shadow-violet-200/30",
+              )}
+              autoFocus
+              aria-label="Enter your detailed answer"
+            />
+            {showValidation && answer.trim().length < minLength && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-center gap-2 text-sm text-red-600 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                role="alert"
+                aria-live="polite"
+              >
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium text-center">
+                  Please provide at least {minLength} characters for a meaningful answer
+                </span>
+              </motion.div>
+            )}
+          </motion.div>
 
-        {/* Hint System */}
-        <motion.div
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <HintSystem
-            hints={hints || []}
-            onHintUsed={(hintIndex) => handleHintUsed(hintIndex + 1)}
-            questionText={questionData.text}
-            maxHints={3}
-          />
-        </motion.div>
+          {/* Simple success indicator - no detailed feedback to prevent answer revelation */}
+          {answer.trim() && similarity >= 0.3 && (
+            <div className="flex items-center justify-center pt-2">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 px-3 py-1.5 rounded-full">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Good response!</span>
+              </div>
+            </div>
+          )}
 
-        {/* Footer */}
-        <motion.div
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <QuizFooter
-            onNext={handleNext}
-            onPrevious={onPrevious}
-            onSubmit={handleSubmit}
-            canGoNext={canProceed}
-            canGoPrevious={canGoPrevious}
-            isLastQuestion={isLastQuestion}
-            nextLabel="Next Question"
-            submitLabel="Finish Quiz"
-          />
-        </motion.div>
-      </div>
+          {/* Hint System */}
+          <motion.div
+            variants={itemVariants}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="w-full"
+          >
+            <HintSystem
+              hints={hints || []}
+              onHintUsed={(hintIndex) => handleHintUsed(hintIndex + 1)}
+              questionText={questionData.text}
+              maxHints={3}
+            />
+          </motion.div>
+
+          {/* Footer */}
+          <motion.div
+            variants={itemVariants}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="w-full"
+          >
+            <QuizFooter
+              onNext={handleNext}
+              onPrevious={onPrevious}
+              onSubmit={handleSubmit}
+              canGoNext={canProceed}
+              canGoPrevious={canGoPrevious}
+              isLastQuestion={isLastQuestion}
+              nextLabel="Next Question"
+              submitLabel="Finish Quiz"
+            />
+          </motion.div>
+        </div>
+      </motion.div>
     </QuizContainer>
   )
 }

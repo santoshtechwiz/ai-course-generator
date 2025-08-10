@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper";
 import { generateMetadata } from "@/lib/seo";
 import { FAQSchema } from "@/lib/seo";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 // Enhanced metadata for better SEO
 export const metadata: Metadata = generateMetadata({
@@ -57,6 +58,20 @@ export default function ExplorePage() {
     <>
       <FAQSchema items={faqItems} />
       <PageWrapper>
+        <div className="mb-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Explore</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        
         <PageHeader
           title="Explore AI-Powered Content Creation"
           description="Create professional-quality educational content in minutes with our AI tools. "
