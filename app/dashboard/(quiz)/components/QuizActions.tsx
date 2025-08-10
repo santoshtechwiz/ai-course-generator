@@ -1,8 +1,6 @@
 "use client"
 
 import React from "react"
-
-import type { ReactElement } from "react"
 import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
@@ -12,7 +10,6 @@ import {
   Trash2,
   Download,
   Heart,
-  BarChart2,
   MoreHorizontal,
   Sparkles,
   Copy,
@@ -20,6 +17,11 @@ import {
   Users,
   Star,
   TrendingUp,
+  Lock,
+  Globe,
+  CheckCircle,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -36,79 +38,44 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Separator } from "@/components/ui/separator"
 import UnifiedPdfGenerator from "@/components/shared/UnifiedPdfGenerator"
-import type { PdfData, PdfConfig } from "@/components/shared/UnifiedPdfGenerator"
 
 interface QuizActionsProps {
   quizSlug: string
-  quizData?: any
-  initialIsPublic: boolean
-  initialIsFavorite: boolean
-  isOwner: boolean
+  quizData?: {
+    title?: string
+    description?: string
+    quizType?: string
+    userId?: string
+    rating?: number
+    attempts?: number
+    questions?: any[]
+    flashCards?: any[]
+  }
+  initialIsPublic?: boolean
+  initialIsFavorite?: boolean
+  isOwner?: boolean
   className?: string
-}
-
-interface ActionButton {
-  id: string
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  loading: boolean
-  onClick: (() => void) | (() => Promise<void>)
-  disabled: boolean
-  active?: boolean
-  premium?: boolean
-  destructive?: boolean
-  category: "share" | "stats" | "personal" | "utility"
-  priority: "primary" | "secondary"
-}
-
-const categoryConfig = {
-  share: {
-    label: "Share & Export",
-    color: "blue",
-    bgColor: "bg-blue-50 dark:bg-blue-950/10",
-    borderColor: "border-blue-200 dark:border-blue-800",
-    iconColor: "text-blue-600 dark:text-blue-400",
-    hoverColor: "hover:bg-blue-100 dark:hover:bg-blue-900/20",
-  },
-  stats: {
-    label: "Stats & Progress",
-    color: "green",
-    bgColor: "bg-green-50 dark:bg-green-950/10",
-    borderColor: "border-green-200 dark:border-green-800",
-    iconColor: "text-green-600 dark:text-green-400",
-    hoverColor: "hover:bg-green-100 dark:hover:bg-green-900/20",
-  },
-  personal: {
-    label: "Personal Tools",
-    color: "pink",
-    bgColor: "bg-pink-50 dark:bg-pink-950/10",
-    borderColor: "border-pink-200 dark:border-pink-800",
-    iconColor: "text-pink-600 dark:text-pink-400",
-    hoverColor: "hover:bg-pink-100 dark:hover:bg-pink-900/20",
-  },
-  utility: {
-    label: "Settings",
-    color: "gray",
-    bgColor: "bg-gray-50 dark:bg-gray-950/10",
-    borderColor: "border-gray-200 dark:border-gray-800",
-    iconColor: "text-gray-600 dark:text-gray-400",
-    hoverColor: "hover:bg-gray-100 dark:hover:bg-gray-900/20",
-  },
 }
 
 export function QuizActions({
   quizSlug,
-  quizData,
-  initialIsPublic,
-  initialIsFavorite,
-  isOwner,
+  quizData = {},
+  initialIsPublic = false,
+  initialIsFavorite = false,
+  isOwner = false,
   className,
-}: QuizActionsProps): ReactElement {
-  // Validate required props
+}: QuizActionsProps) {
+  // Handle missing quiz slug gracefully
   if (!quizSlug) {
-    console.error('QuizActions: quizSlug is required')
-    return <div className="text-red-500 text-sm">Error: Invalid quiz slug</div>
+    console.error("QuizActions: Missing quizSlug prop");
+    return (
+      <div className="flex items-center justify-center p-6 text-destructive bg-destructive/10 rounded-lg">
+        <AlertTriangle className="w-4 h-4 mr-2" />
+        <span className="text-sm">Error: Invalid quiz configuration</span>
+      </div>
+    )
   }
 
   const [isPublic, setIsPublic] = useState(initialIsPublic)
@@ -117,110 +84,94 @@ export function QuizActions({
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isShareLoading, setIsShareLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const router = useRouter()
-  const { user, subscription, isAuthenticated } = useAuth()
   
-  // Simple ownership check: current user ID matches quiz owner user ID OR isOwner prop is true
+  // Add error handling for auth hook with proper typing
+  let authData: { user: { id: string } | null; subscription: any; isAuthenticated: boolean }
+  try {
+    const auth = useAuth()
+    authData = {
+      user: auth?.user || null,
+      subscription: auth?.subscription || null,
+      isAuthenticated: auth?.isAuthenticated || false
+    }
+  } catch (error) {
+    console.error("Failed to load auth data:", error)
+    authData = { user: null, subscription: null, isAuthenticated: false }
+  }
+  
+  const { user, subscription, isAuthenticated } = authData
+  
   const currentUserId = user?.id || null
   const isUserOwner = isOwner || (currentUserId && quizData?.userId && currentUserId === quizData.userId)
 
-  // Check if mobile on mount
-  const checkMobile = () => setIsMobile(window.innerWidth < 768)
   React.useEffect(() => {
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
+    setMounted(true)
   }, [])
 
-  const promptLogin = useCallback(
-    () =>
-      toast({
-        title: "Authentication required",
-        description: "Please log in to perform this action",
-        variant: "destructive",
-      }),
-    [router],
-  )
+  const handleError = useCallback((message: string, error: unknown) => {
+    console.error('QuizActions error:', error)
+    toast({
+      title: "Something went wrong",
+      description: message,
+      variant: "destructive",
+    })
+  }, [])
 
-  const promptUpgrade = useCallback(
-    () =>
+  const updateQuiz = async (field: string, value: boolean) => {
+    if (!isAuthenticated) {
       toast({
-        title: "Premium feature",
-        description: "Upgrade to Premium to download PDFs",
-        variant: "destructive",
-      }),
-    [router],
-  )
-
-  const updateQuiz = async (field: "isPublic" | "isFavorite", value: boolean) => {
-    const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
-    if (!isAuthenticated || !currentUserId) return promptLogin()
-
-    if (field === "isPublic" && !isUserOwner) {
-      toast({
-        title: "Permission denied",
-        description: "Only the quiz owner can change visibility",
+        title: "Sign in required",
+        description: "Please sign in to perform this action",
         variant: "destructive",
       })
       return
     }
 
+    if (field === "isPublic" && !isUserOwner) {
+      toast({
+        title: "Permission denied",
+        description: "Only quiz owners can change visibility settings",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const setLoading = field === "isPublic" ? setIsPublicLoading : setIsFavoriteLoading
+    const setState = field === "isPublic" ? setIsPublic : setIsFavorite
+
     try {
       setLoading(true)
-      
-      // Update optimistically for better UX
-      field === "isPublic" ? setIsPublic(value) : setIsFavorite(value)
-      
-      // Construct the correct API endpoint
+      setState(value) // Optimistic update
+
       const updateEndpoint = `/api/quizzes/${quizData?.quizType || 'common'}/${quizSlug}`
-      
-      console.log('Updating quiz via:', updateEndpoint, 'with data:', { [field]: value }) // Debug log
-      
-      const res = await fetch(updateEndpoint, {
+      const response = await fetch(updateEndpoint, {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${currentUserId}` // Add auth if needed
         },
         body: JSON.stringify({ [field]: value }),
       })
 
-      const data = await res.json()
-      
-      if (!res.ok) {
-        // Revert state if API call fails
-        field === "isPublic" ? setIsPublic(!value) : setIsFavorite(!value)
-        throw new Error(data.error || data.message || `Server error: ${res.status}`)
+      if (!response.ok) {
+        setState(!value) // Revert on failure
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to update quiz`)
       }
       
-      // Show success toast
       toast({
-        title:
-          field === "isPublic"
-            ? value
-              ? "Quiz is now public"
-              : "Quiz is now private"
-            : value
-              ? "Added to favorites"
-              : "Removed from favorites",
-        description:
-          field === "isPublic"
-            ? value
-              ? "Others can now discover your quiz"
-              : "Only you can access this quiz"
-            : value
-              ? "Quiz saved to favorites"
-              : "Quiz removed from favorites",
+        title: "Success!",
+        description: field === "isPublic"
+          ? (value ? "Quiz is now public and discoverable" : "Quiz is now private")
+          : (value ? "Added to your favorites" : "Removed from favorites"),
       })
-    } catch (err: any) {
-      console.error('Update error:', err) // Debug log
-      toast({
-        title: "Error",
-        description: err.message || "Failed to update quiz. Please try again.",
-        variant: "destructive",
-      })
+    } catch (error) {
+      setState(!value) // Revert on error
+      const errorMessage = error instanceof Error ? error.message : "Failed to update quiz"
+      handleError(errorMessage, error)
     } finally {
       setLoading(false)
     }
@@ -228,57 +179,81 @@ export function QuizActions({
 
   const handleShare = async () => {
     try {
-      // Construct the correct share URL based on quiz type
+      setIsShareLoading(true)
       const quizType = quizData?.quizType || 'quiz'
       const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
       
-      console.log('Sharing URL:', shareUrl) // Debug log
+      const canUseNativeShare = typeof navigator !== 'undefined' && 
+        typeof navigator.share === 'function' && 
+        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
       
-      if (navigator.share && isMobile) {
+      if (canUseNativeShare) {
         await navigator.share({
           title: quizData?.title || "Check out this quiz!",
           text: `Test your knowledge with this ${quizType} quiz`,
           url: shareUrl,
         })
-        
         toast({
           title: "Shared successfully!",
-          description: "Quiz shared via native sharing",
+          description: "Quiz shared via device sharing",
         })
       } else {
         await navigator.clipboard.writeText(shareUrl)
         toast({
-          title: "Link copied!",
-          description: "Quiz link copied to clipboard",
+          title: "Link copied to clipboard",
+          description: "Share this link with others to let them take your quiz",
         })
       }
-    } catch (err: any) {
-      console.error('Share error:', err) // Debug log
-      
-      if (err.name !== "AbortError") {
-        // Fallback: try to copy to clipboard
-        try {
-          const quizType = quizData?.quizType || 'quiz'
-          const shareUrl = `${window.location.origin}/dashboard/${quizType}/${quizSlug}`
-          await navigator.clipboard.writeText(shareUrl)
-          
-          toast({
-            title: "Link copied!",
-            description: "Quiz link copied to clipboard",
-          })
-        } catch (clipboardErr) {
-          toast({
-            title: "Sharing failed",
-            description: "Unable to share or copy link. Please try again.",
-            variant: "destructive",
-          })
-        }
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : 'Unknown'
+      if (errorName !== "AbortError") {
+        handleError("Failed to share quiz", error)
       }
+    } finally {
+      setIsShareLoading(false)
     }
   }
 
-  // Prepare PDF data based on quiz type
-  const pdfData = useMemo((): PdfData => {
+  const handleDelete = async () => {
+    if (!isUserOwner) {
+      toast({
+        title: "Permission denied",
+        description: "Only quiz owners can delete quizzes",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsDeleting(true)
+      const deleteEndpoint = `/api/quizzes/${quizData?.quizType || 'common'}/${quizSlug}`
+      
+      const response = await fetch(deleteEndpoint, { 
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" }
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to delete quiz`)
+      }
+
+      toast({
+        title: "Quiz deleted successfully",
+        description: "Redirecting to dashboard...",
+      })
+      
+      setTimeout(() => router.push("/dashboard"), 1500)
+    } catch (error) {
+      handleError("Failed to delete quiz", error)
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
+  // Prepare PDF data with proper typing
+  const pdfData = useMemo(() => {
     if (!quizData) return { title: "Quiz", questions: [] }
 
     const quizType = quizData.quizType?.toLowerCase() || "mcq"
@@ -295,7 +270,6 @@ export function QuizActions({
       }
     }
 
-    // For MCQ, open-ended, and other quiz types
     return {
       title: quizData.title || "Quiz",
       description: quizData.description,
@@ -310,7 +284,7 @@ export function QuizActions({
     }
   }, [quizData])
 
-  const pdfConfig: PdfConfig = {
+  const pdfConfig = {
     showAnswers: true,
     highlightCorrectAnswers: true,
     showExplanations: true,
@@ -327,489 +301,293 @@ export function QuizActions({
     return quizType === "flashcard" ? "flashcards" : "quiz"
   }
 
-  const handleDelete = async () => {
-    if (!isUserOwner) {
-      toast({
-        title: "Permission denied",
-        description: "Only the quiz owner can delete this quiz",
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      setIsDeleting(true)
-      
-      // Construct the correct API endpoint with quizType
-      const deleteEndpoint = `/api/quizzes/${quizData?.quizType || 'common'}/${quizSlug}`
-      
-      console.log('Deleting quiz via:', deleteEndpoint) // Debug log
-      
-      const response = await fetch(deleteEndpoint, { 
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.id}` // Add auth if needed
-        }
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Server error: ${response.status}`)
-      }
-
-      toast({
-        title: "Quiz deleted",
-        description: "Redirecting to dashboard...",
-      })
-      
-      // Add a delay to let the user see the success message
-      setTimeout(() => router.push("/dashboard"), 1000)
-    } catch (error: any) {
-      console.error('Delete error:', error) // Debug log
-      toast({
-        title: "Delete failed",
-        description: error.message || "Failed to delete quiz. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsDeleting(false)
-      setShowDeleteDialog(false)
-    }
-  }
-
-  const actionButtons = useMemo(
-    (): ActionButton[] => {
-      const baseActions: ActionButton[] = [
-        // Share & Export Actions
-        {
-          id: "share",
-          label: "Share quiz",
-          icon: Share2,
-          loading: false,
-          onClick: handleShare,
-          disabled: false,
-          category: "share",
-          priority: "primary",
-        },
-        // Personal Tools
-        {
-          id: "favorite",
-          label: isFavorite ? "Remove from favorites" : "Add to favorites",
-          icon: Heart,
-          loading: isFavoriteLoading,
-          onClick: isAuthenticated ? () => updateQuiz("isFavorite", !isFavorite) : promptLogin,
-          disabled: !isAuthenticated,
-          active: isFavorite,
-          category: "personal",
-          priority: "primary",
-        },
-      ]
-
-      // Owner-only actions
-      if (isUserOwner && currentUserId) {
-        baseActions.push(
-          {
-            id: "visibility",
-            label: isPublic ? "Make private" : "Make public",
-            icon: isPublic ? Eye : EyeOff,
-            loading: isPublicLoading,
-            onClick: () => updateQuiz("isPublic", !isPublic),
-            disabled: isPublicLoading,
-            active: isPublic,
-            category: "utility",
-            priority: "secondary",
-          },
-          {
-            id: "delete",
-            label: "Delete quiz",
-            icon: Trash2,
-            loading: isDeleting,
-            onClick: () => setShowDeleteDialog(true),
-            disabled: isDeleting,
-            destructive: true,
-            category: "utility",
-            priority: "secondary",
-          }
-        )
-      }
-
-      return baseActions
+  // Primary actions - always visible
+  const primaryActions = useMemo(() => [
+    {
+      id: "share",
+      label: "Share",
+      description: "Copy link to share with others",
+      icon: Share2,
+      loading: isShareLoading,
+      onClick: handleShare,
+      disabled: false,
+      variant: "primary",
     },
-    [
-      isAuthenticated,
-      isFavorite,
-      isFavoriteLoading,
-      isPublic,
-      isPublicLoading,
-      isDeleting,
-      isUserOwner,
-      currentUserId,
-      promptLogin,
-      handleShare,
-      updateQuiz,
-    ],
-  )
+    {
+      id: "favorite",
+      label: isFavorite ? "Favorited" : "Add to Favorites",
+      description: isFavorite ? "Remove from favorites" : "Save for quick access",
+      icon: Heart,
+      loading: isFavoriteLoading,
+      onClick: () => updateQuiz("isFavorite", !isFavorite),
+      disabled: !isAuthenticated,
+      active: isFavorite,
+      variant: isFavorite ? "primary" : "secondary",
+    },
+  ], [isShareLoading, isFavorite, isFavoriteLoading, isAuthenticated, handleShare])
 
-  const groupedActions = useMemo(() => {
-    const groups: Record<string, ActionButton[]> = {}
-    actionButtons.forEach((action) => {
-      if (!groups[action.category]) {
-        groups[action.category] = []
-      }
-      groups[action.category].push(action)
-    })
-    return groups
-  }, [actionButtons])
+  // Owner actions - shown in dropdown
+  const ownerActions = useMemo(() => {
+    if (!isUserOwner) return []
+    
+    return [
+      {
+        id: "visibility",
+        label: isPublic ? "Make Private" : "Make Public",
+        description: isPublic ? "Hide from public discovery" : "Allow others to discover this quiz",
+        icon: isPublic ? Lock : Globe,
+        loading: isPublicLoading,
+        onClick: () => updateQuiz("isPublic", !isPublic),
+        disabled: false,
+        variant: "secondary",
+      },
+      {
+        id: "delete",
+        label: "Delete Quiz",
+        description: "Permanently remove this quiz",
+        icon: Trash2,
+        loading: isDeleting,
+        onClick: () => setShowDeleteDialog(true),
+        disabled: false,
+        destructive: true,
+        variant: "ghost",
+      },
+    ]
+  }, [isUserOwner, isPublic, isPublicLoading, isDeleting])
 
-  const primaryActions = actionButtons.filter((action) => action.priority === "primary")
-  const secondaryActions = actionButtons.filter((action) => action.priority === "secondary")
-
-  const getButtonClass = (action: ActionButton, isCompact = false) => {
-    const config = categoryConfig[action.category]
-    return cn(
-      "relative group transition-all duration-200 overflow-hidden",
-      "focus:outline-none focus:ring-2 focus:ring-offset-2",
-      isCompact ? "h-12 w-12 p-0 rounded-full shadow-lg" : "h-10 px-4 py-2 rounded-lg",
-      config.hoverColor,
-      "hover:scale-[1.02] active:scale-[0.98]",
-      "hover:shadow-md active:shadow-sm",
-      action.active && "ring-2 ring-offset-2",
-      action.active && action.category === "personal" && "ring-pink-500",
-      action.active && action.category === "utility" && "ring-green-500",
-      action.disabled && "opacity-50 cursor-not-allowed hover:scale-100",
-      action.premium &&
-        "border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20",
-    )
-  }
-
-  const getIconClass = (action: ActionButton, isCompact = false) => {
-    const config = categoryConfig[action.category]
-    return cn(
-      "transition-all duration-200",
-      isCompact ? "h-6 w-6" : "h-4 w-4",
-      config.iconColor,
-      action.active && action.id === "favorite" && "fill-current text-pink-500 scale-110",
-      action.active && action.id === "visibility" && isPublic && "text-green-500 scale-110",
-      action.premium && "text-amber-600",
-      action.loading && "animate-pulse",
-      "group-hover:scale-110",
-    )
-  }
-
-  // Mobile Floating Action Bar
-  if (isMobile) {
+  if (!mounted) {
     return (
-      <TooltipProvider delayDuration={200}>
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 max-w-[90vw]",
-            "bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl",
-            "px-2 py-2 flex items-center gap-1 overflow-x-auto scrollbar-none",
-            className,
-          )}
-        >
-          {primaryActions.map((action) => (
-            <Tooltip key={action.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    getButtonClass(action, true),
-                    "h-11 w-11 p-0 rounded-xl flex-shrink-0"
-                  )}
-                  onClick={!action.disabled ? action.onClick : undefined}
-                  disabled={action.disabled || action.loading}
-                  aria-label={action.label}
-                >
-                  {action.loading ? (
-                    <BarChart2 className={cn(getIconClass(action, true), "animate-spin")} />
-                  ) : (
-                    <action.icon className={getIconClass(action, true)} />
-                  )}
-
-                  {action.premium && (
-                    <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-1">
-                      <Sparkles className="h-2 w-2" />
-                    </div>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="font-medium">
-                {action.label}
-                {action.disabled && action.premium && " (Premium)"}
-                {action.disabled && !action.premium && !isAuthenticated && " (Login required)"}
-              </TooltipContent>
-            </Tooltip>
-          ))}
-
-          {/* PDF Download Component for Mobile */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex-shrink-0">
-                <UnifiedPdfGenerator
-                  data={pdfData}
-                  type={getPdfType()}
-                  config={pdfConfig}
-                  fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
-                  buttonText=""
-                  variant="ghost"
-                  size="default"
-                  className="h-11 w-11 p-0 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-                />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top">Download PDF</TooltipContent>
-          </Tooltip>
-
-          {secondaryActions.length > 0 && (
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="h-12 w-12 p-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-lg"
-                      aria-label="More actions"
-                    >
-                      <MoreHorizontal className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-                      {/* Show dot indicator if there are owner actions */}
-                      {isUserOwner && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                          {secondaryActions.length}
-                        </div>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  More actions {isUserOwner && "(Owner)"}
-                </TooltipContent>
-              </Tooltip>
-
-              <DropdownMenuContent align="center" side="top" className="min-w-[220px] mb-2">
-                {Object.entries(groupedActions).map(([category, actions]) => {
-                  const secondaryCategoryActions = actions.filter((action) => action.priority === "secondary")
-                  if (secondaryCategoryActions.length === 0) return null
-
-                  const config = categoryConfig[category as keyof typeof categoryConfig]
-
-                  return (
-                    <div key={category}>
-                      <div className={cn("px-3 py-2 text-xs font-semibold uppercase tracking-wider", config.iconColor)}>
-                        {config.label}
-                        {category === "utility" && isUserOwner && (
-                          <Badge variant="outline" className="ml-2 text-xs">Owner</Badge>
-                        )}
-                      </div>
-                      {secondaryCategoryActions.map((action) => (
-                        <DropdownMenuItem
-                          key={action.id}
-                          onSelect={action.onClick}
-                          disabled={action.disabled || action.loading}
-                          className={cn(
-                            "flex items-center gap-3 py-3 px-3 mx-1 rounded-md",
-                            config.hoverColor,
-                            action.destructive && "text-destructive focus:bg-destructive/10",
-                          )}
-                        >
-                          {action.loading ? (
-                            <BarChart2 className={cn("h-4 w-4", "animate-spin")} />
-                          ) : (
-                            <action.icon className={getIconClass(action)} />
-                          )}
-                          <span className="font-medium">{action.label}</span>
-                          {action.premium && (
-                            <Badge variant="secondary" className="ml-auto px-1.5 py-0 text-xs">
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              Pro
-                            </Badge>
-                          )}
-                        </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuSeparator className="my-1" />
-                    </div>
-                  )
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+      <div className={cn("bg-card rounded-lg border p-3 sm:p-4", className)}>
+        <div className="animate-pulse space-y-3">
+          <div className="h-4 bg-muted rounded w-1/3"></div>
+          <div className="flex gap-2 flex-wrap">
+            <div className="h-8 bg-muted rounded w-16 sm:w-20"></div>
+            <div className="h-8 bg-muted rounded w-20 sm:w-24"></div>
+            <div className="h-8 bg-muted rounded w-16 sm:w-20"></div>
+          </div>
         </div>
-
-        {isUserOwner && (
-          <ConfirmDialog
-            isOpen={showDeleteDialog}
-            onCancel={() => setShowDeleteDialog(false)}
-            onConfirm={handleDelete}
-            title="Delete Quiz"
-            description="Are you sure you want to delete this quiz? This action cannot be undone."
-            confirmText="Delete"
-            cancelText="Cancel"
-          />
-        )}
-      </TooltipProvider>
+      </div>
     )
   }
 
-  // Desktop Toolbar Layout
   return (
     <TooltipProvider delayDuration={300}>
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "w-full bg-card/80 backdrop-blur-sm border rounded-xl shadow-sm",
-          "transition-all hover:shadow-md hover:bg-card/90",
-          className,
+          "bg-card rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden",
+          className
         )}
       >
-        {/* Toolbar Header */}
-        <div className="flex flex-col gap-4 p-4 border-b border-border/50">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <Settings className="h-5 w-5 text-primary flex-shrink-0" />
-                <h3 className="text-lg font-semibold text-foreground">Quiz Actions</h3>
-              </div>
+        {/* Header */}
+        <div className="p-3 sm:p-4 pb-2 sm:pb-3">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <h3 className="font-medium text-foreground text-sm sm:text-base">Quiz Actions</h3>
             </div>
-
-            {/* Quiz Stats */}
-            {quizData && (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                {quizData.rating && (
-                  <div className="flex items-center gap-1 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg whitespace-nowrap">
-                    <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />
-                    <span className="font-medium">{quizData.rating.toFixed(1)}</span>
-                  </div>
-                )}
-                {quizData.attempts && (
-                  <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg whitespace-nowrap">
-                    <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                    <span className="font-medium">{quizData.attempts}</span>
-                  </div>
-                )}
-              </div>
-            )}
+            
+            {/* Quiz Stats - Hide on very small screens */}
+            <div className="hidden xs:flex items-center gap-2">
+              {quizData?.rating && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                  <span>{quizData.rating.toFixed(1)}</span>
+                </div>
+              )}
+              {quizData?.attempts && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="w-3 h-3" />
+                  <span>{quizData.attempts}</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Status Badges Row */}
-          {(isPublic || isFavorite) && (
-            <div className="flex flex-wrap items-center gap-2">
-              {isPublic && (
-                <Badge variant="secondary" className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 whitespace-nowrap">
-                  <Eye className="h-3 w-3 mr-1 flex-shrink-0" />
-                  {isUserOwner ? "Public" : "Shared"}
-                </Badge>
-              )}
-              {isFavorite && (
-                <Badge variant="secondary" className="px-2 py-1 text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300 whitespace-nowrap">
-                  <Heart className="h-3 w-3 mr-1 fill-current flex-shrink-0" />
-                  Favorite
-                </Badge>
-              )}
-            </div>
-          )}
+          {/* Status Indicators */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+            {isPublic && (
+              <Badge variant="outline" className="h-5 sm:h-6 text-xs bg-green-50 border-green-200 text-green-700">
+                <Globe className="w-2.5 sm:w-3 h-2.5 sm:h-3 mr-1" />
+                <span className="hidden sm:inline">Public</span>
+                <span className="sm:hidden">Pub</span>
+              </Badge>
+            )}
+            {!isPublic && isUserOwner && (
+              <Badge variant="outline" className="h-5 sm:h-6 text-xs bg-gray-50 border-gray-200 text-gray-700">
+                <Lock className="w-2.5 sm:w-3 h-2.5 sm:h-3 mr-1" />
+                <span className="hidden sm:inline">Private</span>
+                <span className="sm:hidden">Prv</span>
+              </Badge>
+            )}
+            {isFavorite && (
+              <Badge variant="outline" className="h-5 sm:h-6 text-xs bg-pink-50 border-pink-200 text-pink-700">
+                <Heart className="w-2.5 sm:w-3 h-2.5 sm:h-3 mr-1 fill-current" />
+                <span className="hidden sm:inline">Favorite</span>
+                <span className="sm:hidden">Fav</span>
+              </Badge>
+            )}
+          </div>
         </div>
 
-        {/* Action Toolbar */}
-        <div className="p-4 w-full">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full">
-            {/* All Actions in Grid Format */}
-            {Object.entries(groupedActions).map(([category, actions]) => {
-              const config = categoryConfig[category as keyof typeof categoryConfig]
+        <Separator />
 
-              return actions.map((action) => (
-                <Tooltip key={action.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={action.active ? "default" : action.destructive ? "destructive" : "outline"}
-                      size="sm"
-                      className={cn(
-                        "h-10 px-3 gap-2 transition-all duration-200 w-full justify-start",
-                        config.hoverColor,
-                        action.active && "ring-2 ring-offset-1",
-                        action.active && action.category === "personal" && "ring-pink-400",
-                        action.active && action.category === "utility" && "ring-green-400",
-                        action.disabled && "opacity-50 cursor-not-allowed",
-                        action.premium && "border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20"
-                      )}
-                      onClick={!action.disabled ? action.onClick : undefined}
-                      disabled={action.disabled || action.loading}
-                      aria-label={action.label}
-                    >
-                      <div className={cn("w-1 h-6 rounded-full mr-1 flex-shrink-0", config.iconColor.replace("text-", "bg-"))} />
-                      {action.loading ? (
-                        <BarChart2 className={cn("h-4 w-4 flex-shrink-0", "animate-spin")} />
-                      ) : (
-                        <action.icon className={cn(
-                          "h-4 w-4 flex-shrink-0",
-                          action.active && action.id === "favorite" && "fill-current text-pink-500",
-                          action.active && action.id === "visibility" && isPublic && "text-green-500",
-                          action.premium && "text-amber-600"
-                        )} />
-                      )}
-                      <span className="font-medium text-sm truncate">{action.label}</span>
+        {/* Actions */}
+        <div className="p-3 sm:p-4 pt-2 sm:pt-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            {/* Primary Actions */}
+            {Array.isArray(primaryActions) && primaryActions.map((action) => (
+              <Tooltip key={action.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={action.variant === "primary" ? "default" : "outline"}
+                    size="sm"
+                    onClick={action.onClick}
+                    disabled={action.disabled || action.loading}
+                    className={cn(
+                      "h-7 sm:h-8 px-2 sm:px-3 gap-1 sm:gap-2 transition-all duration-200 text-xs sm:text-sm",
+                      action.active && "bg-primary text-primary-foreground",
+                      action.disabled && !isAuthenticated && "opacity-60"
+                    )}
+                  >
+                    {action.loading ? (
+                      <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <action.icon className={cn(
+                        "w-3 h-3 flex-shrink-0",
+                        action.active && action.id === "favorite" && "fill-current"
+                      )} />
+                    )}
+                    <span className="font-medium hidden sm:inline">{action.label}</span>
+                    <span className="font-medium sm:hidden">{action.label.split(' ')[0]}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-center max-w-48">
+                    <div className="font-medium">{action.label}</div>
+                    {action.description && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {action.description}
+                      </div>
+                    )}
+                    {action.disabled && !isAuthenticated && (
+                      <div className="text-xs text-destructive mt-1">
+                        Sign in required
+                      </div>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ))}
 
-                      {action.premium && (
-                        <Badge variant="secondary" className="ml-auto px-1.5 py-0 text-xs flex-shrink-0">
-                          <Sparkles className="h-3 w-3" />
-                        </Badge>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="text-center">
-                      <div className="font-medium">{action.label}</div>
-                      {action.disabled && action.premium && (
-                        <div className="text-xs text-muted-foreground mt-1">Premium feature</div>
-                      )}
-                      {action.disabled && !action.premium && !isAuthenticated && (
-                        <div className="text-xs text-muted-foreground mt-1">Login required</div>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              ))
-            })}
-            
-            {/* PDF Download Component */}
+            {/* PDF Download */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-full">
+                <div>
                   <UnifiedPdfGenerator
                     data={pdfData}
                     type={getPdfType()}
                     config={pdfConfig}
                     fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
-                    buttonText="Download PDF"
+                    buttonText=""
                     variant="outline"
                     size="sm"
-                    className="h-10 px-3 gap-2 transition-all duration-200 w-full justify-start"
+                    className="h-7 sm:h-8 w-7 sm:w-8 p-0"
                   />
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Download quiz as PDF</TooltipContent>
+              <TooltipContent>
+                <div className="text-center">
+                  <div className="font-medium">Download PDF</div>
+                  <div className="text-xs text-muted-foreground">
+                    Export quiz for offline use
+                  </div>
+                </div>
+              </TooltipContent>
             </Tooltip>
+
+            {/* Owner Actions Dropdown */}
+            {ownerActions.length > 0 && (
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 sm:h-8 w-7 sm:w-8 p-0"
+                      >
+                        <MoreHorizontal className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-center">
+                      <div className="font-medium">Owner Actions</div>
+                      <div className="text-xs text-muted-foreground">
+                        Manage quiz settings
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Owner Settings
+                  </div>
+                  <DropdownMenuSeparator />
+                  
+                  {ownerActions.map((action) => (
+                    <DropdownMenuItem
+                      key={action.id}
+                      onClick={action.onClick}
+                      disabled={action.disabled || action.loading}
+                      className={cn(
+                        "flex items-center gap-2 py-2",
+                        action.destructive && "text-destructive focus:bg-destructive/10"
+                      )}
+                    >
+                      {action.loading ? (
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <action.icon className="w-4 h-4" />
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{action.label}</div>
+                        {action.description && (
+                          <div className="text-xs text-muted-foreground">
+                            {action.description}
+                          </div>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
         {/* Public Quiz Notice */}
         {isPublic && (
           <div className="mx-4 mb-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-full">
-                <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium text-green-800 dark:text-green-200 text-sm mb-1">
+            <div className="flex items-start gap-2">
+              <Globe className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-green-800 dark:text-green-200 text-sm">
                   {isUserOwner ? "Public Quiz" : "Shared Quiz"}
                 </h4>
-                <p className="text-xs text-green-700 dark:text-green-300">
-                  This quiz is {isUserOwner ? "public" : "shared with you"}.
-                  {isUserOwner && " Others can discover and take it."}
+                <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                  {isUserOwner 
+                    ? "This quiz is discoverable by anyone and appears in public listings."
+                    : "This quiz has been shared with you."
+                  }
                 </p>
               </div>
               {isUserOwner && (
-                <Badge variant="outline" className="border-green-300 text-green-700 dark:text-green-300 text-xs">
-                  <TrendingUp className="h-3 w-3 mr-1" />
+                <Badge variant="outline" className="border-green-300 text-green-700 text-xs flex-shrink-0">
+                  <TrendingUp className="w-3 h-3 mr-1" />
                   Discoverable
                 </Badge>
               )}
@@ -817,35 +595,17 @@ export function QuizActions({
           </div>
         )}
 
-        {/* Debug Panel (Development Only) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mx-4 mb-4 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <div className="text-xs font-mono text-yellow-800 dark:text-yellow-200">
-              <div><strong>Debug Info:</strong></div>
-              <div>isOwner (prop): {String(isOwner)}</div>
-              <div>isUserOwner (calculated): {String(isUserOwner)}</div>
-              <div>currentUserId: {currentUserId || 'null'}</div>
-              <div>quizData.userId: {quizData?.userId || 'null'}</div>
-              <div>isAuthenticated: {String(isAuthenticated)}</div>
-              <div>quizType: {quizData?.quizType || 'unknown'}</div>
-              <div>Actions: {actionButtons.map(a => a.id).join(', ')}</div>
-            </div>
-          </div>
-        )}
-
-        {isUserOwner && (
-          <ConfirmDialog
-            isOpen={showDeleteDialog}
-            onCancel={() => setShowDeleteDialog(false)}
-            onConfirm={handleDelete}
-            title="Delete Quiz"
-            description="Are you sure you want to delete this quiz? This action cannot be undone."
-            confirmText="Delete"
-            cancelText="Cancel"
-          />
-        )}
-      </div>
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          onCancel={() => setShowDeleteDialog(false)}
+          onConfirm={handleDelete}
+          title="Delete Quiz"
+          description="Are you sure you want to delete this quiz? This action cannot be undone and will remove all associated data."
+          confirmText="Delete Quiz"
+          cancelText="Cancel"
+        />
+      </motion.div>
     </TooltipProvider>
   )
 }
-

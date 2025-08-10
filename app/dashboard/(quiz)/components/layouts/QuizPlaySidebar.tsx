@@ -100,18 +100,22 @@ export const QuizPlaySidebar = memo<QuizPlaySidebarProps>((props) => {
               )}
 
               <Suspense fallback={<QuizSkeleton />}>
-                <div className="space-y-4 w-full">
+                <div className="space-y-4 sm:space-y-6 w-full">
                   {/* Quiz Actions - Clean and accessible */}
-                  {quizSlug && (
-                    <div className="space-y-3">
+                  {quizSlug ? (
+                    <div className="w-full">
                       <QuizActions
                         quizSlug={quizSlug}
-                        quizData={quizData}
+                        quizData={quizData || {}}
                         initialIsPublic={isPublic}
                         initialIsFavorite={isFavorite}
                         isOwner={isOwner}
                         className="w-full"
                       />
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground text-sm">
+                      Quiz actions unavailable
                     </div>
                   )}
                   

@@ -10,12 +10,15 @@ interface CodeQuizPageProps {
 export async function generateMetadata({ params }: CodeQuizPageProps): Promise<Metadata> {
   const { slug } = await params
   
+  // Create better SEO title without raw slug
+  const cleanTopic = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  
   return generateQuizPageMetadata({
     quizType: "code",
     slug,
-    title: `Code Quiz: ${slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-    description: "Test your coding skills with this interactive programming quiz. Write, debug, and optimize code with real-time feedback.",
-    topic: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    title: `${cleanTopic} - Programming Challenge`,
+    description: `Master ${cleanTopic} programming concepts with hands-on coding challenges. Write, debug, and optimize code with real-time feedback and explanations.`,
+    topic: cleanTopic
   })
 }
 

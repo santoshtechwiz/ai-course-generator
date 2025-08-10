@@ -90,15 +90,15 @@ export default async function RootLayout({
         </head>
 
         <body
-          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen`}
+          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
           role="document"
         >
-          <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg">
+          <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:shadow-lg focus:text-sm">
             Skip to main content
           </a>
           <Providers session={session}>
-            <div className="min-h-screen flex flex-col">
-              <main id="main-content" className="flex-1 w-full pb-24" role="main" tabIndex={-1}>
+            <div className="min-h-screen flex flex-col relative">
+              <main id="main-content" className="flex-1 w-full pb-12 sm:pb-16 md:pb-20 lg:pb-24 overflow-x-hidden" role="main" tabIndex={-1}>
                 <Suspense fallback={<SuspenseGlobalFallback />}>
                   {children}
                 </Suspense>

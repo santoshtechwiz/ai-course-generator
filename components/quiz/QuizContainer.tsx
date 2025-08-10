@@ -99,8 +99,8 @@ export function QuizContainer({
 
   // Always use full width for consistent UX across all quiz types
   const containerClasses = cn(
-    "w-full min-h-screen flex flex-col",
-    variant === "compact" && "min-h-[80vh]",
+    "w-full min-h-[calc(100vh-4rem)] flex flex-col overflow-hidden",
+    variant === "compact" && "min-h-[70vh]",
     variant === "expanded" && "min-h-[calc(100vh-2rem)]",
     className
   )
@@ -114,13 +114,13 @@ export function QuizContainer({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="w-full flex-1 flex flex-col p-4"
+          className="w-full flex-1 flex flex-col p-2 sm:p-3"
         >
-          {/* Full-width container with minimal padding */}
-          <div className="w-full flex-1 flex flex-col">
+          {/* Full-width container with responsive padding */}
+          <div className="w-full flex-1 flex flex-col max-w-5xl mx-auto">
             <Card className="border-0 shadow-none bg-transparent flex-1">
               <CardContent className="w-full p-0 flex-1 flex flex-col">
-                <div className="w-full flex-1 flex flex-col space-y-6">
+                <div className="w-full flex-1 flex flex-col space-y-3 sm:space-y-4">
                   {children}
                 </div>
               </CardContent>

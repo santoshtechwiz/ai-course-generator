@@ -10,12 +10,15 @@ interface FlashcardQuizPageProps {
 export async function generateMetadata({ params }: FlashcardQuizPageProps): Promise<Metadata> {
   const { slug } = await params
   
+  // Create better SEO title without raw slug
+  const cleanTopic = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  
   return generateQuizPageMetadata({
     quizType: "flashcard",
     slug,
-    title: `Flashcard Quiz: ${slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-    description: "Study with interactive flashcards to reinforce your knowledge. Review key concepts and test your memory retention.",
-    topic: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    title: `${cleanTopic} - Study Flashcards`,
+    description: `Master ${cleanTopic} concepts with interactive flashcards. Study key terms, definitions, and important facts with spaced repetition learning.`,
+    topic: cleanTopic
   })
 }
 

@@ -49,7 +49,7 @@ export function QuizQuestion({
         )}
         
         <motion.h2
-          className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed max-w-5xl mx-auto px-4 break-words"
+          className="text-lg sm:text-xl md:text-2xl font-bold text-foreground leading-relaxed max-w-3xl mx-auto px-1 sm:px-2 break-words text-balance"
           initial={animate ? { opacity: 0, scale: 0.95 } : false}
           animate={animate ? { opacity: 1, scale: 1 } : false}
           transition={{ delay: 0.2, duration: 0.5 }}

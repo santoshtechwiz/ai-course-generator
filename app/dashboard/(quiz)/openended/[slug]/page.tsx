@@ -10,12 +10,15 @@ interface OpenEndedQuizPageProps {
 export async function generateMetadata({ params }: OpenEndedQuizPageProps): Promise<Metadata> {
   const { slug } = await params
   
+  // Create better SEO title without raw slug
+  const cleanTopic = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  
   return generateQuizPageMetadata({
     quizType: "openended",
     slug,
-    title: `Open-Ended Quiz: ${slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-    description: "Practice with open-ended questions that require detailed written responses. Develop critical thinking and communication skills.",
-    topic: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    title: `${cleanTopic} - Essay Questions & Analysis`,
+    description: `Deepen your understanding of ${cleanTopic} with comprehensive essay questions. Practice critical thinking and detailed written responses with expert feedback.`,
+    topic: cleanTopic
   })
 }
 

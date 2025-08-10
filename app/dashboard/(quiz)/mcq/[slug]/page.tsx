@@ -10,12 +10,16 @@ interface McqQuizPageProps {
 export async function generateMetadata({ params }: McqQuizPageProps): Promise<Metadata> {
   const { slug } = await params
   
+  // Try to get the actual quiz title from the database/cache first
+  // For now, create a better title without using raw slug
+  const cleanTopic = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  
   return generateQuizPageMetadata({
     quizType: "mcq",
     slug,
-    title: `MCQ Quiz: ${slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-    description: "Take this multiple choice quiz to test your knowledge and improve your skills. Interactive questions with instant feedback and detailed explanations.",
-    topic: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    title: `${cleanTopic} - Multiple Choice Quiz`,
+    description: `Test your knowledge of ${cleanTopic} with interactive multiple choice questions. Get instant feedback and detailed explanations for each answer.`,
+    topic: cleanTopic
   })
 }
 

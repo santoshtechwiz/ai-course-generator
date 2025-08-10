@@ -279,35 +279,35 @@ export default function CreateQuizForm({
 
   return (
     <FormContainer variant="glass">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
         {/* Topic Selection */}
         <motion.div
-          className="space-y-6"
+          className="space-y-4 sm:space-y-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center gap-2">
-            <Label htmlFor="title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <Label htmlFor="title" className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">
               Topic
             </Label>
             <span className="text-rose-500">*</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 cursor-help" />
                 </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs">
+                <TooltipContent side="right" className="max-w-xs text-xs sm:text-sm">
                   <p>Enter any topic you'd like to be quizzed on</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
 
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400">Choose a category:</p>
+          <div className="space-y-3 sm:space-y-4">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Choose a category:</p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
               {Object.entries(SUBJECT_CATEGORIES).map(([categoryName, category]) => {
                 const Icon = category.icon
                 const isSelected = selectedCategory === categoryName
@@ -320,15 +320,15 @@ export default function CreateQuizForm({
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-200",
+                      "flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-full font-medium text-xs sm:text-sm transition-all duration-200 min-h-[2.5rem]",
                       isSelected
                         ? category.color
                         : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700",
                     )}
                     onClick={() => setSelectedCategory(selectedCategory === categoryName ? null : categoryName)}
                   >
-                    <Icon className="w-4 h-4" />
-                    {categoryName}
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">{categoryName}</span>
                   </motion.button>
                 )
               })}
@@ -340,7 +340,7 @@ export default function CreateQuizForm({
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
               >
                 {SUBJECT_CATEGORIES[selectedCategory as keyof typeof SUBJECT_CATEGORIES].subjects.map((subject) => (
                   <motion.button

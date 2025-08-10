@@ -31,20 +31,20 @@ const MobileMenu = () => {
           </Button>
         </motion.div>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0 border-r backdrop-blur-lg">
-        <SheetHeader className="flex items-center justify-between p-4 border-b">
-          <SheetTitle>Menu</SheetTitle>
+      <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0 border-r backdrop-blur-lg">
+        <SheetHeader className="flex items-center justify-between p-3 sm:p-4 border-b">
+          <SheetTitle className="text-base sm:text-lg">Menu</SheetTitle>
           <motion.div
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu">
-              <X className="h-5 w-5" />
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu" className="h-8 w-8 sm:h-9 sm:w-9">
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </motion.div>
         </SheetHeader>
-        <nav className="flex flex-col space-y-4 mt-8 px-4">
+        <nav className="flex flex-col space-y-2 sm:space-y-3 mt-4 sm:mt-6 px-3 sm:px-4">
           <AnimatePresence>
             {navItems.map((item, index) => (
               <motion.div
@@ -62,7 +62,7 @@ const MobileMenu = () => {
               >
                 <Button
                   variant={pathname === item.href ? "default" : "ghost"}
-                  className={`w-full justify-start rounded-lg transition-all duration-300 ${
+                  className={`w-full justify-start rounded-lg transition-all duration-300 h-10 sm:h-11 text-sm sm:text-base ${
                     pathname === item.href
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted/80 hover:translate-x-1"
@@ -74,8 +74,8 @@ const MobileMenu = () => {
                     whileHover={{ x: 2 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   >
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {item.name}
+                    <item.icon className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
                   </motion.div>
                 </Button>
               </motion.div>

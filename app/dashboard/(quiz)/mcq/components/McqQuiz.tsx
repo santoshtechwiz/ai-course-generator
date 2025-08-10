@@ -9,6 +9,20 @@ import { CheckCircle2, Sparkles, Zap, Target } from 'lucide-react'
 import { toast } from "sonner"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    transition: { duration: 0.3, ease: "easeIn" },
+  },
+}
+
 interface McqQuizProps {
   question: {
     id: string
