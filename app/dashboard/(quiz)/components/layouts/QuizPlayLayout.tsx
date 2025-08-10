@@ -32,7 +32,7 @@ import {
   Brain,
   Lightbulb,
 } from "lucide-react"
-import { QuizActions } from "../QuizActions"
+import {QuizActions} from "../QuizActions"
 
 export const dynamic = "force-dynamic"
 
@@ -237,7 +237,6 @@ export default function QuizPlayLayout({
   isPublic = false,
   isFavorite = false,
   userId = "",
-  ownerId,
   quizData = null,
   randomQuizStats = {},
   timeSpent = 0,
@@ -261,34 +260,10 @@ export default function QuizPlayLayout({
     Math.min(quizData?.currentQuestionIndex !== undefined ? quizData.currentQuestionIndex + 1 : 1, totalQuestions)
   )
 
-  // Auth and ownership - improved logic
+  // Auth and ownership
   const authUser = useAuth().user
-  const currentUserId = authUser?.id || ""
-  
-  // Multiple ways to determine ownership for better compatibility
-  const isOwner = useMemo(() => {
-    // 1. Check if explicitly passed as prop
-    if (ownerId && currentUserId) {
-      return ownerId === currentUserId
-    }
-    
-    // 2. Check from Redux state (quiz store)
-    if (quizOwnerId && currentUserId) {
-      return quizOwnerId === currentUserId
-    }
-    
-    // 3. Check from quiz data userId
-    if (quizData?.userId && currentUserId) {
-      return quizData.userId === currentUserId
-    }
-    
-    // 4. Check from passed userId prop
-    if (userId && currentUserId) {
-      return userId === currentUserId
-    }
-    
-    return false
-  }, [ownerId, currentUserId, quizOwnerId, quizData?.userId, userId])
+  userId = authUser?.id || ""
+  const isOwner = quizOwnerId === userId
 
   // Enhanced callbacks with better performance
   const toggleSidebar = useCallback(() => {
@@ -453,25 +428,25 @@ export default function QuizPlayLayout({
     </header>
   ), [quizTitle, config, Icon, difficulty, questionNumber, totalQuestions, progressPercentage, timeSpent, sidebarOpen, toggleSidebar, isMobile])
 
-  // Removed empty SidebarComponent - Quiz Actions now only in QuizPlaySidebar
-
+  // Enhanced RandomQuizComponent with compact QuizActions
   const RandomQuizComponent = useMemo(() => (
     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl rounded-2xl border border-white/20 dark:border-gray-700/30 p-4 shadow-lg">
       <Suspense fallback={<QuizSkeleton />}>
-        <div className="w-full">
+        <div className="w-full mb-4">
           <QuizActions
             quizSlug={quizSlug}
             quizData={quizData || {}}
             initialIsPublic={isPublic}
             initialIsFavorite={isFavorite}
             isOwner={isOwner}
+            compact
             className="w-full"
           />
         </div>
         <RandomQuiz showStats={false} autoRotate={true} />
       </Suspense>
     </div>
-  ), [])
+  ), [quizSlug, quizData, isPublic, isFavorite, isOwner])
 
   if (!isLoaded) {
     return (
@@ -591,9 +566,6 @@ export default function QuizPlayLayout({
           </div>
         </div>
       )}
-
-
     </div>
   )
 }
-
