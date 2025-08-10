@@ -2,24 +2,17 @@
 
 import { useAuth, useMediaQuery } from "@/hooks"
 import { usePathname } from "next/navigation"
-import { buildQuizUrl, cn } from "@/lib/utils"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback, memo } from "react"
 import { useSelector } from "react-redux"
 import { selectQuizUserId } from "@/store/slices/quiz"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RandomQuiz } from "./RandomQuiz"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
-import { TagsDisplay } from "@/components/quiz/TagsDisplay"
-import { QuizType } from "@/app/types/quiz-types"
 
 import {
-  ChevronLeft,
-  ChevronRight,
-  Timer,
   Trophy,
   Target,
   BookOpen,
@@ -39,6 +32,7 @@ import {
   Brain,
   Lightbulb,
 } from "lucide-react"
+import { QuizActions } from "../QuizActions"
 
 export const dynamic = "force-dynamic"
 
@@ -61,64 +55,64 @@ interface QuizPlayLayoutProps {
 }
 
 const quizTypeConfig = {
-  mcq: { 
-    icon: Target, 
-    label: "Multiple Choice", 
-    color: "text-blue-700 dark:text-blue-300", 
+  mcq: {
+    icon: Target,
+    label: "Multiple Choice",
+    color: "text-blue-700 dark:text-blue-300",
     bgColor: "bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 dark:from-blue-950/60 dark:via-blue-900/40 dark:to-indigo-950/60",
     badgeColor: "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 border-0",
     accentColor: "bg-gradient-to-r from-blue-500 to-blue-600",
     iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
   },
-  code: { 
-    icon: Code2, 
-    label: "Code Quiz", 
-    color: "text-emerald-700 dark:text-emerald-300", 
+  code: {
+    icon: Code2,
+    label: "Code Quiz",
+    color: "text-emerald-700 dark:text-emerald-300",
     bgColor: "bg-gradient-to-br from-emerald-50 via-emerald-100 to-teal-100 dark:from-emerald-950/60 dark:via-emerald-900/40 dark:to-teal-950/60",
     badgeColor: "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border-0",
     accentColor: "bg-gradient-to-r from-emerald-500 to-teal-600",
     iconBg: "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30"
   },
-  blanks: { 
-    icon: Focus, 
-    label: "Fill Blanks", 
-    color: "text-cyan-700 dark:text-cyan-300", 
+  blanks: {
+    icon: Focus,
+    label: "Fill Blanks",
+    color: "text-cyan-700 dark:text-cyan-300",
     bgColor: "bg-gradient-to-br from-cyan-50 via-cyan-100 to-sky-100 dark:from-cyan-950/60 dark:via-cyan-900/40 dark:to-sky-950/60",
     badgeColor: "bg-gradient-to-r from-cyan-500 to-sky-600 text-white shadow-lg shadow-cyan-500/25 border-0",
     accentColor: "bg-gradient-to-r from-cyan-500 to-sky-600",
     iconBg: "bg-gradient-to-br from-cyan-500 to-sky-600 text-white shadow-lg shadow-cyan-500/30"
   },
-  openended: { 
-    icon: FileText, 
-    label: "Open Ended", 
-    color: "text-violet-700 dark:text-violet-300", 
+  openended: {
+    icon: FileText,
+    label: "Open Ended",
+    color: "text-violet-700 dark:text-violet-300",
     bgColor: "bg-gradient-to-br from-violet-50 via-violet-100 to-purple-100 dark:from-violet-950/60 dark:via-violet-900/40 dark:to-purple-950/60",
     badgeColor: "bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25 border-0",
     accentColor: "bg-gradient-to-r from-violet-500 to-purple-600",
     iconBg: "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30"
   },
-  flashcard: { 
-    icon: CreditCard, 
-    label: "Flashcards", 
-    color: "text-orange-700 dark:text-orange-300", 
+  flashcard: {
+    icon: CreditCard,
+    label: "Flashcards",
+    color: "text-orange-700 dark:text-orange-300",
     bgColor: "bg-gradient-to-br from-orange-50 via-orange-100 to-amber-100 dark:from-orange-950/60 dark:via-orange-900/40 dark:to-amber-950/60",
     badgeColor: "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg shadow-orange-500/25 border-0",
     accentColor: "bg-gradient-to-r from-orange-500 to-amber-600",
     iconBg: "bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-lg shadow-orange-500/30"
   },
-  quiz: { 
-    icon: BookOpen, 
-    label: "General Quiz", 
-    color: "text-indigo-700 dark:text-indigo-300", 
+  quiz: {
+    icon: BookOpen,
+    label: "General Quiz",
+    color: "text-indigo-700 dark:text-indigo-300",
     bgColor: "bg-gradient-to-br from-indigo-50 via-indigo-100 to-blue-100 dark:from-indigo-950/60 dark:via-indigo-900/40 dark:to-blue-950/60",
     badgeColor: "bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/25 border-0",
     accentColor: "bg-gradient-to-r from-indigo-500 to-blue-600",
     iconBg: "bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/30"
   },
-  others: { 
-    icon: Play, 
-    label: "Mixed Quiz", 
-    color: "text-slate-700 dark:text-slate-300", 
+  others: {
+    icon: Play,
+    label: "Mixed Quiz",
+    color: "text-slate-700 dark:text-slate-300",
     bgColor: "bg-gradient-to-br from-slate-50 via-slate-100 to-gray-100 dark:from-slate-950/60 dark:via-slate-900/40 dark:to-gray-950/60",
     badgeColor: "bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-lg shadow-slate-500/25 border-0",
     accentColor: "bg-gradient-to-r from-slate-500 to-gray-600",
@@ -152,7 +146,7 @@ const TimerDisplay = memo(({ initialTime = 0 }: { initialTime?: number }) => {
         setTimeSpent(prev => prev + 1)
       }, 1000)
     }
-    
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
@@ -164,7 +158,7 @@ const TimerDisplay = memo(({ initialTime = 0 }: { initialTime?: number }) => {
     const hours = Math.floor(seconds / 3600)
     const mins = Math.floor((seconds % 3600) / 60)
     const secs = seconds % 60
-    
+
     if (hours > 0) {
       return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
     }
@@ -174,7 +168,7 @@ const TimerDisplay = memo(({ initialTime = 0 }: { initialTime?: number }) => {
   const displayTime = initialTime > 0 ? initialTime : timeSpent
 
   return (
-    <div 
+    <div
       className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-400/20 dark:to-purple-400/20 backdrop-blur-xl rounded-xl text-sm font-semibold border border-blue-200/50 dark:border-blue-400/30 shadow-lg shadow-blue-500/10"
       role="timer"
       aria-label={`Time elapsed: ${formatTime(displayTime)}`}
@@ -213,17 +207,17 @@ const ProgressIndicator = memo(({ current, total, percentage }: { current: numbe
           </span>
         </div>
       </div>
-      
+
       <div className="relative">
         <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-700 ease-out shadow-lg shadow-blue-500/30"
             style={{ width: `${percentage}%` }}
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-full" />
       </div>
-      
+
       <div className="flex justify-between text-xs font-medium">
         <span className="text-green-600 dark:text-green-400">Started</span>
         <span className="text-orange-600 dark:text-orange-400">{total - current} remaining</span>
@@ -243,6 +237,7 @@ export default function QuizPlayLayout({
   isPublic = false,
   isFavorite = false,
   userId = "",
+  ownerId,
   quizData = null,
   randomQuizStats = {},
   timeSpent = 0,
@@ -265,11 +260,35 @@ export default function QuizPlayLayout({
     1,
     Math.min(quizData?.currentQuestionIndex !== undefined ? quizData.currentQuestionIndex + 1 : 1, totalQuestions)
   )
-  
-  // Auth and ownership
+
+  // Auth and ownership - improved logic
   const authUser = useAuth().user
-  userId = authUser?.id || ""
-  const isOwner = quizOwnerId === userId
+  const currentUserId = authUser?.id || ""
+  
+  // Multiple ways to determine ownership for better compatibility
+  const isOwner = useMemo(() => {
+    // 1. Check if explicitly passed as prop
+    if (ownerId && currentUserId) {
+      return ownerId === currentUserId
+    }
+    
+    // 2. Check from Redux state (quiz store)
+    if (quizOwnerId && currentUserId) {
+      return quizOwnerId === currentUserId
+    }
+    
+    // 3. Check from quiz data userId
+    if (quizData?.userId && currentUserId) {
+      return quizData.userId === currentUserId
+    }
+    
+    // 4. Check from passed userId prop
+    if (userId && currentUserId) {
+      return userId === currentUserId
+    }
+    
+    return false
+  }, [ownerId, currentUserId, quizOwnerId, quizData?.userId, userId])
 
   // Enhanced callbacks with better performance
   const toggleSidebar = useCallback(() => {
@@ -346,14 +365,14 @@ export default function QuizPlayLayout({
   // Derived values with better memoization
   const config = useMemo(() => quizTypeConfig[quizType] || quizTypeConfig.quiz, [quizType])
   const Icon = config.icon
-  const progressPercentage = useMemo(() => 
-    Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))), 
+  const progressPercentage = useMemo(() =>
+    Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))),
     [questionNumber, totalQuestions]
   )
 
   // Enhanced header component with clean styling
   const HeaderComponent = useMemo(() => (
-    <header 
+    <header
       className="sticky top-0 z-50 backdrop-blur-xl border-b border-white/20 dark:border-gray-700/30 bg-white/80 dark:bg-gray-900/80 transition-all duration-500 shadow-lg"
       role="banner"
     >
@@ -364,7 +383,7 @@ export default function QuizPlayLayout({
             <div className={`p-3 rounded-2xl ${config.iconBg} transition-all duration-300 hover:scale-110 hover:rotate-3`}>
               <Icon className="h-6 w-6" />
             </div>
-            
+
             <div className="min-w-0 flex-1">
               <h1 className="font-bold text-xl truncate leading-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent mb-1">
                 {quizTitle}
@@ -404,8 +423,8 @@ export default function QuizPlayLayout({
               </div>
             )}
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={toggleSidebar}
               className="shrink-0 h-10 w-10 p-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl shadow-xl border-white/30 dark:border-gray-700/30 hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:scale-110 rounded-xl"
@@ -439,6 +458,16 @@ export default function QuizPlayLayout({
   const RandomQuizComponent = useMemo(() => (
     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl rounded-2xl border border-white/20 dark:border-gray-700/30 p-4 shadow-lg">
       <Suspense fallback={<QuizSkeleton />}>
+        <div className="w-full">
+          <QuizActions
+            quizSlug={quizSlug}
+            quizData={quizData || {}}
+            initialIsPublic={isPublic}
+            initialIsFavorite={isFavorite}
+            isOwner={isOwner}
+            className="w-full"
+          />
+        </div>
         <RandomQuiz showStats={false} autoRotate={true} />
       </Suspense>
     </div>
@@ -471,11 +500,10 @@ export default function QuizPlayLayout({
       <main className="flex-1 flex max-w-screen-2xl mx-auto w-full p-4 sm:p-6 lg:p-8">
         <div className="flex w-full gap-6 lg:gap-8">
           {/* Question Area */}
-          <div 
+          <div
             ref={mainContentRef}
-            className={`flex-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-2xl border border-white/20 dark:border-gray-700/30 shadow-2xl shadow-black/10 transition-all duration-500 ${
-              isFullscreen ? 'p-10' : 'p-8 lg:p-10'
-            } overflow-auto`}
+            className={`flex-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-2xl border border-white/20 dark:border-gray-700/30 shadow-2xl shadow-black/10 transition-all duration-500 ${isFullscreen ? 'p-10' : 'p-8 lg:p-10'
+              } overflow-auto`}
             role="main"
             aria-label="Quiz content"
           >
@@ -506,21 +534,20 @@ export default function QuizPlayLayout({
 
             {/* Progress Section */}
             <div className="mb-6">
-              <ProgressIndicator 
-                current={questionNumber} 
-                total={totalQuestions} 
-                percentage={progressPercentage} 
+              <ProgressIndicator
+                current={questionNumber}
+                total={totalQuestions}
+                percentage={progressPercentage}
               />
             </div>
-            
+
             {children}
           </div>
 
           {/* Desktop Sidebar */}
           {sidebarOpen && !isFullscreen && (
-            <aside className={`hidden lg:block shrink-0 space-y-6 transition-all duration-500 ${
-              isTablet ? 'w-72' : 'w-80'
-            }`}>
+            <aside className={`hidden lg:block shrink-0 space-y-6 transition-all duration-500 ${isTablet ? 'w-72' : 'w-80'
+              }`}>
               {RandomQuizComponent}
             </aside>
           )}
@@ -529,14 +556,14 @@ export default function QuizPlayLayout({
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && isMobile && !isFullscreen && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden transition-all duration-500" 
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden transition-all duration-500"
           onClick={closeSidebar}
           role="dialog"
           aria-modal="true"
           aria-label="Quiz sidebar"
         >
-          <div 
+          <div
             className="absolute right-0 top-0 h-full w-5/6 max-w-sm bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-l border-white/20 dark:border-gray-700/30 p-6 shadow-2xl transform transition-all duration-500"
             onClick={e => e.stopPropagation()}
           >
@@ -547,8 +574,8 @@ export default function QuizPlayLayout({
                 </div>
                 Quiz Menu
               </h2>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={closeSidebar}
                 className="h-10 w-10 p-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-xl border border-white/30 dark:border-gray-700/30 transition-all duration-300 hover:scale-105"
@@ -557,7 +584,7 @@ export default function QuizPlayLayout({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-10rem)]">
               {RandomQuizComponent}
             </div>
@@ -565,7 +592,7 @@ export default function QuizPlayLayout({
         </div>
       )}
 
-    
+
     </div>
   )
 }

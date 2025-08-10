@@ -22,6 +22,7 @@ import {
   CheckCircle,
   AlertTriangle,
   ExternalLink,
+  HelpCircle,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -52,6 +53,7 @@ interface QuizActionsProps {
     attempts?: number
     questions?: any[]
     flashCards?: any[]
+    sharedWith?: string[]
   }
   initialIsPublic?: boolean
   initialIsFavorite?: boolean
@@ -301,7 +303,7 @@ export function QuizActions({
     return quizType === "flashcard" ? "flashcards" : "quiz"
   }
 
-  // Primary actions - always visible
+  // Primary actions - always visible with proper permissions
   const primaryActions = useMemo(() => [
     {
       id: "share",
@@ -325,6 +327,36 @@ export function QuizActions({
       variant: isFavorite ? "primary" : "secondary",
     },
   ], [isShareLoading, isFavorite, isFavoriteLoading, isAuthenticated, handleShare])
+
+  // Download permission logic
+  const canDownload = useMemo(() => {
+    // Public quizzes can be downloaded by anyone
+    if (isPublic) return true
+    // Private quizzes can only be downloaded by the owner
+    if (!isPublic && isUserOwner) return true
+    // Signed-in users can download if they have access (e.g., shared privately)
+    if (isAuthenticated && currentUserId && quizData?.sharedWith?.includes(currentUserId)) return true
+    return false
+  }, [isPublic, isUserOwner, isAuthenticated, quizData?.sharedWith, currentUserId])
+
+  const getDownloadTooltip = () => {
+    if (!isAuthenticated) {
+      return {
+        title: "Sign in required",
+        description: "Please sign in to download this quiz"
+      }
+    }
+    if (!canDownload) {
+      return {
+        title: "Download restricted",
+        description: "Only the quiz owner can download private quizzes"
+      }
+    }
+    return {
+      title: "Download PDF",
+      description: "Export quiz for offline use"
+    }
+  }
 
   // Owner actions - shown in dropdown
   const ownerActions = useMemo(() => {
@@ -459,8 +491,13 @@ export function QuizActions({
                         action.active && action.id === "favorite" && "fill-current"
                       )} />
                     )}
-                    <span className="font-medium hidden sm:inline">{action.label}</span>
-                    <span className="font-medium sm:hidden">{action.label.split(' ')[0]}</span>
+                    <span className="font-medium hidden xs:inline">{action.label}</span>
+                    <span className="font-medium xs:hidden">
+                      {action.id === "favorite" 
+                        ? (isFavorite ? "♥" : "♡") 
+                        : action.label.slice(0, 5)
+                      }
+                    </span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -481,27 +518,53 @@ export function QuizActions({
               </Tooltip>
             ))}
 
-            {/* PDF Download */}
+            {/* PDF Download with permission check */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div>
-                  <UnifiedPdfGenerator
-                    data={pdfData}
-                    type={getPdfType()}
-                    config={pdfConfig}
-                    fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
-                    buttonText=""
-                    variant="outline"
-                    size="sm"
-                    className="h-7 sm:h-8 w-7 sm:w-8 p-0"
-                  />
+                  {canDownload ? (
+                    <UnifiedPdfGenerator
+                      data={pdfData}
+                      type={getPdfType()}
+                      config={pdfConfig}
+                      fileName={`${quizData?.title || quizSlug}-quiz.pdf`}
+                      buttonText=""
+                      variant="outline"
+                      size="sm"
+                      className="h-7 sm:h-8 w-7 sm:w-8 p-0"
+                    />
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={true}
+                      className="h-7 sm:h-8 w-7 sm:w-8 p-0 opacity-50 cursor-not-allowed"
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          toast({
+                            title: "Sign in required",
+                            description: "Please sign in to download quizzes",
+                            variant: "destructive",
+                          })
+                        } else {
+                          toast({
+                            title: "Download restricted",
+                            description: "Only quiz owners can download private quizzes",
+                            variant: "destructive",
+                          })
+                        }
+                      }}
+                    >
+                      <Download className="w-3 h-3" />
+                    </Button>
+                  )}
                 </div>
               </TooltipTrigger>
               <TooltipContent>
                 <div className="text-center">
-                  <div className="font-medium">Download PDF</div>
+                  <div className="font-medium">{getDownloadTooltip().title}</div>
                   <div className="text-xs text-muted-foreground">
-                    Export quiz for offline use
+                    {getDownloadTooltip().description}
                   </div>
                 </div>
               </TooltipContent>
@@ -569,6 +632,33 @@ export function QuizActions({
           </div>
         </div>
 
+        {/* Authentication Notice for non-signed-in users */}
+        {!isAuthenticated && (
+          <div className="mx-4 mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-start gap-2">
+              <HelpCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-blue-800 dark:text-blue-200 text-sm">
+                  Sign in for more features
+                </h4>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                  Sign in to save favorites, download PDFs, and access your personal dashboard.
+                </p>
+                <Button 
+                  size="sm" 
+                  className="mt-2 h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                  onClick={() => {
+                    // Redirect to sign in page
+                    window.location.href = '/auth/signin'
+                  }}
+                >
+                  Sign In
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Public Quiz Notice */}
         {isPublic && (
           <div className="mx-4 mb-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -581,7 +671,7 @@ export function QuizActions({
                 <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
                   {isUserOwner 
                     ? "This quiz is discoverable by anyone and appears in public listings."
-                    : "This quiz has been shared with you."
+                    : "This quiz has been shared publicly and can be downloaded by anyone."
                   }
                 </p>
               </div>
@@ -591,6 +681,23 @@ export function QuizActions({
                   Discoverable
                 </Badge>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Private Quiz Notice for non-owners */}
+        {!isPublic && !isUserOwner && isAuthenticated && (
+          <div className="mx-4 mb-4 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Lock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-amber-800 dark:text-amber-200 text-sm">
+                  Private Quiz
+                </h4>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                  This is a private quiz. Some features like downloading are restricted to the quiz owner.
+                </p>
+              </div>
             </div>
           </div>
         )}
