@@ -112,7 +112,7 @@ export const fetchFlashCardQuiz = createAsyncThunk(
         slug,
         id: data.id || slug,
         title: data.title || "Flashcard Quiz",
-        userId: data.id || null,
+        userId: data.userId || null,
         questions: data.flashCards || [],
         quizType: "flashcard",
         // Ensure we have a consistent structure

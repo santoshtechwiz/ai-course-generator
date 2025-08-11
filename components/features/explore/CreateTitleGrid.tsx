@@ -109,7 +109,7 @@ const tiles = [  {
     title: "Multiple Choice Questions",
     description:
       "Create effective multiple-choice quizzes that adapt to your skill level and provide instant feedback.",
-    url: "/dashboard/(quiz)/mcq",
+    url: "/dashboard/mcq",
     color: "blue",
     quotes: [
       "Create engaging quizzes that adapt to each learner's level",
@@ -132,7 +132,7 @@ const tiles = [  {
     title: "Document-Based Quizzes",
     description:
       "Turn your PDFs, articles and notes into interactive quizzes with just one click. Perfect for quick comprehension checks.",
-    url: "/dashboard/(quiz)/document",
+    url: "/dashboard/document",
     color: "amber",
     quotes: [
       "Transform any document into a quiz in under 30 seconds",
@@ -160,7 +160,7 @@ const tiles = [  {
     title: "Essay & Open Questions",
     description:
       "Create thought-provoking essay questions that encourage critical thinking and deeper analysis of topics.",
-    url: "/dashboard/(quiz)/openended",
+    url: "/dashboard/openended",
     color: "green",
     quotes: [
       "Generate thoughtful essay prompts for any subject in seconds",
@@ -174,7 +174,7 @@ const tiles = [  {
       "Structure questions for different educational levels",
       "Create rubrics and grading criteria automatically",
     ],
-    isPremium: true,
+    isPremium: false,
     seoKeywords:
       "essay question generator, open-ended assessment, critical thinking questions",
     benefits: [
@@ -188,7 +188,7 @@ const tiles = [  {
     title: "Fill-in-the-Blank Exercises",
     description:
       "Create gap-fill exercises that reinforce vocabulary and key concepts in an engaging, interactive format.",
-    url: "/dashboard/(quiz)/blanks",
+    url: "/dashboard/blanks",
     color: "pink",
     quotes: [
       "Create vocabulary-building exercises in seconds",
@@ -235,7 +235,7 @@ const tiles = [  {
     title: "Coding Exercises",
     description:
       "Create programming challenges that test real coding skills with automatic grading and feedback.",
-    url: "/dashboard/(quiz)/code",
+    url: "/dashboard/code",
     color: "red",
     quotes: [
       "Create coding challenges for any programming language",
@@ -258,7 +258,7 @@ const tiles = [  {
     title: "Smart Flashcards",
     description:
       "Create flashcard sets that adapt to your learning progress, focusing on what you need to review most.",
-    url: "/dashboard/(quiz)/flashcard",
+    url: "/dashboard/flashcard",
     color: "indigo",
 
     quotes: [

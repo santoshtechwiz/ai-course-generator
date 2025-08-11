@@ -124,7 +124,26 @@ export function QuizActions({
   
   // Simple ownership check: current user ID matches quiz owner user ID OR isOwner prop is true
   const currentUserId = user?.id || null
-  const isUserOwner = isOwner || (currentUserId && quizData?.userId && currentUserId === quizData.userId)
+  const isUserOwner = useMemo(() => {
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('QuizActions ownership check:', {
+        isOwnerProp: isOwner,
+        currentUserId,
+        quizDataUserId: quizData?.userId,
+        isAuthenticated,
+        user: user ? { id: user.id, email: user.email } : null
+      })
+    }
+    
+    // Primary check: explicit isOwner prop
+    if (isOwner === true) return true
+    
+    // Secondary check: match user IDs
+    if (currentUserId && quizData?.userId && currentUserId === quizData.userId) return true
+    
+    return false
+  }, [isOwner, currentUserId, quizData?.userId, isAuthenticated, user])
 
   // Check if mobile on mount
   const checkMobile = () => setIsMobile(window.innerWidth < 768)

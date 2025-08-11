@@ -277,7 +277,46 @@ export default function FlashcardQuizWrapper({
       maxScore: totalQuestions,
     };
 
+    // First save results to Redux state
     dispatch(completeFlashCardQuiz(results));
+    
+    // Then save to backend if user is authenticated
+    if (isAuthenticated && userId) {
+      try {
+        dispatch(saveFlashCardResults({
+          slug,
+          data: {
+            quizId: slug,
+            score: percentage,
+            answers: ratingAnswers.map(answer => ({
+              questionId: answer.questionId,
+              answer: answer.answer,
+              timeSpent: answer.timeSpent || 0,
+              isCorrect: answer.answer === ANSWER_TYPES.CORRECT,
+              timestamp: new Date().toISOString()
+            })),
+            totalTime,
+            completedAt: timestamp,
+            type: 'flashcard',
+            results: {
+              correctCount,
+              incorrectCount,
+              stillLearningCount,
+              totalQuestions,
+              percentage
+            }
+          }
+        })).unwrap().then(() => {
+          console.log('Flashcard results saved successfully');
+        }).catch((error) => {
+          console.error('Failed to save flashcard results:', error);
+          // Don't block the user flow, but show a warning
+          toast.error('Results saved locally but failed to sync to server');
+        });
+      } catch (error) {
+        console.error('Error saving flashcard results:', error);
+      }
+    }
   };
 
   // Loading Skeletons

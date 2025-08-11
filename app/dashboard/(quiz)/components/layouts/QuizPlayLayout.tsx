@@ -265,6 +265,20 @@ export default function QuizPlayLayout({
   userId = authUser?.id || ""
   const isOwner = quizOwnerId === userId
 
+  // Debug ownership detection in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('QuizPlayLayout Ownership Debug:', {
+        quizOwnerId,
+        userId,
+        isOwner,
+        authUser: authUser ? { id: authUser.id, email: authUser.email } : null,
+        quizSlug,
+        quizData: quizData ? { title: quizData.title, userId: (quizData as any).userId } : null
+      })
+    }
+  }, [quizOwnerId, userId, isOwner, authUser, quizSlug, quizData])
+
   // Enhanced callbacks with better performance
   const toggleSidebar = useCallback(() => {
     setSidebarOpen(prev => !prev)
@@ -439,7 +453,6 @@ export default function QuizPlayLayout({
             initialIsPublic={isPublic}
             initialIsFavorite={isFavorite}
             isOwner={isOwner}
-            compact
             className="w-full"
           />
         </div>
