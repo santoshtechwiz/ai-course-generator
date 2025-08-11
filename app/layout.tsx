@@ -1,20 +1,20 @@
-import type { Metadata } from "next";
-import "../globals.css";
+import type React from "react"
+import type { Metadata } from "next"
+import "../globals.css"
 
-import Footer from "@/components/shared/Footer";
-import { Providers } from "@/store/provider";
-import { getServerAuthSession } from "@/lib/server-auth";
+import Footer from "@/components/shared/Footer"
+import { Providers } from "@/store/provider"
+import { getServerAuthSession } from "@/lib/server-auth"
 
-import { Suspense } from "react";
-import { font } from "./font";
-import { Toaster } from "sonner";
+import { Suspense } from "react"
+import { font } from "./font"
 
-import { GlobalLoader } from "@/components/loaders";
-import GlobalLoaderProvider from "@/components/GlobalLoaderProvider";
-import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback";
-import { defaultMetadata, DefaultSEO, generateMetadata } from "@/lib/seo";
+import { GlobalLoader } from "@/components/loaders"
+import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
+import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
+import { DefaultSEO, generateMetadata } from "@/lib/seo"
 
-import { GoogleAnalytics } from '@next/third-parties/google'
+import { GoogleAnalytics } from "@next/third-parties/google"
 
 export const metadata: Metadata = generateMetadata({
   title: "CourseAI - AI-Powered Educational Content Creator",
@@ -22,7 +22,7 @@ export const metadata: Metadata = generateMetadata({
     "Create professional courses, quizzes, and educational content with AI. Empower educators, trainers, and learners with intelligent content generation tools for any subject.",
   keywords: [
     "AI course creator",
-    "AI quiz generator", 
+    "AI quiz generator",
     "educational content creation",
     "e-learning platform",
     "course builder",
@@ -40,35 +40,25 @@ export const metadata: Metadata = generateMetadata({
     "teaching tools",
     "exam creator",
     "knowledge assessment",
-    "courseai"
+    "courseai",
   ],
   canonical: "/",
   type: "website",
-});
+})
 export default async function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const session = await getServerAuthSession();
+  const session = await getServerAuthSession()
 
   return (
     <GlobalLoaderProvider>
-      <html
-        lang="en"
-        suppressHydrationWarning
-        className="scroll-smooth overflow-x-hidden"
-      >
+      <html lang="en" suppressHydrationWarning className="scroll-smooth overflow-x-hidden">
         <head>
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover"
-          />
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
           <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
-          <meta
-            name="google-site-verification"
-            content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
-          />
+          <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
           {/* Enhanced SEO and UX Meta Tags */}
           <meta name="theme-color" content="#0066cc" media="(prefers-color-scheme: light)" />
           <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
@@ -93,15 +83,21 @@ export default async function RootLayout({
           className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
           role="document"
         >
-          <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:shadow-lg focus:text-sm">
+          <a
+            href="#main-content"
+            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:shadow-lg focus:text-sm"
+          >
             Skip to main content
           </a>
           <Providers session={session}>
             <div className="min-h-screen flex flex-col relative">
-              <main id="main-content" className="flex-1 w-full pb-12 sm:pb-16 md:pb-20 lg:pb-24 overflow-x-hidden" role="main" tabIndex={-1}>
-                <Suspense fallback={<SuspenseGlobalFallback />}>
-                  {children}
-                </Suspense>
+              <main
+                id="main-content"
+                className="flex-1 w-full pb-12 sm:pb-16 md:pb-20 lg:pb-24 overflow-x-hidden"
+                role="main"
+                tabIndex={-1}
+              >
+                <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
               </main>
               <Footer />
             </div>
@@ -113,5 +109,5 @@ export default async function RootLayout({
         <GoogleAnalytics gaId="G-8E6345HNS4" />
       </html>
     </GlobalLoaderProvider>
-  );
+  )
 }

@@ -17,7 +17,7 @@ export default function CodeQuizClient({ params }: CodeQuizClientProps) {
   // Properly unwrap the params Promise once at the top level
   const { slug } = use(params);
   const router = useRouter();
-  
+
   // Get quiz state from Redux for layout purposes
   const quizData = useSelector((state: any) => state.quiz);
 

@@ -1,196 +1,249 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
-import {
-  Clock,
-  ChevronRight,
-  ChevronLeft,
-  Loader2,
-  Target,
-  Shuffle,
-  Zap,
-  TrendingUp,
-  Star,
-  Users,
-  Calendar,
-  Tag
-} from "lucide-react"
-import Link from "next/link"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { useRandomQuizzes, type RandomQuiz as RandomQuizType } from "@/hooks/useRandomQuizzes"
+import React from "react"
+
+import type { ReactElement } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight, RefreshCw, ExternalLink, Play, Pause, Shuffle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import { useRandomQuizzes, type RandomQuiz } from "@/hooks/useRandomQuizzes"
 
 interface RandomQuizProps {
-  className?: string
+  maxQuizzes?: number
   showStats?: boolean
   autoRotate?: boolean
-  rotateInterval?: number
+  rotationInterval?: number
+  className?: string
 }
 
-const getQuizRoute = (quizType: string) => {
-  const routes: Record<string, string> = {
-    blanks: "dashboard/blanks",
-    mcq: "dashboard/mcq", 
-    flashcard: "dashboard/flashcard",
-    openended: "dashboard/openended",
-    code: "dashboard/code",
-  }
-  return routes[quizType] || "dashboard/mcq"
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut",
+      staggerChildren: 0.1,
+    },
+  },
 }
 
-const QuizCard = ({ quiz, isActive }: { quiz: RandomQuizType; isActive: boolean }) => {
-  if (!isActive) return null
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    transition: { duration: 0.2 },
+  },
+}
+
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 300 : -300,
+    opacity: 0,
+  }),
+  center: {
+    zIndex: 1,
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    zIndex: 0,
+    x: direction < 0 ? 300 : -300,
+    opacity: 0,
+  }),
+}
+
+// Quiz type configurations
+const quizTypeConfig = {
+  mcq: {
+    label: "Multiple Choice",
+    color: "bg-blue-500",
+    textColor: "text-blue-700",
+    bgColor: "bg-blue-50 dark:bg-blue-950/20",
+    borderColor: "border-blue-200 dark:border-blue-800",
+  },
+  code: {
+    label: "Code Quiz",
+    color: "bg-green-500",
+    textColor: "text-green-700",
+    bgColor: "bg-green-50 dark:bg-green-950/20",
+    borderColor: "border-green-200 dark:border-green-800",
+  },
+  blanks: {
+    label: "Fill Blanks",
+    color: "bg-cyan-500",
+    textColor: "text-cyan-700",
+    bgColor: "bg-cyan-50 dark:bg-cyan-950/20",
+    borderColor: "border-cyan-200 dark:border-cyan-800",
+  },
+  openended: {
+    label: "Open Ended",
+    color: "bg-purple-500",
+    textColor: "text-purple-700",
+    bgColor: "bg-purple-50 dark:bg-purple-950/20",
+    borderColor: "border-purple-200 dark:border-purple-800",
+  },
+  flashcard: {
+    label: "Flashcards",
+    color: "bg-orange-500",
+    textColor: "text-orange-700",
+    bgColor: "bg-orange-50 dark:bg-orange-950/20",
+    borderColor: "border-orange-200 dark:border-orange-800",
+  },
+  quiz: {
+    label: "General Quiz",
+    color: "bg-indigo-500",
+    textColor: "text-indigo-700",
+    bgColor: "bg-indigo-50 dark:bg-indigo-950/20",
+    borderColor: "border-indigo-200 dark:border-indigo-800",
+  },
+}
+
+// Difficulty configurations
+const difficultyConfig = {
+  easy: {
+    label: "Easy",
+    color: "bg-green-500",
+    textColor: "text-green-700",
+  },
+  medium: {
+    label: "Medium",
+    color: "bg-yellow-500",
+    textColor: "text-yellow-700",
+  },
+  hard: {
+    label: "Hard",
+    color: "bg-red-500",
+    textColor: "text-red-700",
+  },
+}
+
+// Loading skeleton component
+const QuizCardSkeleton = () => (
+  <Card className="w-full h-full">
+    <CardContent className="p-6 space-y-4">
+      <div className="flex justify-between items-start">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-16" />
+      </div>
+      <Skeleton className="h-6 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-8 w-20" />
+      </div>
+    </CardContent>
+  </Card>
+)
+
+// Error state component
+const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) => (
+  <Card className="w-full h-full border-destructive/20">
+    <CardContent className="p-6 text-center space-y-4">
+      <div className="text-4xl">⚠️</div>
+      <h3 className="font-semibold text-destructive">Failed to Load Quizzes</h3>
+      <p className="text-sm text-muted-foreground">{error}</p>
+      <Button onClick={onRetry} variant="outline" size="sm">
+        <RefreshCw className="w-4 h-4 mr-2" />
+        Try Again
+      </Button>
+    </CardContent>
+  </Card>
+)
+
+// Empty state component
+const EmptyState = ({ onRefresh }: { onRefresh: () => void }) => (
+  <Card className="w-full h-full">
+    <CardContent className="p-6 text-center space-y-4">
+      <div className="text-4xl">📚</div>
+      <h3 className="font-semibold">No Quizzes Available</h3>
+      <p className="text-sm text-muted-foreground">Check back later for new quizzes</p>
+      <Button onClick={onRefresh} variant="outline" size="sm">
+        <RefreshCw className="w-4 h-4 mr-2" />
+        Refresh
+      </Button>
+    </CardContent>
+  </Card>
+)
+
+// Quiz card component
+const QuizCard = React.memo(({ quiz, showStats }: { quiz: RandomQuiz; showStats: boolean }) => {
+  const config = quizTypeConfig[quiz.quizType as keyof typeof quizTypeConfig] || quizTypeConfig.quiz
+  const difficultyConf = difficultyConfig[quiz.difficulty as keyof typeof difficultyConfig] || difficultyConfig.medium
+
+  const handleQuizClick = useCallback(() => {
+    const url = `/dashboard/${quiz.quizType}/${quiz.slug || quiz.id}`
+    window.open(url, "_blank", "noopener,noreferrer")
+  }, [quiz.quizType, quiz.slug, quiz.id])
 
   return (
-    <motion.div
-      key={quiz.id}
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="h-full"
-    >
-      <Card className="h-full border-0 shadow-lg bg-gradient-to-br from-background via-background to-accent/5 hover:shadow-xl transition-all duration-300">
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between mb-3">
-            <motion.div 
-              className="flex items-center gap-2"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center shadow-md">
-                <span className="text-primary-foreground font-bold text-sm">
-                  {quiz.quizType.slice(0, 2).toUpperCase()}
-                </span>
-              </div>
-              {quiz.isNew && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-emerald-100 to-green-100 border border-emerald-200 rounded-full"
-                >
-                  <Zap className="h-3 w-3 text-emerald-600" />
-                  <span className="text-xs font-medium text-emerald-700">New</span>
-                </motion.div>
-              )}
-            </motion.div>
-            
-            {quiz.popularity === "High" && (
-              <motion.div
-                initial={{ scale: 0, rotate: -45 }}
-                animate={{ scale: 1, rotate: 0 }}
-                className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 rounded-full"
-              >
-                <TrendingUp className="h-3 w-3 text-orange-600" />
-                <span className="text-xs font-medium text-orange-700">Popular</span>
-              </motion.div>
-            )}
-          </div>
-
-          <CardTitle className="text-lg font-bold leading-tight line-clamp-2 mb-3">
-            {quiz.title}
-          </CardTitle>
-
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
-              {quiz.quizType.charAt(0).toUpperCase() + quiz.quizType.slice(1)}
+    <motion.div variants={cardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="w-full h-full">
+      <Card
+        className={cn("w-full h-full cursor-pointer transition-all duration-200 hover:shadow-lg", config.borderColor)}
+      >
+        <CardContent className="p-6 space-y-4 h-full flex flex-col">
+          {/* Header */}
+          <div className="flex justify-between items-start">
+            <Badge variant="secondary" className={cn("text-xs", config.bgColor, config.textColor)}>
+              {config.label}
             </Badge>
-            <Badge 
-              variant="outline" 
-              className={cn(
-                "text-xs border-2",
-                quiz.difficulty === "Easy" && "border-green-300 text-green-700 bg-green-50",
-                quiz.difficulty === "Medium" && "border-amber-300 text-amber-700 bg-amber-50", 
-                quiz.difficulty === "Hard" && "border-red-300 text-red-700 bg-red-50"
-              )}
-            >
-              {quiz.difficulty}
+            <Badge variant="outline" className={cn("text-xs", difficultyConf.textColor)}>
+              {difficultyConf.label}
             </Badge>
           </div>
-        </CardHeader>
 
-        <CardContent className="pb-4">
-          {quiz.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-              {quiz.description}
-            </p>
-          )}
+          {/* Title */}
+          <h3 className="font-semibold text-lg leading-tight line-clamp-2 flex-1">{quiz.title}</h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-4">
-            <motion.div 
-              className="flex items-center gap-2 justify-center sm:justify-start"
-              whileHover={{ scale: 1.05 }}
-            >
-              <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />
-              <span className="font-medium">{quiz.duration} min</span>
-            </motion.div>
-            
-            <motion.div 
-              className="flex items-center gap-2 justify-center sm:justify-start"
-              whileHover={{ scale: 1.05 }}
-            >
-              <Target className="h-4 w-4 text-green-500 flex-shrink-0" />
-              <span className="font-medium">{quiz.completionRate}%</span>
-            </motion.div>
-            
-            {quiz.bestScore && (
-              <motion.div 
-                className="flex items-center gap-2 justify-center sm:justify-start sm:col-span-2"
-                whileHover={{ scale: 1.05 }}
-              >
-                <Star className="h-4 w-4 text-amber-500 fill-current flex-shrink-0" />
-                <span className="font-medium">{quiz.bestScore}%</span>
-              </motion.div>
-            )}
-          </div>
+          {/* Description */}
+          {quiz.description && <p className="text-sm text-muted-foreground line-clamp-2">{quiz.description}</p>}
 
-          {quiz.tags && quiz.tags.length > 0 && (
-            <div className="flex items-start gap-1 mb-2">
-              <Tag className="h-3 w-3 text-muted-foreground mt-1 flex-shrink-0" />
-              <div className="flex flex-wrap gap-1 min-w-0">
-                {quiz.tags.slice(0, 3).map((tag, index) => (
-                  <span 
-                    key={index}
-                    className="text-xs px-2 py-1 bg-muted/60 text-muted-foreground rounded-md truncate max-w-[80px]"
-                    title={tag}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+          {/* Stats */}
+          <div className="flex justify-between items-center pt-2 border-t">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{quiz.questionCount} questions</span>
+              {showStats && quiz.rating && <span className="flex items-center gap-1">⭐ {quiz.rating.toFixed(1)}</span>}
             </div>
-          )}
+            <Button onClick={handleQuizClick} size="sm" className="h-8 px-3 text-xs">
+              <ExternalLink className="w-3 h-3 mr-1" />
+              Start
+            </Button>
+          </div>
         </CardContent>
-
-        <CardFooter className="pt-0">
-          <Link href={`/${getQuizRoute(quiz.quizType)}/${quiz.slug}`} className="w-full">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all duration-300">
-                Start Quiz
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            </motion.div>
-          </Link>
-        </CardFooter>
       </Card>
     </motion.div>
   )
-}
+})
 
-export const RandomQuiz = ({ 
-  className, 
-  showStats = true, 
-  autoRotate = false, 
-  rotateInterval = 8000 
-}: RandomQuizProps) => {
-  const { quizzes, isLoading, error, refresh, shuffleQuizzes, stats, isCached } = useRandomQuizzes(6)
-  const [activeIndex, setActiveIndex] = useState(0)
+QuizCard.displayName = "QuizCard"
+
+export function RandomQuiz({
+  maxQuizzes = 6,
+  showStats = true,
+  autoRotate = false,
+  rotationInterval = 5000,
+  className,
+}: RandomQuizProps): ReactElement {
+  const { quizzes, isLoading, error, refreshQuizzes, shuffleQuizzes } = useRandomQuizzes(maxQuizzes)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [direction, setDirection] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
   // Auto-rotation logic
@@ -198,149 +251,175 @@ export const RandomQuiz = ({
     if (!autoRotate || isPaused || quizzes.length <= 1) return
 
     const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % quizzes.length)
-    }, rotateInterval)
+      setDirection(1)
+      setCurrentIndex((prev) => (prev + 1) % quizzes.length)
+    }, rotationInterval)
 
     return () => clearInterval(interval)
-  }, [autoRotate, isPaused, quizzes.length, rotateInterval])
+  }, [autoRotate, isPaused, quizzes.length, rotationInterval])
 
-  const nextQuiz = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % quizzes.length)
+  // Navigation handlers
+  const goToNext = useCallback(() => {
+    if (quizzes.length <= 1) return
+    setDirection(1)
+    setCurrentIndex((prev) => (prev + 1) % quizzes.length)
   }, [quizzes.length])
 
-  const prevQuiz = useCallback(() => {
-    setActiveIndex((prev) => (prev === 0 ? quizzes.length - 1 : prev - 1))
+  const goToPrevious = useCallback(() => {
+    if (quizzes.length <= 1) return
+    setDirection(-1)
+    setCurrentIndex((prev) => (prev - 1 + quizzes.length) % quizzes.length)
   }, [quizzes.length])
 
-  const handleShuffle = useCallback(() => {
-    shuffleQuizzes()
-    setActiveIndex(0)
-  }, [shuffleQuizzes])
+  const toggleAutoRotation = useCallback(() => {
+    setIsPaused((prev) => !prev)
+  }, [])
 
-  const handleRefresh = useCallback(() => {
-    refresh()
-    setActiveIndex(0)
-  }, [refresh])
+  // Current quiz
+  const currentQuiz = useMemo(() => {
+    return quizzes[currentIndex] || null
+  }, [quizzes, currentIndex])
 
-  if (isLoading && quizzes.length === 0) {
+  // Reset index when quizzes change
+  useEffect(() => {
+    setCurrentIndex(0)
+  }, [quizzes])
+
+  if (isLoading) {
     return (
-      <Card className={cn("w-full h-full flex items-center justify-center min-h-[300px]", className)}>
-        <div className="flex flex-col items-center gap-3 p-4 text-center">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          >
-            <Loader2 className="h-8 w-8 text-primary" />
-          </motion.div>
-          <p className="text-sm text-muted-foreground">Discovering amazing quizzes...</p>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className={cn("w-full", className)}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Discover Quizzes</h2>
+            <Skeleton className="h-8 w-20" />
+          </div>
+          <QuizCardSkeleton />
         </div>
-      </Card>
+      </motion.div>
     )
   }
 
-  if (error && quizzes.length === 0) {
+  if (error) {
     return (
-      <Card className={cn("w-full h-full flex items-center justify-center min-h-[300px]", className)}>
-        <div className="flex flex-col items-center gap-3 text-center p-4">
-          <div className="text-2xl">😅</div>
-          <p className="text-sm text-muted-foreground">Couldn't load quizzes right now</p>
-          <Button variant="outline" size="sm" onClick={handleRefresh} className="mt-2">
-            Try Again
-          </Button>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className={cn("w-full", className)}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Discover Quizzes</h2>
+          </div>
+          <ErrorState error={error} onRetry={refreshQuizzes} />
         </div>
-      </Card>
+      </motion.div>
     )
   }
 
   if (quizzes.length === 0) {
     return (
-      <Card className={cn("w-full h-full flex items-center justify-center min-h-[300px]", className)}>
-        <div className="flex flex-col items-center gap-3 text-center p-4">
-          <div className="text-4xl">📚</div>
-          <p className="text-sm text-muted-foreground">No quizzes available at the moment</p>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className={cn("w-full", className)}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Discover Quizzes</h2>
+          </div>
+          <EmptyState onRefresh={refreshQuizzes} />
         </div>
-      </Card>
+      </motion.div>
     )
   }
 
-  const currentQuiz = quizzes[activeIndex]
-
   return (
-    <Card className={cn("w-full h-full flex flex-col", className)}>
-      {/* Quiz Content - Simplified without header */}
-      <CardContent className="p-3 flex-1 min-h-0">
-        <div 
-          className="relative h-full"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          <AnimatePresence mode="wait">
-            <QuizCard 
-              key={currentQuiz.id}
-              quiz={currentQuiz} 
-              isActive={true} 
-            />
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className={cn("w-full", className)}>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Discover Quizzes</h2>
+          <div className="flex items-center gap-2">
+            {autoRotate && (
+              <Button
+                onClick={toggleAutoRotation}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                title={isPaused ? "Resume auto-rotation" : "Pause auto-rotation"}
+              >
+                {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              </Button>
+            )}
+            <Button onClick={shuffleQuizzes} variant="ghost" size="sm" className="h-8 w-8 p-0" title="Shuffle quizzes">
+              <Shuffle className="w-4 h-4" />
+            </Button>
+            <Button onClick={refreshQuizzes} variant="ghost" size="sm" className="h-8 w-8 p-0" title="Refresh quizzes">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Quiz Display */}
+        <div className="relative overflow-hidden">
+          <AnimatePresence initial={false} custom={direction} mode="wait">
+            {currentQuiz && (
+              <motion.div
+                key={currentIndex}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 },
+                }}
+                className="w-full"
+              >
+                <QuizCard quiz={currentQuiz} showStats={showStats} />
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
-      </CardContent>
 
-      {/* Enhanced Navigation */}
-      {quizzes.length > 1 && (
-        <CardFooter className="flex items-center justify-center gap-2 sm:gap-4 pt-0 px-2 sm:px-4">
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={prevQuiz} 
-              className="h-8 w-8 p-0 hover:bg-primary/10 flex-shrink-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
+        {/* Navigation Controls */}
+        {quizzes.length > 1 && (
+          <div className="flex items-center justify-between">
+            <Button onClick={goToPrevious} variant="outline" size="sm" className="h-8 px-3 bg-transparent">
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
             </Button>
-          </motion.div>
 
-          <div className="flex items-center gap-1 overflow-hidden">
-            {quizzes.slice(0, 5).map((_, index) => (
-              <motion.button
-                key={index}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0",
-                  index === activeIndex 
-                    ? "bg-primary w-4 sm:w-6" 
-                    : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                )}
-                onClick={() => setActiveIndex(index)}
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.8 }}
-              />
-            ))}
-            {quizzes.length > 5 && (
-              <span className="text-xs text-muted-foreground ml-1">+{quizzes.length - 5}</span>
-            )}
+            {/* Dot indicators */}
+            <div className="flex items-center gap-2">
+              {quizzes.slice(0, Math.min(5, quizzes.length)).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setDirection(index > currentIndex ? 1 : -1)
+                    setCurrentIndex(index)
+                  }}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-all duration-200",
+                    index === currentIndex
+                      ? "bg-primary scale-125"
+                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50",
+                  )}
+                  aria-label={`Go to quiz ${index + 1}`}
+                />
+              ))}
+              {quizzes.length > 5 && (
+                <span className="text-xs text-muted-foreground ml-2">+{quizzes.length - 5} more</span>
+              )}
+            </div>
+
+            <Button onClick={goToNext} variant="outline" size="sm" className="h-8 px-3 bg-transparent">
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
           </div>
+        )}
 
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={nextQuiz} 
-              className="h-8 w-8 p-0 hover:bg-primary/10 flex-shrink-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </motion.div>
-        </CardFooter>
-      )}
-
-      {/* Auto-rotation indicator */}
-      {autoRotate && !isPaused && quizzes.length > 1 && (
-        <motion.div
-          className="absolute bottom-2 right-2 w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center"
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <div className="w-2 h-2 bg-primary rounded-full" />
-        </motion.div>
-      )}
-    </Card>
+        {/* Quiz counter */}
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">
+            Showing {currentIndex + 1} of {quizzes.length} quizzes
+          </p>
+        </div>
+      </div>
+    </motion.div>
   )
 }

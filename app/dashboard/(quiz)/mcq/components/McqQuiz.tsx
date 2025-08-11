@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, Sparkles, Zap, Target } from 'lucide-react'
+import { CheckCircle2, Target } from "lucide-react"
 import { toast } from "sonner"
 import { QuizStateProvider } from "@/components/quiz/QuizStateProvider"
 
+// Standardized animation variants
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -20,6 +21,27 @@ const containerVariants = {
     opacity: 0,
     y: -20,
     transition: { duration: 0.3, ease: "easeIn" },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+      mass: 0.8,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.95,
+    transition: { duration: 0.3 },
   },
 }
 
@@ -129,37 +151,37 @@ const McqQuiz = ({
           difficulty={difficulty?.toLowerCase() as "easy" | "medium" | "hard"}
           fullWidth={true}
         >
-          <motion.div 
-            variants={containerVariants} 
-            initial="hidden" 
-            animate="visible" 
-            exit="exit" 
-            className="w-full h-full max-w-screen-lg mx-auto px-4 sm:px-6 lg:px-8"
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
           >
-            <div className="w-full h-full space-y-4 sm:space-y-6">
-              {/* Enhanced Question Header */}
+            <div className="w-full space-y-8">
+              {/* Question Header */}
               <motion.div
-                className="w-full text-center space-y-4"
+                className="w-full text-center space-y-6"
                 initial={{ opacity: 0, y: -30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
               >
-                {/* Question Type Badge */}
+                {/* Quiz Type Badge */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="flex justify-center mb-4"
+                  className="flex justify-center mb-6"
                 >
-                  <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-200 dark:border-blue-800 rounded-full">
-                    <Target className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-xs sm:text-sm font-medium text-blue-700 dark:text-blue-300">Multiple Choice</span>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
+                    <Target className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">Multiple Choice</span>
                   </div>
                 </motion.div>
 
-                {/* Question Text with enhanced styling */}
+                {/* Question Text */}
                 <motion.h2
-                  className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-foreground leading-relaxed break-words"
+                  className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed break-words max-w-4xl mx-auto"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.6 }}
@@ -167,27 +189,19 @@ const McqQuiz = ({
                   {questionText}
                 </motion.h2>
 
-                {/* Animated underline */}
-                <motion.div
-                  className="h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full mx-auto max-w-48"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.5, duration: 0.8 }}
-                />
-
                 {/* Progress indicator */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="text-xs sm:text-sm text-muted-foreground"
+                  transition={{ delay: 0.5 }}
+                  className="text-sm text-muted-foreground"
                 >
                   Question {questionNumber} of {totalQuestions}
                 </motion.div>
               </motion.div>
 
-              {/* Enhanced Options with better mobile experience */}
-              <div className="w-full space-y-4">
+              {/* Options */}
+              <div className="w-full space-y-4 max-w-4xl mx-auto">
                 <AnimatePresence>
                   {options.map((option, index) => {
                     const isSelected = selectedOption === option.id
@@ -199,15 +213,21 @@ const McqQuiz = ({
                         key={option.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ 
-                          delay: index * 0.05 + 0.1, 
-                          duration: 0.3
+                        transition={{
+                          delay: index * 0.1 + 0.1,
+                          duration: 0.4,
+                          type: "spring",
+                          stiffness: 200,
                         }}
-                        whileHover={!isDisabled ? { 
-                          scale: 1.005,
-                          transition: { duration: 0.1 }
-                        } : {}}
-                        whileTap={!isDisabled ? { scale: 0.995 } : {}}
+                        whileHover={
+                          !isDisabled
+                            ? {
+                                scale: 1.02,
+                                transition: { duration: 0.2 },
+                              }
+                            : {}
+                        }
+                        whileTap={!isDisabled ? { scale: 0.98 } : {}}
                         onHoverStart={() => !isDisabled && setHoveredOption(option.id)}
                         onHoverEnd={() => setHoveredOption(null)}
                         className="w-full"
@@ -215,13 +235,13 @@ const McqQuiz = ({
                         <motion.label
                           htmlFor={`option-${option.id}`}
                           className={cn(
-                            "group relative flex items-center gap-3 p-4 w-full rounded-lg border cursor-pointer transition-all duration-200",
-                            "hover:shadow-md focus-within:ring-2 focus-within:ring-primary/50",
+                            "group relative flex items-center gap-4 p-4 sm:p-5 w-full rounded-xl border-2 cursor-pointer transition-all duration-300",
+                            "hover:shadow-lg focus-within:ring-2 focus-within:ring-primary/50",
                             isSelected
-                              ? "border-primary bg-gradient-to-r from-primary/10 to-primary/5 shadow-md shadow-primary/10"
+                              ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
                               : isHovered
-                              ? "border-primary/50 bg-gradient-to-r from-primary/5 to-primary/2 shadow-sm"
-                              : "border-border/50 bg-card/80 hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/2",
+                                ? "border-primary/50 bg-primary/5 shadow-md"
+                                : "border-border hover:border-primary/30 hover:bg-primary/5",
                             isDisabled && "opacity-60 cursor-not-allowed",
                           )}
                           onClick={() => !isDisabled && handleOptionSelect(option.id)}
@@ -238,39 +258,39 @@ const McqQuiz = ({
                             className="sr-only"
                           />
 
-                          {/* Enhanced Letter Badge */}
+                          {/* Letter Badge */}
                           <div
                             className={cn(
-                              "relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-semibold text-xs sm:text-sm flex-shrink-0 transition-all duration-200",
+                              "relative flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm flex-shrink-0 transition-all duration-300",
                               isSelected
-                                ? "bg-primary text-primary-foreground scale-105"
+                                ? "bg-primary text-primary-foreground scale-110 shadow-lg"
                                 : isHovered
-                                ? "bg-primary/20 text-primary scale-102"
-                                : "bg-muted text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
+                                  ? "bg-primary/20 text-primary scale-105"
+                                  : "bg-muted text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
                             )}
                           >
                             {option.letter}
-                            
-                            {/* Success indicator for selected option */}
+
+                            {/* Success indicator */}
                             <AnimatePresence>
                               {isSelected && (
                                 <motion.div
-                                  className="absolute -top-0.5 -right-0.5"
+                                  className="absolute -top-1 -right-1"
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
                                   exit={{ scale: 0 }}
                                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                 >
-                                  <CheckCircle2 className="w-3 h-3 text-green-500 bg-white rounded-full" />
+                                  <CheckCircle2 className="w-4 h-4 text-green-500 bg-background rounded-full" />
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </div>
 
-                          {/* Enhanced Option Text */}
+                          {/* Option Text */}
                           <div
                             className={cn(
-                              "flex-1 text-xs sm:text-sm font-medium leading-snug min-w-0 relative z-10",
+                              "flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0",
                               "break-words whitespace-normal",
                               isSelected
                                 ? "text-foreground font-semibold"
@@ -279,10 +299,23 @@ const McqQuiz = ({
                           >
                             <motion.span
                               className="block"
+                              animate={isSelected ? { scale: 1.02 } : { scale: 1 }}
+                              transition={{ duration: 0.2 }}
                             >
                               {option.text}
                             </motion.span>
                           </div>
+
+                          {/* Selection indicator */}
+                          {isSelected && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              className="flex-shrink-0"
+                            >
+                              <CheckCircle2 className="w-5 h-5 text-primary" />
+                            </motion.div>
+                          )}
                         </motion.label>
                       </motion.div>
                     )
@@ -290,11 +323,12 @@ const McqQuiz = ({
                 </AnimatePresence>
               </div>
 
-              {/* Enhanced Footer with better mobile layout */}
+              {/* Footer */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
+                className="w-full max-w-4xl mx-auto"
               >
                 <QuizFooter
                   onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
@@ -310,19 +344,6 @@ const McqQuiz = ({
                   submitState={stateManager.submitState}
                   nextState={stateManager.nextState}
                 />
-              </motion.div>
-
-              {/* Progress indicator at bottom for mobile */}
-              <motion.div
-                className="block sm:hidden text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-              >
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-full text-sm text-muted-foreground">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span>{questionNumber} of {totalQuestions}</span>
-                </div>
               </motion.div>
             </div>
           </motion.div>

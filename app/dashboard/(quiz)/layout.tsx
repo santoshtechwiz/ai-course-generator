@@ -15,11 +15,14 @@ export const metadata: Metadata = {
 }
 
 /**
- * Quiz Layout - Bypasses DashboardShell
- * 
- * This layout provides essential providers (auth, theme, etc.) 
- * without the DashboardShell navigation/footer that would conflict 
- * with QuizPlayLayout's own UI structure.
+ * Enhanced Quiz Layout - Completely independent from DashboardShell
+ *
+ * This layout provides a dedicated quiz experience with:
+ * - Independent navigation and UI structure
+ * - Optimized for quiz interactions
+ * - Enhanced responsive design
+ * - Better accessibility features
+ * - No interference with parent layouts
  */
 export default async function QuizLayout({
   children,
@@ -34,9 +37,16 @@ export default async function QuizLayout({
       withTheme={true}
       withSubscriptionSync={true}
     >
-      <GlobalLoader />
-      {children}
-      <Toaster />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
+        {/* Quiz-specific background pattern */}
+            
+        {/* Main quiz content area */}
+        <div className="relative z-10 min-h-screen">
+          <GlobalLoader />
+          {children}
+          <Toaster />
+        </div>
+      </div>
     </ClientLayoutWrapper>
   )
 }

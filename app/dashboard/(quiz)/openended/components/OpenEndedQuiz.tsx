@@ -1,21 +1,19 @@
 "use client"
 import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, AlertCircle, Target, BookOpen, Clock, Brain, Lightbulb, Eye, Zap, Info } from "lucide-react" // Added Info icon
+import { CheckCircle, AlertCircle, BookOpen, Lightbulb, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { HintSystem } from "@/components/quiz/HintSystem"
-import { TagsDisplay } from "@/components/quiz/TagsDisplay"
-import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
-import { calculateAnswerSimilarity, getSimilarityLabel, getSimilarityFeedback } from "@/lib/utils/text-similarity"
-import { generateOpenEndedHints, calculateHintPenalty } from "@/lib/utils/hint-system"
+import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
+import { generateOpenEndedHints } from "@/lib/utils/hint-system"
 import type { OpenEndedQuestion } from "@/app/types/quiz-types"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip" // Assuming Tooltip components are available
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface OpenEndedQuizProps {
   question: OpenEndedQuestion
@@ -32,7 +30,7 @@ interface OpenEndedQuizProps {
   timeSpent?: number
 }
 
-// Animation variants (kept consistent for smooth transitions)
+// Standardized animation variants
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -59,44 +57,23 @@ const containerVariants = {
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
       type: "spring",
-      stiffness: 250,
-      damping: 25,
+      stiffness: 200,
+      damping: 20,
       mass: 0.8,
     },
   },
   exit: {
     opacity: 0,
     y: -20,
-    scale: 0.98,
-    transition: { duration: 0.2 },
-  },
-}
-
-const feedbackVariants = {
-  hidden: { opacity: 0, scale: 0.8, y: 10 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 350,
-      damping: 28,
-      delay: 0.1,
-    },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    y: -10,
-    transition: { duration: 0.2 },
+    scale: 0.95,
+    transition: { duration: 0.3 },
   },
 }
 
@@ -175,7 +152,7 @@ export default function OpenEndedQuiz({
   }, [])
 
   const handleAnswerSubmit = useCallback(() => {
-    const minLength = 10
+    const minLength = 5
     if (!answer.trim() || answer.trim().length < minLength) {
       setShowValidation(true)
       return false
@@ -215,53 +192,8 @@ export default function OpenEndedQuiz({
     [isLastQuestion, handleSubmit, handleNext],
   )
 
-  // Get feedback based on similarity
-  const feedback = useMemo(() => {
-    if (!answer.trim()) return null
-    const label = getSimilarityLabel(similarity)
-    const message = getSimilarityFeedback(similarity)
-    let color = "text-gray-600"
-    let bgColor = "bg-gray-50 dark:bg-gray-950/20"
-    let borderColor = "border-gray-200 dark:border-gray-800"
-    let icon = Target
-    let level = "Getting Started"
-    let emoji = "🎯"
-
-    if (similarity >= 0.8) {
-      color = "text-emerald-600"
-      bgColor = "bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20"
-      borderColor = "border-emerald-200 dark:border-emerald-800"
-      icon = CheckCircle
-      level = "Excellent Response"
-      emoji = "🏆"
-    } else if (similarity >= 0.6) {
-      color = "text-blue-600"
-      bgColor = "bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20"
-      borderColor = "border-blue-200 dark:border-blue-800"
-      icon = Target
-      level = "Good Progress"
-      emoji = "👍"
-    } else if (similarity >= 0.4) {
-      color = "text-yellow-600"
-      bgColor = "bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20"
-      borderColor = "border-yellow-200 dark:border-yellow-800"
-      icon = AlertCircle
-      level = "Needs Improvement"
-      emoji = "⚡"
-    } else {
-      color = "text-red-600"
-      bgColor = "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20"
-      borderColor = "border-red-200 dark:border-red-800"
-      icon = AlertCircle
-      level = "Keep Trying"
-      emoji = "🎯"
-    }
-    return { label, message, color, bgColor, borderColor, icon, level, emoji }
-  }, [answer, similarity])
-
-  const minLength = 5  // Reduced from 10 to 5 for better UX
-  // Updated logic: Enable next button based on minimum length AND similarity score
-  const canProceed = answer.trim().length >= minLength && similarity >= 0.3  // Reduced threshold from 0.4 to 0.3
+  const minLength = 5
+  const canProceed = answer.trim().length >= minLength && similarity >= 0.3
   const wordCount = answer
     .trim()
     .split(/\s+/)
@@ -278,16 +210,15 @@ export default function OpenEndedQuiz({
       difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
       fullWidth={true}
     >
-      <motion.div 
-        variants={containerVariants} 
-        initial="hidden" 
-        animate="visible" 
-        exit="exit" 
-        className="w-full h-full max-w-screen-lg mx-auto px-4 sm:px-6 lg:px-8"
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
       >
-        <div className="w-full h-full space-y-4 sm:space-y-6">
-
-          {/* Enhanced Question Display */}
+        <div className="w-full space-y-8">
+          {/* Question Display */}
           <motion.div
             variants={itemVariants}
             initial={{ opacity: 0, y: 20 }}
@@ -295,26 +226,26 @@ export default function OpenEndedQuiz({
             transition={{ delay: 0.1 }}
             className="w-full"
           >
-            <Card className="w-full h-full border-0 shadow-lg bg-white dark:bg-gray-900">
-              <div className="bg-gradient-to-r from-violet-500 to-purple-500 h-1"></div>
-              <CardContent className="w-full h-full p-4 sm:p-6">
+            <Card className="w-full border-0 shadow-lg bg-card">
+              <div className="bg-primary h-1"></div>
+              <CardContent className="w-full p-6 sm:p-8">
                 <div className="w-full space-y-6">
                   {/* Header Section */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
-                      <BookOpen className="w-6 h-6 text-white" />
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                      <BookOpen className="w-6 h-6 text-primary-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-bold text-foreground">Open-Ended Question</h3>
                       {hintsUsed > 0 && (
-                        <Badge variant="outline" className="mt-1 text-xs text-amber-600 border-amber-300">
+                        <Badge variant="outline" className="mt-1 text-xs">
                           <Lightbulb className="w-3 h-3 mr-1" />
                           {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used
                         </Badge>
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Question Content */}
                   <div className="w-full text-center">
                     <p className="text-lg leading-relaxed text-foreground break-words max-w-4xl mx-auto">
@@ -332,7 +263,7 @@ export default function OpenEndedQuiz({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="w-full space-y-4 sm:space-y-6"
+            className="w-full space-y-4 max-w-4xl mx-auto"
           >
             <div className="flex flex-col gap-2">
               <label htmlFor="answer" className="text-sm font-medium text-foreground flex items-center gap-1">
@@ -356,13 +287,13 @@ export default function OpenEndedQuiz({
               onKeyDown={handleKeyDown}
               placeholder="Share your understanding and reasoning..."
               className={cn(
-                "w-full min-h-[120px] sm:min-h-[140px] resize-y transition-all border-2 bg-background text-sm sm:text-base",
-                "focus:outline-none focus:ring-0 p-3 sm:p-4 rounded-lg",
+                "w-full min-h-[140px] resize-y transition-all border-2 bg-background text-base",
+                "focus:outline-none focus:ring-0 p-4 rounded-lg",
                 isAnswered
                   ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
                   : showValidation
-                    ? "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                    : "border-gray-300 hover:border-violet-400 focus:border-violet-500 focus:shadow-violet-200/30",
+                    ? "border-destructive bg-destructive/10 text-destructive"
+                    : "border-primary/30 hover:border-primary/50 focus:border-primary",
               )}
               autoFocus
               aria-label="Enter your detailed answer"
@@ -371,7 +302,7 @@ export default function OpenEndedQuiz({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-center gap-2 text-sm text-red-600 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                className="flex items-center justify-center gap-2 text-sm text-destructive p-3 bg-destructive/10 rounded-lg border border-destructive/20"
                 role="alert"
                 aria-live="polite"
               >
@@ -383,7 +314,7 @@ export default function OpenEndedQuiz({
             )}
           </motion.div>
 
-          {/* Simple success indicator - no detailed feedback to prevent answer revelation */}
+          {/* Success indicator */}
           {answer.trim() && similarity >= 0.3 && (
             <div className="flex items-center justify-center pt-2">
               <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 px-3 py-1.5 rounded-full">
@@ -399,7 +330,7 @@ export default function OpenEndedQuiz({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="w-full"
+            className="w-full max-w-4xl mx-auto"
           >
             <HintSystem
               hints={hints || []}
@@ -415,7 +346,7 @@ export default function OpenEndedQuiz({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="w-full"
+            className="w-full max-w-4xl mx-auto"
           >
             <QuizFooter
               onNext={handleNext}

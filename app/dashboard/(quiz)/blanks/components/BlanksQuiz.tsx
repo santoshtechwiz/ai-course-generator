@@ -1,17 +1,16 @@
 "use client"
 import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { CheckCircle, AlertCircle, Target, BookOpen, Lightbulb, Trophy, Focus, Brain } from 'lucide-react'
+import { CheckCircle, AlertCircle, Lightbulb, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { QuizContainer } from "@/components/quiz/QuizContainer"
 import { QuizFooter } from "@/components/quiz/QuizFooter"
 import { HintSystem } from "@/components/quiz/HintSystem"
-import { calculateAnswerSimilarity, getSimilarityLabel, getSimilarityFeedback } from "@/lib/utils/text-similarity"
+import { calculateAnswerSimilarity } from "@/lib/utils/text-similarity"
 import { generateBlanksHints } from "@/lib/utils/hint-system"
 import type { BlankQuizQuestion } from "@/app/types/quiz-types"
 
@@ -30,7 +29,7 @@ interface BlanksQuizProps {
   timeSpent?: number
 }
 
-// Enhanced animation variants with smoother transitions
+// Standardized animation variants
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -39,7 +38,7 @@ const containerVariants = {
     transition: {
       when: "beforeChildren",
       staggerChildren: 0.1,
-      duration: 0.7,
+      duration: 0.6,
       ease: "easeOut",
     },
   },
@@ -77,36 +76,15 @@ const itemVariants = {
   },
 }
 
-const feedbackVariants = {
-  hidden: { opacity: 0, scale: 0.8, y: 20 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 25,
-      delay: 0.1,
-    },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    y: -20,
-    transition: { duration: 0.3 },
-  },
-}
-
 const inputFocusVariants = {
   focused: {
     scale: 1.02,
-    boxShadow: "0 0 0 4px rgba(6, 182, 212, 0.15)",
+    boxShadow: "0 0 0 4px hsl(var(--primary) / 0.15)",
     transition: { duration: 0.2, ease: "easeOut" },
   },
   unfocused: {
     scale: 1,
-    boxShadow: "0 0 0 0px rgba(6, 182, 212, 0)",
+    boxShadow: "0 0 0 0px hsl(var(--primary) / 0)",
     transition: { duration: 0.2, ease: "easeIn" },
   },
 }
@@ -131,12 +109,10 @@ export default function BlanksQuiz({
   const [showValidation, setShowValidation] = useState(false)
   const [hintsUsed, setHintsUsed] = useState(0)
   const [isFocused, setIsFocused] = useState(false)
-  const [typingTime, setTypingTime] = useState(0)
   const [showCelebration, setShowCelebration] = useState(false)
 
   // Extract question data with proper fallbacks
   const questionData = useMemo(() => {
-    const openEndedData = question || {}
     return {
       text: question.question,
       answer: question.answer,
@@ -162,17 +138,6 @@ export default function BlanksQuiz({
     }
   }, [questionData.text])
 
-  // Typing time tracker
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (answer.length > 0 && isFocused) {
-      interval = setInterval(() => {
-        setTypingTime((prev) => prev + 1)
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [answer, isFocused])
-
   // Calculate similarity when answer changes
   useEffect(() => {
     if (answer.trim() && questionData.answer) {
@@ -180,7 +145,7 @@ export default function BlanksQuiz({
       setSimilarity(result.similarity)
       const wasAnswered = isAnswered
       setIsAnswered(result.isAcceptable)
-      
+
       // Show celebration for first correct answer
       if (!wasAnswered && result.isAcceptable && result.similarity >= 0.8) {
         setShowCelebration(true)
@@ -243,113 +208,60 @@ export default function BlanksQuiz({
     [isLastQuestion, handleSubmit, handleNext],
   )
 
-  // Enhanced feedback based on similarity
-  const feedback = useMemo(() => {
-    if (!answer.trim()) return null
-    const label = getSimilarityLabel(similarity)
-    const message = getSimilarityFeedback(similarity)
-    let color = "text-gray-600"
-    let bgColor = "bg-gray-50 dark:bg-gray-950/20"
-    let borderColor = "border-gray-200 dark:border-gray-800"
-    let icon = Target
-    let level = "Getting Started"
-    let emoji = "🎯"
-    let celebration = ""
-
-    if (similarity >= 0.9) {
-      color = "text-emerald-600"
-      bgColor = "bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20"
-      borderColor = "border-emerald-200 dark:border-emerald-800"
-      icon = Trophy
-      level = "Perfect Match!"
-      emoji = "🏆"
-      celebration = "🎉✨🌟"
-    } else if (similarity >= 0.8) {
-      color = "text-cyan-600"
-      bgColor = "bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20"
-      borderColor = "border-cyan-200 dark:border-cyan-800"
-      icon = CheckCircle
-      level = "Excellent!"
-      emoji = "✅"
-      celebration = "🎊👏"
-    } else if (similarity >= 0.65) {
-      color = "text-green-600"
-      bgColor = "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20"
-      borderColor = "border-green-200 dark:border-green-800"
-      icon = CheckCircle
-      level = "Good Match!"
-      emoji = "👍"
-      celebration = "💪📚"
-    } else if (similarity >= 0.4) {
-      color = "text-yellow-600"
-      bgColor = "bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20"
-      borderColor = "border-yellow-200 dark:border-yellow-800"
-      icon = AlertCircle
-      level = "Close!"
-      emoji = "⚡"
-      celebration = "🌱💡"
-    } else {
-      color = "text-red-600"
-      bgColor = "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20"
-      borderColor = "border-red-200 dark:border-red-800"
-      icon = AlertCircle
-      level = "Try Again!"
-      emoji = "🤔"
-      celebration = "💪🔥"
-    }
-    return { label, message, color, bgColor, borderColor, icon, level, emoji, celebration }
-  }, [answer, similarity])
-
-  const canProceed = Boolean(answer.trim() && similarity >= 0.6)  // Reduced from 0.7 to 0.6 for better UX
-  const minimumSimilarityThreshold = 0.7
+  const canProceed = Boolean(answer.trim() && similarity >= 0.6)
 
   return (
-    <motion.div 
-      variants={containerVariants} 
-      initial="hidden" 
-      animate="visible" 
-      exit="exit" 
-      className="w-full h-full max-w-screen-lg mx-auto px-4 sm:px-6 lg:px-8"
+    <QuizContainer
+      questionNumber={questionNumber}
+      totalQuestions={totalQuestions}
+      quizType="blanks"
+      animationKey={String(question.id)}
+      difficulty={questionData.difficulty.toLowerCase() as "easy" | "medium" | "hard"}
+      fullWidth={true}
     >
-      <QuizContainer 
-        animationKey={String(question.id)}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
       >
-        <div className="w-full h-full space-y-4 sm:space-y-6">
-          {/* Streamlined Question Display */}
+        <div className="w-full space-y-8">
+          {/* Question Display */}
           <motion.div variants={itemVariants} className="w-full">
-            <Card className="w-full h-full border-0 shadow-lg bg-white dark:bg-gray-900">
-              <div className="bg-gradient-to-r from-cyan-500 to-teal-500 h-1"></div>
-              <CardContent className="w-full h-full p-4 sm:p-6">
+            <Card className="w-full border-0 shadow-lg bg-card">
+              <div className="bg-primary h-1"></div>
+              <CardContent className="w-full p-6 sm:p-8">
                 <div className="w-full space-y-6">
                   {/* Header Section */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
-                      <BookOpen className="w-6 h-6 text-white" />
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                      <FileText className="w-6 h-6 text-primary-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-bold text-foreground">Fill in the Blank</h3>
                       {hintsUsed > 0 && (
-                        <Badge variant="outline" className="mt-1 text-xs text-amber-600 border-amber-300">
+                        <Badge variant="outline" className="mt-1 text-xs">
                           <Lightbulb className="w-3 h-3 mr-1" />
                           {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used
                         </Badge>
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Question Content */}
                   <div className="w-full">
                     {questionParts.hasBlank ? (
-                      <div className="w-full space-y-4 sm:space-y-6 text-center">
+                      <div className="w-full space-y-6 text-center">
                         <div className="w-full max-w-4xl mx-auto">
-                          <div className="text-base sm:text-lg leading-relaxed mb-3 sm:mb-4">
+                          <div className="text-lg sm:text-xl leading-relaxed mb-6">
                             <span className="text-foreground break-words">{questionParts.before}</span>
                           </div>
-                          
+
                           <motion.div
                             variants={inputFocusVariants}
                             animate={isFocused ? "focused" : "unfocused"}
-                            className="relative w-full max-w-sm sm:max-w-md mx-auto mb-3 sm:mb-4"
+                            className="relative w-full max-w-md mx-auto mb-6"
                           >
                             <Input
                               value={answer}
@@ -360,42 +272,42 @@ export default function BlanksQuiz({
                               placeholder="Your answer"
                               className={cn(
                                 "w-full text-center font-semibold border-2 border-dashed rounded-lg transition-all duration-300",
-                                "text-base sm:text-lg py-3 px-3 sm:py-4 sm:px-4 min-h-[48px] sm:min-h-[56px] bg-background",
+                                "text-base sm:text-lg py-4 px-4 min-h-[56px] bg-background",
                                 isAnswered
-                                  ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300"
+                                  ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
                                   : showValidation
-                                    ? "border-red-400 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                                    : "border-cyan-300 hover:border-cyan-400 focus:border-cyan-500 focus:shadow-cyan-200/30",
+                                    ? "border-destructive bg-destructive/10 text-destructive"
+                                    : "border-primary/30 hover:border-primary/50 focus:border-primary",
                               )}
                               autoFocus
                               aria-label="Fill in the blank"
                             />
-                            
+
                             {isAnswered && (
                               <motion.div
                                 initial={{ scale: 0, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg"
+                                className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
                               >
                                 <CheckCircle className="w-4 h-4 text-white" />
                               </motion.div>
                             )}
                           </motion.div>
-                          
-                          <div className="text-base sm:text-lg leading-relaxed mb-3 sm:mb-4">
+
+                          <div className="text-lg sm:text-xl leading-relaxed">
                             <span className="text-foreground break-words">{questionParts.after}</span>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full space-y-4 sm:space-y-6 text-center">
+                      <div className="w-full space-y-6 text-center">
                         <p className="text-foreground break-words text-lg leading-relaxed max-w-4xl mx-auto">
                           {questionData.text}
                         </p>
                         <motion.div
                           variants={inputFocusVariants}
                           animate={isFocused ? "focused" : "unfocused"}
-                          className="relative w-full max-w-sm sm:max-w-md mx-auto mb-3 sm:mb-4"
+                          className="relative w-full max-w-md mx-auto"
                         >
                           <Input
                             value={answer}
@@ -406,22 +318,22 @@ export default function BlanksQuiz({
                             placeholder="Enter your answer"
                             className={cn(
                               "w-full text-center font-semibold border-2 border-dashed rounded-lg transition-all duration-300",
-                              "text-base sm:text-lg py-3 px-3 sm:py-4 sm:px-4 min-h-[48px] sm:min-h-[56px] bg-background",
+                              "text-base sm:text-lg py-4 px-4 min-h-[56px] bg-background",
                               isAnswered
-                                ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300"
+                                ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
                                 : showValidation
-                                  ? "border-red-400 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300"
-                                  : "border-cyan-300 hover:border-cyan-400 focus:border-cyan-500 focus:shadow-cyan-200/30",
+                                  ? "border-destructive bg-destructive/10 text-destructive"
+                                  : "border-primary/30 hover:border-primary/50 focus:border-primary",
                             )}
                             autoFocus
                             aria-label="Enter your answer"
                           />
-                          
+
                           {isAnswered && (
                             <motion.div
                               initial={{ scale: 0, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
-                              className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg"
+                              className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
                             >
                               <CheckCircle className="w-4 h-4 text-white" />
                             </motion.div>
@@ -443,15 +355,13 @@ export default function BlanksQuiz({
                 </div>
               </CardContent>
             </Card>
-            
-            {/* Enhanced Validation Error */}
+
+            {/* Validation Error */}
             {showValidation && !answer.trim() && (
               <motion.div
-                variants={feedbackVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="flex items-center justify-center gap-3 text-sm text-red-600 mt-4 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-center gap-3 text-sm text-destructive mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20"
                 role="alert"
                 aria-live="polite"
               >
@@ -461,8 +371,8 @@ export default function BlanksQuiz({
             )}
           </motion.div>
 
-          {/* Enhanced Hint System */}
-          <motion.div variants={itemVariants} className="w-full">
+          {/* Hint System */}
+          <motion.div variants={itemVariants} className="w-full max-w-4xl mx-auto">
             <HintSystem
               hints={hints}
               onHintUsed={handleHintUsed}
@@ -472,8 +382,8 @@ export default function BlanksQuiz({
             />
           </motion.div>
 
-          {/* Enhanced Footer */}
-          <motion.div variants={itemVariants} className="w-full">
+          {/* Footer */}
+          <motion.div variants={itemVariants} className="w-full max-w-4xl mx-auto">
             <QuizFooter
               onNext={handleNext}
               onPrevious={onPrevious}
@@ -486,7 +396,7 @@ export default function BlanksQuiz({
             />
           </motion.div>
         </div>
-      </QuizContainer>
-    </motion.div>
+      </motion.div>
+    </QuizContainer>
   )
 }
