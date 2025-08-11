@@ -111,11 +111,8 @@ export const fetchSubscription = createAsyncThunk<
 
     return transformed
   } catch (error) {
-    if (error instanceof Error && error.message === "Request timed out") {
-      logger.warn("Subscription fetch timed out")
-    } else {
-      logger.warn("Subscription fetch failed", error)
-    }
+    // Always return default, never throw
+    logger.warn("Subscription fetch failed or timed out", error)
     return DEFAULT_FREE_SUBSCRIPTION
   }
 })
