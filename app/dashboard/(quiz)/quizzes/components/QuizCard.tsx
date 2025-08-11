@@ -80,17 +80,17 @@ const quizTypeConfig = {
   flashcard: {
     label: "Flash Cards",
     icon: Flashlight,
-    gradient: "from-orange-500 to-red-500",
-    bgColor: "bg-orange-50 dark:bg-orange-950/20",
-    textColor: "text-orange-600 dark:text-orange-400",
-    borderColor: "border-orange-200 dark:border-orange-800",
+    gradient: "from-amber-500 to-amber-600",
+    bgColor: "bg-amber-50 dark:bg-amber-950/20",
+    textColor: "text-amber-600 dark:text-amber-400",
+    borderColor: "border-amber-200 dark:border-amber-800",
   },
 } as const
 
 const difficultyConfig = {
   Easy: { color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-950/30" },
   Medium: { color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-950/30" },
-  Hard: { color: "text-red-600", bg: "bg-red-100 dark:bg-red-950/30" },
+  Hard: { color: "text-primary", bg: "bg-primary/10" },
 } as const
 
 function QuizCardComponent({
@@ -181,13 +181,13 @@ function QuizCardComponent({
                 {(isTrending || isPopular) && (
                   <Badge
                     className={cn(
-                      "text-xs border-0",
+                      "text-xs border-0 text-white",
                       isTrending
-                        ? "bg-gradient-to-r from-orange-500 to-red-500"
-                        : "bg-gradient-to-r from-purple-500 to-pink-500",
+                        ? "bg-gradient-to-r from-amber-500 to-amber-600"
+                        : "bg-gradient-to-r from-primary to-primary/80",
                     )}
                   >
-                    {isTrending ? "Hot" : "Popular"}
+                    {isTrending ? "Trending" : "Popular"}
                   </Badge>
                 )}
 
@@ -197,7 +197,7 @@ function QuizCardComponent({
                   className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
                   onClick={handleFavorite}
                 >
-                  <Heart className={cn("h-4 w-4", isFavorited && "fill-current text-red-500")} />
+                  <Heart className={cn("h-4 w-4", isFavorited && "fill-current text-primary")} />
                 </Button>
               </div>
             </div>
@@ -205,26 +205,26 @@ function QuizCardComponent({
 
           <CardContent className="flex-1 space-y-4 px-6">
             {/* Title and Rating */}
-            <div className="space-y-2">
-              <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+            <div className="space-y-3">
+              <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-300">
                 {title}
               </h3>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                     <span className="text-sm font-semibold">{rating}</span>
                   </div>
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Users className="w-3 h-3" />
-                    <span className="text-xs">({enrolledCount.toLocaleString()})</span>
+                    <span className="text-xs font-medium">({enrolledCount.toLocaleString()})</span>
                   </div>
                 </div>
 
                 {completionRate > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    {Math.round(completionRate)}% Complete
+                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                    {Math.round(completionRate)}% Done
                   </Badge>
                 )}
               </div>
@@ -233,22 +233,26 @@ function QuizCardComponent({
             {/* Description */}
             <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
 
-            {/* Stats */}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>{estimatedTime}</span>
+            {/* Enhanced Stats */}
+            <div className="flex items-center justify-between text-sm bg-muted/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="p-1 rounded-md bg-accent/50">
+                  <Clock className="w-3.5 h-3.5" />
+                </div>
+                <span className="font-medium">{estimatedTime}</span>
               </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <BookOpen className="w-4 h-4" />
-                <span>{questionCount} questions</span>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="p-1 rounded-md bg-accent/50">
+                  <BookOpen className="w-3.5 h-3.5" />
+                </div>
+                <span className="font-medium">{questionCount} questions</span>
               </div>
             </div>
 
             {/* Progress Bar */}
             {completionRate > 0 && (
               <div className="space-y-2">
-                <Progress value={completionRate} className="h-2" />
+                <Progress value={completionRate} className="h-2.5 bg-muted/50" />
               </div>
             )}
           </CardContent>

@@ -32,16 +32,16 @@ export default async function QuizLayout({
   const session = await getAuthSession()
 
   return (
-    <ClientLayoutWrapper 
+    <ClientLayoutWrapper
       session={session}
       withTheme={true}
       withSubscriptionSync={true}
     >
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
+      <div className="min-h-screen bg-green-500 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
         {/* Quiz-specific background pattern */}
-            
+
         {/* Main quiz content area */}
-        <div className="relative z-10 min-h-screen">
+        <div className="relative z-10 min-h-screen bg-red-500">
           <GlobalLoader />
           {children}
           <Toaster />

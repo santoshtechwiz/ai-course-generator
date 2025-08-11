@@ -143,24 +143,24 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search courses..."
-            className="pl-10 shadow-sm"
+            className="pl-11 h-11 shadow-sm bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 rounded-xl"
             value={searchTerm}
             onChange={handleSearchChange}
           />
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center rounded-lg border p-1">
+          {/* Enhanced View Mode Toggle */}
+          <div className="flex items-center rounded-xl border border-border/50 p-1 bg-background/50">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0 rounded-lg transition-all duration-200"
             >
               <Grid3X3 className="h-4 w-4" />
             </Button>
@@ -168,7 +168,7 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0 rounded-lg transition-all duration-200"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -176,35 +176,35 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         </div>
       </motion.div>
 
-      {/* Filter Tabs */}
+      {/* Enhanced Filter Tabs */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
-            <TabsTrigger value="all" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-muted/30 p-1 rounded-xl">
+            <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">All</span>
-              <Badge variant="secondary" className="ml-1">
+              <span className="hidden sm:inline font-medium">All</span>
+              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.all.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="in-progress" className="flex items-center gap-2">
+            <TabsTrigger value="in-progress" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
               <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">In Progress</span>
-              <Badge variant="secondary" className="ml-1">
+              <span className="hidden sm:inline font-medium">In Progress</span>
+              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.inProgress.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="completed" className="flex items-center gap-2">
+            <TabsTrigger value="completed" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
               <CheckCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Completed</span>
-              <Badge variant="secondary" className="ml-1">
+              <span className="hidden sm:inline font-medium">Completed</span>
+              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.completed.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="favorites" className="flex items-center gap-2">
+            <TabsTrigger value="favorites" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all">
               <Star className="h-4 w-4" />
-              <span className="hidden sm:inline">Favorites</span>
-              <Badge variant="secondary" className="ml-1">
+              <span className="hidden sm:inline font-medium">Favorites</span>
+              <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs">
                 {courseData.favorites.length}
               </Badge>
             </TabsTrigger>
@@ -286,10 +286,15 @@ interface CourseCardProps {
 
 function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
   return (
-    <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+    <motion.div 
+      whileHover={{ y: -6, scale: 1.02 }} 
+      transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+    >
       <Card
         className={cn(
-          "group cursor-pointer overflow-hidden border-0 shadow-md transition-all duration-300 hover:shadow-xl",
+          "group cursor-pointer overflow-hidden border-0 bg-card/50 backdrop-blur-sm",
+          "shadow-lg hover:shadow-2xl transition-all duration-500",
+          "ring-1 ring-border/50 hover:ring-primary/20",
           isLoading && "opacity-70 scale-[0.98]",
         )}
         onClick={onClick}
@@ -300,15 +305,18 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             src={course.image || "/placeholder.svg?height=200&width=400"}
             alt={course.title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
           />
 
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Enhanced Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          
+          {/* Hover gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
           {/* Category Badge */}
           {course.category && (
-            <Badge className="absolute left-3 top-3 bg-background/90 text-foreground shadow-sm">
+            <Badge className="absolute left-3 top-3 bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm border-0 font-medium">
               {course.category.name}
             </Badge>
           )}
@@ -320,47 +328,64 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
             </div>
           )}
 
-          {/* Play Button Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <div className="rounded-full bg-primary/90 p-3 shadow-lg backdrop-blur-sm">
-              <Play className="h-6 w-6 text-primary-foreground" />
-            </div>
+          {/* Enhanced Play Button Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <motion.div 
+              className="rounded-full bg-primary shadow-2xl backdrop-blur-sm border border-primary-foreground/20"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="p-4">
+                <Play className="h-6 w-6 text-primary-foreground ml-0.5" />
+              </div>
+            </motion.div>
           </div>
         </div>
 
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {/* Title and Description */}
-            <div className="space-y-2">
-              <h3 className="line-clamp-2 text-lg font-semibold leading-tight group-hover:text-primary transition-colors">
-                {course.title}
-              </h3>
-              <p className="line-clamp-2 text-sm text-muted-foreground">{course.description}</p>
+        <CardContent className="p-6 space-y-5">
+          {/* Title and Description */}
+          <div className="space-y-3">
+            <h3 className="line-clamp-2 text-lg font-semibold leading-tight group-hover:text-primary transition-colors duration-300">
+              {course.title}
+            </h3>
+            <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">{course.description}</p>
+          </div>
+
+          {/* Progress Bar */}
+          {progress !== undefined && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium">Progress</span>
+                <span className="font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md text-xs">
+                  {Math.round(progress)}%
+                </span>
+              </div>
+              <Progress 
+                value={progress} 
+                className="h-2.5 bg-muted/50" 
+              />
             </div>
+          )}
 
-            {/* Progress Bar */}
-            {progress !== undefined && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium text-primary">{Math.round(progress)}%</span>
+          {/* Enhanced Course Stats */}
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <div className="p-1 rounded-md bg-accent/50">
+                  <Clock className="h-3.5 w-3.5" />
                 </div>
-                <Progress value={progress} className="h-2" />
+                <span className="font-medium">{course.estimatedHours || "N/A"}h</span>
               </div>
-            )}
-
-            {/* Course Stats */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{course.estimatedHours || "N/A"}h</span>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <div className="p-1 rounded-md bg-accent/50">
+                  <Users className="h-3.5 w-3.5" />
                 </div>
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  <span>1.2k</span>
-                </div>
+                <span className="font-medium">1.2k</span>
               </div>
+            </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -379,16 +404,38 @@ function CourseCard({ course, progress, isLoading, onClick }: CourseCardProps) {
                   <DropdownMenuItem>View Details</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-accent/80"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem className="cursor-pointer">Add to Favorites</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">Share Course</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">View Details</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-            {/* Completion Badge */}
-            {progress === 100 && (
-              <Badge className="w-fit bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                <CheckCircle className="mr-1 h-3 w-3" />
+          {/* Enhanced Completion Badge */}
+          {progress === 100 && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Badge className="w-fit bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
+                <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
                 Completed
               </Badge>
-            )}
-          </div>
+            </motion.div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

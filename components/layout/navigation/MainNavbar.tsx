@@ -166,28 +166,36 @@ export default function MainNavbar() {
             <AsyncNavLink
               href={item.href}
               className={cn(
-                "relative px-3 py-2 text-sm font-medium transition-colors group block",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-md",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                "relative px-4 py-2.5 text-sm font-semibold transition-all duration-300 group block rounded-lg",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-accent",
+                "hover:bg-accent/60 active:scale-[0.98]",
+                isActive 
+                  ? "text-primary bg-primary/5 shadow-sm border border-border/50" 
+                  : "text-muted-foreground hover:text-primary",
               )}
               data-testid={`nav-item-${item.name.toLowerCase()}`}
               aria-current={isActive ? "page" : undefined}
             >
-              <div className="flex items-center gap-1.5">
-                <Icon className="h-4 w-4" />
-                <span>{item.name}</span>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "p-1 rounded-md transition-colors duration-200",
+                  isActive ? "bg-primary/10" : "group-hover:bg-accent/80"
+                )}>
+                  <Icon className={cn(
+                    "h-4 w-4 transition-colors duration-200",
+                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                  )} />
+                </div>
+                <span className="font-medium">{item.name}</span>
               </div>
-              <div className="relative mt-0.5">
-                {isActive ? (
-                  <motion.div 
-                    className="absolute bottom-0 left-0 h-0.5 bg-primary rounded-full w-full" 
-                    layoutId="activeNavIndicator"
-                    transition={{ duration: 0.2, type: "spring" }}
-                  />
-                ) : (
-                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary/30 rounded-full group-hover:w-full transition-all duration-300" />
-                )}
-              </div>
+              {/* Subtle active indicator */}
+              {isActive && (
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-lg -z-10" 
+                  layoutId="activeNavIndicator"
+                  transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+                />
+              )}
             </AsyncNavLink>
           </motion.div>
         )
@@ -278,8 +286,9 @@ export default function MainNavbar() {
     <>      <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          "border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60",
-          scrolled && "shadow-sm bg-background/95 supports-[backdrop-filter]:bg-background/80",
+          "border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70",
+          "before:absolute before:inset-0 before:bg-gradient-to-r before:from-orange-50/20 before:via-transparent before:to-amber-50/20 before:pointer-events-none dark:before:from-orange-950/10 dark:before:to-amber-900/10",
+          scrolled && "shadow-lg shadow-orange-500/5 bg-background/95 supports-[backdrop-filter]:bg-background/80",
         )}
         data-testid="main-navbar"
         role="navigation"

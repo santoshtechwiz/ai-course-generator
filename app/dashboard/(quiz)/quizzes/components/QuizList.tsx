@@ -122,7 +122,7 @@ function QuizListComponent({
                 <Search className="h-16 w-16 text-muted-foreground mb-4" />
                 <h3 className="font-semibold text-xl mb-2">No quizzes found</h3>
                 <p className="text-muted-foreground mb-6 max-w-md">
-                  We couldn't find any quizzes matching your search criteria. Try adjusting your filters.
+                  No matches found. Try different keywords or filters.
                 </p>
                 <Button variant="outline" onClick={() => window.location.reload()}>
                   Clear Filters
@@ -131,13 +131,13 @@ function QuizListComponent({
             ) : (
               <>
                 <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-xl mb-2">No quizzes yet</h3>
+                <h3 className="font-semibold text-xl mb-2">Ready to start?</h3>
                 <p className="text-muted-foreground mb-6 max-w-md">
-                  Get started by creating your first quiz. It's quick and easy!
+                  Create your first quiz to test knowledge and skills.
                 </p>
                 <CreateCard
                   title="Create Your First Quiz"
-                  description="Start building engaging quizzes to test knowledge and skills."
+                  description="Quick and easy quiz builder"
                   animationDuration={2.0}
                 />
               </>
@@ -153,7 +153,7 @@ function QuizListComponent({
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">
             {activeFilter === "all" ? "All Quizzes" : `${activeFilter.toUpperCase()} Quizzes`}
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -162,11 +162,11 @@ function QuizListComponent({
         </div>
 
         {onViewModeChange && (
-          <ToggleGroup type="single" value={viewMode} onValueChange={onViewModeChange}>
-            <ToggleGroupItem value="grid" aria-label="Grid view">
+          <ToggleGroup type="single" value={viewMode} onValueChange={onViewModeChange} className="bg-muted/30 p-1 rounded-lg">
+            <ToggleGroupItem value="grid" aria-label="Grid view" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">
               <Grid3X3 className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view">
+            <ToggleGroupItem value="list" aria-label="List view" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">
               <List className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
@@ -175,13 +175,13 @@ function QuizListComponent({
 
       {/* Quiz Distribution Stats */}
       {quizzes.length > 0 && (
-        <Card>
-          <CardContent className="p-6">
+        <Card className="bg-accent/20 border-border/50">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium">Quiz Distribution</h3>
-              <Badge variant="secondary">{quizzes.length} total</Badge>
+              <h3 className="font-medium text-sm sm:text-base">Quiz Distribution</h3>
+              <Badge variant="secondary" className="bg-primary/10 text-primary">{quizzes.length} total</Badge>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
               {Object.entries(quizCounts)
                 .filter(([key]) => key !== "all")
                 .map(([type, count]) => (
@@ -190,9 +190,9 @@ function QuizListComponent({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1 }}
-                    className="text-center p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    className="text-center p-3 rounded-lg bg-background/60 border border-border/30 hover:bg-accent/60 transition-colors"
                   >
-                    <div className="text-2xl font-bold text-primary">{count}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">{count}</div>
                     <div className="text-xs text-muted-foreground capitalize">
                       {type === "openended" ? "Open Ended" : type}
                     </div>
@@ -206,8 +206,10 @@ function QuizListComponent({
       {/* Quiz Grid */}
       <motion.div
         className={cn(
-          "grid gap-6",
-          viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 max-w-4xl mx-auto",
+          "grid gap-4 sm:gap-6",
+          viewMode === "grid" 
+            ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" 
+            : "grid-cols-1 max-w-4xl mx-auto",
         )}
         variants={containerVariants}
         initial="hidden"

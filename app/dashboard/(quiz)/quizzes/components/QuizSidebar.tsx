@@ -24,7 +24,7 @@ const quizTypes = [
   },
   { id: "blanks" as const, label: "Fill Blanks", icon: PenTool, color: "text-amber-600 dark:text-amber-400" },
   { id: "code" as const, label: "Code", icon: Code, color: "text-purple-600 dark:text-purple-400" },
-  { id: "flashcard" as const, label: "Flash Cards", icon: Flashlight, color: "text-pink-600 dark:text-pink-400" },
+  { id: "flashcard" as const, label: "Flash Cards", icon: Flashlight, color: "text-amber-600 dark:text-amber-400" },
 ]
 
 interface QuizSidebarProps {
@@ -87,7 +87,7 @@ function QuizSidebarComponent({
     <div className="space-y-6">
       {/* Search */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-200 dark:to-gray-100 bg-clip-text text-transparent">Search Quizzes</Label>
+        <Label className="text-sm font-medium">Search Quizzes</Label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -95,13 +95,13 @@ function QuizSidebarComponent({
             placeholder="Search by title..."
             value={search}
             onChange={onSearchChange}
-            className="pl-10 pr-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl border-white/30 dark:border-gray-700/30 focus:border-blue-500/50 transition-all duration-300"
+            className="pl-10 pr-10 bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
           />
           {search && (
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-red-500/10 hover:text-red-600 transition-all duration-200"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted/80 hover:text-muted-foreground transition-all duration-200"
               onClick={onClearSearch}
             >
               <X className="h-3 w-3" />
@@ -121,7 +121,7 @@ function QuizSidebarComponent({
               variant="ghost"
               size="sm"
               onClick={() => selectedTypes.forEach(toggleQuizType)}
-              className="h-6 px-2 text-xs hover:bg-red-500/10 hover:text-red-600 transition-all duration-200"
+              className="h-6 px-2 text-xs hover:bg-muted/80 hover:text-muted-foreground transition-all duration-200"
             >
               Clear
             </Button>
@@ -139,14 +139,14 @@ function QuizSidebarComponent({
                 className={cn(
                   "justify-start gap-2 h-10 transition-all duration-300 hover:scale-105",
                   isSelected 
-                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 border-0" 
-                    : "bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl border-white/30 dark:border-gray-700/30 hover:bg-white/80 dark:hover:bg-gray-800/80"
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md" 
+                    : "bg-background/50 border-border/50 hover:bg-accent/80 hover:text-accent-foreground"
                 )}
               >
-                <type.icon className={cn("h-4 w-4", isSelected ? "text-white" : type.color)} />
+                <type.icon className={cn("h-4 w-4", isSelected ? "text-primary-foreground" : type.color)} />
                 <span className="text-sm font-medium">{type.label}</span>
                 {isSelected && (
-                  <Badge variant="secondary" className="ml-auto text-xs px-1.5 py-0.5 bg-white/20 text-white border-0">
+                  <Badge variant="secondary" className="ml-auto text-xs px-1.5 py-0.5 bg-primary-foreground/20 text-primary-foreground border-0">
                     ✓
                   </Badge>
                 )}
@@ -172,8 +172,8 @@ function QuizSidebarComponent({
                 className="my-6"
               />
               <div className="flex justify-between text-sm font-medium">
-                <span className="text-blue-600 dark:text-blue-400">{localQuestionCount[0]} questions</span>
-                <span className="text-purple-600 dark:text-purple-400">{localQuestionCount[1]} questions</span>
+                <span className="text-primary">{localQuestionCount[0]} questions</span>
+                <span className="text-primary">{localQuestionCount[1]} questions</span>
               </div>
             </div>
           </div>
@@ -183,10 +183,10 @@ function QuizSidebarComponent({
       {/* Public Only Toggle */}
       {onPublicOnlyChange && (
         <>
-          <Separator className="bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
-          <div className="flex items-center justify-between p-4 bg-white/30 dark:bg-gray-800/30 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/30">
+          <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="flex items-center justify-between p-4 bg-accent/30 rounded-xl border border-border/50">
             <div className="space-y-0.5">
-              <Label className="text-sm font-medium bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-200 dark:to-gray-100 bg-clip-text text-transparent">Public Quizzes Only</Label>
+              <Label className="text-sm font-medium">Public Quizzes Only</Label>
               <p className="text-xs text-muted-foreground">Show only publicly available quizzes</p>
             </div>
             <Switch checked={showPublicOnly} onCheckedChange={onPublicOnlyChange} />
@@ -200,23 +200,23 @@ function QuizSidebarComponent({
     <>
       {/* Desktop Sidebar */}
       <div className="hidden lg:block w-80 shrink-0">
-        <Card className="sticky top-6 bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl border border-white/20 dark:border-gray-700/30 shadow-2xl shadow-black/10">
+        <Card className="sticky top-6 bg-background/95 backdrop-blur-sm border-border/50 shadow-lg">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
-                  <Filter className="h-4 w-4 text-white" />
+              <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                <div className="p-2 bg-primary rounded-xl">
+                  <Filter className="h-4 w-4 text-primary-foreground" />
                 </div>
                 Filters
               </CardTitle>
               {hasActiveFilters && (
-                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg">
+                <Badge variant="secondary" className="text-xs bg-primary text-primary-foreground">
                   {selectedTypes.length + (search ? 1 : 0) + (showPublicOnly ? 1 : 0)} active
                 </Badge>
               )}
             </div>
           </CardHeader>
-          <CardContent>{renderFilters()}</CardContent>
+          <CardContent className="space-y-6">{renderFilters()}</CardContent>
         </Card>
       </div>
 
@@ -225,15 +225,15 @@ function QuizSidebarComponent({
         <Button
           variant="outline"
           onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="w-full justify-between bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 shadow-lg hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300"
+          className="w-full justify-between bg-background/95 backdrop-blur-sm border-border/50 shadow-md hover:bg-accent/80 transition-all duration-300"
         >
           <div className="flex items-center gap-2">
-            <div className="p-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-              <Filter className="h-3.5 w-3.5 text-white" />
+            <div className="p-1 bg-primary rounded-lg">
+              <Filter className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
             <span className="font-medium">Filters</span>
             {hasActiveFilters && (
-              <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
+              <Badge variant="secondary" className="text-xs bg-primary text-primary-foreground">
                 {selectedTypes.length + (search ? 1 : 0) + (showPublicOnly ? 1 : 0)}
               </Badge>
             )}
@@ -243,8 +243,8 @@ function QuizSidebarComponent({
 
         <Collapsible open={showMobileFilters} onOpenChange={setShowMobileFilters}>
           <CollapsibleContent>
-            <Card className="mt-4 bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl border border-white/20 dark:border-gray-700/30 shadow-xl">
-              <CardContent className="pt-6">{renderFilters()}</CardContent>
+            <Card className="mt-4 bg-background/95 backdrop-blur-sm border-border/50 shadow-lg">
+              <CardContent className="pt-6 space-y-6">{renderFilters()}</CardContent>
             </Card>
           </CollapsibleContent>
         </Collapsible>
@@ -290,13 +290,13 @@ function QuizSidebarComponent({
                   <Button 
                     variant="outline" 
                     onClick={onClearSearch} 
-                    className="flex-1 bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl border-white/30 dark:border-gray-700/30 hover:bg-red-500/10 hover:text-red-600 hover:border-red-500/30 transition-all duration-300"
+                    className="flex-1 bg-background/50 border-border/50 hover:bg-muted/80 hover:text-muted-foreground hover:border-border transition-all duration-300"
                   >
                     Clear All
                   </Button>
                   <Button 
                     onClick={() => setShowMobileFilters(false)} 
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 border-0 hover:scale-105 transition-all duration-300"
+                    className="flex-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 border-0 hover:scale-105 transition-all duration-300"
                   >
                     Apply Filters
                   </Button>

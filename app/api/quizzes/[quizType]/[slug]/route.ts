@@ -28,7 +28,10 @@ export async function GET(
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
     
-    return NextResponse.json(quiz)
+    // Add caching headers to the response
+    const response = NextResponse.json(quiz)
+    response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+    return response
   } catch (error) {
     // Await params before using its properties in error logging
     let quizType = "unknown"

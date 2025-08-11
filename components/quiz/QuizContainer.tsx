@@ -80,10 +80,10 @@ const containerVariants = {
  * Unified Quiz Container Component
  * 
  * Provides consistent UX patterns across all quiz types:
- * - Full-width responsive layout
- * - Consistent spacing and animations
- * - Type-specific styling with shared patterns
- * - Flexible variants for different use cases
+ * - Clean, professional layout
+ * - Consistent spacing and responsive design
+ * - Minimal nesting for better performance
+ * - Focus mode friendly
  */
 export function QuizContainer({
   children,
@@ -92,16 +92,16 @@ export function QuizContainer({
   quizType = "mcq",
   animationKey,
   className,
-  fullWidth = true, // Default to true for consistent full-width behavior
+  fullWidth = true,
   variant = "default",
 }: QuizContainerProps) {
   const config = quizTypeConfig[quizType] || quizTypeConfig.mcq
 
-  // Always use full width for consistent UX across all quiz types
   const containerClasses = cn(
-    "w-full min-h-[calc(100vh-4rem)] flex flex-col overflow-hidden",
-    variant === "compact" && "min-h-[70vh]",
+    "w-full flex flex-col",
+    variant === "compact" && "max-w-3xl mx-auto",
     variant === "expanded" && "min-h-[calc(100vh-2rem)]",
+    variant === "default" && "max-w-4xl mx-auto",
     className
   )
 
@@ -114,17 +114,11 @@ export function QuizContainer({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="w-full flex-1 flex flex-col p-2 sm:p-3"
+          className="w-full flex-1 flex flex-col"
         >
-          {/* Full-width container with responsive padding */}
-          <div className="w-full flex-1 flex flex-col max-w-5xl mx-auto">
-            <Card className="border-0 shadow-none bg-transparent flex-1">
-              <CardContent className="w-full p-0 flex-1 flex flex-col">
-                <div className="w-full flex-1 flex flex-col space-y-3 sm:space-y-4">
-                  {children}
-                </div>
-              </CardContent>
-            </Card>
+          {/* Simplified container - no unnecessary nesting */}
+          <div className="w-full space-y-6">
+            {children}
           </div>
         </motion.div>
       </AnimatePresence>

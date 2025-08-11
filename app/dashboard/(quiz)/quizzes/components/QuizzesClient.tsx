@@ -185,24 +185,26 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   )
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="flex flex-col lg:flex-row gap-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[debouncedSearch]}>
-          <QuizSidebar
-            search={search}
-            onSearchChange={handleSearchChange}
-            onClearSearch={handleClearSearch}
-            isSearching={isSearching}
-            selectedTypes={selectedTypes}
-            toggleQuizType={toggleQuizType}
-            questionCountRange={questionCountRange}
-            onQuestionCountChange={setQuestionCountRange}
-            showPublicOnly={showPublicOnly}
-            onPublicOnlyChange={setShowPublicOnly}
-          />
+          <div className="lg:w-80 lg:flex-shrink-0">
+            <QuizSidebar
+              search={search}
+              onSearchChange={handleSearchChange}
+              onClearSearch={handleClearSearch}
+              isSearching={isSearching}
+              selectedTypes={selectedTypes}
+              toggleQuizType={toggleQuizType}
+              questionCountRange={questionCountRange}
+              onQuestionCountChange={setQuestionCountRange}
+              showPublicOnly={showPublicOnly}
+              onPublicOnlyChange={setShowPublicOnly}
+            />
+          </div>
         </ErrorBoundary>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 space-y-6">
           <ErrorBoundary fallbackRender={ErrorFallback} onReset={handleRetry} resetKeys={[queryKey.join("")]}>
             {isLoading ? (
               <QuizzesSkeleton />
@@ -224,7 +226,12 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
                   onViewModeChange={handleViewModeChange}
                 />
                 <div ref={ref} className="h-20 flex items-center justify-center">
-                  {isFetchingNextPage && <div className="text-sm text-muted-foreground">Loading more quizzes...</div>}
+                  {isFetchingNextPage && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" />
+                      Loading more quizzes...
+                    </div>
+                  )}
                 </div>
               </>
             )}

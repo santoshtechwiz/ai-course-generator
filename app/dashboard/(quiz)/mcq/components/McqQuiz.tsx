@@ -156,196 +156,130 @@ const McqQuiz = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
+            className="w-full space-y-6"
           >
-            <div className="w-full space-y-8">
-              {/* Question Header */}
-              <motion.div
-                className="w-full text-center space-y-6"
-                initial={{ opacity: 0, y: -30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-              >
-                {/* Quiz Type Badge */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="flex justify-center mb-6"
-                >
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
-                    <Target className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium text-primary">Multiple Choice</span>
-                  </div>
-                </motion.div>
-
-                {/* Question Text */}
-                <motion.h2
-                  className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed break-words max-w-4xl mx-auto"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.6 }}
-                >
-                  {questionText}
-                </motion.h2>
-
-                {/* Progress indicator */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-sm text-muted-foreground"
-                >
-                  Question {questionNumber} of {totalQuestions}
-                </motion.div>
-              </motion.div>
-
-              {/* Options */}
-              <div className="w-full space-y-4 max-w-4xl mx-auto">
-                <AnimatePresence>
-                  {options.map((option, index) => {
-                    const isSelected = selectedOption === option.id
-                    const isHovered = hoveredOption === option.id
-                    const isDisabled = isAnswering || isSubmitting || stateManager.isSubmitting
-
-                    return (
-                      <motion.div
-                        key={option.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay: index * 0.1 + 0.1,
-                          duration: 0.4,
-                          type: "spring",
-                          stiffness: 200,
-                        }}
-                        whileHover={
-                          !isDisabled
-                            ? {
-                                scale: 1.02,
-                                transition: { duration: 0.2 },
-                              }
-                            : {}
-                        }
-                        whileTap={!isDisabled ? { scale: 0.98 } : {}}
-                        onHoverStart={() => !isDisabled && setHoveredOption(option.id)}
-                        onHoverEnd={() => setHoveredOption(null)}
-                        className="w-full"
-                      >
-                        <motion.label
-                          htmlFor={`option-${option.id}`}
-                          className={cn(
-                            "group relative flex items-center gap-4 p-4 sm:p-5 w-full rounded-xl border-2 cursor-pointer transition-all duration-300",
-                            "hover:shadow-lg focus-within:ring-2 focus-within:ring-primary/50",
-                            isSelected
-                              ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
-                              : isHovered
-                                ? "border-primary/50 bg-primary/5 shadow-md"
-                                : "border-border hover:border-primary/30 hover:bg-primary/5",
-                            isDisabled && "opacity-60 cursor-not-allowed",
-                          )}
-                          onClick={() => !isDisabled && handleOptionSelect(option.id)}
-                        >
-                          {/* Radio Input */}
-                          <input
-                            type="radio"
-                            name="mcq-option"
-                            id={`option-${option.id}`}
-                            value={option.id}
-                            checked={isSelected}
-                            disabled={isDisabled}
-                            onChange={() => !isDisabled && handleOptionSelect(option.id)}
-                            className="sr-only"
-                          />
-
-                          {/* Letter Badge */}
-                          <div
-                            className={cn(
-                              "relative flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm flex-shrink-0 transition-all duration-300",
-                              isSelected
-                                ? "bg-primary text-primary-foreground scale-110 shadow-lg"
-                                : isHovered
-                                  ? "bg-primary/20 text-primary scale-105"
-                                  : "bg-muted text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
-                            )}
-                          >
-                            {option.letter}
-
-                            {/* Success indicator */}
-                            <AnimatePresence>
-                              {isSelected && (
-                                <motion.div
-                                  className="absolute -top-1 -right-1"
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  exit={{ scale: 0 }}
-                                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                >
-                                  <CheckCircle2 className="w-4 h-4 text-green-500 bg-background rounded-full" />
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-
-                          {/* Option Text */}
-                          <div
-                            className={cn(
-                              "flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0",
-                              "break-words whitespace-normal",
-                              isSelected
-                                ? "text-foreground font-semibold"
-                                : "text-muted-foreground group-hover:text-foreground",
-                            )}
-                          >
-                            <motion.span
-                              className="block"
-                              animate={isSelected ? { scale: 1.02 } : { scale: 1 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              {option.text}
-                            </motion.span>
-                          </div>
-
-                          {/* Selection indicator */}
-                          {isSelected && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              className="flex-shrink-0"
-                            >
-                              <CheckCircle2 className="w-5 h-5 text-primary" />
-                            </motion.div>
-                          )}
-                        </motion.label>
-                      </motion.div>
-                    )
-                  })}
-                </AnimatePresence>
+            {/* Question Header - Simplified */}
+            <motion.div
+              className="text-center space-y-4"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* Quiz Type Badge */}
+              <div className="flex justify-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
+                  <Target className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">Multiple Choice</span>
+                </div>
               </div>
 
-              {/* Footer */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                className="w-full max-w-4xl mx-auto"
-              >
-                <QuizFooter
-                  onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
-                  onPrevious={undefined}
-                  onSubmit={isLastQuestion && onSubmit ? () => stateManager.handleSubmit(onSubmit) : undefined}
-                  onRetake={onRetake}
-                  canGoNext={!!selectedOption && !isAnswering}
-                  canGoPrevious={false}
-                  isLastQuestion={isLastQuestion}
-                  isSubmitting={isSubmitting || stateManager.isSubmitting}
-                  showRetake={showRetake}
-                  hasAnswer={!!selectedOption}
-                  submitState={stateManager.submitState}
-                  nextState={stateManager.nextState}
-                />
-              </motion.div>
+              {/* Question Text */}
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground leading-relaxed max-w-3xl mx-auto">
+                {questionText}
+              </h2>
+            </motion.div>
+
+            {/* Options - Simplified Layout */}
+            <div className="w-full space-y-3 max-w-2xl mx-auto">
+              <AnimatePresence>
+                {options.map((option, index) => {
+                  const isSelected = selectedOption === option.id
+                  const isHovered = hoveredOption === option.id
+                  const isDisabled = isAnswering || isSubmitting || stateManager.isSubmitting
+
+                  return (
+                    <motion.div
+                      key={option.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1, duration: 0.3 }}
+                      whileHover={!isDisabled ? { scale: 1.01 } : {}}
+                      whileTap={!isDisabled ? { scale: 0.99 } : {}}
+                      onHoverStart={() => !isDisabled && setHoveredOption(option.id)}
+                      onHoverEnd={() => setHoveredOption(null)}
+                    >
+                      <label
+                        htmlFor={`option-${option.id}`}
+                        className={cn(
+                          "flex items-center gap-4 p-4 w-full rounded-xl border-2 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-lg",
+                          "focus-within:ring-2 focus-within:ring-blue-300 dark:focus-within:ring-blue-600",
+                          "bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50",
+                          isSelected
+                            ? "border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-950/40 dark:to-indigo-900/30 shadow-blue-200/50 dark:shadow-blue-800/30"
+                            : isHovered
+                              ? "border-blue-300 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 shadow-md"
+                              : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600",
+                          isDisabled && "opacity-60 cursor-not-allowed",
+                        )}
+                        onClick={() => !isDisabled && handleOptionSelect(option.id)}
+                      >
+                        {/* Radio Input */}
+                        <input
+                          type="radio"
+                          name="mcq-option"
+                          id={`option-${option.id}`}
+                          value={option.id}
+                          checked={isSelected}
+                          disabled={isDisabled}
+                          onChange={() => !isDisabled && handleOptionSelect(option.id)}
+                          className="sr-only"
+                        />
+
+                        {/* Letter Badge */}
+                        <div
+                          className={cn(
+                            "flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm flex-shrink-0 transition-all duration-300 shadow-md",
+                            isSelected
+                              ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-blue-500/30"
+                              : "bg-gradient-to-r from-slate-100 to-gray-200 dark:from-slate-700 dark:to-gray-600 text-slate-700 dark:text-slate-200",
+                          )}
+                        >
+                          {option.letter}
+                        </div>
+
+                        {/* Option Text */}
+                        <div className="flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0">
+                          {option.text}
+                        </div>
+
+                        {/* Selection indicator */}
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="flex-shrink-0"
+                          >
+                            <CheckCircle2 className="w-5 h-5 text-primary" />
+                          </motion.div>
+                        )}
+                      </label>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
             </div>
+
+            {/* Footer */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <QuizFooter
+                onNext={onNext ? () => stateManager.handleNext(onNext) : undefined}
+                onPrevious={undefined}
+                onSubmit={isLastQuestion && onSubmit ? () => stateManager.handleSubmit(onSubmit) : undefined}
+                onRetake={onRetake}
+                canGoNext={!!selectedOption && !isAnswering}
+                canGoPrevious={false}
+                isLastQuestion={isLastQuestion}
+                isSubmitting={isSubmitting || stateManager.isSubmitting}
+                showRetake={showRetake}
+                hasAnswer={!!selectedOption}
+                submitState={stateManager.submitState}
+                nextState={stateManager.nextState}
+              />
+            </motion.div>
           </motion.div>
         </QuizContainer>
       )}

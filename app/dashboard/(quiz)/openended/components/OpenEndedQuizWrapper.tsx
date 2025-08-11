@@ -212,7 +212,7 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="w-full max-w-4xl ">
       <div className="space-y-6">
         <OpenEndedQuiz
           question={formattedQuestion!}

@@ -194,7 +194,7 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="w-full ">
       <div className="space-y-6">
         <BlanksQuiz
           key={formattedQuestion.id} // ✅ forces component reset per question

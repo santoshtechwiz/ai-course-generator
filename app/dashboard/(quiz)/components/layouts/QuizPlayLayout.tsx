@@ -173,11 +173,10 @@ const QuizSkeleton = () => (
   </div>
 )
 
-// Enhanced Timer component with sound effects and notifications
+// Simplified Timer component
 const TimerDisplay = memo(({ initialTime = 0 }: { initialTime?: number }) => {
   const [timeSpent, setTimeSpent] = useState(initialTime)
   const [isRunning, setIsRunning] = useState(initialTime === 0)
-  const [soundEnabled, setSoundEnabled] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -194,15 +193,6 @@ const TimerDisplay = memo(({ initialTime = 0 }: { initialTime?: number }) => {
     }
   }, [initialTime, isRunning])
 
-  const toggleTimer = useCallback(() => {
-    setIsRunning((prev) => !prev)
-  }, [])
-
-  const resetTimer = useCallback(() => {
-    setTimeSpent(0)
-    setIsRunning(false)
-  }, [])
-
   const formatTime = useCallback((seconds: number) => {
     const hours = Math.floor(seconds / 3600)
     const mins = Math.floor((seconds % 3600) / 60)
@@ -218,42 +208,21 @@ const TimerDisplay = memo(({ initialTime = 0 }: { initialTime?: number }) => {
 
   return (
     <div
-      className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500/15 to-purple-500/15 dark:from-blue-400/25 dark:to-purple-400/25 backdrop-blur-xl rounded-2xl text-sm font-bold border border-blue-200/60 dark:border-blue-400/40 shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-300 group"
+      className="flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-700/20 text-sm font-medium"
       role="timer"
       aria-label={`Time elapsed: ${formatTime(displayTime)}`}
     >
-      <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
-        <Clock className="h-4 w-4 text-white animate-pulse" />
-      </div>
-      <span className="tabular-nums bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-lg">
+      <Clock className="h-4 w-4 text-muted-foreground" />
+      <span className="tabular-nums text-foreground">
         {formatTime(displayTime)}
       </span>
-
-      {initialTime === 0 && (
-        <div className="flex items-center gap-1 ml-2">
-          <Button variant="ghost" size="sm" onClick={toggleTimer} className="h-6 w-6 p-0 hover:bg-white/20 rounded-lg">
-            {isRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={resetTimer} className="h-6 w-6 p-0 hover:bg-white/20 rounded-lg">
-            <RotateCcw className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="h-6 w-6 p-0 hover:bg-white/20 rounded-lg"
-          >
-            {soundEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
-          </Button>
-        </div>
-      )}
     </div>
   )
 })
 
 TimerDisplay.displayName = "TimerDisplay"
 
-// Enhanced Progress component with more visual feedback
+// Simplified Progress component
 const ProgressIndicator = memo(
   ({ current, total, percentage }: { current: number; total: number; percentage: number }) => {
     const [animatedPercentage, setAnimatedPercentage] = useState(0)
@@ -266,59 +235,31 @@ const ProgressIndicator = memo(
     }, [percentage])
 
     return (
-      <div className="space-y-4 p-4 bg-gradient-to-r from-white/70 to-white/50 dark:from-gray-800/70 dark:to-gray-800/50 backdrop-blur-xl rounded-2xl border border-white/30 dark:border-gray-700/30 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg shadow-green-500/30">
-              <CheckCircle className="h-4 w-4 text-white" />
+      <div className="w-full p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-white/20 dark:border-gray-700/20 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <CheckCircle className="h-4 w-4 text-primary" />
             </div>
-            <div>
-              <span className="text-sm font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-200 dark:to-gray-100 bg-clip-text text-transparent">
-                Question {current} of {total}
-              </span>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{total - current} remaining</p>
-            </div>
+            <span className="text-sm font-medium text-foreground">
+              Question {current} of {total}
+            </span>
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg">
-                <Zap className="h-3.5 w-3.5 text-white" />
-              </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
-                {percentage}%
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Complete</p>
+            <span className="text-lg font-bold text-primary">
+              {percentage}%
+            </span>
+            <p className="text-xs text-muted-foreground">Complete</p>
           </div>
         </div>
 
+        {/* Simplified progress bar */}
         <div className="relative">
-          <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-full overflow-hidden shadow-inner">
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-1000 ease-out shadow-lg shadow-blue-500/50 relative overflow-hidden"
+              className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${animatedPercentage}%` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
-              <div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"
-                style={{ animationDelay: "0.5s" }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 text-xs font-medium">
-          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            Started
-          </div>
-          <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400 justify-center">
-            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-            In Progress
-          </div>
-          <div className="flex items-center gap-1 text-purple-600 dark:text-purple-400 justify-end">
-            <div className="w-2 h-2 bg-purple-500 rounded-full" />
-            Complete
+            />
           </div>
         </div>
       </div>
@@ -517,42 +458,33 @@ export default function QuizPlayLayout({
     [questionNumber, totalQuestions],
   )
 
-  // Enhanced header component
+  // Enhanced header component with vibrant styling
   const HeaderComponent = useMemo(
     () => (
       <header
-        className={`sticky top-0 z-50 backdrop-blur-xl border-b border-white/20 dark:border-gray-700/30 bg-gradient-to-r ${config.lightBg} dark:${config.darkBg} transition-all duration-500 shadow-xl`}
+        className={`sticky top-0 z-50 backdrop-blur-xl border-b border-white/30 dark:border-gray-700/30 bg-gradient-to-r from-white/90 via-white/95 to-white/90 dark:from-gray-900/90 dark:via-gray-900/95 dark:to-gray-900/90 supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-gray-900/70 transition-all duration-300 shadow-lg shadow-black/5`}
         role="banner"
       >
-        <div className="max-w-screen-2xl mx-auto px-4 py-4 lg:px-8">
+        <div className="max-w-screen-2xl mx-auto px-4 py-3 lg:px-6">
           <div className="flex items-center justify-between gap-4">
             {/* Quiz Info Section */}
-            <div className="flex items-center gap-4 min-w-0 flex-1">
-              <div
-                className={`p-3 rounded-2xl ${config.iconBg} transition-all duration-300 hover:scale-110 hover:rotate-3 shadow-lg`}
-              >
-                <Icon className="h-6 w-6 animate-pulse" />
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className={`p-2.5 rounded-xl bg-gradient-to-r ${config.primaryGradient} shadow-lg shadow-primary/25`}>
+                <Icon className="h-5 w-5 text-white" />
               </div>
 
               <div className="min-w-0 flex-1">
-                <h1 className="font-bold text-xl lg:text-2xl truncate leading-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent mb-2">
+                <h1 className="font-bold text-lg lg:text-xl truncate leading-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                   {quizTitle}
                 </h1>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Badge
-                    className={`text-xs px-4 py-2 font-bold ${config.badgeColor} transition-all duration-300 hover:scale-105 rounded-xl`}
-                  >
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="text-xs px-2 py-1">
                     {config.label}
                   </Badge>
                   <DifficultyBadge difficulty={difficulty} />
                   {!isMobile && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-xl text-sm font-semibold border border-white/40 dark:border-gray-700/40 shadow-lg">
-                      <div className="p-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
-                        <HelpCircle className="h-3.5 w-3.5 text-white" />
-                      </div>
-                      <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
-                        {questionNumber}/{totalQuestions}
-                      </span>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <span>{questionNumber}/{totalQuestions}</span>
                     </div>
                   )}
                 </div>
@@ -560,17 +492,12 @@ export default function QuizPlayLayout({
             </div>
 
             {/* Controls Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {!isMobile && (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <TimerDisplay initialTime={timeSpent} />
-                  <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-yellow-500/15 to-orange-500/15 dark:from-yellow-400/25 dark:to-orange-400/25 backdrop-blur-xl rounded-xl text-sm font-bold border border-yellow-200/60 dark:border-yellow-400/40 shadow-xl shadow-yellow-500/20">
-                    <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl">
-                      <Trophy className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="tabular-nums bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent text-lg">
-                      {progressPercentage}%
-                    </span>
+                  <div className="text-sm font-medium text-primary">
+                    {progressPercentage}%
                   </div>
                 </div>
               )}
@@ -586,13 +513,13 @@ export default function QuizPlayLayout({
                 variant="outline"
                 size="sm"
                 onClick={toggleSidebar}
-                className="shrink-0 h-10 w-10 p-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl shadow-xl border-white/30 dark:border-gray-700/30 hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:scale-110 rounded-xl group"
+                className="shrink-0 h-9 w-9 p-0"
                 aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
               >
                 {sidebarOpen ? (
-                  <X className="h-4 w-4 group-hover:text-red-500 transition-colors" />
+                  <X className="h-4 w-4" />
                 ) : (
-                  <Menu className="h-4 w-4 group-hover:text-blue-500 transition-colors" />
+                  <Menu className="h-4 w-4" />
                 )}
               </Button>
             </div>
@@ -600,15 +527,13 @@ export default function QuizPlayLayout({
 
           {/* Mobile Stats */}
           {isMobile && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/20 dark:border-gray-700/30">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
               <TimerDisplay initialTime={timeSpent} />
-              <div className="flex items-center gap-2 px-3 py-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-xl text-sm font-semibold border border-white/40 dark:border-gray-700/40 shadow-lg">
-                <div className="p-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
-                  <HelpCircle className="h-3.5 w-3.5 text-white" />
-                </div>
-                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
-                  {questionNumber} of {totalQuestions}
-                </span>
+              <div className="text-sm text-muted-foreground">
+                Question {questionNumber} of {totalQuestions}
+              </div>
+              <div className="text-sm font-medium text-primary">
+                {progressPercentage}%
               </div>
             </div>
           )}
@@ -641,15 +566,16 @@ export default function QuizPlayLayout({
         <Suspense fallback={<QuizSkeleton />}>
           <div className="w-full mb-6">
             <QuizActions
+              quizId={quizId || quizSlug}
               quizSlug={quizSlug}
-              quizData={quizData || {}}
-              initialIsPublic={isPublic}
-              initialIsFavorite={isFavorite}
-              isOwner={isOwner}
+              quizType={quizType}
+              title={quizTitle}
+              isPublic={isPublic}
+              isFavorite={isFavorite}
               className="w-full"
             />
           </div>
-          <RandomQuiz showStats={false} autoRotate={true} />
+          <RandomQuiz  autoRotate={true} />
         </Suspense>
       </div>
     ),
@@ -705,49 +631,50 @@ export default function QuizPlayLayout({
 
   return (
     <div
-      className={`min-h-screen flex flex-col bg-gradient-to-br ${config.lightBg} dark:${config.darkBg} transition-all duration-500 ${isFullscreen ? "overflow-hidden" : ""} relative`}
+      className={`min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-gray-900 dark:to-indigo-950/30 transition-all duration-500 ${isFullscreen ? "overflow-hidden" : ""} relative`}
     >
-      {/* Animated background pattern */}
-      <div className="absolute inset-0 opacity-5 dark:opacity-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
-        <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0deg,rgba(120,119,198,0.1)_360deg)]" />
-      </div>
+      {/* Enhanced background patterns */}
+      {!isFullscreen && (
+        <div className="absolute inset-0 opacity-40 dark:opacity-20">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-100/20 via-transparent to-cyan-100/20 dark:from-violet-900/10 dark:to-cyan-900/10" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.05),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.08),transparent_50%)] dark:bg-[radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.03),transparent_50%)]" />
+        </div>
+      )}
 
       {/* Header */}
       {!isFullscreen && HeaderComponent}
 
       {/* Main Content */}
-      <main className="flex-1 flex max-w-screen-2xl mx-auto w-full p-4 sm:p-6 lg:p-8 relative z-10">
-        <div className="flex w-full gap-6 lg:gap-8">
-          {/* Question Area */}
+      <main className="flex-1 flex max-w-screen-2xl mx-auto w-full p-3 sm:p-4 lg:p-6 relative z-10">
+        <div className="flex w-full gap-4 lg:gap-6">
+          {/* Question Area - Simplified with better focus */}
           <div
             ref={mainContentRef}
-            className={`flex-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-3xl border border-white/30 dark:border-gray-700/30 shadow-2xl shadow-black/20 transition-all duration-500 ${
-              isFullscreen ? "p-8 lg:p-12" : "p-6 lg:p-10"
+            className={`flex-1 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-xl transition-all duration-500 ${
+              isFullscreen ? "p-6 lg:p-8" : "p-4 lg:p-6"
             } overflow-auto relative`}
             role="main"
             aria-label="Quiz content"
           >
-            {/* Content wrapper with enhanced styling */}
-            <div className="relative">
-              {/* Progress Section */}
-              <div className="mb-8">
-                <ProgressIndicator current={questionNumber} total={totalQuestions} percentage={progressPercentage} />
-              </div>
+            {/* Simplified content wrapper */}
+            <div className="w-full">
+              {/* Progress Section - only show when not in fullscreen */}
+              {!isFullscreen && (
+                <div className="mb-6">
+                  <ProgressIndicator current={questionNumber} total={totalQuestions} percentage={progressPercentage} />
+                </div>
+              )}
 
-              {/* Main quiz content */}
-              <div className="relative">{children}</div>
+              {/* Main quiz content with consistent spacing */}
+              <div className="w-full">{children}</div>
             </div>
-
-            {/* Decorative elements */}
-            <div className="absolute top-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-400/10 to-purple-500/10 rounded-full blur-xl" />
-            <div className="absolute bottom-6 left-6 w-20 h-20 bg-gradient-to-r from-green-400/10 to-blue-500/10 rounded-full blur-xl" />
           </div>
 
-          {/* Desktop Sidebar */}
+          {/* Desktop Sidebar - Hidden in focus mode */}
           {sidebarOpen && !isFullscreen && (
             <aside
-              className={`hidden lg:block shrink-0 space-y-6 transition-all duration-500 ${
+              className={`hidden lg:block shrink-0 space-y-4 transition-all duration-500 ${
                 isTablet ? "w-72" : "w-80"
               } animate-in slide-in-from-right-full`}
             >

@@ -224,178 +224,177 @@ export default function BlanksQuiz({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
+        className="w-full space-y-6"
       >
-        <div className="w-full space-y-8">
-          {/* Question Display */}
-          <motion.div variants={itemVariants} className="w-full">
-            <Card className="w-full border-0 shadow-lg bg-card">
-              <div className="bg-primary h-1"></div>
-              <CardContent className="w-full p-6 sm:p-8">
-                <div className="w-full space-y-6">
-                  {/* Header Section */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
-                      <FileText className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-bold text-foreground">Fill in the Blank</h3>
-                      {hintsUsed > 0 && (
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          <Lightbulb className="w-3 h-3 mr-1" />
-                          {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+        {/* Header */}
+        <motion.div className="text-center space-y-4">
+          {/* Quiz Type Badge */}
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
+              <FileText className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Fill in the Blank</span>
+            </div>
+          </div>
+        </motion.div>
 
-                  {/* Question Content */}
-                  <div className="w-full">
-                    {questionParts.hasBlank ? (
-                      <div className="w-full space-y-6 text-center">
-                        <div className="w-full max-w-4xl mx-auto">
-                          <div className="text-lg sm:text-xl leading-relaxed mb-6">
-                            <span className="text-foreground break-words">{questionParts.before}</span>
-                          </div>
+        {/* Question Content - Simplified */}
+        <motion.div
+          variants={itemVariants}
+          className="w-full max-w-3xl mx-auto p-6 bg-card rounded-lg border border-border shadow-sm"
+        >
+          {questionParts.hasBlank ? (
+            <div className="space-y-6 text-center">
+              {/* Question text with blank */}
+              <div className="text-lg leading-relaxed">
+                <span className="text-foreground">{questionParts.before}</span>
+              </div>
 
-                          <motion.div
-                            variants={inputFocusVariants}
-                            animate={isFocused ? "focused" : "unfocused"}
-                            className="relative w-full max-w-md mx-auto mb-6"
-                          >
-                            <Input
-                              value={answer}
-                              onChange={handleInputChange}
-                              onKeyDown={handleKeyDown}
-                              onFocus={() => setIsFocused(true)}
-                              onBlur={() => setIsFocused(false)}
-                              placeholder="Your answer"
-                              className={cn(
-                                "w-full text-center font-semibold border-2 border-dashed rounded-lg transition-all duration-300",
-                                "text-base sm:text-lg py-4 px-4 min-h-[56px] bg-background",
-                                isAnswered
-                                  ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
-                                  : showValidation
-                                    ? "border-destructive bg-destructive/10 text-destructive"
-                                    : "border-primary/30 hover:border-primary/50 focus:border-primary",
-                              )}
-                              autoFocus
-                              aria-label="Fill in the blank"
-                            />
-
-                            {isAnswered && (
-                              <motion.div
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
-                              >
-                                <CheckCircle className="w-4 h-4 text-white" />
-                              </motion.div>
-                            )}
-                          </motion.div>
-
-                          <div className="text-lg sm:text-xl leading-relaxed">
-                            <span className="text-foreground break-words">{questionParts.after}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full space-y-6 text-center">
-                        <p className="text-foreground break-words text-lg leading-relaxed max-w-4xl mx-auto">
-                          {questionData.text}
-                        </p>
-                        <motion.div
-                          variants={inputFocusVariants}
-                          animate={isFocused ? "focused" : "unfocused"}
-                          className="relative w-full max-w-md mx-auto"
-                        >
-                          <Input
-                            value={answer}
-                            onChange={handleInputChange}
-                            onKeyDown={handleKeyDown}
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={() => setIsFocused(false)}
-                            placeholder="Enter your answer"
-                            className={cn(
-                              "w-full text-center font-semibold border-2 border-dashed rounded-lg transition-all duration-300",
-                              "text-base sm:text-lg py-4 px-4 min-h-[56px] bg-background",
-                              isAnswered
-                                ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
-                                : showValidation
-                                  ? "border-destructive bg-destructive/10 text-destructive"
-                                  : "border-primary/30 hover:border-primary/50 focus:border-primary",
-                            )}
-                            autoFocus
-                            aria-label="Enter your answer"
-                          />
-
-                          {isAnswered && (
-                            <motion.div
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
-                            >
-                              <CheckCircle className="w-4 h-4 text-white" />
-                            </motion.div>
-                          )}
-                        </motion.div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Success Indicator */}
-                  {answer.trim() && similarity >= 0.6 && (
-                    <div className="flex items-center justify-center pt-2">
-                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 px-3 py-1.5 rounded-full">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">Good answer!</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Validation Error */}
-            {showValidation && !answer.trim() && (
+              {/* Input Field */}
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-center gap-3 text-sm text-destructive mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20"
-                role="alert"
-                aria-live="polite"
+                variants={inputFocusVariants}
+                animate={isFocused ? "focused" : "unfocused"}
+                className="relative max-w-sm mx-auto"
               >
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span className="font-medium">Please enter an answer before continuing</span>
+                <Input
+                  value={answer}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  placeholder="Your answer"
+                  className={cn(
+                    "text-center font-semibold border-2 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md",
+                    "text-base py-3 px-4 focus:ring-0 focus:ring-offset-0",
+                    "bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50",
+                    isAnswered
+                      ? "border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/30 dark:to-green-900/30 text-emerald-800 dark:text-emerald-200 shadow-emerald-200/50"
+                      : showValidation
+                        ? "border-rose-400 bg-gradient-to-br from-rose-50 to-red-100/50 dark:from-rose-950/30 dark:to-red-900/20 shadow-rose-200/50"
+                        : "border-cyan-200 dark:border-cyan-700 hover:border-cyan-400 dark:hover:border-cyan-500 focus:border-cyan-500 dark:focus:border-cyan-400 focus:shadow-cyan-200/50 dark:focus:shadow-cyan-800/30",
+                  )}
+                  autoFocus
+                />
+
+                {isAnswered && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+                  >
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  </motion.div>
+                )}
               </motion.div>
-            )}
-          </motion.div>
 
-          {/* Hint System */}
-          <motion.div variants={itemVariants} className="w-full max-w-4xl mx-auto">
-            <HintSystem
-              hints={hints}
-              onHintUsed={handleHintUsed}
-              userInput={answer}
-              questionText={questionData.text}
-              maxHints={3}
-            />
-          </motion.div>
+              {/* Continuation of question */}
+              <div className="text-lg leading-relaxed">
+                <span className="text-foreground">{questionParts.after}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6 text-center">
+              <p className="text-lg leading-relaxed text-foreground">
+                {questionData.text}
+              </p>
+              <motion.div
+                variants={inputFocusVariants}
+                animate={isFocused ? "focused" : "unfocused"}
+                className="relative max-w-sm mx-auto"
+              >
+                <Input
+                  value={answer}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  placeholder="Enter your answer"
+                  className={cn(
+                    "text-center font-medium border-2 rounded-lg transition-all duration-200",
+                    "text-base py-3 px-4",
+                    isAnswered
+                      ? "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300"
+                      : showValidation
+                        ? "border-destructive bg-destructive/10"
+                        : "border-primary/30 hover:border-primary/50 focus:border-primary",
+                  )}
+                  autoFocus
+                />
 
-          {/* Footer */}
-          <motion.div variants={itemVariants} className="w-full max-w-4xl mx-auto">
-            <QuizFooter
-              onNext={handleNext}
-              onPrevious={onPrevious}
-              onSubmit={handleSubmit}
-              canGoNext={canProceed}
-              canGoPrevious={canGoPrevious}
-              isLastQuestion={isLastQuestion}
-              nextLabel="Next Question"
-              submitLabel="Finish Quiz"
-            />
-          </motion.div>
-        </div>
+                {isAnswered && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+                  >
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  </motion.div>
+                )}
+              </motion.div>
+            </div>
+          )}
+
+          {/* Success Indicator */}
+          {answer.trim() && similarity >= 0.6 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="flex items-center justify-center pt-4"
+            >
+              <div className="flex items-center gap-3 text-emerald-700 dark:text-emerald-300 bg-gradient-to-r from-emerald-50 to-green-100 dark:from-emerald-950/40 dark:to-green-900/30 px-4 py-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800 shadow-lg shadow-emerald-100/50 dark:shadow-emerald-900/20">
+                <div className="p-1 bg-emerald-500 rounded-full">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-semibold">Perfect! That's the correct answer!</span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Validation Error */}
+          {showValidation && !answer.trim() && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="flex items-center justify-center gap-3 text-rose-700 dark:text-rose-300 mt-4 p-4 bg-gradient-to-r from-rose-50 to-red-100 dark:from-rose-950/40 dark:to-red-900/30 rounded-xl border-2 border-rose-200 dark:border-rose-800 shadow-lg shadow-rose-100/50 dark:shadow-rose-900/20"
+              role="alert"
+            >
+              <div className="p-1 bg-rose-500 rounded-full">
+                <AlertCircle className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-semibold">Please enter an answer before continuing</span>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Hint System - Enhanced with vibrant colors */}
+        <motion.div 
+          variants={itemVariants}
+          className="space-y-4"
+        >
+          <HintSystem
+            hints={hints}
+            onHintUsed={handleHintUsed}
+            userInput={answer}
+            questionText={questionData.text}
+            maxHints={3}
+            className="border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/30 dark:to-yellow-900/20 rounded-xl shadow-lg shadow-amber-100/50 dark:shadow-amber-900/20"
+          />
+        </motion.div>
+
+        {/* Footer */}
+        <motion.div variants={itemVariants}>
+          <QuizFooter
+            onNext={handleNext}
+            onPrevious={onPrevious}
+            onSubmit={handleSubmit}
+            canGoNext={canProceed}
+            canGoPrevious={canGoPrevious}
+            isLastQuestion={isLastQuestion}
+            nextLabel="Next Question"
+            submitLabel="Finish Quiz"
+          />
+        </motion.div>
       </motion.div>
     </QuizContainer>
   )

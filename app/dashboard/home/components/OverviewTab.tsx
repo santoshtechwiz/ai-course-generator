@@ -40,55 +40,74 @@ const OverviewTab = memo(function OverviewTab({ userData, userStats }: OverviewT
     {
       title: "Courses",
       value: userData?.courses?.length || 0,
-      icon: <BookOpen className="h-5 w-5 text-blue-500" />,
-      color: "bg-blue-500/10",
+      icon: <BookOpen className="h-5 w-5" />,
+      color: "bg-primary/10",
+      iconColor: "text-primary",
+      gradient: "from-primary/5 to-primary/10"
     },
     {
-      title: "Quizzes",
+      title: "Quizzes", 
       value: userData?.userQuizzes?.length || 0,
-      icon: <GraduationCap className="h-5 w-5 text-purple-500" />,
-      color: "bg-purple-500/10",
+      icon: <GraduationCap className="h-5 w-5" />,
+      color: "bg-secondary/10",
+      iconColor: "text-secondary-foreground",
+      gradient: "from-secondary/5 to-secondary/10"
     },
     {
       title: "Avg. Score",
       value: `${Math.round(userStats?.averageScore || 0)}%`,
-      icon: <BarChart3 className="h-5 w-5 text-green-500" />,
-      color: "bg-green-500/10",
+      icon: <BarChart3 className="h-5 w-5" />,
+      color: "bg-accent/10",
+      iconColor: "text-accent-foreground",
+      gradient: "from-accent/5 to-accent/10"
     },
     {
-      title: "Learning Time",
+      title: "Learning Time", 
       value: `${Math.round((userStats?.totalTimeSpent || 0) / 60)} min`,
-      icon: <Clock className="h-5 w-5 text-amber-500" />,
-      color: "bg-amber-500/10",
+      icon: <Clock className="h-5 w-5" />,
+      color: "bg-muted/10",
+      iconColor: "text-muted-foreground",
+      gradient: "from-muted/5 to-muted/10"
     },
     {
       title: "Streak",
       value: userData?.streakDays || 0,
-      icon: <Award className="h-5 w-5 text-red-500" />,
-      color: "bg-red-500/10",
+      icon: <Award className="h-5 w-5" />,
+      color: "bg-primary/10",
+      iconColor: "text-primary",
+      gradient: "from-primary/5 to-primary/10"
     },
     {
       title: "Improvement",
       value: `${Math.round(userStats?.recentImprovement || 0)}%`,
-      icon: <TrendingUp className="h-5 w-5 text-indigo-500" />,
-      color: "bg-indigo-500/10",
+      icon: <TrendingUp className="h-5 w-5" />,
+      color: "bg-secondary/10",
+      iconColor: "text-secondary-foreground", 
+      gradient: "from-secondary/5 to-secondary/10"
     },
   ]
 
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
+      {/* Enhanced Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((stat, index) => (
-          <Card key={index} className="overflow-hidden">
-            <CardContent className="p-4">
+          <Card key={index} className="overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group">
+            <CardContent className="p-5">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${stat.color}`}>{stat.icon}</div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+                <div className={`p-2.5 rounded-xl ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={stat.iconColor}>
+                    {stat.icon}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground font-medium">{stat.title}</p>
+                  <p className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                    {stat.value}
+                  </p>
                 </div>
               </div>
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10`} />
             </CardContent>
           </Card>
         ))}

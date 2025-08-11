@@ -70,20 +70,20 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                 <motion.div
                   className={cn(
                     "group relative overflow-hidden rounded-xl border-2 transition-all duration-300 cursor-pointer",
-                    "hover:shadow-md hover:shadow-primary/8",
+                    "hover:shadow-lg hover:shadow-orange-100/50 dark:hover:shadow-orange-900/20",
                     isSelected
-                      ? "border-primary bg-gradient-to-r from-primary/12 via-primary/6 to-primary/4 shadow-md shadow-primary/15"
-                      : "border-border/60 bg-gradient-to-r from-card/90 to-card/70 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/6 hover:to-primary/3",
+                      ? "border-orange-400 dark:border-orange-600 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950/50 dark:via-amber-900/30 dark:to-orange-900/40 shadow-lg shadow-orange-200/50 dark:shadow-orange-800/30"
+                      : "border-orange-200 dark:border-orange-800 bg-gradient-to-r from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-950/20 hover:border-orange-300 dark:hover:border-orange-700 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-amber-50/50 dark:hover:from-orange-950/30 dark:hover:to-amber-900/20",
                     disabled && "opacity-50 cursor-not-allowed",
                   )}
                   onClick={() => !disabled && onSelect(option)}
                   layout
                 >
-                  {/* Selection Background Glow */}
+                  {/* Selection Background Glow - Orange theme */}
                   <AnimatePresence>
                     {isSelected && (
                       <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-primary/8 to-primary/4"
+                        className="absolute inset-0 bg-gradient-to-r from-orange-100/80 to-amber-100/60 dark:from-orange-950/60 dark:to-amber-900/40"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
@@ -93,13 +93,13 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                   </AnimatePresence>
 
                   <div className="relative flex items-start space-x-3 p-3 sm:p-4">
-                    {/* Option Letter Badge */}
+                    {/* Option Letter Badge - Orange theme */}
                     <motion.div
                       className={cn(
-                        "flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm transition-all duration-300 flex-shrink-0",
+                        "flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm transition-all duration-300 flex-shrink-0 shadow-md",
                         isSelected
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted/60 text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary",
+                          ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-orange-500/30"
+                          : "bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/50 dark:to-amber-800/50 text-orange-700 dark:text-orange-300 group-hover:from-orange-200 group-hover:to-amber-200 dark:group-hover:from-orange-800/70 dark:group-hover:to-amber-700/70",
                       )}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -115,15 +115,15 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                       className="sr-only"
                     />
 
-                    {/* Option Text - Compact and Readable */}
+                    {/* Option Text - Enhanced readability */}
                     <Label
                       htmlFor={`code-option-${index}`}
                       className={cn(
-                        "flex-1 cursor-pointer text-sm font-medium leading-relaxed transition-all duration-300 min-w-0",
+                        "flex-1 cursor-pointer text-sm font-semibold leading-relaxed transition-all duration-300 min-w-0",
                         "break-words whitespace-normal",
                         isSelected
-                          ? "text-foreground font-semibold"
-                          : "text-muted-foreground group-hover:text-foreground",
+                          ? "text-orange-800 dark:text-orange-200 font-bold"
+                          : "text-gray-700 dark:text-gray-300 group-hover:text-orange-700 dark:group-hover:text-orange-300",
                         disabled && "cursor-not-allowed",
                       )}
                       style={{
@@ -143,11 +143,11 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                       </motion.span>
                     </Label>
 
-                    {/* Selection Indicator */}
+                    {/* Selection Indicator - Orange theme */}
                     <AnimatePresence>
                       {isSelected && (
                         <motion.div
-                          className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground flex-shrink-0"
+                          className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-amber-600 text-white flex-shrink-0 shadow-lg shadow-orange-500/30"
                           initial={{ scale: 0, opacity: 0, rotate: -90 }}
                           animate={{ scale: 1, opacity: 1, rotate: 0 }}
                           exit={{ scale: 0, opacity: 0, rotate: 90 }}
