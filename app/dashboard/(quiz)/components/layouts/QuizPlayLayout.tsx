@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RandomQuiz } from "./RandomQuiz"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
+import MeteorShower from "@/components/ui/meteor-shower"
+import ScrollProgressBar from "@/components/ui/txt-gradient-scroll"
 
 import {
   Trophy,
@@ -630,106 +632,111 @@ export default function QuizPlayLayout({
   }
 
   return (
-    <div
-      className={`min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-gray-900 dark:to-indigo-950/30 transition-all duration-500 ${isFullscreen ? "overflow-hidden" : ""} relative`}
-    >
-      {/* Enhanced background patterns */}
-      {!isFullscreen && (
-        <div className="absolute inset-0 opacity-40 dark:opacity-20">
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-100/20 via-transparent to-cyan-100/20 dark:from-violet-900/10 dark:to-cyan-900/10" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.05),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.08),transparent_50%)] dark:bg-[radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.03),transparent_50%)]" />
-        </div>
-      )}
-
-      {/* Header */}
-      {!isFullscreen && HeaderComponent}
-
-      {/* Main Content */}
-      <main className="flex-1 flex max-w-screen-2xl mx-auto w-full p-3 sm:p-4 lg:p-6 relative z-10">
-        <div className="flex w-full gap-4 lg:gap-6">
-          {/* Question Area - Simplified with better focus */}
-          <div
-            ref={mainContentRef}
-            className={`flex-1 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-xl transition-all duration-500 ${
-              isFullscreen ? "p-6 lg:p-8" : "p-4 lg:p-6"
-            } overflow-auto relative`}
-            role="main"
-            aria-label="Quiz content"
-          >
-            {/* Simplified content wrapper */}
-            <div className="w-full">
-              {/* Progress Section - only show when not in fullscreen */}
-              {!isFullscreen && (
-                <div className="mb-6">
-                  <ProgressIndicator current={questionNumber} total={totalQuestions} percentage={progressPercentage} />
-                </div>
-              )}
-
-              {/* Main quiz content with consistent spacing */}
-              <div className="w-full">{children}</div>
+    <MeteorShower>
+      <div className="relative min-h-screen">
+        <ScrollProgressBar type="circle" position="top-right" />
+        <div
+          className={`min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-gray-900 dark:to-indigo-950/30 transition-all duration-500 ${isFullscreen ? "overflow-hidden" : ""} relative`}
+        >
+          {/* Enhanced background patterns */}
+          {!isFullscreen && (
+            <div className="absolute inset-0 opacity-40 dark:opacity-20">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-100/20 via-transparent to-cyan-100/20 dark:from-violet-900/10 dark:to-cyan-900/10" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.05),transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.08),transparent_50%)] dark:bg-[radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.03),transparent_50%)]" />
             </div>
-          </div>
+          )}
 
-          {/* Desktop Sidebar - Hidden in focus mode */}
-          {sidebarOpen && !isFullscreen && (
-            <aside
-              className={`hidden lg:block shrink-0 space-y-4 transition-all duration-500 ${
-                isTablet ? "w-72" : "w-80"
-              } animate-in slide-in-from-right-full`}
+          {/* Header */}
+          {!isFullscreen && HeaderComponent}
+
+          {/* Main Content */}
+          <main className="flex-1 flex max-w-screen-2xl mx-auto w-full p-3 sm:p-4 lg:p-6 relative z-10">
+            <div className="flex w-full gap-4 lg:gap-6">
+              {/* Question Area - Simplified with better focus */}
+              <div
+                ref={mainContentRef}
+                className={`flex-1 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-xl transition-all duration-500 ${
+                  isFullscreen ? "p-6 lg:p-8" : "p-4 lg:p-6"
+                } overflow-auto relative`}
+                role="main"
+                aria-label="Quiz content"
+              >
+                {/* Simplified content wrapper */}
+                <div className="w-full">
+                  {/* Progress Section - only show when not in fullscreen */}
+                  {!isFullscreen && (
+                    <div className="mb-6">
+                      <ProgressIndicator current={questionNumber} total={totalQuestions} percentage={progressPercentage} />
+                    </div>
+                  )}
+
+                  {/* Main quiz content with consistent spacing */}
+                  <div className="w-full">{children}</div>
+                </div>
+              </div>
+
+              {/* Desktop Sidebar - Hidden in focus mode */}
+              {sidebarOpen && !isFullscreen && (
+                <aside
+                  className={`hidden lg:block shrink-0 space-y-4 transition-all duration-500 ${
+                    isTablet ? "w-72" : "w-80"
+                  } animate-in slide-in-from-right-full`}
+                >
+                  {RandomQuizComponent}
+                </aside>
+              )}
+            </div>
+          </main>
+
+          {/* Mobile Sidebar Overlay */}
+          {sidebarOpen && isMobile && !isFullscreen && (
+            <div
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden transition-all duration-500 animate-in fade-in"
+              onClick={closeSidebar}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Quiz sidebar"
             >
-              {RandomQuizComponent}
-            </aside>
+              <div
+                className="absolute right-0 top-0 h-full w-5/6 max-w-sm bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-l border-white/30 dark:border-gray-700/30 p-6 shadow-2xl transform transition-all duration-500 animate-in slide-in-from-right-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="font-bold text-xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center gap-3">
+                    <div className={`p-2 bg-gradient-to-r ${config.primaryGradient} rounded-xl shadow-lg`}>
+                      <Lightbulb className="h-4 w-4 text-white" />
+                    </div>
+                    Quiz Hub
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={closeSidebar}
+                    className="h-10 w-10 p-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-xl border border-white/40 dark:border-gray-700/40 transition-all duration-300 hover:scale-105 group"
+                    aria-label="Close sidebar"
+                  >
+                    <X className="h-4 w-4 group-hover:text-red-500 transition-colors" />
+                  </Button>
+                </div>
+
+                <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                  {RandomQuizComponent}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Keyboard shortcuts hint */}
+          {!isMobile && (
+            <div className="fixed bottom-4 left-4 z-40 opacity-60 hover:opacity-100 transition-opacity duration-300">
+              <div className="bg-black/80 text-white text-xs px-3 py-2 rounded-lg backdrop-blur-xl">
+                Press Ctrl+S to toggle sidebar • Ctrl+F for fullscreen
+              </div>
+            </div>
           )}
         </div>
-      </main>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && isMobile && !isFullscreen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden transition-all duration-500 animate-in fade-in"
-          onClick={closeSidebar}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Quiz sidebar"
-        >
-          <div
-            className="absolute right-0 top-0 h-full w-5/6 max-w-sm bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-l border-white/30 dark:border-gray-700/30 p-6 shadow-2xl transform transition-all duration-500 animate-in slide-in-from-right-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-bold text-xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center gap-3">
-                <div className={`p-2 bg-gradient-to-r ${config.primaryGradient} rounded-xl shadow-lg`}>
-                  <Lightbulb className="h-4 w-4 text-white" />
-                </div>
-                Quiz Hub
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={closeSidebar}
-                className="h-10 w-10 p-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-xl border border-white/40 dark:border-gray-700/40 transition-all duration-300 hover:scale-105 group"
-                aria-label="Close sidebar"
-              >
-                <X className="h-4 w-4 group-hover:text-red-500 transition-colors" />
-              </Button>
-            </div>
-
-            <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-              {RandomQuizComponent}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Keyboard shortcuts hint */}
-      {!isMobile && (
-        <div className="fixed bottom-4 left-4 z-40 opacity-60 hover:opacity-100 transition-opacity duration-300">
-          <div className="bg-black/80 text-white text-xs px-3 py-2 rounded-lg backdrop-blur-xl">
-            Press Ctrl+S to toggle sidebar • Ctrl+F for fullscreen
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </MeteorShower>
   )
 }

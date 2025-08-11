@@ -102,7 +102,7 @@ export const categories = [
     description: "Teaching and learning",
     icon: BookOpen,
     color:
-      "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 data-[state=checked]:border-red-500 data-[state=checked]:text-red-500",
+      "bg-accent/10 hover:bg-accent/20 border-accent/20 data-[state=checked]:border-accent data-[state=checked]:text-accent",
   },
   {
     id: "photography",

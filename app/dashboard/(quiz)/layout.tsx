@@ -4,6 +4,7 @@ import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import { getAuthSession } from "@/lib/auth"
 import { GlobalLoader } from "@/components/ui/loader"
 import type { Metadata } from "next"
+import MeteorShower from "@/components/ui/meteor-shower"
 
 export const metadata: Metadata = {
   title: "Quiz | CourseAI",
@@ -37,15 +38,17 @@ export default async function QuizLayout({
       withTheme={true}
       withSubscriptionSync={true}
     >
-      <div className="min-h-screen bg-green-500 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
         {/* Quiz-specific background pattern */}
 
         {/* Main quiz content area */}
-        <div className="relative z-10 min-h-screen bg-red-500">
-          <GlobalLoader />
-          {children}
-          <Toaster />
-        </div>
+        <MeteorShower>
+          <div className="relative z-10 min-h-screen">
+            <GlobalLoader />
+            {children}
+            <Toaster />
+          </div>
+        </MeteorShower>
       </div>
     </ClientLayoutWrapper>
   )

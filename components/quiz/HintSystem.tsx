@@ -154,9 +154,9 @@ export function HintSystem({
 
   const getColor = (spoiler: HintLevel["spoilerLevel"], index: number) => {
     if (index >= 4) {
-      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/20 dark:text-red-300 dark:border-red-800"
+      return "bg-accent/10 text-accent-foreground border-accent/20 dark:bg-accent/20 dark:text-accent-foreground dark:border-accent/30"
     } else if (index >= 2) {
-      return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/20 dark:text-yellow-300 dark:border-yellow-800"
+      return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
     } else {
       return "bg-green-100 text-green-800 border-green-200 dark:bg-green-950/20 dark:text-green-300 dark:border-green-800"
     }
@@ -346,8 +346,8 @@ export function HintSystem({
                 className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700"
               >
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <AlertTriangle className="h-8 w-8 text-red-500" />
+                  <div className="w-16 h-16 bg-accent/10 dark:bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AlertTriangle className="h-8 w-8 text-accent" />
                   </div>
 
                   <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">Show Complete Answer?</h3>
@@ -357,8 +357,8 @@ export function HintSystem({
                     assessment score.
                   </p>
 
-                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-6">
-                    <div className="flex items-center justify-center gap-2 text-red-700 dark:text-red-300 font-medium">
+                  <div className="bg-accent/5 dark:bg-accent/10 border border-accent/20 dark:border-accent/30 rounded-lg p-3 mb-6">
+                    <div className="flex items-center justify-center gap-2 text-accent-foreground font-medium">
                       <span>Score Impact: -{hintToConfirm.penalty}%</span>
                     </div>
                   </div>

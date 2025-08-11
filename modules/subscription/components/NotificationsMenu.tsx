@@ -63,7 +63,7 @@ export default function NotificationsMenu({ refreshCredits }: NotificationsMenuP
               >
                 <Badge
                   variant="default"
-                  className="h-5 min-w-5 flex bg-red-500 items-center justify-center rounded-full px-1 text-[10px] font-medium"
+                  className="h-5 min-w-5 flex bg-accent items-center justify-center rounded-full px-1 text-[10px] font-medium"
                 >
                   {creditInfo.remainingCredits}
                 </Badge>
