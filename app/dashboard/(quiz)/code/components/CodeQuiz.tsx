@@ -15,6 +15,7 @@ import { Code2, Terminal, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
+
 interface CodeQuizProps {
   question: CodeQuestion
   onAnswer: (answer: string) => void
@@ -251,7 +252,7 @@ const CodeQuiz = ({
       >
         {/* Header - shadcn theme */}
         <motion.div className="text-center space-y-3">
-         
+
           {/* Question Text */}
           <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-relaxed max-w-2xl mx-auto">
             {question.text || question.question}
@@ -305,6 +306,7 @@ const CodeQuiz = ({
 
               {/* Code Content */}
               <div className="relative max-h-[400px] overflow-y-auto">
+
                 <SyntaxHighlighter
                   language={syntaxLanguage}
                   style={vscDarkPlus}
@@ -313,8 +315,8 @@ const CodeQuiz = ({
                     margin: 0,
                     padding: "1rem",
                     fontSize: "0.95rem",
-                    background: "hsl(var(--card))",
                     lineHeight: "1.5",
+                   
                   }}
                   codeTagProps={{
                     style: {
@@ -329,11 +331,12 @@ const CodeQuiz = ({
                     userSelect: "none",
                     fontSize: "0.8rem",
                   }}
-                  wrapLines={true}
-                  wrapLongLines={true}
+                  wrapLines
+                  wrapLongLines
                 >
                   {question.codeSnippet}
                 </SyntaxHighlighter>
+
               </div>
             </div>
           </motion.div>
