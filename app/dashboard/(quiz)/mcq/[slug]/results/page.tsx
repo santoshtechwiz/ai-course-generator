@@ -8,6 +8,7 @@ import QuizResultHandler from "../../../components/QuizResultHandler"
 
 import { use } from "react"
 import { McqQuizResult } from "../../components/McqQuizResult"
+import QuizResultLayout from "../../../components/layouts/QuizResultLayout"
 
 interface ResultsPageProps {
   params: Promise<{
@@ -27,7 +28,7 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
 
   if (!slug) {
     return (
-      <div className="container max-w-4xl py-6">
+      <QuizResultLayout title="Results" quizType="mcq">
         <Card>
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-4">Error</h2>
@@ -35,27 +36,25 @@ export default function McqResultsPage({ params }: ResultsPageProps) {
             <Button onClick={() => router.replace("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
-      </div>
+      </QuizResultLayout>
     )
   }
 
   return (
-    <div className="container max-w-4xl py-10">      
-    <QuizResultHandler
-      slug={slug}
-      quizType="mcq"
-    >
-      {({ result }) => (
-        result ? (
-          // Render the McqQuizResult directly instead of going through QuizResult
-          // to avoid potential duplicate rendering
-          <McqQuizResult
-            result={result}
-            onRetake={handleRetakeQuiz}
-          />
-        ) : null
-      )}
-    </QuizResultHandler>
-    </div>
+    <QuizResultLayout title="Results" quizType="mcq" slug={slug}>
+      <QuizResultHandler
+        slug={slug}
+        quizType="mcq"
+      >
+        {({ result }) => (
+          result ? (
+            <McqQuizResult
+              result={result}
+              onRetake={handleRetakeQuiz}
+            />
+          ) : null
+        )}
+      </QuizResultHandler>
+    </QuizResultLayout>
   )
 }
