@@ -141,6 +141,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
 
+  // Initialize video player hook BEFORE any usage of containerRef
+  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
+    videoId,
+    onEnded: () => {
+      // Mark free video as played if not authenticated
+      if (!isAuthenticated && !hasPlayedFreeVideo) {
+        localStorage.setItem("hasPlayedFreeVideo", "true")
+        setHasPlayedFreeVideo(true)
+      }
+    },
+    onProgress,
+    onTimeUpdate,
+    rememberPlaybackPosition,
+    rememberPlaybackSettings,
+    onBookmark,
+    autoPlay: autoPlay && canPlayVideo,
+    onVideoLoad,
+    onCertificateClick,
+  })
+
   // Observe visibility of the container to toggle mini controls
   const [isInView, setIsInView] = useState(true)
   useEffect(() => {
@@ -196,26 +216,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setCanPlayVideo(authenticationState.canPlayVideo)
     setShowAuthPrompt(authenticationState.showAuthPrompt)
   }, [authenticationState])
-
-  // Initialize video player hook with enhanced options
-  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
-    videoId,
-    onEnded: () => {
-      // Mark free video as played if not authenticated
-      if (!isAuthenticated && !hasPlayedFreeVideo) {
-        localStorage.setItem("hasPlayedFreeVideo", "true")
-        setHasPlayedFreeVideo(true)
-      }
-    },
-    onProgress,
-    onTimeUpdate,
-    rememberPlaybackPosition,
-    rememberPlaybackSettings,
-    onBookmark,
-    autoPlay: autoPlay && canPlayVideo,
-    onVideoLoad,
-    onCertificateClick,
-  })
 
   // Handle Picture-in-Picture
   const handlePictureInPicture = useCallback(async () => {
