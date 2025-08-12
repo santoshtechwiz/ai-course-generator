@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DifficultyBadge } from "@/components/quiz/DifficultyBadge"
-import { CheckCircle, Clock, Home, Maximize, Minimize, Menu, X } from "lucide-react"
+import { CheckCircle, Clock, Home, Maximize, Minimize, Menu, X, Target } from "lucide-react"
 import { QuizActions } from "../QuizActions"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { RandomQuiz } from "./RandomQuiz"
 
 export const dynamic = "force-dynamic"
 
@@ -75,14 +77,32 @@ export default function QuizPlayLayout({
   const isMobile = useMediaQuery("(max-width: 768px)")
   const pathname = usePathname()
   const [isLoaded, setIsLoaded] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isFocusMode, setIsFocusMode] = useState(false)
+  const [showEngage, setShowEngage] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
 
+  // Auto-increment timer when not provided
+  const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
-    const t = setTimeout(() => setIsLoaded(true), 150)
-    return () => clearTimeout(t)
+    setIsLoaded(true)
+    const interval = setInterval(() => {
+      setElapsed((e) => e + 1)
+    }, 1000)
+    return () => clearInterval(interval)
   }, [])
+
+  // Engagement modal: show once per slug
+  useEffect(() => {
+    if (!quizSlug) return
+    const key = `ai_quiz_engagement_${quizSlug}`
+    const seen = typeof window !== 'undefined' ? localStorage.getItem(key) : '1'
+    if (!seen) {
+      const t = setTimeout(() => setShowEngage(true), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [quizSlug])
 
   const title = quizData?.title || "Untitled Quiz"
   const difficulty = quizData?.difficulty || "medium"
@@ -92,11 +112,18 @@ export default function QuizPlayLayout({
     Math.min(quizData?.currentQuestionIndex !== undefined ? quizData.currentQuestionIndex + 1 : 1, totalQuestions),
   )
 
-  const toggleSidebar = useCallback(() => setSidebarOpen((s) => !s), [])
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((s) => {
+      const next = !s
+      setIsFocusMode(!next ? false : true)
+      return next
+    })
+  }, [])
   const toggleFullscreen = useCallback(() => setIsFullscreen((s) => !s), [])
   const goHome = useCallback(() => (window.location.href = "/dashboard/quizzes"), [])
 
   const header = useMemo(() => {
+    const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b">
         <div className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-2.5">
@@ -111,35 +138,42 @@ export default function QuizPlayLayout({
                     {questionNumber}/{totalQuestions}
                   </span>
                 )}
+                {isFocusMode && (
+                  <span className="inline-flex items-center gap-1 text-xs text-primary">
+                    <Target className="h-3 w-3" /> Focus mode
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {!isMobile && <Timer seconds={timeSpent} />}
+              {!isMobile && <Timer seconds={displaySeconds} />}
               <Button variant="ghost" size="icon" aria-label="Home" onClick={goHome}>
                 <Home className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="icon" aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"} onClick={toggleFullscreen}>
                 {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
               </Button>
-              <Button variant="outline" size="icon" onClick={toggleSidebar} aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}>
+              <Button variant="outline" size="icon" onClick={toggleSidebar} aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}>
                 {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </Button>
             </div>
           </div>
           {isMobile && (
             <div className="mt-2">
-              <Timer seconds={timeSpent} />
+              <Timer seconds={displaySeconds} />
             </div>
           )}
         </div>
       </header>
     )
-  }, [title, quizType, difficulty, isMobile, questionNumber, totalQuestions, timeSpent, isFullscreen, sidebarOpen])
+  }, [title, quizType, difficulty, isMobile, questionNumber, totalQuestions, timeSpent, elapsed, isFullscreen, sidebarOpen, isFocusMode])
 
   const progress = useMemo(() => Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))), [questionNumber, totalQuestions])
 
   if (!isLoaded) return null
+
+  const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
 
   return (
     <div className={`min-h-screen ${isFullscreen ? "overflow-hidden" : ""}`}>
@@ -147,8 +181,8 @@ export default function QuizPlayLayout({
       <main className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-3">
         <div className="flex gap-3 lg:gap-4">
           <section ref={mainRef} className={`flex-1 rounded-xl border bg-card shadow-sm ${isFullscreen ? "p-3 sm:p-4 lg:p-5" : "p-3 sm:p-4"}`}>
-            {/* Progress (compact) */}
-            {!isFullscreen && (
+            {/* Progress (compact) hidden in focus mode */}
+            {!isFullscreen && !isFocusMode && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium">Progress</span>
@@ -163,12 +197,15 @@ export default function QuizPlayLayout({
             <div className="w-full">{children}</div>
           </section>
 
-          {/* Sidebar: Random/Actions */}
-          {!isFullscreen && (
-            <aside className="hidden lg:block w-72 shrink-0">
-              <div className="rounded-xl border bg-card p-3">
+          {/* Sidebar: Quiz actions + Random Quiz */}
+          {sidebarOpen && !isFullscreen && (
+            <aside className="hidden lg:block w-80 shrink-0">
+              <div className="rounded-xl border bg-card p-3 space-y-3">
                 <Suspense fallback={<QuizSkeleton />}>
                   <QuizActions quizId={quizId || quizSlug} quizSlug={quizSlug} quizType={quizType} title={title} isPublic={isPublic} isFavorite={isFavorite} className="w-full" />
+                </Suspense>
+                <Suspense fallback={<QuizSkeleton />}>
+                  <RandomQuiz autoRotate={true} />
                 </Suspense>
               </div>
             </aside>
@@ -187,14 +224,39 @@ export default function QuizPlayLayout({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="overflow-y-auto max-h-[calc(100vh-5rem)]">
+            <div className="overflow-y-auto max-h-[calc(100vh-5rem)] space-y-3">
               <Suspense fallback={<QuizSkeleton />}>
                 <QuizActions quizId={quizId || quizSlug} quizSlug={quizSlug} quizType={quizType} title={title} isPublic={isPublic} isFavorite={isFavorite} className="w-full" />
+              </Suspense>
+              <Suspense fallback={<QuizSkeleton />}>
+                <RandomQuiz autoRotate={true} />
               </Suspense>
             </div>
           </div>
         </div>
       )}
+
+      {/* Engagement modal */}
+      <Dialog open={showEngage} onOpenChange={(open) => {
+        setShowEngage(open)
+        if (!open && quizSlug) localStorage.setItem(`ai_quiz_engagement_${quizSlug}`, "1")
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Did you know?</DialogTitle>
+            <DialogDescription>
+              This quiz was created with AI to help you learn faster and grow your skills.
+              Enjoy a tailored experience with smart feedback and insights.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowEngage(false)}>Got it</Button>
+            <Button asChild>
+              <a href="/dashboard/explore">Explore more AI quizzes</a>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
