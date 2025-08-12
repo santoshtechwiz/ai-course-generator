@@ -177,6 +177,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     currentChapterId: currentChapter?.id?.toString(),
   })
 
+  // Determine user subscription once (used for gating below)
+  const userSubscription = useMemo(() => {
+    if (!subscription) return null
+    return subscription.plan || null
+  }, [subscription])
+
   // Check if user can play this video: allowed if chapter is free or user is subscribed
   const canPlayVideo = useMemo(() => {
     const allowedByChapter = currentChapter?.isFree === true
@@ -536,12 +542,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       </Card>
     </div>
   )
-  // Simplify subscription status checking - determine it once
-  const userSubscription = useMemo(() => {
-    if (!subscription) return null
-    return subscription.plan || null
-  }, [subscription])
-
   // Determine access levels based on subscription
   const accessLevels: AccessLevels = useMemo(() => {
     return {
