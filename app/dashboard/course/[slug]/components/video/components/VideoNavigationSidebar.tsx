@@ -53,6 +53,32 @@ interface VideoNavigationSidebarProps {
   formatDuration?: (seconds: number) => string
 }
 
+const Equalizer = () => (
+  <div className="flex items-end gap-0.5">
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 6 }}
+      animate={{ height: [6, 14, 8, 12, 6] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+      style={{ display: "inline-block" }}
+    />
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 10 }}
+      animate={{ height: [10, 6, 12, 6, 10] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+      style={{ display: "inline-block" }}
+    />
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 8 }}
+      animate={{ height: [8, 12, 6, 14, 8] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+      style={{ display: "inline-block" }}
+    />
+  </div>
+)
+
 // Enhanced Chapter Item Component with better status indicators
 const ChapterItem = React.memo(
   ({
@@ -82,7 +108,7 @@ const ChapterItem = React.memo(
   }) => {
     const getStatusIcon = () => {
       if (isActive && isPlaying) {
-        return <Play className="h-4 w-4 text-primary animate-pulse" fill="currentColor" />
+        return <Equalizer />
       }
       if (isActive && !isPlaying) {
         return <Pause className="h-4 w-4 text-primary" fill="currentColor" />
