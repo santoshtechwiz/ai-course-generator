@@ -49,8 +49,15 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     try {
       const savedTab = localStorage.getItem("quiz_active_tab")
       const savedView = localStorage.getItem("quiz_view_mode") as "grid" | "list" | null
+      const savedSearch = localStorage.getItem("quiz_search")
+      const savedTypes = localStorage.getItem("quiz_types")
       if (savedTab) setActiveTab(savedTab)
       if (savedView === "grid" || savedView === "list") setViewMode(savedView)
+      if (typeof savedSearch === 'string') setSearch(savedSearch)
+      if (savedTypes) {
+        const arr = savedTypes.split(",").filter(Boolean) as QuizType[]
+        if (arr.length > 0) setSelectedTypes(arr)
+      }
     } catch {}
   }, [])
 
@@ -61,6 +68,12 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   useEffect(() => {
     try { localStorage.setItem("quiz_view_mode", viewMode) } catch {}
   }, [viewMode])
+  useEffect(() => {
+    try { localStorage.setItem("quiz_search", search) } catch {}
+  }, [search])
+  useEffect(() => {
+    try { localStorage.setItem("quiz_types", selectedTypes.join(",")) } catch {}
+  }, [selectedTypes])
 
   const debouncedSearch = useDebounce(search, 300)
   const { ref, inView } = useInView({ threshold: 0.1 })
