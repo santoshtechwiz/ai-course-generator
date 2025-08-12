@@ -226,17 +226,7 @@ export default function BlanksQuiz({
         exit="exit"
         className="w-full space-y-6"
       >
-        {/* Header */}
-        <motion.div className="text-center space-y-4">
-          {/* Quiz Type Badge */}
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
-              <FileText className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Fill in the Blank</span>
-            </div>
-          </div>
-        </motion.div>
-
+    
         {/* Question Content - Simplified */}
         <motion.div
           variants={itemVariants}

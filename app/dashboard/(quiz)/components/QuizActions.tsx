@@ -432,55 +432,86 @@ const QuizActions = memo(
     }
 
     // Default variant
+    // Heading color by quiz type
+    const headingColor = quizType === "mcq"
+      ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
+      : quizType === "openended"
+      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+      : quizType === "blanks"
+      ? "bg-gradient-to-r from-cyan-500 to-blue-400 text-white"
+      : quizType === "code"
+      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+      : "bg-primary text-white"
+
+    const headingText = quizType === "mcq"
+      ? "Multiple Choice Quiz Actions"
+      : quizType === "openended"
+      ? "Open-Ended Quiz Actions"
+      : quizType === "blanks"
+      ? "Fill in the Blanks Quiz Actions"
+      : quizType === "code"
+      ? "Code Quiz Actions"
+      : "Quiz Actions"
+
     return (
       <motion.div
-        className={cn("flex items-center gap-3", className)}
+        className={cn("flex flex-col gap-2", className)}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
-        {/* Status Badge */}
-        <Badge variant={isPublic ? "default" : "secondary"} className="text-xs">
-          {isPublic ? (
-            <>
-              <Globe className="w-3 h-3 mr-1" />
-              Public
-            </>
-          ) : (
-            <>
-              <Lock className="w-3 h-3 mr-1" />
-              Private
-            </>
-          )}
-        </Badge>
+        {/* Heading */}
+        <div className={cn(
+          "rounded-lg px-4 py-2 text-lg font-bold shadow-sm w-fit mb-1",
+          headingColor
+        )}>
+          {headingText}
+        </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1">
-          {primaryActions
-            .filter((action) => action.show)
-            .map((action) => (
-              <ActionButton
-                key={action.key}
-                icon={action.icon}
-                label={action.label}
-                onClick={action.onClick}
-                loading={action.loading}
-                className={action.className}
-              />
-            ))}
+        <div className="flex items-center gap-3">
+          {/* Status Badge */}
+          <Badge variant={isPublic ? "default" : "secondary"} className="text-xs">
+            {isPublic ? (
+              <>
+                <Globe className="w-3 h-3 mr-1" />
+                Public
+              </>
+            ) : (
+              <>
+                <Lock className="w-3 h-3 mr-1" />
+                Private
+              </>
+            )}
+          </Badge>
 
-          {secondaryActions
-            .filter((action) => action.show)
-            .map((action) => (
-              <ActionButton
-                key={action.key}
-                icon={action.icon}
-                label={action.label}
-                onClick={action.onClick}
-                loading={action.loading}
-                className={action.className}
-              />
-            ))}
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1">
+            {primaryActions
+              .filter((action) => action.show)
+              .map((action) => (
+                <ActionButton
+                  key={action.key}
+                  icon={action.icon}
+                  label={action.label}
+                  onClick={action.onClick}
+                  loading={action.loading}
+                  className={action.className}
+                />
+              ))}
+
+            {secondaryActions
+              .filter((action) => action.show)
+              .map((action) => (
+                <ActionButton
+                  key={action.key}
+                  icon={action.icon}
+                  label={action.label}
+                  onClick={action.onClick}
+                  loading={action.loading}
+                  className={action.className}
+                />
+              ))}
+          </div>
         </div>
 
         {/* Delete Confirmation Dialog */}
