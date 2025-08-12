@@ -12,7 +12,7 @@ import BookmarkManager from "./BookmarkManager"
 import KeyboardShortcutsModal from "../../KeyboardShortcutsModal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Play, Lock, User } from "lucide-react"
+import { Play, Lock, User, Pause, SkipForward } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import type { VideoPlayerProps } from "../types"
@@ -140,6 +140,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
+
+  // Observe visibility of the container to toggle mini controls
+  const [isInView, setIsInView] = useState(true)
+  useEffect(() => {
+    if (!containerRef.current || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        setIsInView(entry.isIntersecting)
+      },
+      { root: null, threshold: 0.3 },
+    )
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [containerRef])
 
   // Track mounting state to prevent "element not found" errors
   useEffect(() => {
@@ -798,6 +813,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             isPiPSupported={Boolean(getVideoElement() && (getVideoElement() as any).requestPictureInPicture && (document as any).pictureInPictureEnabled)}
             isPiPActive={state.isPictureInPicture}
           />
+        </div>
+      )}
+
+      {/* Floating mini controls when player is not fully in view */}
+      {canPlayVideo && !isInView && (
+        <div className="fixed bottom-4 right-4 z-40 bg-black/80 text-white rounded-full shadow-lg border border-white/10 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
+          <button
+            className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-white/10"
+            onClick={handlePlayClick}
+            aria-label={state.playing ? "Pause" : "Play"}
+          >
+            {state.playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+          {onNextVideo && (
+            <button
+              className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-white/10"
+              onClick={handleNextChapter}
+              aria-label="Next video"
+              title={nextVideoTitle ? `Next: ${nextVideoTitle}` : "Next video"}
+            >
+              <SkipForward className="h-4 w-4" />
+            </button>
+          )}
         </div>
       )}
 
