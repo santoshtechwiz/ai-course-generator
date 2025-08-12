@@ -677,6 +677,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             formatDuration={formatDuration}
             nextVideoId={nextChapter?.videoId}
             currentVideoId={currentVideoId || ''}
+            isPlaying={Boolean(currentVideoId)}
             courseStats={{
               completedCount: progress?.completedChapters?.length || 0,
               totalChapters: videoPlaylist.length,

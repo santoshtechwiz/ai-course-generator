@@ -138,20 +138,20 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
 
   // Main content that will be access controlled
   const summaryContent = (
-    <Card className="w-full shadow-md rounded-lg border border-purple-300 dark:border-purple-700">
+    <Card className="w-full shadow-md rounded-lg border">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-3xl font-semibold text-purple-800 dark:text-purple-200">
-            <BookOpen className="h-7 w-7 text-purple-500 dark:text-purple-300" />
+          <CardTitle className="flex items-center gap-2 text-2xl font-semibold">
+            <BookOpen className="h-6 w-6 text-primary" />
             <span>{name} Summary</span>
           </CardTitle>
-          <CardDescription className="text-purple-500 dark:text-purple-400">
+          <CardDescription>
             AI-generated summary of the chapter content
           </CardDescription>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-4 p-8 bg-purple-50 dark:bg-purple-900 rounded-b-lg">
+      <CardContent className="pt-4 p-6">
         {summary ? (
           <MarkdownRenderer content={summary} />
         ) : (
@@ -180,13 +180,13 @@ const CourseAISummary: React.FC<CourseSummaryProps> = ({
 
       {/* Show refresh button for regular users only if summary exists */}
       {summary && isAuthenticated && (
-        <CardFooter className="bg-purple-50 dark:bg-purple-900 rounded-b-lg p-8">
+        <CardFooter className="p-6">
           <Button
             variant="outline"
             size="sm"
             onClick={handleGenerateSummary}
             disabled={isRefetching}
-            className="ml-auto bg-transparent"
+            className="ml-auto"
           >
             {isRefetching ? (
               <>
