@@ -39,7 +39,29 @@ export default function MainNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [ready, setReady] = useState(false)
-    // Animation variants
+  
+  // Keyboard shortcuts (Cmd/Ctrl+K, /)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
+      const isTyping = tag === 'input' || tag === 'textarea' || (e.target as HTMLElement)?.isContentEditable
+      // Cmd/Ctrl+K opens search
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsSearchModalOpen(true)
+        return
+      }
+      // / quick search if not typing
+      if (!isTyping && e.key === '/') {
+        e.preventDefault()
+        setIsSearchModalOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // Animation variants
   const navbarVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: { 
@@ -150,7 +172,9 @@ export default function MainNavbar() {
       handleSearchClose()
     },
     [router, handleSearchClose, startLoading],
-  )  // Navigation items with active state and animations
+  )
+
+  // Navigation items with active state and animations
   const navigationItems = useMemo(
     () =>
       navItems.map((item) => {
@@ -196,12 +220,15 @@ export default function MainNavbar() {
                   transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
                 />
               )}
+              {/* Hover underline */}
+              <span className="pointer-events-none absolute left-4 right-4 bottom-1 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </AsyncNavLink>
           </motion.div>
         )
       }),
     [pathname, itemVariants],
   )
+
   // Mobile navigation items with animations and icons
   const mobileNavigationItems = useMemo(
     () => navItems.map((item) => {
@@ -272,6 +299,8 @@ export default function MainNavbar() {
     )
   }, [isAuthenticated, availableCredits, subscriptionPlan])
 
+  const isPremium = useMemo(() => subscriptionPlan && subscriptionPlan !== "FREE", [subscriptionPlan])
+
   // User avatar component
   const UserAvatar = useMemo(
     () => (
@@ -283,7 +312,13 @@ export default function MainNavbar() {
     [user?.avatarUrl, user?.name, userInitials],  )
   
   return (
-    <>      <header
+    <>
+      {/* Skip to content for accessibility */}
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:bg-background focus:border focus:rounded px-3 py-1 shadow">
+        Skip to content
+      </a>
+      
+      <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           "border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70",
@@ -308,7 +343,7 @@ export default function MainNavbar() {
             whileTap={{ scale: 0.98 }}
           >
             <AsyncNavLink href="/" aria-label="Return to homepage">
-            <Logo />
+              <Logo />
             </AsyncNavLink>
           </motion.div>
 
@@ -329,6 +364,15 @@ export default function MainNavbar() {
           >
             {/* Credits Display */}
             {CreditsDisplay}
+
+            {/* Upgrade CTA (non-premium) */}
+            {!isPremium && (
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden sm:block">
+                <Button asChild size="sm" className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow hover:shadow-md">
+                  <a href="/dashboard/subscription" aria-label="Upgrade plan">Upgrade</a>
+                </Button>
+              </motion.div>
+            )}
 
             {/* Search Button */}
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -366,7 +410,9 @@ export default function MainNavbar() {
               >
                 <NotificationsMenu />
               </motion.div>
-            )}            {/* User Menu or Sign In Button */}
+            )}
+
+            {/* User Menu */}
             <motion.div 
               className={cn("transition-all duration-300", ready ? "opacity-100 scale-100" : "opacity-0 scale-95")}
               whileHover={{ scale: 1.05 }}
@@ -484,6 +530,13 @@ export default function MainNavbar() {
                       className="p-4 border-t space-y-3"
                       variants={itemVariants}
                     >
+                      {/* Upgrade CTA (mobile) */}
+                      {!isPremium && (
+                        <Button asChild className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow hover:shadow-md" size="lg">
+                          <a href="/dashboard/subscription">Upgrade</a>
+                        </Button>
+                      )}
+
                       {/* Mobile Notifications */}
                       {isAuthenticated && (
                         <div className="flex items-center justify-center">
@@ -510,8 +563,17 @@ export default function MainNavbar() {
                   </motion.div>
                 </AnimatePresence>
               </SheetContent>
-            </Sheet>          </motion.div>
+            </Sheet>
+          </motion.div>
         </motion.div>
+        {/* Animated bottom border accent */}
+        <motion.div 
+          className="h-0.5 w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent" 
+          initial={{ scaleX: 0 }} 
+          animate={{ scaleX: scrolled ? 1 : 0 }} 
+          transition={{ duration: 0.5 }} 
+          style={{ transformOrigin: 'left' }}
+        />
       </header>
 
       {/* Search Modal */}
