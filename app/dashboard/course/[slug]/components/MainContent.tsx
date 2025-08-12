@@ -674,7 +674,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             progress={progress}
             isAuthenticated={!!user}
             completedChapters={completedChapters}
-            videoDurations={videoDurations}
             formatDuration={formatDuration}
             nextVideoId={nextChapter?.videoId}
             currentVideoId={currentVideoId || ''}
