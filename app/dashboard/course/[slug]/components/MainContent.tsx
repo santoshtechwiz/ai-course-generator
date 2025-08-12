@@ -16,6 +16,7 @@ import VideoNavigationSidebar from "./video/components/VideoNavigationSidebar"
 import { migratedStorage } from "@/lib/storage"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
+import VideoGenerationSection from "./VideoGenerationSection"
 
 import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
 import { VideoDebug } from "./video/components/VideoDebug"
