@@ -4,6 +4,8 @@ import { CheckCircle2, XCircle, Clock, Lightbulb, AlertCircle } from "lucide-rea
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 interface ProcessedAnswer {
   questionId: string
@@ -109,8 +111,26 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
 
           {/* Code Snippet (if applicable) */}
           {question.codeSnippet && (
-            <div className="mb-4">
-              <pre className="p-3 rounded-md bg-muted overflow-auto text-sm"><code>{question.codeSnippet}</code></pre>
+            <div className="mb-4 rounded-lg overflow-hidden border border-muted bg-muted/30">
+              <div className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground bg-muted">
+                <div>Code</div>
+                <div className="font-mono opacity-80">{question.language || 'javascript'}</div>
+              </div>
+              <div className="max-h-96 overflow-auto">
+                <SyntaxHighlighter
+                  language={(question.language || 'javascript').toLowerCase()}
+                  style={vscDarkPlus}
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: 0,
+                    background: 'transparent',
+                    fontSize: '0.85rem',
+                  }}
+                  wrapLongLines
+                >
+                  {question.codeSnippet}
+                </SyntaxHighlighter>
+              </div>
             </div>
           )}
 
