@@ -176,7 +176,7 @@ const ChapterItem = React.memo(
             )}
 
             {/* Chapter number and status icon */}
-            <div className="flex-shrink-0 flex items-center mr-3">
+            <div className="flex-shrink-0 flex items-center mr-3 min-w-[2rem]">
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
@@ -563,7 +563,7 @@ const SidebarContent = React.memo(function SidebarContent({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: unitIndex * 0.1 }}
-                  className="mb-1 last:mb-0"
+                  className="mb-2 last:mb-0"
                 >
                   <MemoizedUnitCard
                     unit={unit}
