@@ -590,6 +590,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                   {wideMode ? "Normal width" : "Wider video"}
                 </Button>
+                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
               </div>
 
               {/* Video player */}
@@ -669,7 +670,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         <span>{isVideoLoading ? "Loading..." : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
-                        {currentChapter.isFree && (<span className="px-2 py-1 rounded bg-gray-200 text-gray-800 text-xs">Free</span>)}
+                        {currentChapter.isFree ? (
+                          <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">Free</span>
+                        ) : (
+                          <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">Locked</span>
+                        )}
                         {!user && !hasPlayedFreeVideo && (
                           <span className="px-2 py-1 rounded border border-green-600 text-green-600 text-xs">Preview</span>
                         )}

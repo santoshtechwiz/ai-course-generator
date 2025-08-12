@@ -203,13 +203,39 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   })
 
   // Handle Picture-in-Picture
-  const handlePictureInPicture = useCallback(() => {
+  const handlePictureInPicture = useCallback(async () => {
+    const videoEl = getVideoElement()
+    // Prefer native PiP on the actual video element when available
+    if (videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled) {
+      try {
+        if ((document as any).pictureInPictureElement) {
+          await (document as any).exitPictureInPicture()
+        } else {
+          await (videoEl as any).requestPictureInPicture()
+        }
+        return
+      } catch (error) {
+        toast({
+          title: "PiP Error",
+          description: "Could not toggle Picture‑in‑Picture.",
+          variant: "destructive",
+        })
+        // fall through to handler below
+      }
+    }
+
+    // Fallback to handler provided by the hook/parent if available
     if (handlers.handlePictureInPictureToggle) {
       handlers.handlePictureInPictureToggle()
     } else if (onPictureInPictureToggle) {
       onPictureInPictureToggle()
+    } else {
+      toast({
+        title: "PiP not available",
+        description: "This video provider does not support Picture‑in‑Picture.",
+      })
     }
-  }, [handlers.handlePictureInPictureToggle, onPictureInPictureToggle])
+  }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast])
 
   // Handle Theater Mode (throttled)
   const handleTheaterMode = useCallback(() => {
@@ -769,7 +795,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             onPictureInPicture={handlePictureInPicture}
-            isPiPSupported={state.isPiPSupported}
+            isPiPSupported={Boolean(getVideoElement() && (getVideoElement() as any).requestPictureInPicture && (document as any).pictureInPictureEnabled)}
             isPiPActive={state.isPictureInPicture}
           />
         </div>
