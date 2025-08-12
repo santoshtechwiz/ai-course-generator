@@ -7,7 +7,7 @@ import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useInView } from "react-intersection-observer"
 import { ErrorBoundary } from "react-error-boundary"
-import { AlertCircle, RefreshCw } from "lucide-react"
+import { AlertCircle, RefreshCw, Crown, Rocket, Sparkles, Filter, Flame } from "lucide-react"
 import type { QuizType } from "@/app/types/quiz-types"
 import type { QuizListItem } from "@/app/actions/getQuizes"
 import { getQuizzes } from "@/app/actions/getQuizes"
@@ -16,6 +16,9 @@ import { QuizList } from "./QuizList"
 import { QuizzesSkeleton } from "./QuizzesSkeleton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { QuizCard } from "./QuizCard"
+import { cn } from "@/lib/utils"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -40,6 +43,24 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const [showPublicOnly, setShowPublicOnly] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  // Restore persisted preferences
+  useEffect(() => {
+    try {
+      const savedTab = localStorage.getItem("quiz_active_tab")
+      const savedView = localStorage.getItem("quiz_view_mode") as "grid" | "list" | null
+      if (savedTab) setActiveTab(savedTab)
+      if (savedView === "grid" || savedView === "list") setViewMode(savedView)
+    } catch {}
+  }, [])
+
+  // Persist preferences
+  useEffect(() => {
+    try { localStorage.setItem("quiz_active_tab", activeTab) } catch {}
+  }, [activeTab])
+  useEffect(() => {
+    try { localStorage.setItem("quiz_view_mode", viewMode) } catch {}
+  }, [viewMode])
 
   const debouncedSearch = useDebounce(search, 300)
   const { ref, inView } = useInView({ threshold: 0.1 })
@@ -121,7 +142,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   }, [])
 
   const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value)
+    setActiveTab(value || "all")
   }, [])
 
   const handleCreateQuiz = useCallback(() => {
@@ -184,6 +205,103 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     </Card>
   )
 
+  // Featured banner for engagement
+  const FeaturedBanner = () => (
+    <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5">
+      <CardContent className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="p-3 rounded-xl bg-primary text-primary-foreground shadow">
+            <Crown className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Unlock Premium Quizzes</h3>
+            <p className="text-sm text-muted-foreground">
+              Get access to advanced question banks, code challenges, and AI insights to accelerate learning.
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <Badge variant="secondary" className="bg-primary/10 text-primary">Popular</Badge>
+              <Badge variant="outline" className="gap-1"><Flame className="h-3 w-3" /> Trending now</Badge>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <a href="/dashboard/mcq" className="gap-2"><Sparkles className="h-4 w-4" /> Create Quiz</a>
+          </Button>
+          <Button asChild>
+            <a href="/dashboard/subscription" className="gap-2"><Rocket className="h-4 w-4" /> Upgrade</a>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  // Quick filter chips
+  const QuickFilters = () => (
+    <div className="flex items-center flex-wrap gap-2">
+      {[
+        { key: "all", label: "All" },
+        { key: "mcq", label: "MCQ" },
+        { key: "code", label: "Code" },
+        { key: "openended", label: "Open Ended" },
+        { key: "blanks", label: "Blanks" },
+        { key: "flashcard", label: "Flashcards" },
+      ].map(({ key, label }) => (
+        <Button
+          key={key}
+          variant={activeTab === key ? "default" : "secondary"}
+          size="sm"
+          className={cn("h-8 px-3", activeTab === key ? "" : "bg-muted")}
+          onClick={() => handleTabChange(key)}
+        >
+          {label}
+          {key !== "all" && quizCounts[key as keyof typeof quizCounts] !== undefined && (
+            <span className="ml-2 text-xs opacity-80">{quizCounts[key as keyof typeof quizCounts]}</span>
+          )}
+        </Button>
+      ))}
+    </div>
+  )
+
+  // Recommended row (horizontal scroll)
+  const recommended = useMemo(() => {
+    if (!quizzes?.length) return []
+    // Simple heuristic: more questions -> more engaging
+    return [...quizzes]
+      .sort((a, b) => (b.questionCount || 0) - (a.questionCount || 0))
+      .slice(0, 8)
+  }, [quizzes])
+
+  const RecommendedRow = () => {
+    if (!recommended.length) return null
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-semibold">Recommended for you</h3>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setActiveTab("all")}>View all</Button>
+        </div>
+        <div className="-mx-1 overflow-x-auto">
+          <div className="flex items-stretch gap-3 px-1">
+            {recommended.map((q) => (
+              <div key={q.id} className="min-w-[280px] max-w-[320px]">
+                <QuizCard
+                  title={q.title}
+                  description={q.title}
+                  questionCount={q.questionCount || 0}
+                  isPublic={q.isPublic}
+                  slug={q.slug}
+                  quizType={q.quizType as QuizType}
+                  estimatedTime={`${Math.max(Math.ceil((q.questionCount || 0) * 0.5), 1)} min`}
+                  completionRate={Math.min(Math.max(q.bestScore || 0, 0), 100)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
@@ -210,6 +328,22 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
               <QuizzesSkeleton />
             ) : (
               <>
+                <FeaturedBanner />
+
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <QuickFilters />
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleCreateQuiz} className="gap-2">
+                      <Sparkles className="h-4 w-4" /> Create Quiz
+                    </Button>
+                    <Button asChild size="sm">
+                      <a href="/dashboard/subscription" className="gap-2"><Crown className="h-4 w-4" /> Upgrade</a>
+                    </Button>
+                  </div>
+                </div>
+
+                <RecommendedRow />
+
                 <QuizList
                   quizzes={quizzes}
                   isLoading={false}
