@@ -117,4 +117,23 @@ shouldRetryOnError: (error: any) => {
 - **API route testing** for backend logic
 - **Subscription consistency checks** via custom scripts
 
+
+## Unified Storage System
+
+Use the unified storage API in `lib/storage` for all localStorage/sessionStorage, encryption, and persistence needs. Features include:
+- Unified API for localStorage/sessionStorage
+- Built-in AES encryption for sensitive data
+- Type-safe with generics
+- SSR compatible
+- Automatic migration from legacy storage
+- Robust error handling and cross-tab sync
+
+**Example usage:**
+```typescript
+import { storage } from '@/lib/storage'
+storage.setItem('user_preference', { theme: 'dark' })
+const preference = storage.getItem('user_preference')
+storage.removeItem('user_preference')
+```
+
 When working on this codebase, prioritize type safety, follow the established SWR patterns for data fetching, and maintain the domain-driven component organization.

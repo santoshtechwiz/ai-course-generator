@@ -585,50 +585,7 @@ export default function QuizPlayLayout({
   )
 
   if (!isLoaded) {
-    return (
-      <div
-        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${config.lightBg} dark:${config.darkBg} relative overflow-hidden`}
-      >
-        {/* Animated background elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full opacity-20 animate-pulse" />
-          <div
-            className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-r from-green-400 to-blue-500 rounded-full opacity-20 animate-pulse"
-            style={{ animationDelay: "1s" }}
-          />
-          <div
-            className="absolute bottom-32 left-1/3 w-40 h-40 bg-gradient-to-r from-pink-400 to-orange-500 rounded-full opacity-20 animate-pulse"
-            style={{ animationDelay: "2s" }}
-          />
-        </div>
-
-        <div className="text-center space-y-8 z-10">
-          <div className="relative">
-            <div
-              className={`animate-spin rounded-full h-20 w-20 border-4 border-transparent bg-gradient-to-r ${config.primaryGradient} mx-auto rounded-full shadow-2xl`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full animate-pulse" />
-            </div>
-            <div className="absolute inset-6 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center shadow-inner">
-              <Icon
-                className={`h-8 w-8 bg-gradient-to-r ${config.primaryGradient} bg-clip-text text-transparent animate-bounce`}
-              />
-            </div>
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Loading Your Quiz Experience
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Preparing an engaging learning session...</p>
-            <div className="flex justify-center gap-2 mt-6">
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" />
-              <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-              <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+   return null;
   }
 
   return (

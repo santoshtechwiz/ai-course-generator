@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useCallback, useMemo, memo } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -194,17 +193,22 @@ const ActionButton = memo(
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant={variant}
-            size={size}
-            onClick={onClick}
-            disabled={loading}
-            className={cn("h-9 px-3", className)}
-            {...props}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
-            <span className="sr-only">{label}</span>
-          </Button>
+            <Button
+              variant={variant}
+              size={size}
+              onClick={onClick}
+              disabled={loading}
+              className={cn("h-9 px-3 transition-all", className)}
+              {...props}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
+              <span className="sr-only">{label}</span>
+            </Button>
+          </motion.div>
         </TooltipTrigger>
         <TooltipContent>
           <p>{label}</p>
@@ -214,6 +218,46 @@ const ActionButton = memo(
   ),
 )
 ActionButton.displayName = "ActionButton"
+
+// Quiz type configuration
+const quizTypeConfig = {
+  mcq: {
+    label: "Multiple Choice",
+    color: "bg-blue-500",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+    ),
+  },
+  openended: {
+    label: "Open Ended",
+    color: "bg-purple-500",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
+  blanks: {
+    label: "Fill in Blanks",
+    color: "bg-cyan-500",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2v20M2 12h20" />
+      </svg>
+    ),
+  },
+  code: {
+    label: "Code",
+    color: "bg-orange-500",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" />
+      </svg>
+    ),
+  },
+}
 
 // Main Actions Component
 const QuizActions = memo(
@@ -257,6 +301,17 @@ const QuizActions = memo(
       onDelete,
     })
 
+    const config = quizTypeConfig[quizType as keyof typeof quizTypeConfig] || {
+      label: "Quiz",
+      color: "bg-primary",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+      ),
+    }
+
     const primaryActions = useMemo(
       () => [
         {
@@ -266,6 +321,7 @@ const QuizActions = memo(
           onClick: handleShare,
           loading: actionState.isSharing,
           show: true,
+          variant: "outline" as const,
         },
         {
           key: "favorite",
@@ -274,7 +330,8 @@ const QuizActions = memo(
           onClick: handleFavorite,
           loading: actionState.isFavoriting,
           show: true,
-          className: isFavorite ? "text-red-500 hover:text-red-600" : "",
+          className: isFavorite ? "text-destructive hover:text-destructive/80" : "",
+          variant: "outline" as const,
         },
       ],
       [handleShare, handleFavorite, actionState.isSharing, actionState.isFavoriting, isFavorite],
@@ -289,6 +346,7 @@ const QuizActions = memo(
           onClick: handleVisibilityToggle,
           loading: actionState.isTogglingVisibility,
           show: canEdit,
+          variant: "ghost" as const,
         },
         {
           key: "pdf",
@@ -297,6 +355,7 @@ const QuizActions = memo(
           onClick: handlePdfGeneration,
           loading: actionState.isGeneratingPdf,
           show: showPdfGeneration,
+          variant: "ghost" as const,
         },
         {
           key: "delete",
@@ -305,7 +364,8 @@ const QuizActions = memo(
           onClick: () => setShowDeleteDialog(true),
           loading: actionState.isDeleting,
           show: canDelete,
-          className: "text-red-500 hover:text-red-600",
+          className: "text-destructive hover:text-destructive/80",
+          variant: "ghost" as const,
         },
       ],
       [
@@ -325,13 +385,20 @@ const QuizActions = memo(
     if (variant === "minimal") {
       return (
         <div className={cn("flex items-center gap-1", className)}>
-          <ActionButton icon={Share2} label="Share" onClick={handleShare} loading={actionState.isSharing} />
+          <ActionButton 
+            icon={Share2} 
+            label="Share" 
+            onClick={handleShare} 
+            loading={actionState.isSharing} 
+            variant="ghost"
+          />
           <ActionButton
             icon={Heart}
             label={isFavorite ? "Unfavorite" : "Favorite"}
             onClick={handleFavorite}
             loading={actionState.isFavoriting}
-            className={isFavorite ? "text-red-500" : ""}
+            className={isFavorite ? "text-destructive" : ""}
+            variant="ghost"
           />
         </div>
       )
@@ -366,15 +433,18 @@ const QuizActions = memo(
                 onClick={action.onClick}
                 loading={action.loading}
                 className={action.className}
+                variant={action.variant}
               />
             ))}
 
           {/* More Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 px-2">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="ghost" size="sm" className="h-9 px-2">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </motion.div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {secondaryActions
@@ -413,7 +483,7 @@ const QuizActions = memo(
                 <AlertDialogAction
                   onClick={handleDelete}
                   disabled={actionState.isDeleting}
-                  className="bg-red-500 hover:bg-red-600"
+                  className="bg-destructive hover:bg-destructive/80"
                 >
                   {actionState.isDeleting ? (
                     <>
@@ -432,44 +502,22 @@ const QuizActions = memo(
     }
 
     // Default variant
-    // Heading color by quiz type
-    const headingColor = quizType === "mcq"
-      ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
-      : quizType === "openended"
-      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-      : quizType === "blanks"
-      ? "bg-gradient-to-r from-cyan-500 to-blue-400 text-white"
-      : quizType === "code"
-      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
-      : "bg-primary text-white"
-
-    const headingText = quizType === "mcq"
-      ? "Multiple Choice Quiz Actions"
-      : quizType === "openended"
-      ? "Open-Ended Quiz Actions"
-      : quizType === "blanks"
-      ? "Fill in the Blanks Quiz Actions"
-      : quizType === "code"
-      ? "Code Quiz Actions"
-      : "Quiz Actions"
-
     return (
       <motion.div
-        className={cn("flex flex-col gap-2", className)}
+        className={cn("flex flex-col gap-4 bg-card rounded-xl border p-4 shadow-sm", className)}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.3 }}
       >
-        {/* Heading */}
-        <div className={cn(
-          "rounded-lg px-4 py-2 text-lg font-bold shadow-sm w-fit mb-1",
-          headingColor
-        )}>
-          {headingText}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Status Badge */}
+        {/* Quiz Type Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className={cn("p-2 rounded-lg text-white", config.color)}>
+              {config.icon}
+            </div>
+            <h3 className="font-semibold text-lg">{config.label} Actions</h3>
+          </div>
+          
           <Badge variant={isPublic ? "default" : "secondary"} className="text-xs">
             {isPublic ? (
               <>
@@ -483,35 +531,37 @@ const QuizActions = memo(
               </>
             )}
           </Badge>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-1">
-            {primaryActions
-              .filter((action) => action.show)
-              .map((action) => (
-                <ActionButton
-                  key={action.key}
-                  icon={action.icon}
-                  label={action.label}
-                  onClick={action.onClick}
-                  loading={action.loading}
-                  className={action.className}
-                />
-              ))}
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {primaryActions
+            .filter((action) => action.show)
+            .map((action) => (
+              <ActionButton
+                key={action.key}
+                icon={action.icon}
+                label={action.label}
+                onClick={action.onClick}
+                loading={action.loading}
+                className={action.className}
+                variant={action.variant}
+              />
+            ))}
 
-            {secondaryActions
-              .filter((action) => action.show)
-              .map((action) => (
-                <ActionButton
-                  key={action.key}
-                  icon={action.icon}
-                  label={action.label}
-                  onClick={action.onClick}
-                  loading={action.loading}
-                  className={action.className}
-                />
-              ))}
-          </div>
+          {secondaryActions
+            .filter((action) => action.show)
+            .map((action) => (
+              <ActionButton
+                key={action.key}
+                icon={action.icon}
+                label={action.label}
+                onClick={action.onClick}
+                loading={action.loading}
+                className={action.className}
+                variant={action.variant}
+              />
+            ))}
         </div>
 
         {/* Delete Confirmation Dialog */}
@@ -528,7 +578,7 @@ const QuizActions = memo(
               <AlertDialogAction
                 onClick={handleDelete}
                 disabled={actionState.isDeleting}
-                className="bg-red-500 hover:bg-red-600"
+                className="bg-destructive hover:bg-destructive/80"
               >
                 {actionState.isDeleting ? (
                   <>

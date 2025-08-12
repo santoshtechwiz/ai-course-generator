@@ -165,13 +165,7 @@ const McqQuiz = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              {/* Quiz Type Badge */}
-              <div className="flex justify-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
-                  <Target className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">Multiple Choice</span>
-                </div>
-              </div>
+            
 
               {/* Question Text */}
               <h2 className="text-xl sm:text-2xl font-semibold text-foreground leading-relaxed max-w-3xl mx-auto">

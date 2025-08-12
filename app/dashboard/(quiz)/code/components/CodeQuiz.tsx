@@ -247,56 +247,51 @@ const CodeQuiz = ({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="w-full space-y-6"
+        className="w-full space-y-5"
       >
-        {/* Header - Enhanced with orange theme */}
-        <motion.div className="text-center space-y-4">
-          {/* Quiz Type Badge */}
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-950/40 dark:to-amber-900/30 border-2 border-orange-200 dark:border-orange-800 rounded-xl shadow-lg shadow-orange-100/50 dark:shadow-orange-900/20">
-              <Code2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              <span className="text-sm font-bold text-orange-700 dark:text-orange-300">Code Challenge</span>
-            </div>
-          </div>
-
+        {/* Header - shadcn theme */}
+        <motion.div className="text-center space-y-3">
+         
           {/* Question Text */}
-          <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-800 to-amber-700 dark:from-orange-200 dark:to-amber-300 bg-clip-text text-transparent leading-relaxed max-w-3xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-relaxed max-w-2xl mx-auto">
             {question.text || question.question}
           </h2>
         </motion.div>
 
-        {/* Code Display Section - Improved */}
+        {/* Code Display Section - shadcn theme */}
         {question.codeSnippet && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="w-full max-w-4xl mx-auto"
+            className="w-full max-w-2xl mx-auto"
           >
-            <div className="overflow-hidden rounded-xl border-2 border-orange-200 dark:border-orange-800 shadow-lg shadow-orange-100/50 dark:shadow-orange-900/20 bg-gradient-to-br from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-950/30">
-              {/* Code Header - Enhanced */}
-              <div className="bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-950/60 dark:to-amber-900/40 px-4 py-3 flex items-center justify-between border-b-2 border-orange-200 dark:border-orange-800">
+            <div className="overflow-hidden rounded-xl border border-border shadow-sm bg-card">
+              {/* Code Header - shadcn theme */}
+              <div className="bg-muted px-4 py-3 flex items-center justify-between border-b border-border">
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+                    <div className="w-3 h-3 rounded-full bg-destructive/80 shadow-sm"></div>
+                    <div className="w-3 h-3 rounded-full bg-warning/80 shadow-sm"></div>
+                    <div className="w-3 h-3 rounded-full bg-success/80 shadow-sm"></div>
                   </div>
-                  <div className="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/50 dark:to-amber-900/50 px-3 py-1.5 rounded-lg border-2 border-orange-300 dark:border-orange-700 shadow-sm">
-                    <Terminal className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <span className="text-sm font-bold text-orange-700 dark:text-orange-300">{language}</span>
+                  <div className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-lg border border-border shadow-sm">
+                    <Terminal className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-bold text-muted-foreground">{language || "Code"}</span>
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleCopyCode}
-                  className="h-9 px-4 bg-gradient-to-r from-orange-200 to-amber-200 dark:from-orange-800/50 dark:to-amber-800/50 hover:from-orange-300 hover:to-amber-300 dark:hover:from-orange-700/60 dark:hover:to-amber-700/60 border-2 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 font-semibold rounded-lg shadow-sm transition-all duration-300"
+                  className="h-9 px-4 border border-border text-primary font-semibold rounded-lg shadow-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                   title="Copy code"
+                  aria-label="Copy code to clipboard"
+                  disabled={isSubmitting}
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 mr-2" />
+                      <Check className="w-4 h-4 mr-2 animate-pulse text-success" />
                       Copied!
                     </>
                   ) : (
@@ -317,13 +312,13 @@ const CodeQuiz = ({
                   customStyle={{
                     margin: 0,
                     padding: "1rem",
-                    fontSize: "0.875rem",
-                    background: "hsl(var(--background))",
+                    fontSize: "0.95rem",
+                    background: "hsl(var(--card))",
                     lineHeight: "1.5",
                   }}
                   codeTagProps={{
                     style: {
-                      fontSize: "0.875rem",
+                      fontSize: "0.95rem",
                       lineHeight: "1.5",
                     },
                   }}
@@ -332,7 +327,7 @@ const CodeQuiz = ({
                     paddingRight: "1rem",
                     minWidth: "2.5em",
                     userSelect: "none",
-                    fontSize: "0.75rem",
+                    fontSize: "0.8rem",
                   }}
                   wrapLines={true}
                   wrapLongLines={true}
@@ -344,7 +339,7 @@ const CodeQuiz = ({
           </motion.div>
         )}
 
-        {/* Options Section */}
+        {/* Options Section - unified width, accessibility */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -358,6 +353,7 @@ const CodeQuiz = ({
             disabled={isSubmitting || isAnswering}
             correctAnswer={question.correctAnswer}
             showCorrectAnswer={false}
+            aria-label="Quiz options"
           />
         </motion.div>
 

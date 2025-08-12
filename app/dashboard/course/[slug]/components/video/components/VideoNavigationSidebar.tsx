@@ -43,9 +43,6 @@ interface VideoNavigationSidebarProps {
   progress: CourseProgress | null
   completedChapters: (number | string)[]
   nextVideoId?: string
-  prevVideoId?: string
-  videoDurations?: Record<string, number>
-  formatDuration?: (seconds: number) => string
   courseStats?: {
     completedCount: number
     totalChapters: number
@@ -53,16 +50,6 @@ interface VideoNavigationSidebarProps {
   }
   isPlaying?: boolean
   onTogglePlay?: () => void
-}
-
-// Enhanced format duration function
-function formatDuration(seconds: number): string {
-  if (!seconds || isNaN(seconds)) return "--:--"
-
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
 }
 
 // Enhanced Chapter Item Component with better status indicators
@@ -451,6 +438,225 @@ function DesktopSidebar({
   )
 }
 
+// Memoize ChapterItem and UnitCard with stable keys and props
+const MemoizedChapterItem = React.memo(ChapterItem)
+const MemoizedUnitCard = React.memo(UnitCard)
+
+// SidebarContent with improved UX and performance
+const SidebarContent = React.memo(function SidebarContent({
+  filteredUnits,
+  expandedUnits,
+  toggleUnit,
+  completedChapters,
+  currentChapter,
+  nextVideoId,
+  isAuthenticated,
+  handleChapterClick,
+  totalChapters,
+  isPlaying,
+  searchQuery,
+  handleSearchChange,
+  courseId,
+  courseProgress,
+  computedStats,
+  loading,
+  scrollToActive,
+}: {
+  filteredUnits: any[]
+  expandedUnits: Record<string, boolean>
+  toggleUnit: (unitId: string) => void
+  completedChapters: (number | string)[]
+  currentChapter?: FullChapterType | null
+  nextVideoId?: string
+  isAuthenticated: boolean
+  handleChapterClick: (chapter: FullChapterType) => void
+  totalChapters: number
+  isPlaying?: boolean
+  searchQuery: string
+  handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  courseId: string | number
+  courseProgress: number
+  computedStats: {
+    completedCount: number
+    totalChapters: number
+    progressPercentage: number
+  }
+  loading?: boolean
+  scrollToActive?: boolean
+}) {
+  // Ref for auto-scroll to active chapter
+  const activeChapterRef = React.useRef<HTMLLIElement>(null)
+
+  React.useEffect(() => {
+    if (scrollToActive && activeChapterRef.current) {
+      activeChapterRef.current.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [currentChapter?.id, scrollToActive])
+
+  // Skeleton loading for sidebar
+  if (loading) {
+    return (
+      <div className="p-4">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded" />
+          <div className="h-6 bg-muted rounded w-2/3" />
+          <div className="h-6 bg-muted rounded w-1/2" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <React.Fragment>
+      {/* Sticky Search Bar */}
+      <div className="sticky top-0 z-10 p-4 border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search chapters..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="pl-9 h-9 bg-background/50 focus:ring-2 focus:ring-primary"
+            aria-label="Search chapters"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSearchChange({ target: { value: "" } } as any)}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+              tabIndex={0}
+              aria-label="Clear search"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Course Content Navigation */}
+      <ScrollArea className="flex-1">
+        <nav aria-label="Course navigation" className="pb-4">
+          {filteredUnits?.length > 0 ? (
+            filteredUnits.map((unit, unitIndex) => {
+              const unitCompletedChapters = unit.chapters.filter((chapter) =>
+                completedChapters?.includes(Number(chapter.id)),
+              ).length
+
+              // Precompute global chapter index for all chapters in this unit
+              const prevChaptersCount = React.useMemo(
+                () =>
+                  filteredUnits
+                    .slice(0, unitIndex)
+                    .reduce((acc, u) => acc + u.chapters.length, 0),
+                [filteredUnits, unitIndex]
+              )
+
+              return (
+                <motion.div
+                  key={unit.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: unitIndex * 0.1 }}
+                  className="mb-1 last:mb-0"
+                >
+                  <MemoizedUnitCard
+                    unit={unit}
+                    isExpanded={expandedUnits[unit.id] ?? true}
+                    onToggle={() => toggleUnit(unit.id)}
+                    completedChapters={unitCompletedChapters}
+                    totalChapters={unit.chapters.length}
+                  >
+                    <ul role="list" className="bg-background/30">
+                      {unit.chapters.map((chapter, chapterIndex) => {
+                        const globalChapterIndex = prevChaptersCount + chapterIndex
+                        const isActive = currentChapter?.id === chapter.id
+                        const isCompleted = completedChapters?.includes(Number(chapter.id)) || false
+                        const isLocked = !isAuthenticated && !chapter.isFree
+                        const isNextVideo = chapter.videoId === nextVideoId
+                        const isPrevVideo = chapter.videoId === currentChapter?.videoId
+
+                        const chapterWithDescriptionFix = {
+                          ...chapter,
+                          description: chapter.description === null ? undefined : chapter.description,
+                        }
+
+                        return (
+                          <li
+                            key={chapter.id}
+                            ref={isActive ? activeChapterRef : undefined}
+                            tabIndex={isLocked ? -1 : 0}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            <MemoizedChapterItem
+                              chapter={chapterWithDescriptionFix}
+                              isActive={isActive}
+                              isCompleted={isCompleted}
+                              isLocked={isLocked}
+                              isNextVideo={isNextVideo}
+                              isPrevVideo={isPrevVideo}
+                              isPlaying={isActive ? isPlaying : false}
+                              onChapterClick={handleChapterClick}
+                              chapterIndex={globalChapterIndex}
+                              totalChapters={totalChapters}
+                            />
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </MemoizedUnitCard>
+                </motion.div>
+              )
+            })
+          ) : (
+            <div className="p-5 text-center text-muted-foreground">
+              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No chapters available.</p>
+            </div>
+          )}
+
+          {searchQuery && filteredUnits?.length === 0 && (
+            <div className="p-5 text-center text-muted-foreground">
+              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No chapters found for "{searchQuery}"</p>
+              <Button variant="ghost" size="sm" onClick={() => handleSearchChange({ target: { value: "" } } as any)} className="mt-2">
+                Clear search
+              </Button>
+            </div>
+          )}
+        </nav>
+      </ScrollArea>
+
+      {/* Enhanced Footer */}
+      <div className="border-t border-border/50 p-4 bg-muted/30 text-xs text-muted-foreground">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-between cursor-help">
+                <span className="flex items-center gap-2">
+                  <BookOpen className="h-3 w-3" />
+                  Course ID: {courseId}
+                </span>
+                {courseProgress === 100 && (
+                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Completed
+                  </Badge>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Your progress is saved automatically</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </React.Fragment>
+  )
+})
+
+SidebarContent.displayName = "SidebarContent"
+
 export default function VideoNavigationSidebar({
   course,
   currentChapter,
@@ -461,21 +667,21 @@ export default function VideoNavigationSidebar({
   progress,
   completedChapters = [],
   nextVideoId,
-  videoDurations = {},
-  formatDuration: formatDurationProp,
   courseStats,
   isPlaying = false,
   onTogglePlay,
 }: VideoNavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(false)
 
-  // Initialize all units as expanded by default
+  // Collapse all units on mobile by default, expand on desktop
   React.useEffect(() => {
     if (course?.courseUnits && Object.keys(expandedUnits).length === 0) {
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 1024
       const initialExpanded = course.courseUnits.reduce(
         (acc, unit) => {
-          acc[unit.id] = true
+          acc[unit.id] = !isMobile // collapsed on mobile, expanded on desktop
           return acc
         },
         {} as Record<string, boolean>,
@@ -484,37 +690,10 @@ export default function VideoNavigationSidebar({
     }
   }, [course?.courseUnits, expandedUnits])
 
-  const formatDurationFn = useCallback(
-    (seconds: number): string => {
-      if (formatDurationProp) return formatDurationProp(seconds)
-      return formatDuration(seconds)
-    },
-    [formatDurationProp],
-  )
-
-  const effectiveProgress = useMemo(() => {
-    if (!course) {
-      return {
-        id: 0,
-        userId: "",
-        courseId: 0,
-        progress: 0,
-        completedChapters: [],
-        currentChapterId: currentChapter?.id || undefined,
-      }
-    }
-
-    return (
-      progress || {
-        id: 0,
-        userId: "",
-        courseId: typeof course.id === "string" ? Number.parseInt(course.id) : course.id || 0,
-        progress: 0,
-        completedChapters: [],
-        currentChapterId: currentChapter?.id || undefined,
-      }
-    )
-  }, [progress, course, currentChapter?.id])
+  // Optionally, show loading skeleton while course is loading
+  React.useEffect(() => {
+    setLoading(!course)
+  }, [course])
 
   const totalChapters = useMemo(() => {
     if (!course?.courseUnits) return 0
@@ -573,139 +752,8 @@ export default function VideoNavigationSidebar({
     }))
   }, [])
 
-  // Enhanced Sidebar Content
-  const SidebarContent = React.memo(() => (
-    <>
-      {/* Search functionality */}
-      <div className="p-4 border-b border-border/50 bg-background/50">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search chapters..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="pl-9 h-9 bg-background/50"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Course Content Navigation */}
-      <ScrollArea className="flex-1">
-        <nav aria-label="Course navigation" className="pb-4">
-          {filteredUnits?.map((unit, unitIndex) => {
-            const unitCompletedChapters = unit.chapters.filter((chapter) =>
-              completedChapters?.includes(Number(chapter.id)),
-            ).length
-
-            return (
-              <motion.div
-                key={unit.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: unitIndex * 0.1 }}
-                className="mb-1 last:mb-0"
-              >
-                <UnitCard
-                  unit={unit}
-                  isExpanded={expandedUnits[unit.id] ?? true}
-                  onToggle={() => toggleUnit(unit.id)}
-                  completedChapters={unitCompletedChapters}
-                  totalChapters={unit.chapters.length}
-                >
-                  <ul role="list" className="bg-background/30">
-                    {unit.chapters.map((chapter, chapterIndex) => {
-                      const globalChapterIndex =
-                        course?.courseUnits?.slice(0, unitIndex).reduce((acc, u) => acc + u.chapters.length, 0) +
-                        chapterIndex
-
-                      const isActive = currentChapter?.id === chapter.id
-                      const isCompleted = completedChapters?.includes(Number(chapter.id)) || false
-                      const isLocked = !isAuthenticated && !chapter.isFree
-                      const isNextVideo = chapter.videoId === nextVideoId
-                      const isPrevVideo = chapter.videoId === currentChapter?.videoId
-
-                      const chapterWithDescriptionFix = {
-                        ...chapter,
-                        description: chapter.description === null ? undefined : chapter.description,
-                      }
-
-                      return (
-                        <ChapterItem
-                          key={chapter.id}
-                          chapter={chapterWithDescriptionFix}
-                          isActive={isActive}
-                          isCompleted={isCompleted}
-                          isLocked={isLocked}
-                          isNextVideo={isNextVideo}
-                          isPrevVideo={isPrevVideo}
-                          isPlaying={isActive ? isPlaying : false}
-                          onChapterClick={handleChapterClick}
-                          chapterIndex={globalChapterIndex || chapterIndex}
-                          totalChapters={totalChapters}
-                        />
-                      )
-                    })}
-                  </ul>
-                </UnitCard>
-              </motion.div>
-            )
-          }) || (
-            <div className="p-5 text-center text-muted-foreground">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No chapters available.</p>
-            </div>
-          )}
-
-          {searchQuery && filteredUnits?.length === 0 && (
-            <div className="p-5 text-center text-muted-foreground">
-              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No chapters found for "{searchQuery}"</p>
-              <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")} className="mt-2">
-                Clear search
-              </Button>
-            </div>
-          )}
-        </nav>
-      </ScrollArea>
-
-      {/* Enhanced Footer */}
-      <div className="border-t border-border/50 p-4 bg-muted/30 text-xs text-muted-foreground">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center justify-between cursor-help">
-                <span className="flex items-center gap-2">
-                  <BookOpen className="h-3 w-3" />
-                  Course ID: {courseId}
-                </span>
-                {courseProgress === 100 && (
-                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Completed
-                  </Badge>
-                )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Your progress is saved automatically</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-    </>
-  ))
-
-  SidebarContent.displayName = "SidebarContent"
+  // Auto-scroll to active chapter on navigation
+  const scrollToActive = true
 
   return (
     <>
@@ -718,7 +766,25 @@ export default function VideoNavigationSidebar({
         isPlaying={isPlaying}
         onTogglePlay={onTogglePlay}
       >
-        <SidebarContent />
+        <SidebarContent
+          filteredUnits={filteredUnits}
+          expandedUnits={expandedUnits}
+          toggleUnit={toggleUnit}
+          completedChapters={completedChapters}
+          currentChapter={currentChapter}
+          nextVideoId={nextVideoId}
+          isAuthenticated={isAuthenticated}
+          handleChapterClick={handleChapterClick}
+          totalChapters={totalChapters}
+          isPlaying={isPlaying}
+          searchQuery={searchQuery}
+          handleSearchChange={handleSearchChange}
+          courseId={courseId}
+          courseProgress={courseProgress}
+          computedStats={computedStats}
+          loading={loading}
+          scrollToActive={scrollToActive}
+        />
       </MobileSidebar>
 
       {/* Desktop Sidebar */}
@@ -730,7 +796,25 @@ export default function VideoNavigationSidebar({
         isPlaying={isPlaying}
         onTogglePlay={onTogglePlay}
       >
-        <SidebarContent />
+        <SidebarContent
+          filteredUnits={filteredUnits}
+          expandedUnits={expandedUnits}
+          toggleUnit={toggleUnit}
+          completedChapters={completedChapters}
+          currentChapter={currentChapter}
+          nextVideoId={nextVideoId}
+          isAuthenticated={isAuthenticated}
+          handleChapterClick={handleChapterClick}
+          totalChapters={totalChapters}
+          isPlaying={isPlaying}
+          searchQuery={searchQuery}
+          handleSearchChange={handleSearchChange}
+          courseId={courseId}
+          courseProgress={courseProgress}
+          computedStats={computedStats}
+          loading={loading}
+          scrollToActive={scrollToActive}
+        />
       </DesktopSidebar>
     </>
   )

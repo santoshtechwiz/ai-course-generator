@@ -184,6 +184,8 @@ export interface Quiz {
   id: string;
   title: string;
   description?: string;
+  isPublic?: boolean;
+  createdAt?:string;
   questions: Array<{
     id: string;
     question: string;

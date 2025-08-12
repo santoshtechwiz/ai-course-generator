@@ -70,20 +70,20 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                 <motion.div
                   className={cn(
                     "group relative overflow-hidden rounded-xl border-2 transition-all duration-300 cursor-pointer",
-                    "hover:shadow-lg hover:shadow-orange-100/50 dark:hover:shadow-orange-900/20",
+                    "hover:shadow-lg hover:shadow-primary/10 dark:hover:shadow-primary/20",
                     isSelected
-                      ? "border-orange-400 dark:border-orange-600 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950/50 dark:via-amber-900/30 dark:to-orange-900/40 shadow-lg shadow-orange-200/50 dark:shadow-orange-800/30"
-                      : "border-orange-200 dark:border-orange-800 bg-gradient-to-r from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-950/20 hover:border-orange-300 dark:hover:border-orange-700 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-amber-50/50 dark:hover:from-orange-950/30 dark:hover:to-amber-900/20",
+                      ? "border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-primary/20 dark:from-primary/20 dark:via-primary/10 dark:to-primary/20 shadow-lg shadow-primary/10 dark:shadow-primary/20"
+                      : "border-border bg-gradient-to-r from-background to-muted/30 dark:from-background dark:to-muted/20 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/5 hover:to-muted/10 dark:hover:from-primary/10 dark:hover:to-muted/10",
                     disabled && "opacity-50 cursor-not-allowed",
                   )}
                   onClick={() => !disabled && onSelect(option)}
                   layout
                 >
-                  {/* Selection Background Glow - Orange theme */}
+                  {/* Selection Background Glow - Theme */}
                   <AnimatePresence>
                     {isSelected && (
                       <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-orange-100/80 to-amber-100/60 dark:from-orange-950/60 dark:to-amber-900/40"
+                        className="absolute inset-0 bg-gradient-to-r from-primary/20 to-muted/20 dark:from-primary/30 dark:to-muted/20"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
@@ -93,13 +93,13 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                   </AnimatePresence>
 
                   <div className="relative flex items-start space-x-3 p-3 sm:p-4">
-                    {/* Option Letter Badge - Orange theme */}
+                    {/* Option Letter Badge - Theme */}
                     <motion.div
                       className={cn(
                         "flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm transition-all duration-300 flex-shrink-0 shadow-md",
                         isSelected
-                          ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-orange-500/30"
-                          : "bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/50 dark:to-amber-800/50 text-orange-700 dark:text-orange-300 group-hover:from-orange-200 group-hover:to-amber-200 dark:group-hover:from-orange-800/70 dark:group-hover:to-amber-700/70",
+                          ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-primary/20"
+                          : "bg-gradient-to-r from-muted to-muted/80 dark:from-muted/50 dark:to-muted/50 text-primary group-hover:from-primary/10 group-hover:to-muted/20 dark:group-hover:from-primary/20 dark:group-hover:to-muted/20",
                       )}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -122,8 +122,8 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                         "flex-1 cursor-pointer text-sm font-semibold leading-relaxed transition-all duration-300 min-w-0",
                         "break-words whitespace-normal",
                         isSelected
-                          ? "text-orange-800 dark:text-orange-200 font-bold"
-                          : "text-gray-700 dark:text-gray-300 group-hover:text-orange-700 dark:group-hover:text-orange-300",
+                          ? "text-primary font-bold"
+                          : "text-foreground group-hover:text-primary dark:group-hover:text-primary",
                         disabled && "cursor-not-allowed",
                       )}
                       style={{
@@ -143,11 +143,11 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
                       </motion.span>
                     </Label>
 
-                    {/* Selection Indicator - Orange theme */}
+                    {/* Selection Indicator - Theme */}
                     <AnimatePresence>
                       {isSelected && (
                         <motion.div
-                          className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-amber-600 text-white flex-shrink-0 shadow-lg shadow-orange-500/30"
+                          className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground flex-shrink-0 shadow-lg shadow-primary/20"
                           initial={{ scale: 0, opacity: 0, rotate: -90 }}
                           animate={{ scale: 1, opacity: 1, rotate: 0 }}
                           exit={{ scale: 0, opacity: 0, rotate: 90 }}
@@ -166,7 +166,7 @@ const CodeQuizOptions = ({ options, selectedOption, onSelect, disabled = false }
 
                   {/* Hover Shimmer Effect */}
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100"
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent opacity-0 group-hover:opacity-100"
                     animate={{
                       x: ["-100%", "100%"],
                     }}
