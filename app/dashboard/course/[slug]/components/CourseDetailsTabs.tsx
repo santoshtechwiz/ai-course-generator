@@ -148,8 +148,8 @@ export default function CourseDetailsTabs({
               chapterId={currentChapter.id}
               name={currentChapter.title || currentChapter.name || "Chapter Summary"}
               existingSummary={currentChapter.summary || null}
-              hasAccess={accessLevels?.isSubscribed}
-              isAdmin={accessLevels?.isAdmin}
+                            hasAccess={Boolean(accessLevels?.isSubscribed || currentChapter?.isFree)}
+               isAdmin={accessLevels?.isAdmin}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
