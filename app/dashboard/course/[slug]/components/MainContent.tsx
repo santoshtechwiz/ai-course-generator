@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useProgress, useToast } from "@/hooks" // Fix: Changed from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2 } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
@@ -73,6 +73,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
+  const [wideMode, setWideMode] = useState(false)
   const isOwner = user?.id === course.userId;
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
@@ -93,6 +94,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   useEffect(() => {
     const freeVideoPlayed = migratedStorage.getPreference("played_free_video", false)
     setHasPlayedFreeVideo(Boolean(freeVideoPlayed))
+    // Restore wide mode preference per course
+    try {
+      const saved = localStorage.getItem(`wide_mode_course_${course.id}`)
+      if (saved === 'true') setWideMode(true)
+    } catch {}
   }, [])
 
   // Memoized video playlist
@@ -547,7 +553,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         {/* Main content */}        <main className="flex-1 min-w-0">
              <CourseActions slug={course.slug} isOwner={isOwner}/>
    
-          <div className="max-w-6xl mx-auto p-4 lg:p-6">            {/* Video Generation Section */}
+          <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4">            {/* Video Generation Section */}
             <VideoGenerationSection 
               course={course}
               onVideoGenerated={(chapterId, videoId) => {
@@ -560,64 +566,84 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             />
 
             {/* Video player section */}
-            <div className="space-y-6">
+            <div className="space-y-4">
+              {/* Toolbar */}
+              <div className="flex items-center justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setWideMode((v) => {
+                      const next = !v
+                      try { localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) } catch {}
+                      return next
+                    })
+                  }}
+                  className="gap-2"
+                >
+                  {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  {wideMode ? "Normal width" : "Wider video"}
+                </Button>
+              </div>
+
               {/* Video player */}
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                {currentVideoId ? (
-                  <>
-                    <VideoPlayer
-                      videoId={currentVideoId}
-                      courseId={course.id}
-                      chapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
-                      courseName={course.title}
-                      onEnded={handleVideoEnd}
-                      onProgress={handleVideoProgress}
-                      onVideoLoad={handleVideoLoad}
-                      onPlayerReady={handlePlayerReady}
-                      onBookmark={handleSeekToBookmark}
-                      bookmarks={[]}
-                      isAuthenticated={!!user}
-                      autoPlay={false}
-                      showControls={true}
-                      onCertificateClick={handleCertificateClick}
-                      onChapterComplete={handleChapterComplete}
-                      onNextVideo={nextChapter ? handleNextVideo : undefined}
-                      nextVideoId={nextChapter?.videoId}
-                      nextVideoTitle={nextChapter?.chapter?.title || ''}
-                      onPrevVideo={prevChapter ? handlePrevVideo : undefined}
-                      prevVideoTitle={prevChapter?.chapter?.title || ''}
-                      hasNextVideo={!!nextChapter}
-                      hasPrevVideo={!!prevChapter}
-                      theatreMode={theatreMode}
-                      isFullscreen={isFullscreen}
-                      onTheaterModeToggle={onTheaterModeToggle}
-                      className="h-full w-full"
-                    />
-                    {/* CourseAI Logo Overlay */}
-                    <AnimatedCourseAILogo
-                      show={showLogoOverlay}
-                      videoEnding={videoEnding}
-                      onAnimationComplete={() => setShowLogoOverlay(false)}
-                    />
-                    {/* Autoplay Overlay */}
-                    {showAutoplayOverlay && nextChapter && (
-                      <AutoplayOverlay
-                        countdown={autoplayCountdown}
-                        onCancel={handleCancelAutoplay}
-                        onNextVideo={handleNextVideo}
-                        nextVideoTitle={nextChapter.chapter.title}
+              <div className={wideMode ? "mx-auto w-full max-w-none" : "mx-auto w-full"}>
+                <div className="relative aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border shadow-lg">
+                  {currentVideoId ? (
+                    <>
+                      <VideoPlayer
+                        videoId={currentVideoId}
+                        courseId={course.id}
+                        chapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                        courseName={course.title}
+                        onEnded={handleVideoEnd}
+                        onProgress={handleVideoProgress}
+                        onVideoLoad={handleVideoLoad}
+                        onPlayerReady={handlePlayerReady}
+                        onBookmark={handleSeekToBookmark}
+                        bookmarks={[]}
+                        isAuthenticated={!!user}
+                        autoPlay={false}
+                        showControls={true}
+                        onCertificateClick={handleCertificateClick}
+                        onChapterComplete={handleChapterComplete}
+                        onNextVideo={nextChapter ? handleNextVideo : undefined}
+                        nextVideoId={nextChapter?.videoId}
+                        nextVideoTitle={nextChapter?.chapter?.title || ''}
+                        onPrevVideo={prevChapter ? handlePrevVideo : undefined}
+                        prevVideoTitle={prevChapter?.chapter?.title || ''}
+                        hasNextVideo={!!nextChapter}
+                        theatreMode={theatreMode}
+                        isFullscreen={isFullscreen}
+                        onTheaterModeToggle={onTheaterModeToggle}
+                        className="h-full w-full"
                       />
-                    )}
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="text-center text-white p-4">
-                      <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
-                      <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
+                      {/* CourseAI Logo Overlay */}
+                      <AnimatedCourseAILogo
+                        show={showLogoOverlay}
+                        videoEnding={videoEnding}
+                        onAnimationComplete={() => setShowLogoOverlay(false)}
+                      />
+                      {/* Autoplay Overlay */}
+                      {showAutoplayOverlay && nextChapter && (
+                        <AutoplayOverlay
+                          countdown={autoplayCountdown}
+                          onCancel={handleCancelAutoplay}
+                          onNextVideo={handleNextVideo}
+                          nextVideoTitle={nextChapter.chapter.title}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="text-center text-white p-4">
+                        <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
+                        <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               {/* Chapter navigation */}
               <div className="flex items-center justify-between">
@@ -674,10 +700,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             progress={progress}
             isAuthenticated={!!user}
             completedChapters={completedChapters}
-            videoDurations={videoDurations}
             formatDuration={formatDuration}
             nextVideoId={nextChapter?.videoId}
             currentVideoId={currentVideoId || ''}
+            isPlaying={Boolean(currentVideoId)}
             courseStats={{
               completedCount: progress?.completedChapters?.length || 0,
               totalChapters: videoPlaylist.length,

@@ -4,6 +4,8 @@ import { CheckCircle2, XCircle, Clock, Lightbulb, AlertCircle } from "lucide-rea
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 interface ProcessedAnswer {
   questionId: string
@@ -15,6 +17,8 @@ interface ProcessedAnswer {
   explanation?: string
   difficulty?: string
   category?: string
+  codeSnippet?: string
+  language?: string
 }
 
 interface QuestionCardProps {
@@ -24,9 +28,13 @@ interface QuestionCardProps {
 
 export function QuestionCard({ question, index }: QuestionCardProps) {
   const formatTime = (seconds: number) => {
+    if (!seconds || seconds < 0) return "0.00s"
+    if (seconds < 60) {
+      return `${seconds.toFixed(2)}s`
+    }
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
+    return `${mins}:${secs.toFixed(2).padStart(5, "0")}` // mm:SS.ss
   }
 
   const getDifficultyColor = (difficulty?: string) => {
@@ -82,7 +90,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
                   {question.difficulty}
                 </Badge>
               )}
-              {question.timeSpent && (
+              {typeof question.timeSpent === 'number' && (
                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatTime(question.timeSpent)}
@@ -100,6 +108,31 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
               </Badge>
             )}
           </div>
+
+          {/* Code Snippet (if applicable) */}
+          {question.codeSnippet && (
+            <div className="mb-4 rounded-lg overflow-hidden border border-muted bg-muted/30">
+              <div className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground bg-muted">
+                <div>Code</div>
+                <div className="font-mono opacity-80">{question.language || 'javascript'}</div>
+              </div>
+              <div className="max-h-96 overflow-auto">
+                <SyntaxHighlighter
+                  language={(question.language || 'javascript').toLowerCase()}
+                  style={vscDarkPlus}
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: 0,
+                    background: 'transparent',
+                    fontSize: '0.85rem',
+                  }}
+                  wrapLongLines
+                >
+                  {question.codeSnippet}
+                </SyntaxHighlighter>
+              </div>
+            </div>
+          )}
 
           {/* Answer Section */}
           <div className="space-y-4">

@@ -50,7 +50,34 @@ interface VideoNavigationSidebarProps {
   }
   isPlaying?: boolean
   onTogglePlay?: () => void
+  formatDuration?: (seconds: number) => string
 }
+
+const Equalizer = () => (
+  <div className="flex items-end gap-0.5">
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 6 }}
+      animate={{ height: [6, 14, 8, 12, 6] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+      style={{ display: "inline-block" }}
+    />
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 10 }}
+      animate={{ height: [10, 6, 12, 6, 10] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+      style={{ display: "inline-block" }}
+    />
+    <motion.span
+      className="w-1 rounded-sm bg-primary"
+      initial={{ height: 8 }}
+      animate={{ height: [8, 12, 6, 14, 8] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+      style={{ display: "inline-block" }}
+    />
+  </div>
+)
 
 // Enhanced Chapter Item Component with better status indicators
 const ChapterItem = React.memo(
@@ -65,6 +92,7 @@ const ChapterItem = React.memo(
     onChapterClick,
     chapterIndex,
     totalChapters,
+    formatDuration,
   }: {
     chapter: FullChapterType
     isActive: boolean
@@ -76,13 +104,14 @@ const ChapterItem = React.memo(
     onChapterClick: (chapter: FullChapterType) => void
     chapterIndex: number
     totalChapters: number
+    formatDuration?: (seconds: number) => string
   }) => {
     const getStatusIcon = () => {
       if (isActive && isPlaying) {
-        return <Play className="h-4 w-4 text-green-500 animate-pulse" fill="currentColor" />
+        return <Equalizer />
       }
       if (isActive && !isPlaying) {
-        return <Pause className="h-4 w-4 text-blue-500" fill="currentColor" />
+        return <Pause className="h-4 w-4 text-primary" fill="currentColor" />
       }
       if (isCompleted) {
         return <CheckCircle className="h-4 w-4 text-green-500" fill="currentColor" />
@@ -94,11 +123,11 @@ const ChapterItem = React.memo(
     }
 
     const getStatusBadges = () => {
-      const badges = []
+      const badges = [] as React.ReactNode[]
 
       if (isActive) {
         badges.push(
-          <Badge key="current" variant="default" className="text-[10px] py-0 h-5 bg-blue-500 text-white animate-pulse">
+          <Badge key="current" variant="default" className="text-[10px] py-0 h-5 bg-primary text-primary-foreground animate-pulse">
             {isPlaying ? "Playing" : "Current"}
           </Badge>,
         )
@@ -109,7 +138,7 @@ const ChapterItem = React.memo(
           <Badge
             key="next"
             variant="outline"
-            className="text-[10px] py-0 h-5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800"
+            className="text-[10px] py-0 h-5 bg-primary/10 text-primary border-primary/20"
           >
             Up Next
           </Badge>,
@@ -121,7 +150,7 @@ const ChapterItem = React.memo(
           <Badge
             key="free"
             variant="outline"
-            className="text-[10px] py-0 h-5 bg-green-50 text-green-600 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800"
+            className="text-[10px] py-0 h-5 bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800"
           >
             Free
           </Badge>,
@@ -132,27 +161,27 @@ const ChapterItem = React.memo(
     }
 
     return (
-      <motion.li
+      <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.2, delay: chapterIndex * 0.05 }}
       >
         <div
           className={cn(
-            "relative border-l-3 transition-all duration-200",
+            "relative border-l-4 transition-all duration-200",
             isActive
-              ? "border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/30"
+              ? "border-l-primary bg-primary/10"
               : isCompleted
-                ? "border-l-green-500/30 hover:border-l-green-500"
-                : "border-l-transparent hover:border-l-blue-300",
-            isNextVideo && !isActive && "border-l-orange-300 bg-orange-50/30 dark:bg-orange-950/20",
+                ? "border-l-green-500/40 hover:border-l-green-500/70"
+                : "border-l-transparent hover:border-l-primary/40",
+            isNextVideo && !isActive && "border-l-primary/30 bg-primary/5",
           )}
         >
           <button
             className={cn(
               "flex items-start w-full px-4 py-3 text-sm transition-all duration-200 text-left group",
-              "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              isActive && "bg-accent/30 font-medium",
+              "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              isActive && "bg-accent font-medium",
               isLocked && "opacity-60 cursor-not-allowed",
               "relative overflow-hidden",
             )}
@@ -165,7 +194,7 @@ const ChapterItem = React.memo(
             {/* Progress indicator line for active chapter */}
             {isActive && (
               <motion.div
-                className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"
+                className="absolute left-0 top-0 bottom-0 w-1 bg-primary"
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: 1 }}
                 transition={{ duration: 0.3 }}
@@ -173,16 +202,16 @@ const ChapterItem = React.memo(
             )}
 
             {/* Chapter number and status icon */}
-            <div className="flex-shrink-0 flex items-center mr-3">
+            <div className="flex-shrink-0 flex items-center mr-3 min-w-[2rem]">
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-blue-500 text-white"
+                    ? "bg-primary text-primary-foreground"
                     : isCompleted
                       ? "bg-green-500 text-white"
                       : isNextVideo
-                        ? "bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400"
+                        ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground",
                 )}
               >
@@ -206,7 +235,7 @@ const ChapterItem = React.memo(
                 <ChevronRight
                   className={cn(
                     "h-4 w-4 text-muted-foreground/50 transition-all flex-shrink-0 mt-0.5",
-                    isActive ? "opacity-100 text-blue-500" : "opacity-0 group-hover:opacity-70",
+                    isActive ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-70",
                   )}
                 />
               </div>
@@ -216,7 +245,7 @@ const ChapterItem = React.memo(
                 {chapter.duration && (
                   <span className="flex items-center gap-1">
                     <Timer className="h-3 w-3" />
-                    {chapter.duration}
+                    {typeof chapter.duration === 'number' && formatDuration ? formatDuration(chapter.duration) : chapter.duration}
                   </span>
                 )}
 
@@ -231,7 +260,7 @@ const ChapterItem = React.memo(
             </div>
           </button>
         </div>
-      </motion.li>
+      </motion.div>
     )
   },
 )
@@ -260,7 +289,7 @@ const UnitCard = React.memo(
     return (
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
         <CollapsibleTrigger asChild>
-          <button className="w-full px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors border-b border-border/50 text-left group">
+          <button className="w-full px-4 py-3 bg-card hover:bg-accent transition-colors border-b text-left group">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-sm truncate">{unit.title}</h3>
@@ -461,6 +490,7 @@ const SidebarContent = React.memo(function SidebarContent({
   computedStats,
   loading,
   scrollToActive,
+  formatDuration,
 }: {
   filteredUnits: any[]
   expandedUnits: Record<string, boolean>
@@ -483,6 +513,7 @@ const SidebarContent = React.memo(function SidebarContent({
   }
   loading?: boolean
   scrollToActive?: boolean
+  formatDuration?: (seconds: number) => string
 }) {
   // Ref for auto-scroll to active chapter
   const activeChapterRef = React.useRef<HTMLLIElement>(null)
@@ -539,7 +570,7 @@ const SidebarContent = React.memo(function SidebarContent({
         <nav aria-label="Course navigation" className="pb-4">
           {filteredUnits?.length > 0 ? (
             filteredUnits.map((unit, unitIndex) => {
-              const unitCompletedChapters = unit.chapters.filter((chapter) =>
+              const unitCompletedChapters = unit.chapters.filter((chapter: any) =>
                 completedChapters?.includes(Number(chapter.id)),
               ).length
 
@@ -558,7 +589,7 @@ const SidebarContent = React.memo(function SidebarContent({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: unitIndex * 0.1 }}
-                  className="mb-1 last:mb-0"
+                  className="mb-2 last:mb-0"
                 >
                   <MemoizedUnitCard
                     unit={unit}
@@ -568,7 +599,7 @@ const SidebarContent = React.memo(function SidebarContent({
                     totalChapters={unit.chapters.length}
                   >
                     <ul role="list" className="bg-background/30">
-                      {unit.chapters.map((chapter, chapterIndex) => {
+                      {unit.chapters.map((chapter: FullChapterType, chapterIndex: number) => {
                         const globalChapterIndex = prevChaptersCount + chapterIndex
                         const isActive = currentChapter?.id === chapter.id
                         const isCompleted = completedChapters?.includes(Number(chapter.id)) || false
@@ -599,6 +630,7 @@ const SidebarContent = React.memo(function SidebarContent({
                               onChapterClick={handleChapterClick}
                               chapterIndex={globalChapterIndex}
                               totalChapters={totalChapters}
+                              formatDuration={formatDuration}
                             />
                           </li>
                         )
@@ -638,7 +670,7 @@ const SidebarContent = React.memo(function SidebarContent({
                   Course ID: {courseId}
                 </span>
                 {courseProgress === 100 && (
-                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Completed
                   </Badge>
@@ -670,6 +702,7 @@ export default function VideoNavigationSidebar({
   courseStats,
   isPlaying = false,
   onTogglePlay,
+  formatDuration,
 }: VideoNavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({})
@@ -784,6 +817,7 @@ export default function VideoNavigationSidebar({
           computedStats={computedStats}
           loading={loading}
           scrollToActive={scrollToActive}
+          formatDuration={formatDuration}
         />
       </MobileSidebar>
 
@@ -814,6 +848,7 @@ export default function VideoNavigationSidebar({
           computedStats={computedStats}
           loading={loading}
           scrollToActive={scrollToActive}
+          formatDuration={formatDuration}
         />
       </DesktopSidebar>
     </>
