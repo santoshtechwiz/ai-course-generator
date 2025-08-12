@@ -120,10 +120,15 @@ export default function FlashCardResults({
     }
   }, [reviewCardsState.length, stillLearningCardsState.length, result])
 
-  const formatTime = (seconds: number) =>
-    seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`
+  const formatTime = (seconds: number) => {
+    if (!seconds || seconds < 0) return "0.00s"
+    if (seconds < 60) return `${seconds.toFixed(2)}s`
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toFixed(2).padStart(5, "0")}`
+  }
 
-  const avgTime = totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0
+  const avgTime = totalQuestions > 0 ? Number((totalTime / totalQuestions).toFixed(2)) : 0
 
   const answerMap = useMemo(() => {
     const map: Record<number | string, string> = {}

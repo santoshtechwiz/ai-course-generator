@@ -449,7 +449,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
                   transition={{ delay: 0.8, type: "spring", stiffness: 150 }}
                   className="text-center"
                 >
-                  <div className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
+                                    <div className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
                     {stats.correct}<span className="text-2xl md:text-3xl text-gray-500"> / {stats.total}</span>
                   </div>
                   <div className="text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium">Questions Correct</div>
@@ -493,13 +493,13 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
               color: "red",
               description: "Questions to review",
             },
-            {
-              icon: Clock,
-              label: "Avg. Time",
-              value: `${Math.round(stats.avgTime)}s`,
-              color: "blue",
-              description: "Per question",
-            },
+                          {
+                icon: Clock,
+                label: "Avg. Time",
+                value: `${(stats.avgTime ?? 0).toFixed(2)}s`,
+                color: "blue",
+                description: "Per question",
+              },
             {
               icon: Flame,
               label: "Best Streak",

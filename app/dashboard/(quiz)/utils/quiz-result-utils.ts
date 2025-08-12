@@ -22,49 +22,53 @@ export function processQuizAnswers(result: any): ProcessedAnswer[] {
     // Process options with type safety
     const options = q.options || []
     
-    // Normalize all options to have consistent structure
-    const normalizedOptions = options.map((opt: any) => 
-      typeof opt === 'string' 
-        ? { id: opt, text: opt, value: opt }
-        : { id: opt.id, text: opt.text || '', value: opt.value || opt.text || '' }
-    )
+    // Normalize all options to have consistent structure (ensure ids and texts are strings)
+    const normalizedOptions = options.map((opt: any) => {
+      if (typeof opt === 'string') {
+        return { id: String(opt), text: String(opt), value: String(opt) }
+      }
+      return {
+        id: String(opt.id ?? opt.value ?? opt.text ?? ''),
+        text: String(opt.text ?? opt.value ?? ''),
+        value: String(opt.value ?? opt.text ?? '')
+      }
+    })
     
-    // Find user and correct answer IDs
-    const userAnswerId = normalizedOptions.find((opt: QuestionOption) => 
-      opt.text === q.userAnswer
-    )?.id || q.selectedOptionId || ''
+    // Resolve user answer (could be option id, value, or text)
+    const rawUser = q.userAnswer ?? q.selectedOptionId ?? ''
+    const userOption = normalizedOptions.find((opt: QuestionOption) => {
+      const target = String(rawUser)
+      return String(opt.id) === target || String(opt.value) === target || String(opt.text) === target
+    })
+    const userAnswerId = userOption?.id || String(q.selectedOptionId ?? '')
+    const userAnswerText = userOption?.text || (typeof q.userAnswer === 'string' ? q.userAnswer : '') || '(No answer selected)'
     
-    const correctAnswerId = normalizedOptions.find((opt: QuestionOption) => 
-      opt.text === q.correctAnswer
-    )?.id || ''
+    // Resolve correct answer (could be option id, value, or text)
+    const rawCorrect = q.correctAnswer ?? q.correctOptionId ?? q.answer ?? ''
+    const correctOption = normalizedOptions.find((opt: QuestionOption) => {
+      const target = String(rawCorrect)
+      return String(opt.id) === target || String(opt.value) === target || String(opt.text) === target
+    })
+    const correctAnswerId = correctOption?.id || ''
+    const correctAnswerText = correctOption?.text || (typeof q.correctAnswer === 'string' ? q.correctAnswer : '') || ''
 
-    // For MCQ questions, ensure we have the correct answer text
-    let correctAnswerText = q.correctAnswer || ''
-    if (!correctAnswerText && q.type === 'mcq') {
-      // Try to find from options if not directly provided
-      const correctOption = normalizedOptions.find((opt: QuestionOption) => 
-        opt.id === correctAnswerId || opt.value === correctAnswerId
-      )
-      correctAnswerText = correctOption?.text || correctAnswerText
-    }
-
-    // For code questions, include code snippet
-    const hasCodeSnippet = q.type === 'code' || q.codeSnippet
+    // For code questions, include code snippet and language if available
+    const hasCodeSnippet = q.type === 'code' || Boolean(q.codeSnippet)
 
     return {
       questionId: q.questionId || q.id || `q-${Math.random().toString(36).substring(2, 9)}`,
       question: q.question || q.text || '',
-      userAnswer: q.userAnswer || '(No answer selected)',
+      userAnswer: userAnswerText,
       correctAnswer: correctAnswerText,
-      isCorrect: q.isCorrect || false,
+      isCorrect: Boolean(q.isCorrect),
       type: q.type || 'mcq',
       options: normalizedOptions,
       allOptions: normalizedOptions,
       userAnswerId,
       correctAnswerId,
       // Include code-specific properties
-      codeSnippet: q.codeSnippet || '',
-      language: q.language || 'javascript',
+      codeSnippet: hasCodeSnippet ? (q.codeSnippet || '') : undefined,
+      language: hasCodeSnippet ? (q.language || 'javascript') : undefined,
       explanation: q.explanation || '',
       difficulty: q.difficulty || '',
       category: q.category || '',

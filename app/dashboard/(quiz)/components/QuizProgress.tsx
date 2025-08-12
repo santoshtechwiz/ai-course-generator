@@ -102,11 +102,11 @@ export const QuizProgress: React.FC<QuizProgressProps> = ({
 
   // Format time display with better handling
   const formatTime = (seconds: number) => {
-    if (!seconds || typeof seconds !== "number" || seconds < 0) return "0s"
-    if (seconds < 60) return `${Math.floor(seconds)}s`
+    if (!seconds || typeof seconds !== "number" || seconds < 0) return "0.00s"
+    if (seconds < 60) return `${Number(seconds).toFixed(2)}s`
     const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}m ${remainingSeconds}s`
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toFixed(2).padStart(5, '0')}`
   }
 
   // Calculate average time per question with validation

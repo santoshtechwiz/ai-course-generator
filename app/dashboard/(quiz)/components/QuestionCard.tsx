@@ -15,6 +15,8 @@ interface ProcessedAnswer {
   explanation?: string
   difficulty?: string
   category?: string
+  codeSnippet?: string
+  language?: string
 }
 
 interface QuestionCardProps {
@@ -24,9 +26,13 @@ interface QuestionCardProps {
 
 export function QuestionCard({ question, index }: QuestionCardProps) {
   const formatTime = (seconds: number) => {
+    if (!seconds || seconds < 0) return "0.00s"
+    if (seconds < 60) {
+      return `${seconds.toFixed(2)}s`
+    }
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
+    return `${mins}:${secs.toFixed(2).padStart(5, "0")}` // mm:SS.ss
   }
 
   const getDifficultyColor = (difficulty?: string) => {
@@ -82,7 +88,7 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
                   {question.difficulty}
                 </Badge>
               )}
-              {question.timeSpent && (
+              {typeof question.timeSpent === 'number' && (
                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatTime(question.timeSpent)}
@@ -100,6 +106,13 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
               </Badge>
             )}
           </div>
+
+          {/* Code Snippet (if applicable) */}
+          {question.codeSnippet && (
+            <div className="mb-4">
+              <pre className="p-3 rounded-md bg-muted overflow-auto text-sm"><code>{question.codeSnippet}</code></pre>
+            </div>
+          )}
 
           {/* Answer Section */}
           <div className="space-y-4">
