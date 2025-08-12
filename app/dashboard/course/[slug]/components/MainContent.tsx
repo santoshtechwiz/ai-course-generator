@@ -93,6 +93,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   useEffect(() => {
     const freeVideoPlayed = migratedStorage.getPreference("played_free_video", false)
     setHasPlayedFreeVideo(Boolean(freeVideoPlayed))
+    // Restore wide mode preference per course
+    try {
+      const saved = localStorage.getItem(`wide_mode_course_${course.id}`)
+      if (saved === 'true') setWideMode(true)
+    } catch {}
   }, [])
 
   // Memoized video playlist
@@ -566,7 +571,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setWideMode((v) => !v)}
+                  onClick={() => {
+                    setWideMode((v) => {
+                      const next = !v
+                      try { localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) } catch {}
+                      return next
+                    })
+                  }}
                   className="gap-2"
                 >
                   {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
