@@ -217,6 +217,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowAuthPrompt(authenticationState.showAuthPrompt)
   }, [authenticationState])
 
+  // Safe video element getter with proper error handling (defined early for use in handlers and JSX)
+  const getVideoElement = useCallback((): HTMLVideoElement | null => {
+    if (!isMounted || !containerRef.current) return null
+
+    try {
+      // First try to get from ReactPlayer internal structure
+      const reactPlayerVideo = containerRef.current.querySelector("iframe")?.contentDocument?.querySelector("video")
+      if (reactPlayerVideo) {
+        videoElementRef.current = reactPlayerVideo as HTMLVideoElement
+        return reactPlayerVideo as HTMLVideoElement
+      }
+
+      // Fallback to direct video element
+      const directVideo = containerRef.current.querySelector("video")
+      if (directVideo) {
+        videoElementRef.current = directVideo as HTMLVideoElement
+        return directVideo as HTMLVideoElement
+      }
+
+      return null
+    } catch (error) {
+      console.warn("Error accessing video element:", error)
+      return null
+    }
+  }, [isMounted, containerRef])
+
   // Handle Picture-in-Picture
   const handlePictureInPicture = useCallback(async () => {
     const videoEl = getVideoElement()
@@ -274,32 +300,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
       : `${m}:${s.toString().padStart(2, "0")}`
   }, [])
-
-  // Safe video element getter with proper error handling
-  const getVideoElement = useCallback((): HTMLVideoElement | null => {
-    if (!isMounted || !containerRef.current) return null
-
-    try {
-      // First try to get from ReactPlayer internal structure
-      const reactPlayerVideo = containerRef.current.querySelector("iframe")?.contentDocument?.querySelector("video")
-      if (reactPlayerVideo) {
-        videoElementRef.current = reactPlayerVideo
-        return reactPlayerVideo
-      }
-
-      // Fallback to direct video element
-      const directVideo = containerRef.current.querySelector("video")
-      if (directVideo) {
-        videoElementRef.current = directVideo
-        return directVideo
-      }
-
-      return null
-    } catch (error) {
-      console.warn("Error accessing video element:", error)
-      return null
-    }
-  }, [isMounted, containerRef])
 
   // Enhanced player ready handler with better error handling
   const handlePlayerReady = useCallback(() => {
