@@ -69,12 +69,12 @@ AuthPrompt.displayName = "AuthPrompt"
 const PlayButton = React.memo(({ onClick }: { onClick: () => void }) => (
   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
     <button
-      className="bg-black/60 backdrop-blur-sm rounded-full p-3 sm:p-4 cursor-pointer pointer-events-auto hover:bg-black/80 transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black/50"
+      className="rounded-full p-3 sm:p-4 cursor-pointer pointer-events-auto transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-black/50 bg-primary text-primary-foreground shadow-lg"
       onClick={onClick}
       aria-label="Play video"
       type="button"
     >
-      <Play className="h-8 w-8 sm:h-12 sm:w-12 text-white ml-1" />
+      <Play className="h-8 w-8 sm:h-12 sm:w-12 ml-1" />
     </button>
   </div>
 ))
@@ -138,6 +138,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const chapterTitleRef = useRef(chapterTitle)
   const videoIdRef = useRef(videoId)
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
+  const lastFsToggleRef = useRef<number>(0)
+  const lastTheaterToggleRef = useRef<number>(0)
 
   // Track mounting state to prevent "element not found" errors
   useEffect(() => {
@@ -209,8 +211,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [handlers.handlePictureInPictureToggle, onPictureInPictureToggle])
 
-  // Handle Theater Mode
+  // Handle Theater Mode (throttled)
   const handleTheaterMode = useCallback(() => {
+    const now = Date.now()
+    if (now - lastTheaterToggleRef.current < 500) return
+    lastTheaterToggleRef.current = now
     if (handlers.handleTheaterModeToggle) {
       handlers.handleTheaterModeToggle()
     } else if (onTheaterModeToggle) {
@@ -254,6 +259,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return null
     }
   }, [isMounted, containerRef])
+
   // Enhanced player ready handler with better error handling
   const handlePlayerReady = useCallback(() => {
     setPlayerReady(true)
@@ -279,7 +285,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       } catch (error) {
         console.warn("Error getting video duration:", error)
       }
-    }    handlers.onReady()
+    }
+    handlers.onReady()
   }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading])
 
   // Enhanced play handler with better UX
@@ -428,7 +435,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (state.playing && !isHovering && !showChapterStart && !showChapterEnd) {
         controlsTimeoutRef.current = setTimeout(() => {
           setShowControlsState(false)
-        }, 3000)
+        }, 4500)
       }
     }
 
@@ -459,6 +466,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return () => cancelAnimationFrame(animationFrame)
     }
   }, [state.playing, chapterStartShown, playerReady, canPlayVideo, showChapterEnd, isMounted])
+
   // Reset overlay states when video changes with proper cleanup
   useEffect(() => {
     setChapterStartShown(false)
@@ -506,7 +514,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [handlers])
 
-  // Keyboard shortcuts with proper accessibility
+  // Keyboard shortcuts with proper accessibility (throttled for f/t)
   useEffect(() => {
     if (!isMounted || !canPlayVideo) return
 
@@ -539,12 +547,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           handlers.onMute()
           break
         case "f":
+          if (event.repeat) return
           event.preventDefault()
-          handlers.onToggleFullscreen()
+          {
+            const now = Date.now()
+            if (now - lastFsToggleRef.current >= 500) {
+              lastFsToggleRef.current = now
+              handlers.onToggleFullscreen()
+            }
+          }
           break
         case "t":
+          if (event.repeat) return
           event.preventDefault()
-          handlers.handleTheaterModeToggle()
+          handleTheaterMode()
           break
         case "p":
           if (state.isPiPSupported) {
@@ -556,7 +572,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           if (state.isFullscreen || state.theaterMode) {
             event.preventDefault()
             if (state.isFullscreen) handlers.onToggleFullscreen()
-            if (state.theaterMode) handlers.handleTheaterModeToggle()
+            if (state.theaterMode) handleTheaterMode()
           }
           break
       }
@@ -577,6 +593,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     state.theaterMode,
     state.isPiPSupported,
     handlePictureInPicture,
+    handleTheaterMode,
   ])
 
   // Memoized authentication prompt
@@ -633,7 +650,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onDuration={(duration) => {
             setVideoDuration(duration)
             setIsLoadingDuration(false)
-          }}          config={{
+          }}
+          config={{
             youtube: {
               playerVars: {
                 autoplay: 0,
@@ -659,7 +677,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <div className="bg-black/20 backdrop-blur-sm rounded-full p-1 sm:p-1.5 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
           <span className="text-white font-bold text-xs select-none">CourseAI</span>
         </div>
-      </div>      {/* Video loading managed by global loader - no local overlay needed */}
+      </div>
 
       {/* Error state */}
       {state.playerError && (
@@ -686,7 +704,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         chapterTitle={chapterTitleRef.current}
         courseTitle={courseName}
         onComplete={handleChapterStartComplete}
-        duration={10000}
+        duration={3500}
         videoId={videoId}
       />
 
