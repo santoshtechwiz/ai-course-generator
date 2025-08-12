@@ -135,7 +135,7 @@ const ChapterItem = React.memo(
     }
 
     return (
-      <motion.li
+      <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.2, delay: chapterIndex * 0.05 }}
@@ -234,7 +234,7 @@ const ChapterItem = React.memo(
             </div>
           </button>
         </div>
-      </motion.li>
+      </motion.div>
     )
   },
 )
