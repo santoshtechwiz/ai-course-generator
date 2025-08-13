@@ -23,6 +23,7 @@ import {
   Users,
   Play,
   MoreHorizontal,
+  GraduationCap,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -121,7 +122,10 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0"
       >
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight">My Courses</h2>
+          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <GraduationCap className="h-7 w-7 text-primary" />
+            My Courses
+          </h2>
           <p className="text-muted-foreground">Manage and continue your learning journey</p>
         </div>
 
@@ -135,12 +139,12 @@ export default function CoursesTab({ userData }: CoursesTabProps) {
         </div>
       </motion.div>
 
-      {/* Search and Controls */}
+      {/* Search and Controls (sticky) */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-b py-3"
       >
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
