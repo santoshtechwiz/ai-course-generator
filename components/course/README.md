@@ -5,15 +5,9 @@ A modern, responsive course video page for learning platforms with premium conte
 ## Features
 
 ### 🎥 Video Player
-- **Cinematic Design**: Large video player with minimal distractions
-- **Smart Controls**: Auto-hiding controls with smooth animations
+- **Placeholder Design**: Simple video player placeholder
 - **Lock Overlay**: Premium content protection with subscription prompts
-- **Fullscreen Support**: Native fullscreen functionality with proper API handling
-- **Theater Mode**: Wider video layout for immersive viewing
-- **Progress Tracking**: Real-time video progress with seek functionality
-- **Volume Control**: Slider-based volume adjustment
-- **Playback Speed**: Multiple speed options (0.5x to 2x)
-- **Engagement Overlay**: Like, share, and download buttons on video
+- **Progress Tracking**: Basic progress tracking functionality
 
 ### 📚 Course Management
 - **Free/Paid Content**: First 2 videos free, rest behind subscription
@@ -32,10 +26,6 @@ A modern, responsive course video page for learning platforms with premium conte
 - **Responsive Layout**: Desktop-first design that works on all devices
 - **Smooth Animations**: Hover effects and transitions throughout
 - **Accessibility**: Keyboard navigation and screen reader support
-- **Theater Mode**: Immersive viewing experience with wider layout
-- **Floating Actions**: Quick access to engagement features
-- **Interactive Notes**: Timestamp-based note-taking system
-- **Engagement Feedback**: Visual feedback for user interactions
 
 ### 💰 Subscription Features
 - **Floating CTA**: Animated subscribe button for non-subscribers
@@ -47,17 +37,13 @@ A modern, responsive course video page for learning platforms with premium conte
 
 ### Core Components
 - `CourseVideoPage`: Main page component orchestrating all features
-- `VideoPlayer`: Custom video player with premium content protection
 - `CourseSidebar`: Lesson navigation and course information
 - `VideoDescription`: Rich video descriptions with transcript support
-- `VideoEngagement`: Interactive engagement features (like, share, bookmark)
-- `VideoNotes`: Timestamp-based note-taking system
 - `QuizSection`: Interactive quiz component with scoring
 
 ### Engagement Components
 - `ProgressTracker`: Visual progress tracking with completion status
 - `SubscribeButton`: Floating subscription call-to-action
-- `FloatingActions`: Quick access floating action buttons
 - `RelatedCourses`: Course recommendations and discovery
 - `CourseHeader`: Navigation and course metadata
 

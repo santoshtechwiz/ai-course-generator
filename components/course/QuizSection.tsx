@@ -3,7 +3,19 @@
 import { useState } from 'react'
 import { Lock, CheckCircle, XCircle, Clock, Award } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Quiz } from '@/hooks/useCourseData'
+
+interface Quiz {
+  id: string
+  title: string
+  questions: Array<{
+    id: string
+    question: string
+    options: string[]
+    correctAnswer: number
+    explanation: string
+  }>
+  timeLimit: number
+}
 
 interface QuizSectionProps {
   quiz: Quiz

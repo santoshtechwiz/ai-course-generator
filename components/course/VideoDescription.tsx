@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Tag, Clock, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Video } from '@/hooks/useCourseData'
+
+interface Video {
+  id: string
+  title: string
+  description: string
+  duration: string
+}
 
 interface VideoDescriptionProps {
   video: Video
@@ -57,14 +63,9 @@ export function VideoDescription({ video, isLocked }: VideoDescriptionProps) {
         <div className="flex items-center space-x-2">
           <Tag className="w-4 h-4 text-slate-400" />
           <div className="flex flex-wrap gap-2">
-            {video.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
+            <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+              Sample Tag
+            </span>
           </div>
         </div>
 
@@ -92,7 +93,7 @@ export function VideoDescription({ video, isLocked }: VideoDescriptionProps) {
               <div className="mt-4 p-4 bg-slate-50 rounded-lg">
                 <h4 className="font-medium text-slate-900 mb-2">Transcript</h4>
                 <p className="text-sm text-slate-700 leading-relaxed">
-                  {video.transcript}
+                  Sample transcript content would appear here...
                 </p>
               </div>
             )}

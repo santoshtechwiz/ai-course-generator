@@ -1,9 +1,33 @@
 'use client'
 
 import { useState } from 'react'
-import { Lock, Play, CheckCircle, Clock, Star, Users, BookOpen } from 'lucide-react'
+import { Lock, Play, CheckCircle, Clock, Star, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Course, Video } from '@/hooks/useCourseData'
+
+interface Course {
+  id: string
+  title: string
+  description: string
+  instructor: string
+  category: string
+  level: 'Beginner' | 'Intermediate' | 'Advanced'
+  rating: number
+  totalRatings: number
+  duration: string
+  videos: Array<{
+    id: string
+    title: string
+    description: string
+    duration: string
+  }>
+  quizzes: Array<{
+    id: string
+    title: string
+    questions: any[]
+  }>
+  thumbnail: string
+  tags: string[]
+}
 
 interface CourseSidebarProps {
   course: Course
