@@ -134,6 +134,14 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
                 </Badge>
               </div>
             </div>
+            {/* Breadcrumbs */}
+            <div className="max-w-screen-2xl mx-auto mt-2 hidden md:flex items-center gap-2 text-xs text-muted-foreground">
+              <a href="/dashboard" className="hover:text-foreground">Dashboard</a>
+              <span>/</span>
+              <a href="/dashboard/course" className="hover:text-foreground">Courses</a>
+              <span>/</span>
+              <span className="text-foreground/80 line-clamp-1">{course.title}</span>
+            </div>
           </motion.header>
         )}
       </AnimatePresence>
