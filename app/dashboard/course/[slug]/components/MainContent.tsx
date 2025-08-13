@@ -28,6 +28,7 @@ import { User } from "@/modules/auth"
 import { useAuth } from "@/modules/auth"
 import { isAdmin } from "@/lib/auth"
 import CourseActions from "./CourseActions"
+import { cn } from "@/lib/utils"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -99,7 +100,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     // Restore wide mode preference per course
     try {
       const saved = localStorage.getItem(`wide_mode_course_${course.id}`)
-      if (saved === 'true') setWideMode(true)
+      if (saved === 'true') {
+        setWideMode(true)
+      } else if (typeof window !== 'undefined') {
+        // Default to wide mode on desktop if no preference is set
+        if (window.innerWidth >= 1280) {
+          setWideMode(true)
+        }
+      }
     } catch {}
   }, [])
 
@@ -571,7 +579,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         {/* Main content */}        <main className="flex-1 min-w-0">
              <CourseActions slug={course.slug} isOwner={isOwner}/>
    
-          <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4">            {/* Video Generation Section */}
+          <div className={cn("mx-auto py-4", wideMode ? "max-w-none px-0" : "max-w-7xl px-4 lg:px-6")}>            {/* Video Generation Section */}
             <VideoGenerationSection 
               course={course}
               onVideoGenerated={(chapterId, videoId) => {
@@ -606,7 +614,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               </div>
 
               {/* Video player */}
-              <div className={wideMode ? "mx-auto w-full max-w-none" : "mx-auto w-full"}>
+              <div className={wideMode ? "w-full" : "mx-auto w-full"}>
                 <div className="relative aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border shadow-lg">
                   {currentVideoId ? (
                     <>
@@ -759,7 +767,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             </div>
           </div>
         </main>
-        {/* Desktop sidebar - Using VideoNavigationSidebar */}
+        {/* Desktop sidebar - hide in wide mode for full focus */}
+        {!wideMode && (
         <aside className="hidden lg:block w-96 border-l bg-background/50 backdrop-blur-sm">
                     <VideoNavigationSidebar
              course={course}
@@ -781,6 +790,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
              }}
            />
         </aside>
+        )}
       </div>
 
       {/* Floating subscribe CTA for guests/free users */}

@@ -455,8 +455,10 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       }
     }
 
+    // Always attach once when focused; cleanup ensures no duplicates
     if (isPlayerFocused && state.userInteracted) {
-      window.addEventListener("keydown", handleKeyDown)
+      window.removeEventListener("keydown", handleKeyDown)
+      window.addEventListener("keydown", handleKeyDown, { passive: false })
     }
 
     return () => {

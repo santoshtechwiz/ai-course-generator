@@ -32,23 +32,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
 
   // Handle keyboard shortcuts for theater mode
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 't' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        setTheatreMode(prev => !prev)
-      }
-      if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        toggleFullscreen()
-      }
-      if (e.key === 'h' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault()
-        setShowControls(prev => !prev)
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyPress)
-    return () => document.removeEventListener('keydown', handleKeyPress)
+    // Moved keyboard shortcuts to player scope to avoid duplicates
   }, [])
 
   // Handle fullscreen changes
