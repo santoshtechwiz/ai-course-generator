@@ -419,6 +419,15 @@ function MobileSidebar({
         </SheetHeader>
         <div className="flex-1 overflow-hidden">{children}</div>
       </SheetContent>
+
+      {/* Floating mobile Chapters button bottom-right */}
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="lg:hidden fixed bottom-6 right-6 z-40 rounded-full shadow-xl bg-primary text-primary-foreground"
+        aria-label="Open chapters"
+      >
+        Chapters
+      </Button>
     </Sheet>
   )
 }
