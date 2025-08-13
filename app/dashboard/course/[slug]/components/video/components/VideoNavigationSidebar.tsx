@@ -28,6 +28,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Input } from "@/components/ui/input"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { motion, AnimatePresence } from "framer-motion"
+import Image from "next/image"
 // Fix type import path
 import type { FullCourseType, FullChapterType } from "@/app/types/course-types"
 // Use our CourseProgress type instead of Prisma's
@@ -223,11 +224,13 @@ const ChapterItem = React.memo(
             {/* Thumbnail */}
             {chapter.videoId && (
               <div className="relative mr-3 w-16 h-10 rounded-md overflow-hidden flex-shrink-0">
-                <img
+                <Image
                   src={`https://img.youtube.com/vi/${chapter.videoId}/mqdefault.jpg`}
-                  alt=""
-                  className={cn("h-full w-full object-cover transition-transform duration-200", isLocked ? "opacity-60" : "group-hover:scale-[1.03]")}
-                  loading="lazy"
+                  alt={chapter.title || "Chapter thumbnail"}
+                  fill
+                  className={cn("object-cover transition-transform duration-200", isLocked ? "opacity-60" : "group-hover:scale-[1.03]")}
+                  sizes="64px"
+                  priority={false}
                 />
                 {isLocked && (
                   <div className="absolute inset-0 grid place-items-center bg-black/20">

@@ -799,7 +799,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 transition-transform hover:scale-[1.02]"
+            className="shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 transition-transform hover:scale-[1.02] rounded-full"
           >
             Subscribe to Unlock
           </Button>
