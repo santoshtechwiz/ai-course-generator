@@ -17,6 +17,8 @@ import { migratedStorage } from "@/lib/storage"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
 import VideoGenerationSection from "./VideoGenerationSection"
+import { MarkdownRenderer } from "./markdownUtils"
+import { Rating } from "@/components/ui/rating"
 
 import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
 import { VideoDebug } from "./video/components/VideoDebug"
@@ -104,10 +106,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Memoized video playlist
   const videoPlaylist = useMemo(() => {
     const playlist: { videoId: string; chapter: FullChapterType }[] = []
-
+    
     if (!course?.courseUnits) {
       return playlist
     }
+
+    // Global index across all units/chapters to support implicit free gating
+    let globalIndex = 0
 
     course.courseUnits.forEach((unit) => {
       if (!unit.chapters) return
@@ -141,8 +146,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           const safeChapter = {
             ...chapter,
             description: chapter.description === null ? undefined : chapter.description,
-          }
+            // Implicit free gating for first two videos
+            isFree: Boolean(chapter.isFree) || globalIndex < 2,
+            // Unlock only the first quiz (after two free videos we unlock the first quiz slot)
+            // Here we choose the quiz tied to the second video (index 1)
+            isFreeQuiz: globalIndex === 1,
+          } as FullChapterType & { isFreeQuiz?: boolean }
+
           playlist.push({ videoId: chapter.videoId!, chapter: safeChapter })
+          globalIndex += 1
         })
     })
 
@@ -652,6 +664,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Chapter description and rating */}
+              {currentChapter?.description && (
+                <div className="rounded-lg border bg-card/50 p-4 md:p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-3">About this lesson</h3>
+                  <div className="prose prose-sm max-w-none text-foreground/90">
+                    <MarkdownRenderer content={currentChapter.description} />
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Rate this lesson</span>
+                    <Rating
+                      value={0}
+                      onValueChange={() => {}}
+                      className="scale-110"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Chapter navigation */}
               <div className="flex items-center justify-between">
                 <Button
@@ -698,6 +729,33 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 currentChapter={currentChapter}
                 accessLevels={accessLevels}                onSeekToBookmark={handleSeekToBookmark}
               />
+
+              {/* Related courses recommendation (simple placeholder using CourseCard) */}
+              {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold mb-4">Recommended for you</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {(course as any).relatedCourses.slice(0, 3).map((c: any, idx: number) => (
+                      <div key={c.id || idx}>
+                        {/* Lazy import via dynamic would be nicer; using a simple card fallback to avoid new imports */}
+                        <div className="border rounded-lg overflow-hidden shadow-sm">
+                          <div className="p-4">
+                            <div className="font-semibold line-clamp-2">{c.title}</div>
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description}</p>
+                            <Button
+                              variant="outline"
+                              className="mt-3 w-full"
+                              onClick={() => (window.location.href = `/dashboard/course/${c.slug}`)}
+                            >
+                              View Course
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -724,6 +782,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
            />
         </aside>
       </div>
+
+      {/* Floating subscribe CTA for guests/free users */}
+      {!userSubscription && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <Button
+            size="lg"
+            onClick={() => (window.location.href = "/dashboard/subscription")}
+            className="shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 transition-transform hover:scale-[1.02]"
+          >
+            Subscribe to Unlock
+          </Button>
+        </div>
+      )}
 
       {/* Certificate modal */}
       <AnimatePresence>

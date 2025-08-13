@@ -35,6 +35,11 @@ const nextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+        pathname: "/**",
+      },
     ],
     minimumCacheTTL: 600, // Cache images for at least 10 minutes
     dangerouslyAllowSVG: false,

@@ -148,8 +148,8 @@ export default function CourseDetailsTabs({
               chapterId={currentChapter.id}
               name={currentChapter.title || currentChapter.name || "Chapter Summary"}
               existingSummary={currentChapter.summary || null}
-                            hasAccess={Boolean(accessLevels?.isSubscribed || currentChapter?.isFree)}
-               isAdmin={accessLevels?.isAdmin}
+              hasAccess={Boolean(accessLevels?.isSubscribed || currentChapter?.isFree)}
+              isAdmin={accessLevels?.isAdmin}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -168,7 +168,11 @@ export default function CourseDetailsTabs({
               key={currentChapter.id}
               course={course}
               chapter={currentChapter}
-              accessLevels={accessLevels!}
+              accessLevels={{
+                ...accessLevels!,
+                // Gate quiz: allow if subscribed or this chapter flagged as free quiz
+                isSubscribed: Boolean(accessLevels?.isSubscribed || (currentChapter as any)?.isFreeQuiz === true),
+              }}
               isPublicCourse={course.isPublic || false}
               chapterId={currentChapter.id.toString()}
             />

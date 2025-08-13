@@ -111,12 +111,12 @@ const QuizSkeleton = () => (
 )
 
 export default function CourseDetailsQuiz({ chapter, course, isPublicCourse, chapterId, accessLevels }: QuizProps) {
-  const hasQuizAccess = accessLevels.isSubscribed || accessLevels.isPublic || chapter?.isFree === true
+  const hasQuizAccess = accessLevels.isSubscribed || accessLevels.isPublic || chapter?.isFree === true || (chapter as any)?.isFreeQuiz === true
   const { toast } = useToast()
   const { data: session } = useSession()
   const isUserAuthenticated = accessLevels.isAuthenticated || !!session
   const effectiveChapterId = chapterId || chapter?.id?.toString()
-  const canFetchQuestions = isUserAuthenticated || chapter?.isFree === true
+  const canFetchQuestions = hasQuizAccess
 
   const initialQuizState: QuizState = {
     answers: {},

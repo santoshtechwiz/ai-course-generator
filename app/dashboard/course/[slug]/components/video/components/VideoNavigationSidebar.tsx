@@ -220,6 +220,23 @@ const ChapterItem = React.memo(
               </div>
             </div>
 
+            {/* Thumbnail */}
+            {chapter.videoId && (
+              <div className="relative mr-3 w-16 h-10 rounded-md overflow-hidden flex-shrink-0">
+                <img
+                  src={`https://img.youtube.com/vi/${chapter.videoId}/mqdefault.jpg`}
+                  alt=""
+                  className={cn("h-full w-full object-cover transition-transform duration-200", isLocked ? "opacity-60" : "group-hover:scale-[1.03]")}
+                  loading="lazy"
+                />
+                {isLocked && (
+                  <div className="absolute inset-0 grid place-items-center bg-black/20">
+                    <Lock className="h-4 w-4 text-white" />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Chapter content */}
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-start justify-between gap-2">
