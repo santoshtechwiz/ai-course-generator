@@ -20,6 +20,7 @@ import { useGlobalLoader } from "@/store/loaders/global-loader"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Add memo and useCallback to optimize rendering
 const MemoizedCourseCard = React.memo(CourseCard)
@@ -332,7 +333,7 @@ export default function CoursesClient({
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
       {/* Enhanced Header with Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 w-full">
         <div className="space-y-2">
           <h2 className="text-2xl font-bold tracking-tight">
             {searchQuery || selectedCategory ? "Search Results" : "All Courses"}
@@ -357,7 +358,7 @@ export default function CoursesClient({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 sticky top-2 sm:static z-20">
           {/* Mobile filter button */}
           <Sheet open={showFilters} onOpenChange={setShowFilters}>
             <SheetTrigger asChild>
@@ -416,47 +417,37 @@ export default function CoursesClient({
             </SheetContent>
           </Sheet>
 
-          {/* Desktop controls */}
-          <div className="hidden sm:flex items-center gap-4">
-            {!searchQuery && !selectedCategory && (
-              <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList className="bg-muted/50">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-background">
-                    <Target className="h-4 w-4 mr-2" />
-                    All
-                  </TabsTrigger>
-                  <TabsTrigger value="popular" className="data-[state=active]:bg-background">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Popular
-                  </TabsTrigger>
-                  <TabsTrigger value="newest" className="data-[state=active]:bg-background">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Newest
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
+          {/* Desktop quick sort tabs */}
+          <div className="hidden sm:flex items-center rounded-xl border border-border/50 p-1 bg-background/50">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="popular">Popular</TabsTrigger>
+                <TabsTrigger value="newest">Newest</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
 
-            <div className="flex items-center border rounded-md overflow-hidden bg-muted/50">
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="icon"
-                className="h-9 w-9 rounded-none"
-                onClick={() => handleViewModeChange("grid")}
-                aria-label="Grid view"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="icon"
-                className="h-9 w-9 rounded-none"
-                onClick={() => handleViewModeChange("list")}
-                aria-label="List view"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* View toggles */}
+          <div className="flex items-center border rounded-md overflow-hidden bg-muted/50">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="icon"
+              className="h-9 w-9 rounded-none"
+              onClick={() => handleViewModeChange("grid")}
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="icon"
+              className="h-9 w-9 rounded-none"
+              onClick={() => handleViewModeChange("list")}
+              aria-label="List view"
+            >
+              <List className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -501,6 +492,16 @@ export default function CoursesClient({
                   className={viewMode === "list" ? "max-w-none" : ""}
                 />
               </motion.div>
+            ))}
+
+            {/* Skeletons while fetching next page */}
+            {isFetchingNextPage && Array.from({ length: 4 }).map((_, i) => (
+              <div key={`s-${i}`} className="space-y-3">
+                <Skeleton className="w-full aspect-video rounded-lg" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
             ))}
           </div>
         </motion.div>
@@ -577,6 +578,19 @@ export default function CoursesClient({
             </CardContent>
           </Card>
         </motion.div>
+      )}
+
+      {/* Floating CTA (example): show if many results present */}
+      {courses.length >= 12 && (
+        <div className="fixed bottom-6 right-6 z-20">
+          <Button
+            size="lg"
+            onClick={() => (window.location.href = "/dashboard/subscription")}
+            className="shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 rounded-full"
+          >
+            Subscribe for Full Access
+          </Button>
+        </div>
       )}
     </div>
   )
