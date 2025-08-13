@@ -116,6 +116,11 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
                   <Badge variant="secondary" className="text-xs">
                     {course.category?.name || 'Course'}
                   </Badge>
+                  {course.level || course.difficulty ? (
+                    <Badge variant="outline" className="text-xs">
+                      {course.level || course.difficulty}
+                    </Badge>
+                  ) : null}
                   <span className="text-sm font-medium text-muted-foreground">
                     {course.title}
                   </span>

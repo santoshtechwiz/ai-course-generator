@@ -503,7 +503,14 @@ export const CourseCard = React.memo(
                   </div>
 
                   {/* Description */}
-                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
+                    {/* Ratings Row */}
+                    <div className="mt-2 flex items-center gap-1">
+                      {[1,2,3,4,5].map((i) => (
+                        <Star key={i} className={`h-4 w-4 ${rating >= i ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                      ))}
+                      <span className="ml-2 text-xs text-muted-foreground">{rating.toFixed ? rating.toFixed(1) : rating}/5</span>
+                    </div>
                 </motion.div>
               </CardHeader>
 

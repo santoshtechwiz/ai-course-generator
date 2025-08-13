@@ -767,6 +767,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             </div>
           </div>
         </main>
+        {/* Sticky mobile Next Lesson CTA */}
+        <div className="lg:hidden sticky bottom-0 z-30 p-4 bg-gradient-to-t from-background/90 to-transparent">
+          <Button
+            className="w-full"
+            onClick={handleNextVideo}
+            disabled={!nextChapter || !(nextChapter?.chapter?.isFree || !!userSubscription)}
+          >
+            Next Lesson
+          </Button>
+        </div>
         {/* Desktop sidebar - hide in wide mode for full focus */}
         {!wideMode && (
         <aside className="hidden lg:block w-96 border-l bg-background/50 backdrop-blur-sm">
