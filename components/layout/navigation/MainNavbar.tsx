@@ -369,7 +369,7 @@ export default function MainNavbar() {
             {!isPremium && (
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden sm:block">
                 <Button asChild size="sm" className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow hover:shadow-md">
-                  <a href="/dashboard/subscription" aria-label="Upgrade plan">Upgrade</a>
+                  <a href="/dashboard/subscription" aria-label="Upgrade your plan to unlock premium features">Upgrade</a>
                 </Button>
               </motion.div>
             )}
@@ -381,11 +381,11 @@ export default function MainNavbar() {
                 size="icon"
                 onClick={handleSearchOpen}
                 className="h-9 w-9 hover:bg-accent/80 transition-all duration-200 relative overflow-hidden group"
-                aria-label="Search"
+                aria-label="Open search"
                 data-testid="search-button"
               >
                 <Search className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                <span className="sr-only">Search</span>
+                <span className="sr-only">Open search</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
               </Button>
             </motion.div>
@@ -434,6 +434,7 @@ export default function MainNavbar() {
                     size="icon" 
                     className="h-9 w-9" 
                     aria-label="Open navigation menu"
+                    aria-haspopup="dialog"
                     aria-expanded={isMobileMenuOpen}
                     aria-controls="mobile-menu"
                   >
@@ -468,10 +469,10 @@ export default function MainNavbar() {
                         size="icon" 
                         onClick={() => setIsMobileMenuOpen(false)} 
                         className="h-8 w-8 hover:bg-accent/80 transition-colors"
-                        aria-label="Close menu"
+                        aria-label="Close navigation menu"
                       >
                         <X className="h-4 w-4" />
-                        <span className="sr-only">Close menu</span>
+                        <span className="sr-only">Close navigation menu</span>
                       </Button>
                     </motion.div>
 
@@ -554,8 +555,9 @@ export default function MainNavbar() {
                             onClick={handleSignIn} 
                             className="w-full shadow-sm hover:shadow-md transition-all duration-200" 
                             size="lg"
+                            aria-label="Sign in to your account"
                           >
-                            Sign In
+                            Sign in
                           </Button>
                         </motion.div>
                       )}
