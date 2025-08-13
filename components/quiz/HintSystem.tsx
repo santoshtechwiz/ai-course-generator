@@ -168,14 +168,14 @@ export function HintSystem({
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <Card
         className={cn(
-          "bg-gradient-to-r from-blue-50/60 to-indigo-50/60 border-blue-200 relative overflow-hidden dark:from-blue-950/30 dark:to-indigo-950/30 dark:border-blue-700",
+          "relative overflow-hidden border-border bg-card",
           className,
         )}
       >
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300 text-lg">
-              <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="flex items-center gap-2 text-foreground text-lg">
+              <Lightbulb className="h-5 w-5 text-primary" />
               Learning Hints
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function HintSystem({
               </Badge>
             </div>
           </div>
-          <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Progressive hints to guide your learning. Each hint provides more specific guidance.
           </p>
         </CardHeader>
@@ -198,10 +198,10 @@ export function HintSystem({
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 border border-cyan-200 dark:border-cyan-700 text-cyan-800 dark:text-cyan-200 p-4 rounded-lg shadow-sm"
+                className="p-4 rounded-lg shadow-sm bg-muted border border-border text-foreground"
               >
                 <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-cyan-600 dark:text-cyan-400" />
+                  <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-primary" />
                   <div>
                     <div className="font-semibold mb-1">Smart Analysis</div>
                     <p className="text-sm leading-relaxed">{proactiveHint}</p>
@@ -223,16 +223,16 @@ export function HintSystem({
                   animate="visible"
                   exit="exit"
                   layout
-                  className="border rounded-xl p-4 bg-white dark:bg-gray-950/50 shadow-sm hover:shadow-md transition-all duration-300 space-y-3"
+                  className="border border-border rounded-xl p-4 bg-card shadow-sm hover:shadow-md transition-all duration-300 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white">
+                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
                         <HintIcon className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">Hint {index + 1}</span>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{hint.description}</div>
+                        <span className="font-semibold text-sm text-foreground">Hint {index + 1}</span>
+                        <div className="text-xs text-muted-foreground">{hint.description}</div>
                       </div>
                     </div>
                     <Badge className={cn("text-xs font-medium", getColor(hint.spoilerLevel, index))}>
@@ -240,14 +240,9 @@ export function HintSystem({
                     </Badge>
                   </div>
 
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border-l-4 border-l-blue-400"
-                  >
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{hint.content}</p>
-                  </motion.div>
+                  <div className="text-sm text-muted-foreground leading-relaxed">
+                    {hint.hint}
+                  </div>
 
                   <div className="flex items-center justify-between text-xs">
                     <div className="text-gray-500 dark:text-gray-400">
@@ -268,41 +263,12 @@ export function HintSystem({
             })}
           </AnimatePresence>
 
-          {/* Reveal Next Hint Button */}
-          {revealedCount < availableHints.length ? (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Button
-                onClick={handleReveal}
-                className={cn(
-                  "w-full text-sm transition-all duration-300 ease-in-out",
-                  revealedCount >= 4
-                    ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl"
-                    : revealedCount >= 2
-                      ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl"
-                      : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl",
-                )}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                {revealedCount >= 4 ? (
-                  <span className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    Show Complete Answer (-{nextHint?.penalty || 20}%)
-                  </span>
-                ) : (
-                  `Get Hint ${revealedCount + 1} (-${nextHint?.penalty || 5}%)`
-                )}
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center text-gray-500 dark:text-gray-400 text-sm py-4 flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg border"
-            >
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span className="font-medium">All hints revealed</span>
-            </motion.div>
-          )}
+          {/* Reveal button */}
+          <div className="pt-2">
+            <Button onClick={handleReveal} disabled={!nextHint} className="w-full">
+              {nextHint ? "Reveal next hint" : "No more hints"}
+            </Button>
+          </div>
 
           {/* Score Impact Display */}
           {revealedCount > 0 && (
