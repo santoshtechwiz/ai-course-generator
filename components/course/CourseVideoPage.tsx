@@ -1,18 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { VideoPlayer } from './VideoPlayer'
+import { useState } from 'react'
 import { CourseSidebar } from './CourseSidebar'
 import { VideoDescription } from './VideoDescription'
-import { VideoEngagement } from './VideoEngagement'
-import { VideoNotes } from './VideoNotes'
 import { QuizSection } from './QuizSection'
 import { ProgressTracker } from './ProgressTracker'
 import { SubscribeButton } from './SubscribeButton'
-import { FloatingActions } from './FloatingActions'
 import { RelatedCourses } from './RelatedCourses'
 import { CourseHeader } from './CourseHeader'
-import { useCourseData } from '@/hooks/useCourseData'
 import { cn } from '@/lib/utils'
 
 interface CourseVideoPageProps {
@@ -23,16 +18,35 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [showSubscribeModal, setShowSubscribeModal] = useState(false)
-  const [isTheaterMode, setIsTheaterMode] = useState(false)
-  const [currentVideoTime, setCurrentVideoTime] = useState(0)
-  const [videoDuration, setVideoDuration] = useState(0)
   
-  const { course, isLoading, error } = useCourseData(courseId)
+  // Mock data - in real app this would come from API
+  const course = {
+    id: courseId,
+    title: "Course Title",
+    description: "Course description",
+    instructor: "Instructor Name",
+    category: "Category",
+    level: "Beginner" as const,
+    rating: 4.5,
+    totalRatings: 100,
+    duration: "10 hours",
+    videos: [
+      { id: "1", title: "Video 1", description: "Description 1", duration: "10:00" },
+      { id: "2", title: "Video 2", description: "Description 2", duration: "15:00" },
+      { id: "3", title: "Video 3", description: "Description 3", duration: "20:00" }
+    ],
+    quizzes: [
+      { id: "quiz-1", title: "Quiz 1", questions: [] },
+      { id: "quiz-2", title: "Quiz 2", questions: [] }
+    ],
+    thumbnail: "",
+    tags: []
+  }
   
   const isSubscribed = false // This would come from auth context
   const canAccessVideo = (index: number) => isSubscribed || index < 2
   
-  const currentVideo = course?.videos[currentVideoIndex]
+  const currentVideo = course.videos[currentVideoIndex]
   const isVideoLocked = !canAccessVideo(currentVideoIndex)
   
   const handleVideoChange = (index: number) => {
@@ -44,44 +58,9 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
   }
   
   const handleNextVideo = () => {
-    if (currentVideoIndex < course?.videos.length - 1) {
+    if (currentVideoIndex < course.videos.length - 1) {
       handleVideoChange(currentVideoIndex + 1)
     }
-  }
-  
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="animate-pulse">
-          <div className="h-16 bg-white border-b"></div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="aspect-video bg-slate-200 rounded-lg mb-8"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="h-8 bg-slate-200 rounded w-3/4"></div>
-                <div className="h-4 bg-slate-200 rounded w-full"></div>
-                <div className="h-4 bg-slate-200 rounded w-5/6"></div>
-              </div>
-              <div className="space-y-4">
-                <div className="h-64 bg-slate-200 rounded-lg"></div>
-                <div className="h-32 bg-slate-200 rounded-lg"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-  
-  if (error || !course) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-slate-900 mb-2">Course Not Found</h2>
-          <p className="text-slate-600">The course you're looking for doesn't exist.</p>
-        </div>
-      </div>
-    )
   }
   
   return (
@@ -94,29 +73,31 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
-      <div className={cn(
-        "mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300",
-        isTheaterMode ? "max-w-6xl" : "max-w-7xl"
-      )}>
-        <div className={cn(
-          "grid gap-8 transition-all duration-300",
-          isTheaterMode 
-            ? "grid-cols-1" 
-            : "grid-cols-1 lg:grid-cols-3"
-        )}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className={cn(
-            "space-y-8 transition-all duration-300",
-            isTheaterMode ? "w-full" : "lg:col-span-2"
-          )}>
-            {/* Video Player */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Video Player Placeholder */}
             <div className="relative">
-              <VideoPlayer 
-                video={currentVideo}
-                isLocked={isVideoLocked}
-                onVideoEnd={handleNextVideo}
-                onTimeUpdate={setCurrentVideoTime}
-              />
+              <div className="aspect-video bg-slate-200 rounded-xl flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">🎥</div>
+                  <h3 className="text-xl font-semibold text-slate-700 mb-2">
+                    {currentVideo.title}
+                  </h3>
+                  <p className="text-slate-600 mb-4">
+                    {isVideoLocked ? "Subscribe to watch this video" : "Video player would go here"}
+                  </p>
+                  {isVideoLocked && (
+                    <button 
+                      onClick={() => setShowSubscribeModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                    >
+                      Subscribe to Watch
+                    </button>
+                  )}
+                </div>
+              </div>
               
               {/* Progress Tracker */}
               <div className="mt-6">
@@ -132,34 +113,6 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
             <VideoDescription 
               video={currentVideo}
               isLocked={isVideoLocked}
-            />
-
-            {/* Video Engagement */}
-            <VideoEngagement
-              videoId={currentVideo.id}
-              videoTitle={currentVideo.title}
-              onLike={() => {
-                // Handle like action
-              }}
-              onShare={() => {
-                // Handle share action
-              }}
-              onBookmark={() => {
-                // Handle bookmark action
-              }}
-              onComment={() => {
-                // Handle comment action
-              }}
-              onDownload={() => {
-                // Handle download action
-              }}
-            />
-
-            {/* Video Notes */}
-            <VideoNotes
-              videoId={currentVideo.id}
-              currentTime={currentVideoTime}
-              duration={videoDuration}
             />
             
             {/* Quiz Section */}
@@ -197,7 +150,7 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
           
           {/* Sidebar */}
           <div className={cn(
-            isTheaterMode ? "hidden" : "lg:block",
+            "lg:block",
             isSidebarOpen ? "block" : "hidden"
           )}>
             <CourseSidebar 
@@ -226,25 +179,6 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
           onClick={() => setShowSubscribeModal(true)}
         />
       )}
-
-      {/* Floating Actions */}
-      <FloatingActions
-        onLike={() => {
-          // Handle like action
-        }}
-        onBookmark={() => {
-          // Handle bookmark action
-        }}
-        onShare={() => {
-          // Handle share action
-        }}
-        onComment={() => {
-          // Handle comment action
-        }}
-        onAddNote={() => {
-          // Handle add note action
-        }}
-      />
       
       {/* Subscribe Modal */}
       {showSubscribeModal && (
