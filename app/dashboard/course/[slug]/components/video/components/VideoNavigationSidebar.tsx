@@ -51,6 +51,7 @@ interface VideoNavigationSidebarProps {
   isPlaying?: boolean
   onTogglePlay?: () => void
   formatDuration?: (seconds: number) => string
+  isSubscribed: boolean
 }
 
 const Equalizer = () => (
@@ -480,6 +481,7 @@ const SidebarContent = React.memo(function SidebarContent({
   currentChapter,
   nextVideoId,
   isAuthenticated,
+  isSubscribed,
   handleChapterClick,
   totalChapters,
   isPlaying,
@@ -499,6 +501,7 @@ const SidebarContent = React.memo(function SidebarContent({
   currentChapter?: FullChapterType | null
   nextVideoId?: string
   isAuthenticated: boolean
+  isSubscribed: boolean
   handleChapterClick: (chapter: FullChapterType) => void
   totalChapters: number
   isPlaying?: boolean
@@ -603,7 +606,7 @@ const SidebarContent = React.memo(function SidebarContent({
                         const globalChapterIndex = prevChaptersCount + chapterIndex
                         const isActive = currentChapter?.id === chapter.id
                         const isCompleted = completedChapters?.includes(Number(chapter.id)) || false
-                        const isLocked = !isAuthenticated && !chapter.isFree
+                        const isLocked = !(chapter.isFree || isSubscribed)
                         const isNextVideo = chapter.videoId === nextVideoId
                         const isPrevVideo = chapter.videoId === currentChapter?.videoId
 
@@ -696,6 +699,7 @@ export default function VideoNavigationSidebar({
   onChapterSelect,
   currentVideoId,
   isAuthenticated,
+  isSubscribed,
   progress,
   completedChapters = [],
   nextVideoId,
@@ -807,6 +811,7 @@ export default function VideoNavigationSidebar({
           currentChapter={currentChapter}
           nextVideoId={nextVideoId}
           isAuthenticated={isAuthenticated}
+          isSubscribed={isSubscribed}
           handleChapterClick={handleChapterClick}
           totalChapters={totalChapters}
           isPlaying={isPlaying}
@@ -838,6 +843,7 @@ export default function VideoNavigationSidebar({
           currentChapter={currentChapter}
           nextVideoId={nextVideoId}
           isAuthenticated={isAuthenticated}
+          isSubscribed={isSubscribed}
           handleChapterClick={handleChapterClick}
           totalChapters={totalChapters}
           isPlaying={isPlaying}

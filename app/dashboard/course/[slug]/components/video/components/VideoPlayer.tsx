@@ -12,7 +12,7 @@ import BookmarkManager from "./BookmarkManager"
 import KeyboardShortcutsModal from "../../KeyboardShortcutsModal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Play, Lock, User } from "lucide-react"
+import { Play, Lock, User, Pause, SkipForward } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import type { VideoPlayerProps } from "../types"
@@ -141,6 +141,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
 
+  // Initialize video player hook BEFORE any usage of containerRef
+  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
+    videoId,
+    onEnded: () => {
+      // Mark free video as played if not authenticated
+      if (!isAuthenticated && !hasPlayedFreeVideo) {
+        localStorage.setItem("hasPlayedFreeVideo", "true")
+        setHasPlayedFreeVideo(true)
+      }
+    },
+    onProgress,
+    onTimeUpdate,
+    rememberPlaybackPosition,
+    rememberPlaybackSettings,
+    onBookmark,
+    autoPlay: autoPlay && canPlayVideo,
+    onVideoLoad,
+    onCertificateClick,
+  })
+
+  // Observe visibility of the container to toggle mini controls
+  const [isInView, setIsInView] = useState(true)
+  useEffect(() => {
+    if (!containerRef.current || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        setIsInView(entry.isIntersecting)
+      },
+      { root: null, threshold: 0.3 },
+    )
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [containerRef])
+
   // Track mounting state to prevent "element not found" errors
   useEffect(() => {
     setIsMounted(true)
@@ -182,34 +217,66 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowAuthPrompt(authenticationState.showAuthPrompt)
   }, [authenticationState])
 
-  // Initialize video player hook with enhanced options
-  const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
-    videoId,
-    onEnded: () => {
-      // Mark free video as played if not authenticated
-      if (!isAuthenticated && !hasPlayedFreeVideo) {
-        localStorage.setItem("hasPlayedFreeVideo", "true")
-        setHasPlayedFreeVideo(true)
+  // Safe video element getter with proper error handling (defined early for use in handlers and JSX)
+  const getVideoElement = useCallback((): HTMLVideoElement | null => {
+    if (!isMounted || !containerRef.current) return null
+
+    try {
+      // First try to get from ReactPlayer internal structure
+      const reactPlayerVideo = containerRef.current.querySelector("iframe")?.contentDocument?.querySelector("video")
+      if (reactPlayerVideo) {
+        videoElementRef.current = reactPlayerVideo as HTMLVideoElement
+        return reactPlayerVideo as HTMLVideoElement
       }
-    },
-    onProgress,
-    onTimeUpdate,
-    rememberPlaybackPosition,
-    rememberPlaybackSettings,
-    onBookmark,
-    autoPlay: autoPlay && canPlayVideo,
-    onVideoLoad,
-    onCertificateClick,
-  })
+
+      // Fallback to direct video element
+      const directVideo = containerRef.current.querySelector("video")
+      if (directVideo) {
+        videoElementRef.current = directVideo as HTMLVideoElement
+        return directVideo as HTMLVideoElement
+      }
+
+      return null
+    } catch (error) {
+      console.warn("Error accessing video element:", error)
+      return null
+    }
+  }, [isMounted, containerRef])
 
   // Handle Picture-in-Picture
-  const handlePictureInPicture = useCallback(() => {
+  const handlePictureInPicture = useCallback(async () => {
+    const videoEl = getVideoElement()
+    // Prefer native PiP on the actual video element when available
+    if (videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled) {
+      try {
+        if ((document as any).pictureInPictureElement) {
+          await (document as any).exitPictureInPicture()
+        } else {
+          await (videoEl as any).requestPictureInPicture()
+        }
+        return
+      } catch (error) {
+        toast({
+          title: "PiP Error",
+          description: "Could not toggle Picture‑in‑Picture.",
+          variant: "destructive",
+        })
+        // fall through to handler below
+      }
+    }
+
+    // Fallback to handler provided by the hook/parent if available
     if (handlers.handlePictureInPictureToggle) {
       handlers.handlePictureInPictureToggle()
     } else if (onPictureInPictureToggle) {
       onPictureInPictureToggle()
+    } else {
+      toast({
+        title: "PiP not available",
+        description: "This video provider does not support Picture‑in‑Picture.",
+      })
     }
-  }, [handlers.handlePictureInPictureToggle, onPictureInPictureToggle])
+  }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast])
 
   // Handle Theater Mode (throttled)
   const handleTheaterMode = useCallback(() => {
@@ -233,32 +300,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
       : `${m}:${s.toString().padStart(2, "0")}`
   }, [])
-
-  // Safe video element getter with proper error handling
-  const getVideoElement = useCallback((): HTMLVideoElement | null => {
-    if (!isMounted || !containerRef.current) return null
-
-    try {
-      // First try to get from ReactPlayer internal structure
-      const reactPlayerVideo = containerRef.current.querySelector("iframe")?.contentDocument?.querySelector("video")
-      if (reactPlayerVideo) {
-        videoElementRef.current = reactPlayerVideo
-        return reactPlayerVideo
-      }
-
-      // Fallback to direct video element
-      const directVideo = containerRef.current.querySelector("video")
-      if (directVideo) {
-        videoElementRef.current = directVideo
-        return directVideo
-      }
-
-      return null
-    } catch (error) {
-      console.warn("Error accessing video element:", error)
-      return null
-    }
-  }, [isMounted, containerRef])
 
   // Enhanced player ready handler with better error handling
   const handlePlayerReady = useCallback(() => {
@@ -769,9 +810,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             onPictureInPicture={handlePictureInPicture}
-            isPiPSupported={state.isPiPSupported}
+            isPiPSupported={Boolean(getVideoElement() && (getVideoElement() as any).requestPictureInPicture && (document as any).pictureInPictureEnabled)}
             isPiPActive={state.isPictureInPicture}
           />
+        </div>
+      )}
+
+      {/* Floating mini controls when player is not fully in view */}
+      {canPlayVideo && !isInView && (
+        <div className="fixed bottom-4 right-4 z-40 bg-black/80 text-white rounded-full shadow-lg border border-white/10 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
+          <button
+            className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-white/10"
+            onClick={handlePlayClick}
+            aria-label={state.playing ? "Pause" : "Play"}
+          >
+            {state.playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+          {onNextVideo && (
+            <button
+              className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-white/10"
+              onClick={handleNextChapter}
+              aria-label="Next video"
+              title={nextVideoTitle ? `Next: ${nextVideoTitle}` : "Next video"}
+            >
+              <SkipForward className="h-4 w-4" />
+            </button>
+          )}
         </div>
       )}
 

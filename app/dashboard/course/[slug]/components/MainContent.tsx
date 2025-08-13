@@ -177,10 +177,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     currentChapterId: currentChapter?.id?.toString(),
   })
 
-  // Check if user can play video
+  // Determine user subscription once (used for gating below)
+  const userSubscription = useMemo(() => {
+    if (!subscription) return null
+    return subscription.plan || null
+  }, [subscription])
+
+  // Check if user can play this video: allowed if chapter is free or user is subscribed
   const canPlayVideo = useMemo(() => {
-    return !!user || !hasPlayedFreeVideo
-  }, [user, hasPlayedFreeVideo])
+    const allowedByChapter = currentChapter?.isFree === true
+    return allowedByChapter || !!userSubscription
+  }, [currentChapter?.isFree, userSubscription])
 
   // Get direct access to the Zustand video state store
   const videoStateStore = useVideoState
@@ -329,6 +336,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       // Mark free video as played if not authenticated
       if (!user && !hasPlayedFreeVideo) {
+        // keep legacy preference but not relied upon for gating anymore
         migratedStorage.setPreference("played_free_video", true)
         setHasPlayedFreeVideo(true)
       }
@@ -395,8 +403,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           return;
         }
 
-        // Check if user can play this video
-        if (!canPlayVideo) {
+        // Check if user can play the selected video (free chapter or subscribed)
+        const allowed = Boolean(safeChapter.isFree || userSubscription)
+        if (!allowed) {
           setShowAuthPrompt(true);
           return;
         }
@@ -513,16 +522,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
             <Lock className="h-8 w-8 text-primary" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Sign in to continue watching</h3>
+          <h3 className="text-xl font-semibold mb-2">Unlock this lesson</h3>
           <p className="text-muted-foreground mb-6">
-            You've used your free video preview. Sign in to access all course content and features.
+            The first two chapters (including summary and quiz) are free. Upgrade your plan to access all remaining lessons.
           </p>
           <div className="space-y-3">
-            <Button onClick={() => (window.location.href = "/api/auth/signin")} className="w-full" size="lg">
+            <Button onClick={() => (window.location.href = "/dashboard/subscription")} className="w-full" size="lg">
+              Upgrade Now
+            </Button>
+            <Button variant="outline" onClick={() => (window.location.href = "/api/auth/signin")} className="w-full">
               <UserIcon className="h-4 w-4 mr-2" />
               Sign In
             </Button>
-            <Button variant="outline" onClick={() => setShowAuthPrompt(false)} className="w-full">
+            <Button variant="ghost" onClick={() => setShowAuthPrompt(false)} className="w-full">
               Back to Course
             </Button>
           </div>
@@ -530,12 +542,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       </Card>
     </div>
   )
-  // Simplify subscription status checking - determine it once
-  const userSubscription = useMemo(() => {
-    if (!subscription) return null
-    return subscription.plan || null
-  }, [subscription])
-
   // Determine access levels based on subscription
   const accessLevels: AccessLevels = useMemo(() => {
     return {
@@ -584,6 +590,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                   {wideMode ? "Normal width" : "Wider video"}
                 </Button>
+                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
               </div>
 
               {/* Video player */}
@@ -663,7 +670,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         <span>{isVideoLoading ? "Loading..." : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
-                        {currentChapter.isFree && (<span className="px-2 py-1 rounded bg-gray-200 text-gray-800 text-xs">Free</span>)}
+                        {currentChapter.isFree ? (
+                          <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">Free</span>
+                        ) : (
+                          <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">Locked</span>
+                        )}
                         {!user && !hasPlayedFreeVideo && (
                           <span className="px-2 py-1 rounded border border-green-600 text-green-600 text-xs">Preview</span>
                         )}
@@ -692,24 +703,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         </main>
         {/* Desktop sidebar - Using VideoNavigationSidebar */}
         <aside className="hidden lg:block w-96 border-l bg-background/50 backdrop-blur-sm">
-          <VideoNavigationSidebar
-            course={course}
-            currentChapter={currentChapter}
-            courseId={course.id.toString()}
-            onChapterSelect={handleChapterSelect}
-            progress={progress}
-            isAuthenticated={!!user}
-            completedChapters={completedChapters}
-            formatDuration={formatDuration}
-            nextVideoId={nextChapter?.videoId}
-            currentVideoId={currentVideoId || ''}
-            isPlaying={Boolean(currentVideoId)}
-            courseStats={{
-              completedCount: progress?.completedChapters?.length || 0,
-              totalChapters: videoPlaylist.length,
-              progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-            }}
-          />
+                    <VideoNavigationSidebar
+             course={course}
+             currentChapter={currentChapter}
+             courseId={course.id.toString()}
+             onChapterSelect={handleChapterSelect}
+             progress={progress}
+             isAuthenticated={!!user}
+             isSubscribed={!!userSubscription}
+             completedChapters={completedChapters}
+             formatDuration={formatDuration}
+             nextVideoId={nextChapter?.videoId}
+             currentVideoId={currentVideoId || ''}
+             isPlaying={Boolean(currentVideoId)}
+             courseStats={{
+               completedCount: progress?.completedChapters?.length || 0,
+               totalChapters: videoPlaylist.length,
+               progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+             }}
+           />
         </aside>
       </div>
 
