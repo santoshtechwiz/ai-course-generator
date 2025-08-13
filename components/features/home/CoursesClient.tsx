@@ -7,7 +7,7 @@ import { useInfiniteQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import type { CategoryId } from "@/config/categories"
-import { BookOpen, ChevronDown, Loader2, LayoutGrid, List, Filter, Search, TrendingUp, Clock, Users } from "lucide-react"
+import { BookOpen, ChevronDown, Loader2, LayoutGrid, List, Filter, Search, TrendingUp, Clock, Users, GraduationCap } from "lucide-react"
 // Add import for missing icons
 import { AlertCircle, RefreshCw, Sparkles, Award, Target } from "lucide-react"
 import { CreateCard } from "@/components/CreateCard"
@@ -335,7 +335,8 @@ export default function CoursesClient({
       {/* Enhanced Header with Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 w-full">
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <GraduationCap className="h-6 w-6 text-primary" />
             {searchQuery || selectedCategory ? "Search Results" : "All Courses"}
           </h2>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -352,6 +353,10 @@ export default function CoursesClient({
                 <div className="flex items-center gap-1">
                   <Award className="h-4 w-4" />
                   <span>{(courses.reduce((acc, course) => acc + (course.rating || 0), 0) / courses.length).toFixed(1)} avg rating</span>
+                </div>
+                <div className="hidden md:flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>Learn at your pace</span>
                 </div>
               </>
             )}
@@ -551,7 +556,7 @@ export default function CoursesClient({
         >
           <Card className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-primary/20">
             <CardContent className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-foreground">
                 <div>
                   <div className="text-2xl font-bold text-primary">{courses.length}</div>
                   <div className="text-sm text-muted-foreground">Total Courses</div>
