@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Play, Pause, Volume2, VolumeX, Maximize, Lock, Eye } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Lock, Eye, Settings, RotateCcw, RotateCw, Heart, Share2, Download, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Video } from '@/hooks/useCourseData'
 
@@ -9,15 +9,22 @@ interface VideoPlayerProps {
   video: Video
   isLocked: boolean
   onVideoEnd: () => void
+  onTimeUpdate?: (currentTime: number) => void
 }
 
-export function VideoPlayer({ video, isLocked, onVideoEnd }: VideoPlayerProps) {
+export function VideoPlayer({ video, isLocked, onVideoEnd, onTimeUpdate }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [showControls, setShowControls] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isTheaterMode, setIsTheaterMode] = useState(false)
+  const [volume, setVolume] = useState(1)
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [showSettings, setShowSettings] = useState(false)
+  const [isLiked, setIsLiked] = useState(false)
+  const [showEngagement, setShowEngagement] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -33,6 +40,7 @@ export function VideoPlayer({ video, isLocked, onVideoEnd }: VideoPlayerProps) {
 
     const handleTimeUpdate = () => {
       setCurrentTime(video.currentTime)
+      onTimeUpdate?.(video.currentTime)
     }
 
     const handleEnded = () => {
@@ -79,13 +87,58 @@ export function VideoPlayer({ video, isLocked, onVideoEnd }: VideoPlayerProps) {
     setIsMuted(!isMuted)
   }
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen()
-      setIsFullscreen(true)
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current?.requestFullscreen()
+        setIsFullscreen(true)
+      } else {
+        await document.exitFullscreen()
+        setIsFullscreen(false)
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error)
+    }
+  }
+
+  const toggleTheaterMode = () => {
+    setIsTheaterMode(!isTheaterMode)
+  }
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value)
+    setVolume(newVolume)
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume
+      setIsMuted(newVolume === 0)
+    }
+  }
+
+  const handlePlaybackRateChange = (rate: number) => {
+    setPlaybackRate(rate)
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate
+    }
+    setShowSettings(false)
+  }
+
+  const handleLike = () => {
+    setIsLiked(!isLiked)
+    setShowEngagement(true)
+    setTimeout(() => setShowEngagement(false), 2000)
+  }
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: video.title,
+        text: `Check out this video: ${video.title}`,
+        url: window.location.href
+      })
     } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
+      navigator.clipboard.writeText(window.location.href)
+      setShowEngagement(true)
+      setTimeout(() => setShowEngagement(false), 2000)
     }
   }
 
@@ -125,7 +178,11 @@ export function VideoPlayer({ video, isLocked, onVideoEnd }: VideoPlayerProps) {
   return (
     <div 
       ref={containerRef}
-      className="relative bg-black rounded-xl overflow-hidden shadow-2xl"
+      className={cn(
+        "relative bg-black overflow-hidden shadow-2xl transition-all duration-300",
+        isTheaterMode ? "rounded-none" : "rounded-xl",
+        isFullscreen ? "fixed inset-0 z-50" : ""
+      )}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
@@ -195,16 +252,27 @@ export function VideoPlayer({ video, isLocked, onVideoEnd }: VideoPlayerProps) {
             </button>
 
             {/* Volume Control */}
-            <button
-              onClick={toggleMute}
-              className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
-            >
-              {isMuted ? (
-                <VolumeX className="w-5 h-5" />
-              ) : (
-                <Volume2 className="w-5 h-5" />
-              )}
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={toggleMute}
+                className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5" />
+                ) : (
+                  <Volume2 className="w-5 h-5" />
+                )}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+              />
+            </div>
 
             {/* Time Display */}
             <div className="text-white text-sm font-mono">
@@ -212,13 +280,61 @@ export function VideoPlayer({ video, isLocked, onVideoEnd }: VideoPlayerProps) {
             </div>
           </div>
 
-          {/* Fullscreen Button */}
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
-          >
-            <Maximize className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Settings Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+              
+              {/* Settings Dropdown */}
+              {showSettings && (
+                <div className="absolute bottom-full right-0 mb-2 bg-black/90 backdrop-blur-sm rounded-lg p-2 min-w-32">
+                  <div className="text-white text-xs mb-2">Playback Speed</div>
+                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                    <button
+                      key={rate}
+                      onClick={() => handlePlaybackRateChange(rate)}
+                      className={cn(
+                        "block w-full text-left px-2 py-1 text-sm rounded hover:bg-white/20 transition-colors",
+                        playbackRate === rate ? "text-blue-400" : "text-white"
+                      )}
+                    >
+                      {rate}x
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Theater Mode Button */}
+            <button
+              onClick={toggleTheaterMode}
+              className={cn(
+                "p-2 rounded-full transition-colors",
+                isTheaterMode 
+                  ? "text-blue-400 bg-blue-400/20" 
+                  : "text-white hover:bg-white/20"
+              )}
+            >
+              <BookOpen className="w-5 h-5" />
+            </button>
+
+            {/* Fullscreen Button */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
+            >
+              {isFullscreen ? (
+                <Minimize className="w-5 h-5" />
+              ) : (
+                <Maximize className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -230,12 +346,48 @@ export function VideoPlayer({ video, isLocked, onVideoEnd }: VideoPlayerProps) {
         </div>
       </div>
 
-      {/* Preview Indicator for Locked Videos */}
-      {isLocked && (
-        <div className="absolute top-4 right-4">
+      {/* Engagement Buttons */}
+      <div className="absolute top-4 right-4 flex items-center space-x-2">
+        {/* Preview Indicator for Locked Videos */}
+        {isLocked && (
           <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-1">
             <Eye className="w-4 h-4" />
             <span>Preview</span>
+          </div>
+        )}
+
+        {/* Like Button */}
+        <button
+          onClick={handleLike}
+          className={cn(
+            "p-2 rounded-full transition-all duration-200",
+            isLiked 
+              ? "bg-red-500 text-white" 
+              : "bg-black/50 text-white hover:bg-black/70"
+          )}
+        >
+          <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
+        </button>
+
+        {/* Share Button */}
+        <button
+          onClick={handleShare}
+          className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all duration-200"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
+
+        {/* Download Button */}
+        <button className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all duration-200">
+          <Download className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Engagement Feedback */}
+      {showEngagement && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <div className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium animate-bounce">
+            {isLiked ? "Added to favorites!" : "Removed from favorites"}
           </div>
         </div>
       )}

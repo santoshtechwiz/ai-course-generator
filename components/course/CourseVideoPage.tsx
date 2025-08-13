@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react'
 import { VideoPlayer } from './VideoPlayer'
 import { CourseSidebar } from './CourseSidebar'
 import { VideoDescription } from './VideoDescription'
+import { VideoEngagement } from './VideoEngagement'
+import { VideoNotes } from './VideoNotes'
 import { QuizSection } from './QuizSection'
 import { ProgressTracker } from './ProgressTracker'
 import { SubscribeButton } from './SubscribeButton'
+import { FloatingActions } from './FloatingActions'
 import { RelatedCourses } from './RelatedCourses'
 import { CourseHeader } from './CourseHeader'
 import { useCourseData } from '@/hooks/useCourseData'
@@ -20,6 +23,9 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [showSubscribeModal, setShowSubscribeModal] = useState(false)
+  const [isTheaterMode, setIsTheaterMode] = useState(false)
+  const [currentVideoTime, setCurrentVideoTime] = useState(0)
+  const [videoDuration, setVideoDuration] = useState(0)
   
   const { course, isLoading, error } = useCourseData(courseId)
   
@@ -88,16 +94,28 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={cn(
+        "mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300",
+        isTheaterMode ? "max-w-6xl" : "max-w-7xl"
+      )}>
+        <div className={cn(
+          "grid gap-8 transition-all duration-300",
+          isTheaterMode 
+            ? "grid-cols-1" 
+            : "grid-cols-1 lg:grid-cols-3"
+        )}>
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className={cn(
+            "space-y-8 transition-all duration-300",
+            isTheaterMode ? "w-full" : "lg:col-span-2"
+          )}>
             {/* Video Player */}
             <div className="relative">
               <VideoPlayer 
                 video={currentVideo}
                 isLocked={isVideoLocked}
                 onVideoEnd={handleNextVideo}
+                onTimeUpdate={setCurrentVideoTime}
               />
               
               {/* Progress Tracker */}
@@ -114,6 +132,34 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
             <VideoDescription 
               video={currentVideo}
               isLocked={isVideoLocked}
+            />
+
+            {/* Video Engagement */}
+            <VideoEngagement
+              videoId={currentVideo.id}
+              videoTitle={currentVideo.title}
+              onLike={() => {
+                // Handle like action
+              }}
+              onShare={() => {
+                // Handle share action
+              }}
+              onBookmark={() => {
+                // Handle bookmark action
+              }}
+              onComment={() => {
+                // Handle comment action
+              }}
+              onDownload={() => {
+                // Handle download action
+              }}
+            />
+
+            {/* Video Notes */}
+            <VideoNotes
+              videoId={currentVideo.id}
+              currentTime={currentVideoTime}
+              duration={videoDuration}
             />
             
             {/* Quiz Section */}
@@ -151,7 +197,7 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
           
           {/* Sidebar */}
           <div className={cn(
-            "lg:block",
+            isTheaterMode ? "hidden" : "lg:block",
             isSidebarOpen ? "block" : "hidden"
           )}>
             <CourseSidebar 
@@ -180,6 +226,25 @@ export default function CourseVideoPage({ courseId }: CourseVideoPageProps) {
           onClick={() => setShowSubscribeModal(true)}
         />
       )}
+
+      {/* Floating Actions */}
+      <FloatingActions
+        onLike={() => {
+          // Handle like action
+        }}
+        onBookmark={() => {
+          // Handle bookmark action
+        }}
+        onShare={() => {
+          // Handle share action
+        }}
+        onComment={() => {
+          // Handle comment action
+        }}
+        onAddNote={() => {
+          // Handle add note action
+        }}
+      />
       
       {/* Subscribe Modal */}
       {showSubscribeModal && (
