@@ -29,7 +29,9 @@ export function GlobalLoaderProvider({ children }: { children: React.ReactNode }
       delayTimeoutRef.current = setTimeout(() => {
         startLoading({ 
           message: "Loading page...", 
-          isBlocking: true 
+          isBlocking: true,
+          minVisibleMs: 600,
+          autoProgress: true,
         })
         
         // Clear the delay timeout as it's no longer needed
@@ -39,7 +41,7 @@ export function GlobalLoaderProvider({ children }: { children: React.ReactNode }
         finishTimeoutRef.current = setTimeout(() => {
           stopLoading()
           finishTimeoutRef.current = null
-        }, 500)
+        }, 300)
       }, 100)
     }
 
