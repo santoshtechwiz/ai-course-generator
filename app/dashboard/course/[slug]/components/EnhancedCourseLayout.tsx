@@ -77,7 +77,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="bg-background/95 backdrop-blur-sm border-b px-4 py-3 sticky top-0 z-40"
+            className="sticky top-0 z-40 px-4 py-3 border-b bg-gradient-to-b from-background/95 to-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm"
           >
             <div className="flex items-center justify-between max-w-screen-2xl mx-auto">
               <div className="flex items-center gap-3">
