@@ -195,14 +195,14 @@ const McqQuiz = ({
                       <label
                         htmlFor={`option-${option.id}`}
                         className={cn(
-                          "flex items-center gap-4 p-4 w-full rounded-xl border-2 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-lg",
-                          "focus-within:ring-2 focus-within:ring-blue-300 dark:focus-within:ring-blue-600",
-                          "bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50",
+                          "flex items-center gap-3 p-3 sm:p-4 w-full rounded-xl border cursor-pointer transition-colors duration-200 shadow-sm",
+                          "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+                          "bg-card hover:bg-muted",
                           isSelected
-                            ? "border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-950/40 dark:to-indigo-900/30 shadow-blue-200/50 dark:shadow-blue-800/30"
+                            ? "border-primary/50"
                             : isHovered
-                              ? "border-blue-300 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 shadow-md"
-                              : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600",
+                              ? "border-primary/30"
+                              : "border-border",
                           isDisabled && "opacity-60 cursor-not-allowed",
                         )}
                         onClick={() => !isDisabled && handleOptionSelect(option.id)}
@@ -218,36 +218,34 @@ const McqQuiz = ({
                           onChange={() => !isDisabled && handleOptionSelect(option.id)}
                           className="sr-only"
                         />
-
-                        {/* Letter Badge */}
-                        <div
-                          className={cn(
-                            "flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm flex-shrink-0 transition-all duration-300 shadow-md",
-                            isSelected
-                              ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-blue-500/30"
-                              : "bg-gradient-to-r from-slate-100 to-gray-200 dark:from-slate-700 dark:to-gray-600 text-slate-700 dark:text-slate-200",
-                          )}
-                        >
-                          {option.letter}
-                        </div>
-
-                        {/* Option Text */}
-                        <div className="flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0">
-                          {option.text}
-                        </div>
-
-                        {/* Selection indicator */}
-                        {isSelected && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="flex-shrink-0"
-                          >
-                            <CheckCircle2 className="w-5 h-5 text-primary" />
-                          </motion.div>
-                        )}
-                      </label>
-                    </motion.div>
+ 
+                         {/* Letter Badge */}
+                         <div
+                           className={cn(
+                             "flex items-center justify-center w-9 h-9 rounded-lg font-bold text-sm flex-shrink-0",
+                             isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                           )}
+                         >
+                           {option.letter}
+                         </div>
+ 
+                         {/* Option Text */}
+                         <div className="flex-1 text-sm sm:text-base font-medium leading-relaxed min-w-0 text-foreground">
+                           {option.text}
+                         </div>
+ 
+                         {/* Selection indicator */}
+                         {isSelected && (
+                           <motion.div
+                             initial={{ scale: 0 }}
+                             animate={{ scale: 1 }}
+                             className="flex-shrink-0"
+                           >
+                             <CheckCircle2 className="w-5 h-5 text-primary" />
+                           </motion.div>
+                         )}
+                       </label>
+                     </motion.div>
                   )
                 })}
               </AnimatePresence>
