@@ -124,19 +124,19 @@ export default function CourseDetailsTabs({
         {/* Tab Navigation */}
         <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/20 rounded-none flex-shrink-0">
           <TabsTrigger value="summary" className="flex items-center gap-2 text-sm">
-            <FileText className="h-4 w-4" />
+            <FileText className="h-4 w-4 text-primary" />
             Summary
           </TabsTrigger>
           <TabsTrigger value="quiz" className="flex items-center gap-2 text-sm">
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-4 w-4 text-purple-500" />
             Quiz
           </TabsTrigger>
           <TabsTrigger value="progress" className="flex items-center gap-2 text-sm">
-            <BarChart3 className="h-4 w-4" />
+            <BarChart3 className="h-4 w-4 text-emerald-600" />
             Progress
           </TabsTrigger>
           <TabsTrigger value="bookmarks" className="flex items-center gap-2 text-sm">
-            <BookmarkIcon className="h-4 w-4" />
+            <BookmarkIcon className="h-4 w-4 text-amber-600" />
             Bookmarks
           </TabsTrigger>
         </TabsList>
