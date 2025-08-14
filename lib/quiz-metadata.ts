@@ -74,7 +74,7 @@ export function generateQuizMetadata({
     `${config.description}${topic ? ` on ${topic}` : ''}${questionCount ? `. ${questionCount} questions` : ''}.`
 
   // Use the existing SEO system with correct parameters
-  return generateSEOQuizMetadata({
+  const base = generateSEOQuizMetadata({
     title: dynamicTitle,
     description: dynamicDescription,
     slug: quizType, // Use quiz type as slug for now
@@ -82,6 +82,12 @@ export function generateQuizMetadata({
     difficulty: difficulty,
     questionsCount: questionCount,
   })
+
+  // Apply robots noindex when required (not-found/private)
+  if (noIndex) {
+    base.robots = { index: false, follow: true }
+  }
+  return base
 }
 
 /**
