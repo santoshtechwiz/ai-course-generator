@@ -138,9 +138,27 @@ export const cancelSubscription = createAsyncThunk<
     if (!res.ok) {
       throw new Error(`Failed to cancel subscription: ${res.statusText}`)
     }
-
-    const result: SubscriptionData = await res.json()
-    return result
+    // After successful cancel, refetch status for a consistent shape
+    const statusRes = await fetchWithTimeout(`/api/subscriptions/status?nocache=${Date.now()}` , { credentials: "include" }, 10000)
+    if (!statusRes.ok) {
+      return {
+        ...data,
+        status: "CANCELED",
+        cancelAtPeriodEnd: true,
+        isSubscribed: false,
+      }
+    }
+    const refreshed: SubscriptionStatusResponse = await statusRes.json()
+    return {
+      credits: Math.max(0, refreshed.credits || 0),
+      tokensUsed: Math.max(0, refreshed.tokensUsed || 0),
+      subscriptionPlan: refreshed.subscriptionPlan || "FREE",
+      cancelAtPeriodEnd: Boolean(refreshed.cancelAtPeriodEnd),
+      expirationDate: refreshed.expirationDate,
+      status: (refreshed.status as SubscriptionStatusType) || "INACTIVE",
+      subscriptionId: refreshed.subscriptionId || "",
+      isSubscribed: refreshed.status === "ACTIVE",
+    }
   } catch (error: any) {
     logger.error("Subscription cancellation failed", error)
     return rejectWithValue(error.message || "Failed to cancel subscription")
@@ -169,9 +187,27 @@ export const resumeSubscription = createAsyncThunk<
     if (!res.ok) {
       throw new Error(`Failed to resume subscription: ${res.statusText}`)
     }
-
-    const result: SubscriptionData = await res.json()
-    return result
+    // After successful resume, refetch status
+    const statusRes = await fetchWithTimeout(`/api/subscriptions/status?nocache=${Date.now()}`, { credentials: "include" }, 10000)
+    if (!statusRes.ok) {
+      return {
+        ...data,
+        status: "ACTIVE",
+        cancelAtPeriodEnd: false,
+        isSubscribed: true,
+      }
+    }
+    const refreshed: SubscriptionStatusResponse = await statusRes.json()
+    return {
+      credits: Math.max(0, refreshed.credits || 0),
+      tokensUsed: Math.max(0, refreshed.tokensUsed || 0),
+      subscriptionPlan: refreshed.subscriptionPlan || "FREE",
+      cancelAtPeriodEnd: Boolean(refreshed.cancelAtPeriodEnd),
+      expirationDate: refreshed.expirationDate,
+      status: (refreshed.status as SubscriptionStatusType) || "INACTIVE",
+      subscriptionId: refreshed.subscriptionId || "",
+      isSubscribed: refreshed.status === "ACTIVE",
+    }
   } catch (error: any) {
     logger.error("Subscription resume failed", error)
     return rejectWithValue(error.message || "Failed to resume subscription")
