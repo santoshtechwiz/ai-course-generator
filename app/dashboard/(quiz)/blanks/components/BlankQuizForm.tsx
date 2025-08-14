@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { blanksQuizSchema } from "@/schema/schema"
-import { GlobalLoader } from "@/components/ui/loader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -185,9 +185,10 @@ export default function BlankQuizForm({ isLoggedIn, maxQuestions, credits, param
 
   if (isLoading) {
     return (
-      <FormContainer>
-        <GlobalLoader />
-      </FormContainer>
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-48 w-full" />
+      </div>
     )
   }
 

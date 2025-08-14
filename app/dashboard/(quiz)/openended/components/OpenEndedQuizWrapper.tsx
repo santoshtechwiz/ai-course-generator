@@ -29,7 +29,7 @@ import OpenEndedQuiz from "./OpenEndedQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
 import { useGlobalLoader } from '@/store/loaders/global-loader'
-import { GlobalLoader } from '@/components/ui/loader'
+import { Skeleton } from "@/components/ui/skeleton"
 import { OpenEndedQuestion } from "@/app/types/quiz-types"
 
 
@@ -181,7 +181,12 @@ export default function OpenEndedQuizWrapper({ slug, title }: OpenEndedQuizWrapp
   }, [currentQuestion])
 
   if (isLoading) {
-    return <GlobalLoader  />
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    )
   }
 
   if (hasError) {

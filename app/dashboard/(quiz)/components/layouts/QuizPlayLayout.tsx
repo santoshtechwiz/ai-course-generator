@@ -13,6 +13,9 @@ import { CheckCircle, Clock, Home, Maximize, Minimize, Menu, X, Target } from "l
 import { QuizActions } from "../QuizActions"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { RandomQuiz } from "./RandomQuiz"
+import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
+import Confetti from "react-confetti"
+import { useWindowSize } from "react-use"
 
 export const dynamic = "force-dynamic"
 
@@ -81,6 +84,9 @@ export default function QuizPlayLayout({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
+  const { width, height } = useWindowSize()
+  const { quizzes: relatedQuizzes } = useRandomQuizzes(6)
+  const [showConfetti, setShowConfetti] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
 
   // Auto-increment timer when not provided
@@ -170,13 +176,21 @@ export default function QuizPlayLayout({
   }, [title, quizType, difficulty, isMobile, questionNumber, totalQuestions, timeSpent, elapsed, isFullscreen, sidebarOpen, isFocusMode])
 
   const progress = useMemo(() => Math.min(100, Math.max(0, Math.round((questionNumber / totalQuestions) * 100))), [questionNumber, totalQuestions])
+  useEffect(() => {
+    if (progress === 100) {
+      setShowConfetti(true)
+      const t = setTimeout(() => setShowConfetti(false), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [progress])
 
   if (!isLoaded) return null
 
   const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
 
   return (
-    <div className={`min-h-screen ${isFullscreen ? "overflow-hidden" : ""}`}>
+    <div className={`min-h-screen relative ${isFullscreen ? "overflow-hidden" : ""}`}>
+      {showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={180} gravity={0.25} />}
       {header}
       <main className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-3">
         <div className="flex gap-3 lg:gap-4">
@@ -211,6 +225,27 @@ export default function QuizPlayLayout({
             </aside>
           )}
         </div>
+        {/* Related quizzes carousel */}
+        {!isFullscreen && relatedQuizzes.length > 0 && (
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">You might also like</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {relatedQuizzes.slice(0, 3).map((rq) => (
+                <a key={rq.id} href={`/dashboard/${rq.quizType}/${rq.slug}`} className="group rounded-lg border bg-card p-3 hover:border-primary/50 transition-colors">
+                  <div className="text-sm font-medium line-clamp-1 group-hover:text-primary">{rq.title}</div>
+                  <div className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px]">{rq.quizType}</Badge>
+                    <span>{rq.questionCount} qns</span>
+                    {rq.estimatedTime ? <span>{rq.estimatedTime}m</span> : null}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Mobile Sidebar */}

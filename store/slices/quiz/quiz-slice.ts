@@ -4,6 +4,36 @@ import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
 
+// In-memory cache for fetched quizzes (per session). Keeps last N entries with TTL.
+const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const MAX_CACHE_ENTRIES = 100
+const quizCache = new Map<string, { timestamp: number; data: any }>()
+
+function getQuizCacheKey(type: QuizType | null, slug: string | null): string {
+  return `${type || 'unknown'}::${slug || 'unknown'}`
+}
+
+function getCachedQuiz(type: QuizType | null, slug: string | null): any | null {
+  const key = getQuizCacheKey(type, slug)
+  const entry = quizCache.get(key)
+  if (!entry) return null
+  if (Date.now() - entry.timestamp > QUIZ_CACHE_TTL_MS) {
+    quizCache.delete(key)
+    return null
+  }
+  return entry.data
+}
+
+function setCachedQuiz(type: QuizType | null, slug: string | null, data: any): void {
+  const key = getQuizCacheKey(type, slug)
+  quizCache.set(key, { timestamp: Date.now(), data })
+  // Evict oldest if over capacity
+  if (quizCache.size > MAX_CACHE_ENTRIES) {
+    const oldestKey = [...quizCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0]
+    if (oldestKey) quizCache.delete(oldestKey)
+  }
+}
+
 // Initial State
 const initialState: QuizState = {
   slug: null,
@@ -44,6 +74,19 @@ export const fetchQuiz = createAsyncThunk(
 
       const slug = payload.slug?.trim() || ""
       const type = payload.quizType as QuizType
+
+      // Serve from cache if available and no inline data provided
+      if (!payload.data) {
+        const cached = getCachedQuiz(type, slug)
+        if (cached) {
+          return {
+            ...cached,
+            slug,
+            quizType: type,
+            id: slug,
+          }
+        }
+      }
 
       if (payload.data && Array.isArray(payload.data.questions)) {
         return {
@@ -156,6 +199,8 @@ export const fetchQuiz = createAsyncThunk(
         id: slug,
       }
 
+      // Cache normalized quiz for quick re-entry and deterministic loads
+      setCachedQuiz(type, slug, normalized)
       console.log("Quiz fetched successfully:", normalized)
       return normalized
     } catch (error: any) {

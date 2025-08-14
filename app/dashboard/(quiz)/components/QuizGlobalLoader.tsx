@@ -4,7 +4,6 @@ import { useEffect } from "react"
 import { useSelector } from "react-redux"
 import { useGlobalLoader } from "@/store/loaders/global-loader"
 import { selectQuizStatus, selectQuizTitle } from "@/store/slices/quiz/quiz-slice"
-import { GlobalLoader } from "@/components/loaders/GlobalLoader"
 
 interface QuizGlobalLoaderProps {
   quizType?: string
@@ -20,19 +19,15 @@ export function QuizGlobalLoader({ quizType = "Quiz" }: QuizGlobalLoaderProps) {
       startLoading({
         message: `Loading ${quizType}...`,
         subMessage: quizTitle ? `Preparing "${quizTitle}"` : "Please wait while we prepare your quiz",
-        isBlocking: true
+        isBlocking: true,
+        autoProgress: true,
+        minVisibleMs: 400,
       })
     } else if (quizStatus === "succeeded" || quizStatus === "failed") {
       stopLoading()
     }
-
-    return () => {
-      // Cleanup on unmount
-      if (quizStatus === "loading") {
-        stopLoading()
-      }
-    }
   }, [quizStatus, quizTitle, quizType, startLoading, stopLoading])
 
-  return <GlobalLoader />
+  // Rely on the single GlobalLoader mounted at app level
+  return null
 }

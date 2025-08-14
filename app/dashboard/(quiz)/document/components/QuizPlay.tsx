@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { GlobalLoader } from "@/components/ui/loader"
+import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -293,7 +293,12 @@ export function QuizPlayer({ quizId }: { quizId: string }) {
     })
   }
 
-  if (loading) return <GlobalLoader />
+  if (loading) return (
+    <div className="space-y-3">
+      <Skeleton className="h-6 w-36" />
+      <Skeleton className="h-48 w-full" />
+    </div>
+  )
 
   if (!quiz) {
     return (

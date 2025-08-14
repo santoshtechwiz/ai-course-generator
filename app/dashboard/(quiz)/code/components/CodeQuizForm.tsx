@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { codeQuizSchema } from "@/schema/schema"
-import { GlobalLoader } from "@/components/ui/loader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import type { z } from "zod"
 import { SubscriptionSlider } from "@/app/dashboard/subscription/components/SubscriptionSlider"
@@ -372,7 +372,10 @@ export default function CodeQuizForm({ credits, isLoggedIn, maxQuestions, params
   if (isLoading && !isConfirmDialogOpen) {
     return (
       <FormContainer>
-        <GlobalLoader />
+        <Skeleton className="space-y-3">
+          <Skeleton className="h-6 w-36" />
+          <Skeleton className="h-48 w-full" />
+        </Skeleton>
       </FormContainer>
     )
   }
