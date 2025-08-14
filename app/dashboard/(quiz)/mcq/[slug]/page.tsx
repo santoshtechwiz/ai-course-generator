@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { generateQuizPageMetadata } from "@/components/seo/QuizPageWrapper"
 import McqQuizClient from "./McqQuizClient"
 import prisma from "@/lib/db"
+import { QuizSchema } from "@/lib/seo"
+import React from "react"
 
 interface McqQuizPageProps {
   params: Promise<{ slug: string }>
@@ -40,6 +42,30 @@ export async function generateMetadata({ params }: McqQuizPageProps): Promise<Me
   })
 }
 
+function QuizJsonLd({ slug, title }: { slug: string; title: string }) {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/dashboard/mcq/${slug}`
+  return (
+    <QuizSchema
+      name={title}
+      url={url}
+      description={`Interactive multiple-choice assessment on ${title}`}
+      questions={[]}
+    />
+  )
+}
+
 export default function McqQuizPage({ params }: McqQuizPageProps) {
-  return <McqQuizClient params={params} />
+  // Render client with JSON-LD helper
+  const ClientWithJsonLd = async () => {
+    const { slug } = await params
+    const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    return (
+      <>
+        <QuizJsonLd slug={slug} title={title} />
+        <McqQuizClient params={params} />
+      </>
+    )
+  }
+  // @ts-expect-error Async Server Component
+  return <ClientWithJsonLd />
 }

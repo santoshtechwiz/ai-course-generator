@@ -41,6 +41,7 @@ export function generateQuizPageMetadata({
   
   return generateQuizMetadata({
     quizType,
+    slug,
     title,
     description,
     topic: derivedTopic,
