@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useMediaQuery } from "@/hooks"
+import { useMediaQuery, useResponsive } from "@/hooks"
 import { usePathname } from "next/navigation"
 import { Suspense, useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { RandomQuiz } from "./RandomQuiz"
 import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import Confetti from "react-confetti"
-import { useWindowSize } from "react-use"
+
 
 export const dynamic = "force-dynamic"
 
@@ -84,7 +84,7 @@ export default function QuizPlayLayout({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
-  const { width, height } = useWindowSize()
+
   const { quizzes: relatedQuizzes } = useRelatedQuizzes({ quizType, difficulty: quizData?.difficulty, exclude: quizSlug, limit: 6, tags: Array.isArray(quizData?.tags) ? quizData?.tags : undefined })
   const [showConfetti, setShowConfetti] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
