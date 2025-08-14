@@ -2,7 +2,7 @@ import type React from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import { getAuthSession } from "@/lib/auth"
-import { GlobalLoader } from "@/components/ui/loader"
+// Removed inline GlobalLoader to avoid duplicate overlays; relying on app-level GlobalLoader
 import type { Metadata } from "next"
 import MeteorShower from "@/components/ui/meteor-shower"
 
@@ -44,7 +44,6 @@ export default async function QuizLayout({
         {/* Main quiz content area */}
         <MeteorShower>
           <div className="relative z-10 min-h-screen">
-            <GlobalLoader />
             {children}
             <Toaster />
           </div>
