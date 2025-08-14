@@ -190,38 +190,30 @@ export default function MainNavbar() {
             <AsyncNavLink
               href={item.href}
               className={cn(
-                "relative px-4 py-2.5 text-sm font-semibold transition-all duration-300 group block rounded-lg",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-accent",
-                "hover:bg-accent/60 active:scale-[0.98]",
+                "relative px-4 py-2.5 text-sm font-medium transition-colors group block rounded-md whitespace-nowrap",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "hover:bg-accent/60",
                 isActive 
-                  ? "text-primary bg-primary/5 shadow-sm border border-border/50" 
-                  : "text-muted-foreground hover:text-primary",
+                  ? "text-primary bg-accent/60 border border-border/50" 
+                  : "text-muted-foreground hover:text-foreground",
               )}
               data-testid={`nav-item-${item.name.toLowerCase()}`}
               aria-current={isActive ? "page" : undefined}
             >
               <div className="flex items-center gap-2">
                 <div className={cn(
-                  "p-1 rounded-md transition-colors duration-200",
-                  isActive ? "bg-primary/10" : "group-hover:bg-accent/80"
+                  "p-1 rounded-md",
+                  isActive ? "bg-accent/80" : "group-hover:bg-accent/60"
                 )}>
                   <Icon className={cn(
-                    "h-4 w-4 transition-colors duration-200",
-                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                    "h-4 w-4",
+                    isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                   )} />
                 </div>
-                <span className="font-medium">{item.name}</span>
+                <span className="font-medium whitespace-nowrap">{item.name}</span>
               </div>
-              {/* Subtle active indicator */}
-              {isActive && (
-                <motion.div 
-                  className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-lg -z-10" 
-                  layoutId="activeNavIndicator"
-                  transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
-                />
-              )}
-              {/* Hover underline */}
-              <span className="pointer-events-none absolute left-4 right-4 bottom-1 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Minimal active underline */}
+              {isActive && <span className="absolute left-4 right-4 bottom-1 h-[2px] bg-primary/60" />}
             </AsyncNavLink>
           </motion.div>
         )
@@ -241,7 +233,7 @@ export default function MainNavbar() {
               href={item.href}
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-4 py-3.5 text-base font-medium transition-all duration-200 rounded-lg",
+                "flex items-center gap-3 px-4 py-3.5 text-base font-medium rounded-lg whitespace-nowrap",
                 "hover:bg-accent/80",
                 isActive 
                   ? "text-primary bg-primary/5 border-l-2 border-primary" 
@@ -281,7 +273,7 @@ export default function MainNavbar() {
 
     return (
       <div className="hidden lg:flex items-center space-x-2" data-testid="credits-display">
-        <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-card border rounded-lg shadow-sm">
+        <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-card border rounded-lg shadow-sm whitespace-nowrap">
           <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
           <span
             className={cn("text-sm font-medium tabular-nums", isLowCredits ? "text-destructive" : "text-foreground")}
@@ -320,10 +312,9 @@ export default function MainNavbar() {
       
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          "border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70",
-          "before:absolute before:inset-0 before:bg-gradient-to-r before:from-orange-50/20 before:via-transparent before:to-amber-50/20 before:pointer-events-none dark:before:from-orange-950/10 dark:before:to-amber-900/10",
-          scrolled && "shadow-lg shadow-orange-500/5 bg-background/95 supports-[backdrop-filter]:bg-background/80",
+          "fixed top-0 left-0 right-0 z-50",
+          "border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70",
+          scrolled && "bg-background/90",
         )}
         data-testid="main-navbar"
         role="navigation"
@@ -386,7 +377,6 @@ export default function MainNavbar() {
               >
                 <Search className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
                 <span className="sr-only">Open search</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
               </Button>
             </motion.div>
 
