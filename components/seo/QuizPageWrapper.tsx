@@ -31,8 +31,10 @@ export function generateQuizPageMetadata({
   description,
   topic,
   difficulty,
-  questionCount
-}: Omit<QuizPageWrapperProps, 'children'>): Metadata {
+  questionCount,
+  // When rendering not-found/private pages, opt out of indexing
+  noIndex
+}: Omit<QuizPageWrapperProps, 'children'> & { noIndex?: boolean }): Metadata {
   
   // Extract topic from slug if not provided
   const derivedTopic = topic || (slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : undefined)
@@ -43,7 +45,8 @@ export function generateQuizPageMetadata({
     description,
     topic: derivedTopic,
     difficulty,
-    questionCount
+    questionCount,
+    noIndex: Boolean(noIndex)
   })
 }
 
