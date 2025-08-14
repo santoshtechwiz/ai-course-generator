@@ -285,7 +285,7 @@ export default function QuizPlayLayout({
         </div>
       )}
 
-      {/* Engagement modal */}
+      {/* Non-blocking Engagement modal rendered after main to avoid empty content on dismiss */}
       <Dialog open={showEngage} onOpenChange={(open) => {
         setShowEngage(open)
         if (!open && quizSlug) localStorage.setItem(`ai_quiz_engagement_${quizSlug}`, "1")
