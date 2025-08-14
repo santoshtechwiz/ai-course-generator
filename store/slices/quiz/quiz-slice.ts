@@ -3,6 +3,7 @@ import type { RootState } from '@/store'
 import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
+import { STORAGE_KEYS } from '@/constants/global'
 
 // In-memory cache for fetched quizzes (per session). Keeps last N entries with TTL.
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -31,6 +32,28 @@ function setCachedQuiz(type: QuizType | null, slug: string | null, data: any): v
   if (quizCache.size > MAX_CACHE_ENTRIES) {
     const oldestKey = [...quizCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0]
     if (oldestKey) quizCache.delete(oldestKey)
+  }
+}
+
+function persistProgress(slug: string | null, quizType: QuizType | null, currentQuestionIndex: number) {
+  if (typeof window === 'undefined' || !slug || !quizType) return
+  try {
+    const key = `${STORAGE_KEYS.QUIZ_STATE}:${quizType}:${slug}`
+    const value = JSON.stringify({ slug, quizType, currentQuestionIndex, updatedAt: Date.now() })
+    localStorage.setItem(key, value)
+  } catch {}
+}
+
+function readProgress(slug: string | null, quizType: QuizType | null): number | null {
+  if (typeof window === 'undefined' || !slug || !quizType) return null
+  try {
+    const key = `${STORAGE_KEYS.QUIZ_STATE}:${quizType}:${slug}`
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return typeof parsed.currentQuestionIndex === 'number' ? parsed.currentQuestionIndex : null
+  } catch {
+    return null
   }
 }
 
@@ -201,6 +224,12 @@ export const fetchQuiz = createAsyncThunk(
 
       // Cache normalized quiz for quick re-entry and deterministic loads
       setCachedQuiz(type, slug, normalized)
+
+      // Restore last progress if any
+      const lastIndex = readProgress(slug, type)
+      if (typeof lastIndex === 'number' && lastIndex >= 0 && lastIndex < questions.length) {
+        normalized.currentQuestionIndex = lastIndex
+      }
       console.log("Quiz fetched successfully:", normalized)
       return normalized
     } catch (error: any) {
@@ -537,12 +566,7 @@ const quizSlice = createSlice({
       const index = action.payload
       if (index >= 0 && index < state.questions.length) {
         state.currentQuestionIndex = index
-        
-        // Automatically start timing for the new question
-        const currentQuestion = state.questions[index]
-        if (currentQuestion && !state.questionStartTimes[String(currentQuestion.id)]) {
-          state.questionStartTimes[String(currentQuestion.id)] = Date.now()
-        }
+        persistProgress(state.slug, state.quizType, state.currentQuestionIndex)
       }
     },
 
@@ -635,18 +659,17 @@ const quizSlice = createSlice({
         state.status = 'loading'
         state.error = null
       })
-      .addCase(fetchQuiz.fulfilled, (state, action) => {
+      .addCase(fetchQuiz.fulfilled, (state, action: PayloadAction<any>) => {
         state.status = 'succeeded'
         state.slug = action.payload.slug
         state.quizType = action.payload.quizType
         state.title = action.payload.title || ''
         state.questions = action.payload.questions || []
+        state.currentQuestionIndex = action.payload.currentQuestionIndex || 0
         state.answers = {}
         state.results = null
-        state.currentQuestionIndex = 0
         state.isCompleted = false
-        state.error = null
-        state.userId = action.payload.userId ?? null
+        persistProgress(state.slug, state.quizType, state.currentQuestionIndex)
       })
       .addCase(fetchQuiz.rejected, (state, action) => {
         const payload = action.payload as any

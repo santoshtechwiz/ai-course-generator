@@ -184,6 +184,9 @@ export default function QuizPlayLayout({
     }
   }, [progress])
 
+  // Resume CTA visibility: show when progress exists and not at start
+  const canResume = questionNumber > 1
+
   if (!isLoaded) return null
 
   const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
@@ -193,6 +196,15 @@ export default function QuizPlayLayout({
       {showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={180} gravity={0.25} />}
       {header}
       <main className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-3">
+        {canResume && !isFullscreen && (
+          <div className="mb-3 flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-xs">
+            <span className="text-muted-foreground">Continue where you left off?</span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Question {questionNumber} of {totalQuestions}</span>
+              <Button size="sm" variant="secondary" onClick={() => mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Resume</Button>
+            </div>
+          </div>
+        )}
         <div className="flex gap-3 lg:gap-4">
           <section ref={mainRef} className={`flex-1 rounded-xl border bg-card shadow-sm ${isFullscreen ? "p-3 sm:p-4 lg:p-5" : "p-3 sm:p-4"}`}>
             {/* Progress (compact) hidden in focus mode */}
