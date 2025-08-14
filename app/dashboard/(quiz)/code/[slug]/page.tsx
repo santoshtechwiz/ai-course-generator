@@ -2,6 +2,9 @@ import type { Metadata } from "next"
 import { generateQuizPageMetadata } from "@/components/seo/QuizPageWrapper"
 import CodeQuizClient from "./CodeQuizClient"
 import prisma from "@/lib/db"
+import { QuizSchema } from "@/lib/seo"
+import React from "react"
+import QuizSEOClient from "../../components/QuizSEOClient"
 
 interface CodeQuizPageProps {
   params: Promise<{ slug: string }>
@@ -31,6 +34,30 @@ export async function generateMetadata({ params }: CodeQuizPageProps): Promise<M
   })
 }
 
+function QuizJsonLd({ slug, title }: { slug: string; title: string }) {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/dashboard/code/${slug}`
+  return (
+    <QuizSchema
+      name={title}
+      url={url}
+      description={`Programming challenge on ${title}`}
+      questions={[]}
+    />
+  )
+}
+
 export default function CodeQuizPage({ params }: CodeQuizPageProps) {
-  return <CodeQuizClient params={params} />
+  const ClientWithJsonLd = async () => {
+    const { slug } = await params
+    const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    return (
+      <>
+        <QuizSEOClient />
+        <QuizJsonLd slug={slug} title={title} />
+        <CodeQuizClient params={params} />
+      </>
+    )
+  }
+  // @ts-expect-error Async Server Component
+  return <ClientWithJsonLd />
 }

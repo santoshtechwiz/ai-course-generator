@@ -2,6 +2,9 @@ import type { Metadata } from "next"
 import { generateQuizPageMetadata } from "@/components/seo/QuizPageWrapper"
 import BlanksQuizClient from "./BlanksQuizClient"
 import prisma from "@/lib/db"
+import { QuizSchema } from "@/lib/seo"
+import React from "react"
+import QuizSEOClient from "../../components/QuizSEOClient"
 
 interface BlanksQuizPageProps {
   params: Promise<{ slug: string }>
@@ -31,6 +34,30 @@ export async function generateMetadata({ params }: BlanksQuizPageProps): Promise
   })
 }
 
+function QuizJsonLd({ slug, title }: { slug: string; title: string }) {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://courseai.io"}/dashboard/blanks/${slug}`
+  return (
+    <QuizSchema
+      name={title}
+      url={url}
+      description={`Fill in the blanks quiz on ${title}`}
+      questions={[]}
+    />
+  )
+}
+
 export default function BlanksQuizPage({ params }: BlanksQuizPageProps) {
-  return <BlanksQuizClient params={params} />
+  const ClientWithJsonLd = async () => {
+    const { slug } = await params
+    const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    return (
+      <>
+        <QuizSEOClient />
+        <QuizJsonLd slug={slug} title={title} />
+        <BlanksQuizClient params={params} />
+      </>
+    )
+  }
+  // @ts-expect-error Async Server Component
+  return <ClientWithJsonLd />
 }
