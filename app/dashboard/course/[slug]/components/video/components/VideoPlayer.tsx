@@ -19,6 +19,7 @@ import type { VideoPlayerProps } from "../types"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+import CreateContentPromo from "@/components/growth/CreateContentPromo"
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -813,6 +814,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             isPiPSupported={Boolean(getVideoElement() && (getVideoElement() as any).requestPictureInPicture && (document as any).pictureInPictureEnabled)}
             isPiPActive={state.isPictureInPicture}
           />
+          {/* Growth Promo */}
+          {!showChapterEnd && (
+            <div className="px-3 pb-3">
+              <CreateContentPromo context="video" topic={chapterTitleRef.current || courseName} className="max-w-md" storageKey={String(videoIdRef.current)} />
+            </div>
+          )}
         </div>
       )}
 

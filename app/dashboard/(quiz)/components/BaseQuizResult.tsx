@@ -23,6 +23,7 @@ import { useAuth } from "@/modules/auth"
 import { toast } from "@/components/ui/use-toast"
 import CertificateGenerator from "@/app/dashboard/course/[slug]/components/CertificateGenerator"
 import { PDFDownloadLink } from "@react-pdf/renderer"
+import CreateContentPromo from "@/components/growth/CreateContentPromo"
 
 // Enhanced performance level configurations with modern styling
 const PERFORMANCE_LEVELS = {
@@ -861,6 +862,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
               <PerformanceOverview />
+              <CreateContentPromo context="results" topic={title} className="mt-2" storageKey={result?.slug || title} />
             </TabsContent>
 
             {/* Review Tab */}
