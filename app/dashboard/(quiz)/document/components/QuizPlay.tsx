@@ -71,17 +71,17 @@ const QuestionOption = memo(function QuestionOption({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 + 0.2 }}
-      whileHover={{ scale: isPaused ? 1 : 1.02, transition: { duration: 0.2 } }}
-      whileTap={{ scale: isPaused ? 1 : 0.98 }}
-      className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-300 ${
+      whileHover={{ scale: isPaused ? 1 : 1.01, transition: { duration: 0.15 } }}
+      whileTap={{ scale: isPaused ? 1 : 0.99 }}
+      className={`group relative overflow-hidden rounded-xl border transition-colors duration-200 ${
         isSelected
-          ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
-          : "border-border hover:border-primary/50 hover:bg-muted/50"
+          ? "border-primary/50 bg-card"
+          : "border-border hover:border-primary/30 hover:bg-muted"
       } ${isPaused ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
     >
-      <div className="flex items-center gap-4 p-6">
+      <div className="flex items-center gap-3 p-4">
         <RadioGroupItem id={`opt-${index}`} value={index.toString()} className="shrink-0" disabled={isPaused} />
-        <Label htmlFor={`opt-${index}`} className="flex-1 text-base leading-relaxed cursor-pointer">
+        <Label htmlFor={`opt-${index}`} className="flex-1 text-base leading-relaxed cursor-pointer text-foreground">
           <span className="font-medium text-primary mr-2">{String.fromCharCode(65 + index)}.</span>
           {option}
         </Label>
@@ -91,7 +91,7 @@ const QuestionOption = memo(function QuestionOption({
       {isSelected && (
         <motion.div
           layoutId="selected-indicator"
-          className="absolute inset-0 border-2 border-primary rounded-xl pointer-events-none"
+          className="absolute inset-0 border border-primary rounded-xl pointer-events-none"
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         />
       )}
