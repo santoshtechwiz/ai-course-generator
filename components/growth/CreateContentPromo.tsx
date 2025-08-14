@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Sparkles, Wand2, X, Target, BookOpen, Code2, PenTool } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 interface CreateContentPromoProps {
   context?: "quiz" | "results" | "video"
@@ -24,6 +25,7 @@ type ContentType = "mcq" | "code" | "blanks" | "flashcard"
 
 export default function CreateContentPromo({ context = "quiz", topic, className = "", storageKey, onDismiss, force = false }: CreateContentPromoProps) {
   const router = useRouter()
+  const { startLoading } = useGlobalLoader()
   const [hidden, setHidden] = React.useState(false)
   const [open, setOpen] = React.useState(false)
   const [type, setType] = React.useState<ContentType | null>(null)
@@ -60,6 +62,8 @@ export default function CreateContentPromo({ context = "quiz", topic, className 
       items: [] as any[],
     }
     try { sessionStorage.setItem("create_draft", JSON.stringify(draft)) } catch {}
+    // Show loader immediately to avoid blank state while navigating
+    startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 400, autoProgress: true })
     const map: Record<ContentType, string> = {
       mcq: "/dashboard/mcq?draft=1",
       code: "/dashboard/code?draft=1",
