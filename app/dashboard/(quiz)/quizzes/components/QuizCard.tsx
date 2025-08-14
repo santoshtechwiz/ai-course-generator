@@ -42,6 +42,7 @@ interface QuizCardProps {
   isPopular?: boolean
   isTrending?: boolean
   isPremium?: boolean
+  compact?: boolean
 }
 
 const quizTypeConfig = {
@@ -106,6 +107,7 @@ function QuizCardComponent({
   enrolledCount = 1250,
   isPopular = false,
   isTrending = false,
+  compact = false,
 }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
@@ -135,7 +137,7 @@ function QuizCardComponent({
   return (
     <AsyncNavLink
       href={`/dashboard/${quizType}/${slug}`}
-      className="h-full group block focus:outline-none"
+      className={cn("h-full group block focus:outline-none", compact && "@container")}
       tabIndex={0}
       aria-label={`Open quiz: ${title}`}
     >
@@ -153,10 +155,16 @@ function QuizCardComponent({
             "h-full overflow-hidden flex flex-col relative transition-all duration-300 border-0 shadow-md hover:shadow-xl",
             config.bgColor,
             "backdrop-blur-sm",
+            compact && "@sm:flex-row @sm:items-stretch",
           )}
         >
+          {/* Gradient border accent */}
+          <div className={cn("absolute inset-0 pointer-events-none", "[mask-image:linear-gradient(black,transparent)]")}
+               aria-hidden>
+            <div className={cn("absolute inset-0 rounded-xl border-2 opacity-30", config.borderColor)} />
+          </div>
           {/* Header */}
-          <CardHeader className="pb-4 relative">
+          <CardHeader className={cn("pb-4 relative", compact && "@sm:w-1/3 @sm:shrink-0")}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <motion.div
@@ -203,7 +211,7 @@ function QuizCardComponent({
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 space-y-4 px-6">
+          <CardContent className={cn("flex-1 space-y-4 px-6", compact && "@sm:px-4 @sm:py-6")}>
             {/* Title and Rating */}
             <div className="space-y-3">
               <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-300">
@@ -257,7 +265,7 @@ function QuizCardComponent({
             )}
           </CardContent>
 
-          <CardFooter className="p-6 pt-0">
+          <CardFooter className={cn("p-6 pt-0", compact && "@sm:p-4 @sm:pt-0 @sm:border-l @sm:border-white/10")}>
             <Button className={cn("w-full group/btn", buttonContent.className)} size="lg" tabIndex={-1}>
               <ButtonIcon className="w-4 h-4 mr-2" />
               {buttonContent.text}

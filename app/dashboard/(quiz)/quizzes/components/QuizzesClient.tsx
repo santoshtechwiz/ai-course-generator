@@ -52,7 +52,14 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
       const savedSearch = localStorage.getItem("quiz_search")
       const savedTypes = localStorage.getItem("quiz_types")
       if (savedTab) setActiveTab(savedTab)
-      if (savedView === "grid" || savedView === "list") setViewMode(savedView)
+      if (savedView === "grid" || savedView === "list") {
+        setViewMode(savedView)
+      } else {
+        // Default to compact list on mobile when no saved preference
+        if (typeof window !== 'undefined' && window.innerWidth < 640) {
+          setViewMode("list")
+        }
+      }
       if (typeof savedSearch === 'string') setSearch(savedSearch)
       if (savedTypes) {
         const arr = savedTypes.split(",").filter(Boolean) as QuizType[]

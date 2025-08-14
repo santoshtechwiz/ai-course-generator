@@ -237,6 +237,7 @@ function QuizListComponent({
                   quizType={quiz.quizType as QuizType}
                   estimatedTime={getEstimatedTime(quiz.questionCount || 0)}
                   completionRate={Math.min(Math.max(quiz.bestScore || 0, 0), 100)}
+                  compact={viewMode === "list"}
                 />
               </motion.div>
             ))}
