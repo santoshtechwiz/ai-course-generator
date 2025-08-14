@@ -158,6 +158,16 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   // Avoid fetching next page when no results at all
   const noResults = !isLoading && !isError && quizzes.length === 0
 
+  // Determine whether filters/search are active for empty state UX
+  const isSearching = (
+    debouncedSearch.trim() !== "" ||
+    selectedTypes.length > 0 ||
+    questionCountRange[0] > 0 ||
+    questionCountRange[1] < 50 ||
+    showPublicOnly ||
+    activeTab !== "all"
+  )
+
   // Load more when in view
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage && !isError && !noResults) {
