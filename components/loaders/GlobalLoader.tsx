@@ -2,62 +2,52 @@
 
 import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { HashLoader } from "react-spinners"
-import { AlertCircle, CheckCircle } from "lucide-react"
-
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 interface IconProps {
   size?: number
-}
-
-interface InlineSpinnerProps {
-  size?: number
   className?: string
 }
 
-export function InlineSpinner({ size = 16, className = "" }: InlineSpinnerProps) {
-  return (
-    <HashLoader
-      color="#3B82F6"
-      size={size}
-      cssOverride={{
-        display: 'inline-block',
-      }}
-      className={className}
-    />
-  )
-}
-
-export function LoadingSpinner({ size = 40 }: IconProps) {
+// Simple spinner component
+export function LoadingSpinner({ size = 24, className }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.2 }}
+      className={cn("flex items-center justify-center", className)}
     >
-      <HashLoader 
-        color="#3B82F6"
-        size={size}
-        cssOverride={{
-          display: 'block',
-          margin: '0 auto',
-        }}
+      <Loader2 
+        size={size} 
+        className="animate-spin text-primary"
       />
     </motion.div>
   )
 }
 
-function SuccessIcon({ size = 40 }: IconProps) {
+// Inline spinner for small loading states
+export function InlineSpinner({ size = 16, className }: IconProps) {
+  return (
+    <Loader2 
+      size={size} 
+      className={cn("animate-spin text-primary", className)}
+    />
+  )
+}
+
+// Success icon with animation
+function SuccessIcon({ size = 24, className }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0 }}
       transition={{ duration: 0.3, type: "spring" }}
-      className="flex items-center justify-center"
+      className={cn("flex items-center justify-center", className)}
     >
       <CheckCircle 
         size={size} 
@@ -67,14 +57,15 @@ function SuccessIcon({ size = 40 }: IconProps) {
   )
 }
 
-function ErrorIcon({ size = 40 }: IconProps) {
+// Error icon with animation
+function ErrorIcon({ size = 24, className }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0, rotate: -180 }}
       animate={{ opacity: 1, scale: 1, rotate: 0 }}
       exit={{ opacity: 0, scale: 0, rotate: 180 }}
       transition={{ duration: 0.3, type: "spring" }}
-      className="flex items-center justify-center"
+      className={cn("flex items-center justify-center", className)}
     >
       <AlertCircle 
         size={size} 
@@ -84,24 +75,26 @@ function ErrorIcon({ size = 40 }: IconProps) {
   )
 }
 
+// Simple progress bar
 function ProgressBar({ progress }: { progress: number }) {
   return (
     <div className="w-64 mt-4">
       <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
+          className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
           initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
+          animate={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         />
       </div>
-      <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1">
-        {Math.round(progress)}% complete
+      <p className="text-xs text-center text-muted-foreground mt-1">
+        {Math.round(Math.min(100, Math.max(0, progress)))}% complete
       </p>
     </div>
   )
 }
 
+// Main GlobalLoader component
 export function GlobalLoader() {
   const { 
     state, 
@@ -121,11 +114,11 @@ export function GlobalLoader() {
   const renderIcon = () => {
     switch (state) {
       case 'loading':
-        return <LoadingSpinner />
+        return <LoadingSpinner size={32} />
       case 'success':
-        return <SuccessIcon />
+        return <SuccessIcon size={32} />
       case 'error':
-        return <ErrorIcon />
+        return <ErrorIcon size={32} />
       default:
         return null
     }
@@ -172,9 +165,9 @@ export function GlobalLoader() {
           <motion.p 
             className={cn(
               "text-sm font-medium mt-3 text-center",
-              state === 'error' ? "text-red-600 dark:text-red-400" :
+              state === 'error' ? "text-destructive" :
               state === 'success' ? "text-emerald-600 dark:text-emerald-400" :
-              "text-gray-700 dark:text-gray-300"
+              "text-foreground"
             )}
           >
             {getMessage()}
@@ -182,11 +175,12 @@ export function GlobalLoader() {
           
           {getSubMessage() && (
             <motion.p 
-              className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center"
+              className="text-xs text-muted-foreground mt-1 text-center"
             >
               {getSubMessage()}
             </motion.p>
           )}
+          
           {state === 'loading' && typeof progress === 'number' && (
             <ProgressBar progress={progress} />
           )}
@@ -214,10 +208,10 @@ export function GlobalLoader() {
           className={cn(
             "flex flex-col items-center space-y-4 p-8 rounded-xl shadow-2xl border max-w-sm mx-4",
             state === 'error' 
-              ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30" 
+              ? "bg-destructive/10 border-destructive/20" 
               : state === 'success'
               ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30"
-              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              : "bg-card border-border"
           )}
         >
           {renderIcon()}
@@ -227,10 +221,10 @@ export function GlobalLoader() {
               className={cn(
                 "text-lg font-semibold",
                 state === 'error' 
-                  ? "text-red-700 dark:text-red-300" 
+                  ? "text-destructive" 
                   : state === 'success'
                   ? "text-emerald-700 dark:text-emerald-300"
-                  : "text-gray-900 dark:text-gray-100"
+                  : "text-foreground"
               )}
             >
               {getMessage()}
@@ -238,7 +232,7 @@ export function GlobalLoader() {
             
             {getSubMessage() && (
               <motion.p 
-                className="text-sm text-gray-600 dark:text-gray-400"
+                className="text-sm text-muted-foreground"
               >
                 {getSubMessage()}
               </motion.p>
