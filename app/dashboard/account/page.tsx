@@ -47,20 +47,19 @@ export default async function SubscriptionAccountPage() {
         throw new Error("User ID is required but was null.")
       }
 
-      // Use Promise.all instead of Promise.allSettled for better performance
-      // and add a timeout to prevent long-running requests
-      const fetchWithTimeout = async (promise: Promise<any>, timeoutMs = 5000) => {
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Request timed out")), timeoutMs)
-        })
-        return Promise.race([promise, timeoutPromise])
+      // Resolve to safe fallbacks on timeout instead of throwing
+      const withTimeout = async <T>(promise: Promise<T>, timeoutMs = 8000, fallback: T): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+        ])
       }
 
       const [subscriptionStatus, tokenData, billingHistory, paymentMethods] = await Promise.all([
-        fetchWithTimeout(SubscriptionService.getSubscriptionStatus(userId)),
-        fetchWithTimeout(SubscriptionService.getTokensUsed(userId)),
-        fetchWithTimeout(SubscriptionService.getBillingHistory(userId)),
-        fetchWithTimeout(SubscriptionService.getPaymentMethods(userId)),
+        withTimeout(SubscriptionService.getSubscriptionStatus(userId), 8000, { subscriptionPlan: "FREE", isSubscribed: false } as any),
+        withTimeout(SubscriptionService.getTokensUsed(userId), 8000, { used: 0, total: 0 } as any),
+        withTimeout(SubscriptionService.getBillingHistory(userId), 8000, [] as any),
+        withTimeout(SubscriptionService.getPaymentMethods(userId), 8000, [] as any),
       ]).catch((error) => {
         console.error("Error fetching subscription data:", error)
         return [{ subscriptionPlan: "FREE", isSubscribed: false }, { used: 0, total: 0 }, [], []]
