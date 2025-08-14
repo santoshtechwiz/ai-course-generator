@@ -13,11 +13,17 @@ export class QuizListService {
   constructor() {
     this.quizRepository = new QuizRepository();
     this.userRepository = new UserRepository();
-    this.quizzesCache = new NodeCache({
-      stdTTL: 900, // 15 minutes
-      checkperiod: 60, // Check for expired keys every minute
-      useClones: false, // Disable cloning for better performance
-    });
+
+    // Global singleton cache across HMR/serverless invocations
+    const globalForQuizzes = globalThis as unknown as { __quizzesCache?: NodeCache };
+    if (!globalForQuizzes.__quizzesCache) {
+      globalForQuizzes.__quizzesCache = new NodeCache({
+        stdTTL: 900, // 15 minutes
+        checkperiod: 60, // Check for expired keys every minute
+        useClones: false, // Disable cloning for better performance
+      });
+    }
+    this.quizzesCache = globalForQuizzes.__quizzesCache;
   }
 
   /**

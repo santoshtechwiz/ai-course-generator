@@ -133,8 +133,12 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
       return undefined
     },
     staleTime: 1000 * 60 * 5,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    retry: 1,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   // Dedupe helper

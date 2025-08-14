@@ -5,8 +5,21 @@ import type { QuizType } from "../types/quiz-types"
 import NodeCache from "node-cache"
 import { Quiz } from "../types/types"
 
-const quizCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
-const quizDetailCache = new NodeCache({ stdTTL: 900, checkperiod: 60 }) // 15 minute cache for quiz details
+// Global singletons for caches
+const globalForQuizCache = globalThis as unknown as {
+	__quizListCache?: NodeCache
+	__quizDetailCache?: NodeCache
+}
+
+if (!globalForQuizCache.__quizListCache) {
+	globalForQuizCache.__quizListCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }) // 5 minute cache
+}
+if (!globalForQuizCache.__quizDetailCache) {
+	globalForQuizCache.__quizDetailCache = new NodeCache({ stdTTL: 900, checkperiod: 60 }) // 15 minute cache for quiz details
+}
+
+const quizCache = globalForQuizCache.__quizListCache
+const quizDetailCache = globalForQuizCache.__quizDetailCache
 
 interface GetQuizzesParams {
   page?: number
