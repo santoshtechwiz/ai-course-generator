@@ -97,7 +97,7 @@ export function QuizFooter({
             animate={{ opacity: 1, scale: 1 }}
             className="flex items-center gap-2"
           >
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Answer recorded</span>
           </motion.div>
         )}
@@ -126,13 +126,7 @@ export function QuizFooter({
           <Button
             onClick={onSubmit}
             size="lg"
-            className={cn(
-              "min-w-[140px] h-12 transition-all duration-200",
-              isSuccess && "bg-green-600 hover:bg-green-700",
-              hasAnswer 
-                ? "bg-primary hover:bg-primary/90" 
-                : "bg-muted-foreground/50 hover:bg-muted-foreground/60"
-            )}
+            className={cn("min-w-[140px] h-12 transition-all duration-200")}
             disabled={!hasAnswer || isLoading}
           >
             {isLoading ? (
@@ -156,13 +150,7 @@ export function QuizFooter({
           <Button
             onClick={onNext}
             size="lg"
-            className={cn(
-              "min-w-[140px] h-12 transition-all duration-200",
-              isSuccess && "bg-green-600 hover:bg-green-700",
-              canGoNext 
-                ? "bg-primary hover:bg-primary/90" 
-                : "bg-muted-foreground/50 hover:bg-muted-foreground/60"
-            )}
+            className={cn("min-w-[140px] h-12 transition-all duration-200")}
             disabled={!canGoNext || isLoading}
           >
             {isLoading ? (
