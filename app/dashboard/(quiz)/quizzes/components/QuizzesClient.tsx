@@ -130,9 +130,26 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 
+  // Dedupe helper
+  const dedupeById = useCallback((items: QuizListItem[]) => {
+    const seen = new Set<string>()
+    const result: QuizListItem[] = []
+    for (const q of items || []) {
+      const key = String(q.id || q.slug || "")
+      if (!key) continue
+      if (!seen.has(key)) {
+        seen.add(key)
+        result.push(q)
+      }
+    }
+    return result
+  }, [])
+
+  const rawQuizzes = extractQuizzes(data)
+  const quizzes = useMemo(() => dedupeById(rawQuizzes), [rawQuizzes, dedupeById])
+
   // Avoid fetching next page when no results at all
-  const allQuizzes = extractQuizzes(data)
-  const noResults = !isLoading && !isError && allQuizzes.length === 0
+  const noResults = !isLoading && !isError && quizzes.length === 0
 
   // Load more when in view
   useEffect(() => {
@@ -173,16 +190,6 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const handleViewModeChange = useCallback((mode: "grid" | "list") => {
     if (mode) setViewMode(mode)
   }, [])
-
-  const quizzes = extractQuizzes(data)
-
-  const isSearching =
-    debouncedSearch.trim() !== "" ||
-    selectedTypes.length > 0 ||
-    questionCountRange[0] > 0 ||
-    questionCountRange[1] < 50 ||
-    showPublicOnly ||
-    activeTab !== "all"
 
   const quizCounts = useMemo(() => {
     const counts = {
@@ -283,11 +290,16 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   // Recommended row (horizontal scroll)
   const recommended = useMemo(() => {
     if (!quizzes?.length) return []
-    // Simple heuristic: more questions -> more engaging
     return [...quizzes]
       .sort((a, b) => (b.questionCount || 0) - (a.questionCount || 0))
       .slice(0, 8)
   }, [quizzes])
+
+  const filteredGridQuizzes = useMemo(() => {
+    if (!recommended.length) return quizzes
+    const recIds = new Set(recommended.map((q) => String(q.id || q.slug)))
+    return quizzes.filter((q) => !recIds.has(String(q.id || q.slug)))
+  }, [quizzes, recommended])
 
   const RecommendedRow = () => {
     if (!recommended.length) return null
@@ -383,7 +395,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
                     <RecommendedRow />
 
                     <QuizList
-                      quizzes={quizzes}
+                      quizzes={filteredGridQuizzes}
                       isLoading={false}
                       isError={isError}
                       isFetchingNextPage={isFetchingNextPage}
