@@ -28,9 +28,9 @@ export function GlobalLoaderProvider({ children }: { children: React.ReactNode }
       // Small delay to avoid flicker on fast routes
       delayTimeoutRef.current = setTimeout(() => {
         startLoading({ 
-          message: "Loading page...", 
+          message: "Loading...", 
           isBlocking: true,
-          minVisibleMs: 600,
+          minVisibleMs: 250,
           autoProgress: true,
         })
         
@@ -41,7 +41,7 @@ export function GlobalLoaderProvider({ children }: { children: React.ReactNode }
         finishTimeoutRef.current = setTimeout(() => {
           stopLoading()
           finishTimeoutRef.current = null
-        }, 300)
+        }, 150)
       }, 100)
     }
 
