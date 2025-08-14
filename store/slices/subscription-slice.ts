@@ -35,13 +35,15 @@ const initialState: SubscriptionState = {
 
 const MIN_FETCH_INTERVAL = 30000 // 30 seconds
 
-const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Request timed out")), ms)
-    ),
-  ])
+const fetchWithTimeout = async (input: RequestInfo, init: RequestInit = {}, timeoutMs = 10000): Promise<Response> => {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(input, { ...init, signal: controller.signal })
+    return response
+  } finally {
+    clearTimeout(id)
+  }
 }
 
 export const fetchSubscription = createAsyncThunk<
@@ -62,18 +64,15 @@ export const fetchSubscription = createAsyncThunk<
 
   try {
     const cacheBuster = `nocache=${Date.now()}`
-    const res = await withTimeout(
-      fetch(`/api/subscriptions/status?${cacheBuster}`, {
-        headers: {
-          Accept: "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-        credentials: "include",
-      }),
-      10000
-    )
+    const res = await fetchWithTimeout(`/api/subscriptions/status?${cacheBuster}`, {
+      headers: {
+        Accept: "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      credentials: "include",
+    }, 12000)
 
     if (res?.status === 401) {
       logger.warn("User not authenticated for subscription")
@@ -187,17 +186,14 @@ export const forceSyncSubscription = createAsyncThunk<
   try {
     logger.info("Force syncing subscription with Stripe...")
     
-    const res = await withTimeout(
-      fetch("/api/subscriptions/sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-        },
-        credentials: "include",
-      }),
-      15000 // 15 second timeout for sync
-    )
+    const res = await fetchWithTimeout("/api/subscriptions/sync", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+      credentials: "include",
+    }, 15000)
 
     if (res.status === 401) {
       logger.warn("User not authenticated for force sync")
