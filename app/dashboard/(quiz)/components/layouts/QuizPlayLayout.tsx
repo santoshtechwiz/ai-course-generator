@@ -13,7 +13,7 @@ import { CheckCircle, Clock, Home, Maximize, Minimize, Menu, X, Target } from "l
 import { QuizActions } from "../QuizActions"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { RandomQuiz } from "./RandomQuiz"
-import { useRandomQuizzes } from "@/hooks/useRandomQuizzes"
+import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import Confetti from "react-confetti"
 import { useWindowSize } from "react-use"
 
@@ -85,7 +85,7 @@ export default function QuizPlayLayout({
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
   const { width, height } = useWindowSize()
-  const { quizzes: relatedQuizzes } = useRandomQuizzes(6)
+  const { quizzes: relatedQuizzes } = useRelatedQuizzes({ quizType, difficulty: quizData?.difficulty, exclude: quizSlug, limit: 6 })
   const [showConfetti, setShowConfetti] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
 
