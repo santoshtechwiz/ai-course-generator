@@ -15,6 +15,7 @@ import {
   forceSyncSubscription,
   selectSubscriptionData,
 } from "@/store/slices/subscription-slice";
+import { usePathname } from "next/navigation";
 
 // Types
 export interface User {
@@ -59,13 +60,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, status, update } = useSession();
   const dispatch = useAppDispatch();
   const reduxSubscription = useAppSelector(selectSubscriptionData);
+  const pathname = usePathname();
+
+  const shouldSyncSubscription = (path: string | null | undefined): boolean => {
+    if (!path) return false;
+    // Limit subscription auto-fetch to subscription-relevant areas
+    return (
+      path.startsWith("/dashboard/account") ||
+      path.startsWith("/dashboard/(quiz)") ||
+      path.startsWith("/dashboard/course") ||
+      path.startsWith("/dashboard/subscription")
+    );
+  };
 
   // Load fresh subscription on session load
   useEffect(() => {
-    if (session?.user?.id && status === 'authenticated') {
+    if (session?.user?.id && status === 'authenticated' && shouldSyncSubscription(pathname)) {
       dispatch(fetchSubscription({ forceRefresh: true }));
     }
-  }, [session?.user?.id, status, dispatch]); // More specific dependencies
+  }, [session?.user?.id, status, dispatch, pathname]); // More specific dependencies
 
   const refreshUserData = useCallback(async () => {
     try {
