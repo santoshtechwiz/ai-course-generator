@@ -486,23 +486,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     setShowCertificate(true)
   }, [])
 
-  // Autoplay countdown logic
+  // Autoplay logic removed per request
   useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (showAutoplayOverlay && autoplayCountdown > 0) {
-      interval = setInterval(() => {
-        setAutoplayCountdown((prev) => {
-          if (prev <= 1) {
-            setShowAutoplayOverlay(false)
-            handleNextVideo()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [showAutoplayOverlay, autoplayCountdown, handleNextVideo])
+    setShowAutoplayOverlay(false)
+    setAutoplayCountdown(0)
+  }, [])
 
   // Course stats
   const courseStats = useMemo(
@@ -639,16 +627,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                         videoEnding={videoEnding}
                         onAnimationComplete={() => setShowLogoOverlay(false)}
                       />
-                      {/* Autoplay Overlay */}
-                      {showAutoplayOverlay && nextChapter && (
-                        <AutoplayOverlay
-                          countdown={autoplayCountdown}
-                          onCancel={handleCancelAutoplay}
-                          onNextVideo={handleNextVideo}
-                          nextVideoTitle={nextChapter.chapter.title}
-                        />
-                      )}
-                    </>
+                                          </>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full">
                       <div className="text-center text-white p-4">
