@@ -8,6 +8,7 @@ import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import { RootState } from "@/store"
+import { NoResults } from "@/components/ui/no-results"
 
 import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
 import { useAuth } from "@/hooks"
@@ -26,6 +27,8 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
   const quizTitle = useSelector((state: RootState) => state.flashcard.title);
   const questions = useSelector((state: RootState) => state.flashcard.questions);
   const quizStatus = useSelector((state: RootState) => state.flashcard.status);
+  const status = useSelector((state: any) => state.quiz.status)
+  const error = useSelector((state: any) => state.quiz.error)
   
   // Create quiz data object for QuizPlayLayout
   const quizData = {
@@ -49,9 +52,37 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-3">Error</h2>
             <p className="text-muted-foreground mb-4">Quiz slug is missing. Please check the URL.</p>
-            <Button size="lg" onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
+            <Button size="lg" onClick={() => router.push("/dashboard/quizzes")}>
+              Back to Quizzes
+            </Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  if (status === 'not-found') {
+    const isPrivate = error && /private|visibility|unauthorized/i.test(error)
+    return (
+      <div className="mx-auto w-full max-w-screen-md px-4 py-10">
+        <NoResults
+          variant="error"
+          title={isPrivate ? "This quiz is private" : "Quiz not found"}
+          description={isPrivate
+            ? "The quiz exists but is not publicly accessible. Ask the owner to share it or explore public quizzes."
+            : "We couldn’t find this quiz. It may have been removed or the link is incorrect. Explore other quizzes below."}
+          action={{
+            label: "Explore Quizzes",
+            onClick: () => router.push("/dashboard/quizzes"),
+            variant: "default"
+          }}
+          secondaryAction={{
+            label: "Go Home",
+            onClick: () => router.push("/dashboard"),
+            variant: "outline"
+          }}
+          illustrationPlacement="left"
+        />
       </div>
     )
   }

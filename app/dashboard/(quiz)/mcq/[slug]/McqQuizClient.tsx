@@ -10,6 +10,7 @@ import McqQuizWrapper from "../components/McqQuizWrapper"
 import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
+import { NoResults } from "@/components/ui/no-results"
 
 
 interface McqQuizClientProps {
@@ -23,6 +24,8 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
 
   // Get quiz state from Redux for layout purposes
   const quizData = useSelector((state: any) => state.quiz);
+  const status = useSelector((state: any) => state.quiz.status)
+  const error = useSelector((state: any) => state.quiz.error)
 
   // Let the wrapper component handle data fetching to avoid duplicates
 
@@ -36,6 +39,33 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
             <Button size="lg" onClick={() => router.push("/dashboard/quizzes")}>Back to Quizzes</Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  // Friendly not-found/private handling
+  if (status === 'not-found') {
+    const isPrivate = error && /private|visibility|unauthorized/i.test(error)
+    return (
+      <div className="mx-auto w-full max-w-screen-md px-4 py-10">
+        <NoResults
+          variant="error"
+          title={isPrivate ? "This quiz is private" : "Quiz not found"}
+          description={isPrivate
+            ? "The quiz exists but is not publicly accessible. Ask the owner to share it or explore public quizzes."
+            : "We couldn’t find this quiz. It may have been removed or the link is incorrect. Explore other quizzes below."}
+          action={{
+            label: "Explore Quizzes",
+            onClick: () => router.push("/dashboard/quizzes"),
+            variant: "default"
+          }}
+          secondaryAction={{
+            label: "Go Home",
+            onClick: () => router.push("/dashboard"),
+            variant: "outline"
+          }}
+          illustrationPlacement="left"
+        />
       </div>
     )
   }
