@@ -4,6 +4,7 @@ import McqQuizClient from "./McqQuizClient"
 import prisma from "@/lib/db"
 import { QuizSchema } from "@/lib/seo"
 import React from "react"
+import QuizSEOClient from "../../components/QuizSEOClient"
 
 interface McqQuizPageProps {
   params: Promise<{ slug: string }>
@@ -61,6 +62,7 @@ export default function McqQuizPage({ params }: McqQuizPageProps) {
     const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     return (
       <>
+        <QuizSEOClient />
         <QuizJsonLd slug={slug} title={title} />
         <McqQuizClient params={params} />
       </>
