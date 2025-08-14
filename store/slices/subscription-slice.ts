@@ -14,6 +14,7 @@ import type {
   EnhancedSubscriptionData,
 } from "@/app/types/subscription"
 import { logger } from "@/lib/logger"
+import { fetchWithTimeout } from "@/lib/http"
 
 const DEFAULT_FREE_SUBSCRIPTION: SubscriptionData = {
   credits: 0,
@@ -34,17 +35,6 @@ const initialState: SubscriptionState = {
 }
 
 const MIN_FETCH_INTERVAL = 30000 // 30 seconds
-
-const fetchWithTimeout = async (input: RequestInfo, init: RequestInit = {}, timeoutMs = 10000): Promise<Response> => {
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    const response = await fetch(input, { ...init, signal: controller.signal })
-    return response
-  } finally {
-    clearTimeout(id)
-  }
-}
 
 export const fetchSubscription = createAsyncThunk<
   SubscriptionData,
@@ -128,18 +118,18 @@ export const cancelSubscription = createAsyncThunk<
   }
 
   try {
-    const res = await fetch("/api/subscriptions/cancel", {
+    const res = await fetchWithTimeout("/api/subscriptions/cancel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ subscriptionId: data.subscriptionId }),
-    })
+    }, 10000)
 
     if (!res.ok) {
       throw new Error(`Failed to cancel subscription: ${res.statusText}`)
     }
     // After successful cancel, refetch status for a consistent shape
-    const statusRes = await fetchWithTimeout(`/api/subscriptions/status?nocache=${Date.now()}` , { credentials: "include" }, 10000)
+    const statusRes = await fetchWithTimeout(`/api/subscriptions/status?nocache=${Date.now()}`, { credentials: "include" }, 10000)
     if (!statusRes.ok) {
       return {
         ...data,
@@ -177,12 +167,12 @@ export const resumeSubscription = createAsyncThunk<
   }
 
   try {
-    const res = await fetch("/api/subscriptions/resume", {
+    const res = await fetchWithTimeout("/api/subscriptions/resume", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ subscriptionId: data.subscriptionId }),
-    })
+    }, 10000)
 
     if (!res.ok) {
       throw new Error(`Failed to resume subscription: ${res.statusText}`)
