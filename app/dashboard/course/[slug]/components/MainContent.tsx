@@ -29,6 +29,8 @@ import { useAuth } from "@/modules/auth"
 import { isAdmin } from "@/lib/auth"
 import CourseActions from "./CourseActions"
 import { cn } from "@/lib/utils"
+import { PDFDownloadLink } from "@react-pdf/renderer"
+import CertificateGenerator from "./CertificateGenerator"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -497,8 +499,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Certificate handler
   const handleCertificateClick = useCallback(() => {
-    router.push(`/certificate/${course.id}`)
-  }, [router, course.id])
+    setShowCertificate(true)
+  }, [])
 
   // Autoplay countdown logic
   useEffect(() => {
@@ -839,10 +841,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 </p>
               </div>
               <div className="space-y-3">
-                <Button onClick={handleCertificateClick} className="w-full">
-                  <Award className="h-4 w-4 mr-2" />
-                  View Certificate
-                </Button>
+                <PDFDownloadLink
+                  document={<CertificateGenerator courseName={course.title} userName={user?.name || "Student"} />}
+                  fileName={`${(course.title || 'Course').replace(/\s+/g, '_')}_Certificate.pdf`}
+                  className="w-full"
+                >
+                  {({ loading }) => (
+                    <Button disabled={loading} className="w-full">
+                      <Award className="h-4 w-4 mr-2" />
+                      {loading ? 'Preparing...' : 'Download Certificate'}
+                    </Button>
+                  )}
+                </PDFDownloadLink>
                 <Button variant="outline" onClick={() => setShowCertificate(false)} className="w-full">
                   Close
                 </Button>

@@ -21,6 +21,8 @@ import type { BaseQuizResultProps, ProcessedAnswer } from "./quiz-result-types"
 import { getPerformanceLevel } from "@/lib/utils/text-similarity"
 import { useAuth } from "@/modules/auth"
 import { toast } from "@/components/ui/use-toast"
+import CertificateGenerator from "@/app/dashboard/course/[slug]/components/CertificateGenerator"
+import { PDFDownloadLink } from "@react-pdf/renderer"
 
 // Enhanced performance level configurations with modern styling
 const PERFORMANCE_LEVELS = {
@@ -353,6 +355,9 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
   const PerformanceOverview = () => {
     const PerformanceIcon = performanceConfig.icon
 
+    const safeTitle = (title || "Quiz").trim()
+    const certificateFile = `${safeTitle.replace(/[^a-z0-9]+/gi, "_")}_Certificate.pdf`
+
     return (
       <div className="space-y-8">
         {/* Hero Performance Card with enhanced animations */}
@@ -552,6 +557,21 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             <RotateCcw className="h-5 w-5 mr-2" />
             Retake Quiz
           </Button>
+          <PDFDownloadLink
+            document={<CertificateGenerator courseName={safeTitle} userName={user?.name || "Student"} />}
+            fileName={certificateFile}
+          >
+            {({ loading }) => (
+              <Button 
+                size="lg"
+                disabled={loading}
+                className="w-full sm:w-auto min-w-[220px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Award className="h-5 w-5 mr-2" />
+                {loading ? "Preparing..." : "Download Certificate"}
+              </Button>
+            )}
+          </PDFDownloadLink>
           
           {user && (
             <Button 

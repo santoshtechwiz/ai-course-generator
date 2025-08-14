@@ -13,6 +13,8 @@ import { addBookmark, removeBookmark, type BookmarkItem, type CourseProgress } f
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsQuiz from "./CourseQuiz"
 import CourseAISummary from "./CourseSummary"
+import CertificateGenerator from "./CertificateGenerator"
+import { PDFDownloadLink } from "@react-pdf/renderer"
 
 export interface AccessLevels {
   isSubscribed: boolean
@@ -117,6 +119,29 @@ export default function CourseDetailsTabs({
     { id: "bookmarks", label: "Bookmarks", icon: <BookmarkIcon className="h-4 w-4 mr-2" /> },
     { id: "resources", label: "Resources", icon: <File className="h-4 w-4 mr-2" /> },
   ]
+
+  function CertificateButton({ courseTitle }: { courseTitle: string }) {
+    const safeCourse = courseTitle?.trim() || "Course"
+    const fileName = `${safeCourse.replace(/\s+/g, "_")}_Certificate.pdf`
+    return (
+      <PDFDownloadLink
+        document={<CertificateGenerator courseName={safeCourse} userName={undefined} />}
+        fileName={fileName}
+        className="w-full"
+      >
+        {({ loading }) => (
+          <Button disabled={loading} className="w-full">
+            {loading ? "Preparing..." : (
+              <>
+                <Award className="h-4 w-4 mr-2" />
+                Download Certificate
+              </>
+            )}
+          </Button>
+        )}
+      </PDFDownloadLink>
+    )
+  }
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
@@ -229,23 +254,22 @@ export default function CourseDetailsTabs({
                   <div className="text-xs text-muted-foreground">Certificates</div>
                 </div>
               </div>
-              {courseStats.progressPercentage === 100 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
-                  <div className="flex items-center gap-3">
-                    <Award className="h-8 w-8 text-yellow-600" />
-                    <div>
-                      <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Course Completed!</h3>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                        Congratulations! You've completed all chapters.
-                      </p>
+                              {courseStats.progressPercentage === 100 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
+                    <div className="flex items-center gap-3">
+                      <Award className="h-8 w-8 text-yellow-600" />
+                      <div>
+                        <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Course Completed!</h3>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          Congratulations! You've completed all chapters.
+                        </p>
+                      </div>
+                      <div className="ml-auto min-w-[220px]">
+                        <CertificateButton courseTitle={course.title} />
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm" className="ml-auto bg-transparent">
-                      <Award className="h-4 w-4 mr-2" />
-                      Certificate
-                    </Button>
                   </div>
-                </div>
-              )}
+                )}
             </CardContent>
           </Card>
         </TabsContent>
