@@ -82,10 +82,8 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
         <CardFooter className="pb-4 pt-0">
           <Button 
             onClick={() => {
-              startLoading({ message: item.type === "course" ? "Loading course..." : "Loading quiz...", isBlocking: true });
-              setTimeout(() => {
-                router.push(getUrl())
-              }, 100);
+              startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 200, autoProgress: true });
+              router.push(item.href);
             }} 
             variant="outline" 
             className="w-full"

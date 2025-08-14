@@ -162,13 +162,13 @@ export default function MainNavbar() {
   const handleSearchClose = useCallback(() => setIsSearchModalOpen(false), [])
   const handleMobileMenuToggle = useCallback(() => setIsMobileMenuOpen((prev) => !prev), [])
   const handleSignIn = useCallback(() => {
-    startLoading({ message: "Redirecting to sign in..." });
+    startLoading({ message: "Loading...", minVisibleMs: 200, autoProgress: true });
     router.push("/api/auth/signin")
   }, [router, startLoading])
 
   const handleSearchResult = useCallback(
     (url: string) => {
-      startLoading({ message: "Loading page..." });
+      startLoading({ message: "Loading...", minVisibleMs: 200, autoProgress: true });
       router.push(url)
       handleSearchClose()
     },

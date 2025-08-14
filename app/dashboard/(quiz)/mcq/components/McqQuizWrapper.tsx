@@ -69,11 +69,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   useEffect(() => {    // To prevent infinite loop, we track if we've already shown the loader for this completion    
     if (isCompleted && quizStatus === "succeeded" && !hasShownLoaderRef.current) {
       hasShownLoaderRef.current = true;
-      startLoading({
-        message: "🎉 Quiz completed! Calculating your results...",
-        isBlocking: true
-      })
-
+      
       submissionTimeoutRef.current = setTimeout(() => {
         router.push(`/dashboard/mcq/${slug}/results`)
       }, 500)
@@ -115,11 +111,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const handleSubmitQuiz = useCallback(async () => {
     try {
       toast.success("Quiz submitted successfully!")
-      startLoading({
-        message: "🎉 Quiz completed! Calculating your results...",
-        isBlocking: true
-      })
-
+      
       await dispatch(submitQuiz()).unwrap()
 
       setTimeout(() => {
