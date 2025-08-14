@@ -12,13 +12,15 @@ export async function generateMetadata({ params }: FlashcardQuizPageProps): Prom
   
   // Create better SEO title without raw slug
   const cleanTopic = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  const likelyInvalid = slug.length < 3 || /[^a-z0-9-]/i.test(slug)
   
   return generateQuizPageMetadata({
     quizType: "flashcard",
     slug,
     title: `${cleanTopic} - Study Flashcards`,
     description: `Master ${cleanTopic} concepts with interactive flashcards. Study key terms, definitions, and important facts with spaced repetition learning.`,
-    topic: cleanTopic
+    topic: cleanTopic,
+    noIndex: likelyInvalid
   })
 }
 

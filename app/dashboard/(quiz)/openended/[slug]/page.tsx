@@ -12,13 +12,15 @@ export async function generateMetadata({ params }: OpenEndedQuizPageProps): Prom
   
   // Create better SEO title without raw slug
   const cleanTopic = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  
+  const likelyInvalid = slug.length < 3 || /[^a-z0-9-]/i.test(slug)
+
   return generateQuizPageMetadata({
     quizType: "openended",
     slug,
-    title: `${cleanTopic} - Essay Questions & Analysis`,
-    description: `Deepen your understanding of ${cleanTopic} with comprehensive essay questions. Practice critical thinking and detailed written responses with expert feedback.`,
-    topic: cleanTopic
+    title: `${cleanTopic} - Open-Ended Quiz`,
+    description: `Practice writing detailed responses about ${cleanTopic}. Get guidance and constructive feedback.`,
+    topic: cleanTopic,
+    noIndex: likelyInvalid
   })
 }
 

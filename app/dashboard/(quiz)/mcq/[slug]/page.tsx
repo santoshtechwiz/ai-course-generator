@@ -13,13 +13,15 @@ export async function generateMetadata({ params }: McqQuizPageProps): Promise<Me
   // Try to get the actual quiz title from the database/cache first
   // For now, create a better title without using raw slug
   const cleanTopic = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  const likelyInvalid = slug.length < 3 || /[^a-z0-9-]/i.test(slug)
   
   return generateQuizPageMetadata({
     quizType: "mcq",
     slug,
     title: `${cleanTopic} - Multiple Choice Quiz`,
     description: `Test your knowledge of ${cleanTopic} with interactive multiple choice questions. Get instant feedback and detailed explanations for each answer.`,
-    topic: cleanTopic
+    topic: cleanTopic,
+    noIndex: likelyInvalid
   })
 }
 

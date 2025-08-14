@@ -10,12 +10,16 @@ interface BlanksQuizPageProps {
 export async function generateMetadata({ params }: BlanksQuizPageProps): Promise<Metadata> {
   const { slug } = await params
   
+  const clean = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  const likelyInvalid = slug.length < 3 || /[^a-z0-9-]/i.test(slug)
+
   return generateQuizPageMetadata({
     quizType: "blanks",
     slug,
-    title: `Fill in the Blanks Quiz: ${slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+    title: `Fill in the Blanks Quiz: ${clean}`,
     description: "Test your knowledge with fill-in-the-blank questions. Complete sentences and statements to demonstrate your understanding.",
-    topic: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    topic: clean,
+    noIndex: likelyInvalid
   })
 }
 
