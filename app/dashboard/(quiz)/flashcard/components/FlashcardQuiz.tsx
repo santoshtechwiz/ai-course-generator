@@ -5,7 +5,7 @@ import { useAnimation as useAnimationContext } from "@/providers/animation-provi
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { submitFlashCardAnswer, nextFlashCard } from "@/store/slices/flashcard-slice"
+import { submitFlashCardAnswer, nextFlashCard, setCurrentFlashCard } from "@/store/slices/flashcard-slice"
 import { useAppDispatch, useAppSelector } from "@/store"
 
 // Import modular components
@@ -114,19 +114,78 @@ export default function FlashCardQuiz({
     })
   }, [currentCard, onSaveCard])
 
-  // Move to next card
+  // Adaptive scheduler helpers
+  const answerMap = useMemo(() => {
+    // Build latest answer per questionId for quick lookups
+    const map = new Map<string, { answer: "correct" | "incorrect" | "still_learning" }>()
+    const stateAnswers = (useAppSelector as any)?.prototype ? [] : [] // placeholder to prevent linter confusion
+    // We already have Redux state via useAppSelector above; reuse it
+    // Note: answers are stored in Redux flashcard slice; pull at time of scheduling for freshness
+    // We will compute from closure 'useAppSelector((state) => state.flashcard.answers)' by reading directly in scheduler
+    return map
+  }, [])
+
+  const computeNextIndex = useCallback(() => {
+    if (!cards?.length) return currentQuestionIndex
+
+    // Gather status per index from Redux state
+    const state = (window as any).__NEXT_REDUX_STORE__?.getState?.()
+    const fcAnswers: any[] = state?.flashcard?.answers || []
+    const statusById = new Map<string, "correct" | "incorrect" | "still_learning" | "unseen">()
+    fcAnswers.forEach((a) => {
+      if (a && typeof a.questionId !== 'undefined' && typeof a.answer !== 'undefined') {
+        statusById.set(String(a.questionId), a.answer)
+      }
+    })
+
+    const incorrect: number[] = []
+    const stillLearning: number[] = []
+    const correct: number[] = []
+    const unseen: number[] = []
+
+    cards.forEach((c, idx) => {
+      const s = statusById.get(String(c.id)) || "unseen"
+      if (s === "incorrect") incorrect.push(idx)
+      else if (s === "still_learning") stillLearning.push(idx)
+      else if (s === "correct") correct.push(idx)
+      else unseen.push(idx)
+    })
+
+    // Remove current index to avoid immediate repeats when possible
+    const removeCurrent = (arr: number[]) => arr.filter((i) => i !== currentQuestionIndex)
+    const poolIncorrect = removeCurrent(incorrect)
+    const poolStill = removeCurrent(stillLearning)
+    const poolUnseen = removeCurrent(unseen)
+    const poolCorrect = removeCurrent(correct)
+
+    // Weights: incorrect 0.6, still_learning 0.3, unseen 0.1 fallback to correct
+    const r = Math.random()
+    let candidatePool: number[] | null = null
+    if (poolIncorrect.length && r < 0.6) candidatePool = poolIncorrect
+    else if (poolStill.length && r < 0.9) candidatePool = poolStill
+    else if (poolUnseen.length) candidatePool = poolUnseen
+    else if (poolCorrect.length) candidatePool = poolCorrect
+
+    if (candidatePool && candidatePool.length) {
+      return candidatePool[Math.floor(Math.random() * candidatePool.length)]
+    }
+
+    // Fallback: sequential or loop to start
+    const next = currentQuestionIndex + 1
+    return next < cards.length ? next : 0
+  }, [cards, currentQuestionIndex])
+
+  // Move to next card using adaptive scheduler
   const moveToNextCard = useCallback(() => {
     if (!cards?.length) return
-    const maxIndex = cards.length - 1
-
-    if (currentQuestionIndex < maxIndex) {
-      setFlipped(false)
-      dispatch(nextFlashCard())
-    } else {
-      // Quiz completed - show completion feedback
+    const nextIndex = computeNextIndex()
+    setFlipped(false)
+    if (nextIndex === 0 && currentQuestionIndex === cards.length - 1) {
       handleQuizCompletion()
+    } else {
+      dispatch(setCurrentFlashCard(nextIndex))
     }
-  }, [currentQuestionIndex, cards, dispatch])
+  }, [cards, computeNextIndex, dispatch, currentQuestionIndex, handleQuizCompletion])
 
   // Handle quiz completion with proper feedback
   const handleQuizCompletion = useCallback(() => {
@@ -478,12 +537,12 @@ export default function FlashCardQuiz({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-full text-sm text-muted-foreground">
-            <span className="font-medium">
-              {currentQuestionIndex + 1} of {cards.length}
-            </span>
+          <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-full text-sm text-muted-foreground">
+            <span className="font-medium">{currentQuestionIndex + 1} / {cards.length}</span>
             <span className="text-xs">•</span>
-            <span className="text-xs">Press Space to flip</span>
+            <AccuracyBadge />
+            <span className="text-xs">•</span>
+            <span className="text-xs">Space = Flip</span>
           </div>
         </motion.div>
 
@@ -535,4 +594,17 @@ export default function FlashCardQuiz({
       </div>
     </motion.div>
   )
+}
+
+function AccuracyBadge() {
+  // Read from Redux without causing re-renders of parent
+  let accuracy = 0
+  try {
+    const state = (window as any).__NEXT_REDUX_STORE__?.getState?.()
+    const answers: any[] = state?.flashcard?.answers || []
+    const total = answers.filter((a: any) => 'answer' in a).length
+    const correct = answers.filter((a: any) => a.answer === 'correct').length
+    accuracy = total > 0 ? Math.round((correct / total) * 100) : 0
+  } catch {}
+  return <span className="text-xs">Accuracy {accuracy}%</span>
 }
