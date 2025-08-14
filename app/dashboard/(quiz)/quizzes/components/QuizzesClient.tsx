@@ -130,12 +130,16 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 
+  // Avoid fetching next page when no results at all
+  const allQuizzes = extractQuizzes(data)
+  const noResults = !isLoading && !isError && allQuizzes.length === 0
+
   // Load more when in view
   useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage && !isError) {
+    if (inView && hasNextPage && !isFetchingNextPage && !isError && !noResults) {
       fetchNextPage()
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, isError])
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, isError, noResults])
 
   // Event Handlers
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,7 +224,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
 
   // Featured banner for engagement
   const FeaturedBanner = () => (
-    <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5">
+    <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-r from-violet-600/15 via-fuchsia-500/10 to-rose-500/10">
       <CardContent className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="p-3 rounded-xl bg-primary text-primary-foreground shadow">
@@ -238,10 +242,10 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="hover:bg-primary/10">
             <a href="/dashboard/mcq" className="gap-2"><Sparkles className="h-4 w-4" /> Create Quiz</a>
           </Button>
-          <Button asChild>
+          <Button asChild className="bg-gradient-to-r from-primary to-primary/80">
             <a href="/dashboard/subscription" className="gap-2"><Rocket className="h-4 w-4" /> Upgrade</a>
           </Button>
         </div>
@@ -346,40 +350,63 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <QuickFilters />
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleCreateQuiz} className="gap-2">
+                    <Button variant="outline" size="sm" onClick={handleCreateQuiz} className="gap-2 hover:bg-primary/10">
                       <Sparkles className="h-4 w-4" /> Create Quiz
                     </Button>
-                    <Button asChild size="sm">
+                    <Button asChild size="sm" className="bg-gradient-to-r from-primary to-primary/80">
                       <a href="/dashboard/subscription" className="gap-2"><Crown className="h-4 w-4" /> Upgrade</a>
                     </Button>
                   </div>
                 </div>
 
-                <RecommendedRow />
+                {/* Empty state when no results */}
+                {noResults ? (
+                  <div className="mt-6">
+                    <QuizList
+                      quizzes={[]}
+                      isLoading={false}
+                      isError={false}
+                      isFetchingNextPage={false}
+                      hasNextPage={false}
+                      isSearching={isSearching}
+                      onCreateQuiz={handleCreateQuiz}
+                      activeFilter={activeTab}
+                      onFilterChange={handleTabChange}
+                      onRetry={handleRetry}
+                      quizCounts={{ all: 0, mcq: 0, openended: 0, code: 0, blanks: 0, flashcard: 0 }}
+                      viewMode={viewMode}
+                      onViewModeChange={handleViewModeChange}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <RecommendedRow />
 
-                <QuizList
-                  quizzes={quizzes}
-                  isLoading={false}
-                  isError={isError}
-                  isFetchingNextPage={isFetchingNextPage}
-                  hasNextPage={!!hasNextPage}
-                  isSearching={isSearching}
-                  onCreateQuiz={handleCreateQuiz}
-                  activeFilter={activeTab}
-                  onFilterChange={handleTabChange}
-                  onRetry={handleRetry}
-                  quizCounts={quizCounts}
-                  viewMode={viewMode}
-                  onViewModeChange={handleViewModeChange}
-                />
-                <div ref={ref} className="h-20 flex items-center justify-center">
-                  {isFetchingNextPage && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" />
-                      Loading more quizzes...
+                    <QuizList
+                      quizzes={quizzes}
+                      isLoading={false}
+                      isError={isError}
+                      isFetchingNextPage={isFetchingNextPage}
+                      hasNextPage={!!hasNextPage}
+                      isSearching={isSearching}
+                      onCreateQuiz={handleCreateQuiz}
+                      activeFilter={activeTab}
+                      onFilterChange={handleTabChange}
+                      onRetry={handleRetry}
+                      quizCounts={quizCounts}
+                      viewMode={viewMode}
+                      onViewModeChange={handleViewModeChange}
+                    />
+                    <div ref={ref} className="h-20 flex items-center justify-center">
+                      {isFetchingNextPage && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div className="w-4 h-4 border-2 border-primary border-r-transparent rounded-full animate-spin" />
+                          Loading more quizzes...
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </>
             )}
           </ErrorBoundary>
