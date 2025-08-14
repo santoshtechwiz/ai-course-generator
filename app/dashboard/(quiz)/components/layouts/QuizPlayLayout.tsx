@@ -15,7 +15,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { RandomQuiz } from "./RandomQuiz"
 import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import Confetti from "react-confetti"
-import { useWindowSize } from "react-use"
 
 export const dynamic = "force-dynamic"
 
@@ -84,7 +83,7 @@ export default function QuizPlayLayout({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
-  const { width, height } = useWindowSize()
+  // window size is accessed directly when rendering confetti to avoid SSR issues
   const { quizzes: relatedQuizzes } = useRelatedQuizzes({ quizType, difficulty: quizData?.difficulty, exclude: quizSlug, limit: 6, tags: Array.isArray(quizData?.tags) ? quizData?.tags : undefined })
   const [showConfetti, setShowConfetti] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
@@ -193,7 +192,9 @@ export default function QuizPlayLayout({
 
   return (
     <div className={`min-h-screen relative ${isFullscreen ? "overflow-hidden" : ""}`}>
-      {showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={180} gravity={0.25} />}
+      {showConfetti && typeof window !== 'undefined' && (
+        <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={180} gravity={0.25} />
+      )}
       {header}
       <main className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-3">
         {canResume && !isFullscreen && (
