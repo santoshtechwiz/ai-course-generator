@@ -11,6 +11,7 @@ import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { NoResults } from "@/components/ui/no-results"
+import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 
 
 interface McqQuizClientProps {
@@ -66,6 +67,7 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
           }}
           illustrationPlacement="left"
         />
+        <RelatedQuizSuggestions quizType="mcq" excludeSlug={slug} difficulty={quizData?.difficulty} tags={quizData?.tags} />
       </div>
     )
   }
