@@ -292,16 +292,28 @@ export default function QuizPlayLayout({
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Did you know?</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary animate-bounce">🤖</span>
+              Supercharge your learning
+            </DialogTitle>
             <DialogDescription>
-              This quiz was created with AI to help you learn faster and grow your skills.
-              Enjoy a tailored experience with smart feedback and insights.
+              This AI-powered quiz adapts to you—offering smart hints, quick feedback, and a tailored path to mastery.
+              Level up your skills faster with an experience designed just for you.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <div className="mt-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/30 border border-border/50">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center text-white animate-pulse">✨</div>
+              <div>
+                <p className="font-medium text-foreground">Create your own quiz for free</p>
+                <p>Engage your audience, grow your business, and share your expertise in minutes.</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-3">
             <Button variant="secondary" onClick={() => setShowEngage(false)}>Got it</Button>
-            <Button asChild>
-              <a href="/dashboard/explore">Explore more AI quizzes</a>
+            <Button asChild className="bg-gradient-to-r from-primary to-primary/80">
+              <a href="/dashboard/mcq" className="gap-2">Create a quiz for free</a>
             </Button>
           </DialogFooter>
         </DialogContent>
