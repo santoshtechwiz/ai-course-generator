@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export type LoaderState = "idle" | "loading" | "success" | "error";
 
@@ -234,3 +236,15 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
     }
   )
 );
+
+// Optional hook to tie loader to Next.js route changes
+export function useRouteLoaderBridge() {
+  const pathname = usePathname();
+  const { startLoading, stopLoading } = useGlobalLoader();
+  useEffect(() => {
+    // Start quickly, auto-stop shortly after to avoid lingering
+    startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 150, autoProgress: true });
+    const id = setTimeout(() => stopLoading(), 200);
+    return () => clearTimeout(id);
+  }, [pathname, startLoading, stopLoading]);
+}
