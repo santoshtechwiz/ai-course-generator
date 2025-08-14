@@ -862,7 +862,7 @@ export function BaseQuizResult<T extends BaseQuizResultProps>({
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
               <PerformanceOverview />
-              <CreateContentPromo context="results" topic={title} className="mt-2" storageKey={result?.slug || title} />
+              <CreateContentPromo context="results" topic={title} className="mt-2" storageKey={result?.slug || title} force />
             </TabsContent>
 
             {/* Review Tab */}

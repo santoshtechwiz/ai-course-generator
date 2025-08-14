@@ -767,6 +767,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         courseTitle={courseName}
       />
 
+      {/* Force creation modal at chapter end to promote business growth */}
+      {showChapterEnd && (
+        <div className="absolute left-0 right-0 bottom-20 z-40 px-3">
+          <CreateContentPromo context="video" topic={chapterTitleRef.current || courseName} storageKey={String(videoIdRef.current)} force />
+        </div>
+      )}
+
       {/* Enhanced Custom controls */}
       {canPlayVideo && (
         <div
