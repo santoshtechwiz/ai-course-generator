@@ -562,20 +562,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     <div className="min-h-screen bg-background">
       {/* Mobile header */}
       <div className="flex">
-        {/* Main content */}        <main className="flex-1 min-w-0">
-             <CourseActions slug={course.slug} isOwner={isOwner}/>
+                 {/* Main content */}        <main className="flex-1 min-w-0">
+             <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
    
-          <div className={cn("mx-auto py-4", wideMode ? "max-w-none px-0" : "max-w-7xl px-4 lg:px-6")}>            {/* Video Generation Section */}
-            <VideoGenerationSection 
-              course={course}
-              onVideoGenerated={(chapterId, videoId) => {
-                console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
-                // Optionally auto-select the newly generated video
-                if (videoId) {
-                  dispatch(setCurrentVideoApi(videoId))
-                }
-              }}
-            />
+           <div className={cn("mx-auto py-4 px-4 sm:px-6 lg:px-8", wideMode ? "max-w-none" : "max-w-7xl")}>            {/* Video Generation Section */}
+            {(isOwner || user?.isAdmin) && (
+              <VideoGenerationSection 
+                course={course}
+                onVideoGenerated={(chapterId, videoId) => {
+                  console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
+                  // Optionally auto-select the newly generated video
+                  if (videoId) {
+                    dispatch(setCurrentVideoApi(videoId))
+                  }
+                }}
+              />
+            )}
 
             {/* Video player section */}
             <div className="space-y-4">
@@ -599,12 +601,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
               </div>
 
-              {/* Video player */}
-              <div className={wideMode ? "w-full" : "mx-auto w-full"}>
-                <div className="relative aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border shadow-lg">
-                  {currentVideoId ? (
-                    <>
-                      <VideoPlayer
+                             {/* Video player */}
+               <div className="w-full">
+                 <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-border shadow-sm">
+                   {currentVideoId ? (
+                     <>
+                       <VideoPlayer
                         videoId={currentVideoId}
                         courseId={course.id}
                         chapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
@@ -659,23 +661,23 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 </div>
               </div>
 
-              {/* Chapter description and rating */}
-              {currentChapter?.description && (
-                <div className="rounded-lg border bg-card/50 p-4 md:p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold mb-3">About this lesson</h3>
-                  <div className="prose prose-sm max-w-none text-foreground/90">
-                    <MarkdownRenderer content={currentChapter.description} />
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Rate this lesson</span>
-                    <Rating
-                      value={0}
-                      onValueChange={() => {}}
-                      className="scale-110"
-                    />
-                  </div>
-                </div>
-              )}
+                             {/* Chapter description and rating */}
+               {currentChapter?.description && (
+                 <div className="rounded-xl border bg-card p-4 sm:p-5 lg:p-6 shadow-sm">
+                   <h3 className="text-base sm:text-lg font-semibold mb-3">About this lesson</h3>
+                   <div className="prose prose-sm max-w-none text-foreground/90">
+                     <MarkdownRenderer content={currentChapter.description} />
+                   </div>
+                   <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                     <span className="text-sm text-muted-foreground">Rate this lesson</span>
+                     <Rating
+                       value={0}
+                       onValueChange={() => {}}
+                       className="scale-110"
+                     />
+                   </div>
+                 </div>
+               )}
 
               {/* Chapter navigation */}
               <div className="flex items-center justify-center">
@@ -699,40 +701,42 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   )}
                 </div>
               </div>
-              {/* Course tabs */}
-              <CourseDetailsTabs
-                course={course}
-                currentChapter={currentChapter}
-                accessLevels={accessLevels}                onSeekToBookmark={handleSeekToBookmark}
-              />
+                             {/* Course tabs */}
+               <div className="rounded-xl border bg-card/50">
+                 <CourseDetailsTabs
+                   course={course}
+                   currentChapter={currentChapter}
+                   accessLevels={accessLevels}
+                   onSeekToBookmark={handleSeekToBookmark}
+                 />
+               </div>
 
               {/* Related courses recommendation (simple placeholder using CourseCard) */}
-              {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold mb-4">Recommended for you</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(course as any).relatedCourses.slice(0, 3).map((c: any, idx: number) => (
-                      <div key={c.id || idx}>
-                        {/* Lazy import via dynamic would be nicer; using a simple card fallback to avoid new imports */}
-                        <div className="border rounded-lg overflow-hidden shadow-sm">
-                          <div className="p-4">
-                            <div className="font-semibold line-clamp-2">{c.title}</div>
-                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description}</p>
-                            <Button
-                              variant="outline"
-                              className="mt-3 w-full"
-                              onClick={() => (window.location.href = `/dashboard/course/${c.slug}`)}
-                            >
-                              View Course
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+                             {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
+                 <div className="mt-8">
+                   <h3 className="text-base sm:text-lg font-semibold mb-4">Recommended for you</h3>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                     {(course as any).relatedCourses.slice(0, 3).map((c: any, idx: number) => (
+                       <div key={c.id || idx}>
+                         <div className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                           <div className="p-4">
+                             <div className="font-semibold line-clamp-2">{c.title}</div>
+                             <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description}</p>
+                             <Button
+                               variant="outline"
+                               className="mt-3 w-full"
+                               onClick={() => (window.location.href = `/dashboard/course/${c.slug}`)}
+                             >
+                               View Course
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+</div>
           </div>
         </main>
         {/* Sticky mobile Next Lesson CTA removed per request */}
