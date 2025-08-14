@@ -2,10 +2,30 @@
 import { useQuizPlan } from "../../../../hooks/useQuizPlan";
 import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 const McqPage = () => {
-  // Use our custom hook that already handles session, auth, and subscription data
-  const quizPlan = useQuizPlan(1); // Require 1 credit to create an MCQ quiz
+  const quizPlan = useQuizPlan(1);
+  const searchParams = useSearchParams();
+  const [draft, setDraft] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (searchParams?.get("draft") === "1") {
+      try {
+        const raw = sessionStorage.getItem("create_draft");
+        if (raw) setDraft(JSON.parse(raw));
+      } catch {}
+    }
+  }, [searchParams]);
+
+  const initialParams = useMemo(() => {
+    if (!draft) return undefined;
+    const p: Record<string, string> = {};
+    if (draft.title) p.title = String(draft.title);
+    if (draft.items?.length) p.amount = String(Math.max(1, draft.items.length));
+    return p;
+  }, [draft]);
 
   return (
     <QuizCreateLayout
@@ -23,6 +43,7 @@ const McqPage = () => {
           isLoggedIn={quizPlan.isLoggedIn}
           maxQuestions={quizPlan.maxQuestions}
           quizType="mcq"
+          params={initialParams as any}
         />
       )}
     </QuizCreateLayout>
