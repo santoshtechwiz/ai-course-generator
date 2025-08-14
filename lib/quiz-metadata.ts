@@ -10,6 +10,7 @@ import { generateQuizMetadata as generateSEOQuizMetadata } from "@/lib/seo"
 
 export interface QuizMetadataOptions {
   quizType: "mcq" | "code" | "blanks" | "openended" | "flashcard" | "document"
+  slug?: string
   title?: string
   description?: string
   topic?: string
@@ -57,6 +58,7 @@ const quizTypeConfigs = {
  */
 export function generateQuizMetadata({
   quizType,
+  slug,
   title,
   description,
   topic,
@@ -77,7 +79,7 @@ export function generateQuizMetadata({
   const base = generateSEOQuizMetadata({
     title: dynamicTitle,
     description: dynamicDescription,
-    slug: quizType, // Use quiz type as slug for now
+    slug: slug || quizType,
     quizType: quizType,
     difficulty: difficulty,
     questionsCount: questionCount,
