@@ -338,12 +338,23 @@ export default function MainNavbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 relative",
           "border-b border-border/60 bg-gradient-to-b from-background/80 via-background/70 to-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70",
+          "backdrop-saturate-150",
           scrolled && "bg-background/90",
         )}
         data-testid="main-navbar"
         role="navigation"
         aria-label="Main navigation"
       >
+        {/* Top hairline highlight */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute top-0 left-0 right-0 h-px -z-10"
+          initial={{ opacity: 0.2 }}
+          animate={{ opacity: scrolled ? 0.35 : 0.25 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        </motion.div>
         {/* Background subtle gradient glow */}
         <motion.div
           aria-hidden
@@ -364,6 +375,18 @@ export default function MainNavbar() {
         >
           <div className="h-full w-full opacity-70 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-primary/0 to-transparent" />
         </motion.div>
+        {/* Subtle shimmer indicator on scroll (reduced motion aware) */}
+        {!prefersReducedMotion && scrolled && (
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute top-0 left-0 h-0.5 w-24 -z-10"
+            initial={{ x: "-10%", opacity: 0.0 }}
+            animate={{ x: ["-10%", "110%"], opacity: [0.0, 0.3, 0.0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+          </motion.div>
+        )}
         <motion.div 
           className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl"
           initial="hidden"
