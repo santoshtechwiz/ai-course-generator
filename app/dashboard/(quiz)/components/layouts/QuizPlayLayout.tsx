@@ -85,7 +85,7 @@ export default function QuizPlayLayout({
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [showEngage, setShowEngage] = useState(false)
   const { width, height } = useWindowSize()
-  const { quizzes: relatedQuizzes } = useRelatedQuizzes({ quizType, difficulty: quizData?.difficulty, exclude: quizSlug, limit: 6 })
+  const { quizzes: relatedQuizzes } = useRelatedQuizzes({ quizType, difficulty: quizData?.difficulty, exclude: quizSlug, limit: 6, tags: Array.isArray(quizData?.tags) ? quizData?.tags : undefined })
   const [showConfetti, setShowConfetti] = useState(false)
   const mainRef = useRef<HTMLDivElement>(null)
 

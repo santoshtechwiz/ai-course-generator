@@ -11,8 +11,10 @@ export async function GET(req: NextRequest) {
     const difficulty = searchParams.get("difficulty") || undefined
     const exclude = searchParams.get("exclude") || undefined
     const limit = Math.min(12, Math.max(1, Number(searchParams.get("limit") || 6)))
+    const tagsParam = searchParams.get("tags") || ""
+    const tags = tagsParam ? tagsParam.split(",").map(t => t.trim()).filter(Boolean).slice(0, 5) : []
 
-    const cacheKey = `api:quizzes:related:${quizType || 'all'}:${difficulty || 'any'}:${exclude || 'none'}:${limit}`
+    const cacheKey = `api:quizzes:related:${quizType || 'all'}:${difficulty || 'any'}:${exclude || 'none'}:${tags.join('|')}:${limit}`
     const cached = await cache.get<any>(cacheKey)
     if (cached) {
       return NextResponse.json({ quizzes: cached }, { headers: { "X-Cache": "HIT" } })
@@ -22,11 +24,25 @@ export async function GET(req: NextRequest) {
     if (quizType) where.quizType = quizType
     if (difficulty) where.difficulty = difficulty
     if (exclude) where.slug = { not: exclude }
+    // Prefer tag overlap when available (assuming tags is a string[] column)
+    if (tags.length > 0) {
+      where.OR = [
+        { tags: { hasSome: tags } },
+        { title: { contains: tags[0], mode: 'insensitive' } },
+      ]
+    }
 
+    // Try ordering by recent activity first, then fallback to createdAt
     const quizzes = await prisma.userQuiz.findMany({
       where,
       take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        // @ts-ignore: optional columns depending on schema
+        { lastAttempted: 'desc' as any },
+        // @ts-ignore: optional columns depending on schema
+        { viewCount: 'desc' as any },
+        { createdAt: 'desc' },
+      ],
       select: {
         id: true,
         title: true,
@@ -34,6 +50,12 @@ export async function GET(req: NextRequest) {
         quizType: true,
         difficulty: true,
         _count: { select: { questions: true } },
+        // @ts-ignore
+        viewCount: true,
+        // @ts-ignore
+        lastAttempted: true,
+        // @ts-ignore
+        tags: true,
       },
     })
 
