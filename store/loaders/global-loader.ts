@@ -79,9 +79,9 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           intervalId = setInterval(() => {
             const { progress } = get();
             const current = typeof progress === 'number' ? progress : 0;
-            const next = Math.min(90, current + Math.random() * 6 + 4);
+            const next = Math.min(98, current + Math.random() * 6 + 4);
             set({ progress: next });
-            if (next >= 90) {
+            if (next >= 98) {
               if (get().autoProgressIntervalId) {
                 clearInterval(get().autoProgressIntervalId as NodeJS.Timeout);
               }
@@ -133,10 +133,17 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           autoProgressIntervalId: null,
         });
 
+        // If we had autoProgress, quickly animate to 100% before closing
+        const bumpToFull = () => {
+          const current = typeof get().progress === 'number' ? get().progress! : 0
+          if (current < 100) set({ progress: 100 })
+        }
+
         if (remaining > 0) {
-          setTimeout(() => finalize(), remaining);
+          setTimeout(() => { bumpToFull(); setTimeout(finalize, 120) }, remaining);
         } else {
-          finalize();
+          bumpToFull();
+          setTimeout(finalize, 120);
         }
       },
 
