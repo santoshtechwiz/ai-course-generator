@@ -336,14 +336,34 @@ export default function MainNavbar() {
       
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50",
-          "border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70",
+          "fixed top-0 left-0 right-0 z-50 relative",
+          "border-b border-border/60 bg-gradient-to-b from-background/80 via-background/70 to-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70",
           scrolled && "bg-background/90",
         )}
         data-testid="main-navbar"
         role="navigation"
         aria-label="Main navigation"
       >
+        {/* Background subtle gradient glow */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: scrolled ? 0.35 : 0.2 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="h-full w-full bg-gradient-to-r from-primary/10 via-transparent to-primary/10" />
+        </motion.div>
+        {/* Radial highlight for glass effect */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -z-10 left-1/2 top-0 h-32 w-[80vw] -translate-x-1/2"
+          initial={{ opacity: 0.15, y: -8 }}
+          animate={{ opacity: scrolled ? 0.25 : 0.18, y: scrolled ? 0 : -4 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="h-full w-full opacity-70 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-primary/0 to-transparent" />
+        </motion.div>
         <motion.div 
           className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl"
           initial="hidden"
