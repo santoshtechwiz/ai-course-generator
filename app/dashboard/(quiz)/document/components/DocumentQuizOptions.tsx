@@ -26,9 +26,9 @@ const questionOptions = [
 ]
 
 const difficultyOptions = [
-  { value: 25, label: "Easy", description: "Basic comprehension questions", color: "text-green-600" },
-  { value: 50, label: "Medium", description: "Moderate analysis required", color: "text-yellow-600" },
-  { value: 75, label: "Hard", description: "Deep understanding needed", color: "text-red-600" },
+  { value: 25, label: "Easy", description: "Basic comprehension questions", color: "text-emerald-600 dark:text-emerald-400" },
+  { value: 50, label: "Medium", description: "Moderate analysis required", color: "text-amber-600 dark:text-amber-500" },
+  { value: 75, label: "Hard", description: "Deep understanding needed", color: "text-destructive" },
 ]
 
 export function DocumentQuizOptions({ onOptionsChange, disabled = false }: DocumentQuizOptionsProps) {
