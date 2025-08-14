@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
 import { AsyncNavLink } from "@/components/loaders/AsyncNavLink"
 import { useGlobalLoader } from '@/store/loaders/global-loader'
 
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-motion"
 import Logo from "@/components/shared/Logo"
 
 
@@ -39,6 +39,7 @@ export default function MainNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [ready, setReady] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
   
   // Keyboard shortcuts (Cmd/Ctrl+K, /)
   useEffect(() => {
@@ -278,7 +279,7 @@ export default function MainNavbar() {
           <span
             className={cn("text-sm font-medium tabular-nums", isLowCredits ? "text-destructive" : "text-foreground")}
           >
-            {availableCredits.toLocaleString()}
+            <AnimatedNumber value={availableCredits} />
           </span>
         </div>
         {isPremium && (
@@ -302,6 +303,28 @@ export default function MainNavbar() {
       </Avatar>
     ),
     [user?.avatarUrl, user?.name, userInitials],  )
+
+  function AnimatedNumber({ value }: { value: number }) {
+    const [display, setDisplay] = useState<number>(value)
+    useEffect(() => {
+      if (typeof value !== "number") return
+      const startValue = display
+      const endValue = value
+      if (startValue === endValue) return
+      const durationMs = 500
+      const startAt = performance.now()
+      let raf = 0
+      const step = (now: number) => {
+        const t = Math.min(1, (now - startAt) / durationMs)
+        const current = Math.round(startValue + (endValue - startValue) * t)
+        setDisplay(current)
+        if (t < 1) raf = requestAnimationFrame(step)
+      }
+      raf = requestAnimationFrame(step)
+      return () => cancelAnimationFrame(raf)
+    }, [value])
+    return <>{Number.isFinite(display) ? display.toLocaleString() : "0"}</>
+  }
   
   return (
     <>
@@ -309,6 +332,7 @@ export default function MainNavbar() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1000] focus:bg-background focus:border focus:rounded px-3 py-1 shadow">
         Skip to content
       </a>
+      <MotionConfig reducedMotion={prefersReducedMotion ? "always" : "never"}>
       
       <header
         className={cn(
@@ -330,7 +354,7 @@ export default function MainNavbar() {
           <motion.div 
             className="flex items-center" 
             variants={itemVariants}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, rotate: 0.2 }}
             whileTap={{ scale: 0.98 }}
           >
             <AsyncNavLink href="/" aria-label="Return to homepage">
@@ -345,7 +369,55 @@ export default function MainNavbar() {
             variants={itemVariants}
             aria-label="Primary navigation"
           >
-            {navigationItems}
+            {navItems.map((item) => {
+              const isActive = pathname === item.href
+              const Icon = item.icon || (() => null)
+              return (
+                <motion.div
+                  key={item.name}
+                  variants={itemVariants}
+                  className="relative"
+                  whileHover={{ y: -2, scale: 1.01 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <AsyncNavLink
+                    href={item.href}
+                    className={cn(
+                      "relative px-4 py-2.5 text-sm font-medium transition-colors group block rounded-md whitespace-nowrap",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "hover:bg-accent/60",
+                      isActive 
+                        ? "text-primary bg-accent/60 border border-border/50" 
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    data-testid={`nav-item-${item.name.toLowerCase()}`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="navActivePill"
+                        className="absolute inset-0 -z-10 rounded-md bg-primary/5 border border-border/50"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "p-1 rounded-md",
+                        isActive ? "bg-accent/80" : "group-hover:bg-accent/60"
+                      )}>
+                        <Icon className={cn(
+                          "h-4 w-4",
+                          isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                        )} />
+                      </div>
+                      <span className="font-medium whitespace-nowrap">{item.name}</span>
+                    </div>
+                    {isActive && <span className="absolute left-4 right-4 bottom-1 h-[2px] bg-primary/60" />}
+                    <span className="pointer-events-none absolute left-4 right-4 bottom-1 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </AsyncNavLink>
+                </motion.div>
+              )
+            })}
           </motion.nav>
 
           {/* Right Section */}
@@ -493,7 +565,7 @@ export default function MainNavbar() {
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className="text-sm font-semibold tabular-nums">
-                                {availableCredits.toLocaleString()}
+                                <AnimatedNumber value={availableCredits} />
                               </span>
                               {subscriptionPlan && subscriptionPlan !== "FREE" && (
                                 <Badge variant="secondary" className="text-xs">
@@ -561,8 +633,8 @@ export default function MainNavbar() {
         {/* Animated bottom border accent */}
         <motion.div 
           className="h-0.5 w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent" 
-          initial={{ scaleX: 0 }} 
-          animate={{ scaleX: scrolled ? 1 : 0 }} 
+          initial={{ scaleX: 0, opacity: 0 }} 
+          animate={{ scaleX: scrolled ? 1 : 0, opacity: scrolled ? 1 : 0 }} 
           transition={{ duration: 0.5 }} 
           style={{ transformOrigin: 'left' }}
         />
@@ -570,6 +642,7 @@ export default function MainNavbar() {
 
       {/* Search Modal */}
       <SearchModal isOpen={isSearchModalOpen} setIsOpen={setIsSearchModalOpen} onResultClick={handleSearchResult} />
+      </MotionConfig>
     </>
   )
 }
