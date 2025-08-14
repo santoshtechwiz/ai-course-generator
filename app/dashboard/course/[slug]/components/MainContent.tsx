@@ -468,28 +468,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   )
 
   const handleNextVideo = useCallback(() => {
-    if (!canPlayVideo) {
-      setShowAuthPrompt(true)
-      return
-    }
-
-    if (nextChapter) {
-      dispatch(setCurrentVideoApi(nextChapter.videoId))
-      setVideoEnding(false)
-      setShowLogoOverlay(false)
-      setShowAutoplayOverlay(false)
-      setIsVideoLoading(true)
-    }
-  }, [nextChapter, dispatch, canPlayVideo])
+    /* Next navigation removed per request */
+  }, [])
 
   const handlePrevVideo = useCallback(() => {
-    if (prevChapter) {
-      dispatch(setCurrentVideoApi(prevChapter.videoId))
-      setVideoEnding(false)
-      setShowLogoOverlay(false)
-      setIsVideoLoading(true)
-    }
-  }, [prevChapter, dispatch])
+    /* Prev navigation removed per request */
+  }, [])
 
   // Cancel autoplay
   const handleCancelAutoplay = useCallback(() => {
@@ -636,13 +620,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                         showControls={true}
                         onCertificateClick={handleCertificateClick}
                         onChapterComplete={handleChapterComplete}
-                        onNextVideo={nextChapter ? handleNextVideo : undefined}
-                        nextVideoId={nextChapter?.videoId}
-                        nextVideoTitle={nextChapter?.chapter?.title || ''}
-                        onPrevVideo={prevChapter ? handlePrevVideo : undefined}
-                        prevVideoTitle={prevChapter?.chapter?.title || ''}
-                        hasNextVideo={!!nextChapter}
-                        theatreMode={theatreMode}
+                                                 onNextVideo={undefined}
+                         nextVideoId={undefined}
+                         nextVideoTitle={''}
+                         onPrevVideo={undefined}
+                         prevVideoTitle={''}
+                         hasNextVideo={false}
+                         theatreMode={theatreMode}
                         isFullscreen={isFullscreen}
                         onTheaterModeToggle={onTheaterModeToggle}
                         className="h-full w-full"
@@ -694,16 +678,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               )}
 
               {/* Chapter navigation */}
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  onClick={handlePrevVideo}
-                  disabled={!prevChapter}
-                  className="flex items-center gap-2"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
+              <div className="flex items-center justify-center">
                 <div className="text-center">
                   {currentChapter && (
                     <div>
@@ -723,15 +698,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                     </div>
                   )}
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={handleNextVideo}
-                  disabled={!nextChapter}
-                  className="flex items-center gap-2"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
               </div>
               {/* Course tabs */}
               <CourseDetailsTabs
@@ -769,41 +735,32 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             </div>
           </div>
         </main>
-        {/* Sticky mobile Next Lesson CTA */}
-        <div className="lg:hidden sticky bottom-0 z-30 p-4 bg-gradient-to-t from-background/90 to-transparent">
-          <Button
-            className="w-full"
-            onClick={handleNextVideo}
-            disabled={!nextChapter || !(nextChapter?.chapter?.isFree || !!userSubscription)}
-          >
-            Next Lesson
-          </Button>
-        </div>
-        {/* Desktop sidebar - hide in wide mode for full focus */}
-        {!wideMode && (
-        <aside className="hidden lg:block w-96 border-l bg-background/50 backdrop-blur-sm">
-                    <VideoNavigationSidebar
-             course={course}
-             currentChapter={currentChapter}
-             courseId={course.id.toString()}
-             onChapterSelect={handleChapterSelect}
-             progress={progress}
-             isAuthenticated={!!user}
-             isSubscribed={!!userSubscription}
-             completedChapters={completedChapters}
-             formatDuration={formatDuration}
-             nextVideoId={nextChapter?.videoId}
-             currentVideoId={currentVideoId || ''}
-             isPlaying={Boolean(currentVideoId)}
-             courseStats={{
-               completedCount: progress?.completedChapters?.length || 0,
-               totalChapters: videoPlaylist.length,
-               progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-             }}
-           />
-        </aside>
-        )}
-      </div>
+        {/* Sticky mobile Next Lesson CTA removed per request */}
+                 {/* Sidebar responsive tweaks */}
+         {!wideMode && (
+           <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
+             <VideoNavigationSidebar
+               course={course}
+               currentChapter={currentChapter}
+               courseId={course.id.toString()}
+               onChapterSelect={handleChapterSelect}
+               progress={progress}
+               isAuthenticated={!!user}
+               isSubscribed={!!userSubscription}
+               completedChapters={completedChapters}
+               formatDuration={formatDuration}
+               nextVideoId={undefined}
+               currentVideoId={currentVideoId || ''}
+               isPlaying={Boolean(currentVideoId)}
+               courseStats={{
+                 completedCount: progress?.completedChapters?.length || 0,
+                 totalChapters: videoPlaylist.length,
+                 progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+               }}
+             />
+           </aside>
+         )}
+       </div>
 
       {/* Floating subscribe CTA for guests/free users */}
       {!userSubscription && (

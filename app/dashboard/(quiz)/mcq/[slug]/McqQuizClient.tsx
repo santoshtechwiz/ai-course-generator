@@ -27,6 +27,7 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
   const quizData = useSelector((state: any) => state.quiz);
   const status = useSelector((state: any) => state.quiz.status)
   const error = useSelector((state: any) => state.quiz.error)
+  const hasQuestions = useSelector((state: any) => (state.quiz?.questions || []).length > 0)
 
   // Let the wrapper component handle data fetching to avoid duplicates
 
@@ -45,7 +46,7 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
   }
 
   // Friendly not-found/private handling
-  if (status === 'not-found') {
+  if (status === 'not-found' && !hasQuestions) {
     const isPrivate = error && /private|visibility|unauthorized/i.test(error)
     return (
       <div className="mx-auto w-full max-w-screen-md px-4 py-10">
