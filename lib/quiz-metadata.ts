@@ -63,7 +63,7 @@ export function generateQuizMetadata({
   difficulty,
   category,
   questionCount,
-  noIndex = true
+  noIndex = false
 }: QuizMetadataOptions): Metadata {
   const config = quizTypeConfigs[quizType]
   
