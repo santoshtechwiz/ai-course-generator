@@ -9,6 +9,7 @@ import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { NoResults } from "@/components/ui/no-results"
+import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 
 import FlashcardQuizWrapper from "../components/FlashcardQuizWrapper"
 import { useAuth } from "@/hooks"
@@ -83,6 +84,7 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
           }}
           illustrationPlacement="left"
         />
+        <RelatedQuizSuggestions quizType="flashcard" excludeSlug={slug} />
       </div>
     )
   }

@@ -9,6 +9,7 @@ import { useSelector } from "react-redux"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { NoResults } from "@/components/ui/no-results"
+import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 
 interface OpenEndedQuizClientProps {
   params: Promise<{ slug: string }>
@@ -62,6 +63,7 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
           }}
           illustrationPlacement="left"
         />
+        <RelatedQuizSuggestions quizType="openended" excludeSlug={slug} difficulty={quizData?.difficulty} tags={quizData?.tags} />
       </div>
     )
   }

@@ -9,6 +9,7 @@ import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
+import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 
 interface BlanksQuizClientProps {
   params: Promise<{ slug: string }>
@@ -62,6 +63,7 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
           }}
           illustrationPlacement="left"
         />
+        <RelatedQuizSuggestions quizType="blanks" excludeSlug={slug} difficulty={quizData?.difficulty} tags={quizData?.tags} />
       </div>
     )
   }

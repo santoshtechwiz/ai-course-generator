@@ -9,6 +9,7 @@ import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
+import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 
 interface CodeQuizClientProps {
   params: Promise<{ slug: string }>
@@ -64,6 +65,7 @@ export default function CodeQuizClient({ params }: CodeQuizClientProps) {
           }}
           illustrationPlacement="left"
         />
+        <RelatedQuizSuggestions quizType="code" excludeSlug={slug} difficulty={quizData?.difficulty} tags={quizData?.tags} />
       </div>
     )
   }
