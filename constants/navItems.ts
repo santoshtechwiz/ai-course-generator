@@ -16,9 +16,9 @@ export interface SubItem {
 
 export const navItems: NavItem[] = [
   { name: "Home", href: "/", icon: Home, subItems: [] },
-  { name: "Learning Path", href: "/dashboard/home", icon: BookOpen, subItems: [] },
+  { name: "Learning", href: "/dashboard/home", icon: BookOpen, subItems: [] },
   { name: "Quizzes", href: "/dashboard/quizzes", icon: BrainCircuit, subItems: [], isPublic: true },
   { name: "Courses", href: "/dashboard", icon: Compass, subItems: [], isPublic: true },
   { name: "Create", href: "/dashboard/explore", icon: PlusCircle, subItems: [] },
-  { name: "Membership", href: "/dashboard/subscription", icon: CreditCard, subItems: [] },
+  { name: "Plans", href: "/dashboard/subscription", icon: CreditCard, subItems: [] },
 ]
