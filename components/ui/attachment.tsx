@@ -6,7 +6,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { X, Paperclip, File, FileText, ImageIcon, FileArchive } from "lucide-react"
 import Image from "next/image"
-import { HashLoader } from "react-spinners"
+import { InlineSpinner } from "@/components/loaders/GlobalLoader"
 
 export type AttachmentType = "image" | "document" | "archive" | "unknown"
 
@@ -20,10 +20,6 @@ export interface AttachmentProps {
   onRemove?: (id: string) => void
   isLoading?: boolean
   className?: string
-}
-
-function InlineSpinner({ size = 24, className = "" }: { size?: number; className?: string }) {
-  return <HashLoader color="#3B82F6" size={size} className={className} />
 }
 
 export function Attachment({

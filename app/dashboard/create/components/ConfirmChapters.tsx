@@ -3,7 +3,8 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, BookOpen, CheckCircle, AlertCircle, PlayCircle } from "lucide-react"
-import { GlobalLoader, useGlobalLoader } from "@/components/ui/loader"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { InlineSpinner } from "@/components/loaders/GlobalLoader"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -142,7 +143,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
         {/* Show alert when videos are being generated */}
         {isGeneratingVideos && (
           <Alert className="mt-4 bg-primary/10 border-primary/20">
-            <GlobalLoader size="xs" className="text-primary" />
+            <InlineSpinner size={16} className="text-primary" />
             <AlertTitle>Generating Videos</AlertTitle>
             <AlertDescription>
               Videos are being generated for your chapters. This may take a few minutes.
@@ -214,7 +215,7 @@ const ConfirmChapters = ({ course: initialCourse }: CourseProps) => {
               >
                 {isSaving || isGeneratingVideos ? (
                   <span className="flex items-center">
-                    <GlobalLoader className="w-4 h-4 mr-2" />
+                    <InlineSpinner size={16} className="mr-2" />
                     {isSaving ? "Saving..." : "Generating Videos..."}
                   </span>
                 ) : (

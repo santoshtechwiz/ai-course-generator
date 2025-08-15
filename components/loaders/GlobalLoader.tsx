@@ -2,9 +2,6 @@
 
 import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { HashLoader } from "react-spinners"
-import { AlertCircle, CheckCircle } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 import { useGlobalLoader } from "@/store/loaders/global-loader"
 
@@ -12,92 +9,187 @@ interface IconProps {
   size?: number
 }
 
-interface InlineSpinnerProps {
-  size?: number
-  className?: string
+interface ProgressBarProps {
+  progress: number
+  isDeterministic?: boolean
 }
 
-export function InlineSpinner({ size = 16, className = "" }: InlineSpinnerProps) {
-  return (
-    <HashLoader
-      color="#3B82F6"
-      size={size}
-      cssOverride={{
-        display: 'inline-block',
-      }}
-      className={className}
-    />
-  )
-}
-
-export function LoadingSpinner({ size = 40 }: IconProps) {
+// Modern, deterministic spinner component
+function ModernSpinner({ size = 40 }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.2 }}
+      className="relative"
+      style={{ width: size, height: size }}
     >
-      <HashLoader 
-        color="#3B82F6"
-        size={size}
-        cssOverride={{
-          display: 'block',
-          margin: '0 auto',
-        }}
-      />
+      <svg
+        className="animate-spin"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          className="text-primary/20"
+        />
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          className="text-primary"
+          strokeDasharray="62.83"
+          strokeDashoffset="47.12"
+        />
+      </svg>
     </motion.div>
   )
 }
 
+// Inline spinner for small contexts
+export function InlineSpinner({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <div className={cn("inline-flex items-center justify-center", className)}>
+      <ModernSpinner size={size} />
+    </div>
+  )
+}
+
+// Main loading spinner
+export function LoadingSpinner({ size = 40 }: IconProps) {
+  return <ModernSpinner size={size} />
+}
+
+// Success icon with smooth animation
 function SuccessIcon({ size = 40 }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0 }}
-      transition={{ duration: 0.3, type: "spring" }}
+      transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
       className="flex items-center justify-center"
     >
-      <CheckCircle 
-        size={size} 
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
         className="text-emerald-500"
-      />
+      >
+        <motion.circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="2"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        />
+        <motion.path
+          d="M9 12l2 2 4-4"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        />
+      </svg>
     </motion.div>
   )
 }
 
+// Error icon with attention-grabbing animation
 function ErrorIcon({ size = 40 }: IconProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0, rotate: -180 }}
       animate={{ opacity: 1, scale: 1, rotate: 0 }}
       exit={{ opacity: 0, scale: 0, rotate: 180 }}
-      transition={{ duration: 0.3, type: "spring" }}
+      transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
       className="flex items-center justify-center"
     >
-      <AlertCircle 
-        size={size} 
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
         className="text-red-500"
-      />
+      >
+        <motion.circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="2"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        />
+        <motion.path
+          d="M15 9l-6 6M9 9l6 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        />
+      </svg>
     </motion.div>
   )
 }
 
-function ProgressBar({ progress }: { progress: number }) {
+// Modern progress bar with smooth animations
+function ProgressBar({ progress, isDeterministic = true }: ProgressBarProps) {
   return (
     <div className="w-64 mt-4">
       <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
+          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full relative"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-        />
+          transition={{ 
+            duration: isDeterministic ? 0.3 : 0.1, 
+            ease: "easeOut" 
+          }}
+        >
+          {/* Shimmer effect for loading state */}
+          {progress < 100 && (
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              animate={{ x: ["-100%", "100%"] }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity, 
+                ease: "linear" 
+              }}
+            />
+          )}
+        </motion.div>
       </div>
-      <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1">
-        {Math.round(progress)}% complete
-      </p>
+      <motion.p 
+        className="text-xs text-center text-muted-foreground mt-1"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        {isDeterministic ? `${Math.round(progress)}% complete` : 'Processing...'}
+      </motion.p>
     </div>
   )
 }
@@ -166,15 +258,18 @@ export function GlobalLoader() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
           className="flex flex-col items-center justify-center p-6"
+          role="status"
+          aria-live="polite"
+          aria-label={getMessage()}
         >
           {renderIcon()}
           
           <motion.p 
             className={cn(
               "text-sm font-medium mt-3 text-center",
-              state === 'error' ? "text-red-600 dark:text-red-400" :
-              state === 'success' ? "text-emerald-600 dark:text-emerald-400" :
-              "text-gray-700 dark:text-gray-300"
+              state === 'error' ? "text-destructive" :
+              state === 'success' ? "text-success" :
+              "text-foreground"
             )}
           >
             {getMessage()}
@@ -182,11 +277,12 @@ export function GlobalLoader() {
           
           {getSubMessage() && (
             <motion.p 
-              className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center"
+              className="text-xs text-muted-foreground mt-1 text-center"
             >
               {getSubMessage()}
             </motion.p>
           )}
+          
           {state === 'loading' && typeof progress === 'number' && (
             <ProgressBar progress={progress} />
           )}
@@ -204,7 +300,11 @@ export function GlobalLoader() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-md"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="loader-title"
+        aria-describedby="loader-description"
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
@@ -214,23 +314,24 @@ export function GlobalLoader() {
           className={cn(
             "flex flex-col items-center space-y-4 p-8 rounded-xl shadow-2xl border max-w-sm mx-4",
             state === 'error' 
-              ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30" 
+              ? "bg-destructive/5 border-destructive/20" 
               : state === 'success'
-              ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30"
-              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              ? "bg-success/5 border-success/20"
+              : "bg-card border-border"
           )}
         >
           {renderIcon()}
           
           <div className="text-center space-y-2">
             <motion.h3 
+              id="loader-title"
               className={cn(
                 "text-lg font-semibold",
                 state === 'error' 
-                  ? "text-red-700 dark:text-red-300" 
+                  ? "text-destructive" 
                   : state === 'success'
-                  ? "text-emerald-700 dark:text-emerald-300"
-                  : "text-gray-900 dark:text-gray-100"
+                  ? "text-success"
+                  : "text-foreground"
               )}
             >
               {getMessage()}
@@ -238,7 +339,8 @@ export function GlobalLoader() {
             
             {getSubMessage() && (
               <motion.p 
-                className="text-sm text-gray-600 dark:text-gray-400"
+                id="loader-description"
+                className="text-sm text-muted-foreground"
               >
                 {getSubMessage()}
               </motion.p>

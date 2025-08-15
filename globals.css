@@ -98,96 +98,58 @@
     line-height: 1.2;
   }
 
-  h1 {
-    @apply text-3xl md:text-4xl lg:text-5xl mb-4 scroll-m-20;
+  /* Modern loader animations */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
-  h2 {
-    @apply text-2xl md:text-3xl mb-3 scroll-m-20;
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
   }
 
-  h3 {
-    @apply text-xl md:text-2xl mb-3 scroll-m-20;
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 
-  h4 {
-    @apply text-lg md:text-xl mb-2 scroll-m-20;
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
   }
 
-  p {
-    @apply mb-4 leading-relaxed text-sm sm:text-base;
+  /* Smooth transitions for loader states */
+  .loader-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  a:not([class]) {
-    @apply text-primary underline-offset-4 hover:underline transition-colors;
+  /* Modern backdrop blur for loader overlays */
+  .loader-backdrop {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  ul:not([class]), ol:not([class]) {
-    @apply my-4 ml-6 space-y-2;
-  }
-
-  code {
-    @apply relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm;
-  }
-
-  pre {
-    @apply mb-4 overflow-x-auto rounded-lg border bg-muted p-4;
-  }
-
-  pre code {
-    @apply bg-transparent p-0;
-  }
-
-  ::-webkit-scrollbar {
-    @apply w-2;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-muted/20;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-primary/50 rounded-full;
-  }
-}
-
-/****************************************
- * UTILITY CLASSES
- ****************************************/
-@layer utilities {
-  /* Container classes */
-  .container-sm {
-    @apply max-w-screen-sm mx-auto px-4;
-  }
-
-  .container-md {
-    @apply max-w-screen-md mx-auto px-4 md:px-6;
-  }
-
-  .container-lg {
-    @apply max-w-screen-lg mx-auto px-4 md:px-8;
-  }
-
-  .container-xl {
-    @apply max-w-screen-xl mx-auto px-4 md:px-8;
-  }
-
-  /* Animation utilities */
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .animate-enter {
-    animation: enter 0.15s ease-out;
-  }
-
-  /* Accessibility utilities */
-  .sr-only {
-    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
-  }
-
-  .focus-visible\:not-sr-only:focus-visible {
-    @apply static w-auto h-auto p-0 m-0 overflow-visible whitespace-normal;
+  /* Improved focus styles for accessibility */
+  .loader-focus:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 0.5rem;
   }
 }
 
@@ -195,14 +157,9 @@
  * COMPONENT STYLES
  ****************************************/
 @layer components {
-  .card {
-    @apply rounded-xl border bg-card text-card-foreground shadow-sm transition-all;
-  }
-
+  /* Modern button styles */
   .btn {
-    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors 
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
-           disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
   .btn-primary {
@@ -213,50 +170,133 @@
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
 
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
+  }
+
+  /* Modern card styles */
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+
+  .card-title {
+    @apply text-2xl font-semibold leading-none tracking-tight;
+  }
+
+  .card-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .card-content {
+    @apply p-6 pt-0;
+  }
+
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+
+  /* Modern input styles */
   .input {
-    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 
-           text-sm ring-offset-background file:border-0 file:bg-transparent 
-           file:text-sm file:font-medium placeholder:text-muted-foreground 
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
-           focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Modern label styles */
+  .label {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+  }
+
+  /* Modern badge styles */
+  .badge {
+    @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .badge-default {
+    @apply border-transparent bg-primary text-primary-foreground hover:bg-primary/80;
+  }
+
+  .badge-secondary {
+    @apply border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+
+  .badge-destructive {
+    @apply border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80;
+  }
+
+  .badge-outline {
+    @apply text-foreground;
   }
 }
 
 /****************************************
- * ANIMATION KEYFRAMES
- ****************************************/
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes enter {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/****************************************
- * ACCESSIBILITY ENHANCEMENTS
+ * UTILITY STYLES
  ****************************************/
 @layer utilities {
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
+  /* Modern scrollbar styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground)) transparent;
   }
 
-  .focus\:ring-visible:focus {
-    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--foreground));
+  }
+
+  /* Modern text selection */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary));
+  }
+
+  /* Modern focus ring for better accessibility */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Modern gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+
+  /* Modern glass effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-sm border border-border/50;
+  }
+
+  /* Modern shadow utilities */
+  .shadow-soft {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .shadow-medium {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  .shadow-strong {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.16);
   }
 }

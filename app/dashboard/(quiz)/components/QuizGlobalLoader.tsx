@@ -17,11 +17,12 @@ export function QuizGlobalLoader({ quizType = "Quiz" }: QuizGlobalLoaderProps) {
   useEffect(() => {
     if (quizStatus === "loading") {
       startLoading({
-        message: `Loading...`,
-        subMessage: undefined,
+        message: `Loading ${quizType}...`,
+        subMessage: quizTitle ? `Preparing: ${quizTitle}` : undefined,
         isBlocking: true,
         autoProgress: true,
-        minVisibleMs: 200,
+        deterministic: true, // Use deterministic progress
+        minVisibleMs: 600, // Longer minimum for quiz loading
       })
     } else if (quizStatus === "succeeded" || quizStatus === "failed") {
       stopLoading()

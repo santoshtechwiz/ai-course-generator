@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
+import { InlineSpinner } from "@/components/loaders/GlobalLoader"
 import dynamic from "next/dynamic"
 
 // Import certificate component with SSR disabled
@@ -34,7 +34,7 @@ const CertificateWrapper: React.FC<CertificateWrapperProps> = ({
 
   if (!isClient) {
     return (
-      <Button disabled className="w-full bg-primary/80 hover:bg-primary/90 py-2 px-4 h-auto text-sm">        <GlobalLoader size="xs" className="mr-2 h-4 w-4" />
+      <Button disabled className="w-full bg-primary/80 hover:bg-primary/90 py-2 px-4 h-auto text-sm">        <InlineSpinner size={16} className="mr-2" />
         Preparing certificate...
       </Button>
     )
@@ -55,7 +55,7 @@ const CertificateWrapper: React.FC<CertificateWrapperProps> = ({
             onClick={onDownload}
           >
             {loading ? (
-              <>                <GlobalLoader size="xs" className="mr-2 h-4 w-4" />
+              <>                <InlineSpinner size={16} className="mr-2" />
                 Generating certificate...
               </>
             ) : (

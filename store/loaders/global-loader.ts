@@ -12,6 +12,7 @@ export interface LoaderOptions {
   isBlocking?: boolean;
   minVisibleMs?: number;
   autoProgress?: boolean;
+  deterministic?: boolean;
 }
 
 interface GlobalLoaderStore {
@@ -27,6 +28,7 @@ interface GlobalLoaderStore {
   startedAtMs?: number;
   minVisibleMs?: number;
   autoProgressIntervalId?: NodeJS.Timeout | null;
+  deterministic: boolean;
 
   // Actions
   startLoading: (options?: LoaderOptions) => void;
@@ -60,9 +62,10 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
       startedAtMs: undefined,
       minVisibleMs: 0,
       autoProgressIntervalId: null,
+      deterministic: true,
 
       startLoading: (options = {}) => {
-        // Clear any existing timeout
+        // Clear any existing timeouts and intervals
         const currentState = get();
         if (currentState.autoResetTimeoutId) {
           clearTimeout(currentState.autoResetTimeoutId);
@@ -73,23 +76,41 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
 
         const startedAt = Date.now();
         const minVisible = typeof options.minVisibleMs === 'number' ? Math.max(0, options.minVisibleMs) : 0;
+        const deterministic = options.deterministic !== false; // Default to true
 
-        // Optional auto-progress up to 90%
+        // Deterministic auto-progress: smooth progression to 90%
         let intervalId: NodeJS.Timeout | null = null;
         if (options.autoProgress) {
-          set({ progress: 5 });
+          set({ progress: 0 });
           intervalId = setInterval(() => {
             const { progress } = get();
             const current = typeof progress === 'number' ? progress : 0;
-            const next = Math.min(98, current + Math.random() * 6 + 4);
-            set({ progress: next });
-            if (next >= 98) {
-              if (get().autoProgressIntervalId) {
-                clearInterval(get().autoProgressIntervalId as NodeJS.Timeout);
+            
+            if (deterministic) {
+              // Deterministic: smooth progression with easing
+              const remaining = 90 - current;
+              const increment = Math.max(1, remaining * 0.1); // 10% of remaining
+              const next = Math.min(90, current + increment);
+              set({ progress: next });
+              
+              if (next >= 90) {
+                if (get().autoProgressIntervalId) {
+                  clearInterval(get().autoProgressIntervalId as NodeJS.Timeout);
+                }
+                set({ autoProgressIntervalId: null });
               }
-              set({ autoProgressIntervalId: null });
+            } else {
+              // Non-deterministic: random increments (for legacy support)
+              const next = Math.min(90, current + Math.random() * 6 + 4);
+              set({ progress: next });
+              if (next >= 90) {
+                if (get().autoProgressIntervalId) {
+                  clearInterval(get().autoProgressIntervalId as NodeJS.Timeout);
+                }
+                set({ autoProgressIntervalId: null });
+              }
             }
-          }, 150);
+          }, deterministic ? 100 : 150); // Faster updates for deterministic
         }
 
         set({
@@ -97,13 +118,14 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           isLoading: true,
           message: options.message || "Loading...",
           subMessage: options.subMessage,
-          progress: typeof options.progress === 'number' ? options.progress : get().progress,
+          progress: typeof options.progress === 'number' ? options.progress : (options.autoProgress ? 0 : undefined),
           isBlocking: options.isBlocking || false,
           error: undefined,
           autoResetTimeoutId: undefined,
           startedAtMs: startedAt,
           minVisibleMs: minVisible,
           autoProgressIntervalId: intervalId,
+          deterministic,
         });
       },
 
@@ -113,7 +135,7 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
         const minVisible = currentState.minVisibleMs || 0;
         const remaining = Math.max(0, minVisible - elapsed);
 
-        // Clear any existing timeout
+        // Clear any existing timeout and interval
         if (currentState.autoResetTimeoutId) {
           clearTimeout(currentState.autoResetTimeoutId);
         }
@@ -133,26 +155,30 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           startedAtMs: undefined,
           minVisibleMs: 0,
           autoProgressIntervalId: null,
+          deterministic: true,
         });
 
         // If we had autoProgress, quickly animate to 100% before closing
         const bumpToFull = () => {
-          const current = typeof get().progress === 'number' ? get().progress! : 0
-          if (current < 100) set({ progress: 100 })
-        }
+          const current = typeof get().progress === 'number' ? get().progress! : 0;
+          if (current < 100) set({ progress: 100 });
+        };
 
         if (remaining > 0) {
-          setTimeout(() => { bumpToFull(); setTimeout(finalize, 120) }, remaining);
+          setTimeout(() => { 
+            bumpToFull(); 
+            setTimeout(finalize, 200); // Slightly longer delay for smooth transition
+          }, remaining);
         } else {
           bumpToFull();
-          setTimeout(finalize, 120);
+          setTimeout(finalize, 200);
         }
       },
 
       setSuccess: (message) => {
         const currentState = get();
         
-        // Clear any existing timeout
+        // Clear any existing timeout and interval
         if (currentState.autoResetTimeoutId) {
           clearTimeout(currentState.autoResetTimeoutId);
         }
@@ -166,7 +192,7 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           if (newState.state === "success" && newState.autoResetTimeoutId === timeoutId) {
             get().stopLoading();
           }
-        }, 1200);
+        }, 1500); // Slightly longer to show success state
 
         set({
           state: "success",
@@ -181,7 +207,7 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
       setError: (error) => {
         const currentState = get();
         
-        // Clear any existing timeout
+        // Clear any existing timeout and interval
         if (currentState.autoResetTimeoutId) {
           clearTimeout(currentState.autoResetTimeoutId);
         }
@@ -195,7 +221,7 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           if (newState.state === "error" && newState.autoResetTimeoutId === timeoutId) {
             get().stopLoading();
           }
-        }, 2000);
+        }, 3000); // Longer timeout for errors to allow user to read
 
         set({
           state: "error",
@@ -237,14 +263,25 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
   )
 );
 
-// Optional hook to tie loader to Next.js route changes
+// Improved route loader bridge with better timing
 export function useRouteLoaderBridge() {
   const pathname = usePathname();
   const { startLoading, stopLoading } = useGlobalLoader();
+  
   useEffect(() => {
-    // Start quickly, auto-stop shortly after to avoid lingering
-    startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 150, autoProgress: true });
-    const id = setTimeout(() => stopLoading(), 200);
-    return () => clearTimeout(id);
+    // Only show loader for actual route changes, not initial load
+    if (pathname) {
+      startLoading({ 
+        message: "Loading...", 
+        isBlocking: true, 
+        minVisibleMs: 300, // Minimum visibility to prevent flickering
+        autoProgress: true,
+        deterministic: true, // Use deterministic progress
+      });
+      
+      // Stop after a reasonable delay
+      const id = setTimeout(() => stopLoading(), 800);
+      return () => clearTimeout(id);
+    }
   }, [pathname, startLoading, stopLoading]);
 }

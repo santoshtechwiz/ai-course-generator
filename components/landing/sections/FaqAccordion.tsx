@@ -8,7 +8,7 @@ import { useRef, useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Plus, Minus, Search } from "lucide-react"
 import { useGlobalLoader } from '@/store/loaders/global-loader'
-import { GlobalLoader } from '@/components/ui/loader'
+import { InlineSpinner } from '@/components/loaders/GlobalLoader'
 import { Input } from "@/components/ui/input"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useDebounce } from "@/hooks"
@@ -173,7 +173,7 @@ const FaqAccordion = () => {
 					/>
 					{isSearching && (
 						<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-							<GlobalLoader size="xs" theme="primary" />
+							<InlineSpinner size={16} className="text-primary" />
 						</div>
 					)}
 				</div>

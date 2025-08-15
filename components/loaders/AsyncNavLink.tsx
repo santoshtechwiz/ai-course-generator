@@ -4,7 +4,6 @@ import Link, { LinkProps } from "next/link";
 import { useRouter } from "next/navigation";
 import { useGlobalLoader } from "@/store/loaders/global-loader";
 
-
 interface AsyncNavLinkProps extends LinkProps {
   children: React.ReactNode;
   className?: string;
@@ -30,14 +29,15 @@ export function AsyncNavLink({
       message: "Loading...",
       subMessage: undefined,
       isBlocking: true,
-      minVisibleMs: 300,
+      minVisibleMs: 400, // Longer minimum to prevent flickering
       autoProgress: true,
+      deterministic: true, // Use deterministic progress
     });
 
-    // Delay slightly to let the loader show before navigation triggers
+    // Slightly longer delay to ensure loader is visible
     setTimeout(() => {
       router.push(typeof href === "string" ? href : (href as any).toString());
-    }, 75);
+    }, 100);
   };
 
   return (
