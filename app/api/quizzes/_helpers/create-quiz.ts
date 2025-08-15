@@ -10,6 +10,7 @@ import { QuestionRepository } from "@/app/repositories/question.repository"
 import { QuizRepository } from "@/app/repositories/quiz.repository"
 import { UserRepository } from "@/app/repositories/user.repository"
 import { generateFlashCards } from "@/lib/chatgpt/ai-service"
+import type { QuizType } from "@/app/types/quiz-types"
 
 const questionRepo = new QuestionRepository()
 const quizRepo = new QuizRepository()
@@ -70,7 +71,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       const questions = Array.isArray(gen?.questions) ? gen.questions : gen
 
       // Create quiz using repository, then questions using repository
-      const created = await quizRepo.createUserQuiz(userId, title, "mcq" as any, slug)
+      const created = await quizRepo.createUserQuiz(userId, title, "mcq" as QuizType, slug)
       if (Array.isArray(questions) && questions.length > 0) {
         await questionRepo.createQuestions(questions, created.id, "mcq")
       }
@@ -89,49 +90,41 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       const quiz = await service.generateQuiz({ title, amount, difficulty })
       const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
 
-      const created = await prisma.$transaction(async (tx) => {
-        const userQuiz = await tx.userQuiz.create({
-          data: {
-            userId,
-            title,
-            quizType: "openended",
-            difficulty,
-            slug,
-            isPublic: false,
-            timeStarted: now,
-          },
+      // Create quiz and base questions using repositories
+      const created = await quizRepo.createUserQuiz(userId, title, "openended" as QuizType, slug)
+      if (qList.length > 0) {
+        await questionRepo.createQuestions(qList, created.id, "openended")
+        // Fetch created questions to map IDs to metadata
+        const createdQs = await prisma.userQuizQuestion.findMany({
+          where: { userQuizId: created.id, questionType: "openended" },
+          select: { id: true, question: true },
+          orderBy: { id: "asc" },
         })
-
-        // Store questions with open-ended details
-        for (const q of qList) {
-          const questionText = q.question || ""
-          const answerText = q.answer || q.correct_answer || ""
-          const createdQ = await tx.userQuizQuestion.create({
-            data: {
-              userQuizId: userQuiz.id,
-              question: String(questionText),
-              answer: String(answerText),
-              questionType: "openended",
-            },
-          })
-
-          const hints = Array.isArray(q.hints) ? q.hints.join("|") : (q.hints || "")
-          const tags = Array.isArray(q.tags) ? q.tags.join("|") : (q.tags || "")
-          const qDifficulty = (q.difficulty || difficulty || "medium").toString()
-
-          await tx.openEndedQuestion.create({
-            data: {
-              questionId: createdQ.id,
-              userQuizId: userQuiz.id,
-              hints: String(hints),
-              tags: String(tags),
-              difficulty: String(qDifficulty),
-            },
-          })
+        const questionMap = new Map<string, number[]>()
+        for (const cq of createdQs) {
+          const arr = questionMap.get(cq.question) || []
+          arr.push(cq.id)
+          questionMap.set(cq.question, arr)
         }
-
-        return userQuiz
-      })
+        const metaData = qList.map((q: any) => {
+          const questionText = String(q.question || "")
+          const list = questionMap.get(questionText) || []
+          const questionId = list.shift()
+          if (questionId !== undefined) {
+            questionMap.set(questionText, list)
+          }
+          return {
+            questionId: questionId as number,
+            userQuizId: created.id,
+            hints: Array.isArray(q.hints) ? q.hints.join("|") : String(q.hints || ""),
+            tags: Array.isArray(q.tags) ? q.tags.join("|") : String(q.tags || ""),
+            difficulty: String(q.difficulty || difficulty || "medium"),
+          }
+        }).filter((m) => typeof m.questionId === "number")
+        if (metaData.length > 0) {
+          await prisma.openEndedQuestion.createMany({ data: metaData })
+        }
+      }
 
       await Promise.all([
         quizRepo.updateTopicCount(title),
@@ -146,48 +139,40 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       const quiz = await service.generateQuiz({ title, amount })
       const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
 
-      const created = await prisma.$transaction(async (tx) => {
-        const userQuiz = await tx.userQuiz.create({
-          data: {
-            userId,
-            title,
-            quizType: "blanks",
-            slug,
-            isPublic: false,
-            timeStarted: now,
-          },
+      const created = await quizRepo.createUserQuiz(userId, title, "blanks" as QuizType, slug)
+      if (qList.length > 0) {
+        await questionRepo.createQuestions(qList, created.id, "blanks")
+        // Attach hints/tags/difficulty as open-ended metadata rows
+        const createdQs = await prisma.userQuizQuestion.findMany({
+          where: { userQuizId: created.id, questionType: "blanks" },
+          select: { id: true, question: true },
+          orderBy: { id: "asc" },
         })
-
-        // Store blanks questions and open-ended details (hints/tags/difficulty)
-        for (const q of qList) {
-          const questionText = q.question || ""
-          const answerText = q.answer || q.correct_answer || ""
-          const createdQ = await tx.userQuizQuestion.create({
-            data: {
-              userQuizId: userQuiz.id,
-              question: String(questionText),
-              answer: String(answerText),
-              questionType: "blanks",
-            },
-          })
-
-          const hints = Array.isArray(q.hints) ? q.hints.join("|") : (q.hints || "")
-          const tags = Array.isArray(q.tags) ? q.tags.join("|") : (q.tags || "")
-          const qDifficulty = (q.difficulty || difficulty || "medium").toString()
-
-          await tx.openEndedQuestion.create({
-            data: {
-              questionId: createdQ.id,
-              userQuizId: userQuiz.id,
-              hints: String(hints),
-              tags: String(tags),
-              difficulty: String(qDifficulty),
-            },
-          })
+        const questionMap = new Map<string, number[]>()
+        for (const cq of createdQs) {
+          const arr = questionMap.get(cq.question) || []
+          arr.push(cq.id)
+          questionMap.set(cq.question, arr)
         }
-
-        return userQuiz
-      })
+        const metaData = qList.map((q: any) => {
+          const questionText = String(q.question || "")
+          const list = questionMap.get(questionText) || []
+          const questionId = list.shift()
+          if (questionId !== undefined) {
+            questionMap.set(questionText, list)
+          }
+          return {
+            questionId: questionId as number,
+            userQuizId: created.id,
+            hints: Array.isArray(q.hints) ? q.hints.join("|") : String(q.hints || ""),
+            tags: Array.isArray(q.tags) ? q.tags.join("|") : String(q.tags || ""),
+            difficulty: String(q.difficulty || difficulty || "medium"),
+          }
+        }).filter((m) => typeof m.questionId === "number")
+        if (metaData.length > 0) {
+          await prisma.openEndedQuestion.createMany({ data: metaData })
+        }
+      }
 
       await Promise.all([
         quizRepo.updateTopicCount(title),
