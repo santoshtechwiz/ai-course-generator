@@ -44,6 +44,7 @@ export const metadata: Metadata = generateMetadata({
   canonical: "/",
   type: "website",
 })
+
 export default async function RootLayout({
   children,
 }: {
@@ -59,8 +60,8 @@ export default async function RootLayout({
           <meta name="msvalidate.01" content="7287DB3F4302A848097237E800C21964" />
           <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
           {/* Enhanced SEO and UX Meta Tags */}
-          <meta name="theme-color" content="#0066cc" media="(prefers-color-scheme: light)" />
-          <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+          <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: light)" />
+          <meta name="theme-color" content="#1e293b" media="(prefers-color-scheme: dark)" />
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -79,12 +80,12 @@ export default async function RootLayout({
         </head>
 
         <body
-          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
+          className={`${font.inter.className} ${font.poppins.variable} ${font.openSans.variable} ${font.roboto.variable} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
           role="document"
         >
           <a
             href="#main-content"
-            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:shadow-lg focus:text-sm"
+            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:shadow-lg focus:text-sm focus:font-medium"
           >
             Skip to main content
           </a>

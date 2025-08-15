@@ -8,7 +8,22 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Sparkles, Wand2, X, Target, BookOpen, Code2, PenTool } from "lucide-react"
+import { 
+  Sparkles, 
+  Wand2, 
+  X, 
+  Target, 
+  BookOpen, 
+  Code2, 
+  PenTool, 
+  Zap, 
+  Lightbulb, 
+  Rocket, 
+  Star,
+  TrendingUp,
+  Users,
+  Award
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGlobalLoader } from "@/store/loaders/global-loader"
 
@@ -79,41 +94,136 @@ export default function CreateContentPromo({ context = "quiz", topic, className 
     <>
       {!force && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ 
+            duration: 0.5, 
+            ease: [0.25, 0.46, 0.45, 0.94],
+            delay: 0.1
+          }}
           className={cn("relative", className)}
           role="region"
           aria-label="Create your own content promo"
         >
-          <Card className="border-0 shadow-md bg-gradient-to-br from-primary/5 via-background to-primary/10">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex items-start gap-3">
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 via-background to-secondary/5 overflow-hidden relative group">
+            {/* Animated background elements */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+            />
+            
+            {/* Floating icons */}
+            <motion.div
+              className="absolute top-4 right-4 text-primary/20"
+              animate={{ 
+                rotate: [0, 10, -10, 0],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 3, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+            >
+              <Sparkles className="h-6 w-6" />
+            </motion.div>
+
+            <CardContent className="p-6 sm:p-8 relative">
+              <div className="flex items-start gap-4">
                 <motion.div
-                  className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center text-primary"
-                  animate={{ rotate: [0, 10, -8, 0], scale: [1, 1.05, 1] }}
-                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                  className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-white shadow-lg"
+                  animate={{ 
+                    rotate: [0, 5, -5, 0], 
+                    scale: [1, 1.05, 1],
+                    y: [0, -2, 0]
+                  }}
+                  transition={{ 
+                    duration: 4, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                  whileHover={{ 
+                    scale: 1.1,
+                    rotate: [0, 10, -10, 0]
+                  }}
                   aria-hidden
                 >
-                  <Wand2 className="h-5 w-5" />
+                  <Wand2 className="h-7 w-7" />
                 </motion.div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm sm:text-base font-semibold leading-tight">Create your own quiz for free</h3>
-                    <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Grow your business</Badge>
+                
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="text-lg sm:text-xl font-bold leading-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      ✨ Create Your Own Quiz for Free
+                    </h3>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                    >
+                      <Badge variant="secondary" className="text-xs bg-gradient-to-r from-primary/20 to-secondary/20 text-primary border-primary/30 font-semibold px-3 py-1">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        Grow Your Business
+                      </Badge>
+                    </motion.div>
                   </div>
-                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Engage your audience, share expertise, and track progress with AI-powered content.</p>
+                  
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                    Transform your expertise into engaging, interactive content that captivates your audience and drives results.
+                  </p>
+                  
                   {topic && (
-                    <p className="mt-1 text-xs text-muted-foreground">Prefill topic: <span className="font-medium text-foreground">{topic}</span></p>
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <Lightbulb className="h-4 w-4 text-yellow-500" />
+                      <span>Perfect topic: <span className="font-semibold text-foreground">{topic}</span></span>
+                    </motion.div>
                   )}
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button onClick={onPrimary} className="gap-2 bg-gradient-to-r from-primary to-primary/80"><Sparkles className="h-4 w-4" /> Create</Button>
-                    <Button variant="outline" onClick={handleDismiss} className="gap-2"><X className="h-4 w-4" /> Not now</Button>
+                  
+                  <div className="flex items-center gap-3 pt-2">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button 
+                        onClick={onPrimary} 
+                        className="gap-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        <Sparkles className="h-4 w-4" /> 
+                        Start Creating
+                      </Button>
+                    </motion.div>
+                    
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button 
+                        variant="outline" 
+                        onClick={handleDismiss} 
+                        className="gap-2 border-2 hover:bg-muted/50 font-medium px-6 py-3 transition-all duration-200"
+                      >
+                        <X className="h-4 w-4" /> 
+                        Maybe Later
+                      </Button>
+                    </motion.div>
                   </div>
                 </div>
-                <button aria-label="Dismiss" className="absolute top-2 right-2 text-muted-foreground hover:text-foreground" onClick={handleDismiss}>
-                  <X className="h-4 w-4" />
-                </button>
+                
+                <motion.button 
+                  aria-label="Dismiss" 
+                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground hover:bg-muted/50 p-2 rounded-lg transition-all duration-200" 
+                  onClick={handleDismiss}
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <X className="h-5 w-5" />
+                </motion.button>
               </div>
             </CardContent>
           </Card>
@@ -121,49 +231,168 @@ export default function CreateContentPromo({ context = "quiz", topic, className 
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Let’s create your content</DialogTitle>
-            <DialogDescription>Pick a type and we’ll prefill the builder for you. You can change details later.</DialogDescription>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader className="text-center space-y-3">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20 }}
+              className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-white shadow-lg"
+            >
+              <Rocket className="h-8 w-8" />
+            </motion.div>
+            
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Let's Create Something Amazing! 🚀
+            </DialogTitle>
+            
+            <DialogDescription className="text-base text-muted-foreground max-w-md mx-auto">
+              Choose your content type and we'll set up everything for you. You can customize all the details later.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <TypeCard label="MCQ" active={type === "mcq"} onClick={() => setType("mcq")} Icon={Target} />
-            <TypeCard label="Flashcards" active={type === "flashcard"} onClick={() => setType("flashcard")} Icon={BookOpen} />
-            <TypeCard label="Blanks" active={type === "blanks"} onClick={() => setType("blanks")} Icon={PenTool} />
-            <TypeCard label="Code" active={type === "code"} onClick={() => setType("code")} Icon={Code2} />
-          </div>
+          <motion.div 
+            className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, staggerChildren: 0.1 }}
+          >
+            <TypeCard 
+              label="MCQ Quiz" 
+              description="Multiple choice questions"
+              active={type === "mcq"} 
+              onClick={() => setType("mcq")} 
+              Icon={Target}
+              color="from-blue-500 to-blue-600"
+            />
+            <TypeCard 
+              label="Flashcards" 
+              description="Memory retention"
+              active={type === "flashcard"} 
+              onClick={() => setType("flashcard")} 
+              Icon={BookOpen}
+              color="from-green-500 to-green-600"
+            />
+            <TypeCard 
+              label="Fill Blanks" 
+              description="Complete the gaps"
+              active={type === "blanks"} 
+              onClick={() => setType("blanks")} 
+              Icon={PenTool}
+              color="from-purple-500 to-purple-600"
+            />
+            <TypeCard 
+              label="Code Quiz" 
+              description="Programming challenges"
+              active={type === "code"} 
+              onClick={() => setType("code")} 
+              Icon={Code2}
+              color="from-orange-500 to-orange-600"
+            />
+          </motion.div>
 
-          <div className="mt-4 space-y-2">
-            <label className="text-sm font-medium">Title/Topic</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Data Structures" aria-label="Content title" />
-            <p className="text-xs text-muted-foreground">We’ll use this to prefill the creation page.</p>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">Public content gets better reach. Premium adds analytics.</p>
-            <div className="flex items-center gap-2">
-              {!force && <Button variant="outline" onClick={() => setOpen(false)}>Back</Button>}
-              <Button onClick={handleStart} disabled={!type} className="gap-2 bg-gradient-to-r from-primary to-primary/80">
-                <Sparkles className="h-4 w-4" /> Start
-              </Button>
+          <motion.div 
+            className="mt-8 space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Star className="h-4 w-4 text-yellow-500" />
+                Title/Topic
+              </label>
+              <Input 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                placeholder="e.g., Data Structures & Algorithms" 
+                aria-label="Content title"
+                className="h-12 text-base border-2 focus:border-primary/50 focus:shadow-lg focus:shadow-primary/10"
+              />
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                We'll use this to prefill your creation page and suggest relevant content.
+              </p>
             </div>
-          </div>
+          </motion.div>
+
+          <motion.div 
+            className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Award className="h-4 w-4 text-yellow-500" />
+              <span>Public content gets better reach. Premium adds advanced analytics.</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {!force && (
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setOpen(false)}
+                    className="px-6 py-3 border-2 font-medium"
+                  >
+                    Back
+                  </Button>
+                </motion.div>
+              )}
+              
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  onClick={handleStart} 
+                  disabled={!type} 
+                  className="gap-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Zap className="h-4 w-4" /> 
+                  Start Creating
+                </Button>
+              </motion.div>
+            </div>
+          </motion.div>
         </DialogContent>
       </Dialog>
     </>
   )
 }
 
-function TypeCard({ label, active, onClick, Icon }: { label: string; active: boolean; onClick: () => void; Icon: any }) {
+function TypeCard({ 
+  label, 
+  description,
+  active, 
+  onClick, 
+  Icon, 
+  color 
+}: { 
+  label: string
+  description: string
+  active: boolean
+  onClick: () => void
+  Icon: any
+  color: string
+}) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      className={cn("p-3 rounded-lg border transition-all text-sm font-medium flex flex-col items-center gap-2 focus:outline-none focus:ring-2 focus:ring-primary", active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent/50")}
+      className={cn(
+        "p-4 rounded-xl border-2 transition-all duration-300 text-sm font-medium flex flex-col items-center gap-3 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+        active 
+          ? `bg-gradient-to-br ${color} text-white border-transparent shadow-lg scale-105` 
+          : "bg-background hover:bg-muted/50 border-border hover:border-primary/30 hover:scale-105"
+      )}
       aria-pressed={active}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
     >
-      <Icon className="h-5 w-5" />
-      {label}
-    </button>
+      <Icon className={cn("h-6 w-6", active ? "text-white" : "text-muted-foreground")} />
+      <div className="text-center">
+        <div className="font-semibold">{label}</div>
+        <div className={cn("text-xs mt-1", active ? "text-white/80" : "text-muted-foreground")}>
+          {description}
+        </div>
+      </div>
+    </motion.button>
   )
 }

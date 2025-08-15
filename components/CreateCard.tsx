@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import Link from "next/link"
-import { Sparkles, Rocket, Brain, PlusCircle, ArrowRight, Zap, Lightbulb } from "lucide-react"
+import { Sparkles, Rocket, Brain, PlusCircle, ArrowRight, Zap, Lightbulb, Target, Users, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
@@ -47,10 +47,12 @@ export const CreateCard: React.FC<CreateCardProps> = ({
       <Link href={createUrl} passHref>
         <Button
           className={cn(
-            "whitespace-nowrap bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 group",
-            "relative overflow-hidden",
+            "whitespace-nowrap bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 group",
+            "relative overflow-hidden rounded-xl",
             "md:px-6 md:py-3",
-            "text-base md:text-lg",
+            "text-base md:text-lg font-semibold",
+            "shadow-lg hover:shadow-xl hover:shadow-primary/25",
+            "transition-all duration-300 hover:-translate-y-1",
             className,
           )}
           aria-label="Create Quiz"
@@ -64,7 +66,7 @@ export const CreateCard: React.FC<CreateCardProps> = ({
           </motion.span>
           <span className="relative z-10">{title}</span>
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-primary/50 to-primary/30"
+            className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10"
             initial={{ x: "-100%" }}
             animate={{ x: isHovered ? "100%" : "-100%" }}
             transition={{ duration: animationSpeed * 0.5 }}
@@ -75,10 +77,10 @@ export const CreateCard: React.FC<CreateCardProps> = ({
   }
 
   const floatingIcons = [
-    { icon: Sparkles, delay: 0, color: "text-yellow-300" },
-    { icon: Brain, delay: 0.1, color: "text-blue-300" },
-    { icon: Rocket, delay: 0.2, color: "text-purple-300" },
-    { icon: Lightbulb, delay: 0.3, color: "text-green-300" },
+    { icon: Sparkles, delay: 0, color: "text-yellow-400", bgColor: "bg-yellow-400/20" },
+    { icon: Brain, delay: 0.1, color: "text-blue-400", bgColor: "bg-blue-400/20" },
+    { icon: Rocket, delay: 0.2, color: "text-purple-400", bgColor: "bg-purple-400/20" },
+    { icon: Lightbulb, delay: 0.3, color: "text-green-400", bgColor: "bg-green-400/20" },
   ]
 
   const cardContent = (
@@ -86,20 +88,22 @@ export const CreateCard: React.FC<CreateCardProps> = ({
       <AnimatePresence>
         {(isHovered || isTouched) && isMounted && (
           <>
-            {floatingIcons.map(({ icon: Icon, delay, color }, index) => (
+            {floatingIcons.map(({ icon: Icon, delay, color, bgColor }, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
                 animate={{
                   opacity: [0, 1, 0],
-                  y: [-20, -100],
-                  x: Math.sin((index * Math.PI) / 2) * 30,
+                  y: [-20, -120],
+                  x: Math.sin((index * Math.PI) / 2) * 40,
+                  scale: [0.8, 1.2, 0.8],
                 }}
                 transition={{
                   duration: animationSpeed,
                   delay: delay * animationSpeed,
                   repeat: Number.POSITIVE_INFINITY,
                   repeatDelay: animationSpeed,
+                  ease: "easeInOut",
                 }}
                 className={cn("absolute pointer-events-none", color)}
                 style={{
@@ -107,7 +111,9 @@ export const CreateCard: React.FC<CreateCardProps> = ({
                   bottom: "20%",
                 }}
               >
-                <Icon className="w-6 h-6 md:w-8 md:h-8" />
+                <div className={cn("p-2 rounded-full", bgColor)}>
+                  <Icon className="w-5 h-5 md:w-6 md:h-6" />
+                </div>
               </motion.div>
             ))}
           </>
@@ -119,33 +125,41 @@ export const CreateCard: React.FC<CreateCardProps> = ({
           rotate: isHovered || isTouched ? 180 : 0,
           scale: isHovered || isTouched ? 1.1 : 1,
         }}
-        transition={{ duration: animationSpeed * 0.2 }}
+        transition={{ duration: animationSpeed * 0.2, ease: "easeInOut" }}
         className="relative z-10"
       >
         <div className="relative inline-block">
-          <PlusCircle
-            className={cn(
-              "mx-auto mb-4 text-primary",
-              floating ? "w-12 h-12" : "w-16 h-16",
-              "md:w-20 md:h-20",
-            )}
-          />
-          <motion.div
-            animate={{ scale: isHovered || isTouched ? 1.2 : 1 }}
-            transition={{ duration: animationSpeed * 0.2 }}
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          >
-            <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-yellow-300" />
-          </motion.div>
+          <div className="relative">
+            <PlusCircle
+              className={cn(
+                "mx-auto mb-4 text-primary",
+                floating ? "w-12 h-12" : "w-16 h-16",
+                "md:w-20 md:h-20",
+              )}
+            />
+            <motion.div
+              animate={{ 
+                scale: isHovered || isTouched ? 1.2 : 1,
+                rotate: isHovered || isTouched ? 360 : 0,
+              }}
+              transition={{ duration: animationSpeed * 0.3, ease: "easeInOut" }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            >
+              <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-yellow-400" />
+            </motion.div>
+          </div>
         </div>
       </motion.div>
 
       <CardHeader className="p-0">
-        <CardTitle className={cn("font-semibold mb-2", floating ? "text-lg md:text-xl" : "text-xl md:text-2xl")}>
+        <CardTitle className={cn(
+          "font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+          floating ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+        )}>
           {title}
         </CardTitle>
         {!floating && (
-          <CardDescription className="text-muted-foreground mb-6 text-sm md:text-base max-w-xs mx-auto">
+          <CardDescription className="text-muted-foreground mb-6 text-sm md:text-base max-w-xs mx-auto leading-relaxed">
             {description}
           </CardDescription>
         )}
@@ -157,9 +171,11 @@ export const CreateCard: React.FC<CreateCardProps> = ({
         className={cn(
           "group transition-all duration-300",
           "transform hover:scale-105",
-          "text-base md:text-lg",
+          "text-base md:text-lg font-semibold",
           "px-6 py-3 md:px-8 md:py-4",
-          "shadow-lg hover:shadow-xl",
+          "shadow-lg hover:shadow-xl hover:shadow-primary/25",
+          "bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white",
+          "rounded-xl border-0",
         )}
         aria-label="Start Creating"
       >
@@ -178,13 +194,37 @@ export const CreateCard: React.FC<CreateCardProps> = ({
             transition={{
               duration: animationSpeed * 0.3,
               repeat: Number.POSITIVE_INFINITY,
+              ease: "easeInOut",
             }}
             className="absolute inset-0 pointer-events-none"
           >
-            <Zap className="w-5 h-5 md:w-6 md:h-6" />
+            <Zap className="w-5 h-5 md:w-6 md:h-6 text-yellow-400" />
           </motion.div>
         </motion.span>
       </Button>
+
+      {/* Feature highlights */}
+      {!floating && (
+        <motion.div 
+          className="mt-6 flex items-center justify-center gap-4 text-xs text-muted-foreground"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-1">
+            <Target className="w-3 h-3 text-green-500" />
+            <span>AI Powered</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Users className="w-3 h-3 text-blue-500" />
+            <span>Engage Audience</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <TrendingUp className="w-3 h-3 text-purple-500" />
+            <span>Track Progress</span>
+          </div>
+        </motion.div>
+      )}
     </CardContent>
   )
 
@@ -194,14 +234,15 @@ export const CreateCard: React.FC<CreateCardProps> = ({
         "h-full flex flex-col justify-center items-center",
         "hover:shadow-xl transition-all duration-300",
         "transform hover:-translate-y-2",
-        "bg-background text-foreground border",
-        "relative overflow-hidden",
+        "bg-background text-foreground border-2 border-border/50",
+        "relative overflow-hidden rounded-2xl",
+        "hover:border-primary/30",
         className,
       )}
     >
       {cardContent}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 pointer-events-none"
+        className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 pointer-events-none opacity-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: isHovered || isTouched ? 1 : 0 }}
         transition={{ duration: animationSpeed * 0.3 }}
@@ -222,9 +263,9 @@ export const CreateCard: React.FC<CreateCardProps> = ({
         whileHover={{ scale: 1.05 }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         {linkWrapper}
       </motion.div>
@@ -233,9 +274,13 @@ export const CreateCard: React.FC<CreateCardProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.1 }}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ 
+        duration: 0.5, 
+        delay: 0.1,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
       className="h-full"
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
