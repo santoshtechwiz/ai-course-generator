@@ -20,6 +20,7 @@ export function QuizGlobalLoader({ quizType = "Quiz" }: QuizGlobalLoaderProps) {
         message: `Loading...`,
         subMessage: undefined,
         isBlocking: true,
+        autoProgress: true,
         minVisibleMs: 200,
       })
     } else if (quizStatus === "succeeded" || quizStatus === "failed") {
