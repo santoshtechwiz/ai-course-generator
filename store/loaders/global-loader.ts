@@ -11,7 +11,7 @@ export interface LoaderOptions {
   progress?: number;
   isBlocking?: boolean;
   minVisibleMs?: number;
-  autoProgress?: boolean;
+  autoDismissMs?: number;
 }
 
 interface GlobalLoaderStore {
@@ -23,10 +23,9 @@ interface GlobalLoaderStore {
   progress?: number;
   isBlocking: boolean;
   error?: string;
-  autoResetTimeoutId?: NodeJS.Timeout;
   startedAtMs?: number;
-  minVisibleMs?: number;
-  autoProgressIntervalId?: NodeJS.Timeout | null;
+  minVisibleMs: number;
+  autoDismissMs: number;
 
   // Actions
   startLoading: (options?: LoaderOptions) => void;
@@ -34,6 +33,7 @@ interface GlobalLoaderStore {
   setSuccess: (message?: string) => void;
   setError: (error: string) => void;
   setProgress: (progress: number) => void;
+  reset: () => void;
 
   // Async helper
   withLoading: <T>(
@@ -56,72 +56,95 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
       progress: undefined,
       isBlocking: false,
       error: undefined,
-      autoResetTimeoutId: undefined,
       startedAtMs: undefined,
-      minVisibleMs: 0,
-      autoProgressIntervalId: null,
+      minVisibleMs: 500,
+      autoDismissMs: 2000,
 
       startLoading: (options = {}) => {
-        // Clear any existing timeout
-        const currentState = get();
-        if (currentState.autoResetTimeoutId) {
-          clearTimeout(currentState.autoResetTimeoutId);
-        }
-        if (currentState.autoProgressIntervalId) {
-          clearInterval(currentState.autoProgressIntervalId);
-        }
-
         const startedAt = Date.now();
-        const minVisible = typeof options.minVisibleMs === 'number' ? Math.max(0, options.minVisibleMs) : 0;
-
-        // Optional auto-progress up to 90%
-        let intervalId: NodeJS.Timeout | null = null;
-        if (options.autoProgress) {
-          set({ progress: 5 });
-          intervalId = setInterval(() => {
-            const { progress } = get();
-            const current = typeof progress === 'number' ? progress : 0;
-            const next = Math.min(98, current + Math.random() * 6 + 4);
-            set({ progress: next });
-            if (next >= 98) {
-              if (get().autoProgressIntervalId) {
-                clearInterval(get().autoProgressIntervalId as NodeJS.Timeout);
-              }
-              set({ autoProgressIntervalId: null });
-            }
-          }, 150);
-        }
+        const minVisible = Math.max(0, options.minVisibleMs ?? 500);
+        const autoDismiss = Math.max(1000, options.autoDismissMs ?? 2000);
 
         set({
           state: "loading",
           isLoading: true,
           message: options.message || "Loading...",
           subMessage: options.subMessage,
-          progress: typeof options.progress === 'number' ? options.progress : get().progress,
+          progress: options.progress,
           isBlocking: options.isBlocking || false,
           error: undefined,
-          autoResetTimeoutId: undefined,
           startedAtMs: startedAt,
           minVisibleMs: minVisible,
-          autoProgressIntervalId: intervalId,
+          autoDismissMs: autoDismiss,
         });
       },
 
       stopLoading: () => {
         const currentState = get();
         const elapsed = currentState.startedAtMs ? Date.now() - currentState.startedAtMs : 0;
-        const minVisible = currentState.minVisibleMs || 0;
-        const remaining = Math.max(0, minVisible - elapsed);
+        const remaining = Math.max(0, currentState.minVisibleMs - elapsed);
 
-        // Clear any existing timeout
-        if (currentState.autoResetTimeoutId) {
-          clearTimeout(currentState.autoResetTimeoutId);
+        if (remaining > 0) {
+          // Wait for minimum visibility time
+          setTimeout(() => {
+            get().reset();
+          }, remaining);
+        } else {
+          // Reset immediately
+          get().reset();
         }
-        if (currentState.autoProgressIntervalId) {
-          clearInterval(currentState.autoProgressIntervalId);
-        }
+      },
 
-        const finalize = () => set({
+      setSuccess: (message) => {
+        const currentState = get();
+        const elapsed = currentState.startedAtMs ? Date.now() - currentState.startedAtMs : 0;
+        const remaining = Math.max(0, currentState.minVisibleMs - elapsed);
+
+        set({
+          state: "success",
+          isLoading: false,
+          message: message || "Operation completed successfully!",
+          error: undefined,
+          progress: 100,
+        });
+
+        // Auto-dismiss after minimum visibility time
+        setTimeout(() => {
+          const newState = get();
+          if (newState.state === "success") {
+            get().reset();
+          }
+        }, Math.max(remaining, 800));
+      },
+
+      setError: (error) => {
+        const currentState = get();
+        const elapsed = currentState.startedAtMs ? Date.now() - currentState.startedAtMs : 0;
+        const remaining = Math.max(0, currentState.minVisibleMs - elapsed);
+
+        set({
+          state: "error",
+          isLoading: false,
+          error,
+          message: undefined,
+          progress: undefined,
+        });
+
+        // Auto-dismiss after minimum visibility time
+        setTimeout(() => {
+          const newState = get();
+          if (newState.state === "error") {
+            get().reset();
+          }
+        }, Math.max(remaining, 1500));
+      },
+
+      setProgress: (progress) => {
+        set({ progress: Math.max(0, Math.min(100, progress)) });
+      },
+
+      reset: () => {
+        set({
           state: "idle",
           isLoading: false,
           message: undefined,
@@ -129,86 +152,8 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
           progress: undefined,
           isBlocking: false,
           error: undefined,
-          autoResetTimeoutId: undefined,
           startedAtMs: undefined,
-          minVisibleMs: 0,
-          autoProgressIntervalId: null,
         });
-
-        // If we had autoProgress, quickly animate to 100% before closing
-        const bumpToFull = () => {
-          const current = typeof get().progress === 'number' ? get().progress! : 0
-          if (current < 100) set({ progress: 100 })
-        }
-
-        if (remaining > 0) {
-          setTimeout(() => { bumpToFull(); setTimeout(finalize, 120) }, remaining);
-        } else {
-          bumpToFull();
-          setTimeout(finalize, 120);
-        }
-      },
-
-      setSuccess: (message) => {
-        const currentState = get();
-        
-        // Clear any existing timeout
-        if (currentState.autoResetTimeoutId) {
-          clearTimeout(currentState.autoResetTimeoutId);
-        }
-        if (currentState.autoProgressIntervalId) {
-          clearInterval(currentState.autoProgressIntervalId);
-        }
-
-        const timeoutId = setTimeout(() => {
-          // Only reset if still in success state and this is the same timeout
-          const newState = get();
-          if (newState.state === "success" && newState.autoResetTimeoutId === timeoutId) {
-            get().stopLoading();
-          }
-        }, 1200);
-
-        set({
-          state: "success",
-          isLoading: false,
-          message: message || "Operation completed successfully!",
-          error: undefined,
-          autoResetTimeoutId: timeoutId,
-          progress: 100,
-        });
-      },
-
-      setError: (error) => {
-        const currentState = get();
-        
-        // Clear any existing timeout
-        if (currentState.autoResetTimeoutId) {
-          clearTimeout(currentState.autoResetTimeoutId);
-        }
-        if (currentState.autoProgressIntervalId) {
-          clearInterval(currentState.autoProgressIntervalId);
-        }
-
-        const timeoutId = setTimeout(() => {
-          // Only reset if still in error state and this is the same timeout
-          const newState = get();
-          if (newState.state === "error" && newState.autoResetTimeoutId === timeoutId) {
-            get().stopLoading();
-          }
-        }, 2000);
-
-        set({
-          state: "error",
-          isLoading: false,
-          error,
-          message: undefined,
-          autoResetTimeoutId: timeoutId,
-          progress: undefined,
-        });
-      },
-
-      setProgress: (progress) => {
-        set({ progress: Math.max(0, Math.min(100, progress)) });
       },
 
       withLoading: async (promise, options = {}) => {
@@ -237,14 +182,25 @@ export const useGlobalLoader = create<GlobalLoaderStore>()(
   )
 );
 
-// Optional hook to tie loader to Next.js route changes
+// Simplified route change loader
 export function useRouteLoaderBridge() {
   const pathname = usePathname();
   const { startLoading, stopLoading } = useGlobalLoader();
+  
   useEffect(() => {
-    // Start quickly, auto-stop shortly after to avoid lingering
-    startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 150, autoProgress: true });
-    const id = setTimeout(() => stopLoading(), 200);
-    return () => clearTimeout(id);
+    // Only show loader for actual route changes, not initial load
+    if (pathname) {
+      startLoading({ 
+        message: "Loading...", 
+        isBlocking: false, 
+        minVisibleMs: 200 
+      });
+      
+      const timer = setTimeout(() => {
+        stopLoading();
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
   }, [pathname, startLoading, stopLoading]);
 }

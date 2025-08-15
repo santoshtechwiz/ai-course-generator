@@ -82,7 +82,7 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
         <CardFooter className="pb-4 pt-0">
           <Button 
             onClick={() => {
-              startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 200, autoProgress: true });
+              startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 200 });
               router.push(item.href);
             }} 
             variant="outline" 

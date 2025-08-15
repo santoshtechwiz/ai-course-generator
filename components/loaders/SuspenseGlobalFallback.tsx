@@ -2,18 +2,24 @@
 import { useGlobalLoader } from "@/store/loaders/global-loader";
 import { useEffect } from "react";
 
-
 /**
  * Suspense fallback that triggers the global loader (blocking) and returns null.
  * Ensures only one loader is shown globally with proper accessibility support.
  */
-export default function SuspenseGlobalFallback({ message = "Loading content..." }: { message?: string }) {
+export default function SuspenseGlobalFallback({ 
+  message = "Loading content...",
+  isBlocking = true 
+}: { 
+  message?: string;
+  isBlocking?: boolean;
+}) {
   const { startLoading, stopLoading } = useGlobalLoader();
 
   useEffect(() => {
     startLoading({ 
       message, 
-      isBlocking: true
+      isBlocking,
+      minVisibleMs: 300
     });
     return () => stopLoading();
     // eslint-disable-next-line react-hooks/exhaustive-deps

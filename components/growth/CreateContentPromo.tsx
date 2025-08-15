@@ -63,7 +63,7 @@ export default function CreateContentPromo({ context = "quiz", topic, className 
     }
     try { sessionStorage.setItem("create_draft", JSON.stringify(draft)) } catch {}
     // Show loader immediately to avoid blank state while navigating
-    startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 400, autoProgress: true })
+            startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 400 })
     const map: Record<ContentType, string> = {
       mcq: "/dashboard/mcq?draft=1",
       code: "/dashboard/code?draft=1",
