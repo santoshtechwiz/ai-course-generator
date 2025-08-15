@@ -175,17 +175,6 @@ export default function FlashCardQuiz({
     return next < cards.length ? next : 0
   }, [cards, currentQuestionIndex])
 
-  // Move to next card using adaptive scheduler
-  const moveToNextCard = useCallback(() => {
-    if (!cards?.length) return
-    const nextIndex = computeNextIndex()
-    setFlipped(false)
-    if (nextIndex === 0 && currentQuestionIndex === cards.length - 1) {
-      handleQuizCompletion()
-    } else {
-      dispatch(setCurrentFlashCard(nextIndex))
-    }
-  }, [cards, computeNextIndex, dispatch, currentQuestionIndex, handleQuizCompletion])
 
   // Handle quiz completion with proper feedback
   const handleQuizCompletion = useCallback(() => {
@@ -205,6 +194,18 @@ export default function FlashCardQuiz({
       setIsFinishing(false)
     }, 1500)
   }, [cards.length, onComplete])
+
+  // Move to next card using adaptive scheduler
+  const moveToNextCard = useCallback(() => {
+    if (!cards?.length) return
+    const nextIndex = computeNextIndex()
+    setFlipped(false)
+    if (nextIndex === 0 && currentQuestionIndex === cards.length - 1) {
+      handleQuizCompletion()
+    } else {
+      dispatch(setCurrentFlashCard(nextIndex))
+    }
+  }, [cards, computeNextIndex, dispatch, currentQuestionIndex, handleQuizCompletion])
 
   // Handle self rating
   const handleSelfRating = useCallback(
