@@ -9,7 +9,6 @@ import { getServerAuthSession } from "@/lib/server-auth"
 import { Suspense } from "react"
 import { font } from "./font"
 
-import { GlobalLoader } from "@/components/loaders"
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { DefaultSEO, generateMetadata } from "@/lib/seo"
@@ -104,7 +103,6 @@ export default async function RootLayout({
           </Providers>
 
           <DefaultSEO enableFAQ={false} />
-          <GlobalLoader />
         </body>
         <GoogleAnalytics gaId="G-8E6345HNS4" />
       </html>

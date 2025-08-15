@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import CodeQuizWrapper from "../components/CodeQuizWrapper"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
@@ -71,18 +70,15 @@ export default function CodeQuizClient({ params }: CodeQuizClientProps) {
   }
 
   return (
-    <>
-      <QuizGlobalLoader quizType="Code Challenge" />
-      <QuizPlayLayout
-        quizSlug={slug}
-        quizType="code"
-        quizId={slug}
-        isPublic={true}
-        isFavorite={false}
-        quizData={quizData || null}
-      >
-        <CodeQuizWrapper slug={slug} />
-      </QuizPlayLayout>
-    </>
+    <QuizPlayLayout
+      quizSlug={slug}
+      quizType="code"
+      quizId={slug}
+      isPublic={true}
+      isFavorite={false}
+      quizData={quizData || null}
+    >
+      <CodeQuizWrapper slug={slug} />
+    </QuizPlayLayout>
   );
 }

@@ -25,7 +25,7 @@ import BlanksQuiz from "./BlanksQuiz"
 
 import { useGlobalLoader } from "@/store/loaders/global-loader"
 import { BlankQuizQuestion } from "@/app/types/quiz-types"
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 interface BlanksQuizWrapperProps {
@@ -162,7 +162,12 @@ export default function BlanksQuizWrapper({ slug, title }: BlanksQuizWrapperProp
   
   if (isLoading) {
     return (
-      <LoadingSpinner></LoadingSpinner>
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
     )
   }
 

@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import BlanksQuizWrapper from "../components/BlanksQuizWrapper"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
@@ -69,18 +68,15 @@ export default function BlanksQuizClient({ params }: BlanksQuizClientProps) {
   }
 
   return (
-    <>
-      <QuizGlobalLoader quizType="Fill in the Blanks Quiz" />
-      <QuizPlayLayout
-        quizSlug={slug}
-        quizType="blanks"
-        quizId={slug}
-        isPublic={true}
-        isFavorite={false}
-        quizData={quizData || null}
-      >
-        <BlanksQuizWrapper slug={slug} title="Fill in the Blanks Quiz" />
-      </QuizPlayLayout>
-    </>
+    <QuizPlayLayout
+      quizSlug={slug}
+      quizType="blanks"
+      quizId={slug}
+      isPublic={true}
+      isFavorite={false}
+      quizData={quizData || null}
+    >
+      <BlanksQuizWrapper slug={slug} title="Fill in the Blanks Quiz" />
+    </QuizPlayLayout>
   )
 }

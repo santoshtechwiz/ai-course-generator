@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { QuizServiceFactory } from "@/app/services/quiz-service-factory"
 import { getAuthSession } from "@/lib/auth"
+import { createCacheManager } from "@/app/services/cache/cache-manager"
+
+const cache = createCacheManager()
 
 export async function GET(
   req: NextRequest, 
@@ -9,6 +12,16 @@ export async function GET(
   try {
     // Extract parameters - await params first
     const { quizType, slug } = await params
+
+    // Try cache first
+    const cacheKey = `api:quiz:${quizType}:${slug}`
+    const cached = await cache.get<any>(cacheKey)
+    if (cached) {
+      const response = NextResponse.json(cached)
+      response.headers.set("X-Cache", "HIT")
+      response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+      return response
+    }
     
     // Get the user session for authorization if needed
     const session = await getAuthSession()
@@ -28,8 +41,12 @@ export async function GET(
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 })
     }
     
+    // Save to memory cache
+    await cache.set(cacheKey, quiz, 60) // 60s TTL for API-level cache
+
     // Add caching headers to the response
     const response = NextResponse.json(quiz)
+    response.headers.set("X-Cache", "MISS")
     response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
     return response
   } catch (error) {
@@ -75,6 +92,10 @@ export async function PATCH(
       body
     )
     
+    // Invalidate cache entry
+    const cacheKey = `api:quiz:${quizType}:${slug}`
+    await cache.del(cacheKey)
+    
     return NextResponse.json(updatedQuiz)
   } catch (error) {
     // Await params before using its properties in error logging
@@ -111,6 +132,10 @@ export async function DELETE(
     
     // Delete the quiz using the appropriate service
     await quizService.delete(slug, session.user.id)
+
+    // Invalidate cache entry
+    const cacheKey = `api:quiz:${quizType}:${slug}`
+    await cache.del(cacheKey)
 
     return NextResponse.json({ message: "Quiz deleted successfully" })
   } catch (error) {

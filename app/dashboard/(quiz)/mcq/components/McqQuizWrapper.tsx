@@ -24,8 +24,7 @@ import { toast } from "sonner"
 import { NoResults } from "@/components/ui/no-results"
 import McqQuiz from "./McqQuiz"
 
-import { GlobalLoader } from "@/components/loaders"
-import { useGlobalLoader } from "@/store/loaders/global-loader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 interface McqQuizWrapperProps {
@@ -37,7 +36,6 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { user } = useAuth()
-  const { startLoading, stopLoading } = useGlobalLoader()
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLoaderRef = useRef(false)
   const questions = useSelector(selectQuizQuestions)
@@ -78,7 +76,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
     return () => {
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current)
     }
-  }, [isCompleted, quizStatus, router, slug, startLoading])
+  }, [isCompleted, quizStatus, router, slug])
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex] || null
@@ -121,7 +119,7 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
       console.error("Error submitting quiz:", err)
       toast.error("Failed to submit quiz. Please try again.")
     }
-  }, [dispatch, router, slug, startLoading])
+  }, [dispatch, router, slug])
 
 
   const isLoading = quizStatus === "loading" || quizStatus === "idle"
@@ -152,7 +150,14 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   if (isLoading) {
-    return <GlobalLoader />
+    return (
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    )
   }
 
   if (hasError) {
@@ -171,9 +176,10 @@ export default function McqQuizWrapper({ slug, title }: McqQuizWrapperProps) {
   
   if (!formattedQuestion) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <p className="text-sm text-gray-600">Loading question...</p>
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
         </div>
       </div>
     )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react"
+import { useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import { useAuth } from "@/modules/auth"
@@ -25,8 +25,7 @@ import { NoResults } from "@/components/ui/no-results"
 import CodeQuiz from "./CodeQuiz"
 
 import { QuizActions } from "../../components/QuizActions"
-import { GlobalLoader, LoadingSpinner } from "@/components/loaders/GlobalLoader"
-
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 interface CodeQuizWrapperProps {
@@ -56,7 +55,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
     title: quizTitle || title,
     description: "This is a code quiz. Solve the coding problems to complete the quiz.",
     questions: questions
-  }  // Track initialization to prevent duplicate loads
+  }
+  // Track initialization to prevent duplicate loads
   const isInitializedRef = useRef(false);
 
   // Load the quiz
@@ -90,7 +90,8 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
       isComponentMounted = false;
       if (submissionTimeoutRef.current) clearTimeout(submissionTimeoutRef.current);
     }
-  }, [slug, dispatch])// Navigate to result
+  }, [slug, dispatch])
+  // Navigate to result
   useEffect(() => {
     let isMounted = true;
 
@@ -208,7 +209,12 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   const isLastQuestion = currentQuestionIndex === questions.length - 1
   if (isLoading) {
     return (
-      <LoadingSpinner />
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
     )
   }
   if (hasError) {
@@ -226,7 +232,12 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
   }
   if (!formattedQuestion) {
     return (
-      <GlobalLoader />
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
     )
   } 
   
@@ -252,4 +263,4 @@ function CodeQuizWrapper({ slug, title }: CodeQuizWrapperProps) {
 }
 
 // Export memoized version to prevent unnecessary re-renders
-export default memo(CodeQuizWrapper);
+export default CodeQuizWrapper;

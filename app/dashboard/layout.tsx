@@ -4,7 +4,6 @@ import { DashboardShell } from "@/components/features/dashboard/DashboardShell"
 import CourseAIState from "@/components/development/CourseAIState"
 import { getAuthSession } from "@/lib/auth"
 import Chatbot from "@/components/features/chat/Chatbot"
-import { GlobalLoader } from "@/components/ui/loader"
 import type { Metadata } from "next"
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo"
 
@@ -30,7 +29,6 @@ export default async function DashboardLayout({
   return (
     <div className="flex flex-col font-body  flex-1">
       <DashboardShell>
-        <GlobalLoader />
         <main className="flex-1 pt-16">
           {children}
         </main>          

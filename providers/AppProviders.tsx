@@ -7,8 +7,6 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/modules/auth'
 import { AnimationProvider } from './animation-provider'
-import GlobalLoaderProvider from '@/components/GlobalLoaderProvider'
-import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 interface AppProvidersProps {
   children: ReactNode
@@ -42,10 +40,8 @@ export function AppProviders({ children, session }: AppProvidersProps) {
         <AuthProvider>
           <AnimationProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <GlobalLoaderProvider>
-                {children}
-                <Toaster />
-              </GlobalLoaderProvider>
+              {children}
+              <Toaster />
             </ThemeProvider>
           </AnimationProvider>
         </AuthProvider>

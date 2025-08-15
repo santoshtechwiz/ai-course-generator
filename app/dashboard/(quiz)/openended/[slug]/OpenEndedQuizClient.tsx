@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import OpenEndedQuizWrapper from "../components/OpenEndedQuizWrapper"
 import { useSelector } from "react-redux"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { NoResults } from "@/components/ui/no-results"
 import { RelatedQuizSuggestions } from "../../components/RelatedQuizSuggestions"
 
@@ -69,18 +68,15 @@ export default function OpenEndedQuizClient({ params }: OpenEndedQuizClientProps
   }
 
   return (
-    <>
-      <QuizGlobalLoader quizType="Open-Ended Quiz" />
-      <QuizPlayLayout 
-        quizSlug={slug} 
-        quizType="openended"
-        quizData={quizData || null}
-        quizId={slug}
-        isPublic={true} 
-        isFavorite={false}
-      >
-        <OpenEndedQuizWrapper slug={slug} />
-      </QuizPlayLayout>
-    </>
+    <QuizPlayLayout 
+      quizSlug={slug} 
+      quizType="openended"
+      quizData={quizData || null}
+      quizId={slug}
+      isPublic={true} 
+      isFavorite={false}
+    >
+      <OpenEndedQuizWrapper slug={slug} />
+    </QuizPlayLayout>
   );
 }
