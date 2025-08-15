@@ -4,6 +4,7 @@ import NodeCache from "node-cache"
 import type { NextRequest } from "next/server"
 import { QuizListService } from "@/app/services/quiz-list.service"
 import { getAuthSession } from "@/lib/auth"
+import { createQuizForType } from "@/app/api/quizzes/_helpers/create-quiz"
 
 // Define response types for better type safety
 interface QuizListItem {
@@ -87,34 +88,19 @@ export async function GET(req: NextRequest): Promise<NextResponse<QuizListItem[]
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    // Get the user session for authorization
-    const session = await getAuthSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    // Parse body once to detect type
+    let body: any = null
+    try {
+      const text = await req.text()
+      body = text ? JSON.parse(text) : {}
+    } catch {
+      body = await req.json().catch(() => ({}))
     }
-    
-    // Get the request body
-    const body = await req.json()
-    const quizType = body.type || body.quizType
-    
-    if (!quizType) {
-      return NextResponse.json({ error: "Quiz type is required" }, { status: 400 })
-    }
-    
-    // Create a new request to forward to the specialized endpoint
-    const newRequest = new Request(
-      new URL(`/api/quizzes/${quizType}`, req.url).toString(),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    )
-    
-    // Forward the request
-    return await fetch(newRequest)
+
+    const quizType = (body?.type || body?.quizType || "mcq").toString().toLowerCase()
+
+    // Delegate to shared creator (handles auth, credits, persistence)
+    return await createQuizForType(req, quizType)
   } catch (error) {
     console.error("Error creating quiz:", error)
     return NextResponse.json({ error: "Failed to create quiz" }, { status: 500 })
