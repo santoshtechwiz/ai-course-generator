@@ -10,13 +10,7 @@ import { PageHeader, PageWrapper } from "@/components/layout/PageWrapper"
 import { BookOpen, Sparkles, Zap, Target } from "lucide-react"
 import { JsonLD } from "@/lib/seo"
 import { generateMetadata } from "@/lib/seo"
-import dynamic from "next/dynamic"
-import { QuizzesSkeleton } from "./components/QuizzesSkeleton"
-
-const QuizzesClient = dynamic(() => import("./components/QuizzesClient").then(m => m.QuizzesClient), {
-  ssr: false,
-  loading: () => <QuizzesSkeleton />,
-})
+import QuizzesClientClient from "./components/QuizzesClientClient"
 
 export const metadata: Metadata = generateMetadata({
   title: "Interactive Quizzes – Master Your Knowledge | CourseAI",
@@ -44,7 +38,7 @@ export const metadata: Metadata = generateMetadata({
   ],
 })
 
-export const dynamic = "force-dynamic"
+// ...existing code...
 
 const Page = async () => {
   const session = await getAuthSession()
@@ -150,9 +144,7 @@ const Page = async () => {
         />
 
         <Suspense fallback={<SuspenseGlobalFallback message="Loading your amazing quizzes..." />}>
-          <ClientOnly>
-            <QuizzesClient initialQuizzesData={initialQuizzesData} userId={userId} />
-          </ClientOnly>
+          <QuizzesClientClient initialQuizzesData={initialQuizzesData} userId={userId} />
         </Suspense>
       </div>
     </PageWrapper>
