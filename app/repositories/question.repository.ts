@@ -13,7 +13,7 @@ export class QuestionRepository extends BaseRepository<any> {
   /**
    * Create multiple questions for a quiz
    */
-  async createQuestions(questions: any[], userQuizId: number, type: QuizType) {
+  async createQuestions(questions: any[], userQuizId: number, type: QuizType, tx?: any) {
     const data = questions.map((question) => {
       switch (type) {
         case "mcq": {
@@ -91,7 +91,8 @@ export class QuestionRepository extends BaseRepository<any> {
       }
     });
 
-    return prisma.userQuizQuestion.createMany({
+    const client = tx ?? prisma
+    return client.userQuizQuestion.createMany({
       data,
     });
   }

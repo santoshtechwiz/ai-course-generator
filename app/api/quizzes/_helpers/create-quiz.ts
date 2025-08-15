@@ -84,7 +84,7 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         })
 
         if (Array.isArray(questions) && questions.length > 0) {
-          await questionRepo.createQuestions(questions, userQuiz.id, "mcq")
+          await questionRepo.createQuestions(questions, userQuiz.id, "mcq", tx)
         }
 
         return userQuiz
