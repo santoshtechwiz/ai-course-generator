@@ -450,3 +450,4 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
 }
 
 export const QuizzesClient = QuizzesClientComponent
+export default QuizzesClient
