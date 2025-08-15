@@ -69,26 +69,11 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       const gen = await service.generateQuiz({ amount, title, difficulty, type: "mcq" })
       const questions = Array.isArray(gen?.questions) ? gen.questions : gen
 
-      // Create quiz + questions, then decrement credits and update topic count
-      const created = await prisma.$transaction(async (tx) => {
-        const userQuiz = await tx.userQuiz.create({
-          data: {
-            userId,
-            title,
-            quizType: "mcq",
-            difficulty,
-            slug,
-            isPublic: false,
-            timeStarted: now,
-          },
-        })
-
-        if (Array.isArray(questions) && questions.length > 0) {
-          await questionRepo.createQuestions(questions, userQuiz.id, "mcq", tx)
-        }
-
-        return userQuiz
-      })
+      // Create quiz using repository, then questions using repository
+      const created = await quizRepo.createUserQuiz(userId, title, "mcq" as any, slug)
+      if (Array.isArray(questions) && questions.length > 0) {
+        await questionRepo.createQuestions(questions, created.id, "mcq")
+      }
 
       // Post-creation updates
       await Promise.all([
