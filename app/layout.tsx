@@ -79,7 +79,7 @@ export default async function RootLayout({
         </head>
 
         <body
-          className={`${font.roboto.className} ${font.poppins.className ?? ""} ${font.openSans.className ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
+          className={`${font.inter.variable ?? ""} ${font.poppins.variable ?? ""} ${font.openSans.variable ?? ""} ${font.roboto.variable ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
           role="document"
         >
           <a
