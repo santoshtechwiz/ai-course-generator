@@ -4,6 +4,7 @@ import { API_ENDPOINTS } from './quiz-helpers'
 import { QuizQuestion, QuizResults, QuizState } from './quiz-types'
 import { QuizType } from '@/app/types/quiz-types'
 import { STORAGE_KEYS } from '@/constants/global'
+import { useGlobalLoader } from '@/store/loaders/global-loader'
 
 // In-memory cache for fetched quizzes (per session). Keeps last N entries with TTL.
 const QUIZ_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -142,12 +143,19 @@ export const fetchQuiz = createAsyncThunk(
         console.log(`Using legacy API endpoint: ${url}`);
       }
       
+      // Show a deterministic global loader only when performing network request
+      const loader = useGlobalLoader.getState()
+      try {
+        loader.startLoading({ message: 'Loading quiz...', isBlocking: true, autoProgress: true, minVisibleMs: 200 })
+      } catch {}
+
       const response = await fetch(url)
       if (!response.ok) {
         const errorText = await response.text()
         
         // Handle 404 specifically as not found
         if (response.status === 404) {
+          try { loader.stopLoading() } catch {}
           return rejectWithValue({
             error: `Quiz not found`,
             status: 'not-found',
@@ -155,6 +163,7 @@ export const fetchQuiz = createAsyncThunk(
           })
         }
         
+        try { loader.stopLoading() } catch {}
         return rejectWithValue({
           error: `Error loading quiz: ${response.status}`,
           details: errorText,
@@ -162,6 +171,7 @@ export const fetchQuiz = createAsyncThunk(
       }
 
       const data = await response.json()
+      try { loader.stopLoading() } catch {}
 
       if (!data || !Array.isArray(data.questions)) {
         return rejectWithValue({ 
@@ -222,21 +232,13 @@ export const fetchQuiz = createAsyncThunk(
         id: slug,
       }
 
-      // Cache normalized quiz for quick re-entry and deterministic loads
+      // Cache normalized quiz
       setCachedQuiz(type, slug, normalized)
 
-      // Restore last progress if any
-      const lastIndex = readProgress(slug, type)
-      if (typeof lastIndex === 'number' && lastIndex >= 0 && lastIndex < questions.length) {
-        normalized.currentQuestionIndex = lastIndex
-      }
-      console.log("Quiz fetched successfully:", normalized)
       return normalized
-    } catch (error: any) {
-      console.error("Quiz fetch error:", error)
-      return rejectWithValue({
-        error: error.message || "Failed to load quiz",
-      })
+    } catch (err: any) {
+      try { useGlobalLoader.getState().stopLoading() } catch {}
+      return rejectWithValue({ error: err?.message || 'Unknown error' })
     }
   }
 )

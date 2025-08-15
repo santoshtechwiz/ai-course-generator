@@ -30,15 +30,11 @@ import {
 
 import FlashcardQuiz from "./FlashcardQuiz";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
 import { NoResults } from "@/components/ui/no-results";
 import { useAuth } from "@/modules/auth";
 import SignInPrompt from "@/app/auth/signin/components/SignInPrompt";
 
-import { QuizActions } from "../../components/QuizActions";
-import { LoadingSpinner } from "@/components/loaders/GlobalLoader";
-import { QuizSchema } from "@/lib/seo/components";
-
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FlashcardQuizWrapperProps {
   slug: string;
@@ -70,8 +66,7 @@ export default function FlashcardQuizWrapper({
   const requiresAuth = useSelector(selectRequiresAuth);
   const userId = user?.id;
   const quizId = useSelector((state: RootState) => state.flashcard.quizId);
-  const quizData = useSelector((state: RootState) => state.flashcard.results);
-  const quizOwnerId = useSelector((state: RootState) => state.flashcard.userId);
+
   // Initial load: clear state if needed and fetch quiz
   useEffect(() => {
     if (!slug || isLoading) return;
@@ -112,7 +107,7 @@ export default function FlashcardQuizWrapper({
           hasInitialized.current = false; // Allow retry on error
         });
     }
-  }, [dispatch, slug, isResetMode, isReviewMode]); // Removed quizStatus, questions.length, isLoading
+  }, [dispatch, slug, isResetMode, isReviewMode, isLoading, quizStatus, questions.length]);
 
   // Reset initialization flag when component unmounts or slug changes
   useEffect(() => {
@@ -127,13 +122,11 @@ export default function FlashcardQuizWrapper({
       dispatch(setPendingFlashCardAuth(true));
       router.push(`/auth/signin?callbackUrl=/dashboard/flashcard/${slug}`);
     }
-  }, [requiresAuth, isAuthenticated, isLoading, dispatch, router, slug]); // Redirect to results
+  }, [requiresAuth, isAuthenticated, isLoading, dispatch, router, slug]);
+
+  // Redirect to results when completed and not in review mode
   useEffect(() => {
-    // Only redirect to results if we're not in review mode
-    if (
-      !isReviewMode &&
-      (shouldRedirectToResults || (isCompleted && !shouldRedirectToResults))
-    ) {
+    if (!isReviewMode && (shouldRedirectToResults || (isCompleted && !shouldRedirectToResults))) {
       router.replace(`/dashboard/flashcard/${slug}/results`);
     }
   }, [shouldRedirectToResults, isCompleted, router, slug, isReviewMode]);
@@ -141,190 +134,59 @@ export default function FlashcardQuizWrapper({
   const reviewQuestions = useMemo(() => {
     if (!isReviewMode || !questions.length) return questions;
 
-    // Check if specific card IDs are provided in the URL
     const specificCardsParam = searchParams?.get("cards");
-
     if (specificCardsParam) {
-      // Use specific card IDs from the URL
       const specificCardIds = specificCardsParam
         .split(",")
         .map((id) => id.trim());
 
       const filteredQuestions = questions.filter((q) => {
         if (!q.id) return false;
-
-        // Try matching by both string and number
         const questionIdStr = q.id.toString();
         const questionIdNum = parseInt(questionIdStr);
-
-        // Check if either the string ID or numeric ID is in the specific card IDs
         const isIncludedStr = specificCardIds.includes(questionIdStr);
-        const isIncludedNum =
-          !isNaN(questionIdNum) &&
-          specificCardIds.includes(questionIdNum.toString());
-
+        const isIncludedNum = !isNaN(questionIdNum) && specificCardIds.includes(questionIdNum.toString());
         return isIncludedStr || isIncludedNum;
       });
 
       return filteredQuestions;
-    } else if (answers.length) {
-      // Fall back to filtering by answer status
+    }
+
+    if (answers.length) {
       const reviewType = searchParams?.get("type");
       const reviewIds = answers
         .filter((a): a is RatingAnswer => {
           if (!("answer" in a)) return false;
-
-          if (reviewType === "stillLearning") {
-            return a.answer === ANSWER_TYPES.STILL_LEARNING;
-          } else {
-            return (
-              a.answer === ANSWER_TYPES.INCORRECT ||
-              a.answer === ANSWER_TYPES.STILL_LEARNING ||
-              a.isCorrect === false
-            );
-          }
+          if (reviewType === "stillLearning") return a.answer === ANSWER_TYPES.STILL_LEARNING;
+          return (
+            a.answer === ANSWER_TYPES.INCORRECT ||
+            a.answer === ANSWER_TYPES.STILL_LEARNING ||
+            a.isCorrect === false
+          );
         })
         .map((a) => a.questionId);
 
-      return questions.filter((q) =>
-        reviewIds.includes(q.id?.toString() || "")
-      );
+      return questions.filter((q) => reviewIds.includes(q.id?.toString() || ""));
     }
 
     return questions;
-  }, [answers, questions, isReviewMode, searchParams?.get("cards"), searchParams?.get("type")]);
+  }, [answers, questions, isReviewMode, searchParams]);
 
-  const currentQuestions = isReviewMode ? reviewQuestions : questions;
-  const onComplete = () => {
-    const ratingAnswers = answers.filter(
-      (a): a is RatingAnswer => "answer" in a
-    );
+  const currentCards = isReviewMode ? reviewQuestions : questions;
 
-    const correctCount = ratingAnswers.filter(
-      (a) => a.answer === ANSWER_TYPES.CORRECT
-    ).length;
-    const stillLearningCount = ratingAnswers.filter(
-      (a) => a.answer === ANSWER_TYPES.STILL_LEARNING
-    ).length;
-    const incorrectCount = ratingAnswers.filter(
-      (a) => a.answer === ANSWER_TYPES.INCORRECT
-    ).length;
-    const totalTime = ratingAnswers.reduce(
-      (acc, a) => acc + (a.timeSpent || 0),
-      0
-    ); // If we're in review mode, just navigate to results instead of completing quiz
-    if (isReviewMode) {
-      // Save the review results to state for better UX
-      const timestamp = new Date().toISOString();
-      const reviewResults = {
-        correctCount,
-        incorrectCount,
-        stillLearningCount,
-        totalTime,
-        reviewCompleted: true,
-        timestamp,
-      };
-
-      // Store review session analytics in localStorage for persistence
-      try {
-        const reviewKey = `flashcard_review_${slug}_${timestamp}`;
-        localStorage.setItem(reviewKey, JSON.stringify(reviewResults));
-      } catch (e) {
-        console.error("Failed to save review analytics:", e);
-      }
-
-      // Navigate back to results
-      router.push(`/dashboard/flashcard/${slug}/results`);
-      return;
-    }
-
-    const totalQuestions = questions.length;
-    const percentage = totalQuestions
-      ? (correctCount / totalQuestions) * 100
-      : 0;
-    const timestamp = new Date().toISOString();
-
-    const results: QuizResultsState = {
-      score: correctCount,
-      percentage,
-      correctCount,
-      incorrectCount,
-      stillLearningCount,
-      correctAnswers: correctCount,
-      stillLearningAnswers: stillLearningCount,
-      incorrectAnswers: incorrectCount,
-      totalQuestions,
-      totalTime,
-      completedAt: timestamp,
-      submittedAt: timestamp,
-      reviewCards: ratingAnswers
-        .filter((a) => a.answer === ANSWER_TYPES.INCORRECT)
-        .map((a) => {
-          const id = parseInt(a.questionId);
-          return isNaN(id) ? 0 : id; // Ensure we always return a number
-        }),
-      stillLearningCards: ratingAnswers
-        .filter((a) => a.answer === ANSWER_TYPES.STILL_LEARNING)
-        .map((a) => {
-          const id = parseInt(a.questionId);
-          return isNaN(id) ? 0 : id; // Ensure we always return a number
-        }),
-      questions,
-      answers,
-      slug,
-      title: quizTitle || title || "Flashcard Quiz",
-      quizId: slug,
-      maxScore: totalQuestions,
-    };
-
-    // First save results to Redux state
-    dispatch(completeFlashCardQuiz(results));
-    
-    // Then save to backend if user is authenticated
-    if (isAuthenticated && userId) {
-      try {
-        dispatch(saveFlashCardResults({
-          slug,
-          data: {
-            quizId: slug,
-            score: percentage,
-            answers: ratingAnswers.map(answer => ({
-              questionId: answer.questionId,
-              answer: answer.answer,
-              timeSpent: answer.timeSpent || 0,
-              isCorrect: answer.answer === ANSWER_TYPES.CORRECT,
-              timestamp: new Date().toISOString()
-            })),
-            totalTime,
-            completedAt: timestamp,
-            type: 'flashcard',
-            results: {
-              correctCount,
-              incorrectCount,
-              stillLearningCount,
-              totalQuestions,
-              percentage
-            }
-          }
-        })).unwrap().then(() => {
-          console.log('Flashcard results saved successfully');
-        }).catch((error) => {
-          console.error('Failed to save flashcard results:', error);
-          // Don't block the user flow, but show a warning
-          toast.error('Results saved locally but failed to sync to server');
-        });
-      } catch (error) {
-        console.error('Error saving flashcard results:', error);
-      }
-    }
-  };
-
-  // Loading Skeletons
-  if (quizStatus === "loading" || isLoading) {
-    return <LoadingSpinner size={48} />;
+  // Loading skeleton
+  if (quizStatus === "loading" || quizStatus === "idle") {
+    return (
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    )
   }
 
-  // Error State with Retry
+  // Error state with retry
   if (quizStatus === "failed" || error) {
     return (
       <NoResults
@@ -363,9 +225,9 @@ export default function FlashcardQuizWrapper({
       />
     );
   }
+
   // Empty Review State
-  if (isReviewMode && questions.length > 0 && reviewQuestions.length === 0) {
-    // Get cards parameter for debugging
+  if (isReviewMode && questions.length > 0 && (reviewQuestions?.length || 0) === 0) {
     const cardsParam = searchParams?.get("cards");
     return (
       <NoResults
@@ -392,7 +254,7 @@ export default function FlashcardQuizWrapper({
   }
 
   // No questions found
-  if (!currentQuestions || currentQuestions.length === 0) {
+  if (!currentCards || currentCards.length === 0) {
     return (
       <NoResults
         variant="error"
@@ -412,38 +274,69 @@ export default function FlashcardQuizWrapper({
       />
     );
   }
-  // Main Quiz Component
-  // Only render one progress bar and one main action button (handled inside FlashcardQuiz)
+
+  const onComplete = () => {
+    const ratingAnswers = answers.filter(
+      (a): a is RatingAnswer => "answer" in a
+    );
+
+    const correctCount = ratingAnswers.filter(
+      (a) => a.answer === ANSWER_TYPES.CORRECT
+    ).length;
+    const stillLearningCount = ratingAnswers.filter(
+      (a) => a.answer === ANSWER_TYPES.STILL_LEARNING
+    ).length;
+    const incorrectCount = ratingAnswers.filter(
+      (a) => a.answer === ANSWER_TYPES.INCORRECT
+    ).length;
+    const totalTime = ratingAnswers.reduce(
+      (acc, a) => acc + (a.timeSpent || 0),
+      0
+    );
+
+    const totalQuestions = currentCards.length;
+    const percentage = totalQuestions ? (correctCount / totalQuestions) * 100 : 0;
+    const timestamp = new Date().toISOString();
+
+    const results: QuizResultsState = {
+      score: correctCount,
+      percentage,
+      correctCount,
+      incorrectCount,
+      stillLearningCount,
+      correctAnswers: correctCount,
+      stillLearningAnswers: stillLearningCount,
+      incorrectAnswers: incorrectCount,
+      totalQuestions,
+      totalTime,
+      completedAt: timestamp,
+      submittedAt: timestamp,
+      reviewCards: ratingAnswers,
+    };
+
+    dispatch(completeFlashCardQuiz());
+    dispatch(saveFlashCardResults(results));
+    router.push(`/dashboard/flashcard/${slug}/results`);
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <QuizSchema
-        name={quizTitle || title || "Flashcard Quiz"}
-        url={`https://courseai.io/dashboard/flashcard/${slug}`}
-        questions={currentQuestions}
-        description={`Interactive flashcards for ${quizTitle || title || "learning"} on CourseAI.`}
-        numberOfQuestions={currentQuestions?.length}
-      />
       <div className="space-y-6">
         <FlashcardQuiz
-          key={`${slug}-${isReviewMode ? "review" : "full"}`}
-          cards={currentQuestions}
+          cards={currentCards as any}
           quizId={slug}
           slug={slug}
-          onComplete={onComplete}
+          title={quizTitle || title || "Flashcard Quiz"}
           onSaveCard={(card) => {
-            dispatch(saveFlashCard({ 
-              cardId: parseInt(card.id), 
-              saved: !card.saved 
-            }));
+            const idNum = parseInt(String(card.id));
+            if (!isNaN(idNum)) {
+              dispatch(saveFlashCard({ cardId: idNum, saved: !card.saved }));
+            }
           }}
-          title={
-            isReviewMode
-              ? `Review: ${quizTitle || title || "Flashcard Quiz"}`
-              : quizTitle || title || "Flashcard Quiz"
-          }
           isReviewMode={isReviewMode}
+          onComplete={onComplete}
         />
       </div>
     </div>
-  );
+  )
 }

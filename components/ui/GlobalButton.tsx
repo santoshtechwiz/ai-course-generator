@@ -8,7 +8,7 @@ import { CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useGlobalLoader } from '@/store/loaders/global-loader'
-import { GlobalLoader } from '@/components/ui/loader'
+import { InlineSpinner } from '@/components/ui/loader'
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 relative overflow-hidden",
@@ -155,7 +155,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <GlobalLoader size={16} color="currentColor" />
+              <InlineSpinner size={16} />
               {loadingText || ""}
             </motion.div>
           )
@@ -201,7 +201,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           />
         )
       }
-      
       if (currentState === "error") {
         return (
           <motion.div
@@ -213,26 +212,24 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           />
         )
       }
-      
       return null
     }
-    
+
     const Comp = asChild ? Slot : "button"
+
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, state: currentState, className }))}
+        className={cn(buttonVariants({ variant, size, state: currentState }), className)}
         ref={ref}
-        disabled={disabled || currentState === "loading"}
         onClick={handleClick}
+        disabled={disabled || currentState === "loading"}
         {...props}
       >
         <AnimatePresence mode="wait">
           {getBackgroundAnimation()}
         </AnimatePresence>
-        <span className="relative z-10">
-          <AnimatePresence mode="wait">
-            {getButtonContent()}
-          </AnimatePresence>
+        <span className="relative z-10 flex items-center gap-2">
+          {getButtonContent()}
         </span>
       </Comp>
     )

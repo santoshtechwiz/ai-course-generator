@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import McqQuizWrapper from "../components/McqQuizWrapper"
 
-import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
 import { NoResults } from "@/components/ui/no-results"
@@ -74,18 +73,15 @@ export default function McqQuizClient({ params }: McqQuizClientProps) {
   }
 
   return (
-    <>
-      <QuizGlobalLoader quizType="Multiple Choice Quiz" />
-      <QuizPlayLayout
-        quizSlug={slug}
-        quizType="mcq"
-        quizId={slug}
-        isPublic={true}
-        isFavorite={false}
-        quizData={quizData || null}
-      >
-        <McqQuizWrapper slug={slug} />
-      </QuizPlayLayout>
-    </>
+    <QuizPlayLayout
+      quizSlug={slug}
+      quizType="mcq"
+      quizId={slug}
+      isPublic={true}
+      isFavorite={false}
+      quizData={quizData || null}
+    >
+      <McqQuizWrapper slug={slug} />
+    </QuizPlayLayout>
   )
 }

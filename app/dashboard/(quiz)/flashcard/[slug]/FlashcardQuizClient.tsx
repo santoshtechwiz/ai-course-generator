@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QuizPlayLayout from "../../components/layouts/QuizPlayLayout"
-import { QuizGlobalLoader } from "../../components/QuizGlobalLoader"
 import { useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { NoResults } from "@/components/ui/no-results"
@@ -37,14 +36,6 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
     questions: questions,
     status: quizStatus
   };
-
-  if (quizStatus === "loading") {
-    return (
-      <>
-        <QuizGlobalLoader quizType="Flashcard Quiz" />
-      </>
-    )
-  }
 
   if (!slug) {
     return (
@@ -90,21 +81,18 @@ export default function FlashcardQuizClient({ params }: FlashcardQuizClientProps
   }
 
   return (
-    <>
-      <QuizGlobalLoader quizType="Flashcard Quiz" />
-      <QuizPlayLayout
-        quizSlug={slug}
-        quizType="flashcard"
-        quizId={slug}
-        isPublic={true}
-        isFavorite={false}
-        quizData={quizData}
-      >
-        <FlashcardQuizWrapper
-          slug={slug}
-          title={quizTitle}
-        />
-      </QuizPlayLayout>
-    </>
+    <QuizPlayLayout
+      quizSlug={slug}
+      quizType="flashcard"
+      quizId={slug}
+      isPublic={true}
+      isFavorite={false}
+      quizData={quizData}
+    >
+      <FlashcardQuizWrapper
+        slug={slug}
+        title={quizTitle}
+      />
+    </QuizPlayLayout>
   )
 }
