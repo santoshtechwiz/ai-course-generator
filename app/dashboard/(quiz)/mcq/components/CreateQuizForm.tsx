@@ -179,7 +179,7 @@ export default function CreateQuizForm({
 
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      const response = await axios.post(`/api/quizzes`, { ...data, type: "mcq" })
+      const response = await axios.post(`/api/quizzes/mcq/create`, data)
       return response.data
     },
     onError: (error: any) => {

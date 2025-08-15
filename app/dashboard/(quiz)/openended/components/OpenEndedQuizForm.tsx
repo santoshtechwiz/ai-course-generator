@@ -169,12 +169,12 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
       setSubmitError(null)
 
       try {
-        const response = await fetch("/api/quizzes", {
+        const response = await fetch("/api/quizzes/openended/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ type: "openended", title: data.topic, amount: data.amount }),
+          body: JSON.stringify(data),
         })
 
         if (!response.ok) {
