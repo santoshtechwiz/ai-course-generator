@@ -5,9 +5,35 @@ import { useRouter } from "next/navigation"
 import { motion, useInView } from "framer-motion"
 import { ArrowRight, Check } from "lucide-react"
 
-import MaskReveal from "@/components/animations/MaskReveal"
-import ProgressiveText from "@/components/animations/ProgressiveText"
-import CountUp from "@/components/animations/CountUp"
+// Fallback simple animated wrappers
+const MaskReveal: React.FC<{ direction?: "left" | "right"; delay?: number; children: React.ReactNode }> = ({ children, delay = 0 }) => (
+  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4 }}>
+    {children}
+  </motion.div>
+)
+const ProgressiveText: React.FC<{ text: string; tag?: "h1" | "h2" | "h3" | "p" | "span"; className?: string; delay?: number }> = ({ text, tag = "h2", className, delay = 0 }) => (
+  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay, duration: 0.4 }}>
+    {tag === "h1" ? <h1 className={className}>{text}</h1> : null}
+    {tag === "h2" ? <h2 className={className}>{text}</h2> : null}
+    {tag === "h3" ? <h3 className={className}>{text}</h3> : null}
+    {tag === "p" ? <p className={className}>{text}</p> : null}
+    {tag === "span" ? <span className={className}>{text}</span> : null}
+  </motion.span>
+)
+const CountUp: React.FC<{ end: number; separator?: string; prefix?: string }> = ({ end, separator = ",", prefix = "" }) => {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    const duration = 800
+    const start = performance.now()
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration)
+      setValue(Math.floor(end * t))
+      if (t < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [end])
+  return <>{prefix}{value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator)}</>
+}
 import CTASVG from "../svg/CTASVG"
 import { FeedbackButton } from "@/components/ui/feedback-button"
 import { useGlobalLoader } from '@/store/loaders/global-loader'

@@ -298,11 +298,11 @@ export default function MainNavbar() {
   const UserAvatar = useMemo(
     () => (
       <Avatar className="h-8 w-8 border-2 border-border/50 hover:border-primary/50 transition-all duration-200">
-        <AvatarImage src={user?.avatarUrl || ""} alt={user?.name || "User"} />
+        <AvatarImage src={(user as any)?.image || ""} alt={user?.name || "User"} />
         <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{userInitials}</AvatarFallback>
       </Avatar>
     ),
-    [user?.avatarUrl, user?.name, userInitials],  )
+    [(user as any)?.image, user?.name, userInitials],  )
 
   function AnimatedNumber({ value }: { value: number }) {
     const [display, setDisplay] = useState<number>(value)

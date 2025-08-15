@@ -1,4 +1,3 @@
-export * from "./navigation/Logo"
 export * from "./navigation/MainNavbar"
 export * from "./navigation/MobileMenu"
 export * from "./navigation/SearchModal"

@@ -66,7 +66,13 @@ export function NoResults({
     action
   });
   
-  const IconComponent = customIcon || content.icon;
+  const IconEl = customIcon ? (
+    <>{customIcon}</>
+  ) : (
+    <content.icon className={cn(
+      isLeftPlacement ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-10 sm:w-10"
+    )} />
+  );
 
   return (
     <motion.div 
@@ -105,9 +111,7 @@ export function NoResults({
           }}
           transition={{ duration: 0.5 }}
         >
-          <IconComponent className={cn(
-            isLeftPlacement ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-10 sm:w-10"
-          )} />
+          {IconEl}
         </motion.div>
       </div>
 

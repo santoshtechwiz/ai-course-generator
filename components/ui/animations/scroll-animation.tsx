@@ -3,6 +3,10 @@
 import { motion, useInView } from "framer-motion"
 import { useRef, type ReactNode } from "react"
 import * as PRESETS from "./animation-presets"
+type PresetMap = typeof PRESETS
+function getPreset<K extends keyof PresetMap>(key: K): PresetMap[K] {
+  return PRESETS[key]
+}
 
 type ScrollAnimationProps = {
   children: ReactNode
@@ -23,12 +27,12 @@ export function ScrollAnimation({
 }: ScrollAnimationProps) {
   const ref = useRef(null)
   const isInView = useInView(ref, {
-    threshold,
+    amount: threshold as any,
     once,
   })
 
   // Get the preset animation
-  let animation = typeof preset === "string" ? PRESETS[preset] : preset
+  let animation: any = typeof preset === "string" ? (getPreset(preset as keyof PresetMap) as any) : preset
 
   // Add delay if provided
   if (delay) {

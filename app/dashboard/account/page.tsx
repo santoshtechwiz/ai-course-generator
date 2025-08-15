@@ -48,7 +48,11 @@ export default async function SubscriptionAccountPage() {
       }
 
       // Resolve to safe fallbacks on timeout instead of throwing
-      const withTimeout = async <T>(promise: Promise<T>, timeoutMs = 8000, fallback: T): Promise<T> => {
+      async function withTimeout<T>(
+        promise: Promise<T>,
+        timeoutMs = 8000,
+        fallback: T,
+      ): Promise<T> {
         return Promise.race([
           promise,
           new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),

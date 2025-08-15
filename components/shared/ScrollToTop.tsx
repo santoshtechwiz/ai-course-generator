@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ArrowUp } from "react-feather"
+import { ArrowUp } from "lucide-react"
 
 const ScrollToTop = () => {
   const [showScrollTop, setShowScrollTop] = useState(false)

@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import axios from "axios"
 import { Search, X, Book, FileQuestion } from "lucide-react"
-import { GlobalLoader } from "@/components/ui/loader"
+import { InlineSpinner } from "@/components/ui/loader"
 import { motion, AnimatePresence } from "framer-motion"
 import debounce from "lodash/debounce"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -39,7 +39,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
   const [showLoader, setShowLoader] = useState<boolean>(false)
   const [selectedIndex, setSelectedIndex] = useState<number>(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const loaderTimeoutRef = useRef<NodeJS.Timeout>()
+  const loaderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchSearchResults = useCallback(
     debounce(async (query: string) => {
@@ -254,7 +254,7 @@ export default function SearchModal({ isOpen, setIsOpen, onResultClick }: Search
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5, ease: "linear" }}
                   >
-                    <GlobalLoader size="md" className="text-primary" />
+                    <InlineSpinner size={20} className="text-primary" />
                   </motion.div>
                   <motion.p
                     className="text-sm text-muted-foreground"

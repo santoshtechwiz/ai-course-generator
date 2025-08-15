@@ -83,7 +83,7 @@ export function RecommendedCard({ item, index }: RecommendedCardProps) {
           <Button 
             onClick={() => {
               startLoading({ message: "Loading...", isBlocking: true, minVisibleMs: 200, autoProgress: true });
-              router.push(item.href);
+              router.push(getUrl());
             }} 
             variant="outline" 
             className="w-full"

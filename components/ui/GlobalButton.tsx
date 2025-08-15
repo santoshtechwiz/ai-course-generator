@@ -80,7 +80,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ...props 
   }, ref) => {
     const [internalState, setInternalState] = React.useState<"idle" | "loading" | "success" | "error">("idle")
-    const timeoutRef = React.useRef<NodeJS.Timeout>()
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null)
     
     // Use external state if provided, otherwise use internal state
     const currentState = externalState || (isLoading ? "loading" : internalState)

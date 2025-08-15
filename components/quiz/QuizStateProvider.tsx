@@ -39,8 +39,8 @@ export function QuizStateProvider({
   const [nextState, setNextState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const { startLoading, stopLoading, setError: setGlobalError, setSuccess: setGlobalSuccess } = useGlobalLoader()
   
-  const submitTimeoutRef = useRef<NodeJS.Timeout>()
-  const nextTimeoutRef = useRef<NodeJS.Timeout>()
+  const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const nextTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const resetState = useCallback(() => {
     setState('idle')

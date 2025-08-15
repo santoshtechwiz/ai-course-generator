@@ -241,7 +241,7 @@ export function HintSystem({
                   </div>
 
                   <div className="text-sm text-muted-foreground leading-relaxed">
-                    {hint.hint}
+                    {hint.content}
                   </div>
 
                   <div className="flex items-center justify-between text-xs">

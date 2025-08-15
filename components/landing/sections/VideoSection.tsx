@@ -8,7 +8,18 @@ import { Play, Pause, Volume2, VolumeX, Maximize, ChevronRight } from "lucide-re
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import RevealAnimation from "../RevealAnimation"
+
+const RevealAnimation: React.FC<{ delay?: number; className?: string; children: React.ReactNode }> = ({ delay = 0, className, children }) => (
+  <motion.div
+    className={className}
+    initial={{ opacity: 0, y: 12 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.3 }}
+    transition={{ delay, duration: 0.4 }}
+  >
+    {children}
+  </motion.div>
+)
 
 const VideoSection = () => {
   const containerRef = useRef<HTMLDivElement>(null)

@@ -1,33 +1,32 @@
 "use client"
 
-import type React from "react"
-
 import { motion } from "framer-motion"
 import type { ReactNode } from "react"
 import * as PRESETS from "./animation-presets"
+type PresetMap = typeof PRESETS
+function getPreset<K extends keyof PresetMap>(key: K): PresetMap[K] {
+  return PRESETS[key]
+}
 
 type HoverPresetType = "HOVER_SCALE" | "HOVER_LIFT" | "HOVER_GLOW" | string
 type HoverAnimationProps = {
   children: ReactNode
   preset: HoverPresetType | any
   className?: string
-  as?: React.ElementType
 }
 
-export function HoverAnimation({ children, preset, className, as = "div" }: HoverAnimationProps) {
-  const Component = motion[as as keyof typeof motion] || motion.div
-
+export function HoverAnimation({ children, preset, className }: HoverAnimationProps) {
   // Get the preset animation
-  const animation = typeof preset === "string" ? PRESETS[preset] : preset
+  const animation: any = typeof preset === "string" ? (getPreset(preset as keyof PresetMap) as any) : preset
 
   return (
-    <Component
+    <motion.div
       className={className}
       whileHover={animation.whileHover}
       whileTap={animation.whileTap}
       transition={animation.transition}
     >
       {children}
-    </Component>
+    </motion.div>
   )
 }
