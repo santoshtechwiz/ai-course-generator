@@ -220,16 +220,18 @@ export const forceSyncSubscription = createAsyncThunk<
       },
       credentials: "include",
     }, 15000)
-
-    if (res.status === 401) {
+ 
+    if (res?.status === 401) {
       logger.warn("User not authenticated for force sync")
       return DEFAULT_FREE_SUBSCRIPTION
     }
-
-    if (!res.ok) {
-      throw new Error(`Force sync failed: ${res.status} - ${res.statusText}`)
+ 
+    if (!res?.ok) {
+      const status = res?.status ?? "unknown"
+      const statusText = (res && (res as any).statusText) || "Unknown"
+      throw new Error(`Force sync failed: ${status} - ${statusText}`)
     }
-
+ 
     const syncResult = await res.json()
     logger.info("Force sync completed", syncResult)
     
