@@ -26,6 +26,7 @@ interface VideoState {
   // Actions
   setCurrentVideo: (videoId: string | null, courseId?: string | number | null) => void
   updateVideoProgress: (videoId: string, played: number, playedSeconds: number, duration: number) => void
+  updateProgress: (videoId: string, playedSeconds: number) => void
   markChapterCompleted: (courseId: string, chapterId: string) => void
   addBookmark: (videoId: string, time: number) => void
   removeBookmark: (videoId: string, time: number) => void
@@ -95,6 +96,35 @@ export const useVideoState = create<VideoState>()(
                 played,
                 playedSeconds,
                 duration,
+                lastUpdatedAt: now
+              }
+            }
+          };
+        }),
+        
+      updateProgress: (videoId, playedSeconds) => 
+        set((state) => {
+          const lastUpdate = state.videoProgress[videoId]?.lastUpdatedAt;
+          const now = new Date().toISOString();
+          const shouldUpdate = !lastUpdate || 
+            (new Date(now).getTime() - new Date(lastUpdate || '').getTime() > 5000) || 
+            Math.abs((state.videoProgress[videoId]?.playedSeconds || 0) - playedSeconds) > 0.05;
+            
+          if (!shouldUpdate) return state;
+          
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('[VideoState] Updating progress:', { 
+              videoId, 
+              playedSeconds: Math.round(playedSeconds)
+            });
+          }
+            
+          return {
+            videoProgress: {
+              ...state.videoProgress,
+              [videoId]: {
+                ...state.videoProgress[videoId],
+                playedSeconds,
                 lastUpdatedAt: now
               }
             }

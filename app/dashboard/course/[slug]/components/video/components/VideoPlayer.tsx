@@ -89,6 +89,7 @@ type CertificateState = "idle" | "downloading" | "success" | "error"
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
   videoId,
   onEnded,
+  onVideoEnd,
   onProgress,
   onTimeUpdate,
   rememberPlaybackPosition = true,
@@ -106,8 +107,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   hasNextVideo,
   theatreMode = false,
   isFullscreen = false,
-
-  onPictureInPictureToggle, // Add this prop
+  onPictureInPictureToggle,
   className,
   bookmarks = [],
   isAuthenticated = false,

@@ -60,6 +60,7 @@ export type CertificateState = "idle" | "downloading" | "success" | "error"
 export interface VideoPlayerProps {
   videoId: string
   onEnded?: () => void
+  onVideoEnd?: () => void
   onProgress?: (state: ProgressState) => void
   onTimeUpdate?: (time: number) => void
   rememberPlaybackPosition?: boolean

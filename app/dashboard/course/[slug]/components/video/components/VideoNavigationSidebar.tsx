@@ -35,24 +35,29 @@ import type { FullCourseType, FullChapterType } from "@/app/types/course-types"
 import type { CourseProgress } from "@/app/types/course-types"
 
 interface VideoNavigationSidebarProps {
-  course: FullCourseType
+  course: {
+    id: number
+    title: string
+    chapters: FullChapterType[]
+  }
   currentChapter?: FullChapterType | null
   courseId: string | number
   onChapterSelect: (chapter: FullChapterType) => void
   currentVideoId: string
   isAuthenticated: boolean
-  progress: CourseProgress | null
+  progress: Record<string, any> | null
   completedChapters: (number | string)[]
   nextVideoId?: string
   courseStats?: {
-    completedCount: number
     totalChapters: number
+    completedChapters: number
     progressPercentage: number
   }
   isPlaying?: boolean
   onTogglePlay?: () => void
   formatDuration?: (seconds: number) => string
-  isSubscribed: boolean
+  videoDurations?: Record<string, number>
+  isSubscribed?: boolean
 }
 
 const Equalizer = () => (

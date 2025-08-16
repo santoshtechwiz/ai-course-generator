@@ -19,13 +19,27 @@ interface VideoPlaylistItem {
 export function useVideoManagement(course: FullCourseType, videoDurations: Record<string, number> = {}) {
   const dispatch = useAppDispatch()
   const { toast } = useToast()
-  const videoStateStore = useVideoState
 
-  // Video playlist with proper typing - don't depend on videoDurations initially
+  // Video playlist with proper typing - handle both course.chapters and course.courseUnits[].chapters
   const videoPlaylist = useMemo(() => {
-    if (!course?.chapters) return []
+    if (!course) return []
     
-    return course.chapters
+    // Get chapters from either direct chapters property or from course units
+    let chapters: FullChapterType[] = []
+    
+    if (course.chapters && Array.isArray(course.chapters)) {
+      // Direct chapters property (flattened course)
+      chapters = course.chapters
+    } else if (course.courseUnits && Array.isArray(course.courseUnits)) {
+      // Extract chapters from course units
+      chapters = course.courseUnits
+        .flatMap(unit => unit.chapters || [])
+        .filter((chapter): chapter is FullChapterType => Boolean(chapter))
+    }
+    
+    if (chapters.length === 0) return []
+    
+    return chapters
       .filter((chapter): chapter is FullChapterType => 
         Boolean(chapter?.videoId && chapter?.id)
       )
@@ -38,7 +52,7 @@ export function useVideoManagement(course: FullCourseType, videoDurations: Recor
         duration: videoDurations[chapter.videoId!] || 0,
       }))
       .sort((a, b) => (a.chapter.order || 0) - (b.chapter.order || 0))
-  }, [course?.chapters, videoDurations])
+  }, [course, videoDurations])
 
   // Chapter selection handler
   const handleChapterSelect = useCallback(async (chapter: FullChapterType) => {
@@ -66,7 +80,7 @@ export function useVideoManagement(course: FullCourseType, videoDurations: Recor
       dispatch(setCurrentVideoApi(chapter.videoId))
 
       // Update Zustand store
-      videoStateStore.getState().setCurrentVideo(chapter.videoId, course.id)
+      useVideoState.getState().setCurrentVideo(chapter.videoId, course.id)
 
       // Show success feedback
       toast({
@@ -81,7 +95,7 @@ export function useVideoManagement(course: FullCourseType, videoDurations: Recor
         variant: "destructive",
       })
     }
-  }, [course.id, dispatch, toast, videoStateStore])
+  }, [course.id, dispatch, toast])
 
   // Chapter completion handler
   const handleChapterComplete = useCallback(async (chapterId: string, userId?: string) => {

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { useProgress } from '@/hooks'
+import { useVideoProgress } from './video/hooks/useVideoProgress'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { setCurrentVideoApi } from '@/store/slices/course-slice'
 import { useAuth } from '@/modules/auth'
@@ -54,8 +54,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const { user, subscription } = useAuth()
   
   // Progress tracking hook - MUST be called before any functions that use it
-  const { progress, updateProgress, isLoading: progressLoading } = useProgress({
+  const { progress, updateProgress, isLoading: progressLoading } = useVideoProgress({
     courseId: Number(course.id),
+    videoId: currentVideoId || undefined,
     currentChapterId: undefined, // Will be set after currentChapter is determined
   })
 
@@ -73,16 +74,38 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
 
   // ============================================================================
+  // COMPUTED VALUES AND MEMOIZED DATA
+  // ============================================================================
+  
+  // Extract all chapters from course units and flatten them
+  const allChapters = useMemo(() => {
+    if (!course?.courseUnits) return []
+    
+    return course.courseUnits
+      .flatMap(unit => unit.chapters || [])
+      .filter((chapter): chapter is FullChapterType => 
+        Boolean(chapter?.id && chapter?.title)
+      )
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+  }, [course?.courseUnits])
+
+  // Create a flattened course structure for the video management hook
+  const flattenedCourse = useMemo(() => ({
+    ...course,
+    chapters: allChapters
+  }), [course, allChapters])
+
+  // ============================================================================
   // CUSTOM HOOKS
   // ============================================================================
   
-  // Video management
+  // Video management - use the flattened course structure
   const { 
     videoPlaylist, 
     handleChapterSelect, 
     handleChapterComplete, 
     getCurrentChapterInfo 
-  } = useVideoManagement(course, videoDurations)
+  } = useVideoManagement(flattenedCourse, videoDurations)
 
   // Autoplay functionality
   const {
@@ -107,7 +130,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     handleFullscreenToggle,
     handleTheaterModeToggle,
     gridLayoutClasses
-  } = useLayoutManagement(course.id)
+  } = useLayoutManagement(String(course.id))
 
   // ============================================================================
   // COMPUTED VALUES AND MEMOIZED DATA
@@ -157,8 +180,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   const handleVideoProgress = useCallback((state: { playedSeconds: number }) => {
     if (currentVideoId) {
-      const videoStateStore = useVideoState
-      videoStateStore.getState().updateProgress(currentVideoId, state.playedSeconds)
+      useVideoState.getState().updateProgress(currentVideoId, state.playedSeconds)
     }
   }, [currentVideoId])
 
@@ -227,8 +249,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       dispatch(setCurrentVideoApi(targetVideo.videoId))
 
       // Update Zustand store
-      const videoStateStore = useVideoState
-      videoStateStore.getState().setCurrentVideo(targetVideo.videoId, course.id)
+      useVideoState.getState().setCurrentVideo(targetVideo.videoId, course.id)
 
       console.log(`[MainContent] Initialized with video: ${targetVideo.videoId}, course: ${course.id}`)
     } else {
@@ -259,39 +280,50 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   }
 
   // Show content even if videoPlaylist is empty (course might not have videos yet)
-  const hasContent = course && (videoPlaylist.length > 0 || course.chapters?.length > 0)
+  const hasContent = course && (allChapters.length > 0 || course.courseUnits?.length > 0)
 
   // Memoized props for child components
-  const sidebarProps = useMemo(() => ({
-    course: {
-      id: course.id,
-      title: course.title,
-      chapters: course.chapters || []
-    },
-    currentChapter: currentChapter || null,
-    courseId: course.id.toString(),
-    onChapterSelect: handleChapterSelect,
-    currentVideoId: currentVideoId || '',
-    isAuthenticated: !!user,
-    progress: progress?.chapters || {},
-    completedChapters: progress?.completedChapters || [],
-    videoDurations,
-    formatDuration,
-    courseStats: {
-      totalChapters: videoPlaylist.length,
-      completedChapters: progress?.completedChapters?.length || 0,
-      progressPercentage: progress?.progressPercentage || 0
+  const sidebarProps = useMemo(() => {
+    // Convert completedChapters from string to array if needed
+    const completedChaptersArray = progress?.completedChapters 
+      ? typeof progress.completedChapters === 'string'
+        ? progress.completedChapters.split(',').filter(Boolean)
+        : Array.isArray(progress.completedChapters)
+          ? progress.completedChapters
+          : []
+      : []
+
+    return {
+      course: {
+        id: course.id,
+        title: course.title,
+        chapters: allChapters
+      },
+      currentChapter: currentChapter || null,
+      courseId: course.id.toString(),
+      onChapterSelect: handleChapterSelect,
+      currentVideoId: currentVideoId || '',
+      isAuthenticated: !!user,
+      progress: progress?.chapters || {},
+      completedChapters: completedChaptersArray,
+      videoDurations,
+      formatDuration,
+      courseStats: {
+        totalChapters: allChapters.length,
+        completedChapters: completedChaptersArray.length,
+        progressPercentage: progress?.progress || 0
+      }
     }
-  }), [
+  }, [
     course, 
+    allChapters,
     currentChapter, 
     currentVideoId, 
     handleChapterSelect, 
     user, 
     progress, 
     videoDurations, 
-    formatDuration, 
-    videoPlaylist.length
+    formatDuration
   ])
 
   const videoPlayerProps = useMemo(() => ({
@@ -362,6 +394,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   <p className="text-muted-foreground">
                     This course doesn't have any video content yet.
                   </p>
+                  {allChapters.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Found {allChapters.length} chapters without videos
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -570,7 +607,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       {/* Recommended Section */}
       <div className="p-6">
-        <RecommendedSection />
+        <RecommendedSection title="Recommended Courses">
+          {/* Content will be rendered by the component */}
+        </RecommendedSection>
       </div>
 
       {/* Debug Info (Development Only) */}
