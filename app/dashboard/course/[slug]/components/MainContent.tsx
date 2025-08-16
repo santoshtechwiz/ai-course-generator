@@ -94,6 +94,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Performance optimization: use ref for PIP state to prevent unnecessary re-renders
   const pipStateRef = useRef(false)
   
+  // Mobile playlist state
+  const [mobilePlaylistOpen, setMobilePlaylistOpen] = useState(false)
+  
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
@@ -448,6 +451,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [wideMode])
 
+  // Mobile playlist toggle
+  const handleMobilePlaylistToggle = useCallback(() => {
+    setMobilePlaylistOpen(prev => !prev)
+  }, [])
+
   // Keyboard shortcuts for PIP and other controls
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -727,7 +735,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
     
     if (twoCol) {
-      return "md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]"
+      // Udemy-style layout: video on left, playlist on right
+      return "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]"
     }
     
     return "grid-cols-1"
@@ -793,29 +802,36 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               />
             )}
 
+            {/* Mobile playlist toggle button - positioned above video for better UX */}
+            <div className="md:hidden mb-4">
+              <Button
+                variant="outline"
+                onClick={handleMobilePlaylistToggle}
+                className="w-full bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-background/90 relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center">
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    <span>Course Content</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`}</span>
+                    {currentChapter && (
+                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-300"
+                          style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Button>
+            </div>
+
             {/* Video player section */}
             <div className={gridContainerClasses}> 
-              {/* Left column: Playlist (desktop) - hide when PIP is active */}
-              <AnimatePresence mode="wait">
-                {!isPiPActive && (
-                  <motion.div 
-                    key="sidebar"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="hidden md:block"
-                  >
-                    <div className="sticky top-4">
-                      <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                        <MemoizedVideoNavigationSidebar {...sidebarProps} />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Right column: Video and tabs */}
+              {/* Left column: Video and tabs (main content) */}
               <motion.div 
                 key="video-content"
                 layout
@@ -859,7 +875,66 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                 </div>
  
               </motion.div>
+
+              {/* Right column: Playlist (desktop) - Udemy style */}
+              <AnimatePresence mode="wait">
+                {!isPiPActive && (
+                  <motion.div 
+                    key="sidebar"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="hidden md:block"
+                  >
+                    <div className="sticky top-4">
+                      <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                        <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+
+            {/* Mobile playlist overlay */}
+            <AnimatePresence>
+              {mobilePlaylistOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+                  onClick={() => setMobilePlaylistOpen(false)}
+                >
+                  <motion.div
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-background border-l shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-4 border-b bg-card/80 backdrop-blur-sm">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Course Content</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setMobilePlaylistOpen(false)}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {false && (
               <div className="rounded-xl border bg-card/50 lg:hidden" />

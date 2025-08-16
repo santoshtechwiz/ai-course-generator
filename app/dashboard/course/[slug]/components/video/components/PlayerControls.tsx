@@ -45,7 +45,7 @@ interface PlayerControlsProps {
   isAuthenticated: boolean
   show?: boolean
   onCertificateClick?: () => void
-  playerConfig?: Record<string, any>
+
   onShowKeyboardShortcuts?: () => void
   onTheaterMode?: () => void
   onNextVideo?: () => void
@@ -85,7 +85,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   isAuthenticated,
   show = true,
   onCertificateClick,
-  playerConfig,
+
   onShowKeyboardShortcuts,
   onTheaterMode,
   onNextVideo,

@@ -964,7 +964,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onSeekToBookmark={handleSeekToBookmark}
             isAuthenticated={isAuthenticated}
             onCertificateClick={onCertificateClick}
-            playerConfig={playerConfig}
+
             show={showControlsState}
             onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
             onTheaterMode={handleTheaterMode}

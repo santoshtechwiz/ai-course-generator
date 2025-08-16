@@ -117,7 +117,7 @@ export interface PlayerControlsProps {
   onSeekToBookmark?: (time: number) => void
   isAuthenticated?: boolean
   onCertificateClick?: () => void
-  playerConfig?: PlayerConfig
+
   show?: boolean
   onShowKeyboardShortcuts?: () => void
   onTheaterMode?: () => void
