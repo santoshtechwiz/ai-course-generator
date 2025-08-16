@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardContent }
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import {
   Clock,
   FileText,

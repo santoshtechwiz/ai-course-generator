@@ -4,6 +4,7 @@ import CreateQuizForm from "./components/CreateQuizForm";
 import { QuizCreateLayout } from "../components/QuizCreateLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { GlobalLoader } from "@/components/loaders";
 
 const McqPage = () => {
   const quizPlan = useQuizPlan(1);
@@ -36,7 +37,9 @@ const McqPage = () => {
       isLoggedIn={quizPlan.isLoggedIn}
     >
       {quizPlan.isLoading ? (
-        <div>Loading subscription details... Getting your plan information</div>
+        <div className="flex flex-col items-center justify-center py-12">
+          <GlobalLoader />
+        </div>
       ) : (
         <CreateQuizForm
           credits={quizPlan.credits}

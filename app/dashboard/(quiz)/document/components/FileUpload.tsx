@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { Upload } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void

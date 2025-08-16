@@ -19,19 +19,24 @@ export class QuestionRepository extends BaseRepository<any> {
         case "mcq": {
           const q = question as any;
 
-          // Combine correct answer with distractors, then shuffle
-          let allOptions = [q.option1, q.option2, q.option3, q.answer]
+          // Combine correct answer with distractors when provided in separate fields
+          let allOptions: string[] = []
+          if (Array.isArray(q.options) && q.options.length) {
+            allOptions = [...q.options]
+          } else {
+            allOptions = [q.option1, q.option2, q.option3, q.answer].filter(Boolean)
+          }
           // Remove duplicates
           allOptions = Array.from(new Set(allOptions))
-          // Add "None of the above" if not already present
-          if (allOptions.length < 3) {
+          // Ensure minimum options
+          while (allOptions.length < 4) {
             allOptions.push("None of the above")
           }
           const shuffledOptions = allOptions.sort(() => Math.random() - 0.5)
 
           return {
-            question: q.question,
-            answer: q.answer,
+            question: q.question || q.text || "",
+            answer: (q.correctAnswer ?? q.answer ?? "").toString(),
             options: JSON.stringify(shuffledOptions),
             userQuizId,
             questionType: "mcq" as const,
