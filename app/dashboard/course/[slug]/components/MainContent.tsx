@@ -604,7 +604,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             )}
 
             {/* Video player section */}
-            <div className={cn("grid gap-4", twoCol ? "lg:grid-cols-[2fr_1.2fr]" : "grid-cols-1")}> 
+            <div className={cn("grid gap-4", twoCol ? "md:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_420px]" : "grid-cols-1")}> 
               <div className="min-w-0">
  
                 {/* Video player */}
@@ -669,35 +669,37 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                )}
  
                {/* Right column: Playlist and tabs on large screens */}
-              <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:col-start-2 lg:row-start-1">
-                <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                  <VideoNavigationSidebar
-                    course={course}
-                    currentChapter={currentChapter}
-                    courseId={course.id.toString()}
-                    onChapterSelect={handleChapterSelect}
-                    progress={progress}
-                    isAuthenticated={!!user}
-                    isSubscribed={!!userSubscription}
-                    completedChapters={completedChapters}
-                    formatDuration={formatDuration}
-                    nextVideoId={undefined}
-                    currentVideoId={currentVideoId || ''}
-                    isPlaying={Boolean(currentVideoId)}
-                    courseStats={{
-                      completedCount: progress?.completedChapters?.length || 0,
-                      totalChapters: videoPlaylist.length,
-                      progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-                    }}
-                  />
-                </div>
-                <div className="hidden lg:block rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                  <CourseDetailsTabs
-                    course={course}
-                    currentChapter={currentChapter}
-                    accessLevels={accessLevels}
-                    onSeekToBookmark={handleSeekToBookmark}
-                  />
+              <div className="hidden md:flex md:flex-col md:gap-4 md:col-start-2 md:row-start-1">
+                <div className="sticky top-4 space-y-4">
+                  <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                    <VideoNavigationSidebar
+                      course={course}
+                      currentChapter={currentChapter}
+                      courseId={course.id.toString()}
+                      onChapterSelect={handleChapterSelect}
+                      progress={progress}
+                      isAuthenticated={!!user}
+                      isSubscribed={!!userSubscription}
+                      completedChapters={completedChapters}
+                      formatDuration={formatDuration}
+                      nextVideoId={undefined}
+                      currentVideoId={currentVideoId || ''}
+                      isPlaying={Boolean(currentVideoId)}
+                      courseStats={{
+                        completedCount: progress?.completedChapters?.length || 0,
+                        totalChapters: videoPlaylist.length,
+                        progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+                      }}
+                    />
+                  </div>
+                  <div className="hidden md:block rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                    <CourseDetailsTabs
+                      course={course}
+                      currentChapter={currentChapter}
+                      accessLevels={accessLevels}
+                      onSeekToBookmark={handleSeekToBookmark}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
