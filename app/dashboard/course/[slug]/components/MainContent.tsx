@@ -19,7 +19,7 @@ import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
 import VideoGenerationSection from "./VideoGenerationSection"
 import { MarkdownRenderer } from "./markdownUtils"
-import { Rating } from "@/components/ui/rating"
+
 
 import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
 import { VideoDebug } from "./video/components/VideoDebug"
