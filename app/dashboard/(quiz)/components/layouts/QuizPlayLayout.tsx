@@ -243,7 +243,8 @@ export default function QuizPlayLayout({
         </div>
         {/* Related quizzes carousel */}
         {!isFullscreen && relatedQuizzes.length > 0 && (
-          <div className="mt-6 rounded-xl border bg-card p-4 sm:p-5">
+          <div className="relative mt-6 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4 sm:p-5 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 opacity-[0.08] neural-pattern" aria-hidden="true" />
             <div className="flex items-center gap-2 mb-3">
               <Target className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold">You might also like</h3>
