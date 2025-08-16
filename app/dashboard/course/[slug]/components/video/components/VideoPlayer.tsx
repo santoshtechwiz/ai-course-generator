@@ -134,6 +134,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showControlsState, setShowControlsState] = useState(showControls)
   const [certificateState, setCertificateState] = useState<CertificateState>("idle")
   const [isMounted, setIsMounted] = useState(false)
+  // Mini player position and dragging
+  const [miniPos, setMiniPos] = useState<{ x: number; y: number } | null>(null)
+  const draggingRef = useRef(false)
+  const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 })
 
   // Refs for cleanup and performance
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -142,6 +146,45 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
+  const saveMiniPos = useCallback((pos: { x: number; y: number }) => {
+    try { localStorage.setItem("mini_player_pos", JSON.stringify(pos)) } catch {}
+  }, [])
+  const clamp = useCallback((val: number, min: number, max: number) => Math.max(min, Math.min(max, val)), [])
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    // Initialize mini position to bottom-right by default
+    const w = window.innerWidth
+    const h = window.innerHeight
+    const width = 320
+    const height = Math.round((9 / 16) * width)
+    let initial = { x: w - width - 16, y: h - height - 16 }
+    try {
+      const saved = localStorage.getItem("mini_player_pos")
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
+          initial = {
+            x: clamp(parsed.x, 8, Math.max(8, w - width - 8)),
+            y: clamp(parsed.y, 8, Math.max(8, h - height - 8)),
+          }
+        }
+      }
+    } catch {}
+    setMiniPos(initial)
+    const onResize = () => {
+      const nw = window.innerWidth
+      const nh = window.innerHeight
+      setMiniPos((pos) => {
+        if (!pos) return pos
+        return {
+          x: clamp(pos.x, 8, Math.max(8, nw - width - 8)),
+          y: clamp(pos.y, 8, Math.max(8, nh - height - 8)),
+        }
+      })
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [clamp])
 
   // Initialize video player hook BEFORE any usage of containerRef
   const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
@@ -606,10 +649,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           handleTheaterMode()
           break
         case "p":
-          if (state.isPiPSupported) {
-            event.preventDefault()
-            handlePictureInPicture()
-          }
+          event.preventDefault()
+          handlePictureInPicture()
           break
         case "Escape":
           if (state.isFullscreen || state.theaterMode) {
@@ -720,8 +761,47 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       </div>
 
       {/* Mini player fallback if PiP not supported: small re-mounted player */}
-      {state.isMiniPlayer && (
-        <div className="fixed bottom-4 right-4 z-50 w-[320px] max-w-[85vw] rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/90 backdrop-blur-sm">
+      {state.isMiniPlayer && miniPos && (
+        <div
+          className="fixed z-50 w-[320px] max-w-[85vw] rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/90 backdrop-blur-sm"
+          style={{ left: miniPos.x, top: miniPos.y }}
+          role="dialog"
+          aria-label="Mini player"
+        >
+          <div
+            className="absolute top-0 left-0 right-0 h-7 cursor-move bg-black/30 text-white/70 text-[11px] flex items-center px-2 select-none"
+            onMouseDown={(e) => {
+              draggingRef.current = true
+              const startX = e.clientX
+              const startY = e.clientY
+              const orig = miniPos
+              dragOffsetRef.current = { dx: startX - orig.x, dy: startY - orig.y }
+              const onMove = (ev: MouseEvent) => {
+                if (!draggingRef.current) return
+                const nx = ev.clientX - dragOffsetRef.current.dx
+                const ny = ev.clientY - dragOffsetRef.current.dy
+                const w = window.innerWidth
+                const h = window.innerHeight
+                const width = Math.min(320, Math.max(240, Math.round(w * 0.5)))
+                const height = Math.round((9 / 16) * width)
+                const clamped = {
+                  x: clamp(nx, 8, Math.max(8, w - width - 8)),
+                  y: clamp(ny, 8, Math.max(8, h - height - 8)),
+                }
+                setMiniPos(clamped)
+              }
+              const onUp = () => {
+                draggingRef.current = false
+                if (miniPos) saveMiniPos(miniPos)
+                document.removeEventListener('mousemove', onMove)
+                document.removeEventListener('mouseup', onUp)
+              }
+              document.addEventListener('mousemove', onMove)
+              document.addEventListener('mouseup', onUp)
+            }}
+          >
+            Drag to reposition
+          </div>
           <div className="relative w-full aspect-video">
             <ReactPlayer
               url={youtubeUrl}
