@@ -88,10 +88,9 @@ export interface VideoPlayerProps {
   prevVideoTitle?: string
   hasNextVideo?: boolean
   hasPrevVideo?: boolean
-  theatreMode?: boolean
   isFullscreen?: boolean
-  onTheaterModeToggle?: () => void
-  onPictureInPictureToggle?: () => void
+  onFullscreenToggle?: () => void
+  onPictureInPictureToggle?: (isPiPActive: boolean) => void
 }
 
 export interface PlayerControlsProps {

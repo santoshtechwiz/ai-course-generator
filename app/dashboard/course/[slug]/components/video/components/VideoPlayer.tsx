@@ -106,7 +106,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   hasNextVideo,
   theatreMode = false,
   isFullscreen = false,
-  onTheaterModeToggle,
+
   onPictureInPictureToggle, // Add this prop
   className,
   bookmarks = [],
@@ -357,17 +357,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast])
 
-  // Handle Theater Mode (throttled)
-  const handleTheaterMode = useCallback(() => {
-    const now = Date.now()
-    if (now - lastTheaterToggleRef.current < 500) return
-    lastTheaterToggleRef.current = now
-    if (handlers.handleTheaterModeToggle) {
-      handlers.handleTheaterModeToggle()
-    } else if (onTheaterModeToggle) {
-      onTheaterModeToggle()
-    }
-  }, [handlers.handleTheaterModeToggle, onTheaterModeToggle])
+
 
   // Memoized format time helper
   const formatTime = useCallback((seconds: number): string => {
@@ -677,20 +667,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             }
           }
           break
-        case "t":
-          if (event.repeat) return
-          event.preventDefault()
-          handleTheaterMode()
-          break
+
         case "p":
           event.preventDefault()
           handlePictureInPicture()
           break
         case "Escape":
-          if (state.isFullscreen || state.theaterMode) {
+          if (state.isFullscreen) {
             event.preventDefault()
-            if (state.isFullscreen) handlers.onToggleFullscreen()
-            if (state.theaterMode) handleTheaterMode()
+            handlers.onToggleFullscreen()
           }
           break
       }
@@ -708,10 +693,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     videoDuration,
     state.lastPlayedTime,
     state.isFullscreen,
-    state.theaterMode,
     state.isPiPSupported,
     handlePictureInPicture,
-    handleTheaterMode,
   ])
 
   // Memoized authentication prompt
@@ -737,7 +720,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
        ref={containerRef}
        className={cn(
          "relative object-contain w-full h-full bg-black overflow-hidden group",
-         state.theaterMode && "theater-mode",
          className,
        )}
        onMouseEnter={() => setIsHovering(true)}
@@ -967,7 +949,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             show={showControlsState}
             onShowKeyboardShortcuts={handlers.handleShowKeyboardShortcuts}
-            onTheaterMode={handleTheaterMode}
             onNextVideo={onNextVideo}
             onToggleBookmarkPanel={handleToggleBookmarkPanel}
             autoPlayNext={state.autoPlayNext}

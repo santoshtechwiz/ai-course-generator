@@ -38,9 +38,6 @@ import type { BookmarkData } from "./video/types"
 interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
-  theatreMode?: boolean
-  isFullscreen?: boolean
-  onTheaterModeToggle?: () => void
 }
 
 function validateChapter(chapter: any): boolean {
@@ -60,10 +57,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
 const MainContent: React.FC<ModernCoursePageProps> = ({ 
   course, 
-  initialChapterId,
-  theatreMode = false,
-  isFullscreen = false,
-  onTheaterModeToggle
+  initialChapterId
 }) => {
   // Always define all hooks at the top level - no early returns or conditions before hooks
   console.log(course);
@@ -83,7 +77,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [isVideoLoading, setIsVideoLoading] = useState(true)
   const [hasPlayedFreeVideo, setHasPlayedFreeVideo] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
-  const [autoplayCountdown, setAutoplayCountdown] = useState(0)
+
   const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
@@ -108,10 +102,131 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   } | null>(null)
   const [showChapterTransition, setShowChapterTransition] = useState(false)
   
+  // Fullscreen and Theater mode state
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isTheaterMode, setIsTheaterMode] = useState(false)
+  
+  // Fullscreen and Theater mode handlers
+  const handleFullscreenToggle = useCallback(() => {
+    if (isFullscreen) {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      }
+      setIsFullscreen(false)
+    } else {
+      // Enter fullscreen
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen()
+      }
+      setIsFullscreen(true)
+    }
+  }, [isFullscreen])
+
+  const handleTheaterModeToggle = useCallback(() => {
+    setIsTheaterMode(prev => !prev)
+    // Exit fullscreen when entering theater mode
+    if (isFullscreen) {
+      handleFullscreenToggle()
+    }
+  }, [isFullscreen, handleFullscreenToggle])
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  // ESC key handler for exiting modes
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle shortcuts when not typing in input fields
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'escape':
+          // Exit fullscreen first
+          if (isFullscreen) {
+            handleFullscreenToggle()
+            return
+          }
+          
+          // Exit theater mode
+          if (isTheaterMode) {
+            setIsTheaterMode(false)
+            return
+          }
+          
+          // Exit PIP mode
+          if (isPiPActive) {
+            handlePIPToggle(false)
+            return
+          }
+          
+          // Close overlays
+          if (showChapterTransition) {
+            setShowChapterTransition(false)
+            setNextChapterInfo(null)
+            setAutoplayCountdown(5)
+          }
+          if (showAutoplayOverlay) {
+            setShowAutoplayOverlay(false)
+            setNextChapterInfo(null)
+            setAutoplayCountdown(5)
+          }
+          break
+        case 't':
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault()
+            handleTheaterModeToggle()
+          }
+          break
+        case 'f':
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault()
+            handleFullscreenToggle()
+          }
+          break
+        case 'p':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault()
+            // Toggle PIP if video is playing
+            if (currentVideoId && !isPiPActive) {
+              handlePIPToggle(true)
+            } else if (isPiPActive) {
+              handlePIPToggle(false)
+            }
+          }
+          break
+        case 'a':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault()
+            handleAutoplayToggle()
+          }
+          break
+        case 'space':
+          // Prevent space from scrolling when video is focused
+          if (currentVideoId) {
+            event.preventDefault()
+          }
+          break
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen, isTheaterMode, isPiPActive, showChapterTransition, showAutoplayOverlay, handleFullscreenToggle, handleTheaterModeToggle, handlePIPToggle, handleAutoplayToggle, currentVideoId])
+
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
-  const twoCol = useMemo(() => !theatreMode && !isFullscreen, [theatreMode, isFullscreen])
+  const twoCol = useMemo(() => !isTheaterMode && !isFullscreen, [isTheaterMode, isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
   const bookmarks = useMemo(() => {
@@ -525,61 +640,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     setMobilePlaylistOpen(prev => !prev)
   }, [])
 
-  // Keyboard shortcuts for PIP and other controls
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle shortcuts when not typing in input fields
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        return
-      }
 
-      switch (event.key.toLowerCase()) {
-        case 'p':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            // Toggle PIP if video is playing
-            if (currentVideoId && !isPiPActive) {
-              handlePIPToggle(true)
-            } else if (isPiPActive) {
-              handlePIPToggle(false)
-            }
-          }
-          break
-        case 'escape':
-          if (isPiPActive) {
-            event.preventDefault()
-            handlePIPToggle(false)
-          }
-          // Also close overlays
-          if (showChapterTransition) {
-            setShowChapterTransition(false)
-            setNextChapterInfo(null)
-            setAutoplayCountdown(5)
-          }
-          if (showAutoplayOverlay) {
-            setShowAutoplayOverlay(false)
-            setNextChapterInfo(null)
-            setAutoplayCountdown(5)
-          }
-          break
-        case 'a':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            handleAutoplayToggle()
-          }
-          break
-        case 'space':
-          // Prevent space from scrolling when video is focused
-          if (currentVideoId) {
-            event.preventDefault()
-          }
-          break
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [currentVideoId, isPiPActive, handlePIPToggle, showChapterTransition, showAutoplayOverlay, handleAutoplayToggle])
 
   // Ensure CourseID is set when changing videos
   const handleChapterSelect = useCallback(
@@ -745,9 +806,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     onPrevVideo: undefined,
     prevVideoTitle: '',
     hasNextVideo: false,
-    theatreMode,
     isFullscreen,
-    onTheaterModeToggle,
+    onFullscreenToggle: handleFullscreenToggle,
     onPictureInPictureToggle: handlePIPToggle,
     className: "h-full w-full"
   }), [
@@ -764,9 +824,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     user,
     handleCertificateClick,
     handleChapterComplete,
-    theatreMode,
     isFullscreen,
-    onTheaterModeToggle,
+    handleFullscreenToggle,
     handlePIPToggle
   ])
 
@@ -878,6 +937,34 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                    {autoplayMode ? "Auto-play ON" : "Auto-play OFF"}
                  </Button>
                  
+                 {/* Theater Mode Toggle */}
+                 <Button
+                   variant={isTheaterMode ? "default" : "outline"}
+                   size="sm"
+                   onClick={handleTheaterModeToggle}
+                   className={cn(
+                     "gap-2 transition-all duration-300",
+                     isTheaterMode && "bg-purple-600 hover:bg-purple-700 text-white"
+                   )}
+                 >
+                   {isTheaterMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                   {isTheaterMode ? "Exit Theater" : "Theater Mode"}
+                 </Button>
+                 
+                 {/* Fullscreen Toggle */}
+                 <Button
+                   variant={isFullscreen ? "default" : "outline"}
+                   size="sm"
+                   onClick={handleFullscreenToggle}
+                   className={cn(
+                     "gap-2 transition-all duration-300",
+                     isFullscreen && "bg-blue-600 hover:bg-blue-700 text-white"
+                   )}
+                 >
+                   {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                   {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                 </Button>
+                 
                  {/* PIP Status Indicator */}
                  {isPiPActive && (
                    <motion.div
@@ -892,7 +979,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                </div>
                
                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">
-                 Keys: T Theater • F Fullscreen • B Bookmark • Ctrl+P PIP • Ctrl+A Auto-play • Esc Close
+                 Keys: T Theater • F Fullscreen • B Bookmark • Ctrl+P PIP • Ctrl+A Auto-play • Esc Exit
                </span>
              </div>
              <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
@@ -973,6 +1060,60 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                        className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/50"
                      >
                        Disable
+                     </Button>
+                   </motion.div>
+                 )}
+                 
+                 {/* Theater Mode indicator */}
+                 {isTheaterMode && (
+                   <motion.div
+                     initial={{ opacity: 0, y: -10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     className="mb-3 p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg flex items-center justify-between"
+                   >
+                     <div className="flex items-center gap-2">
+                       <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                       <span className="text-sm font-medium text-purple-800 dark:text-purple-200">
+                         Theater Mode Active
+                       </span>
+                       <span className="text-xs text-purple-600 dark:text-purple-400">
+                         Immersive video viewing experience
+                       </span>
+                     </div>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={handleTheaterModeToggle}
+                       className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-900/50"
+                     >
+                       Exit
+                     </Button>
+                   </motion.div>
+                 )}
+                 
+                 {/* Fullscreen Mode indicator */}
+                 {isFullscreen && (
+                   <motion.div
+                     initial={{ opacity: 0, y: -10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between"
+                   >
+                     <div className="flex items-center gap-2">
+                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                       <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                         Fullscreen Mode Active
+                       </span>
+                       <span className="text-xs text-blue-600 dark:text-blue-400">
+                         Press ESC to exit fullscreen
+                       </span>
+                     </div>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={handleFullscreenToggle}
+                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/50"
+                     >
+                       Exit
                      </Button>
                    </motion.div>
                  )}

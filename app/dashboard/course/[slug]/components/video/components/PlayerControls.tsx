@@ -16,7 +16,6 @@ import {
   SkipForward,
   RewindIcon,
   FastForwardIcon,
-  Monitor,
   PictureInPicture2,
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
@@ -47,7 +46,6 @@ interface PlayerControlsProps {
   onCertificateClick?: () => void
 
   onShowKeyboardShortcuts?: () => void
-  onTheaterMode?: () => void
   onNextVideo?: () => void
   onToggleBookmarkPanel?: () => void
   autoPlayNext?: boolean
@@ -87,7 +85,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onCertificateClick,
 
   onShowKeyboardShortcuts,
-  onTheaterMode,
   onNextVideo,
   onToggleBookmarkPanel,
   autoPlayNext = true,
@@ -423,19 +420,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             </Button>
           )}
 
-          {/* Enhanced Theater mode */}
-          {onTheaterMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
-              onClick={onTheaterMode}
-              title="Toggle theater mode"
-              aria-label="Toggle theater mode"
-            >
-              <Monitor className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          )}
+
 
           {/* Enhanced Fullscreen */}
           <Button

@@ -9,7 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import { useVideoProcessing, type VideoStatus } from "../hooks/useVideoProcessing"
 import { useToast } from "@/hooks"
-import VideoPlayer from "./VideoPlayer"
+import VideoPlayer from "../../course/[slug]/components/video/components/VideoPlayer"
 import { VideoProgressIndicator } from "./VideoProgressIndicator"
 import type { ChapterGenerationStatus } from "../hooks/useCourseEditor"
 
