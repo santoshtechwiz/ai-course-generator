@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { QuizCard } from "./QuizCard"
 import { cn } from "@/lib/utils"
+import RecommendedSection from "@/components/shared/RecommendedSection"
 
 interface QuizzesClientProps {
   initialQuizzesData: {
@@ -325,12 +326,10 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const RecommendedRow = () => {
     if (!recommended.length) return null
     return (
-      <div className="relative space-y-3 rounded-2xl border border-primary/10 bg-gradient-to-r from-primary/5 via-secondary/5 to-accent/5 p-3 sm:p-4 overflow-hidden ai-glass dark:ai-glass-dark">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.08] neural-pattern" aria-hidden="true" />
-        <div className="flex items-center justify-between">
-          <h3 className="text-base sm:text-lg font-semibold">Recommended for you</h3>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setActiveTab("all")}>View all</Button>
-        </div>
+      <RecommendedSection
+        title="Recommended for you"
+        action={<Button variant="ghost" size="sm" className="text-xs" onClick={() => setActiveTab("all")}>View all</Button>}
+      >
         <div className="-mx-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]" aria-label="Recommended quizzes">
           <style jsx>{`
             div::-webkit-scrollbar { display: none; }
@@ -352,7 +351,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
             ))}
           </div>
         </div>
-      </div>
+      </RecommendedSection>
     )
   }
 

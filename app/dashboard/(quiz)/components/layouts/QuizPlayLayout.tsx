@@ -18,6 +18,7 @@ import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import Confetti from "react-confetti"
 import { motion } from "framer-motion"
 import { Sparkles, Wand2 } from "lucide-react"
+import RecommendedSection from "@/components/shared/RecommendedSection"
 
 export const dynamic = "force-dynamic"
 
@@ -243,12 +244,7 @@ export default function QuizPlayLayout({
         </div>
         {/* Related quizzes carousel */}
         {!isFullscreen && relatedQuizzes.length > 0 && (
-          <div className="relative mt-6 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4 sm:p-5 overflow-hidden ai-glass dark:ai-glass-dark">
-            <div className="pointer-events-none absolute inset-0 opacity-[0.08] neural-pattern" aria-hidden="true" />
-            <div className="flex items-center gap-2 mb-3">
-              <Target className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">You might also like</h3>
-            </div>
+          <RecommendedSection title="You might also like">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {relatedQuizzes.slice(0, 3).map((rq) => (
                 <a
@@ -266,7 +262,7 @@ export default function QuizPlayLayout({
                 </a>
               ))}
             </div>
-          </div>
+          </RecommendedSection>
         )}
       </main>
 
