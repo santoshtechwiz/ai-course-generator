@@ -106,6 +106,55 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
   
+  // Enhanced PIP handling with wide mode consideration
+  const handlePIPToggle = useCallback((isPiPActive: boolean) => {
+    // Only update state if it actually changed
+    if (pipStateRef.current !== isPiPActive) {
+      pipStateRef.current = isPiPActive
+      setIsPiPActive(isPiPActive)
+      
+      // If PIP is activated and we're in wide mode, ensure video moves to top
+      if (isPiPActive && wideMode) {
+        // Scroll to top smoothly when PIP is activated in wide mode
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        
+        // Add a small delay to ensure smooth transition
+        setTimeout(() => {
+          // Force a reflow to ensure smooth animation
+          document.body.offsetHeight
+        }, 100)
+      }
+    }
+  }, [wideMode])
+
+  // Auto-play mode toggle with persistence
+  const handleAutoplayToggle = useCallback(() => {
+    const newAutoplayMode = !autoplayMode
+    setAutoplayMode(newAutoplayMode)
+    
+    // Save preference to localStorage
+    try {
+      localStorage.setItem(`autoplay_mode_course_${course.id}`, String(newAutoplayMode))
+    } catch {}
+    
+    // Show feedback toast
+    toast({
+      title: newAutoplayMode ? "Auto-play Enabled" : "Auto-play Disabled",
+      description: newAutoplayMode 
+        ? "Chapters will automatically advance when completed" 
+        : "You'll be prompted before each chapter transition",
+    })
+  }, [autoplayMode, course.id, toast])
+
+  // Mobile playlist toggle
+  const handleMobilePlaylistToggle = useCallback(() => {
+    setMobilePlaylistOpen(prev => !prev)
+  }, [])
+  
+  // Redux state
+  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
+  
   // Fullscreen and Theater mode handlers
   const handleFullscreenToggle = useCallback(() => {
     if (isFullscreen) {
@@ -223,9 +272,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isFullscreen, isTheaterMode, isPiPActive, showChapterTransition, showAutoplayOverlay, handleFullscreenToggle, handleTheaterModeToggle, handlePIPToggle, handleAutoplayToggle, currentVideoId])
 
-  // Redux state
-  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const twoCol = useMemo(() => !isTheaterMode && !isFullscreen, [isTheaterMode, isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
@@ -594,51 +640,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
     console.log(`Chapter completed: ${chapterId}`)
   }, [course.id, dispatch, updateProgress, progress])
-
-  // Enhanced PIP handling with wide mode consideration
-  const handlePIPToggle = useCallback((isPiPActive: boolean) => {
-    // Only update state if it actually changed
-    if (pipStateRef.current !== isPiPActive) {
-      pipStateRef.current = isPiPActive
-      setIsPiPActive(isPiPActive)
-      
-      // If PIP is activated and we're in wide mode, ensure video moves to top
-      if (isPiPActive && wideMode) {
-        // Scroll to top smoothly when PIP is activated in wide mode
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        
-        // Add a small delay to ensure smooth transition
-        setTimeout(() => {
-          // Force a reflow to ensure smooth animation
-          document.body.offsetHeight
-        }, 100)
-      }
-    }
-  }, [wideMode])
-
-  // Auto-play mode toggle with persistence
-  const handleAutoplayToggle = useCallback(() => {
-    const newAutoplayMode = !autoplayMode
-    setAutoplayMode(newAutoplayMode)
-    
-    // Save preference to localStorage
-    try {
-      localStorage.setItem(`autoplay_mode_course_${course.id}`, String(newAutoplayMode))
-    } catch {}
-    
-    // Show feedback toast
-    toast({
-      title: newAutoplayMode ? "Auto-play Enabled" : "Auto-play Disabled",
-      description: newAutoplayMode 
-        ? "Chapters will automatically advance when completed" 
-        : "You'll be prompted before each chapter transition",
-    })
-  }, [autoplayMode, course.id, toast])
-
-  // Mobile playlist toggle
-  const handleMobilePlaylistToggle = useCallback(() => {
-    setMobilePlaylistOpen(prev => !prev)
-  }, [])
 
 
 
