@@ -305,6 +305,36 @@ Ensure a balanced mix of difficulties based on the requested level (${difficulty
 
     return parsedResult as Quiz;
   }
+
+  /**
+   * Generate MCQ quiz using OpenAI
+   */
+  async createMCQQuiz(prompt: string, params: QuizGenerationParams): Promise<string> {
+    const { userType = "FREE" } = params;
+    
+    const model = this.getAIModel(userType);
+    
+    const result = await this.generateChatCompletion({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert educator who creates engaging multiple-choice questions. Each question should have 4 options with only one correct answer. Include explanations and relevant tags.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    if (!result.content) {
+      throw new Error("Failed to generate MCQ quiz");
+    }
+
+    return result.content;
+  }
+
   /**
    * Get the appropriate AI model based on user type
    */

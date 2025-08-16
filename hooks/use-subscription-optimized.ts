@@ -1,7 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useCallback, useMemo, useRef, useEffect } from "react"
-import { useSession } from "next-auth/react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useAppSelector, useAppDispatch } from "@/store"
 import {
   fetchSubscription,
@@ -16,64 +15,33 @@ import {
 
 import { SubscriptionResult, SubscriptionStatusType } from "@/app/types/subscription"
 
-interface SubscriptionContextValue {
-  // Data
-  data: any
-  isSubscribed: boolean
-  subscriptionPlan: string
-  isCancelled: boolean
-  canDownloadPdf: boolean
-  
-  // Token usage
-  tokenUsage: number
-  totalTokens: number
-  remainingTokens: number
-  usagePercentage: number
-  hasExceededLimit: boolean
-  
-  // Loading states
-  isLoading: boolean
-  isInitialized: boolean
-  
-  // Actions
-  refreshSubscription: (force?: boolean) => Promise<void>
-  handleSubscribe: (planId?: string, duration?: number) => Promise<SubscriptionResult>
-  canSubscribeToPlan: (currentPlan: string, targetPlan: string, status: SubscriptionStatusType | null) => { 
-    canSubscribe: boolean; 
-    reason?: string 
-  }
-  
-  // Computed values
-  isSubscribedToAnyPaidPlan: boolean
-  isSubscribedToAllPlans: boolean
-  
-  // Metadata
-  lastFetchTime: number
-  timeSinceLastFetch: number
-}
-
-const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined)
-
-interface SubscriptionProviderProps {
-  children: React.ReactNode
+export type UseSubscriptionOptimizedOptions = {
+  allowPlanChanges?: boolean
+  allowDowngrades?: boolean
+  onSubscriptionSuccess?: (result: SubscriptionResult) => void
+  onSubscriptionError?: (error: SubscriptionResult) => void
   skipInitialFetch?: boolean
   enableAutoRefresh?: boolean
   refreshInterval?: number
+  forceRefreshOnMount?: boolean
 }
 
-const MIN_FETCH_INTERVAL = 30 * 1000 // 30 seconds minimum between fetches
 const DEFAULT_REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
+const MIN_FETCH_INTERVAL = 30 * 1000 // 30 seconds minimum between fetches
 
-export function SubscriptionProvider({ 
-  children, 
-  skipInitialFetch = false,
-  enableAutoRefresh = true,
-  refreshInterval = DEFAULT_REFRESH_INTERVAL
-}: SubscriptionProviderProps) {
-  const { data: session, status } = useSession()
+export default function useSubscriptionOptimized(options: UseSubscriptionOptimizedOptions = {}) {
+  const {
+    allowPlanChanges = false,
+    allowDowngrades = false,
+    onSubscriptionSuccess,
+    onSubscriptionError,
+    skipInitialFetch = false,
+    enableAutoRefresh = true,
+    refreshInterval = DEFAULT_REFRESH_INTERVAL,
+    forceRefreshOnMount = false
+  } = options
+
   const dispatch = useAppDispatch()
-  
-  // Selectors
   const subscriptionData = useAppSelector(selectSubscriptionData)
   const isLoading = useAppSelector(selectSubscriptionLoading)
   const tokenUsageData = useAppSelector(selectTokenUsage)
@@ -82,16 +50,21 @@ export function SubscriptionProvider({
   const isCancelled = useAppSelector(selectIsCancelled)
   const canDownloadPdf = useAppSelector(canDownloadPdfSelector)
 
-  // Local state
-  const [localLoading, setLocalLoading] = React.useState(false)
-  const [lastFetchTime, setLastFetchTime] = React.useState<number>(0)
-  const [isInitialized, setIsInitialized] = React.useState(false)
+  // Local state for better performance
+  const [localLoading, setLocalLoading] = useState(false)
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0)
+  const [isInitialized, setIsInitialized] = useState(false)
   
   // Refs for tracking state without causing re-renders
   const lastFetchTimeRef = useRef<number>(0)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isMountedRef = useRef(true)
-  const sessionIdRef = useRef<string | null>(null)
+
+  // Memoized values to prevent unnecessary re-renders
+  const memoizedSubscriptionData = useMemo(() => subscriptionData, [subscriptionData])
+  const memoizedTokenUsage = useMemo(() => tokenUsageData, [tokenUsageData])
+  const memoizedIsSubscribed = useMemo(() => isSubscribed, [isSubscribed])
+  const memoizedSubscriptionPlan = useMemo(() => subscriptionPlan, [subscriptionPlan])
 
   // Check if we need to fetch subscription data
   const shouldFetch = useCallback((force = false) => {
@@ -102,7 +75,6 @@ export function SubscriptionProvider({
     // 1. Too recent (unless forced)
     // 2. Already loading
     // 3. Component unmounted
-    // 4. No authenticated session
     if (!force && timeSinceLastFetch < MIN_FETCH_INTERVAL) {
       return false
     }
@@ -115,12 +87,8 @@ export function SubscriptionProvider({
       return false
     }
     
-    if (status !== 'authenticated' || !session?.user?.id) {
-      return false
-    }
-    
     return true
-  }, [isLoading, localLoading, status, session?.user?.id])
+  }, [isLoading, localLoading])
 
   // Optimized refresh function
   const refreshSubscription = useCallback(async (force = false) => {
@@ -133,60 +101,46 @@ export function SubscriptionProvider({
       lastFetchTimeRef.current = Date.now()
       setLastFetchTime(Date.now())
 
-      await dispatch(fetchSubscription({ forceRefresh: force })).unwrap()
+      const result = await dispatch(fetchSubscription({ forceRefresh: force })).unwrap()
+      
+      if (result && typeof result === "object") {
+        onSubscriptionSuccess?.({
+          success: true,
+          message: "Subscription refreshed"
+        })
+      }
     } catch (error) {
       console.error("Subscription refresh failed:", error)
+      onSubscriptionError?.({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+        error: "REFRESH_ERROR"
+      })
     } finally {
       if (isMountedRef.current) {
         setLocalLoading(false)
       }
     }
-  }, [dispatch, shouldFetch])
+  }, [dispatch, onSubscriptionSuccess, onSubscriptionError, shouldFetch])
 
   // Initialize subscription data
   useEffect(() => {
     if (isInitialized) return
 
     const shouldSkipInitialFetch = skipInitialFetch || 
-      (subscriptionData !== null && status === 'authenticated')
+      (subscriptionData !== null && !forceRefreshOnMount)
 
-    if (!shouldSkipInitialFetch && status === 'authenticated') {
-      refreshSubscription(false)
+    if (!shouldSkipInitialFetch) {
+      refreshSubscription(forceRefreshOnMount)
       setIsInitialized(true)
     } else {
       setIsInitialized(true)
     }
-  }, [skipInitialFetch, subscriptionData, status, refreshSubscription, isInitialized])
-
-  // Handle session changes
-  useEffect(() => {
-    if (status === 'loading') return
-
-    if (status === 'unauthenticated') {
-      // User logged out - clear subscription data
-      setIsInitialized(false)
-      setLastFetchTime(0)
-      lastFetchTimeRef.current = 0
-      sessionIdRef.current = null
-      return
-    }
-
-    if (status === 'authenticated' && session?.user?.id) {
-      const currentSessionId = session.user.id
-      const sessionChanged = sessionIdRef.current !== currentSessionId
-      
-      if (sessionChanged) {
-        // New session detected - force sync
-        sessionIdRef.current = currentSessionId
-        setIsInitialized(false)
-        refreshSubscription(true)
-      }
-    }
-  }, [session, status, refreshSubscription])
+  }, [skipInitialFetch, subscriptionData, forceRefreshOnMount, refreshSubscription, isInitialized])
 
   // Auto-refresh logic (only when needed)
   useEffect(() => {
-    if (!enableAutoRefresh || !isInitialized || status !== 'authenticated') return
+    if (!enableAutoRefresh || !isInitialized) return
 
     const scheduleRefresh = () => {
       if (refreshTimeoutRef.current) {
@@ -194,7 +148,7 @@ export function SubscriptionProvider({
       }
 
       refreshTimeoutRef.current = setTimeout(() => {
-        if (isMountedRef.current && status === 'authenticated') {
+        if (isMountedRef.current) {
           refreshSubscription(false)
         }
       }, refreshInterval)
@@ -208,7 +162,7 @@ export function SubscriptionProvider({
         clearTimeout(refreshTimeoutRef.current)
       }
     }
-  }, [enableAutoRefresh, refreshInterval, refreshSubscription, isInitialized, status])
+  }, [enableAutoRefresh, refreshInterval, refreshSubscription, isInitialized])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -233,26 +187,32 @@ export function SubscriptionProvider({
         const result = await response.json()
 
         if (!response.ok) {
-          return {
+          const errorResult: SubscriptionResult = {
             success: false,
             message: result.message || "Subscription failed",
             error: result.errorType || "UNKNOWN",
           }
+          onSubscriptionError?.(errorResult)
+          return errorResult
         }
 
         if (result.errorType === "PLAN_CHANGE_RESTRICTED") {
-          return {
+          const errorResult: SubscriptionResult = {
             success: false,
             message: result.message || "Plan change not allowed",
             error: "PLAN_CHANGE_RESTRICTED",
           }
+          onSubscriptionError?.(errorResult)
+          return errorResult
         }
 
         if (result.url) {
-          return {
+          const successResult: SubscriptionResult = {
             success: true,
             redirectUrl: result.url,
           }
+          onSubscriptionSuccess?.(successResult)
+          return successResult
         }
 
         const successResult: SubscriptionResult = {
@@ -260,19 +220,23 @@ export function SubscriptionProvider({
           message: result.message || "Subscription successful",
         }
 
+        onSubscriptionSuccess?.(successResult)
+        
         // Refresh subscription data after successful subscription
         setTimeout(() => refreshSubscription(true), 1000)
         
         return successResult
       } catch (error: any) {
-        return {
+        const errorResult: SubscriptionResult = {
           success: false,
           message: error?.message || "Network error",
           error: "NETWORK",
         }
+        onSubscriptionError?.(errorResult)
+        return errorResult
       }
     },
-    [refreshSubscription],
+    [onSubscriptionSuccess, onSubscriptionError, refreshSubscription],
   )
 
   const canSubscribeToPlan = useCallback(
@@ -291,13 +255,13 @@ export function SubscriptionProvider({
 
   // Memoized computed values
   const isSubscribedToAnyPaidPlan = useMemo(
-    () => !!isSubscribed && subscriptionPlan !== "FREE",
-    [isSubscribed, subscriptionPlan],
+    () => !!memoizedIsSubscribed && memoizedSubscriptionPlan !== "FREE",
+    [memoizedIsSubscribed, memoizedSubscriptionPlan],
   )
   
   const isSubscribedToAllPlans = useMemo(
-    () => String(subscriptionPlan) === "ENTERPRISE",
-    [subscriptionPlan],
+    () => String(memoizedSubscriptionPlan) === "ENTERPRISE",
+    [memoizedSubscriptionPlan],
   )
 
   // Extract token usage data with fallbacks
@@ -307,14 +271,13 @@ export function SubscriptionProvider({
     remaining: remainingTokens = 0,
     percentage: usagePercentage = 0,
     hasExceededLimit = false,
-  } = tokenUsageData || {}
+  } = memoizedTokenUsage || {}
 
-  // Memoized context value to prevent unnecessary re-renders
-  const contextValue = useMemo<SubscriptionContextValue>(() => ({
+  return {
     // Data
-    data: subscriptionData,
-    isSubscribed,
-    subscriptionPlan,
+    data: memoizedSubscriptionData,
+    isSubscribed: memoizedIsSubscribed,
+    subscriptionPlan: memoizedSubscriptionPlan,
     isCancelled,
     canDownloadPdf,
     
@@ -338,44 +301,12 @@ export function SubscriptionProvider({
     isSubscribedToAnyPaidPlan,
     isSubscribedToAllPlans,
     
+    // Options
+    allowPlanChanges,
+    allowDowngrades,
+    
     // Metadata
     lastFetchTime,
     timeSinceLastFetch: Date.now() - lastFetchTimeRef.current,
-  }), [
-    subscriptionData,
-    isSubscribed,
-    subscriptionPlan,
-    isCancelled,
-    canDownloadPdf,
-    tokensUsed,
-    totalTokens,
-    remainingTokens,
-    usagePercentage,
-    hasExceededLimit,
-    isLoading,
-    localLoading,
-    isInitialized,
-    refreshSubscription,
-    handleSubscribe,
-    canSubscribeToPlan,
-    isSubscribedToAnyPaidPlan,
-    isSubscribedToAllPlans,
-    lastFetchTime,
-  ])
-
-  return (
-    <SubscriptionContext.Provider value={contextValue}>
-      {children}
-    </SubscriptionContext.Provider>
-  )
-}
-
-export function useSubscriptionContext() {
-  const context = useContext(SubscriptionContext)
-  if (context === undefined) {
-    throw new Error("useSubscriptionContext must be used within a SubscriptionProvider")
   }
-  return context
 }
-
-export default SubscriptionProvider

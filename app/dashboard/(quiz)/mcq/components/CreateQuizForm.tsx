@@ -23,6 +23,7 @@ import { quizSchema } from "@/schema/schema"
 import { usePersistentState } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { useSubscription } from "@/modules/auth"
+import QuizCreationLoader from "@/components/loaders/QuizCreationLoader"
 
 import type { z } from "zod"
 import type { QueryParams } from "@/app/types/types"
@@ -177,18 +178,15 @@ export default function CreateQuizForm({
     return () => subscription.unsubscribe()
   }, [watch, setFormData])
 
-  const { mutateAsync: createQuizMutation } = useMutation({
+  const { mutateAsync: createQuizMutation, isError: isMutationError, error: mutationError } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      const response = await axios.post(`/api/quizzes/mcq/create`, data)
+      const response = await axios.post(`/api/quizzes/mcq`, data)
       return response.data
     },
     onError: (error: any) => {
       console.error("Error creating quiz:", error)
-      toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to create quiz. Please try again.",
-        variant: "destructive",
-      })
+      const errorMessage = error?.response?.data?.message || error?.response?.data?.details || "Failed to create quiz. Please try again."
+      toast.error("Quiz Creation Failed", errorMessage)
     },
   })
 
@@ -246,18 +244,24 @@ export default function CreateQuizForm({
 
       if (!userQuizId) throw new Error("Quiz ID not found")
 
-      toast({
-        title: "Success!",
-        description: "Your quiz has been created.",
-      })
+      toast.success("Quiz Created!", "Your quiz has been generated successfully. Redirecting...")
 
-      router.push(`/dashboard/mcq/${slug}`)
+      // Small delay to show success message before redirect
+      setTimeout(() => {
+        router.push(`/dashboard/mcq/${slug}`)
+      }, 1500)
     } catch (error) {
+      console.error("Quiz creation error:", error)
       setIsLoading(false)
+      
+      // Error toast is already handled by the mutation onError
+      if (!isMutationError) {
+        toast.error("Quiz Creation Failed", "An unexpected error occurred. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router, quizType])
+  }, [createQuizMutation, watch, toast, router, quizType, isMutationError])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")
@@ -279,6 +283,17 @@ export default function CreateQuizForm({
 
   return (
     <FormContainer variant="glass">
+      {/* Quiz Creation Loader */}
+      <QuizCreationLoader
+        isLoading={isLoading}
+        status={isLoading ? "loading" : isMutationError ? "error" : "idle"}
+        progress={isLoading ? 75 : 0}
+        message={isLoading ? "Generating your quiz questions..." : ""}
+        errorMessage={mutationError?.message || ""}
+        onRetry={() => setIsConfirmDialogOpen(true)}
+        className="mb-6"
+      />
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
         {/* Topic Selection */}
         <motion.div
