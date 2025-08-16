@@ -343,7 +343,7 @@ export default function MainNavbar() {
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
+          "border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 ai-glass dark:ai-glass-dark",
           scrolled && "bg-background/85 shadow-sm"
         )}
         data-testid="main-navbar"
@@ -411,7 +411,7 @@ export default function MainNavbar() {
               </SheetTrigger>
               <AnimatePresence>
                 {isMobileMenuOpen && (
-                  <SheetContent side="right" className="w-80 p-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-l border-border/60">
+                  <SheetContent side="right" className="w-80 p-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-l border-border/60 ai-glass dark:ai-glass-dark">
                     <motion.div initial="hidden" animate="visible" exit="exit" variants={mobileMenuVariants} className="h-full flex flex-col">
                       <div className="p-4 border-b border-border/60">
                         <div className="flex items-center justify-between">

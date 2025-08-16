@@ -133,7 +133,7 @@ export default function QuizPlayLayout({
   const header = useMemo(() => {
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b">
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b ai-glass dark:ai-glass-dark">
         <div className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-2.5">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -243,7 +243,7 @@ export default function QuizPlayLayout({
         </div>
         {/* Related quizzes carousel */}
         {!isFullscreen && relatedQuizzes.length > 0 && (
-          <div className="relative mt-6 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4 sm:p-5 overflow-hidden">
+          <div className="relative mt-6 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4 sm:p-5 overflow-hidden ai-glass dark:ai-glass-dark">
             <div className="pointer-events-none absolute inset-0 opacity-[0.08] neural-pattern" aria-hidden="true" />
             <div className="flex items-center gap-2 mb-3">
               <Target className="h-4 w-4 text-primary" />

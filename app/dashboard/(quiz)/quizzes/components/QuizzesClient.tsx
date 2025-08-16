@@ -325,7 +325,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const RecommendedRow = () => {
     if (!recommended.length) return null
     return (
-      <div className="relative space-y-3 rounded-2xl border border-primary/10 bg-gradient-to-r from-primary/5 via-secondary/5 to-accent/5 p-3 sm:p-4 overflow-hidden">
+      <div className="relative space-y-3 rounded-2xl border border-primary/10 bg-gradient-to-r from-primary/5 via-secondary/5 to-accent/5 p-3 sm:p-4 overflow-hidden ai-glass dark:ai-glass-dark">
         <div className="pointer-events-none absolute inset-0 opacity-[0.08] neural-pattern" aria-hidden="true" />
         <div className="flex items-center justify-between">
           <h3 className="text-base sm:text-lg font-semibold">Recommended for you</h3>
