@@ -10,10 +10,32 @@ import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
 import { subscriptionSlice } from "./slices/subscription-slice"
 
+// Enhanced storage with fallback
+const createStorage = () => {
+  try {
+    // Test if localStorage is available
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const testKey = '__redux_persist_test__'
+      localStorage.setItem(testKey, 'test')
+      localStorage.removeItem(testKey)
+      return storage
+    }
+  } catch (error) {
+    console.warn('localStorage not available, using memory storage fallback')
+  }
+  
+  // Fallback to memory storage
+  return {
+    getItem: (key: string) => Promise.resolve(null),
+    setItem: (key: string, value: string) => Promise.resolve(),
+    removeItem: (key: string) => Promise.resolve(),
+  }
+}
+
 // Persist configs for non-auth slices
 const coursePersistConfig = {
   key: "course",
-  storage,
+  storage: createStorage(),
   whitelist: [
     "autoplayEnabled",
     "bookmarks",
@@ -29,7 +51,7 @@ const coursePersistConfig = {
 
 const flashcardPersistConfig = {
   key: "flashcard",
-  storage,
+  storage: createStorage(),
   whitelist: [
     "quizId",
     "slug",
@@ -48,7 +70,7 @@ const flashcardPersistConfig = {
 
 const quizPersistConfig = {
   key: "quiz",
-  storage,
+  storage: createStorage(),
   whitelist: [
     "quizId",
     "slug",
@@ -90,7 +112,7 @@ export const store = configureStore({
 export const persistor = persistStore(store)
 
 // ✅ Typed hooks
-export type RootState = ReturnType<typeof store.getState>
+export type RootState = typeof store.getState
 export type AppDispatch = typeof store.dispatch
 export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
