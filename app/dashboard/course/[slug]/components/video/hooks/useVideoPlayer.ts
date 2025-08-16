@@ -59,6 +59,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     isPictureInPicture: false,
     isPiPSupported: false,
     isNearingCompletion: false, // Add state for preloading detection
+    isMiniPlayer: false,
   })
 
   const [bufferHealth, setBufferHealth] = useState(100)
@@ -293,7 +294,11 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
           await player.requestPictureInPicture()
           setState(prev => ({ ...prev, isPictureInPicture: true }))
         }
+        return
       }
+
+      // Fallback mini player if PiP not available
+      setState(prev => ({ ...prev, isMiniPlayer: !prev.isMiniPlayer }))
     } catch (error) {
       console.warn('Picture-in-Picture not supported or failed:', error)
       toast({
@@ -301,6 +306,8 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
         description: "Your browser doesn't support Picture-in-Picture mode.",
         variant: "destructive",
       })
+      // Fallback mini player toggle on error
+      setState(prev => ({ ...prev, isMiniPlayer: !prev.isMiniPlayer }))
     }
   }, [toast])
 

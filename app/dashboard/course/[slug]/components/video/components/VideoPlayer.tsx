@@ -657,19 +657,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "relative object-contain w-full h-full bg-black overflow-hidden group",
-        state.theaterMode && "theater-mode",
-        className,
-      )}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-      role="application"
-      aria-label="Video player"
-      tabIndex={0}
-    >
+        <div
+       ref={containerRef}
+       className={cn(
+         "relative object-contain w-full h-full bg-black overflow-hidden group",
+         state.theaterMode && "theater-mode",
+         state.isMiniPlayer && "fixed bottom-4 right-4 z-50 w-[320px] max-w-[85vw] aspect-video rounded-xl border border-white/10 shadow-lg backdrop-blur-sm",
+         className,
+       )}
+       onMouseEnter={() => setIsHovering(true)}
+       onMouseLeave={() => setIsHovering(false)}
+       role="application"
+       aria-label="Video player"
+       tabIndex={0}
+     >
       {/* YouTube Player */}
       <div className="absolute inset-0">
         <ReactPlayer
@@ -710,9 +711,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
               },
             },
+            attributes: {
+              allow:
+                "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+            },
           } as any}
         />
       </div>
+
+      {/* Mini player fallback if PiP not supported */}
+      {state.isMiniPlayer && (
+        <div className="fixed bottom-4 right-4 z-50 w-[320px] max-w-[85vw] aspect-video rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/90 backdrop-blur-sm">
+          <div className="absolute inset-0">
+            {/* Mirror the main player by reusing the same ReactPlayer instance via CSS scaling would be heavy; instead just show a small overlay CTA to return */}
+            <div className="flex h-full w-full items-center justify-center text-white/80 text-sm p-3">
+              <div className="text-center space-y-2">
+                <div>Mini player active</div>
+                <div className="text-xs text-white/60">Use PiP key “P” if supported for system-level floating</div>
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <Button size="sm" variant="secondary" onClick={() => handlers.handlePictureInPictureToggle()}>
+                    Return to player
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Persistent CourseAI Logo */}
       <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 opacity-70 hover:opacity-100 transition-opacity">
@@ -818,7 +842,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             onPictureInPicture={handlePictureInPicture}
-            isPiPSupported={Boolean(getVideoElement() && (getVideoElement() as any).requestPictureInPicture && (document as any).pictureInPictureEnabled)}
+            isPiPSupported={state.isPiPSupported || true}
             isPiPActive={state.isPictureInPicture}
           />
           {/* Growth Promo */}
