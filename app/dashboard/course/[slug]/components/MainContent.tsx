@@ -26,6 +26,7 @@ import AutoplayOverlay from './AutoplayOverlay'
 import CertificateGenerator from './CertificateGenerator'
 import RecommendedSection from '@/components/shared/RecommendedSection'
 import VideoDebug from './video/components/VideoDebug'
+import { PageLoading, InlineLoading } from '@/components/ui/loading'
 
 // Types
 import type { FullCourseType, FullChapterType } from '@/app/types/types'
@@ -252,17 +253,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // RENDER LOGIC
   // ============================================================================
   
-  // Early return for loading state
-  if (!course || !videoPlaylist.length) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading course content...</p>
-        </div>
-      </div>
-    )
+  // Early return for loading state - only show loading if course is not available
+  if (!course) {
+    return <PageLoading text="Loading course..." />
   }
+
+  // Show content even if videoPlaylist is empty (course might not have videos yet)
+  const hasContent = course && (videoPlaylist.length > 0 || course.chapters?.length > 0)
 
   // Memoized props for child components
   const sidebarProps = useMemo(() => ({
@@ -322,33 +319,44 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           <div className="relative">
             {isVideoLoading && (
               <div className="absolute inset-0 bg-muted/20 rounded-lg flex items-center justify-center z-10">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">Loading video...</p>
+                <InlineLoading text="Loading video..." />
+              </div>
+            )}
+            
+            {videoPlaylist.length > 0 ? (
+              <MemoizedVideoPlayer {...videoPlayerProps} />
+            ) : (
+              <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
+                <div className="text-center p-8">
+                  <div className="text-6xl mb-4">📚</div>
+                  <h3 className="text-xl font-semibold mb-2">No Videos Available</h3>
+                  <p className="text-muted-foreground">
+                    This course doesn't have any video content yet.
+                  </p>
                 </div>
               </div>
             )}
             
-            <MemoizedVideoPlayer {...videoPlayerProps} />
-            
-            {/* Chapter Progress Indicator */}
-            <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-center justify-between text-sm">
-                <div>
-                  <span className="font-medium">Chapter {currentIndex + 1} of {videoPlaylist.length}</span>
-                  {nextChapter && (
-                    <span className="text-muted-foreground ml-2">
-                      • Next: {nextChapter.chapter.title}
+            {/* Chapter Progress Indicator - only show if there are videos */}
+            {videoPlaylist.length > 0 && (
+              <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <div>
+                    <span className="font-medium">Chapter {currentIndex + 1} of {videoPlaylist.length}</span>
+                    {nextChapter && (
+                      <span className="text-muted-foreground ml-2">
+                        • Next: {nextChapter.chapter.title}
+                      </span>
+                    )}
+                  </div>
+                  {nextChapter?.duration && (
+                    <span className="text-muted-foreground">
+                      Est. {formatDuration(nextChapter.duration)}
                     </span>
                   )}
                 </div>
-                {nextChapter?.duration && (
-                  <span className="text-muted-foreground">
-                    Est. {formatDuration(nextChapter.duration)}
-                  </span>
-                )}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Course Details Tabs */}
@@ -395,17 +403,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Mobile Playlist Toggle */}
-      <div className="md:hidden fixed bottom-4 right-4 z-50">
-        <button
-          onClick={handleMobilePlaylistToggle}
-          className="w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
-      </div>
+      {/* Mobile Playlist Toggle - only show if there are videos */}
+      {videoPlaylist.length > 0 && (
+        <div className="md:hidden fixed bottom-4 right-4 z-50">
+          <button
+            onClick={handleMobilePlaylistToggle}
+            className="w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Mobile Playlist Overlay */}
       <AnimatePresence>
@@ -437,67 +447,71 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Chapter Transition Overlay */}
-      <AnimatePresence>
-        {showChapterTransition && nextChapterInfo && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
-          >
-            <div className="text-center max-w-md mx-auto p-8">
-              <div className="mb-6">
-                <div className="text-6xl mb-4">🎉</div>
-                <h2 className="text-2xl font-bold mb-2">Chapter Complete!</h2>
-                <p className="text-muted-foreground">
-                  Moving to next chapter in {autoplayCountdown} seconds...
-                </p>
-              </div>
-              
-              <div className="bg-muted/30 rounded-lg p-6 mb-6">
-                <h3 className="font-semibold mb-2">Next: {nextChapterInfo.title}</h3>
-                {nextChapterInfo.description && (
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {nextChapterInfo.description}
+      {/* Chapter Transition Overlay - only show if there are videos */}
+      {videoPlaylist.length > 0 && (
+        <AnimatePresence>
+          {showChapterTransition && nextChapterInfo && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
+            >
+              <div className="text-center max-w-md mx-auto p-8">
+                <div className="mb-6">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h2 className="text-2xl font-bold mb-2">Chapter Complete!</h2>
+                  <p className="text-muted-foreground">
+                    Moving to next chapter in {autoplayCountdown} seconds...
                   </p>
-                )}
-                {nextChapterInfo.duration && (
-                  <p className="text-sm text-muted-foreground">
-                    Duration: {formatDuration(nextChapterInfo.duration)}
-                  </p>
-                )}
+                </div>
+                
+                <div className="bg-muted/30 rounded-lg p-6 mb-6">
+                  <h3 className="font-semibold mb-2">Next: {nextChapterInfo.title}</h3>
+                  {nextChapterInfo.description && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {nextChapterInfo.description}
+                    </p>
+                  )}
+                  {nextChapterInfo.duration && (
+                    <p className="text-sm text-muted-foreground">
+                      Duration: {formatDuration(nextChapterInfo.duration)}
+                    </p>
+                  )}
+                </div>
+                
+                <button
+                  onClick={handleCancelAutoplay}
+                  className="w-full px-4 py-2 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-colors"
+                >
+                  Cancel Auto-play
+                </button>
               </div>
-              
-              <button
-                onClick={handleCancelAutoplay}
-                className="w-full px-4 py-2 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-colors"
-              >
-                Cancel Auto-play
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
-      {/* Autoplay Overlay */}
-      <AnimatePresence>
-        {showAutoplayOverlay && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
-          >
-            <AutoplayOverlay
-              onNextChapter={handleNextVideo}
-              onCancel={handleCancelAutoplay}
-              nextChapter={nextChapter}
-              isLastVideo={isLastVideo}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Autoplay Overlay - only show if there are videos */}
+      {videoPlaylist.length > 0 && (
+        <AnimatePresence>
+          {showAutoplayOverlay && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
+            >
+              <AutoplayOverlay
+                onNextChapter={handleNextVideo}
+                onCancel={handleCancelAutoplay}
+                nextChapter={nextChapter}
+                isLastVideo={isLastVideo}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Certificate Modal */}
       <AnimatePresence>

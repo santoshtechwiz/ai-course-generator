@@ -16,12 +16,12 @@ interface VideoPlaylistItem {
   duration: number
 }
 
-export function useVideoManagement(course: FullCourseType, videoDurations: Record<string, number>) {
+export function useVideoManagement(course: FullCourseType, videoDurations: Record<string, number> = {}) {
   const dispatch = useAppDispatch()
   const { toast } = useToast()
   const videoStateStore = useVideoState
 
-  // Video playlist with proper typing
+  // Video playlist with proper typing - don't depend on videoDurations initially
   const videoPlaylist = useMemo(() => {
     if (!course?.chapters) return []
     
