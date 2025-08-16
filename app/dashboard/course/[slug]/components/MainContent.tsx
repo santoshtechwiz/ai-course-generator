@@ -263,14 +263,36 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Memoized props for child components
   const sidebarProps = useMemo(() => ({
-    course,
-    currentVideoId,
-    videoPlaylist,
+    course: {
+      id: course.id,
+      title: course.title,
+      chapters: course.chapters || []
+    },
+    currentChapter: currentChapter || null,
+    courseId: course.id.toString(),
     onChapterSelect: handleChapterSelect,
-    onChapterComplete: handleChapterComplete,
-    userSubscription,
-    isOwner,
-  }), [course, currentVideoId, videoPlaylist, handleChapterSelect, handleChapterComplete, userSubscription, isOwner])
+    currentVideoId: currentVideoId || '',
+    isAuthenticated: !!user,
+    progress: progress?.chapters || {},
+    completedChapters: progress?.completedChapters || [],
+    videoDurations,
+    formatDuration,
+    courseStats: {
+      totalChapters: videoPlaylist.length,
+      completedChapters: progress?.completedChapters?.length || 0,
+      progressPercentage: progress?.progressPercentage || 0
+    }
+  }), [
+    course, 
+    currentChapter, 
+    currentVideoId, 
+    handleChapterSelect, 
+    user, 
+    progress, 
+    videoDurations, 
+    formatDuration, 
+    videoPlaylist.length
+  ])
 
   const videoPlayerProps = useMemo(() => ({
     videoId: currentVideoId || '',
@@ -296,6 +318,13 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     handleFullscreenToggle, 
     isPiPActive
   ])
+
+  // Access levels for CourseDetailsTabs
+  const accessLevels = useMemo(() => ({
+    isSubscribed: !!userSubscription,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === 'ADMIN'
+  }), [userSubscription, user])
 
   return (
     <div className="min-h-screen bg-background">
@@ -363,8 +392,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
           <MemoizedCourseDetailsTabs
             course={course}
             currentChapter={currentChapter}
-            userSubscription={userSubscription}
-            isOwner={isOwner}
+            accessLevels={accessLevels}
           />
 
           {/* Video Generation Section */}
@@ -503,10 +531,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
             >
               <AutoplayOverlay
-                onNextChapter={handleNextVideo}
+                countdown={autoplayCountdown}
                 onCancel={handleCancelAutoplay}
-                nextChapter={nextChapter}
-                isLastVideo={isLastVideo}
+                onNextVideo={handleNextVideo}
+                nextVideoTitle={nextChapter?.chapter.title}
               />
             </motion.div>
           )}
@@ -530,8 +558,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
               className="bg-background rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               <CertificateGenerator
-                course={course}
-                onClose={() => setShowCertificate(false)}
+                courseName={course.title}
+                userName={user?.name}
+                isEligible={true}
+                progress={100}
               />
             </motion.div>
           </motion.div>
