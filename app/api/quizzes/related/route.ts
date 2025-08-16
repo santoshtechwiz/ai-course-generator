@@ -33,31 +33,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Try ordering by recent activity first, then fallback to createdAt
-    const quizzes = await prisma.userQuiz.findMany({
-      where,
-      take: limit,
-      orderBy: [
-        // @ts-ignore: optional columns depending on schema
-        { lastAttempted: 'desc' as any },
-        // @ts-ignore: optional columns depending on schema
-        { viewCount: 'desc' as any },
-        { createdAt: 'desc' },
-      ],
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        quizType: true,
-        difficulty: true,
-        _count: { select: { questions: true } },
-        // @ts-ignore
-        viewCount: true,
-        // @ts-ignore
-        lastAttempted: true,
-        // @ts-ignore
-        tags: true,
-      },
-    })
+      const quizzes = await prisma.userQuiz.findMany({
+        where,
+        take: limit,
+        orderBy: [
+          // @ts-ignore: optional columns depending on schema
+          { lastAttempted: 'desc' as any },
+          { createdAt: 'desc' },
+        ],
+        include: {
+          questions: true,
+        },
+      })
 
     const normalized = quizzes.map((q) => ({
       id: String(q.id),
@@ -65,7 +52,7 @@ export async function GET(req: NextRequest) {
       slug: q.slug,
       quizType: q.quizType,
       difficulty: q.difficulty || "medium",
-      questionCount: q._count?.questions || 0,
+      questionCount: Array.isArray(q.questions) ? q.questions.length : 0,
       isPublic: true,
     }))
 
