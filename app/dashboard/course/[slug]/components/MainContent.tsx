@@ -554,9 +554,28 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       {/* Mobile header */}
       <div className="flex">
                  {/* Main content */}        <main className="flex-1 min-w-0">
-             <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
-   
-           <div className={cn("mx-auto py-4 px-4 sm:px-6 lg:px-8", wideMode ? "max-w-none" : "max-w-7xl")}>            {/* Video Generation Section */}
+              <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
+             {/* Top toolbar: width toggle and keys hint */}
+             <div className="mx-auto py-3 px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => {
+                   setWideMode((v) => {
+                     const next = !v
+                     try { localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) } catch {}
+                     return next
+                   })
+                 }}
+                 className="gap-2"
+               >
+                 {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                 {wideMode ? "Normal width" : "Wider video"}
+               </Button>
+               <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
+             </div>
+    
+             <div className={cn("mx-auto py-4 px-4 sm:px-6 lg:px-8", wideMode ? "max-w-none" : "max-w-7xl")}>            {/* Video Generation Section */}
             {(isOwner || user?.isAdmin) && (
               <VideoGenerationSection 
                 course={course}
@@ -573,25 +592,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             {/* Video player section */}
             <div className={cn(twoCol ? "lg:grid lg:grid-cols-[2fr_1.2fr] lg:gap-6" : "space-y-4")}> 
               <div className="min-w-0">
-                {/* Toolbar */}
-                <div className="flex items-center justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setWideMode((v) => {
-                        const next = !v
-                        try { localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) } catch {}
-                        return next
-                      })
-                    }}
-                    className="gap-2"
-                  >
-                    {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                    {wideMode ? "Normal width" : "Wider video"}
-                  </Button>
-                  <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
-                </div>
  
                 {/* Video player */}
                 <div className="w-full">
@@ -644,26 +644,39 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </div>
                 </div>
  
-                {/* Chapter description and rating */}
-                {currentChapter?.description && (
+               {/* Chapter description and rating */}
+               {currentChapter?.description && (
                  <div className="rounded-xl border border-primary/10 bg-card/80 ai-glass dark:ai-glass-dark p-4 sm:p-5 lg:p-6 shadow-sm lg:col-start-1">
                     <h3 className="text-base sm:text-lg font-semibold mb-3">About this lesson</h3>
                     <div className="prose prose-sm max-w-none text-foreground/90">
                       <MarkdownRenderer content={currentChapter.description} />
                     </div>
-                    <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                      <span className="text-sm text-muted-foreground">Rate this lesson</span>
-                      <Rating
-                        value={0}
-                        onValueChange={() => {}}
-                        className="scale-110"
-                      />
-                    </div>
                   </div>
                )}
  
-               {/* Course tabs - large screens */}
-              <div className="hidden lg:block lg:col-start-2 lg:row-start-1">
+               {/* Right column: Playlist and tabs on large screens */}
+              <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:col-start-2 lg:row-start-1">
+                <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                  <VideoNavigationSidebar
+                    course={course}
+                    currentChapter={currentChapter}
+                    courseId={course.id.toString()}
+                    onChapterSelect={handleChapterSelect}
+                    progress={progress}
+                    isAuthenticated={!!user}
+                    isSubscribed={!!userSubscription}
+                    completedChapters={completedChapters}
+                    formatDuration={formatDuration}
+                    nextVideoId={undefined}
+                    currentVideoId={currentVideoId || ''}
+                    isPlaying={Boolean(currentVideoId)}
+                    courseStats={{
+                      completedCount: progress?.completedChapters?.length || 0,
+                      totalChapters: videoPlaylist.length,
+                      progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+                    }}
+                  />
+                </div>
                 <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
                   <CourseDetailsTabs
                     course={course}
