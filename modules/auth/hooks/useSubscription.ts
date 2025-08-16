@@ -1,18 +1,30 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useCallback, useMemo } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store'
-import { selectSubscription, fetchSubscription } from '@/store/slices/subscription-slice'
+import { 
+  selectSubscriptionData,
+  selectHasActiveSubscription,
+  selectHasCredits,
+  selectCanCreateQuizOrCourse,
+  selectIsExpired,
+  selectShouldRefreshSubscription,
+  selectSubscriptionCacheStatus,
+  fetchSubscription,
+  markSubscriptionStale,
+  clearSubscriptionError
+} from '@/store/slices/subscription-slice'
 import { useAuth } from '../providers/AuthProvider'
 
 /**
- * Enhanced subscription hook that combines session and Redux data
+ * Enhanced subscription hook with performance optimization and smart caching
  * 
- * This hook provides a unified interface for subscription data that:
- * - Uses session data as the primary source of truth for basic info
- * - Uses Redux for detailed subscription data (tokens used, billing info)
- * - Only fetches data when needed to avoid excessive API calls
- * - Maintains efficient caching via Redux
+ * This hook provides:
+ * - Unified interface for subscription data
+ * - Smart caching based on subscription status
+ * - Performance-optimized selectors
+ * - Automatic refresh when needed
+ * - Prevents duplicate API calls
  */
 export function useSubscription() {
   const dispatch = useAppDispatch()
@@ -20,17 +32,17 @@ export function useSubscription() {
   // Get session-based subscription data (always up-to-date)
   const { subscription: sessionSubscription, user, isAuthenticated } = useAuth()
   
-  // Get Redux subscription data (detailed, cached)
-  const reduxSubscription = useAppSelector(selectSubscription)
+  // Get Redux subscription data using optimized selectors
+  const subscriptionData = useAppSelector(selectSubscriptionData)
+  const hasActiveSubscription = useAppSelector(selectHasActiveSubscription)
+  const hasCredits = useAppSelector(selectHasCredits)
+  const canCreateQuizOrCourse = useAppSelector(selectCanCreateQuizOrCourse)
+  const isExpired = useAppSelector(selectIsExpired)
+  const shouldRefresh = useAppSelector(selectShouldRefreshSubscription)
+  const cacheStatus = useAppSelector(selectSubscriptionCacheStatus)
   
-  // Only fetch subscription data once when authenticated and no data exists
-  useEffect(() => {
-    if (isAuthenticated && !reduxSubscription.data && !reduxSubscription.isLoading) {
-      dispatch(fetchSubscription())
-    }
-  }, [isAuthenticated, reduxSubscription.data, reduxSubscription.isLoading, dispatch])
-    // Determine the most accurate subscription state
-  const subscription = {
+  // Memoized subscription object that combines session and Redux data
+  const subscription = useMemo(() => ({
     // Primary data from session (real-time)
     plan: sessionSubscription?.plan || 'FREE',
     status: sessionSubscription?.status || 'INACTIVE',
@@ -38,23 +50,115 @@ export function useSubscription() {
     credits: sessionSubscription?.credits || 0,
     
     // Enhanced data - prefer session data for tokensUsed, fallback to Redux cache
-    tokensUsed: user?.creditsUsed || reduxSubscription.data?.tokensUsed || 0,
-    subscriptionId: reduxSubscription.data?.subscriptionId || '',
-    cancelAtPeriodEnd: reduxSubscription.data?.cancelAtPeriodEnd || false,
-    currentPeriodEnd: reduxSubscription.data?.currentPeriodEnd || null,
+    tokensUsed: user?.creditsUsed || subscriptionData?.tokensUsed || 0,
+    subscriptionId: subscriptionData?.subscriptionId || '',
+    cancelAtPeriodEnd: subscriptionData?.cancelAtPeriodEnd || false,
+    currentPeriodEnd: subscriptionData?.currentPeriodEnd || null,
     
     // Calculated properties
     isSubscribed: sessionSubscription?.isActive || false,
     isFree: (sessionSubscription?.plan || 'FREE') === 'FREE',
     isPro: (sessionSubscription?.plan || 'FREE') === 'PRO',
     isEnterprise: (sessionSubscription?.plan || 'FREE') === 'ENTERPRISE',
-  }
+  }), [sessionSubscription, user, subscriptionData])
   
+  // Smart refresh logic - only refresh when necessary
+  const refreshSubscription = useCallback((force = false) => {
+    if (force || shouldRefresh) {
+      dispatch(fetchSubscription({ forceRefresh: force }))
+    }
+  }, [dispatch, shouldRefresh])
+  
+  // Mark subscription as stale when user interacts with subscription features
+  const markStale = useCallback(() => {
+    dispatch(markSubscriptionStale())
+  }, [dispatch])
+  
+  // Clear any subscription errors
+  const clearError = useCallback(() => {
+    dispatch(clearSubscriptionError())
+  }, [dispatch])
+  
+  // Auto-refresh logic with smart timing
+  useEffect(() => {
+    if (!isAuthenticated) return
+    
+    // Only fetch if we don't have data or if it's stale
+    if (!subscriptionData && !shouldRefresh) {
+      dispatch(fetchSubscription())
+      return
+    }
+    
+    // Refresh if data is stale and user is authenticated
+    if (shouldRefresh && isAuthenticated) {
+      dispatch(fetchSubscription())
+    }
+  }, [isAuthenticated, subscriptionData, shouldRefresh, dispatch])
+  
+  // Enhanced return object with business logic
   return {
+    // Core subscription data
     subscription,
-    isLoading: reduxSubscription.isLoading,
-    error: reduxSubscription.error,
+    
+    // Business logic selectors
+    hasActiveSubscription,
+    hasCredits,
+    canCreateQuizOrCourse,
+    isExpired,
+    
+    // Cache and performance info
+    shouldRefresh,
+    cacheStatus,
+    
+    // Actions
+    refreshSubscription,
+    markStale,
+    clearError,
+    
+    // Auth state
     isAuthenticated,
     user,
   }
+}
+
+/**
+ * Hook for subscription-aware components that need to check permissions
+ * This hook is optimized for components that only need to know if actions are allowed
+ */
+export function useSubscriptionPermissions() {
+  const { hasActiveSubscription, hasCredits, canCreateQuizOrCourse } = useSubscription()
+  
+  return useMemo(() => ({
+    canCreateQuiz: canCreateQuizOrCourse,
+    canCreateCourse: canCreateQuizOrCourse,
+    canUsePremiumFeatures: hasActiveSubscription,
+    hasAvailableCredits: hasCredits,
+    
+    // Specific permission checks
+    canGenerateContent: canCreateQuizOrCourse,
+    canAccessAdvancedFeatures: hasActiveSubscription,
+    needsSubscriptionUpgrade: !hasActiveSubscription,
+    needsCredits: !hasCredits,
+  }), [hasActiveSubscription, hasCredits, canCreateQuizOrCourse])
+}
+
+/**
+ * Hook for components that need to track subscription changes
+ * Useful for analytics, logging, or UI updates
+ */
+export function useSubscriptionTracking() {
+  const { subscription, cacheStatus, shouldRefresh } = useSubscription()
+  
+  return useMemo(() => ({
+    currentPlan: subscription.plan,
+    subscriptionStatus: subscription.status,
+    isActive: subscription.isActive,
+    cacheStatus,
+    needsRefresh: shouldRefresh,
+    
+    // Tracking helpers
+    isPremiumUser: subscription.plan !== 'FREE',
+    hasExpiredSubscription: subscription.status === 'EXPIRED',
+    isInTrial: subscription.status === 'TRIAL',
+  }), [subscription, cacheStatus, shouldRefresh])
 }

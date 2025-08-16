@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button, type ButtonProps } from "@/components/ui/button"
 import { useToast } from "@/hooks"
 import { useRouter } from "next/navigation"
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { Loader2, Check, Lock, AlertCircle, Sparkles } from "lucide-react"
 import type { PlanType } from "../../../../hooks/useQuizPlan"
 // ✅ UNIFIED: Using unified auth system
-import { useAuth, useSubscription } from "@/modules/auth"
+import { useAuth, useSubscription, useSubscriptionPermissions } from "@/modules/auth"
 import { calculateCreditInfo } from "@/utils/credit-utils"
 
 interface CustomButtonStates {
@@ -38,6 +38,10 @@ interface CustomButtonStates {
     label?: string
     tooltip?: string
   }
+  expiredSubscription?: {
+    label?: string
+    tooltip?: string
+  }
 }
 
 interface PlanAwareButtonProps extends Omit<ButtonProps, "onClick"> {
@@ -54,6 +58,7 @@ interface PlanAwareButtonProps extends Omit<ButtonProps, "onClick"> {
   fallbackHref?: string
   onPlanRequired?: () => void
   onInsufficientCredits?: () => void
+  onExpiredSubscription?: () => void
   customStates?: CustomButtonStates
   showIcon?: boolean
 }
@@ -72,6 +77,7 @@ export default function PlanAwareButton({
   fallbackHref = "/dashboard/subscription",
   onPlanRequired,
   onInsufficientCredits,
+  onExpiredSubscription,
   customStates,
   className = "",
   showIcon = true,
@@ -83,7 +89,8 @@ export default function PlanAwareButton({
 
   // ✅ UNIFIED: Get subscription details from unified auth system
   const { isAuthenticated, user } = useAuth()
-  const { subscription } = useSubscription()
+  const { subscription, isExpired } = useSubscription()
+  const { canCreateQuiz, canCreateCourse, needsSubscriptionUpgrade } = useSubscriptionPermissions()
 
   // Auto-detect authentication - prioritize internal auth state over prop
   const effectiveIsLoggedIn = isAuthenticated || (user?.id ? true : false)
@@ -103,13 +110,14 @@ export default function PlanAwareButton({
   const effectivePlan = currentPlan || subscription?.plan || "FREE"
   const isAlreadySubscribed = subscription?.status === "ACTIVE" || false
   
-  // Check if subscription is expired or in a problematic state
-  const hasExpiredSubscription = subscription?.status && 
-    !["ACTIVE", "TRIALING"].includes(subscription.status) && 
-    subscription.status !== "INACTIVE" // INACTIVE means no subscription, expired means had one but lost it
+  // Enhanced subscription state checking
+  const hasExpiredSubscription = isExpired || 
+    (subscription?.status && 
+     !["ACTIVE", "TRIALING"].includes(subscription.status) && 
+     subscription.status !== "INACTIVE")
 
   // Check if the user's plan meets requirements
-  const meetsRequirement = (): boolean => {
+  const meetsRequirement = useMemo((): boolean => {
     // Plan hierarchy for comparison
     const planHierarchy: Record<PlanType, number> = {
       FREE: 0,
@@ -120,10 +128,30 @@ export default function PlanAwareButton({
 
     // Check if current plan is sufficient, using the effective plan
     return planHierarchy[effectivePlan as PlanType] >= planHierarchy[requiredPlan]
-  }
+  }, [effectivePlan, requiredPlan])
+
+  // Enhanced permission checking that considers both subscription status and credits
+  const canPerformAction = useMemo((): boolean => {
+    // Must be logged in
+    if (!effectiveIsLoggedIn) return false
+    
+    // Must have active subscription (not expired)
+    if (hasExpiredSubscription) return false
+    
+    // Must have sufficient plan
+    if (!meetsRequirement) return false
+    
+    // Must have credits
+    if (!effectiveHasCredits) return false
+    
+    // Must be enabled
+    if (!isEnabled) return false
+    
+    return true
+  }, [effectiveIsLoggedIn, hasExpiredSubscription, meetsRequirement, effectiveHasCredits, isEnabled])
 
   // Extract the button states based on conditions
-  const getButtonState = () => {
+  const getButtonState = useMemo(() => {
     // Processing state takes priority
     if (isLoading || isLoadingState) {
       return {
@@ -138,25 +166,44 @@ export default function PlanAwareButton({
       }
     }
 
-    // Authentication check - show sign in for unauthenticated users OR users with expired subscriptions who lost access
-    if (!effectiveIsLoggedIn || (hasExpiredSubscription && !effectiveHasCredits)) {
+    // Authentication check - show sign in for unauthenticated users
+    if (!effectiveIsLoggedIn) {
       const notLoggedInState = customStates?.notLoggedIn ?? {}
-      const isExpiredCase = effectiveIsLoggedIn && hasExpiredSubscription
       
       return {
-        label: notLoggedInState.label ?? (isExpiredCase ? "Reactivate subscription" : "Sign in to continue"),
-        tooltip: notLoggedInState.tooltip ?? (isExpiredCase 
-          ? "Your subscription has expired. Please reactivate to continue using this feature." 
-          : "You need to be signed in to use this feature"),
+        label: notLoggedInState.label ?? "Sign in to continue",
+        tooltip: notLoggedInState.tooltip ?? "You need to be signed in to use this feature",
         disabled: false,
         icon: <Lock className="h-4 w-4" />,
         variant: "outline" as const,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           e.preventDefault()
-          if (isExpiredCase) {
-            router.push("/dashboard/subscription")
+          router.push("/api/auth/signin?callbackUrl=/dashboard")
+        },
+      }
+    }
+
+    // Expired subscription check - takes priority over credits
+    if (hasExpiredSubscription) {
+      const expiredState = customStates?.expiredSubscription ?? {}
+      
+      return {
+        label: expiredState.label ?? "Reactivate subscription",
+        tooltip: expiredState.tooltip ?? "Your subscription has expired. Please reactivate to continue using this feature.",
+        disabled: false,
+        icon: <AlertCircle className="h-4 w-4" />,
+        variant: "destructive" as const,
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+          e.preventDefault()
+          if (onExpiredSubscription) {
+            onExpiredSubscription()
           } else {
-            router.push("/api/auth/signin?callbackUrl=/dashboard")
+            toast({
+              title: "Subscription Expired",
+              description: "Your subscription has expired. Please reactivate to continue using this feature.",
+              variant: "destructive",
+            })
+            router.push("/dashboard/subscription")
           }
         },
       }
@@ -205,7 +252,7 @@ export default function PlanAwareButton({
     }
 
     // Plan requirement check
-    if (!meetsRequirement()) {
+    if (!meetsRequirement) {
       // Check if already subscribed to prevent duplicate subscriptions
       if (isAlreadySubscribed && requiredPlan !== "FREE") {
         const alreadySubscribedState = customStates?.alreadySubscribed ?? {}
@@ -258,9 +305,32 @@ export default function PlanAwareButton({
         if (onClick) onClick(e)
       },
     }
-  }
+  }, [
+    isLoading,
+    isLoadingState,
+    loadingLabel,
+    effectiveIsLoggedIn,
+    hasExpiredSubscription,
+    isEnabled,
+    effectiveHasCredits,
+    creditsRequired,
+    creditInfo.remainingCredits,
+    meetsRequirement,
+    isAlreadySubscribed,
+    effectivePlan,
+    requiredPlan,
+    label,
+    onClick,
+    onExpiredSubscription,
+    onInsufficientCredits,
+    onPlanRequired,
+    fallbackHref,
+    customStates,
+    router,
+    toast,
+  ])
 
-  const state = getButtonState()
+  const state = getButtonState
 
   return (
     <TooltipProvider>
