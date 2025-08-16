@@ -663,7 +663,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
        className={cn(
          "relative object-contain w-full h-full bg-black overflow-hidden group",
          state.theaterMode && "theater-mode",
-         state.isMiniPlayer && "fixed bottom-4 right-4 z-50 w-[320px] max-w-[85vw] aspect-video rounded-xl border border-white/10 shadow-lg backdrop-blur-sm",
          className,
        )}
        onMouseEnter={() => setIsHovering(true)}
@@ -720,24 +719,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       </div>
 
-      {/* Mini player fallback if PiP not supported */}
+      {/* Mini player fallback if PiP not supported: small re-mounted player */}
       {state.isMiniPlayer && (
-        <div className="fixed bottom-4 right-4 z-50 w-[320px] max-w-[85vw] aspect-video rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/90 backdrop-blur-sm">
-          <div className="absolute inset-0">
-            {/* Mirror the main player by reusing the same ReactPlayer instance via CSS scaling would be heavy; instead just show a small overlay CTA to return */}
-            <div className="flex h-full w-full items-center justify-center text-white/80 text-sm p-3">
-              <div className="text-center space-y-2">
-                <div>Mini player active</div>
-                <div className="text-xs text-white/60">Use PiP key “P” if supported for system-level floating</div>
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  <Button size="sm" variant="secondary" onClick={() => handlers.handlePictureInPictureToggle()}>
-                    Return to player
-                  </Button>
-                </div>
-              </div>
+        <div className="fixed bottom-4 right-4 z-50 w-[320px] max-w-[85vw] rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/90 backdrop-blur-sm">
+          <div className="relative w-full aspect-video">
+            <ReactPlayer
+              url={youtubeUrl}
+              width="100%"
+              height="100%"
+              playing={state.playing && canPlayVideo}
+              volume={state.volume}
+              muted={state.muted}
+              playbackRate={state.playbackRate}
+              config={{ youtube: { playerVars: { controls: 1, playsinline: 1 } }, attributes: { allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" } } as any}
+            />
+            <div className="absolute top-1 right-1 flex gap-1">
+              <Button size="icon" variant="ghost" className="h-7 w-7 bg-black/40 text-white hover:bg-black/60" onClick={() => handlers.handlePictureInPictureToggle()} aria-label="Return to main player">
+                ×
+              </Button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       {/* Persistent CourseAI Logo */}
       <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 opacity-70 hover:opacity-100 transition-opacity">
