@@ -311,17 +311,26 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     }
   }, [toast])
 
-  // Check PIP support
+  // Check PIP support with better error handling
   useEffect(() => {
     if (typeof document !== "undefined") {
-      setState(prev => ({
-        ...prev,
-        isPiPSupported: 'pictureInPictureEnabled' in document
-      }))
+      try {
+        const isSupported = 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled
+        setState(prev => ({
+          ...prev,
+          isPiPSupported: isSupported
+        }))
+      } catch (error) {
+        console.warn('Failed to check PIP support:', error)
+        setState(prev => ({
+          ...prev,
+          isPiPSupported: false
+        }))
+      }
     }
   }, [])
 
-  // Handle PIP events
+  // Handle PIP events with better performance
   useEffect(() => {
     const handleEnterPiP = () => {
       setState(prev => ({ ...prev, isPictureInPicture: true }))
@@ -341,6 +350,23 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       }
     }
   }, [])
+
+  // Enhanced PIP state management with debouncing
+  const [pipState, setPipState] = useState({
+    isActive: false,
+    lastToggle: 0
+  })
+
+  // Debounced PIP toggle to prevent rapid state changes
+  const debouncedPipToggle = useCallback(() => {
+    const now = Date.now()
+    if (now - pipState.lastToggle < 300) return // Prevent rapid toggles
+    
+    setPipState(prev => ({
+      isActive: !prev.isActive,
+      lastToggle: now
+    }))
+  }, [pipState.lastToggle])
 
   // Keyboard shortcuts handlers
   const handleShowKeyboardShortcuts = useCallback(() => {

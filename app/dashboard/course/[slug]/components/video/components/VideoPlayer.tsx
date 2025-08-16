@@ -98,22 +98,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onVideoLoad,
   onCertificateClick,
   onPlayerReady,
-  height = "100%",
-  width = "100%",
-  className,
-  showControls = true,
-  bookmarks = [],
-  isAuthenticated = false,
-  playerConfig,
-  onChapterComplete,
   onNextVideo,
+  nextVideoId,
   nextVideoTitle,
-  courseName,
-  chapterTitle,
+  onPrevVideo,
+  prevVideoTitle,
+  hasNextVideo,
   theatreMode = false,
   isFullscreen = false,
   onTheaterModeToggle,
-  onPictureInPictureToggle,
+  onPictureInPictureToggle, // Add this prop
+  className,
+  bookmarks = [],
+  isAuthenticated = false,
+  showControls = true,
+  courseId,
+  chapterId,
+  courseName,
+  chapterTitle,
 }) => {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -135,7 +137,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [certificateState, setCertificateState] = useState<CertificateState>("idle")
   const [isMounted, setIsMounted] = useState(false)
   // Mini player position and dragging
-  const [miniPos, setMiniPos] = useState<{ x: number; y: number } | null>(null)
+  const [miniPos, setMiniPos] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mini-player-pos')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          // Ensure the saved position is still valid for current viewport
+          if (parsed.x >= 0 && parsed.y >= 0 && 
+              parsed.x <= window.innerWidth - 320 && 
+              parsed.y <= window.innerHeight - 180) {
+            return parsed
+          }
+        } catch {}
+      }
+      // Default position: bottom-right corner
+      return {
+        x: Math.max(8, window.innerWidth - 328),
+        y: Math.max(8, window.innerHeight - 188)
+      }
+    }
+    return { x: 100, y: 100 }
+  })
   const draggingRef = useRef(false)
   const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 })
 
@@ -146,8 +169,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
+  // Save mini player position
   const saveMiniPos = useCallback((pos: { x: number; y: number }) => {
-    try { localStorage.setItem("mini_player_pos", JSON.stringify(pos)) } catch {}
+    try {
+      localStorage.setItem('mini-player-pos', JSON.stringify(pos))
+    } catch {}
   }, [])
   const clamp = useCallback((val: number, min: number, max: number) => Math.max(min, Math.min(max, val)), [])
   useEffect(() => {
@@ -288,38 +314,46 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [isMounted, containerRef])
 
-  // Handle Picture-in-Picture
+  // Enhanced PIP handling with callback to parent
   const handlePictureInPicture = useCallback(async () => {
-    const videoEl = getVideoElement()
-    // Prefer native PiP on the actual video element when available
-    if (videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled) {
-      try {
+    try {
+      // Prefer native PiP on the actual video element when available
+      if (videoEl && (videoEl as any).requestPictureInPicture && (document as any).pictureInPictureEnabled) {
         if ((document as any).pictureInPictureElement) {
           await (document as any).exitPictureInPicture()
+          // Notify parent component about PIP state change
+          onPictureInPictureToggle?.(false)
         } else {
           await (videoEl as any).requestPictureInPicture()
+          // Notify parent component about PIP state change
+          onPictureInPictureToggle?.(true)
         }
         return
-      } catch (error) {
+      }
+
+      // Fallback to custom handlers
+      if (handlers.handlePictureInPictureToggle) {
+        handlers.handlePictureInPictureToggle()
+        // Notify parent component about PIP state change
+        onPictureInPictureToggle?.(true)
+      } else if (onPictureInPictureToggle) {
+        onPictureInPictureToggle(true)
+      } else {
         toast({
-          title: "PiP Error",
-          description: "Could not toggle Picture‑in‑Picture.",
+          title: "PiP not available",
+          description: "This video provider does not support Picture‑in‑Picture.",
           variant: "destructive",
         })
-        // fall through to handler below
       }
-    }
-
-    // Fallback to handler provided by the hook/parent if available
-    if (handlers.handlePictureInPictureToggle) {
-      handlers.handlePictureInPictureToggle()
-    } else if (onPictureInPictureToggle) {
-      onPictureInPictureToggle()
-    } else {
+    } catch (error) {
+      console.warn('Picture-in-Picture failed:', error)
       toast({
-        title: "PiP not available",
-        description: "This video provider does not support Picture‑in‑Picture.",
+        title: "PiP Error",
+        description: "Could not toggle Picture‑in‑Picture.",
+        variant: "destructive",
       })
+      // Notify parent component about PIP state change on error
+      onPictureInPictureToggle?.(false)
     }
   }, [getVideoElement, handlers.handlePictureInPictureToggle, onPictureInPictureToggle, toast])
 
@@ -814,7 +848,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               config={{ youtube: { playerVars: { controls: 1, playsinline: 1 } }, attributes: { allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" } } as any}
             />
             <div className="absolute top-1 right-1 flex gap-1">
-              <Button size="icon" variant="ghost" className="h-7 w-7 bg-black/40 text-white hover:bg-black/60" onClick={() => handlers.handlePictureInPictureToggle()} aria-label="Return to main player">
+              <Button size="icon" variant="ghost" className="h-7 w-7 bg-black/40 text-white hover:bg-black/60" onClick={() => {
+                handlers.handlePictureInPictureToggle()
+                // Notify parent component about PIP state change
+                onPictureInPictureToggle?.(false)
+              }} aria-label="Return to main player">
                 ×
               </Button>
             </div>
@@ -848,7 +886,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm flex items-center justify-center">
           <div className="px-3 py-2 rounded-md bg-black/60 text-white text-xs sm:text-sm flex items-center gap-3">
             <span>Playing in Picture‑in‑Picture</span>
-            <Button size="sm" variant="secondary" onClick={handlePictureInPicture} aria-label="Return from Picture-in-Picture">
+            <Button size="sm" variant="secondary" onClick={() => {
+              handlePictureInPicture()
+              // Notify parent component about PIP state change
+              onPictureInPictureToggle?.(false)
+            }} aria-label="Return from Picture-in-Picture">
               Return
             </Button>
           </div>

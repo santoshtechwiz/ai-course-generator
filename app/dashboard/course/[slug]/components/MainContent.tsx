@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useProgress } from "@/hooks"
 import { useToast } from "@/components/ui/use-toast"
@@ -52,6 +52,12 @@ function validateChapter(chapter: any): boolean {
   );
 }
 
+// Memoized components for better performance
+const MemoizedVideoNavigationSidebar = React.memo(VideoNavigationSidebar)
+const MemoizedVideoPlayer = React.memo(VideoPlayer)
+const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
+const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
+
 const MainContent: React.FC<ModernCoursePageProps> = ({ 
   course, 
   initialChapterId,
@@ -82,7 +88,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
   const [wideMode, setWideMode] = useState(false)
+  const [isPiPActive, setIsPiPActive] = useState(false) // Add PIP state tracking
   const isOwner = user?.id === course.userId;
+  
+  // Performance optimization: use ref for PIP state to prevent unnecessary re-renders
+  const pipStateRef = useRef(false)
+  
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
@@ -128,7 +139,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         }
       }
     } catch {}
-  }, [])
+  }, [course.id])
 
   // Memoized video playlist
   const videoPlaylist = useMemo(() => {
@@ -416,6 +427,60 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     console.log(`Chapter completed: ${chapterId}`)
   }, [course.id, dispatch, updateProgress, progress])
 
+  // Enhanced PIP handling with wide mode consideration
+  const handlePIPToggle = useCallback((isPiPActive: boolean) => {
+    // Only update state if it actually changed
+    if (pipStateRef.current !== isPiPActive) {
+      pipStateRef.current = isPiPActive
+      setIsPiPActive(isPiPActive)
+      
+      // If PIP is activated and we're in wide mode, ensure video moves to top
+      if (isPiPActive && wideMode) {
+        // Scroll to top smoothly when PIP is activated in wide mode
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        
+        // Add a small delay to ensure smooth transition
+        setTimeout(() => {
+          // Force a reflow to ensure smooth animation
+          document.body.offsetHeight
+        }, 100)
+      }
+    }
+  }, [wideMode])
+
+  // Keyboard shortcuts for PIP and other controls
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle shortcuts when not typing in input fields
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'p':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault()
+            // Toggle PIP if video is playing
+            if (currentVideoId && !isPiPActive) {
+              handlePIPToggle(true)
+            } else if (isPiPActive) {
+              handlePIPToggle(false)
+            }
+          }
+          break
+        case 'escape':
+          if (isPiPActive) {
+            event.preventDefault()
+            handlePIPToggle(false)
+          }
+          break
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [currentVideoId, isPiPActive, handlePIPToggle])
+
   // Ensure CourseID is set when changing videos
   const handleChapterSelect = useCallback(
     (chapter: FullChapterType) => {
@@ -509,7 +574,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     setAutoplayCountdown(0)
   }, [])
 
-  // Course stats
+  // Memoized course stats for better performance
   const courseStats = useMemo(
     () => {
       const totalChapters = videoPlaylist.length
@@ -524,6 +589,97 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     },
     [videoPlaylist.length, progress?.completedChapters],
   )
+
+  // Memoized sidebar props to prevent unnecessary re-renders
+  const sidebarProps = useMemo(() => ({
+    course,
+    currentChapter,
+    courseId: course.id.toString(),
+    onChapterSelect: handleChapterSelect,
+    progress,
+    isAuthenticated: !!user,
+    isSubscribed: !!userSubscription,
+    completedChapters,
+    formatDuration,
+    nextVideoId: undefined,
+    currentVideoId: currentVideoId || '',
+    isPlaying: Boolean(currentVideoId),
+    courseStats: {
+      completedCount: progress?.completedChapters?.length || 0,
+      totalChapters: videoPlaylist.length,
+      progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+    }
+  }), [
+    course,
+    currentChapter,
+    handleChapterSelect,
+    progress,
+    user,
+    userSubscription,
+    completedChapters,
+    formatDuration,
+    currentVideoId,
+    videoPlaylist.length
+  ])
+
+  // Memoized video player props
+  const videoPlayerProps = useMemo(() => ({
+    videoId: currentVideoId,
+    courseId: course.id,
+    chapterId: currentChapter?.id ? String(currentChapter.id) : undefined,
+    courseName: course.title,
+    onEnded: handleVideoEnd,
+    onProgress: handleVideoProgress,
+    onVideoLoad: handleVideoLoad,
+    onPlayerReady: handlePlayerReady,
+    onBookmark: handleSeekToBookmark,
+    bookmarks: bookmarkItems,
+    isAuthenticated: !!user,
+    autoPlay: false,
+    showControls: true,
+    onCertificateClick: handleCertificateClick,
+    onChapterComplete: handleChapterComplete,
+    onNextVideo: undefined,
+    nextVideoId: undefined,
+    nextVideoTitle: '',
+    onPrevVideo: undefined,
+    prevVideoTitle: '',
+    hasNextVideo: false,
+    theatreMode,
+    isFullscreen,
+    onTheaterModeToggle,
+    onPictureInPictureToggle: handlePIPToggle,
+    className: "h-full w-full"
+  }), [
+    currentVideoId,
+    course.id,
+    currentChapter?.id,
+    course.title,
+    handleVideoEnd,
+    handleVideoProgress,
+    handleVideoLoad,
+    handlePlayerReady,
+    handleSeekToBookmark,
+    bookmarkItems,
+    user,
+    handleCertificateClick,
+    handleChapterComplete,
+    theatreMode,
+    isFullscreen,
+    onTheaterModeToggle,
+    handlePIPToggle
+  ])
+
+  // Memoized wide mode toggle handler for better performance
+  const handleWideModeToggle = useCallback(() => {
+    setWideMode((v) => {
+      const next = !v
+      try { 
+        localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) 
+      } catch {}
+      return next
+    })
+  }, [course.id])
 
   // Create content for auth prompt here instead of doing an early return
   const authPromptContent = (
@@ -553,6 +709,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       </Card>
     </div>
   )
+  
   // Determine access levels based on subscription
   const accessLevels: AccessLevels = useMemo(() => {
     return {
@@ -562,6 +719,28 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [userSubscription, user])
 
+  // Memoized grid layout classes for better performance
+  const gridLayoutClasses = useMemo(() => {
+    if (isPiPActive) {
+      // When PIP is active, use single column layout to move video to top
+      return "grid-cols-1"
+    }
+    
+    if (twoCol) {
+      return "md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]"
+    }
+    
+    return "grid-cols-1"
+  }, [twoCol, isPiPActive])
+
+  // Enhanced grid container with smooth transitions
+  const gridContainerClasses = useMemo(() => {
+    return cn(
+      "grid gap-4 transition-all duration-300 ease-in-out",
+      gridLayoutClasses
+    )
+  }, [gridLayoutClasses])
+
   // Regular content
   const regularContent = (
     <div className="min-h-screen bg-background">
@@ -570,22 +749,33 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                  {/* Main content */}        <main className="flex-1 min-w-0">
              {/* Top toolbar: width toggle and keys hint */}
              <div className="mx-auto py-3 px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
-               <Button
-                 variant="outline"
-                 size="sm"
-                 onClick={() => {
-                   setWideMode((v) => {
-                     const next = !v
-                     try { localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) } catch {}
-                     return next
-                   })
-                 }}
-                 className="gap-2"
-               >
-                 {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                 {wideMode ? "Normal width" : "Wider video"}
-               </Button>
-               <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
+               <div className="flex items-center gap-3">
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={handleWideModeToggle}
+                   className="gap-2"
+                 >
+                   {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                   {wideMode ? "Normal width" : "Wider video"}
+                 </Button>
+                 
+                 {/* PIP Status Indicator */}
+                 {isPiPActive && (
+                   <motion.div
+                     initial={{ opacity: 0, scale: 0.8 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary text-xs rounded-md border border-primary/20"
+                   >
+                     <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                     PIP Active
+                   </motion.div>
+                 )}
+               </div>
+               
+               <span className="ml-2 hidden md:inline text-xs text-muted-foreground">
+                 Keys: T Theater • F Fullscreen • B Bookmark • Ctrl+P PIP • Esc Exit PIP
+               </span>
              </div>
              <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
 
@@ -604,76 +794,48 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             )}
 
             {/* Video player section */}
-            <div className={cn("grid gap-4", twoCol ? "md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]" : "grid-cols-1")}> 
-              {/* Left column: Playlist (desktop) */}
-              <div className="hidden md:block">
-                <div className="sticky top-4">
-                  <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                    <VideoNavigationSidebar
-                      course={course}
-                      currentChapter={currentChapter}
-                      courseId={course.id.toString()}
-                      onChapterSelect={handleChapterSelect}
-                      progress={progress}
-                      isAuthenticated={!!user}
-                      isSubscribed={!!userSubscription}
-                      completedChapters={completedChapters}
-                      formatDuration={formatDuration}
-                      nextVideoId={undefined}
-                      currentVideoId={currentVideoId || ''}
-                      isPlaying={Boolean(currentVideoId)}
-                      courseStats={{
-                        completedCount: progress?.completedChapters?.length || 0,
-                        totalChapters: videoPlaylist.length,
-                        progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
+            <div className={gridContainerClasses}> 
+              {/* Left column: Playlist (desktop) - hide when PIP is active */}
+              <AnimatePresence mode="wait">
+                {!isPiPActive && (
+                  <motion.div 
+                    key="sidebar"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="hidden md:block"
+                  >
+                    <div className="sticky top-4">
+                      <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                        <MemoizedVideoNavigationSidebar {...sidebarProps} />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Right column: Video and tabs */}
-              <div className="min-w-0">
+              <motion.div 
+                key="video-content"
+                layout
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="min-w-0"
+              >
  
                 {/* Video player */}
                 <div className="w-full">
                  <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
                     {currentVideoId ? (
                       <>
-                        <VideoPlayer
-                         videoId={currentVideoId}
-                         courseId={course.id}
-                         chapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
-                         courseName={course.title}
-                         onEnded={handleVideoEnd}
-                         onProgress={handleVideoProgress}
-                         onVideoLoad={handleVideoLoad}
-                         onPlayerReady={handlePlayerReady}
-                         onBookmark={handleSeekToBookmark}
-                         bookmarks={bookmarkItems}
-                         isAuthenticated={!!user}
-                         autoPlay={false}
-                         showControls={true}
-                         onCertificateClick={handleCertificateClick}
-                         onChapterComplete={handleChapterComplete}
-                                                  onNextVideo={undefined}
-                          nextVideoId={undefined}
-                          nextVideoTitle={''}
-                          onPrevVideo={undefined}
-                          prevVideoTitle={''}
-                          hasNextVideo={false}
-                          theatreMode={theatreMode}
-                         isFullscreen={isFullscreen}
-                         onTheaterModeToggle={onTheaterModeToggle}
-                         className="h-full w-full"
-                       />
-                       {/* CourseAI Logo Overlay */}
-                       <AnimatedCourseAILogo
-                         show={showLogoOverlay}
-                         videoEnding={videoEnding}
-                         onAnimationComplete={() => setShowLogoOverlay(false)}
-                       />
-                                           </>
+                        <MemoizedVideoPlayer {...videoPlayerProps} />
+                        {/* CourseAI Logo Overlay */}
+                        <MemoizedAnimatedCourseAILogo
+                          show={showLogoOverlay}
+                          videoEnding={videoEnding}
+                          onAnimationComplete={() => setShowLogoOverlay(false)}
+                        />
+                      </>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full">
                         <div className="text-center text-white p-4">
@@ -688,7 +850,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
  
                 {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
                 <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4">
-                  <CourseDetailsTabs
+                  <MemoizedCourseDetailsTabs
                     course={course}
                     currentChapter={currentChapter}
                     accessLevels={accessLevels}
@@ -696,7 +858,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   />
                 </div>
  
-              </div>
+              </motion.div>
             </div>
 
             {false && (
@@ -733,25 +895,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                  {/* Sidebar responsive tweaks */}
           {false && (
             <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
-              <VideoNavigationSidebar
-                course={course}
-                currentChapter={currentChapter}
-                courseId={course.id.toString()}
-                onChapterSelect={handleChapterSelect}
-                progress={progress}
-                isAuthenticated={!!user}
-                isSubscribed={!!userSubscription}
-                completedChapters={completedChapters}
-                formatDuration={formatDuration}
-                nextVideoId={undefined}
-                currentVideoId={currentVideoId || ''}
-                isPlaying={Boolean(currentVideoId)}
-                courseStats={{
-                  completedCount: progress?.completedChapters?.length || 0,
-                  totalChapters: videoPlaylist.length,
-                  progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-                }}
-              />
+              <MemoizedVideoNavigationSidebar {...sidebarProps} />
             </aside>
           )}
        </div>
@@ -859,4 +1003,4 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   )
 }
 
-export default MainContent
+export default React.memo(MainContent)

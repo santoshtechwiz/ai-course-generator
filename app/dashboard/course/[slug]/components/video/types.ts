@@ -132,6 +132,7 @@ export interface PlayerControlsProps {
   prevVideoTitle?: string
   onIsDragging?: (isDragging: boolean) => void
   onPictureInPicture?: () => void
+  onPictureInPictureToggle?: (isPiPActive: boolean) => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
 }
