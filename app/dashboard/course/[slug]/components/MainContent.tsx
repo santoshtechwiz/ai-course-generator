@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import CertificateGenerator from "./CertificateGenerator"
 import RecommendedSection from "@/components/shared/RecommendedSection"
+import type { BookmarkData } from "./video/types"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -85,12 +86,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
-  const twoCol = useMemo(() => !wideMode && !theatreMode && !isFullscreen, [wideMode, theatreMode, isFullscreen])
+  const twoCol = useMemo(() => !theatreMode && !isFullscreen, [theatreMode, isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
   const bookmarks = useMemo(() => {
     return getVideoBookmarks(currentVideoId)
   }, [currentVideoId])
+
+  // Adapt raw bookmark times to BookmarkData objects expected by VideoPlayer/BookmarkManager
+  const bookmarkItems: BookmarkData[] = useMemo(() => {
+    if (!currentVideoId) return []
+    return (bookmarks || []).map((time, idx) => ({
+      id: `${currentVideoId}-${time}-${idx}`,
+      videoId: currentVideoId,
+      time,
+      title: `Bookmark ${formatDuration(time)}`,
+      createdAt: new Date().toISOString(),
+      description: undefined,
+    }))
+  }, [bookmarks, currentVideoId])
 
   // Fix: Initialize completedChapters safely so it's always defined
   // Use courseProgress.completedChapters if available, otherwise empty array
@@ -590,7 +604,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             )}
 
             {/* Video player section */}
-            <div className={cn(twoCol ? "lg:grid lg:grid-cols-[2fr_1.2fr] lg:gap-6" : "space-y-4")}> 
+            <div className={cn("grid gap-4", twoCol ? "lg:grid-cols-[2fr_1.2fr]" : "grid-cols-1")}> 
               <div className="min-w-0">
  
                 {/* Video player */}
@@ -608,7 +622,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                          onVideoLoad={handleVideoLoad}
                          onPlayerReady={handlePlayerReady}
                          onBookmark={handleSeekToBookmark}
-                         bookmarks={[]}
+                         bookmarks={bookmarkItems}
                          isAuthenticated={!!user}
                          autoPlay={false}
                          showControls={true}
@@ -677,7 +691,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                     }}
                   />
                 </div>
-                <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                <div className="hidden lg:block rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
                   <CourseDetailsTabs
                     course={course}
                     currentChapter={currentChapter}
@@ -749,7 +763,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         </main>
         {/* Sticky mobile Next Lesson CTA removed per request */}
                  {/* Sidebar responsive tweaks */}
-         {!wideMode && !twoCol && (
+         {false && (
            <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
              <VideoNavigationSidebar
                course={course}
