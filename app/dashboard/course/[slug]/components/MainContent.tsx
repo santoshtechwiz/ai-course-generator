@@ -180,6 +180,207 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [isFullscreen, handleFullscreenToggle])
 
+  // Video and chapter handling functions
+  const handleVideoLoad = useCallback((metadata: any) => {
+    console.log('Video loaded:', metadata)
+    setIsVideoLoading(false)
+  }, [])
+
+  const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
+    setPlayerRef(player)
+    setIsVideoLoading(false)
+  }, [])
+
+  const handleSeekToBookmark = useCallback((time: number) => {
+    if (playerRef?.current) {
+      try {
+        playerRef.current.seekTo(time)
+      } catch (error) {
+        console.error('Error seeking to bookmark:', error)
+      }
+    }
+  }, [playerRef])
+
+  const handleVideoProgress = useCallback((state: { played: number; loaded: number; playedSeconds: number }) => {
+    // Update progress in Zustand store
+    if (currentVideoId && state.playedSeconds > 0) {
+      videoStateStore.getState().updateProgress(currentVideoId, state.playedSeconds)
+    }
+  }, [currentVideoId])
+
+  const handleVideoEnd = useCallback(() => {
+    setVideoEnding(true)
+    
+    // Check if auto-play mode is enabled
+    if (autoplayMode) {
+      // Show chapter transition overlay with countdown
+      setShowChapterTransition(true)
+      setAutoplayCountdown(5)
+      
+      // Start countdown
+      const countdownInterval = setInterval(() => {
+        setAutoplayCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval)
+            // Auto-advance to next chapter
+            handleNextVideo()
+            return 5
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } else {
+      // Show manual auto-play prompt
+      setShowAutoplayOverlay(true)
+    }
+    
+    // Show certificate option
+    setTimeout(() => {
+      setShowCertificate(true)
+    }, 1000)
+  }, [autoplayMode])
+
+  const handleChapterComplete = useCallback((chapterId: string) => {
+    if (!chapterId) return
+    
+    // Update progress in Redux
+    const progress = courseProgress || { completedChapters: [], lastAccessedAt: new Date().toISOString() }
+    
+    // Add to completed chapters if not already there
+    if (!progress.completedChapters?.includes(Number(chapterId))) {
+      updateProgress({
+        completedChapters: [...(progress.completedChapters || []), Number(chapterId)],
+        lastAccessedAt: new Date().toISOString(),
+      })
+    } else {
+      // Just update last accessed time
+      updateProgress({
+        lastAccessedAt: new Date().toISOString(),
+      })
+    }
+
+    console.log(`Chapter completed: ${chapterId}`)
+  }, [course.id, dispatch, updateProgress, progress])
+
+  const handleChapterSelect = useCallback((chapter: FullChapterType) => {
+    // Create a safe chapter object with properly formatted ID
+    let safeChapter;
+    try {
+      if (!chapter) {
+        throw new Error("No chapter provided");
+      }
+
+      safeChapter = {
+        ...chapter,
+        id: String(chapter.id), // Convert ID to string to ensure consistency
+      };
+      
+      // First, check if the chapter actually exists and is valid
+      if (!validateChapter(safeChapter)) {
+        console.error("Invalid chapter selected:", safeChapter);
+        toast({
+          title: "Error",
+          description: "Invalid chapter selected. Please try another chapter.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if user can play the selected video (free chapter or subscribed)
+      const allowed = Boolean(safeChapter.isFree || userSubscription)
+      if (!allowed) {
+        setShowAuthPrompt(true);
+        return;
+      }
+
+      // Check if the chapter has a videoId - this is critical
+      if (!safeChapter.videoId) {
+        console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`);
+        toast({
+          title: "Video Unavailable",
+          description: "This chapter doesn't have a video available.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update Redux state
+      dispatch(setCurrentVideoApi(safeChapter.videoId));
+
+      // Update Zustand store with both videoId and courseId
+      videoStateStore.getState().setCurrentVideo(safeChapter.videoId, course.id);
+
+      // Close mobile playlist if open
+      setMobilePlaylistOpen(false)
+
+      // Show success feedback
+      toast({
+        title: "Chapter Selected",
+        description: `Now playing: ${safeChapter.title}`,
+      })
+    } catch (error) {
+      console.error("Error selecting chapter:", error);
+      toast({
+        title: "Error",
+        description: "Failed to select chapter. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [course.id, userSubscription, dispatch, toast])
+
+  const handleNextVideo = useCallback(() => {
+    if (!currentVideoId) return
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex === -1 || currentIndex >= videoPlaylist.length - 1) return
+    
+    const nextItem = videoPlaylist[currentIndex + 1]
+    if (nextItem) {
+      handleChapterSelect(nextItem.chapter)
+    }
+  }, [currentVideoId, videoPlaylist, handleChapterSelect])
+
+  const handlePrevVideo = useCallback(() => {
+    if (!currentVideoId) return
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex <= 0) return
+    
+    const prevItem = videoPlaylist[currentIndex - 1]
+    if (prevItem) {
+      handleChapterSelect(prevItem.chapter)
+    }
+  }, [currentVideoId, videoPlaylist, handleChapterSelect])
+
+  const handleCancelAutoplay = useCallback(() => {
+    setShowChapterTransition(false)
+    setShowAutoplayOverlay(false)
+    setNextChapterInfo(null)
+    setAutoplayCountdown(5)
+  }, [])
+
+  const handleCertificateClick = useCallback(() => {
+    setShowCertificate(true)
+  }, [])
+
+  const handleWideModeToggle = useCallback(() => {
+    const newWideMode = !wideMode
+    setWideMode(newWideMode)
+    
+    // Save preference to localStorage
+    try {
+      localStorage.setItem(`wide_mode_course_${course.id}`, String(newWideMode))
+    } catch {}
+    
+    // Show feedback toast
+    toast({
+      title: newWideMode ? "Wide Mode Enabled" : "Wide Mode Disabled",
+      description: newWideMode 
+        ? "Video player now uses full width" 
+        : "Video player now uses standard width",
+    })
+  }, [wideMode, course.id, toast])
+
   // Listen for fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -484,251 +685,28 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [progress, resumePromptShown, currentVideoId, videoPlaylist, dispatch, toast, user])
 
-  // Update the handleVideoLoad callback to properly mark loading as complete
-  const handleVideoLoad = useCallback(
-    (metadata: { duration: number; title: string }) => {
-      // Store the duration for the current video
-      setVideoDurations((prev) => ({
-        ...prev, 
-        [currentVideoId || ""]: metadata.duration
-      }))
-      
-      // Make sure loading state is updated
-      setIsVideoLoading(false)
-    },
-    [currentVideoId],
-  )
-
-  // Also update the handlePlayerReady function
-  const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
-    setPlayerRef(player)
-    // Ensure loading is completed
-    setIsVideoLoading(false)
-  }, [])
-
-  const handleSeekToBookmark = useCallback(
-    (time: number, title?: string) => {
-      if (playerRef?.current) {
-        playerRef.current.seekTo(time);
-        if (title) {
-          toast({
-            title: "Seeking to Bookmark",
-            description: `Jumping to "${title}" at ${formatDuration(time)}`
-          });
-        }
-      }
-    },
-    [playerRef, toast, formatDuration],
-  )
-
-  // Update progress with string date
-  const handleVideoProgress = useCallback(
-    (progressState: { played: number; playedSeconds: number }) => {
-      // Show logo animation when video is about to end (last 10-15 seconds)
-      if (progressState.playedSeconds > 0 && currentChapter) {
-        const videoDuration = currentVideoId ? videoDurations[currentVideoId] || 300 : 300
-        const timeRemaining = videoDuration - progressState.playedSeconds
-
-        // Show CourseAI logo overlay in last 10 seconds
-        if (timeRemaining <= 10 && timeRemaining > 0 && !videoEnding) {
-          setVideoEnding(true)
-          setShowLogoOverlay(true)
-        }
-
-        // Reset for next video
-        if (timeRemaining > 10 && videoEnding) {
-          setVideoEnding(false)
-          setShowLogoOverlay(false)
-        }
-      }
-
-      // Update progress periodically
-      if (currentChapter && progressState.played > 0.1) {
-        updateProgress({
-          // currentChapterId: String(currentChapter.id), // Remove invalid property
-          progress: progressState.played,
-          lastAccessedAt: new Date().toISOString(),
-        });
-      }
-    },
-    [currentChapter, videoEnding, updateProgress, videoDurations, currentVideoId],
-  )
-
-  // Video event handlers
-  const handleVideoEnd = useCallback(() => {
-    if (currentChapter) {
-      // Mark chapter as completed
-      dispatch(markChapterAsCompleted({ courseId: Number(course.id), chapterId: Number(currentChapter.id) }))
-
-      // Update progress
-      updateProgress({
-        // completedChapters: [...(progress?.completedChapters || []), Number(currentChapter.id)], // Remove invalid property
-        isCompleted: isLastVideo,
-        lastAccessedAt: new Date().toISOString(),
-      })
-
-      // Mark free video as played if not authenticated
-      if (!user && !hasPlayedFreeVideo) {
-        // keep legacy preference but not relied upon for gating anymore
-        migratedStorage.setPreference("played_free_video", true)
-        setHasPlayedFreeVideo(true)
-      }
-
-      if (isLastVideo) {
-        setShowCertificate(true)
-      } else if (nextChapter && autoplayMode) {
-        // Show chapter transition overlay with countdown
-        setNextChapterInfo({
-          title: nextChapter.chapter.title,
-          description: nextChapter.chapter.description,
-          duration: nextChapter.chapter.duration,
-        })
-        setShowChapterTransition(true)
-        setAutoplayCountdown(5)
-        
-        // Start countdown timer
-        const countdownInterval = setInterval(() => {
-          setAutoplayCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(countdownInterval)
-              // Auto-advance to next chapter
-              handleChapterSelect(nextChapter.chapter)
-              setShowChapterTransition(false)
-              setNextChapterInfo(null)
-              return 5
-            }
-            return prev - 1
-          })
-        }, 1000)
-      } else if (nextChapter && !autoplayMode) {
-        // Show manual autoplay prompt
-        setNextChapterInfo({
-          title: nextChapter.chapter.title,
-          description: nextChapter.chapter.description,
-          duration: nextChapter.chapter.duration,
-        })
-        setShowAutoplayOverlay(true)
-        setAutoplayCountdown(5)
-      }
-    }
-  }, [
-    currentChapter,
-    dispatch,
-    course.id,
-    updateProgress,
-    progress,
-    isLastVideo,
-    nextChapter,
-    user,
-    hasPlayedFreeVideo,
-    autoplayMode,
-    handleChapterSelect,
-  ])
-
-  // Add handleChapterComplete function
-  const handleChapterComplete = useCallback((chapterId: string) => {
-    if (!chapterId) return
-
-    // Mark chapter as completed in Redux store
-    dispatch(markChapterAsCompleted({ courseId: Number(course.id), chapterId: Number(chapterId) }))
-
-    // Update progress
-    updateProgress({
-      // completedChapters: [...(progress?.completedChapters || []), Number(chapterId)], // Remove invalid property
-      lastAccessedAt: new Date().toISOString(),
-    })
-
-    console.log(`Chapter completed: ${chapterId}`)
-  }, [course.id, dispatch, updateProgress, progress])
 
 
 
-  // Ensure CourseID is set when changing videos
-  const handleChapterSelect = useCallback(
-    (chapter: FullChapterType) => {
-      // Create a safe chapter object with properly formatted ID
-      let safeChapter;
-      try {
-        if (!chapter) {
-          throw new Error("No chapter provided");
-        }
 
-        safeChapter = {
-          ...chapter,
-          id: String(chapter.id), // Convert ID to string to ensure consistency
-        };
-        
-        // First, check if the chapter actually exists and is valid
-        if (!validateChapter(safeChapter)) {
-          console.error("Invalid chapter selected:", safeChapter);
-          toast({
-            title: "Error",
-            description: "Invalid chapter selected. Please try another chapter.",
-            variant: "destructive",
-          });
-          return;
-        }
 
-        // Check if user can play the selected video (free chapter or subscribed)
-        const allowed = Boolean(safeChapter.isFree || userSubscription)
-        if (!allowed) {
-          setShowAuthPrompt(true);
-          return;
-        }
 
-        // Check if the chapter has a videoId - this is critical
-        if (!safeChapter.videoId) {
-          console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`);
-          toast({
-            title: "Video Unavailable",
-            description: "This chapter doesn't have a video available.",
-            variant: "destructive",
-          });
-          return;
-        }
 
-        // Update Redux state
-        dispatch(setCurrentVideoApi(safeChapter.videoId));
 
-        // Update Zustand store with both videoId and courseId
-        videoStateStore.getState().setCurrentVideo(safeChapter.videoId, course.id);
 
-        console.log(`[MainContent] Selected chapter: ${safeChapter.title}, videoId: ${safeChapter.videoId}, id: ${safeChapter.id}`);
 
-        setSidebarOpen(false);
-        setVideoEnding(false);
-        setShowLogoOverlay(false);
-        setIsVideoLoading(true);
-      } catch (error) {
-        console.error("Error selecting chapter:", error);
-        toast({
-          title: "Error",
-          description: "There was a problem selecting this chapter. Please try again.",
-          variant: "destructive",
-        });
-      }
-    },
-    [dispatch, canPlayVideo, course.id, videoStateStore, toast]
-  )
 
-  const handleNextVideo = useCallback(() => {
-    /* Next navigation removed per request */
-  }, [])
 
-  const handlePrevVideo = useCallback(() => {
-    /* Prev navigation removed per request */
-  }, [])
 
-  // Cancel autoplay
-  const handleCancelAutoplay = useCallback(() => {
-    setShowAutoplayOverlay(false)
-    setAutoplayCountdown(0)
-  }, [])
 
-  // Certificate handler
-  const handleCertificateClick = useCallback(() => {
-    setShowCertificate(true)
-  }, [])
+
+
+
+
+
+
+
+
 
   // Autoplay logic removed per request
   useEffect(() => {
@@ -830,16 +808,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     handlePIPToggle
   ])
 
-  // Memoized wide mode toggle handler for better performance
-  const handleWideModeToggle = useCallback(() => {
-    setWideMode((v) => {
-      const next = !v
-      try { 
-        localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) 
-      } catch {}
-      return next
-    })
-  }, [course.id])
+
 
   // Create content for auth prompt here instead of doing an early return
   const authPromptContent = (
