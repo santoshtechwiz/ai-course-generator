@@ -85,6 +85,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
+  const twoCol = useMemo(() => !wideMode && !theatreMode && !isFullscreen, [wideMode, theatreMode, isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
   const bookmarks = useMemo(() => {
@@ -570,127 +571,141 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             )}
 
             {/* Video player section */}
-            <div className="space-y-4">
-              {/* Toolbar */}
-              <div className="flex items-center justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setWideMode((v) => {
-                      const next = !v
-                      try { localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) } catch {}
-                      return next
-                    })
-                  }}
-                  className="gap-2"
-                >
-                  {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                  {wideMode ? "Normal width" : "Wider video"}
-                </Button>
-                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
-              </div>
-
-                             {/* Video player */}
-               <div className="w-full">
-                 <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-border shadow-sm">
-                   {currentVideoId ? (
-                     <>
-                       <VideoPlayer
-                        videoId={currentVideoId}
-                        courseId={course.id}
-                        chapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
-                        courseName={course.title}
-                        onEnded={handleVideoEnd}
-                        onProgress={handleVideoProgress}
-                        onVideoLoad={handleVideoLoad}
-                        onPlayerReady={handlePlayerReady}
-                        onBookmark={handleSeekToBookmark}
-                        bookmarks={[]}
-                        isAuthenticated={!!user}
-                        autoPlay={false}
-                        showControls={true}
-                        onCertificateClick={handleCertificateClick}
-                        onChapterComplete={handleChapterComplete}
-                                                 onNextVideo={undefined}
-                         nextVideoId={undefined}
-                         nextVideoTitle={''}
-                         onPrevVideo={undefined}
-                         prevVideoTitle={''}
-                         hasNextVideo={false}
-                         theatreMode={theatreMode}
-                        isFullscreen={isFullscreen}
-                        onTheaterModeToggle={onTheaterModeToggle}
-                        className="h-full w-full"
-                      />
-                      {/* CourseAI Logo Overlay */}
-                      <AnimatedCourseAILogo
-                        show={showLogoOverlay}
-                        videoEnding={videoEnding}
-                        onAnimationComplete={() => setShowLogoOverlay(false)}
-                      />
-                                          </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <div className="text-center text-white p-4">
-                        <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                        <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
-                        <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
-                      </div>
-                    </div>
-                  )}
+            <div className={cn(twoCol ? "lg:grid lg:grid-cols-[2fr_1.2fr] lg:gap-6" : "space-y-4")}> 
+              <div className="min-w-0">
+                {/* Toolbar */}
+                <div className="flex items-center justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setWideMode((v) => {
+                        const next = !v
+                        try { localStorage.setItem(`wide_mode_course_${course.id}`, String(next)) } catch {}
+                        return next
+                      })
+                    }}
+                    className="gap-2"
+                  >
+                    {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    {wideMode ? "Normal width" : "Wider video"}
+                  </Button>
+                  <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
                 </div>
-              </div>
-
-                             {/* Chapter description and rating */}
-               {currentChapter?.description && (
-                 <div className="rounded-xl border bg-card p-4 sm:p-5 lg:p-6 shadow-sm">
-                   <h3 className="text-base sm:text-lg font-semibold mb-3">About this lesson</h3>
-                   <div className="prose prose-sm max-w-none text-foreground/90">
-                     <MarkdownRenderer content={currentChapter.description} />
-                   </div>
-                   <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                     <span className="text-sm text-muted-foreground">Rate this lesson</span>
-                     <Rating
-                       value={0}
-                       onValueChange={() => {}}
-                       className="scale-110"
-                     />
-                   </div>
-                 </div>
+ 
+                {/* Video player */}
+                <div className="w-full">
+                 <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
+                    {currentVideoId ? (
+                      <>
+                        <VideoPlayer
+                         videoId={currentVideoId}
+                         courseId={course.id}
+                         chapterId={currentChapter?.id ? String(currentChapter.id) : undefined}
+                         courseName={course.title}
+                         onEnded={handleVideoEnd}
+                         onProgress={handleVideoProgress}
+                         onVideoLoad={handleVideoLoad}
+                         onPlayerReady={handlePlayerReady}
+                         onBookmark={handleSeekToBookmark}
+                         bookmarks={[]}
+                         isAuthenticated={!!user}
+                         autoPlay={false}
+                         showControls={true}
+                         onCertificateClick={handleCertificateClick}
+                         onChapterComplete={handleChapterComplete}
+                                                  onNextVideo={undefined}
+                          nextVideoId={undefined}
+                          nextVideoTitle={''}
+                          onPrevVideo={undefined}
+                          prevVideoTitle={''}
+                          hasNextVideo={false}
+                          theatreMode={theatreMode}
+                         isFullscreen={isFullscreen}
+                         onTheaterModeToggle={onTheaterModeToggle}
+                         className="h-full w-full"
+                       />
+                       {/* CourseAI Logo Overlay */}
+                       <AnimatedCourseAILogo
+                         show={showLogoOverlay}
+                         videoEnding={videoEnding}
+                         onAnimationComplete={() => setShowLogoOverlay(false)}
+                       />
+                                           </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <div className="text-center text-white p-4">
+                          <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                          <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
+                          <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+ 
+                {/* Chapter description and rating */}
+                {currentChapter?.description && (
+                 <div className="rounded-xl border border-primary/10 bg-card/80 ai-glass dark:ai-glass-dark p-4 sm:p-5 lg:p-6 shadow-sm lg:col-start-1">
+                    <h3 className="text-base sm:text-lg font-semibold mb-3">About this lesson</h3>
+                    <div className="prose prose-sm max-w-none text-foreground/90">
+                      <MarkdownRenderer content={currentChapter.description} />
+                    </div>
+                    <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                      <span className="text-sm text-muted-foreground">Rate this lesson</span>
+                      <Rating
+                        value={0}
+                        onValueChange={() => {}}
+                        className="scale-110"
+                      />
+                    </div>
+                  </div>
                )}
-
-              {/* Chapter navigation */}
-              <div className="flex items-center justify-center">
-                <div className="text-center">
-                  {currentChapter && (
-                    <div>
-                      <h2 className="text-xl font-semibold mb-1">{currentChapter.title}</h2>
-                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{isVideoLoading ? "Loading..." : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
-                        {currentChapter.isFree ? (
-                          <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">Free</span>
-                        ) : (
-                          <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">Locked</span>
-                        )}
-                        {!user && !hasPlayedFreeVideo && (
-                          <span className="px-2 py-1 rounded border border-green-600 text-green-600 text-xs">Preview</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
+ 
+               {/* Course tabs - large screens */}
+              <div className="hidden lg:block lg:col-start-2 lg:row-start-1">
+                <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                  <CourseDetailsTabs
+                    course={course}
+                    currentChapter={currentChapter}
+                    accessLevels={accessLevels}
+                    onSeekToBookmark={handleSeekToBookmark}
+                  />
                 </div>
               </div>
-                             {/* Course tabs */}
-               <div className="rounded-xl border bg-card/50">
-                 <CourseDetailsTabs
-                   course={course}
-                   currentChapter={currentChapter}
-                   accessLevels={accessLevels}
-                   onSeekToBookmark={handleSeekToBookmark}
-                 />
+            </div>
+
+            {/* Course tabs - mobile/tablet flow */}
+              {/* Chapter navigation */}
+               <div className="flex items-center justify-center">
+                 <div className="text-center">
+                   {currentChapter && (
+                     <div>
+                       <h2 className="text-xl font-semibold mb-1">{currentChapter.title}</h2>
+                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                         <Clock className="h-4 w-4" />
+                         <span>{isVideoLoading ? "Loading..." : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
+                         {currentChapter.isFree ? (
+                           <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">Free</span>
+                         ) : (
+                           <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">Locked</span>
+                         )}
+                         {!user && !hasPlayedFreeVideo && (
+                           <span className="px-2 py-1 rounded border border-green-600 text-green-600 text-xs">Preview</span>
+                         )}
+                       </div>
+                     </div>
+                   )}
+                 </div>
                </div>
+              <div className="rounded-xl border bg-card/50 lg:hidden">
+                <CourseDetailsTabs
+                  course={course}
+                  currentChapter={currentChapter}
+                  accessLevels={accessLevels}
+                  onSeekToBookmark={handleSeekToBookmark}
+                />
+              </div>
 
               {/* Related courses recommendation */}
               {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
@@ -721,7 +736,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         </main>
         {/* Sticky mobile Next Lesson CTA removed per request */}
                  {/* Sidebar responsive tweaks */}
-         {!wideMode && (
+         {!wideMode && !twoCol && (
            <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
              <VideoNavigationSidebar
                course={course}
