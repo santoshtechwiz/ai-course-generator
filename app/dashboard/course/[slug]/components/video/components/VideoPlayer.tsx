@@ -20,7 +20,7 @@ import type { VideoPlayerProps } from "../types"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
-import CreateContentPromo from "@/components/growth/CreateContentPromo"
+// Removed in-player growth promo; we will show CTAs outside the player
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -719,7 +719,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           url={youtubeUrl}
           width="100%"
           height="100%"
-          playing={state.playing && canPlayVideo}
+          playing={state.playing && canPlayVideo && !state.isMiniPlayer}
           volume={state.volume}
           muted={state.muted}
           playbackRate={state.playbackRate}
@@ -843,14 +843,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       )}
 
+      {/* Overlay when native PiP is active to avoid double-visual confusion */}
+      {state.isPictureInPicture && !state.isMiniPlayer && (
+        <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+          <div className="px-3 py-2 rounded-md bg-black/60 text-white text-xs sm:text-sm flex items-center gap-3">
+            <span>Playing in Picture‑in‑Picture</span>
+            <Button size="sm" variant="secondary" onClick={handlePictureInPicture} aria-label="Return from Picture-in-Picture">
+              Return
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Play button overlay when paused */}
-      {!state.playing && playerReady && canPlayVideo && !showChapterStart && !showChapterEnd && (
+      {!state.playing && playerReady && canPlayVideo && !showChapterStart && !showChapterEnd && !state.isMiniPlayer && (
         <PlayButton onClick={handlePlayClick} />
       )}
 
       {/* Chapter Start Overlay */}
       <ChapterStartOverlay
-        visible={showChapterStart}
+        visible={showChapterStart && !state.isMiniPlayer}
         chapterTitle={chapterTitleRef.current}
         courseTitle={courseName}
         onComplete={handleChapterStartComplete}
@@ -860,7 +872,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Chapter End Overlay */}
       <ChapterEndOverlay
-        visible={showChapterEnd}
+        visible={showChapterEnd && !state.isMiniPlayer}
         chapterTitle={chapterTitleRef.current}
         nextChapterTitle={nextVideoTitle}
         hasNextChapter={!!onNextVideo}
@@ -875,15 +887,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         courseTitle={courseName}
       />
 
-      {/* Force creation modal at chapter end to promote business growth */}
-      {showChapterEnd && (
-        <div className="absolute left-0 right-0 bottom-20 z-40 px-3">
-          <CreateContentPromo context="video" topic={chapterTitleRef.current || courseName} storageKey={String(videoIdRef.current)} force />
-        </div>
-      )}
-
       {/* Enhanced Custom controls */}
-      {canPlayVideo && (
+      {canPlayVideo && !state.isMiniPlayer && (
         <div
           className={cn(
             "absolute bottom-0 left-0 right-0 z-40 transition-opacity duration-300",
@@ -929,17 +934,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             isPiPSupported={state.isPiPSupported || true}
             isPiPActive={state.isPictureInPicture}
           />
-          {/* Growth Promo */}
-          {!showChapterEnd && (
-            <div className="px-3 pb-3">
-              <CreateContentPromo context="video" topic={chapterTitleRef.current || courseName} className="max-w-md" storageKey={String(videoIdRef.current)} />
-            </div>
-          )}
         </div>
       )}
 
       {/* Floating mini controls when player is not fully in view */}
-      {canPlayVideo && !isInView && (
+      {canPlayVideo && !isInView && !state.isMiniPlayer && (
         <div className="fixed bottom-4 right-4 z-40 bg-black/80 text-white rounded-full shadow-lg border border-white/10 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
           <button
             className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-white/10"
