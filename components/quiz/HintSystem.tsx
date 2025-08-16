@@ -4,7 +4,15 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Lightbulb, Eye, AlertTriangle, CheckCircle, Info, HelpCircle, BookOpen, Target } from "lucide-react"
+import {
+  Lightbulb,
+  Eye,
+  AlertTriangle,
+  Info,
+  HelpCircle,
+  BookOpen,
+  Target,
+} from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import type { HintLevel } from "@/lib/utils/hint-system"
@@ -25,11 +33,7 @@ const containerVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.4,
-      when: "beforeChildren",
-      staggerChildren: 0.1,
-    },
+    transition: { duration: 0.4, when: "beforeChildren", staggerChildren: 0.1 },
   },
 }
 
@@ -39,18 +43,9 @@ const hintVariants = {
     opacity: 1,
     x: 0,
     scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 25,
-    },
+    transition: { type: "spring", stiffness: 300, damping: 25 },
   },
-  exit: {
-    opacity: 0,
-    x: 20,
-    scale: 0.95,
-    transition: { duration: 0.2 },
-  },
+  exit: { opacity: 0, x: 20, scale: 0.95, transition: { duration: 0.2 } },
 }
 
 const proactiveHintVariants = {
@@ -59,18 +54,9 @@ const proactiveHintVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 400,
-      damping: 25,
-    },
+    transition: { type: "spring", stiffness: 400, damping: 25 },
   },
-  exit: {
-    opacity: 0,
-    y: -10,
-    scale: 0.95,
-    transition: { duration: 0.2 },
-  },
+  exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.2 } },
 }
 
 export function HintSystem({
@@ -88,7 +74,6 @@ export function HintSystem({
   const [hintToConfirm, setHintToConfirm] = useState<HintLevel | null>(null)
   const [hintIndexToConfirm, setHintIndexToConfirm] = useState<number | null>(null)
 
-  // Effect to analyze user input and provide proactive hints
   useEffect(() => {
     if (userInput && correctAnswer && questionText) {
       const feedback = analyzeUserInput(userInput, correctAnswer, questionText)
@@ -105,24 +90,21 @@ export function HintSystem({
 
   const handleReveal = () => {
     if (!nextHint) return
-
-    // Show confirmation for high spoiler hints (level 4 and above)
     if (nextHint.spoilerLevel === "high" && revealedCount >= 3) {
       setHintToConfirm(nextHint)
       setHintIndexToConfirm(revealedCount)
       setShowConfirmation(true)
     } else {
-      // Otherwise, reveal directly
       revealConfirmedHint()
     }
   }
 
   const revealConfirmedHint = () => {
-    const next = revealedCount
-    if (next < availableHints.length) {
-      const hint = availableHints[next]
-      onHintUsed?.(next, hint)
-      setRevealedCount(next + 1)
+    const index = revealedCount
+    if (index < availableHints.length) {
+      const hint = availableHints[index]
+      onHintUsed?.(index, hint)
+      setRevealedCount(index + 1)
       setShowConfirmation(false)
       setHintToConfirm(null)
       setHintIndexToConfirm(null)
@@ -137,18 +119,12 @@ export function HintSystem({
 
   const getHintIcon = (index: number) => {
     switch (index) {
-      case 0:
-        return HelpCircle
-      case 1:
-        return BookOpen
-      case 2:
-        return Target
-      case 3:
-        return Eye
-      case 4:
-        return Lightbulb
-      default:
-        return HelpCircle
+      case 0: return HelpCircle
+      case 1: return BookOpen
+      case 2: return Target
+      case 3: return Eye
+      case 4: return Lightbulb
+      default: return HelpCircle
     }
   }
 
@@ -166,23 +142,16 @@ export function HintSystem({
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
-      <Card
-        className={cn(
-          "relative overflow-hidden border-border bg-card",
-          className,
-        )}
-      >
+      <Card className={cn("relative overflow-hidden border-border bg-card", className)}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-foreground text-lg">
               <Lightbulb className="h-5 w-5 text-primary" />
-              Learning Hints
+              <span>Learning Hints</span>
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-sm font-medium">
-                {revealedCount}/{maxHints} Revealed
-              </Badge>
-            </div>
+            <Badge variant="outline" className="text-sm font-medium">
+              {revealedCount}/{maxHints} Revealed
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             Progressive hints to guide your learning. Each hint provides more specific guidance.
@@ -190,7 +159,7 @@ export function HintSystem({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Proactive Hint Section */}
+          {/* Proactive Hint */}
           <AnimatePresence>
             {proactiveHint && (
               <motion.div
@@ -232,7 +201,7 @@ export function HintSystem({
                       </div>
                       <div>
                         <span className="font-semibold text-sm text-foreground">Hint {index + 1}</span>
-                        <div className="text-xs text-muted-foreground">{hint.description}</div>
+                        <p className="text-xs text-muted-foreground">{hint.description}</p>
                       </div>
                     </div>
                     <Badge className={cn("text-xs font-medium", getColor(hint.spoilerLevel, index))}>
@@ -240,12 +209,10 @@ export function HintSystem({
                     </Badge>
                   </div>
 
-                  <div className="text-sm text-muted-foreground leading-relaxed">
-                    {hint.content}
-                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{hint.content}</p>
 
                   <div className="flex items-center justify-between text-xs">
-                    <div className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500 dark:text-gray-400">
                       {hint.type === "direct"
                         ? "Complete Answer"
                         : hint.type === "semantic"
@@ -253,10 +220,10 @@ export function HintSystem({
                           : hint.type === "structural"
                             ? "Structure Clue"
                             : "Context Clue"}
-                    </div>
-                    <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-medium">
-                      <span>-{hint.penalty}% score</span>
-                    </div>
+                    </span>
+                    <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-medium">
+                      -{hint.penalty}% score
+                    </span>
                   </div>
                 </motion.div>
               )
@@ -264,13 +231,11 @@ export function HintSystem({
           </AnimatePresence>
 
           {/* Reveal button */}
-          <div className="pt-2">
-            <Button onClick={handleReveal} disabled={!nextHint} className="w-full">
-              {nextHint ? "Reveal next hint" : "No more hints"}
-            </Button>
-          </div>
+          <Button onClick={handleReveal} disabled={!nextHint} className="w-full">
+            {nextHint ? "Reveal Next Hint" : "No More Hints"}
+          </Button>
 
-          {/* Score Impact Display */}
+          {/* Score Impact */}
           {revealedCount > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -287,16 +252,16 @@ export function HintSystem({
                   <div className="text-sm font-bold text-orange-700 dark:text-orange-300">
                     -{totalPenalty}% from final score
                   </div>
-                  <div className="text-xs text-orange-600 dark:text-orange-400">
-                    Hints help learning but reduce assessment score
-                  </div>
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    Hints support learning but reduce assessment score
+                  </p>
                 </div>
               </div>
             </motion.div>
           )}
         </CardContent>
 
-        {/* Confirmation Modal for Final Answer */}
+        {/* Confirmation Modal */}
         <AnimatePresence>
           {showConfirmation && hintToConfirm && (
             <motion.div
@@ -315,20 +280,15 @@ export function HintSystem({
                   <div className="w-16 h-16 bg-accent/10 dark:bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle className="h-8 w-8 text-accent" />
                   </div>
-
-                  <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">Show Complete Answer?</h3>
-
+                  <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">Reveal Complete Answer?</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                    This will reveal the complete answer. While this helps you learn, it will significantly impact your
-                    assessment score.
+                    Revealing the full answer may help learning, but will significantly reduce your assessment score.
                   </p>
-
                   <div className="bg-accent/5 dark:bg-accent/10 border border-accent/20 dark:border-accent/30 rounded-lg p-3 mb-6">
-                    <div className="flex items-center justify-center gap-2 text-accent-foreground font-medium">
-                      <span>Score Impact: -{hintToConfirm.penalty}%</span>
-                    </div>
+                    <p className="flex items-center justify-center gap-2 text-accent-foreground font-medium">
+                      Score Impact: -{hintToConfirm.penalty}%
+                    </p>
                   </div>
-
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={cancelConfirmation} className="flex-1 bg-transparent">
                       Keep Trying
