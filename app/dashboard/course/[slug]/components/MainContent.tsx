@@ -32,6 +32,7 @@ import CourseActions from "./CourseActions"
 import { cn } from "@/lib/utils"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import CertificateGenerator from "./CertificateGenerator"
+import RecommendedSection from "@/components/shared/RecommendedSection"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -691,31 +692,30 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                  />
                </div>
 
-              {/* Related courses recommendation (simple placeholder using CourseCard) */}
-                             {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
-                 <div className="mt-8">
-                   <h3 className="text-base sm:text-lg font-semibold mb-4">Recommended for you</h3>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                     {(course as any).relatedCourses.slice(0, 3).map((c: any, idx: number) => (
-                       <div key={c.id || idx}>
-                         <div className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                           <div className="p-4">
-                             <div className="font-semibold line-clamp-2">{c.title}</div>
-                             <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description}</p>
-                             <Button
-                               variant="outline"
-                               className="mt-3 w-full"
-                               onClick={() => (window.location.href = `/dashboard/course/${c.slug}`)}
-                             >
-                               View Course
-                             </Button>
-                           </div>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-               )}
+              {/* Related courses recommendation */}
+              {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
+                <RecommendedSection title="Recommended for you" className="mt-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {(course as any).relatedCourses.slice(0, 3).map((c: any, idx: number) => (
+                      <div key={c.id || idx}>
+                        <div className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-background/60">
+                          <div className="p-4">
+                            <div className="font-semibold line-clamp-2">{c.title}</div>
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description}</p>
+                            <Button
+                              variant="outline"
+                              className="mt-3 w-full"
+                              onClick={() => (window.location.href = `/dashboard/course/${c.slug}`)}
+                            >
+                              View Course
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </RecommendedSection>
+              )}
 </div>
           </div>
         </main>
