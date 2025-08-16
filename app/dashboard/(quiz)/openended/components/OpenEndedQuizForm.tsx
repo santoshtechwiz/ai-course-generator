@@ -253,7 +253,7 @@ function TopicFormComponent({ credits, maxQuestions, isLoggedIn, params }: Topic
   return (
     <FormContainer spacing="lg">
       <div className="space-y-8 lg:space-y-10">
-        <form onSubmit={onSubmit} className="space-y-8 lg:space-y-10">
+        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-8 lg:space-y-10">
           <motion.div
             className="space-y-3"
             initial={{ opacity: 0, y: 20 }}
