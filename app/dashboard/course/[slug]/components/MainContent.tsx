@@ -97,6 +97,17 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   // Mobile playlist state
   const [mobilePlaylistOpen, setMobilePlaylistOpen] = useState(false)
   
+  // Auto-play mode state
+  const [autoplayMode, setAutoplayMode] = useState(false)
+  const [autoplayCountdown, setAutoplayCountdown] = useState(5)
+  const [nextChapterInfo, setNextChapterInfo] = useState<{
+    title: string
+    description?: string
+    thumbnail?: string
+    duration?: number
+  } | null>(null)
+  const [showChapterTransition, setShowChapterTransition] = useState(false)
+  
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
@@ -140,6 +151,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         if (window.innerWidth >= 1280) {
           setWideMode(true)
         }
+      }
+    } catch {}
+    
+    // Restore auto-play mode preference
+    try {
+      const savedAutoplay = localStorage.getItem(`autoplay_mode_course_${course.id}`)
+      if (savedAutoplay === 'true') {
+        setAutoplayMode(true)
       }
     } catch {}
   }, [course.id])
@@ -396,10 +415,39 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
       if (isLastVideo) {
         setShowCertificate(true)
-      } else if (nextChapter) {
-        // Show autoplay overlay for next video
+      } else if (nextChapter && autoplayMode) {
+        // Show chapter transition overlay with countdown
+        setNextChapterInfo({
+          title: nextChapter.chapter.title,
+          description: nextChapter.chapter.description,
+          duration: nextChapter.chapter.duration,
+        })
+        setShowChapterTransition(true)
         setAutoplayCountdown(5)
+        
+        // Start countdown timer
+        const countdownInterval = setInterval(() => {
+          setAutoplayCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(countdownInterval)
+              // Auto-advance to next chapter
+              handleChapterSelect(nextChapter.chapter)
+              setShowChapterTransition(false)
+              setNextChapterInfo(null)
+              return 5
+            }
+            return prev - 1
+          })
+        }, 1000)
+      } else if (nextChapter && !autoplayMode) {
+        // Show manual autoplay prompt
+        setNextChapterInfo({
+          title: nextChapter.chapter.title,
+          description: nextChapter.chapter.description,
+          duration: nextChapter.chapter.duration,
+        })
         setShowAutoplayOverlay(true)
+        setAutoplayCountdown(5)
       }
     }
   }, [
@@ -412,6 +460,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     nextChapter,
     user,
     hasPlayedFreeVideo,
+    autoplayMode,
+    handleChapterSelect,
   ])
 
   // Add handleChapterComplete function
@@ -451,6 +501,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     }
   }, [wideMode])
 
+  // Auto-play mode toggle with persistence
+  const handleAutoplayToggle = useCallback(() => {
+    const newAutoplayMode = !autoplayMode
+    setAutoplayMode(newAutoplayMode)
+    
+    // Save preference to localStorage
+    try {
+      localStorage.setItem(`autoplay_mode_course_${course.id}`, String(newAutoplayMode))
+    } catch {}
+    
+    // Show feedback toast
+    toast({
+      title: newAutoplayMode ? "Auto-play Enabled" : "Auto-play Disabled",
+      description: newAutoplayMode 
+        ? "Chapters will automatically advance when completed" 
+        : "You'll be prompted before each chapter transition",
+    })
+  }, [autoplayMode, course.id, toast])
+
   // Mobile playlist toggle
   const handleMobilePlaylistToggle = useCallback(() => {
     setMobilePlaylistOpen(prev => !prev)
@@ -481,13 +550,36 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             event.preventDefault()
             handlePIPToggle(false)
           }
+          // Also close overlays
+          if (showChapterTransition) {
+            setShowChapterTransition(false)
+            setNextChapterInfo(null)
+            setAutoplayCountdown(5)
+          }
+          if (showAutoplayOverlay) {
+            setShowAutoplayOverlay(false)
+            setNextChapterInfo(null)
+            setAutoplayCountdown(5)
+          }
+          break
+        case 'a':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault()
+            handleAutoplayToggle()
+          }
+          break
+        case 'space':
+          // Prevent space from scrolling when video is focused
+          if (currentVideoId) {
+            event.preventDefault()
+          }
           break
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [currentVideoId, isPiPActive, handlePIPToggle])
+  }, [currentVideoId, isPiPActive, handlePIPToggle, showChapterTransition, showAutoplayOverlay, handleAutoplayToggle])
 
   // Ensure CourseID is set when changing videos
   const handleChapterSelect = useCallback(
@@ -769,6 +861,23 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                    {wideMode ? "Normal width" : "Wider video"}
                  </Button>
                  
+                 {/* Auto-play Mode Toggle */}
+                 <Button
+                   variant={autoplayMode ? "default" : "outline"}
+                   size="sm"
+                   onClick={handleAutoplayToggle}
+                   className={cn(
+                     "gap-2 transition-all duration-300",
+                     autoplayMode && "bg-green-600 hover:bg-green-700 text-white"
+                   )}
+                 >
+                   <div className={cn(
+                     "w-2 h-2 rounded-full transition-all duration-300",
+                     autoplayMode ? "bg-white" : "bg-green-500"
+                   )} />
+                   {autoplayMode ? "Auto-play ON" : "Auto-play OFF"}
+                 </Button>
+                 
                  {/* PIP Status Indicator */}
                  {isPiPActive && (
                    <motion.div
@@ -783,7 +892,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                </div>
                
                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">
-                 Keys: T Theater • F Fullscreen • B Bookmark • Ctrl+P PIP • Esc Exit PIP
+                 Keys: T Theater • F Fullscreen • B Bookmark • Ctrl+P PIP • Ctrl+A Auto-play • Esc Close
                </span>
              </div>
              <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
@@ -841,6 +950,33 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
  
                 {/* Video player */}
                 <div className="w-full">
+                 {/* Auto-play mode indicator */}
+                 {autoplayMode && (
+                   <motion.div
+                     initial={{ opacity: 0, y: -10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     className="mb-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg flex items-center justify-between"
+                   >
+                     <div className="flex items-center gap-2">
+                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                       <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                         Auto-play Mode Active
+                       </span>
+                       <span className="text-xs text-green-600 dark:text-green-400">
+                         Chapters will automatically advance
+                       </span>
+                     </div>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={handleAutoplayToggle}
+                       className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/50"
+                     >
+                       Disable
+                     </Button>
+                   </motion.div>
+                 )}
+                 
                  <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
                     {currentVideoId ? (
                       <>
@@ -863,6 +999,52 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                     )}
                   </div>
                 </div>
+ 
+                {/* Chapter Progress Indicator */}
+                {currentChapter && !isLastVideo && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 bg-muted/30 rounded-xl border border-border/50"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full" />
+                        <span className="text-sm font-medium text-foreground">
+                          Chapter {currentIndex + 1} of {videoPlaylist.length}
+                        </span>
+                      </div>
+                      {nextChapter && (
+                        <div className="text-xs text-muted-foreground">
+                          Next: {nextChapter.chapter.title}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Progress bar */}
+                    <div className="w-full bg-muted rounded-full h-2 mb-3">
+                      <motion.div
+                        initial={{ width: "0%" }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: 1, ease: "easeInOut" }}
+                        className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full"
+                      />
+                    </div>
+                    
+                    {/* Chapter info */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{currentChapter.title}</span>
+                      {nextChapter && (
+                        <div className="flex items-center gap-2">
+                          <span>Next chapter in:</span>
+                          <span className="font-medium text-primary">
+                            {nextChapter.chapter.duration ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
  
                 {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
                 <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4">
@@ -1151,7 +1333,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                           </>
                         ) : (
                           <>
-                            <Download className="h-5 w-5 mr-3" />
+                            <Download className="h-5 w-5 mr-2" />
                             Download Certificate
                           </>
                         )}
@@ -1181,7 +1363,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                     }}
                     className="w-full h-12 border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
                   >
-                    <Share2 className="h-5 w-5 mr-3" />
+                    <Share2 className="h-5 w-5 mr-2" />
                     Share Achievement
                   </Button>
 
@@ -1222,6 +1404,213 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                     ))}
                   </div>
                 </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chapter Transition Overlay - Auto-play mode */}
+      <AnimatePresence>
+        {showChapterTransition && nextChapterInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ 
+                type: "spring", 
+                damping: 25, 
+                stiffness: 300,
+                duration: 0.3 
+              }}
+              className="bg-background rounded-2xl shadow-2xl border border-border/50 max-w-md w-full text-center overflow-hidden"
+            >
+              {/* Header with next chapter info */}
+              <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
+                {/* Countdown timer */}
+                <div className="absolute top-4 right-4">
+                  <motion.div
+                    key={autoplayCountdown}
+                    initial={{ scale: 1.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30"
+                  >
+                    <span className="text-xl font-bold">{autoplayCountdown}</span>
+                  </motion.div>
+                </div>
+
+                {/* Next chapter icon */}
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                  <ChevronRight className="h-8 w-8 text-white" />
+                </div>
+
+                <h2 className="text-2xl font-bold mb-2">Next Chapter</h2>
+                <p className="text-white/90">Auto-playing in {autoplayCountdown} seconds</p>
+              </div>
+
+              {/* Chapter content */}
+              <div className="p-6 space-y-4">
+                <h3 className="text-xl font-semibold text-foreground">
+                  {nextChapterInfo.title}
+                </h3>
+                
+                {nextChapterInfo.description && (
+                  <p className="text-muted-foreground text-sm">
+                    {nextChapterInfo.description}
+                  </p>
+                )}
+
+                {nextChapterInfo.duration && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDuration(nextChapterInfo.duration)}</span>
+                  </div>
+                )}
+
+                {/* Progress indicator */}
+                <div className="w-full bg-muted rounded-full h-2">
+                  <motion.div
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${((5 - autoplayCountdown) / 5) * 100}%` }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                  />
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowChapterTransition(false)
+                      setNextChapterInfo(null)
+                      setAutoplayCountdown(5)
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel Auto-play
+                  </Button>
+                  
+                  <Button
+                    onClick={() => {
+                      if (nextChapter) {
+                        handleChapterSelect(nextChapter.chapter)
+                        setShowChapterTransition(false)
+                        setNextChapterInfo(null)
+                        setAutoplayCountdown(5)
+                      }
+                    }}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                  >
+                    Play Now
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Enhanced Autoplay Overlay - Manual mode */}
+      <AnimatePresence>
+        {showAutoplayOverlay && nextChapterInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ 
+                type: "spring", 
+                damping: 25, 
+                stiffness: 300,
+                duration: 0.3 
+              }}
+              className="bg-background rounded-2xl shadow-2xl border border-border/50 max-w-md w-full text-center overflow-hidden"
+            >
+              {/* Header */}
+              <div className="relative bg-gradient-to-br from-green-500 to-emerald-600 p-6 text-white">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                  <Play className="h-8 w-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Next Chapter Ready</h2>
+                <p className="text-white/90">Would you like to continue?</p>
+              </div>
+
+              {/* Chapter content */}
+              <div className="p-6 space-y-4">
+                <h3 className="text-xl font-semibold text-foreground">
+                  {nextChapterInfo.title}
+                </h3>
+                
+                {nextChapterInfo.description && (
+                  <p className="text-muted-foreground text-sm">
+                    {nextChapterInfo.description}
+                  </p>
+                )}
+
+                {nextChapterInfo.duration && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDuration(nextChapterInfo.duration)}</span>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowAutoplayOverlay(false)
+                      setNextChapterInfo(null)
+                      setAutoplayCountdown(5)
+                    }}
+                    className="flex-1"
+                  >
+                    Stay Here
+                  </Button>
+                  
+                  <Button
+                    onClick={() => {
+                      if (nextChapter) {
+                        handleChapterSelect(nextChapter.chapter)
+                        setShowAutoplayOverlay(false)
+                        setNextChapterInfo(null)
+                        setAutoplayCountdown(5)
+                      }
+                    }}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                  >
+                    Continue Learning
+                  </Button>
+                </div>
+
+                {/* Enable auto-play option */}
+                <div className="pt-4 border-t border-border/50">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAutoplayMode(true)
+                      toast({
+                        title: "Auto-play Enabled",
+                        description: "Chapters will automatically advance from now on",
+                      })
+                    }}
+                    className="text-sm text-muted-foreground hover:text-primary"
+                  >
+                    Enable Auto-play for future chapters
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
