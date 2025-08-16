@@ -29,6 +29,7 @@ import type { QueryParams } from "@/app/types/types"
 import PlanAwareButton from "../../components/PlanAwareButton"
 import { SubscriptionSlider } from "../../../subscription/components/SubscriptionSlider"
 import FormContainer from "@/app/dashboard/FormContainer"
+import { useGlobalLoader } from "@/store/loaders/global-loader"
 
 
 interface Subscription {
@@ -139,6 +140,7 @@ export default function CreateQuizForm({
   const { data: session } = useSession()
   const subscription = useSubscription()
   const subscriptionData = subscription
+  const { withLoading } = useGlobalLoader()
 
   const [formData, setFormData] = usePersistentState<QuizFormData>("quizFormData", {
     title: params?.title || "",
@@ -179,7 +181,7 @@ export default function CreateQuizForm({
 
   const { mutateAsync: createQuizMutation } = useMutation({
     mutationFn: async (data: QuizFormData) => {
-      const response = await axios.post(`/api/quizzes/mcq/create`, data)
+      const response = await axios.post(`/api/quizzes`, { ...data, type: "mcq" })
       return response.data
     },
     onError: (error: any) => {
@@ -202,7 +204,7 @@ export default function CreateQuizForm({
         return `Number of questions must be between 1 and ${maxQuestions}`
       }
 
-      if (!data.difficulty || !["easy", "medium", "hard"].includes(data.difficulty)) {
+      if (!data.difficulty || ["easy", "medium", "hard"].includes(data.difficulty) === false) {
         return "Please select a valid difficulty level"
       }
 
@@ -240,11 +242,16 @@ export default function CreateQuizForm({
 
     try {
       const formValues = watch()
-      const response = await createQuizMutation(formValues)
-      const userQuizId = response?.userQuizId
+      const response = await withLoading(createQuizMutation({ ...formValues, type: "mcq" }), {
+        message: "Generating your quiz...",
+        isBlocking: true,
+        minVisibleMs: 400,
+        autoProgress: true,
+      })
+      const userQuizId = response?.userQuizId || response?.quizId
       const slug = response?.slug
 
-      if (!userQuizId) throw new Error("Quiz ID not found")
+      if (!userQuizId || !slug) throw new Error("Quiz creation failed: missing identifiers")
 
       toast({
         title: "Success!",
@@ -252,12 +259,15 @@ export default function CreateQuizForm({
       })
 
       router.push(`/dashboard/mcq/${slug}`)
-    } catch (error) {
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Failed to create quiz. Please try again."
+      setSubmissionError(message)
+      toast({ title: "Error", description: message, variant: "destructive" })
       setIsLoading(false)
     } finally {
       setIsLoading(false)
     }
-  }, [createQuizMutation, watch, toast, router, quizType])
+  }, [createQuizMutation, watch, toast, router, quizType, withLoading])
 
   const amount = watch("amount")
   const difficulty = watch("difficulty")

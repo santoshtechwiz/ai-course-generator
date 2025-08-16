@@ -5,7 +5,7 @@ import React from "react"
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import type { CategoryId } from "@/config/categories"
 import { BookOpen, ChevronDown, Loader2, LayoutGrid, List, Filter, Search, TrendingUp, Clock, Users, GraduationCap } from "lucide-react"
 // Add import for missing icons

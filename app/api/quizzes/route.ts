@@ -4,6 +4,8 @@ import NodeCache from "node-cache"
 import type { NextRequest } from "next/server"
 import { QuizListService } from "@/app/services/quiz-list.service"
 import { getAuthSession } from "@/lib/auth"
+import { QuizServiceFactory } from "@/app/services/quiz-service-factory"
+import { titleSubTopicToSlug } from "@/lib/slug"
 
 // Define response types for better type safety
 interface QuizListItem {
@@ -83,7 +85,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<QuizListItem[]
 
 /**
  * Create a new quiz based on the quiz type
- * Delegates to the appropriate specialized endpoint
+ * Unified create handler to support mcq, code, blanks, openended
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -92,29 +94,129 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
-    
+
+    const userId = session.user.id
+
     // Get the request body
     const body = await req.json()
-    const quizType = body.type || body.quizType
-    
+    const quizType = (body.type || body.quizType || "").toString()
+
     if (!quizType) {
       return NextResponse.json({ error: "Quiz type is required" }, { status: 400 })
     }
-    
-    // Create a new request to forward to the specialized endpoint
-    const newRequest = new Request(
-      new URL(`/api/quizzes/${quizType}`, req.url).toString(),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
+
+    // Dispatch by quiz type
+    switch (quizType) {
+      case "mcq": {
+        const { title, amount, difficulty = "medium" } = body
+        if (!title || !amount) return NextResponse.json({ error: "Missing title or amount" }, { status: 400 })
+
+        // Use MCQ generator to get questions
+        const service = QuizServiceFactory.getQuizService("mcq") as any
+        const { questions } = await service.generateQuiz({ amount, title, difficulty, type: "mcq" })
+
+        // Create quiz and questions
+        const slug = titleSubTopicToSlug("", title)
+        const created = await prisma.userQuiz.create({
+          data: { userId, title, quizType: "mcq", slug, timeStarted: new Date() },
+        })
+
+        // Persist questions (supports array options)
+        if (Array.isArray(questions) && questions.length > 0) {
+          await prisma.userQuizQuestion.createMany({
+            data: questions.map((q: any) => ({
+              userQuizId: created.id,
+              question: q.question || q.text || "",
+              // Accept array or string; store array JSON if array
+              options: Array.isArray(q.options) ? JSON.stringify(q.options) : (typeof q.options === "string" ? q.options : JSON.stringify([])),
+              answer: (q.correctAnswer ?? q.answer ?? "").toString(),
+              questionType: "mcq",
+            })),
+          })
+        }
+
+        return NextResponse.json({ userQuizId: created.id, slug: created.slug })
       }
-    )
-    
-    // Forward the request
-    return await fetch(newRequest)
+      case "code": {
+        const { title, amount, difficulty = "easy", language = "JavaScript" } = body
+        if (!title || !amount || !language) return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+
+        // Use CodeQuizService which handles credit updates and persistence
+        const service = QuizServiceFactory.getQuizService("code") as any
+        const result = await service.generateCodeQuiz(userId, language, title, difficulty, amount)
+        return NextResponse.json(result)
+      }
+      case "blanks": {
+        const { title, amount, topic, difficulty = "easy" } = body
+        if (!title || !amount || !topic) return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+
+        // Reuse the existing blanks route logic inline
+        // Generate quiz using service and persist with unique slug
+        const { BlanksQuizService } = await import("@/app/services/blanks-quiz.service")
+        const { generateSlug } = await import("@/lib/utils")
+        const blanksQuizService = new BlanksQuizService()
+        const quiz = await blanksQuizService.generateQuiz({ title: topic, amount })
+
+        let baseSlug = generateSlug(topic)
+        let slug = baseSlug
+        let suffix = 2
+        while (await prisma.userQuiz.findUnique({ where: { slug } })) {
+          slug = `${baseSlug}-${suffix++}`
+        }
+
+        const createdQuiz = await prisma.userQuiz.create({
+          data: { userId, title, timeStarted: new Date(), quizType: "blanks", slug },
+        })
+
+        if (quiz.questions && quiz.questions.length > 0) {
+          await prisma.userQuizQuestion.createMany({
+            data: quiz.questions.map((q: any) => ({
+              userQuizId: createdQuiz.id,
+              question: q.question,
+              answer: q.correct_answer || q.answer,
+              questionType: "blanks",
+            })),
+          })
+        }
+
+        return NextResponse.json({ userQuizId: createdQuiz.id, slug: createdQuiz.slug })
+      }
+      case "openended": {
+        const { title, amount, difficulty = "medium" } = body
+        if (!title || !amount) return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+
+        const { OpenEndedQuizService } = await import("@/app/services/openended-quiz.service")
+        const { generateSlug } = await import("@/lib/utils")
+        const openService = new OpenEndedQuizService()
+        const quiz = await openService.generateQuiz({ title, amount, difficulty })
+
+        let baseSlug = generateSlug(title)
+        let slug = baseSlug
+        let suffix = 2
+        while (await prisma.userQuiz.findUnique({ where: { slug } })) {
+          slug = `${baseSlug}-${suffix++}`
+        }
+
+        const createdQuiz = await prisma.userQuiz.create({
+          data: { userId, title, timeStarted: new Date(), quizType: "openended", slug },
+        })
+
+        if (quiz.questions && quiz.questions.length > 0) {
+          await prisma.userQuizQuestion.createMany({
+            data: quiz.questions.map((q: any) => ({
+              userQuizId: createdQuiz.id,
+              question: q.question,
+              answer: q.answer,
+              questionType: "openended",
+            })),
+          })
+        }
+
+        return NextResponse.json({ userQuizId: createdQuiz.id, slug: createdQuiz.slug })
+      }
+      default:
+        return NextResponse.json({ error: `Unsupported quiz type: ${quizType}` }, { status: 400 })
+    }
   } catch (error) {
     console.error("Error creating quiz:", error)
     return NextResponse.json({ error: "Failed to create quiz" }, { status: 500 })

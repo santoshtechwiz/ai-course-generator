@@ -26,7 +26,8 @@ export { useQuizAttempts } from "./useQuizAttempts"
 // TOAST UTILITIES
 // ============================================================================
 
-export * from "./use-toast"
+// Re-export unified toast to keep imports stable
+export { useToast, toast } from "@/components/ui/use-toast"
 
 // ============================================================================
 // TEXT UTILITIES

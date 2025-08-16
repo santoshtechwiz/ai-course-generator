@@ -1,5 +1,4 @@
 import type React from "react"
-import { Toaster } from "@/components/ui/toaster"
 import { ClientLayoutWrapper } from "@/components/ClientLayoutWrapper"
 import { getAuthSession } from "@/lib/auth"
 // Removed inline GlobalLoader to avoid duplicate overlays; relying on app-level GlobalLoader
@@ -45,7 +44,6 @@ export default async function QuizLayout({
         <MeteorShower>
           <div className="relative z-10 min-h-screen">
             {children}
-            <Toaster />
           </div>
         </MeteorShower>
       </div>
