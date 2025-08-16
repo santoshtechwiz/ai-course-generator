@@ -10,6 +10,7 @@ import { Suspense } from "react"
 import { font } from "./font"
 
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
+import PageTransition from "@/components/shared/PageTransition"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { DefaultSEO, generateMetadata } from "@/lib/seo"
 
@@ -96,7 +97,9 @@ export default async function RootLayout({
                 role="main"
                 tabIndex={-1}
               >
-                <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
+                <PageTransition>
+                  <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
+                </PageTransition>
               </main>
               <Footer />
             </div>
