@@ -727,34 +727,33 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </div>
                 </RecommendedSection>
               )}
-</div>
-          </div>
+          
         </main>
         {/* Sticky mobile Next Lesson CTA removed per request */}
                  {/* Sidebar responsive tweaks */}
-         {false && (
-           <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
-             <VideoNavigationSidebar
-               course={course}
-               currentChapter={currentChapter}
-               courseId={course.id.toString()}
-               onChapterSelect={handleChapterSelect}
-               progress={progress}
-               isAuthenticated={!!user}
-               isSubscribed={!!userSubscription}
-               completedChapters={completedChapters}
-               formatDuration={formatDuration}
-               nextVideoId={undefined}
-               currentVideoId={currentVideoId || ''}
-               isPlaying={Boolean(currentVideoId)}
-               courseStats={{
-                 completedCount: progress?.completedChapters?.length || 0,
-                 totalChapters: videoPlaylist.length,
-                 progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-               }}
-             />
-           </aside>
-         )}
+          {false && (
+            <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
+              <VideoNavigationSidebar
+                course={course}
+                currentChapter={currentChapter}
+                courseId={course.id.toString()}
+                onChapterSelect={handleChapterSelect}
+                progress={progress}
+                isAuthenticated={!!user}
+                isSubscribed={!!userSubscription}
+                completedChapters={completedChapters}
+                formatDuration={formatDuration}
+                nextVideoId={undefined}
+                currentVideoId={currentVideoId || ''}
+                isPlaying={Boolean(currentVideoId)}
+                courseStats={{
+                  completedCount: progress?.completedChapters?.length || 0,
+                  totalChapters: videoPlaylist.length,
+                  progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+                }}
+              />
+            </aside>
+          )}
        </div>
 
       {/* Floating subscribe CTA for guests/free users */}
