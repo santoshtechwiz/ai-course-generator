@@ -15,7 +15,7 @@ export class CodeQuizService extends BaseQuizService {
   /**
    * Generate a new code quiz
    */
-  async generateCodeQuiz(userId: string, language: string, title: string, difficulty: string, amount: number) {
+ public async generateCodeQuiz(userId: string, language: string, title: string, difficulty: string, amount: number) {
     // Create a slug for the quiz
     const slug = titleSubTopicToSlug(language, title);
     
