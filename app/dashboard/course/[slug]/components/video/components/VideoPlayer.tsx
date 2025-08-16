@@ -736,7 +736,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       {/* Persistent CourseAI Logo */}
       <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 opacity-70 hover:opacity-100 transition-opacity">
