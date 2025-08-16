@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { RandomQuiz } from "./RandomQuiz"
 import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import Confetti from "react-confetti"
+import { motion } from "framer-motion"
+import { Sparkles, Wand2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -293,27 +295,46 @@ export default function QuizPlayLayout({
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary animate-bounce">🤖</span>
-              Supercharge your learning
+              <motion.span
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-primary/10 text-primary"
+              >
+                <Sparkles className="h-5 w-5" />
+              </motion.span>
+              Level up your learning
             </DialogTitle>
             <DialogDescription>
-              This AI-powered quiz adapts to you—offering smart hints, quick feedback, and a tailored path to mastery.
-              Level up your skills faster with an experience designed just for you.
+              This AI-powered quiz adapts to you with smart hints, instant feedback, and a tailored path to mastery.
+              Create your own in seconds to practice exactly what matters.
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-2 text-sm text-muted-foreground">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/30 border border-border/50">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center text-white animate-pulse">✨</div>
-              <div>
-                <p className="font-medium text-foreground">Create your own quiz for free</p>
-                <p>Engage your audience, grow your business, and share your expertise in minutes.</p>
+          <div className="mt-2 text-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              className="flex items-center gap-3 p-3 rounded-lg bg-accent/20 border border-border/50"
+            >
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center text-white">
+                <Wand2 className="h-5 w-5" />
               </div>
+              <div>
+                <p className="font-medium text-foreground">Create a custom quiz for free</p>
+                <p className="text-muted-foreground">Engage your audience, grow your skills, and track progress—no setup required.</p>
+              </div>
+            </motion.div>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-md border bg-card p-2">Adaptive hints</motion.div>
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-md border bg-card p-2">Instant feedback</motion.div>
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-md border bg-card p-2">Shareable results</motion.div>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-3">
-            <Button variant="secondary" onClick={() => setShowEngage(false)}>Got it</Button>
-            <Button asChild className="bg-gradient-to-r from-primary to-primary/80">
-              <a href="/dashboard/mcq" className="gap-2">Create a quiz for free</a>
+            <Button variant="secondary" onClick={() => setShowEngage(false)}>Not now</Button>
+            <Button asChild className="btn-gradient">
+              <a href="/dashboard/mcq" className="gap-2"><Sparkles className="h-4 w-4" /> Create a quiz</a>
             </Button>
           </DialogFooter>
         </DialogContent>

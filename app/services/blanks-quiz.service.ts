@@ -9,7 +9,7 @@ export class BlanksQuizService extends BaseQuizService {
   /**
    * Generate Blanks quiz using the existing generation logic
    */
-  async generateQuiz(params: {
+  public async generateQuiz(params: {
     title: string;
     amount: number;
     userType?: string;

@@ -143,3 +143,44 @@ export async function DELETE(
     return NextResponse.json({ error: "Failed to delete quiz" }, { status: 500 })
   }
 }
+
+
+export async function POST(
+  req: NextRequest, 
+  { params }: { params: { quizType: string; slug: string } }
+): Promise<NextResponse> {
+  try {
+    // Extract parameters
+    const { quizType, slug } = params
+
+    // Get the user session for authorization
+    const session = await getAuthSession()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
+    // Get the request body with quiz data
+    const body = await req.json()
+
+    // Use the factory to get the appropriate quiz service
+    const quizService = QuizServiceFactory.getQuizService(quizType)
+
+    if (!quizService) {
+      return NextResponse.json({ error: `Unsupported quiz type: ${quizType}` }, { status: 400 })
+    }
+
+    // Create the quiz using the appropriate service
+    const newQuiz = await quizService.createQuiz(slug, session.user.id, body)
+
+    return NextResponse.json(newQuiz)
+  } catch (error) {
+    // Await params before using its properties in error logging
+    let quizType = "unknown"
+    try {
+      const awaitedParams = await params
+      quizType = awaitedParams.quizType
+    } catch {}
+    console.error(`Error creating ${quizType} quiz:`, error)
+    return NextResponse.json({ error: "Failed to create quiz" }, { status: 500 })
+  }
+}

@@ -273,7 +273,7 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
           <Button asChild variant="outline" className="hover:bg-primary/10">
             <a href="/dashboard/mcq" className="gap-2"><Sparkles className="h-4 w-4" /> Create Quiz</a>
           </Button>
-          <Button asChild className="bg-gradient-to-r from-primary to-primary/80">
+          <Button asChild className="btn-gradient">
             <a href="/dashboard/subscription" className="gap-2"><Rocket className="h-4 w-4" /> Upgrade</a>
           </Button>
         </div>
@@ -386,8 +386,8 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
                     <Button variant="outline" size="sm" onClick={handleCreateQuiz} className="gap-2 hover:bg-primary/10">
                       <Sparkles className="h-4 w-4" /> Create Quiz
                     </Button>
-                    <Button asChild size="sm" className="bg-gradient-to-r from-primary to-primary/80">
-                      <a href="/dashboard/subscription" className="gap-2"><Crown className="h-4 w-4" /> Upgrade</a>
+                    <Button asChild size="sm" className="btn-gradient">
+                      <a href="/dashboard/openended" className="gap-2"><Sparkles className="h-4 w-4" /> Open-Ended</a>
                     </Button>
                   </div>
                 </div>

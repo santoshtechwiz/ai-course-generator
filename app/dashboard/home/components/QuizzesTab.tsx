@@ -421,7 +421,7 @@ export default function QuizzesTab({ userData, isLoading = false }: QuizzesTabPr
                 <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Quizzes in Progress</h3>
                 <p className="text-muted-foreground text-center">
-                  Start a quiz to see your progress here.
+                  Create your first quiz to see your progress here.
                 </p>
               </CardContent>
             </Card>

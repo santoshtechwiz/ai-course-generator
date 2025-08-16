@@ -10,7 +10,7 @@ export class McqQuizService extends BaseQuizService {
     /**
      * Generate MCQ quiz using the existing generation logic
      */
-    async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string }) {
+    public async generateQuiz(params: { amount: number; title: string; type?: string; difficulty?: string }) {
         const { amount, title, difficulty = "medium" } = params;
         
         try {

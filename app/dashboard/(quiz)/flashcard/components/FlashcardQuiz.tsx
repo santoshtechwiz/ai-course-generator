@@ -175,8 +175,7 @@ export default function FlashCardQuiz({
     return next < cards.length ? next : 0
   }, [cards, currentQuestionIndex])
 
-
-  // Handle quiz completion with proper feedback
+    // Handle quiz completion with proper feedback
   const handleQuizCompletion = useCallback(() => {
     setIsFinishing(true)
 
@@ -194,7 +193,6 @@ export default function FlashCardQuiz({
       setIsFinishing(false)
     }, 1500)
   }, [cards.length, onComplete])
-
   // Move to next card using adaptive scheduler
   const moveToNextCard = useCallback(() => {
     if (!cards?.length) return
@@ -206,6 +204,8 @@ export default function FlashCardQuiz({
       dispatch(setCurrentFlashCard(nextIndex))
     }
   }, [cards, computeNextIndex, dispatch, currentQuestionIndex, handleQuizCompletion])
+
+
 
   // Handle self rating
   const handleSelfRating = useCallback(
