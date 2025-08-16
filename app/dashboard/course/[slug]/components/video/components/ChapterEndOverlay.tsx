@@ -244,7 +244,7 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
               {/* Create Quiz CTA always visible at end-of-chapter */}
               <div className="mt-3">
                 <a
-                  href="/dashboard/mcq"
+                  href={`/dashboard/mcq?topic=${encodeURIComponent(chapterTitle || courseTitle || "")}`}
                   className="w-full inline-flex items-center justify-center rounded-md h-10 text-sm font-medium btn-gradient hover:opacity-90 transition-transform hover:scale-[1.01]"
                   aria-label="Create a quiz from your learnings"
                 >
