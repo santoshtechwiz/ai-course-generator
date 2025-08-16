@@ -13,6 +13,7 @@ import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-foun
 import AsyncNavLink from "@/components/loaders/AsyncNavLink"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { JsonLD } from "@/lib/seo"
+import RecommendedSection from "@/components/shared/RecommendedSection"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = notFoundMetadata

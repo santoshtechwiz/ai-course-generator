@@ -2,7 +2,8 @@
 
 import React from "react"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import ReactPlayer from "react-player/youtube"
+import dynamic from "next/dynamic"
+const ReactPlayer: any = dynamic(() => import("react-player/youtube"), { ssr: false })
 import { useSession } from "next-auth/react"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
 import PlayerControls from "./PlayerControls"
