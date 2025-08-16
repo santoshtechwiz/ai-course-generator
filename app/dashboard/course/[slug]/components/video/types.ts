@@ -46,6 +46,7 @@ export interface VideoPlayerState {
   isPictureInPicture: boolean
   isPiPSupported: boolean
   isNearingCompletion: boolean
+  isMiniPlayer: boolean
 }
 
 export interface ProgressState {

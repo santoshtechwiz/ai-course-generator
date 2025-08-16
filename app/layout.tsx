@@ -10,6 +10,7 @@ import { Suspense } from "react"
 import { font } from "./font"
 
 import GlobalLoaderProvider from "@/components/GlobalLoaderProvider"
+import PageTransition from "@/components/shared/PageTransition"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { DefaultSEO, generateMetadata } from "@/lib/seo"
 
@@ -79,7 +80,7 @@ export default async function RootLayout({
         </head>
 
         <body
-          className={`${font.inter.variable ?? ""} ${font.poppins.variable ?? ""} ${font.openSans.variable ?? ""} ${font.roboto.variable ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
+          className={`${font.inter.variable ?? ""} ${font.poppins.variable ?? ""} ${font.openSans.variable ?? ""} ${font.roboto.variable ?? ""} ${font.jakarta.variable ?? ""} antialiased bg-background text-foreground min-h-screen overflow-x-hidden text-base`}
           role="document"
         >
           <a
@@ -96,7 +97,9 @@ export default async function RootLayout({
                 role="main"
                 tabIndex={-1}
               >
-                <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
+                <PageTransition>
+                  <Suspense fallback={<SuspenseGlobalFallback />}>{children}</Suspense>
+                </PageTransition>
               </main>
               <Footer />
             </div>

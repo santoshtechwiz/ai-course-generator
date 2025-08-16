@@ -18,6 +18,7 @@ import { useRelatedQuizzes } from "@/hooks/useRelatedQuizzes"
 import Confetti from "react-confetti"
 import { motion } from "framer-motion"
 import { Sparkles, Wand2 } from "lucide-react"
+import RecommendedSection from "@/components/shared/RecommendedSection"
 
 export const dynamic = "force-dynamic"
 
@@ -133,7 +134,7 @@ export default function QuizPlayLayout({
   const header = useMemo(() => {
     const displaySeconds = timeSpent > 0 ? timeSpent : elapsed
     return (
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b">
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b ai-glass dark:ai-glass-dark">
         <div className="mx-auto w-full max-w-screen-2xl px-3 sm:px-4 lg:px-6 py-2.5">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -243,15 +244,16 @@ export default function QuizPlayLayout({
         </div>
         {/* Related quizzes carousel */}
         {!isFullscreen && relatedQuizzes.length > 0 && (
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Target className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">You might also like</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <RecommendedSection title="You might also like">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {relatedQuizzes.slice(0, 3).map((rq) => (
-                <a key={rq.id} href={`/dashboard/${rq.quizType}/${rq.slug}`} className="group rounded-lg border bg-card p-3 hover:border-primary/50 transition-colors">
-                  <div className="text-sm font-medium line-clamp-1 group-hover:text-primary">{rq.title}</div>
+                <a
+                  key={rq.id}
+                  href={`/dashboard/${rq.quizType}/${rq.slug}`}
+                  className="group rounded-lg border bg-background/40 p-3 hover:border-primary/50 hover:bg-primary/5 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  aria-label={`Open ${rq.title}`}
+                >
+                  <div className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{rq.title}</div>
                   <div className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
                     <Badge variant="secondary" className="text-[10px]">{rq.quizType}</Badge>
                     <span>{rq.questionCount} qns</span>
@@ -260,7 +262,7 @@ export default function QuizPlayLayout({
                 </a>
               ))}
             </div>
-          </div>
+          </RecommendedSection>
         )}
       </main>
 

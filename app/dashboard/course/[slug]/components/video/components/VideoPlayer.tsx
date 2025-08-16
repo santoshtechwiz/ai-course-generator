@@ -2,7 +2,8 @@
 
 import React from "react"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import ReactPlayer from "react-player/youtube"
+import dynamic from "next/dynamic"
+const ReactPlayer: any = dynamic(() => import("react-player/youtube"), { ssr: false })
 import { useSession } from "next-auth/react"
 import { useVideoPlayer } from "../hooks/useVideoPlayer"
 import PlayerControls from "./PlayerControls"
@@ -19,7 +20,7 @@ import type { VideoPlayerProps } from "../types"
 import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
-import CreateContentPromo from "@/components/growth/CreateContentPromo"
+// Removed in-player growth promo; we will show CTAs outside the player
 
 // Memoized authentication prompt to prevent unnecessary re-renders
 const AuthPrompt = React.memo(
@@ -133,6 +134,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showControlsState, setShowControlsState] = useState(showControls)
   const [certificateState, setCertificateState] = useState<CertificateState>("idle")
   const [isMounted, setIsMounted] = useState(false)
+  // Mini player position and dragging
+  const [miniPos, setMiniPos] = useState<{ x: number; y: number } | null>(null)
+  const draggingRef = useRef(false)
+  const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 })
 
   // Refs for cleanup and performance
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -141,6 +146,45 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const lastFsToggleRef = useRef<number>(0)
   const lastTheaterToggleRef = useRef<number>(0)
+  const saveMiniPos = useCallback((pos: { x: number; y: number }) => {
+    try { localStorage.setItem("mini_player_pos", JSON.stringify(pos)) } catch {}
+  }, [])
+  const clamp = useCallback((val: number, min: number, max: number) => Math.max(min, Math.min(max, val)), [])
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    // Initialize mini position to bottom-right by default
+    const w = window.innerWidth
+    const h = window.innerHeight
+    const width = 320
+    const height = Math.round((9 / 16) * width)
+    let initial = { x: w - width - 16, y: h - height - 16 }
+    try {
+      const saved = localStorage.getItem("mini_player_pos")
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
+          initial = {
+            x: clamp(parsed.x, 8, Math.max(8, w - width - 8)),
+            y: clamp(parsed.y, 8, Math.max(8, h - height - 8)),
+          }
+        }
+      }
+    } catch {}
+    setMiniPos(initial)
+    const onResize = () => {
+      const nw = window.innerWidth
+      const nh = window.innerHeight
+      setMiniPos((pos) => {
+        if (!pos) return pos
+        return {
+          x: clamp(pos.x, 8, Math.max(8, nw - width - 8)),
+          y: clamp(pos.y, 8, Math.max(8, nh - height - 8)),
+        }
+      })
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [clamp])
 
   // Initialize video player hook BEFORE any usage of containerRef
   const { state, playerRef, containerRef, bufferHealth, youtubeUrl, handleProgress, handlers } = useVideoPlayer({
@@ -605,10 +649,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           handleTheaterMode()
           break
         case "p":
-          if (state.isPiPSupported) {
-            event.preventDefault()
-            handlePictureInPicture()
-          }
+          event.preventDefault()
+          handlePictureInPicture()
           break
         case "Escape":
           if (state.isFullscreen || state.theaterMode) {
@@ -657,19 +699,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "relative object-contain w-full h-full bg-black overflow-hidden group",
-        state.theaterMode && "theater-mode",
-        className,
-      )}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-      role="application"
-      aria-label="Video player"
-      tabIndex={0}
-    >
+        <div
+       ref={containerRef}
+       className={cn(
+         "relative object-contain w-full h-full bg-black overflow-hidden group",
+         state.theaterMode && "theater-mode",
+         className,
+       )}
+       onMouseEnter={() => setIsHovering(true)}
+       onMouseLeave={() => setIsHovering(false)}
+       role="application"
+       aria-label="Video player"
+       tabIndex={0}
+     >
       {/* YouTube Player */}
       <div className="absolute inset-0">
         <ReactPlayer
@@ -677,7 +719,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           url={youtubeUrl}
           width="100%"
           height="100%"
-          playing={state.playing && canPlayVideo}
+          playing={state.playing && canPlayVideo && !state.isMiniPlayer}
           volume={state.volume}
           muted={state.muted}
           playbackRate={state.playbackRate}
@@ -710,9 +752,75 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 widget_referrer: typeof window !== "undefined" ? window.location.origin : "",
               },
             },
+            attributes: {
+              allow:
+                "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+            },
           } as any}
         />
       </div>
+
+      {/* Mini player fallback if PiP not supported: small re-mounted player */}
+      {state.isMiniPlayer && miniPos && (
+        <div
+          className="fixed z-50 w-[320px] max-w-[85vw] rounded-xl overflow-hidden border border-white/10 shadow-lg bg-black/90 backdrop-blur-sm"
+          style={{ left: miniPos.x, top: miniPos.y }}
+          role="dialog"
+          aria-label="Mini player"
+        >
+          <div
+            className="absolute top-0 left-0 right-0 h-7 cursor-move bg-black/30 text-white/70 text-[11px] flex items-center px-2 select-none"
+            onMouseDown={(e) => {
+              draggingRef.current = true
+              const startX = e.clientX
+              const startY = e.clientY
+              const orig = miniPos
+              dragOffsetRef.current = { dx: startX - orig.x, dy: startY - orig.y }
+              const onMove = (ev: MouseEvent) => {
+                if (!draggingRef.current) return
+                const nx = ev.clientX - dragOffsetRef.current.dx
+                const ny = ev.clientY - dragOffsetRef.current.dy
+                const w = window.innerWidth
+                const h = window.innerHeight
+                const width = Math.min(320, Math.max(240, Math.round(w * 0.5)))
+                const height = Math.round((9 / 16) * width)
+                const clamped = {
+                  x: clamp(nx, 8, Math.max(8, w - width - 8)),
+                  y: clamp(ny, 8, Math.max(8, h - height - 8)),
+                }
+                setMiniPos(clamped)
+              }
+              const onUp = () => {
+                draggingRef.current = false
+                if (miniPos) saveMiniPos(miniPos)
+                document.removeEventListener('mousemove', onMove)
+                document.removeEventListener('mouseup', onUp)
+              }
+              document.addEventListener('mousemove', onMove)
+              document.addEventListener('mouseup', onUp)
+            }}
+          >
+            Drag to reposition
+          </div>
+          <div className="relative w-full aspect-video">
+            <ReactPlayer
+              url={youtubeUrl}
+              width="100%"
+              height="100%"
+              playing={state.playing && canPlayVideo}
+              volume={state.volume}
+              muted={state.muted}
+              playbackRate={state.playbackRate}
+              config={{ youtube: { playerVars: { controls: 1, playsinline: 1 } }, attributes: { allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" } } as any}
+            />
+            <div className="absolute top-1 right-1 flex gap-1">
+              <Button size="icon" variant="ghost" className="h-7 w-7 bg-black/40 text-white hover:bg-black/60" onClick={() => handlers.handlePictureInPictureToggle()} aria-label="Return to main player">
+                ×
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Persistent CourseAI Logo */}
       <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 opacity-70 hover:opacity-100 transition-opacity">
@@ -735,14 +843,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       )}
 
+      {/* Overlay when native PiP is active to avoid double-visual confusion */}
+      {state.isPictureInPicture && !state.isMiniPlayer && (
+        <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+          <div className="px-3 py-2 rounded-md bg-black/60 text-white text-xs sm:text-sm flex items-center gap-3">
+            <span>Playing in Picture‑in‑Picture</span>
+            <Button size="sm" variant="secondary" onClick={handlePictureInPicture} aria-label="Return from Picture-in-Picture">
+              Return
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Play button overlay when paused */}
-      {!state.playing && playerReady && canPlayVideo && !showChapterStart && !showChapterEnd && (
+      {!state.playing && playerReady && canPlayVideo && !showChapterStart && !showChapterEnd && !state.isMiniPlayer && (
         <PlayButton onClick={handlePlayClick} />
       )}
 
       {/* Chapter Start Overlay */}
       <ChapterStartOverlay
-        visible={showChapterStart}
+        visible={showChapterStart && !state.isMiniPlayer}
         chapterTitle={chapterTitleRef.current}
         courseTitle={courseName}
         onComplete={handleChapterStartComplete}
@@ -752,7 +872,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Chapter End Overlay */}
       <ChapterEndOverlay
-        visible={showChapterEnd}
+        visible={showChapterEnd && !state.isMiniPlayer}
         chapterTitle={chapterTitleRef.current}
         nextChapterTitle={nextVideoTitle}
         hasNextChapter={!!onNextVideo}
@@ -767,15 +887,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         courseTitle={courseName}
       />
 
-      {/* Force creation modal at chapter end to promote business growth */}
-      {showChapterEnd && (
-        <div className="absolute left-0 right-0 bottom-20 z-40 px-3">
-          <CreateContentPromo context="video" topic={chapterTitleRef.current || courseName} storageKey={String(videoIdRef.current)} force />
-        </div>
-      )}
-
       {/* Enhanced Custom controls */}
-      {canPlayVideo && (
+      {canPlayVideo && !state.isMiniPlayer && (
         <div
           className={cn(
             "absolute bottom-0 left-0 right-0 z-40 transition-opacity duration-300",
@@ -818,20 +931,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             onPictureInPicture={handlePictureInPicture}
-            isPiPSupported={Boolean(getVideoElement() && (getVideoElement() as any).requestPictureInPicture && (document as any).pictureInPictureEnabled)}
+            isPiPSupported={state.isPiPSupported || true}
             isPiPActive={state.isPictureInPicture}
           />
-          {/* Growth Promo */}
-          {!showChapterEnd && (
-            <div className="px-3 pb-3">
-              <CreateContentPromo context="video" topic={chapterTitleRef.current || courseName} className="max-w-md" storageKey={String(videoIdRef.current)} />
-            </div>
-          )}
         </div>
       )}
 
       {/* Floating mini controls when player is not fully in view */}
-      {canPlayVideo && !isInView && (
+      {canPlayVideo && !isInView && !state.isMiniPlayer && (
         <div className="fixed bottom-4 right-4 z-40 bg-black/80 text-white rounded-full shadow-lg border border-white/10 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
           <button
             className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-white/10"

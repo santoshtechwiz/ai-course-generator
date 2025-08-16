@@ -13,6 +13,7 @@ import { notFoundStructuredData, setNotFoundHeaders } from "@/app/utils/not-foun
 import AsyncNavLink from "@/components/loaders/AsyncNavLink"
 import SuspenseGlobalFallback from "@/components/loaders/SuspenseGlobalFallback"
 import { JsonLD } from "@/lib/seo"
+import RecommendedSection from "@/components/shared/RecommendedSection"
 
 // Export metadata for SEO optimization
 export const metadata: Metadata = notFoundMetadata
@@ -156,15 +157,13 @@ export default function NotFound() {
             variants={itemVariants}
             className="w-full"
           >
-            <h3 className="text-2xl font-semibold text-foreground mb-6 text-center md:text-left">
-              Recommended for You
-            </h3>
-            
-            <ClientOnly>
-              <Suspense fallback={<SuspenseGlobalFallback />}>
-                <Recommendations />
-              </Suspense>
-            </ClientOnly>
+            <RecommendedSection title="Recommended for You">
+              <ClientOnly>
+                <Suspense fallback={<SuspenseGlobalFallback />}>
+                  <Recommendations />
+                </Suspense>
+              </ClientOnly>
+            </RecommendedSection>
           </motion.div>
 
           {/* Navigation Buttons */}
