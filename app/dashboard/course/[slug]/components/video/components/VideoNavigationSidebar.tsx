@@ -391,7 +391,7 @@ function MobileSidebar({
           <span className="sr-only">Open navigation menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 p-0 bg-background/95 backdrop-blur-sm">
+      <SheetContent side="right" className="w-80 p-0 bg-background/95 backdrop-blur-sm">
         <SheetHeader className="p-4 border-b border-border/50 bg-background/50">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-left line-clamp-2 text-base font-semibold">
@@ -451,7 +451,7 @@ function DesktopSidebar({
   onTogglePlay?: () => void
 }) {
   return (
-    <div className="hidden lg:flex flex-col h-full bg-background/95 backdrop-blur-sm border-r border-border/50">
+    <div className="hidden lg:flex flex-col h-full bg-background/95 backdrop-blur-sm border-l border-border/50">
       {/* Enhanced Header */}
       <div className="p-5 sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50">
         <div className="flex items-center justify-between mb-3">
