@@ -6,7 +6,23 @@ import { useRouter } from "next/navigation"
 import { useProgress } from "@/hooks"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2, Download, Share2 } from "lucide-react"
+import { 
+  Play, 
+  Lock, 
+  User as UserIcon, 
+  Award, 
+  Badge, 
+  ChevronLeft, 
+  ChevronRight, 
+  Clock, 
+  Maximize2, 
+  Minimize2, 
+  Download, 
+  Share2,
+  PictureInPicture,
+  Settings,
+  RotateCcw
+} from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
@@ -19,13 +35,10 @@ import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import AutoplayOverlay from "./AutoplayOverlay"
 import VideoGenerationSection from "./VideoGenerationSection"
 import { MarkdownRenderer } from "./markdownUtils"
-
-
 import { useVideoState, getVideoBookmarks } from "./video/hooks/useVideoState"
 import { VideoDebug } from "./video/components/VideoDebug"
 import { Card, CardContent } from "@/components/ui/card"
 import { AnimatePresence, motion } from "framer-motion"
-import { User } from "@/modules/auth"
 import { useAuth } from "@/modules/auth"
 import { isAdmin } from "@/lib/auth"
 import CourseActions from "./CourseActions"
@@ -40,15 +53,6 @@ interface ModernCoursePageProps {
   initialChapterId?: string
 }
 
-function validateChapter(chapter: any): boolean {
-  return Boolean(
-    chapter &&
-      typeof chapter === "object" &&
-      chapter.id && 
-      (typeof chapter.id === "string" || typeof chapter.id === "number") // Allow number IDs too
-  );
-}
-
 // Memoized components for better performance
 const MemoizedVideoNavigationSidebar = React.memo(VideoNavigationSidebar)
 const MemoizedVideoPlayer = React.memo(VideoPlayer)
@@ -59,16 +63,29 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   course, 
   initialChapterId
 }) => {
-  // Always define all hooks at the top level - no early returns or conditions before hooks
-  console.log(course);
+  // ============================================================================
+  // ALL HOOKS MUST BE AT THE TOP LEVEL - NO EARLY RETURNS OR CONDITIONS
+  // ============================================================================
+  
   const router = useRouter()
-  // Remove useSession  // const { data: session } = useSession()
-  const { toast } = useToast() // Fix: Properly destructure toast from useToast hook
+  const { toast } = useToast()
   const dispatch = useAppDispatch()
-  // Use new auth system
   const { user, subscription } = useAuth()
+  
+  // Progress tracking hook - MUST be called before any functions that use it
+  const { progress, updateProgress, isLoading: progressLoading } = useProgress({
+    courseId: Number(course.id),
+    currentChapterId: undefined, // Will be set after currentChapter is determined
+  })
 
-  // Local state
+  // Redux state
+  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const courseProgress = useAppSelector((state) => state.course.progress)
+
+  // ============================================================================
+  // LOCAL STATE DECLARATIONS
+  // ============================================================================
+  
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [videoEnding, setVideoEnding] = useState(false)
   const [showCertificate, setShowCertificate] = useState(false)
@@ -77,21 +94,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [isVideoLoading, setIsVideoLoading] = useState(true)
   const [hasPlayedFreeVideo, setHasPlayedFreeVideo] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
-
   const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
   const [wideMode, setWideMode] = useState(false)
-  const [isPiPActive, setIsPiPActive] = useState(false) // Add PIP state tracking
-  const isOwner = user?.id === course.userId;
-  
-  // Performance optimization: use ref for PIP state to prevent unnecessary re-renders
-  const pipStateRef = useRef(false)
-  
-  // Mobile playlist state
+  const [isPiPActive, setIsPiPActive] = useState(false)
   const [mobilePlaylistOpen, setMobilePlaylistOpen] = useState(false)
-  
-  // Auto-play mode state
   const [autoplayMode, setAutoplayMode] = useState(false)
   const [autoplayCountdown, setAutoplayCountdown] = useState(5)
   const [nextChapterInfo, setNextChapterInfo] = useState<{
@@ -101,214 +109,244 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     duration?: number
   } | null>(null)
   const [showChapterTransition, setShowChapterTransition] = useState(false)
-  
-  // Fullscreen and Theater mode state
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
+
+  // ============================================================================
+  // REFS AND STORES
+  // ============================================================================
   
-  // Enhanced PIP handling with wide mode consideration
+  const pipStateRef = useRef(false)
+  const videoStateStore = useVideoState
+  const isOwner = user?.id === course.userId
+
+  // ============================================================================
+  // COMPUTED VALUES AND MEMOIZED DATA
+  // ============================================================================
+  
+  // Video playlist with proper typing
+  const videoPlaylist = useMemo(() => {
+    if (!course?.chapters) return []
+    
+    return course.chapters
+      .filter((chapter): chapter is FullChapterType => 
+        Boolean(chapter?.videoId && chapter?.id)
+      )
+      .map((chapter) => ({
+        chapter,
+        videoId: chapter.videoId!,
+        title: chapter.title,
+        description: chapter.description,
+        isFree: chapter.isFree || false,
+        duration: videoDurations[chapter.videoId!] || 0,
+      }))
+      .sort((a, b) => (a.chapter.order || 0) - (b.chapter.order || 0))
+  }, [course?.chapters, videoDurations])
+
+  // Current chapter and index
+  const currentChapter = useMemo(() => {
+    if (!currentVideoId || !videoPlaylist.length) return null
+    return videoPlaylist.find(item => item.videoId === currentVideoId)?.chapter || null
+  }, [currentVideoId, videoPlaylist])
+
+  const currentIndex = useMemo(() => {
+    if (!currentVideoId || !videoPlaylist.length) return -1
+    return videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+  }, [currentVideoId, videoPlaylist])
+
+  // Navigation helpers
+  const nextChapter = useMemo(() => {
+    return currentIndex >= 0 && currentIndex < videoPlaylist.length - 1 
+      ? videoPlaylist[currentIndex + 1] 
+      : null
+  }, [currentIndex, videoPlaylist])
+
+  const prevChapter = useMemo(() => {
+    return currentIndex > 0 ? videoPlaylist[currentIndex - 1] : null
+  }, [currentIndex, videoPlaylist])
+
+  const isLastVideo = useMemo(() => {
+    return currentIndex === videoPlaylist.length - 1
+  }, [currentIndex, videoPlaylist])
+
+  // User subscription info
+  const userSubscription = useMemo(() => {
+    if (!subscription) return null
+    return subscription.plan || null
+  }, [subscription])
+
+  // Video access permissions
+  const canPlayVideo = useMemo(() => {
+    const allowedByChapter = currentChapter?.isFree === true
+    return allowedByChapter || !!userSubscription
+  }, [currentChapter?.isFree, userSubscription])
+
+  // Grid layout classes based on PIP state
+  const gridLayoutClasses = useMemo(() => {
+    if (isPiPActive) {
+      return "grid-cols-1" // Single column when PIP is active
+    }
+    return wideMode 
+      ? "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]" // Wide mode with sidebar
+      : "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]" // Standard layout
+  }, [isPiPActive, wideMode])
+
+  // ============================================================================
+  // EVENT HANDLERS - ALL USE CALLBACK TO PREVENT RE-CREATION
+  // ============================================================================
+  
   const handlePIPToggle = useCallback((isPiPActive: boolean) => {
-    // Only update state if it actually changed
-    if (pipStateRef.current !== isPiPActive) {
-      pipStateRef.current = isPiPActive
-      setIsPiPActive(isPiPActive)
-      
-      // If PIP is activated and we're in wide mode, ensure video moves to top
-      if (isPiPActive && wideMode) {
-        // Scroll to top smoothly when PIP is activated in wide mode
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        
-        // Add a small delay to ensure smooth transition
-        setTimeout(() => {
-          // Force a reflow to ensure smooth animation
-          document.body.offsetHeight
-        }, 100)
-      }
+    setIsPiPActive(isPiPActive)
+    pipStateRef.current = isPiPActive
+    
+    // If PIP is activated in wide mode, smoothly scroll to top
+    if (isPiPActive && wideMode) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [wideMode])
 
-  // Auto-play mode toggle with persistence
   const handleAutoplayToggle = useCallback(() => {
-    const newAutoplayMode = !autoplayMode
-    setAutoplayMode(newAutoplayMode)
+    const newMode = !autoplayMode
+    setAutoplayMode(newMode)
     
     // Save preference to localStorage
     try {
-      localStorage.setItem(`autoplay_mode_course_${course.id}`, String(newAutoplayMode))
+      localStorage.setItem('autoplay_mode', String(newMode))
     } catch {}
     
-    // Show feedback toast
     toast({
-      title: newAutoplayMode ? "Auto-play Enabled" : "Auto-play Disabled",
-      description: newAutoplayMode 
-        ? "Chapters will automatically advance when completed" 
-        : "You'll be prompted before each chapter transition",
+      title: newMode ? "Auto-play Mode Enabled" : "Auto-play Mode Disabled",
+      description: newMode 
+        ? "Videos will automatically advance to the next chapter" 
+        : "Videos will pause at the end of each chapter",
     })
-  }, [autoplayMode, course.id, toast])
+  }, [autoplayMode, toast])
 
-  // Mobile playlist toggle
   const handleMobilePlaylistToggle = useCallback(() => {
-    setMobilePlaylistOpen(prev => !prev)
-  }, [])
-  
-  // Redux state
-  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
-  
-  // Fullscreen and Theater mode handlers
+    setMobilePlaylistOpen(!mobilePlaylistOpen)
+  }, [mobilePlaylistOpen])
+
   const handleFullscreenToggle = useCallback(() => {
-    if (isFullscreen) {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen()
-      }
-      setIsFullscreen(false)
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
     } else {
-      // Enter fullscreen
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen()
-      }
-      setIsFullscreen(true)
+      document.exitFullscreen()
     }
-  }, [isFullscreen])
+  }, [])
 
   const handleTheaterModeToggle = useCallback(() => {
-    setIsTheaterMode(prev => !prev)
-    // Exit fullscreen when entering theater mode
-    if (isFullscreen) {
-      handleFullscreenToggle()
-    }
-  }, [isFullscreen, handleFullscreenToggle])
+    setIsTheaterMode(!isTheaterMode)
+  }, [isTheaterMode])
 
-  // Video and chapter handling functions
-  const handleVideoLoad = useCallback((metadata: any) => {
-    console.log('Video loaded:', metadata)
+  const handleVideoLoad = useCallback(() => {
     setIsVideoLoading(false)
   }, [])
 
-  const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
-    setPlayerRef(player)
+  const handlePlayerReady = useCallback(() => {
     setIsVideoLoading(false)
   }, [])
 
-  const handleSeekToBookmark = useCallback((time: number) => {
+  const handleSeekToBookmark = useCallback((bookmark: BookmarkData) => {
     if (playerRef?.current) {
-      try {
-        playerRef.current.seekTo(time)
-      } catch (error) {
-        console.error('Error seeking to bookmark:', error)
-      }
+      playerRef.current.seekTo(bookmark.time)
     }
   }, [playerRef])
 
-  const handleVideoProgress = useCallback((state: { played: number; loaded: number; playedSeconds: number }) => {
-    // Update progress in Zustand store
-    if (currentVideoId && state.playedSeconds > 0) {
+  const handleVideoProgress = useCallback((state: { playedSeconds: number }) => {
+    if (currentVideoId) {
       videoStateStore.getState().updateProgress(currentVideoId, state.playedSeconds)
     }
-  }, [currentVideoId])
+  }, [currentVideoId, videoStateStore])
 
   const handleVideoEnd = useCallback(() => {
     setVideoEnding(true)
     
-    // Check if auto-play mode is enabled
-    if (autoplayMode) {
-      // Show chapter transition overlay with countdown
+    if (autoplayMode && nextChapter) {
       setShowChapterTransition(true)
-      setAutoplayCountdown(5)
+      setNextChapterInfo({
+        title: nextChapter.chapter.title,
+        description: nextChapter.chapter.description,
+        thumbnail: nextChapter.chapter.thumbnail || undefined,
+        duration: nextChapter.duration,
+      })
       
       // Start countdown
-      const countdownInterval = setInterval(() => {
+      const countdown = setInterval(() => {
         setAutoplayCountdown((prev) => {
           if (prev <= 1) {
-            clearInterval(countdownInterval)
-            // Auto-advance to next chapter
-            handleNextVideo()
+            clearInterval(countdown)
+            handleChapterSelect(nextChapter.chapter)
+            setShowChapterTransition(false)
+            setNextChapterInfo(null)
+            setAutoplayCountdown(5)
             return 5
           }
           return prev - 1
         })
       }, 1000)
     } else {
-      // Show manual auto-play prompt
       setShowAutoplayOverlay(true)
     }
-    
-    // Show certificate option
-    setTimeout(() => {
-      setShowCertificate(true)
-    }, 1000)
-  }, [autoplayMode])
+  }, [autoplayMode, nextChapter, handleChapterSelect])
 
-  const handleChapterComplete = useCallback((chapterId: string) => {
-    if (!chapterId) return
+  const handleChapterComplete = useCallback(async () => {
+    if (!currentChapter?.id || !user) return
     
-    // Update progress in Redux
-    const progress = courseProgress || { completedChapters: [], lastAccessedAt: new Date().toISOString() }
-    
-    // Add to completed chapters if not already there
-    if (!progress.completedChapters?.includes(Number(chapterId))) {
-      updateProgress({
-        completedChapters: [...(progress.completedChapters || []), Number(chapterId)],
-        lastAccessedAt: new Date().toISOString(),
+    try {
+      await dispatch(markChapterAsCompleted({
+        chapterId: currentChapter.id.toString(),
+        courseId: course.id.toString(),
+      }))
+      
+      // Update progress
+      if (updateProgress) {
+        updateProgress({
+          courseId: course.id,
+          chapterId: currentChapter.id.toString(),
+          completed: true,
+        })
+      }
+      
+      toast({
+        title: "Chapter Completed!",
+        description: "Great job! You've completed this chapter.",
       })
-    } else {
-      // Just update last accessed time
-      updateProgress({
-        lastAccessedAt: new Date().toISOString(),
+    } catch (error) {
+      console.error("Error marking chapter as completed:", error)
+      toast({
+        title: "Error",
+        description: "Failed to mark chapter as completed. Please try again.",
+        variant: "destructive",
       })
     }
+  }, [currentChapter?.id, user, dispatch, course.id, updateProgress, toast])
 
-    console.log(`Chapter completed: ${chapterId}`)
-  }, [course.id, dispatch, updateProgress, progress])
+  const handleChapterSelect = useCallback(async (chapter: FullChapterType) => {
+    if (!chapter?.id) {
+      toast({
+        title: "Invalid Chapter",
+        description: "Please select a valid chapter.",
+        variant: "destructive",
+      })
+      return
+    }
 
-  const handleChapterSelect = useCallback((chapter: FullChapterType) => {
-    // Create a safe chapter object with properly formatted ID
-    let safeChapter;
     try {
-      if (!chapter) {
-        throw new Error("No chapter provided");
-      }
-
-      safeChapter = {
-        ...chapter,
-        id: String(chapter.id), // Convert ID to string to ensure consistency
-      };
-      
-      // First, check if the chapter actually exists and is valid
-      if (!validateChapter(safeChapter)) {
-        console.error("Invalid chapter selected:", safeChapter);
-        toast({
-          title: "Error",
-          description: "Invalid chapter selected. Please try another chapter.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if user can play the selected video (free chapter or subscribed)
-      const allowed = Boolean(safeChapter.isFree || userSubscription)
-      if (!allowed) {
-        setShowAuthPrompt(true);
-        return;
-      }
-
-      // Check if the chapter has a videoId - this is critical
-      if (!safeChapter.videoId) {
-        console.error(`Chapter has no videoId: ${safeChapter.id} - ${safeChapter.title}`);
+      // Validate chapter has video
+      if (!chapter.videoId) {
         toast({
           title: "Video Unavailable",
           description: "This chapter doesn't have a video available.",
           variant: "destructive",
-        });
-        return;
+        })
+        return
       }
 
       // Update Redux state
-      dispatch(setCurrentVideoApi(safeChapter.videoId));
+      dispatch(setCurrentVideoApi(chapter.videoId))
 
-      // Update Zustand store with both videoId and courseId
-      videoStateStore.getState().setCurrentVideo(safeChapter.videoId, course.id);
+      // Update Zustand store
+      videoStateStore.getState().setCurrentVideo(chapter.videoId, course.id)
 
       // Close mobile playlist if open
       setMobilePlaylistOpen(false)
@@ -316,41 +354,27 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       // Show success feedback
       toast({
         title: "Chapter Selected",
-        description: `Now playing: ${safeChapter.title}`,
+        description: `Now playing: ${chapter.title}`,
       })
     } catch (error) {
-      console.error("Error selecting chapter:", error);
+      console.error("Error selecting chapter:", error)
       toast({
         title: "Error",
         description: "Failed to select chapter. Please try again.",
         variant: "destructive",
-      });
+      })
     }
-  }, [course.id, userSubscription, dispatch, toast])
+  }, [course.id, dispatch, toast, videoStateStore, setMobilePlaylistOpen])
 
   const handleNextVideo = useCallback(() => {
-    if (!currentVideoId) return
-    
-    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
-    if (currentIndex === -1 || currentIndex >= videoPlaylist.length - 1) return
-    
-    const nextItem = videoPlaylist[currentIndex + 1]
-    if (nextItem) {
-      handleChapterSelect(nextItem.chapter)
-    }
-  }, [currentVideoId, videoPlaylist, handleChapterSelect])
+    if (!currentVideoId || !nextChapter) return
+    handleChapterSelect(nextChapter.chapter)
+  }, [currentVideoId, nextChapter, handleChapterSelect])
 
   const handlePrevVideo = useCallback(() => {
-    if (!currentVideoId) return
-    
-    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
-    if (currentIndex <= 0) return
-    
-    const prevItem = videoPlaylist[currentIndex - 1]
-    if (prevItem) {
-      handleChapterSelect(prevItem.chapter)
-    }
-  }, [currentVideoId, videoPlaylist, handleChapterSelect])
+    if (!currentVideoId || !prevChapter) return
+    handleChapterSelect(prevChapter.chapter)
+  }, [currentVideoId, prevChapter, handleChapterSelect])
 
   const handleCancelAutoplay = useCallback(() => {
     setShowChapterTransition(false)
@@ -381,6 +405,30 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     })
   }, [wideMode, course.id, toast])
 
+  // ============================================================================
+  // EFFECTS - ALL DEPENDENCIES MUST BE PROPERLY DECLARED
+  // ============================================================================
+  
+  // Load wide mode preference from localStorage
+  useEffect(() => {
+    try {
+      const savedWideMode = localStorage.getItem(`wide_mode_course_${course.id}`)
+      if (savedWideMode !== null) {
+        setWideMode(savedWideMode === 'true')
+      }
+    } catch {}
+  }, [course.id])
+
+  // Load autoplay mode preference from localStorage
+  useEffect(() => {
+    try {
+      const savedAutoplayMode = localStorage.getItem('autoplay_mode')
+      if (savedAutoplayMode !== null) {
+        setAutoplayMode(savedAutoplayMode === 'true')
+      }
+    } catch {}
+  }, [])
+
   // Listen for fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -399,71 +447,28 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         return
       }
 
-      switch (event.key.toLowerCase()) {
-        case 'escape':
-          // Exit fullscreen first
-          if (isFullscreen) {
-            handleFullscreenToggle()
-            return
-          }
-          
-          // Exit theater mode
-          if (isTheaterMode) {
-            setIsTheaterMode(false)
-            return
-          }
-          
-          // Exit PIP mode
-          if (isPiPActive) {
-            handlePIPToggle(false)
-            return
-          }
-          
-          // Close overlays
+      switch (event.key) {
+        case 'Escape':
           if (showChapterTransition) {
-            setShowChapterTransition(false)
-            setNextChapterInfo(null)
-            setAutoplayCountdown(5)
-          }
-          if (showAutoplayOverlay) {
+            handleCancelAutoplay()
+          } else if (showAutoplayOverlay) {
             setShowAutoplayOverlay(false)
-            setNextChapterInfo(null)
-            setAutoplayCountdown(5)
-          }
-          break
-        case 't':
-          if (!event.ctrlKey && !event.metaKey) {
-            event.preventDefault()
-            handleTheaterModeToggle()
-          }
-          break
-        case 'f':
-          if (!event.ctrlKey && !event.metaKey) {
-            event.preventDefault()
-            handleFullscreenToggle()
+          } else if (isPiPActive) {
+            handlePIPToggle(false)
           }
           break
         case 'p':
+        case 'P':
           if (event.ctrlKey || event.metaKey) {
             event.preventDefault()
-            // Toggle PIP if video is playing
-            if (currentVideoId && !isPiPActive) {
-              handlePIPToggle(true)
-            } else if (isPiPActive) {
-              handlePIPToggle(false)
-            }
+            handlePIPToggle(!isPiPActive)
           }
           break
         case 'a':
+        case 'A':
           if (event.ctrlKey || event.metaKey) {
             event.preventDefault()
             handleAutoplayToggle()
-          }
-          break
-        case 'space':
-          // Prevent space from scrolling when video is focused
-          if (currentVideoId) {
-            event.preventDefault()
           }
           break
       }
@@ -471,160 +476,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isFullscreen, isTheaterMode, isPiPActive, showChapterTransition, showAutoplayOverlay, handleFullscreenToggle, handleTheaterModeToggle, handlePIPToggle, handleAutoplayToggle, currentVideoId])
-
-  const twoCol = useMemo(() => !isTheaterMode && !isFullscreen, [isTheaterMode, isFullscreen])
-
-  // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
-  const bookmarks = useMemo(() => {
-    return getVideoBookmarks(currentVideoId)
-  }, [currentVideoId])
-
-  // Adapt raw bookmark times to BookmarkData objects expected by VideoPlayer/BookmarkManager
-  const bookmarkItems: BookmarkData[] = useMemo(() => {
-    if (!currentVideoId) return []
-    return (bookmarks || []).map((time, idx) => ({
-      id: `${currentVideoId}-${time}-${idx}`,
-      videoId: currentVideoId,
-      time,
-      title: `Bookmark ${formatDuration(time)}`,
-      createdAt: new Date().toISOString(),
-      description: undefined,
-    }))
-  }, [bookmarks, currentVideoId])
-
-  // Fix: Initialize completedChapters safely so it's always defined
-  // Use courseProgress.completedChapters if available, otherwise empty array
-  const completedChapters = useMemo(() => {
-    return courseProgress?.completedChapters || []
-  }, [courseProgress])
-
-  // Check free video status on mount
-  useEffect(() => {
-    const freeVideoPlayed = migratedStorage.getPreference("played_free_video", false)
-    setHasPlayedFreeVideo(Boolean(freeVideoPlayed))
-    // Restore wide mode preference per course
-    try {
-      const saved = localStorage.getItem(`wide_mode_course_${course.id}`)
-      if (saved === 'true') {
-        setWideMode(true)
-      } else if (typeof window !== 'undefined') {
-        // Default to wide mode on desktop if no preference is set
-        if (window.innerWidth >= 1280) {
-          setWideMode(true)
-        }
-      }
-    } catch {}
-    
-    // Restore auto-play mode preference
-    try {
-      const savedAutoplay = localStorage.getItem(`autoplay_mode_course_${course.id}`)
-      if (savedAutoplay === 'true') {
-        setAutoplayMode(true)
-      }
-    } catch {}
-  }, [course.id])
-
-  // Memoized video playlist
-  const videoPlaylist = useMemo(() => {
-    const playlist: { videoId: string; chapter: FullChapterType }[] = []
-    
-    if (!course?.courseUnits) {
-      return playlist
-    }
-
-    // Global index across all units/chapters to support implicit free gating
-    let globalIndex = 0
-
-    course.courseUnits.forEach((unit) => {
-      if (!unit.chapters) return
-
-      unit.chapters
-        .filter((chapter) => {
-          // Enhanced validation to make sure we have valid chapters
-          const isValid = Boolean(
-            chapter &&
-              typeof chapter === "object" &&
-              chapter.id &&
-              chapter.videoId &&
-              typeof chapter.videoId === "string",
-          )
-
-          if (!isValid && chapter) {
-            // Log invalid chapter in development for debugging
-            if (process.env.NODE_ENV !== "production") {
-              console.debug(`Skipping invalid chapter:`, {
-                id: chapter.id,
-                title: chapter.title,
-                hasVideoId: !!chapter.videoId,
-              })
-            }
-          }
-
-          return isValid
-        })
-        .forEach((chapter) => {
-          // Ensure description is never null, only string or undefined
-          const safeChapter = {
-            ...chapter,
-            description: chapter.description === null ? undefined : chapter.description,
-            // Implicit free gating for first two videos
-            isFree: Boolean(chapter.isFree) || globalIndex < 2,
-            // Unlock only the first quiz (after two free videos we unlock the first quiz slot)
-            // Here we choose the quiz tied to the second video (index 1)
-            isFreeQuiz: globalIndex === 1,
-          } as FullChapterType & { isFreeQuiz?: boolean }
-
-          playlist.push({ videoId: chapter.videoId!, chapter: safeChapter })
-          globalIndex += 1
-        })
-    })
-
-    return playlist
-  }, [course.courseUnits])
-
-  // Current chapter and navigation
-  const currentChapter = useMemo(() => {
-    if (!currentVideoId) return undefined
-    return videoPlaylist.find((entry) => entry.videoId === currentVideoId)?.chapter
-  }, [currentVideoId, videoPlaylist])
-
-  const currentIndex = useMemo(() => {
-    return videoPlaylist.findIndex((entry) => entry.videoId === currentVideoId)
-  }, [currentVideoId, videoPlaylist])
-
-  const nextChapter = useMemo(() => {
-    return currentIndex < videoPlaylist.length - 1 ? videoPlaylist[currentIndex + 1] : null
-  }, [currentIndex, videoPlaylist])
-
-  const prevChapter = useMemo(() => {
-    return currentIndex > 0 ? videoPlaylist[currentIndex - 1] : null
-  }, [currentIndex, videoPlaylist])
-
-  const isLastVideo = useMemo(() => {
-    return currentIndex === videoPlaylist.length - 1
-  }, [currentIndex, videoPlaylist])
-
-  // Progress tracking
-  const { progress, updateProgress, isLoading: progressLoading } = useProgress({
-    courseId: Number(course.id),
-    currentChapterId: currentChapter?.id?.toString(),
-  })
-
-  // Determine user subscription once (used for gating below)
-  const userSubscription = useMemo(() => {
-    if (!subscription) return null
-    return subscription.plan || null
-  }, [subscription])
-
-  // Check if user can play this video: allowed if chapter is free or user is subscribed
-  const canPlayVideo = useMemo(() => {
-    const allowedByChapter = currentChapter?.isFree === true
-    return allowedByChapter || !!userSubscription
-  }, [currentChapter?.isFree, userSubscription])
-
-  // Get direct access to the Zustand video state store
-  const videoStateStore = useVideoState
+  }, [
+    showChapterTransition, 
+    showAutoplayOverlay, 
+    isPiPActive, 
+    handleCancelAutoplay, 
+    handlePIPToggle, 
+    handleAutoplayToggle
+  ])
 
   // Enhanced initialization logic for video selection
   useEffect(() => {
@@ -679,1098 +538,366 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         setResumePromptShown(true)
         toast({
           title: "Resume Learning",
-          description: `Continue from \"${resumeChapter.chapter.title}\"? (Resume feature available in your dashboard)`
+          description: `Continue from "${resumeChapter.chapter.title}"? (Resume feature available in your dashboard)`
         })
       }
     }
-  }, [progress, resumePromptShown, currentVideoId, videoPlaylist, dispatch, toast, user])
+  }, [progress, resumePromptShown, currentVideoId, videoPlaylist, toast, user])
 
+  // ============================================================================
+  // RENDER LOGIC
+  // ============================================================================
+  
+  // Early return for loading state
+  if (!course || !videoPlaylist.length) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading course content...</p>
+        </div>
+      </div>
+    )
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // Autoplay logic removed per request
-  useEffect(() => {
-    setShowAutoplayOverlay(false)
-    setAutoplayCountdown(0)
-  }, [])
-
-  // Memoized course stats for better performance
-  const courseStats = useMemo(
-    () => {
-      const totalChapters = videoPlaylist.length
-      const completedChapters = progress?.completedChapters?.length || 0
-      const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
-
-      return {
-        totalChapters,
-        completedChapters,
-        progressPercentage,
-      }
-    },
-    [videoPlaylist.length, progress?.completedChapters],
-  )
-
-  // Memoized sidebar props to prevent unnecessary re-renders
+  // Memoized props for child components
   const sidebarProps = useMemo(() => ({
     course,
-    currentChapter,
-    courseId: course.id.toString(),
-    onChapterSelect: handleChapterSelect,
-    progress,
-    isAuthenticated: !!user,
-    isSubscribed: !!userSubscription,
-    completedChapters,
-    formatDuration,
-    nextVideoId: undefined,
-    currentVideoId: currentVideoId || '',
-    isPlaying: Boolean(currentVideoId),
-    courseStats: {
-      completedCount: progress?.completedChapters?.length || 0,
-      totalChapters: videoPlaylist.length,
-      progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-    }
-  }), [
-    course,
-    currentChapter,
-    handleChapterSelect,
-    progress,
-    user,
-    userSubscription,
-    completedChapters,
-    formatDuration,
     currentVideoId,
-    videoPlaylist.length
-  ])
+    videoPlaylist,
+    onChapterSelect: handleChapterSelect,
+    onChapterComplete: handleChapterComplete,
+    userSubscription,
+    isOwner,
+  }), [course, currentVideoId, videoPlaylist, handleChapterSelect, handleChapterComplete, userSubscription, isOwner])
 
-  // Memoized video player props
   const videoPlayerProps = useMemo(() => ({
-    videoId: currentVideoId,
+    videoId: currentVideoId || '',
     courseId: course.id,
-    chapterId: currentChapter?.id ? String(currentChapter.id) : undefined,
-    courseName: course.title,
-    onEnded: handleVideoEnd,
-    onProgress: handleVideoProgress,
     onVideoLoad: handleVideoLoad,
     onPlayerReady: handlePlayerReady,
-    onBookmark: handleSeekToBookmark,
-    bookmarks: bookmarkItems,
-    isAuthenticated: !!user,
-    autoPlay: false,
-    showControls: true,
-    onCertificateClick: handleCertificateClick,
-    onChapterComplete: handleChapterComplete,
-    onNextVideo: undefined,
-    nextVideoId: undefined,
-    nextVideoTitle: '',
-    onPrevVideo: undefined,
-    prevVideoTitle: '',
-    hasNextVideo: false,
-    isFullscreen,
-    onFullscreenToggle: handleFullscreenToggle,
+    onSeekToBookmark: handleSeekToBookmark,
+    onVideoProgress: handleVideoProgress,
+    onVideoEnd: handleVideoEnd,
     onPictureInPictureToggle: handlePIPToggle,
-    className: "h-full w-full"
+    onFullscreenToggle: handleFullscreenToggle,
+    isPiPActive,
+    playerRef: setPlayerRef,
   }), [
-    currentVideoId,
-    course.id,
-    currentChapter?.id,
-    course.title,
-    handleVideoEnd,
-    handleVideoProgress,
-    handleVideoLoad,
-    handlePlayerReady,
-    handleSeekToBookmark,
-    bookmarkItems,
-    user,
-    handleCertificateClick,
-    handleChapterComplete,
-    isFullscreen,
-    handleFullscreenToggle,
-    handlePIPToggle
+    currentVideoId, 
+    course.id, 
+    handleVideoLoad, 
+    handlePlayerReady, 
+    handleSeekToBookmark, 
+    handleVideoProgress, 
+    handleVideoEnd, 
+    handlePIPToggle, 
+    handleFullscreenToggle, 
+    isPiPActive
   ])
 
-
-
-  // Create content for auth prompt here instead of doing an early return
-  const authPromptContent = (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardContent className="p-6 text-center">
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
-            <Lock className="h-8 w-8 text-primary" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Unlock this lesson</h3>
-          <p className="text-muted-foreground mb-6">
-            The first two chapters (including summary and quiz) are free. Upgrade your plan to access all remaining lessons.
-          </p>
-          <div className="space-y-3">
-            <Button onClick={() => (window.location.href = "/dashboard/subscription")} className="w-full" size="lg">
-              Upgrade Now
-            </Button>
-            <Button variant="outline" onClick={() => (window.location.href = "/api/auth/signin")} className="w-full">
-              <UserIcon className="h-4 w-4 mr-2" />
-              Sign In
-            </Button>
-            <Button variant="ghost" onClick={() => setShowAuthPrompt(false)} className="w-full">
-              Back to Course
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-  
-  // Determine access levels based on subscription
-  const accessLevels: AccessLevels = useMemo(() => {
-    return {
-      isSubscribed: !!userSubscription,
-      isAdmin: !!user?.isAdmin,
-      isAuthenticated: !!user,
-    }
-  }, [userSubscription, user])
-
-  // Memoized grid layout classes for better performance
-  const gridLayoutClasses = useMemo(() => {
-    if (isPiPActive) {
-      // When PIP is active, use single column layout to move video to top
-      return "grid-cols-1"
-    }
-    
-    if (twoCol) {
-      // Udemy-style layout: video on left, playlist on right
-      return "md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]"
-    }
-    
-    return "grid-cols-1"
-  }, [twoCol, isPiPActive])
-
-  // Enhanced grid container with smooth transitions
-  const gridContainerClasses = useMemo(() => {
-    return cn(
-      "grid gap-4 transition-all duration-300 ease-in-out",
-      gridLayoutClasses
-    )
-  }, [gridLayoutClasses])
-
-  // Regular content
-  const regularContent = (
+  return (
     <div className="min-h-screen bg-background">
-      {/* Mobile header */}
-      <div className="flex">
-                 {/* Main content */}        <main className="flex-1 min-w-0">
-             {/* Top toolbar: width toggle and keys hint */}
-             <div className="mx-auto py-3 px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={handleWideModeToggle}
-                   className="gap-2"
-                 >
-                   {wideMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                   {wideMode ? "Normal width" : "Wider video"}
-                 </Button>
-                 
-                 {/* Auto-play Mode Toggle */}
-                 <Button
-                   variant={autoplayMode ? "default" : "outline"}
-                   size="sm"
-                   onClick={handleAutoplayToggle}
-                   className={cn(
-                     "gap-2 transition-all duration-300",
-                     autoplayMode && "bg-green-600 hover:bg-green-700 text-white"
-                   )}
-                 >
-                   <div className={cn(
-                     "w-2 h-2 rounded-full transition-all duration-300",
-                     autoplayMode ? "bg-white" : "bg-green-500"
-                   )} />
-                   {autoplayMode ? "Auto-play ON" : "Auto-play OFF"}
-                 </Button>
-                 
-                 {/* Theater Mode Toggle */}
-                 <Button
-                   variant={isTheaterMode ? "default" : "outline"}
-                   size="sm"
-                   onClick={handleTheaterModeToggle}
-                   className={cn(
-                     "gap-2 transition-all duration-300",
-                     isTheaterMode && "bg-purple-600 hover:bg-purple-700 text-white"
-                   )}
-                 >
-                   {isTheaterMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                   {isTheaterMode ? "Exit Theater" : "Theater Mode"}
-                 </Button>
-                 
-                 {/* Fullscreen Toggle */}
-                 <Button
-                   variant={isFullscreen ? "default" : "outline"}
-                   size="sm"
-                   onClick={handleFullscreenToggle}
-                   className={cn(
-                     "gap-2 transition-all duration-300",
-                     isFullscreen && "bg-blue-600 hover:bg-blue-700 text-white"
-                   )}
-                 >
-                   {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                   {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-                 </Button>
-                 
-                 {/* PIP Status Indicator */}
-                 {isPiPActive && (
-                   <motion.div
-                     initial={{ opacity: 0, scale: 0.8 }}
-                     animate={{ opacity: 1, scale: 1 }}
-                     className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary text-xs rounded-md border border-primary/20"
-                   >
-                     <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                     PIP Active
-                   </motion.div>
-                 )}
-               </div>
-               
-               <span className="ml-2 hidden md:inline text-xs text-muted-foreground">
-                 Keys: T Theater • F Fullscreen • B Bookmark • Ctrl+P PIP • Ctrl+A Auto-play • Esc Exit
-               </span>
-             </div>
-             <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
-
-            {/* Video Generation Section */}
-            {(isOwner || user?.isAdmin) && (
-              <VideoGenerationSection 
-                course={course}
-                onVideoGenerated={(chapterId, videoId) => {
-                  console.log(`Video generated for chapter ${chapterId}: ${videoId}`)
-                  // Optionally auto-select the newly generated video
-                  if (videoId) {
-                    dispatch(setCurrentVideoApi(videoId))
-                  }
-                }}
-              />
-            )}
-
-            {/* Mobile playlist toggle button - positioned above video for better UX */}
-            <div className="md:hidden mb-4">
+      {/* Top Toolbar */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="flex items-center space-x-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Back</span>
+            </Button>
+            
+            <div className="flex items-center space-x-2">
               <Button
-                variant="outline"
-                onClick={handleMobilePlaylistToggle}
-                className="w-full bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-background/90 relative overflow-hidden"
+                variant="ghost"
+                size="sm"
+                onClick={handleWideModeToggle}
+                className={cn(
+                  "flex items-center space-x-2",
+                  wideMode && "bg-primary/10 text-primary"
+                )}
               >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center">
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    <span>Course Content</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{currentChapter ? `${currentIndex + 1}/${videoPlaylist.length}` : `0/${videoPlaylist.length}`}</span>
-                    {currentChapter && (
-                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary transition-all duration-300"
-                          style={{ width: `${((currentIndex + 1) / videoPlaylist.length) * 100}%` }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <Maximize2 className="h-4 w-4" />
+                <span>Wide Mode</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePIPToggle.bind(null, !isPiPActive)}
+                className={cn(
+                  "flex items-center space-x-2",
+                  isPiPActive && "bg-primary/10 text-primary"
+                )}
+              >
+                <PictureInPicture className="h-4 w-4" />
+                <span>PIP</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAutoplayToggle}
+                className={cn(
+                  "flex items-center space-x-2",
+                  autoplayMode && "bg-primary/10 text-primary"
+                )}
+              >
+                <Play className="h-4 w-4" />
+                <span>Auto-play</span>
               </Button>
             </div>
-
-            {/* Video player section */}
-            <div className={gridContainerClasses}> 
-              {/* Left column: Video and tabs (main content) */}
-              <motion.div 
-                key="video-content"
-                layout
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="min-w-0"
-              >
- 
-                {/* Video player */}
-                <div className="w-full">
-                 {/* Auto-play mode indicator */}
-                 {autoplayMode && (
-                   <motion.div
-                     initial={{ opacity: 0, y: -10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     className="mb-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg flex items-center justify-between"
-                   >
-                     <div className="flex items-center gap-2">
-                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                       <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                         Auto-play Mode Active
-                       </span>
-                       <span className="text-xs text-green-600 dark:text-green-400">
-                         Chapters will automatically advance
-                       </span>
-                     </div>
-                     <Button
-                       variant="ghost"
-                       size="sm"
-                       onClick={handleAutoplayToggle}
-                       className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/50"
-                     >
-                       Disable
-                     </Button>
-                   </motion.div>
-                 )}
-                 
-                 {/* Theater Mode indicator */}
-                 {isTheaterMode && (
-                   <motion.div
-                     initial={{ opacity: 0, y: -10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     className="mb-3 p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg flex items-center justify-between"
-                   >
-                     <div className="flex items-center gap-2">
-                       <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                       <span className="text-sm font-medium text-purple-800 dark:text-purple-200">
-                         Theater Mode Active
-                       </span>
-                       <span className="text-xs text-purple-600 dark:text-purple-400">
-                         Immersive video viewing experience
-                       </span>
-                     </div>
-                     <Button
-                       variant="ghost"
-                       size="sm"
-                       onClick={handleTheaterModeToggle}
-                       className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-900/50"
-                     >
-                       Exit
-                     </Button>
-                   </motion.div>
-                 )}
-                 
-                 {/* Fullscreen Mode indicator */}
-                 {isFullscreen && (
-                   <motion.div
-                     initial={{ opacity: 0, y: -10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between"
-                   >
-                     <div className="flex items-center gap-2">
-                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                       <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                         Fullscreen Mode Active
-                       </span>
-                       <span className="text-xs text-blue-600 dark:text-blue-400">
-                         Press ESC to exit fullscreen
-                       </span>
-                     </div>
-                     <Button
-                       variant="ghost"
-                       size="sm"
-                       onClick={handleFullscreenToggle}
-                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/50"
-                     >
-                       Exit
-                     </Button>
-                   </motion.div>
-                 )}
-                 
-                 <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
-                    {currentVideoId ? (
-                      <>
-                        <MemoizedVideoPlayer {...videoPlayerProps} />
-                        {/* CourseAI Logo Overlay */}
-                        <MemoizedAnimatedCourseAILogo
-                          show={showLogoOverlay}
-                          videoEnding={videoEnding}
-                          onAnimationComplete={() => setShowLogoOverlay(false)}
-                        />
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full">
-                        <div className="text-center text-white p-4">
-                          <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                          <h3 className="text-xl font-medium mb-2">Select a Chapter</h3>
-                          <p className="text-white/70 mb-4">Choose a chapter from the playlist to start learning</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
- 
-                {/* Chapter Progress Indicator */}
-                {currentChapter && !isLastVideo && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-4 bg-muted/30 rounded-xl border border-border/50"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-primary rounded-full" />
-                        <span className="text-sm font-medium text-foreground">
-                          Chapter {currentIndex + 1} of {videoPlaylist.length}
-                        </span>
-                      </div>
-                      {nextChapter && (
-                        <div className="text-xs text-muted-foreground">
-                          Next: {nextChapter.chapter.title}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Progress bar */}
-                    <div className="w-full bg-muted rounded-full h-2 mb-3">
-                      <motion.div
-                        initial={{ width: "0%" }}
-                        animate={{ width: "100%" }}
-                        transition={{ duration: 1, ease: "easeInOut" }}
-                        className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full"
-                      />
-                    </div>
-                    
-                    {/* Chapter info */}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{currentChapter.title}</span>
-                      {nextChapter && (
-                        <div className="flex items-center gap-2">
-                          <span>Next chapter in:</span>
-                          <span className="font-medium text-primary">
-                            {nextChapter.chapter.duration ? formatDuration(nextChapter.chapter.duration) : '~5 min'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
- 
-                {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
-                <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4">
-                  <MemoizedCourseDetailsTabs
-                    course={course}
-                    currentChapter={currentChapter}
-                    accessLevels={accessLevels}
-                    onSeekToBookmark={handleSeekToBookmark}
-                  />
-                </div>
- 
-              </motion.div>
-
-              {/* Right column: Playlist (desktop) - Udemy style */}
-              <AnimatePresence mode="wait">
-                {!isPiPActive && (
-                  <motion.div 
-                    key="sidebar"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="hidden md:block"
-                  >
-                    <div className="sticky top-4">
-                      <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                        <MemoizedVideoNavigationSidebar {...sidebarProps} />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Mobile playlist overlay */}
-            <AnimatePresence>
-              {mobilePlaylistOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-                  onClick={() => setMobilePlaylistOpen(false)}
-                >
-                  <motion.div
-                    initial={{ x: '100%' }}
-                    animate={{ x: 0 }}
-                    exit={{ x: '100%' }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-background border-l shadow-xl"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="p-4 border-b bg-card/80 backdrop-blur-sm">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Course Content</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setMobilePlaylistOpen(false)}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <MemoizedVideoNavigationSidebar {...sidebarProps} />
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {false && (
-              <div className="rounded-xl border bg-card/50 lg:hidden" />
-            )}
-
-              {/* Related courses recommendation */}
-              {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
-                <RecommendedSection title="Recommended for you" className="mt-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {(course as any).relatedCourses.slice(0, 3).map((c: any, idx: number) => (
-                      <div key={c.id || idx}>
-                        <div className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-background/60">
-                          <div className="p-4">
-                            <div className="font-semibold line-clamp-2">{c.title}</div>
-                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description}</p>
-                            <Button
-                              variant="outline"
-                              className="mt-3 w-full"
-                              onClick={() => (window.location.href = `/dashboard/course/${c.slug}`)}
-                            >
-                              View Course
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </RecommendedSection>
-              )}
+          </div>
           
-        </main>
-        {/* Sticky mobile Next Lesson CTA removed per request */}
-                 {/* Sidebar responsive tweaks */}
-          {false && (
-            <aside className="hidden lg:block w-full max-w-[24rem] border-l bg-background/50 backdrop-blur-sm">
-              <MemoizedVideoNavigationSidebar {...sidebarProps} />
-            </aside>
-          )}
-       </div>
-
-      {/* Floating subscribe CTA for guests/free users */}
-      {!userSubscription && (
-        <div className="fixed bottom-6 right-6 z-40">
-          <Button
-            size="lg"
-            onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:opacity-90 transition-transform hover:scale-[1.02] rounded-full"
-          >
-            Subscribe to Unlock
-          </Button>
+          <div className="flex items-center space-x-2">
+            {isPiPActive && (
+              <div className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">
+                PIP Active
+              </div>
+            )}
+            
+            {autoplayMode && (
+              <div className="px-3 py-1 bg-green-500/10 text-green-600 text-sm rounded-full">
+                Auto-play Mode
+              </div>
+            )}
+            
+            <CourseActions course={course} isOwner={isOwner} />
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* Enhanced Certificate modal */}
+      {/* Main Content Grid */}
+      <div className={cn("grid gap-6 p-6", gridLayoutClasses)}>
+        {/* Video and Tabs Column */}
+        <div className="space-y-6">
+          {/* Video Player */}
+          <div className="relative">
+            {isVideoLoading && (
+              <div className="absolute inset-0 bg-muted/20 rounded-lg flex items-center justify-center z-10">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                  <p className="text-sm text-muted-foreground">Loading video...</p>
+                </div>
+              </div>
+            )}
+            
+            <MemoizedVideoPlayer {...videoPlayerProps} />
+            
+            {/* Chapter Progress Indicator */}
+            <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <span className="font-medium">Chapter {currentIndex + 1} of {videoPlaylist.length}</span>
+                  {nextChapter && (
+                    <span className="text-muted-foreground ml-2">
+                      • Next: {nextChapter.chapter.title}
+                    </span>
+                  )}
+                </div>
+                {nextChapter?.duration && (
+                  <span className="text-muted-foreground">
+                    Est. {formatDuration(nextChapter.duration)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Course Details Tabs */}
+          <MemoizedCourseDetailsTabs
+            course={course}
+            currentChapter={currentChapter}
+            userSubscription={userSubscription}
+            isOwner={isOwner}
+          />
+
+          {/* Video Generation Section */}
+          <VideoGenerationSection course={course} />
+        </div>
+
+        {/* Sidebar Column */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={isPiPActive ? 'pip' : 'sidebar'}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="space-y-6"
+          >
+            {isPiPActive ? (
+              <div className="text-center p-8 text-muted-foreground">
+                <PictureInPicture className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">Picture-in-Picture Mode</h3>
+                <p className="text-sm mb-4">
+                  Video is now playing in a floating window. 
+                  Close PIP to return to normal view.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePIPToggle(false)}
+                >
+                  Exit PIP Mode
+                </Button>
+              </div>
+            ) : (
+              <MemoizedVideoNavigationSidebar {...sidebarProps} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Mobile Playlist Toggle */}
+      <div className="md:hidden fixed bottom-4 right-4 z-50">
+        <Button
+          onClick={handleMobilePlaylistToggle}
+          size="lg"
+          className="rounded-full w-14 h-14 shadow-lg"
+        >
+          <Play className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* Mobile Playlist Overlay */}
+      <AnimatePresence>
+        {mobilePlaylistOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed inset-0 bg-background/95 backdrop-blur z-50 md:hidden"
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold">Course Chapters</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMobilePlaylistToggle}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                <MemoizedVideoNavigationSidebar {...sidebarProps} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chapter Transition Overlay */}
+      <AnimatePresence>
+        {showChapterTransition && nextChapterInfo && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
+          >
+            <div className="text-center max-w-md mx-auto p-8">
+              <div className="mb-6">
+                <div className="text-6xl mb-4">🎉</div>
+                <h2 className="text-2xl font-bold mb-2">Chapter Complete!</h2>
+                <p className="text-muted-foreground">
+                  Moving to next chapter in {autoplayCountdown} seconds...
+                </p>
+              </div>
+              
+              <div className="bg-muted/30 rounded-lg p-6 mb-6">
+                <h3 className="font-semibold mb-2">Next: {nextChapterInfo.title}</h3>
+                {nextChapterInfo.description && (
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {nextChapterInfo.description}
+                  </p>
+                )}
+                {nextChapterInfo.duration && (
+                  <p className="text-sm text-muted-foreground">
+                    Duration: {formatDuration(nextChapterInfo.duration)}
+                  </p>
+                )}
+              </div>
+              
+              <Button
+                variant="outline"
+                onClick={handleCancelAutoplay}
+                className="w-full"
+              >
+                Cancel Auto-play
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Autoplay Overlay */}
+      <AnimatePresence>
+        {showAutoplayOverlay && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
+          >
+            <AutoplayOverlay
+              onNextChapter={handleNextVideo}
+              onCancel={handleCancelAutoplay}
+              nextChapter={nextChapter}
+              isLastVideo={isLastVideo}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Certificate Modal */}
       <AnimatePresence>
         {showCertificate && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-            onClick={() => setShowCertificate(false)}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ 
-                type: "spring", 
-                damping: 25, 
-                stiffness: 300,
-                duration: 0.3 
-              }}
-              className="bg-background rounded-2xl shadow-2xl border border-border/50 max-w-lg w-full max-h-[90vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-background rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
-              {/* Header with celebration animation */}
-              <div className="relative bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 p-6 text-white text-center overflow-hidden">
-                {/* Floating celebration elements */}
-                <motion.div
-                  animate={{ 
-                    rotate: [0, 360],
-                    scale: [1, 1.1, 1]
-                  }}
-                  transition={{ 
-                    duration: 2, 
-                    repeat: Infinity, 
-                    ease: "linear" 
-                  }}
-                  className="absolute top-2 right-2"
-                >
-                  <span className="text-2xl">🎉</span>
-                </motion.div>
-                
-                <motion.div
-                  animate={{ 
-                    y: [0, -10, 0],
-                    rotate: [0, 5, -5, 0]
-                  }}
-                  transition={{ 
-                    duration: 1.5, 
-                    repeat: Infinity, 
-                    ease: "easeInOut" 
-                  }}
-                  className="absolute top-2 left-2"
-                >
-                  <span className="text-2xl">🏆</span>
-                </motion.div>
-
-                {/* Main header content */}
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="relative z-10"
-                >
-                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                    <Award className="h-10 w-10 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-2 drop-shadow-lg">
-                    Congratulations!
-                  </h2>
-                  <p className="text-lg text-white/90 font-medium">
-                    You've completed the course
-                  </p>
-                </motion.div>
-
-                {/* Course title with gradient text */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                  className="mt-4"
-                >
-                  <h3 className="text-xl font-semibold bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 inline-block">
-                    "{course.title}"
-                  </h3>
-                </motion.div>
-              </div>
-
-              {/* Certificate content */}
-              <div className="p-6 space-y-6">
-                {/* Achievement stats */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                  className="grid grid-cols-2 gap-4"
-                >
-                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                    <div className="text-2xl font-bold text-primary mb-1">
-                      {videoPlaylist.length}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Lessons Completed
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                    <div className="text-2xl font-bold text-green-600 mb-1">
-                      100%
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Course Progress
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Certificate preview */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8, duration: 0.5 }}
-                  className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/50"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-blue-900 dark:text-blue-100">
-                      Your Certificate
-                    </h4>
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">CA</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    A professional certificate showcasing your achievement in {course.title}
-                  </p>
-                </motion.div>
-
-                {/* Action buttons */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.0, duration: 0.5 }}
-                  className="space-y-3"
-                >
-                  {/* Download Certificate Button */}
-                  <PDFDownloadLink
-                    document={<CertificateGenerator courseName={course.title} userName={user?.name || "Student"} />}
-                    fileName={`${(course.title || 'Course').replace(/\s+/g, '_')}_Certificate.pdf`}
-                    className="w-full"
-                  >
-                    {({ loading }) => (
-                      <Button 
-                        disabled={loading} 
-                        className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-                      >
-                        {loading ? (
-                          <>
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"
-                            />
-                            Generating Certificate...
-                          </>
-                        ) : (
-                          <>
-                            <Download className="h-5 w-5 mr-2" />
-                            Download Certificate
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </PDFDownloadLink>
-
-                  {/* Share Certificate Button */}
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      // Share functionality
-                      if (navigator.share) {
-                        navigator.share({
-                          title: `I completed ${course.title} on CourseAI!`,
-                          text: `Check out my certificate for completing ${course.title} on CourseAI!`,
-                          url: window.location.href,
-                        })
-                      } else {
-                        // Fallback to clipboard
-                        navigator.clipboard.writeText(window.location.href)
-                        toast({
-                          title: "Link Copied!",
-                          description: "Course link copied to clipboard",
-                        })
-                      }
-                    }}
-                    className="w-full h-12 border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
-                  >
-                    <Share2 className="h-5 w-5 mr-2" />
-                    Share Achievement
-                  </Button>
-
-                  {/* Continue Learning Button */}
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setShowCertificate(false)}
-                    className="w-full h-12 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300"
-                  >
-                    Continue Learning
-                  </Button>
-                </motion.div>
-
-                {/* Social sharing suggestions */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.2, duration: 0.5 }}
-                  className="text-center pt-4 border-t border-border/50"
-                >
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Share your achievement with the world!
-                  </p>
-                  <div className="flex justify-center space-x-4">
-                    {['LinkedIn', 'Twitter', 'Facebook'].map((platform) => (
-                      <button
-                        key={platform}
-                        className="w-10 h-10 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center transition-colors duration-300"
-                        onClick={() => {
-                          const url = `https://www.${platform.toLowerCase()}.com/share?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(`I just completed ${course.title} on CourseAI!`)}`
-                          window.open(url, '_blank')
-                        }}
-                      >
-                        <span className="text-xs font-medium text-muted-foreground hover:text-primary">
-                          {platform.charAt(0)}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
+              <CertificateGenerator
+                course={course}
+                onClose={() => setShowCertificate(false)}
+              />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Chapter Transition Overlay - Auto-play mode */}
-      <AnimatePresence>
-        {showChapterTransition && nextChapterInfo && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ 
-                type: "spring", 
-                damping: 25, 
-                stiffness: 300,
-                duration: 0.3 
-              }}
-              className="bg-background rounded-2xl shadow-2xl border border-border/50 max-w-md w-full text-center overflow-hidden"
-            >
-              {/* Header with next chapter info */}
-              <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
-                {/* Countdown timer */}
-                <div className="absolute top-4 right-4">
-                  <motion.div
-                    key={autoplayCountdown}
-                    initial={{ scale: 1.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30"
-                  >
-                    <span className="text-xl font-bold">{autoplayCountdown}</span>
-                  </motion.div>
-                </div>
+      {/* Recommended Section */}
+      <div className="p-6">
+        <RecommendedSection />
+      </div>
 
-                {/* Next chapter icon */}
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                  <ChevronRight className="h-8 w-8 text-white" />
-                </div>
-
-                <h2 className="text-2xl font-bold mb-2">Next Chapter</h2>
-                <p className="text-white/90">Auto-playing in {autoplayCountdown} seconds</p>
-              </div>
-
-              {/* Chapter content */}
-              <div className="p-6 space-y-4">
-                <h3 className="text-xl font-semibold text-foreground">
-                  {nextChapterInfo.title}
-                </h3>
-                
-                {nextChapterInfo.description && (
-                  <p className="text-muted-foreground text-sm">
-                    {nextChapterInfo.description}
-                  </p>
-                )}
-
-                {nextChapterInfo.duration && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{formatDuration(nextChapterInfo.duration)}</span>
-                  </div>
-                )}
-
-                {/* Progress indicator */}
-                <div className="w-full bg-muted rounded-full h-2">
-                  <motion.div
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${((5 - autoplayCountdown) / 5) * 100}%` }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                  />
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowChapterTransition(false)
-                      setNextChapterInfo(null)
-                      setAutoplayCountdown(5)
-                    }}
-                    className="flex-1"
-                  >
-                    Cancel Auto-play
-                  </Button>
-                  
-                  <Button
-                    onClick={() => {
-                      if (nextChapter) {
-                        handleChapterSelect(nextChapter.chapter)
-                        setShowChapterTransition(false)
-                        setNextChapterInfo(null)
-                        setAutoplayCountdown(5)
-                      }
-                    }}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                  >
-                    Play Now
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Enhanced Autoplay Overlay - Manual mode */}
-      <AnimatePresence>
-        {showAutoplayOverlay && nextChapterInfo && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ 
-                type: "spring", 
-                damping: 25, 
-                stiffness: 300,
-                duration: 0.3 
-              }}
-              className="bg-background rounded-2xl shadow-2xl border border-border/50 max-w-md w-full text-center overflow-hidden"
-            >
-              {/* Header */}
-              <div className="relative bg-gradient-to-br from-green-500 to-emerald-600 p-6 text-white">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                  <Play className="h-8 w-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Next Chapter Ready</h2>
-                <p className="text-white/90">Would you like to continue?</p>
-              </div>
-
-              {/* Chapter content */}
-              <div className="p-6 space-y-4">
-                <h3 className="text-xl font-semibold text-foreground">
-                  {nextChapterInfo.title}
-                </h3>
-                
-                {nextChapterInfo.description && (
-                  <p className="text-muted-foreground text-sm">
-                    {nextChapterInfo.description}
-                  </p>
-                )}
-
-                {nextChapterInfo.duration && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{formatDuration(nextChapterInfo.duration)}</span>
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowAutoplayOverlay(false)
-                      setNextChapterInfo(null)
-                      setAutoplayCountdown(5)
-                    }}
-                    className="flex-1"
-                  >
-                    Stay Here
-                  </Button>
-                  
-                  <Button
-                    onClick={() => {
-                      if (nextChapter) {
-                        handleChapterSelect(nextChapter.chapter)
-                        setShowAutoplayOverlay(false)
-                        setNextChapterInfo(null)
-                        setAutoplayCountdown(5)
-                      }
-                    }}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
-                  >
-                    Continue Learning
-                  </Button>
-                </div>
-
-                {/* Enable auto-play option */}
-                <div className="pt-4 border-t border-border/50">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setAutoplayMode(true)
-                      toast({
-                        title: "Auto-play Enabled",
-                        description: "Chapters will automatically advance from now on",
-                      })
-                    }}
-                    className="text-sm text-muted-foreground hover:text-primary"
-                  >
-                    Enable Auto-play for future chapters
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Add debug component in development */}
-      {process.env.NODE_ENV !== "production" && (
-        <>
-          <VideoDebug
-            videoId={typeof currentVideoId === 'string' ? currentVideoId : ''}
-            courseId={course.id}
-            chapterId={currentChapter?.id ? String(currentChapter.id) : ''}
-          />
-         
-        </>
+      {/* Debug Info (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <VideoDebug
+          currentVideoId={currentVideoId}
+          courseId={course.id}
+          isPiPActive={isPiPActive}
+          wideMode={wideMode}
+          autoplayMode={autoplayMode}
+        />
       )}
     </div>
-  )
-
-  // Define resetPlayerState function to fix the DialogTrigger error
-  const resetPlayerState = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      // Clear local storage
-      localStorage.removeItem('video-progress-state')
-      
-      // Reset Zustand state
-      const videoStore = useVideoState.getState()
-      if (videoStore && videoStore.resetState) {
-        videoStore.resetState()
-      }
-      
-      toast({
-        title: "Player State Reset",
-        description: "Video player state has been reset. The page will reload.",
-      })
-      
-      // Reload the page after a short delay
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
-    }
-  }, [toast]) // Add toast to the dependency array
-
-  // Return the correct content based on auth state but without early return
-  return (
-    <>
-      {showAuthPrompt ? authPromptContent : regularContent}
-    </>
   )
 }
 
