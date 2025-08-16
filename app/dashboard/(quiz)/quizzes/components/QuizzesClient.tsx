@@ -325,15 +325,18 @@ function QuizzesClientComponent({ initialQuizzesData, userId }: QuizzesClientPro
   const RecommendedRow = () => {
     if (!recommended.length) return null
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 rounded-xl border bg-card p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base sm:text-lg font-semibold">Recommended for you</h3>
           <Button variant="ghost" size="sm" className="text-xs" onClick={() => setActiveTab("all")}>View all</Button>
         </div>
-        <div className="-mx-1 overflow-x-auto">
-          <div className="flex items-stretch gap-3 px-1">
+        <div className="-mx-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]" aria-label="Recommended quizzes">
+          <style jsx>{`
+            div::-webkit-scrollbar { display: none; }
+          `}</style>
+          <div className="flex items-stretch gap-4 px-2 pb-2 snap-x snap-mandatory">
             {recommended.map((q) => (
-              <div key={q.id} className="min-w-[280px] max-w-[320px]">
+              <div key={q.id} className="min-w-[280px] max-w-[320px] snap-start transition-transform duration-200 hover:-translate-y-0.5">
                 <QuizCard
                   title={q.title}
                   description={q.title}
