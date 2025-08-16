@@ -119,7 +119,7 @@ export default function MainNavbar() {
     const handleScroll = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
-          setScrolled(window.scrollY > 10)
+          setScrolled(window.scrollY > 6)
           ticking = false
         })
         ticking = true
@@ -175,7 +175,7 @@ export default function MainNavbar() {
     [router, handleSearchClose, startLoading],
   )
 
-  // Navigation items with active state and animations
+  // Desktop nav palette and animations
   const navigationItems = useMemo(
     () =>
       navItems.map((item) => {
@@ -192,29 +192,39 @@ export default function MainNavbar() {
               href={item.href}
               className={cn(
                 "relative px-4 py-2.5 text-sm font-medium transition-colors group block rounded-md whitespace-nowrap",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "hover:bg-accent/60",
-                isActive 
-                  ? "text-primary bg-accent/60 border border-border/50" 
-                  : "text-muted-foreground hover:text-foreground",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                isActive
+                  ? "text-primary bg-primary/5 border border-primary/20 shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/60",
               )}
               data-testid={`nav-item-${item.name.toLowerCase()}`}
               aria-current={isActive ? "page" : undefined}
             >
               <div className="flex items-center gap-2">
-                <div className={cn(
-                  "p-1 rounded-md",
-                  isActive ? "bg-accent/80" : "group-hover:bg-accent/60"
-                )}>
-                  <Icon className={cn(
-                    "h-4 w-4",
-                    isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
-                  )} />
+                <div
+                  className={cn(
+                    "p-1 rounded-md transition-colors",
+                    isActive ? "bg-primary/10" : "group-hover:bg-accent/60"
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 transition-colors",
+                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    )}
+                  />
                 </div>
                 <span className="font-medium whitespace-nowrap">{item.name}</span>
               </div>
-              {/* Minimal active underline */}
-              {isActive && <span className="absolute left-4 right-4 bottom-1 h-[2px] bg-primary/60" />}
+              {/* Active underline */}
+              <motion.span
+                layoutId={`nav-underline-${item.name}`}
+                className={cn(
+                  "absolute left-4 right-4 bottom-1 h-[2px] rounded-full",
+                  isActive ? "bg-primary/70" : "bg-transparent group-hover:bg-primary/40"
+                )}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              />
             </AsyncNavLink>
           </motion.div>
         )
@@ -222,7 +232,7 @@ export default function MainNavbar() {
     [pathname, itemVariants],
   )
 
-  // Mobile navigation items with animations and icons
+  // Mobile navigation items with refined colors
   const mobileNavigationItems = useMemo(
     () => navItems.map((item) => {
         const isActive = pathname === item.href
@@ -235,17 +245,13 @@ export default function MainNavbar() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-4 py-3.5 text-base font-medium rounded-lg whitespace-nowrap",
-                "hover:bg-accent/80",
-                isActive 
-                  ? "text-primary bg-primary/5 border-l-2 border-primary" 
-                  : "text-muted-foreground border-l-2 border-transparent hover:border-primary/40",
+                isActive
+                  ? "text-primary bg-primary/5 border-l-2 border-primary"
+                  : "text-foreground/80 hover:text-foreground/90 hover:bg-accent/70 border-l-2 border-transparent",
               )}
               aria-current={isActive ? "page" : undefined}
             >
-              <div className={cn(
-                "p-2 rounded-md",
-                isActive ? "bg-primary/10" : "bg-muted/50"
-              )}>
+              <div className={cn("p-2 rounded-md", isActive ? "bg-primary/10" : "bg-muted/50")}> 
                 <Icon className="w-4 h-4" />
               </div>
               {item.name}
@@ -274,7 +280,7 @@ export default function MainNavbar() {
 
     return (
       <div className="hidden lg:flex items-center space-x-2" data-testid="credits-display">
-        <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-card border rounded-lg shadow-sm whitespace-nowrap">
+        <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-card/80 backdrop-blur border rounded-lg shadow-sm whitespace-nowrap">
           <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
           <span
             className={cn("text-sm font-medium tabular-nums", isLowCredits ? "text-destructive" : "text-foreground")}
@@ -337,8 +343,8 @@ export default function MainNavbar() {
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70",
-          scrolled && "bg-background/90",
+          "border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
+          scrolled && "bg-background/85"
         )}
         data-testid="main-navbar"
         role="navigation"
@@ -369,280 +375,74 @@ export default function MainNavbar() {
             variants={itemVariants}
             aria-label="Primary navigation"
           >
-            {navItems.map((item) => {
-              const isActive = pathname === item.href
-              const Icon = item.icon || (() => null)
-              return (
-                <motion.div
-                  key={item.name}
-                  variants={itemVariants}
-                  className="relative"
-                  whileHover={{ y: -2, scale: 1.01 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <AsyncNavLink
-                    href={item.href}
-                    className={cn(
-                      "relative px-4 py-2.5 text-sm font-medium transition-colors group block rounded-md whitespace-nowrap",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      "hover:bg-accent/60",
-                      isActive 
-                        ? "text-primary bg-accent/60 border border-border/50" 
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                    data-testid={`nav-item-${item.name.toLowerCase()}`}
-                    aria-current={isActive ? "page" : undefined}
-                  >
-                    {isActive && (
-                      <motion.span
-                        layoutId="navActivePill"
-                        className="absolute inset-0 -z-10 rounded-md bg-primary/5 border border-border/50"
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      />
-                    )}
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "p-1 rounded-md",
-                        isActive ? "bg-accent/80" : "group-hover:bg-accent/60"
-                      )}>
-                        <Icon className={cn(
-                          "h-4 w-4",
-                          isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
-                        )} />
-                      </div>
-                      <span className="font-medium whitespace-nowrap">{item.name}</span>
-                    </div>
-                    {isActive && <span className="absolute left-4 right-4 bottom-1 h-[2px] bg-primary/60" />}
-                    <span className="pointer-events-none absolute left-4 right-4 bottom-1 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </AsyncNavLink>
-                </motion.div>
-              )
-            })}
+            {navigationItems}
           </motion.nav>
 
-          {/* Right Section */}
-          <motion.div 
-            className="flex items-center space-x-2 sm:space-x-3"
-            variants={itemVariants}
-          >
-            {/* Credits Display */}
+          {/* Right section */}
+          <motion.div className="hidden md:flex items-center gap-3" variants={itemVariants}>
             {CreditsDisplay}
-
-            {/* Upgrade CTA (non-premium) */}
-            {!isPremium && (
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden sm:block">
-                <Button asChild size="sm" className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow hover:shadow-md">
-                  <a href="/dashboard/subscription" aria-label="Upgrade your plan to unlock premium features">Upgrade</a>
-                </Button>
-              </motion.div>
-            )}
-
-            {/* Search Button */}
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSearchOpen}
-                className="h-9 w-9 hover:bg-accent/80 transition-all duration-200 relative overflow-hidden group"
-                aria-label="Open search"
-                data-testid="search-button"
-              >
-                <Search className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                <span className="sr-only">Open search</span>
-              </Button>
-            </motion.div>
-
-            {/* Theme Toggle */}
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <div className="relative overflow-hidden rounded-md">
-                <ThemeToggle />
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 pointer-events-none" />
-              </div>
-            </motion.div>
-
-            {/* Notifications - Desktop Only */}
-            {isAuthenticated && (
-              <motion.div
-                className={cn(
-                  "hidden sm:block transition-all duration-300",
-                  ready ? "opacity-100 scale-100" : "opacity-0 scale-95",
-                )}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+            <Button variant="ghost" size="icon" aria-label="Open search" onClick={handleSearchOpen}
+              className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
+              <Search className="h-5 w-5" />
+            </Button>
+            <ThemeToggle />
+            {isAuthenticated ? (
+              <>
                 <NotificationsMenu />
-              </motion.div>
+                <UserMenu>{UserAvatar}</UserMenu>
+              </>
+            ) : (
+              <Button onClick={handleSignIn} className="bg-primary text-primary-foreground hover:bg-primary/90">Sign in</Button>
             )}
+          </motion.div>
 
-            {/* User Menu */}
-            <motion.div 
-              className={cn("transition-all duration-300", ready ? "opacity-100 scale-100" : "opacity-0 scale-95")}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <UserMenu />
-            </motion.div>
-
-            {/* Mobile Menu Trigger */}
+          {/* Mobile menu button */}
+          <motion.div className="md:hidden flex items-center gap-2" variants={itemVariants}>
+            <Button variant="ghost" size="icon" onClick={handleSearchOpen} aria-label="Open search"
+              className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
+              <Search className="h-5 w-5" />
+            </Button>
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <motion.div
-                  className="md:hidden"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-9 w-9" 
-                    aria-label="Open navigation menu"
-                    aria-haspopup="dialog"
-                    aria-expanded={isMobileMenuOpen}
-                    aria-controls="mobile-menu"
-                  >
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Menu</span>
-                  </Button>
-                </motion.div>
+                <Button variant="ghost" size="icon" aria-label="Open menu" onClick={handleMobileMenuToggle}
+                  className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
+                  {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </Button>
               </SheetTrigger>
-              <SheetContent 
-                side="right" 
-                className="w-80 sm:w-96 p-0 overflow-hidden"
-                role="dialog"
-                aria-label="Navigation"
-              >
-                <AnimatePresence>
-                  <motion.div 
-                    className="flex flex-col h-full"
-                    variants={mobileMenuVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    id="mobile-menu"
-                  >
-                    {/* Mobile Header */}
-                    <motion.div 
-                      className="flex items-center justify-between p-4 border-b"
-                      variants={itemVariants}
-                    >
-                      <Logo />
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => setIsMobileMenuOpen(false)} 
-                        className="h-8 w-8 hover:bg-accent/80 transition-colors"
-                        aria-label="Close navigation menu"
-                      >
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Close navigation menu</span>
-                      </Button>
-                    </motion.div>
-
-                    {/* Mobile User Section */}
-                    {isAuthenticated && (
-                      <motion.div 
-                        className="py-4 px-4 border-b"
-                        variants={itemVariants}
-                      >
-                        <div className="flex items-center space-x-3 mb-3">
-                          {UserAvatar}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{user?.name || "User"}</p>
-                            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                          </div>
+              <AnimatePresence>
+                {isMobileMenuOpen && (
+                  <SheetContent side="right" className="w-80 p-0">
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={mobileMenuVariants} className="h-full flex flex-col">
+                      <div className="p-4 border-b border-border/60">
+                        <div className="flex items-center justify-between">
+                          <Logo />
+                          <ThemeToggle />
                         </div>
-
-                        {/* Mobile Credits */}
-                        {availableCredits !== null && (
-                          <motion.div 
-                            className="flex items-center justify-between p-3 bg-card rounded-lg border shadow-sm"
-                            whileHover={{ scale: 1.02 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <CreditCard className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">Credits</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-semibold tabular-nums">
-                                <AnimatedNumber value={availableCredits} />
-                              </span>
-                              {subscriptionPlan && subscriptionPlan !== "FREE" && (
-                                <Badge variant="secondary" className="text-xs">
-                                  <Sparkles className="h-3 w-3 mr-1" />
-                                  {subscriptionPlan}
-                                </Badge>
-                              )}
-                            </div>
-                          </motion.div>
+                      </div>
+                      <nav className="flex-1 p-3 space-y-1">
+                        {mobileNavigationItems}
+                      </nav>
+                      <div className="p-3 border-t border-border/60 flex items-center gap-2">
+                        {isAuthenticated ? (
+                          <UserMenu className="flex-1">
+                            <Button variant="outline" className="w-full">Account</Button>
+                          </UserMenu>
+                        ) : (
+                          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSignIn}>Sign in</Button>
                         )}
-                      </motion.div>
-                    )}
-
-                    {/* Mobile Navigation */}
-                    <motion.nav 
-                      className="flex-1 py-4 space-y-1 overflow-y-auto px-3"
-                      variants={itemVariants}
-                      aria-label="Mobile navigation"
-                    >
-                      {mobileNavigationItems}
-                    </motion.nav>
-
-                    {/* Mobile Footer */}
-                    <motion.div 
-                      className="p-4 border-t space-y-3"
-                      variants={itemVariants}
-                    >
-                      {/* Upgrade CTA (mobile) */}
-                      {!isPremium && (
-                        <Button asChild className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow hover:shadow-md" size="lg">
-                          <a href="/dashboard/subscription">Upgrade</a>
-                        </Button>
-                      )}
-
-                      {/* Mobile Notifications */}
-                      {isAuthenticated && (
-                        <div className="flex items-center justify-center">
-                          <NotificationsMenu />
-                        </div>
-                      )}
-
-                      {/* Mobile Sign In */}
-                      {!isAuthenticated && !authLoading && (
-                        <motion.div
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
-                        >
-                          <Button 
-                            onClick={handleSignIn} 
-                            className="w-full shadow-sm hover:shadow-md transition-all duration-200" 
-                            size="lg"
-                            aria-label="Sign in to your account"
-                          >
-                            Sign in
-                          </Button>
-                        </motion.div>
-                      )}
+                      </div>
                     </motion.div>
-                  </motion.div>
-                </AnimatePresence>
-              </SheetContent>
+                  </SheetContent>
+                )}
+              </AnimatePresence>
             </Sheet>
           </motion.div>
         </motion.div>
-        {/* Animated bottom border accent */}
-        <motion.div 
-          className="h-0.5 w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent" 
-          initial={{ scaleX: 0, opacity: 0 }} 
-          animate={{ scaleX: scrolled ? 1 : 0, opacity: scrolled ? 1 : 0 }} 
-          transition={{ duration: 0.5 }} 
-          style={{ transformOrigin: 'left' }}
-        />
       </header>
 
-      {/* Search Modal */}
-      <SearchModal isOpen={isSearchModalOpen} setIsOpen={setIsSearchModalOpen} onResultClick={handleSearchResult} />
       </MotionConfig>
+
+      <SearchModal open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen} onSearchResult={handleSearchResult} />
     </>
   )
 }

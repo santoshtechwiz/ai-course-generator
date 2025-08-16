@@ -49,7 +49,7 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
   const { data: session, status } = useSession()
   const dispatch = useAppDispatch()
   const subscription = useAppSelector(selectSubscription)
-    // Track last sync to prevent excessive calls
+  // Track last sync to prevent excessive calls
   const lastSyncRef = useRef<number>(0)
   const sessionIdRef = useRef<string | null>(null)
   
@@ -63,35 +63,27 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
     
     // Skip if recent sync and not forced
     if (!force && timeSinceLastSync < config.minSyncInterval) {
-      logger.debug(`Subscription sync skipped: too recent (${timeSinceLastSync}ms ago)`)
       return
     }
     
     // Skip if no session
     if (status !== 'authenticated' || !session?.user?.id) {
-      logger.debug('Subscription sync skipped: no authenticated session')
       return
     }
     
     try {
       lastSyncRef.current = now
       
-      logger.debug(`Syncing subscription data (reason: ${reason}, force: ${force})`)
-      
       if (force) {
-        // Use force sync for critical updates (login, plan change, etc.)
         await dispatch(forceSyncSubscription()).unwrap()
       } else {
-        // Use regular fetch for routine updates
         await dispatch(fetchSubscription({ forceRefresh: false })).unwrap()
       }
-      
-      logger.debug('Subscription sync completed successfully')
     } catch (error) {
-      logger.error('Subscription sync failed:', error)
+      logger.warn('Subscription sync failed')
     }
   }, [dispatch, session?.user?.id, status, config.minSyncInterval])
-    // Track subscription state to avoid circular dependencies
+  // Track subscription state to avoid circular dependencies
   const hasSubscriptionDataRef = useRef(false)
   
   // Primary sync: React to session changes
@@ -100,13 +92,11 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
     
     // Handle session state changes
     if (status === 'loading') {
-      // Session is loading, don't sync yet
       return
     }
     
     if (status === 'unauthenticated') {
       // User logged out - clear subscription data immediately
-      logger.debug('Session ended, clearing subscription data')
       dispatch(setSubscriptionData({
         credits: 0,
         tokensUsed: 0,
@@ -126,17 +116,10 @@ export function useSessionSubscriptionSync(options: SessionSyncOptions = {}) {
       const sessionChanged = sessionIdRef.current !== currentSessionId
       
       if (sessionChanged) {
-        // New session detected - force sync
-        logger.debug('Session changed, forcing subscription sync', {
-          previousSession: sessionIdRef.current,
-          newSession: currentSessionId
-        })
         sessionIdRef.current = currentSessionId
         hasSubscriptionDataRef.current = false // Reset subscription data flag
         syncSubscription(true, 'session_change')
       } else if (!hasSubscriptionDataRef.current) {
-        // Same session but no subscription data loaded yet - regular sync
-        logger.debug('No subscription data for current session, syncing')
         syncSubscription(false, 'initial_load')
       }
     }
