@@ -568,7 +568,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       {/* Mobile header */}
       <div className="flex">
                  {/* Main content */}        <main className="flex-1 min-w-0">
-              <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
              {/* Top toolbar: width toggle and keys hint */}
              <div className="mx-auto py-3 px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
                <Button
@@ -588,8 +587,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                </Button>
                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Keys: T Theater • F Fullscreen • B Bookmark</span>
              </div>
-    
-             <div className={cn("mx-auto py-4 px-4 sm:px-6 lg:px-8", wideMode ? "max-w-none" : "max-w-7xl")}>            {/* Video Generation Section */}
+             <CourseActions slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
+
+            {/* Video Generation Section */}
             {(isOwner || user?.isAdmin) && (
               <VideoGenerationSection 
                 course={course}
@@ -604,7 +604,35 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             )}
 
             {/* Video player section */}
-            <div className={cn("grid gap-4", twoCol ? "md:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_420px]" : "grid-cols-1")}> 
+            <div className={cn("grid gap-4", twoCol ? "md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]" : "grid-cols-1")}> 
+              {/* Left column: Playlist (desktop) */}
+              <div className="hidden md:block">
+                <div className="sticky top-4">
+                  <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
+                    <VideoNavigationSidebar
+                      course={course}
+                      currentChapter={currentChapter}
+                      courseId={course.id.toString()}
+                      onChapterSelect={handleChapterSelect}
+                      progress={progress}
+                      isAuthenticated={!!user}
+                      isSubscribed={!!userSubscription}
+                      completedChapters={completedChapters}
+                      formatDuration={formatDuration}
+                      nextVideoId={undefined}
+                      currentVideoId={currentVideoId || ''}
+                      isPlaying={Boolean(currentVideoId)}
+                      courseStats={{
+                        completedCount: progress?.completedChapters?.length || 0,
+                        totalChapters: videoPlaylist.length,
+                        progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right column: Video and tabs */}
               <div className="min-w-0">
  
                 {/* Video player */}
@@ -658,83 +686,22 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                   </div>
                 </div>
  
-               {/* Chapter description and rating */}
-               {currentChapter?.description && (
-                 <div className="rounded-xl border border-primary/10 bg-card/80 ai-glass dark:ai-glass-dark p-4 sm:p-5 lg:p-6 shadow-sm lg:col-start-1">
-                    <h3 className="text-base sm:text-lg font-semibold mb-3">About this lesson</h3>
-                    <div className="prose prose-sm max-w-none text-foreground/90">
-                      <MarkdownRenderer content={currentChapter.description} />
-                    </div>
-                  </div>
-               )}
- 
-               {/* Right column: Playlist and tabs on large screens */}
-              <div className="hidden md:flex md:flex-col md:gap-4 md:col-start-2 md:row-start-1">
-                <div className="sticky top-4 space-y-4">
-                  <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                    <VideoNavigationSidebar
-                      course={course}
-                      currentChapter={currentChapter}
-                      courseId={course.id.toString()}
-                      onChapterSelect={handleChapterSelect}
-                      progress={progress}
-                      isAuthenticated={!!user}
-                      isSubscribed={!!userSubscription}
-                      completedChapters={completedChapters}
-                      formatDuration={formatDuration}
-                      nextVideoId={undefined}
-                      currentVideoId={currentVideoId || ''}
-                      isPlaying={Boolean(currentVideoId)}
-                      courseStats={{
-                        completedCount: progress?.completedChapters?.length || 0,
-                        totalChapters: videoPlaylist.length,
-                        progressPercentage: videoPlaylist.length > 0 ? Math.round(((progress?.completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-                      }}
-                    />
-                  </div>
-                  <div className="hidden md:block rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark">
-                    <CourseDetailsTabs
-                      course={course}
-                      currentChapter={currentChapter}
-                      accessLevels={accessLevels}
-                      onSeekToBookmark={handleSeekToBookmark}
-                    />
-                  </div>
+                {/* Tabs below video: Summary, Quiz, Bookmarks, etc */}
+                <div className="rounded-xl border bg-card/60 ai-glass dark:ai-glass-dark mt-4">
+                  <CourseDetailsTabs
+                    course={course}
+                    currentChapter={currentChapter}
+                    accessLevels={accessLevels}
+                    onSeekToBookmark={handleSeekToBookmark}
+                  />
                 </div>
+ 
               </div>
             </div>
 
-            {/* Course tabs - mobile/tablet flow */}
-              {/* Chapter navigation */}
-               <div className="flex items-center justify-center">
-                 <div className="text-center">
-                   {currentChapter && (
-                     <div>
-                       <h2 className="text-xl font-semibold mb-1">{currentChapter.title}</h2>
-                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                         <Clock className="h-4 w-4" />
-                         <span>{isVideoLoading ? "Loading..." : (typeof currentChapter.duration === 'number' ? formatDuration(currentChapter.duration) : "")}</span>
-                         {currentChapter.isFree ? (
-                           <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">Free</span>
-                         ) : (
-                           <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">Locked</span>
-                         )}
-                         {!user && !hasPlayedFreeVideo && (
-                           <span className="px-2 py-1 rounded border border-green-600 text-green-600 text-xs">Preview</span>
-                         )}
-                       </div>
-                     </div>
-                   )}
-                 </div>
-               </div>
-              <div className="rounded-xl border bg-card/50 lg:hidden">
-                <CourseDetailsTabs
-                  course={course}
-                  currentChapter={currentChapter}
-                  accessLevels={accessLevels}
-                  onSeekToBookmark={handleSeekToBookmark}
-                />
-              </div>
+            {false && (
+              <div className="rounded-xl border bg-card/50 lg:hidden" />
+            )}
 
               {/* Related courses recommendation */}
               {Array.isArray((course as any)?.relatedCourses) && (course as any).relatedCourses.length > 0 && (
