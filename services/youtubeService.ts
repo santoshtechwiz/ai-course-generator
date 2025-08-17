@@ -198,8 +198,13 @@ class YoutubeService {
   }
 
   private static async getYtTranscript(videoId: string): Promise<string | null> {
-    const transcript = await new YtTranscript({ videoId }).getTranscript()
-    return transcript ? transcript.map((item) => item?.text).join(" ") : null
+    try {
+      const transcript = await new YtTranscript({ videoId }).getTranscript()
+      return transcript ? transcript.map((item) => item?.text).join(" ") : null
+    } catch (error) {
+      console.warn('YtTranscript error:', error)
+      return null
+    }
   }
 
   // youtubei.js fallback (supports cookie token if provided)
@@ -208,25 +213,37 @@ class YoutubeService {
       const yt = await Innertube.create({
         cookie: this.youtubeCookie,
       })
-      const info = await yt.getInfo(videoId)
-      const tracks = info?.captions?.captionTracks || []
-      const enTrack = tracks.find((t: any) => (t.language_code || t.languageCode || "").startsWith("en")) || tracks[0]
-      if (!enTrack) return null
-      const transcript = await enTrack.fetch()
-      // transcript.events: [{segs:[{utf8: "text"}], tStartMs, dDurationMs}, ...]
-      if (transcript?.events?.length) {
-        return transcript.events
-          .map((e: any) => (e?.segs || []).map((s: any) => s?.utf8 || "").join(" "))
-          .filter(Boolean)
-          .join(" ")
+      
+      // Add parser error handling
+      try {
+        const info = await yt.getInfo(videoId)
+        const tracks = info?.captions?.captionTracks || []
+        const enTrack = tracks.find((t: any) => (t.language_code || t.languageCode || "").startsWith("en")) || tracks[0]
+        if (!enTrack) return null
+        const transcript = await enTrack.fetch()
+        // transcript.events: [{segs:[{utf8: "text"}], tStartMs, dDurationMs}, ...]
+        if (transcript?.events?.length) {
+          return transcript.events
+            .map((e: any) => (e?.segs || []).map((s: any) => s?.utf8 || "").join(" "))
+            .filter(Boolean)
+            .join(" ")
+        }
+        // Some tracks return .segments
+        if (transcript?.segments?.length) {
+          return transcript.segments.map((s: any) => s?.utf8 || s?.text || "").join(" ")
+        }
+        return null
+      } catch (parserError) {
+        // Handle YouTube.js parser errors gracefully
+        console.warn('YouTube.js parser error:', parserError)
+        if (parserError instanceof Error && parserError.message.includes('CompositeVideoPrimaryInfo')) {
+          console.warn('YouTube.js parser needs update for this video format')
+        }
+        return null
       }
-      // Some tracks return .segments
-      if (transcript?.segments?.length) {
-        return transcript.segments.map((s: any) => s?.utf8 || s?.text || "").join(" ")
-      }
-      return null
     } catch (err) {
       // Silent fail to allow other methods
+      console.warn('YouTube.js initialization error:', err)
       return null
     }
   }

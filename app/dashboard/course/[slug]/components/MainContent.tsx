@@ -701,6 +701,54 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     }
   }, [course.id])
 
+
+
+  // Fetch related courses
+  useEffect(() => {
+    fetchRelatedCourses(course.id, 5).then(setRelatedCourses)
+  }, [course.id])
+
+  // Fetch personalized recommendations when course is completed
+  useEffect(() => {
+    if (isLastVideo && user) {
+      fetchPersonalizedRecommendations(
+        user.id,
+        completedChapters?.map(String) || [],
+        course,
+        3
+      ).then(setPersonalizedRecommendations)
+    }
+  }, [isLastVideo, user, completedChapters, course])
+
+  // Fetch quiz suggestions for key chapters
+  useEffect(() => {
+    if (isKeyChapter && currentChapter) {
+      fetchQuizSuggestions(
+        course.id,
+        currentChapter.id,
+        currentChapter.title
+      ).then(setQuizSuggestions)
+    } else {
+      setQuizSuggestions([])
+    }
+  }, [isKeyChapter, currentChapter, course.id])
+
+  // Memoized course stats for better performance
+  const courseStats = useMemo(
+    () => {
+      const totalChapters = videoPlaylist.length
+      const completedChapters = progress?.completedChapters?.length || 0
+      const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
+
+      return {
+        totalChapters,
+        completedChapters,
+        progressPercentage,
+      }
+    },
+    [videoPlaylist.length, progress?.completedChapters],
+  )
+
   // Enhanced next video navigation handler
   const handleNextVideo = useCallback(() => {
     if (!currentChapter || !videoPlaylist.length) return
@@ -755,52 +803,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
       title: prevVideo.chapter?.title || 'Previous Chapter'
     } : null
   }, [currentVideoId, videoPlaylist])
-
-  // Fetch related courses
-  useEffect(() => {
-    fetchRelatedCourses(course.id, 5).then(setRelatedCourses)
-  }, [course.id])
-
-  // Fetch personalized recommendations when course is completed
-  useEffect(() => {
-    if (isLastVideo && user) {
-      fetchPersonalizedRecommendations(
-        user.id,
-        completedChapters?.map(String) || [],
-        course,
-        3
-      ).then(setPersonalizedRecommendations)
-    }
-  }, [isLastVideo, user, completedChapters, course])
-
-  // Fetch quiz suggestions for key chapters
-  useEffect(() => {
-    if (isKeyChapter && currentChapter) {
-      fetchQuizSuggestions(
-        course.id,
-        currentChapter.id,
-        currentChapter.title
-      ).then(setQuizSuggestions)
-    } else {
-      setQuizSuggestions([])
-    }
-  }, [isKeyChapter, currentChapter, course.id])
-
-  // Memoized course stats for better performance
-  const courseStats = useMemo(
-    () => {
-      const totalChapters = videoPlaylist.length
-      const completedChapters = progress?.completedChapters?.length || 0
-      const progressPercentage = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0
-
-      return {
-        totalChapters,
-        completedChapters,
-        progressPercentage,
-      }
-    },
-    [videoPlaylist.length, progress?.completedChapters],
-  )
 
   // Memoized sidebar props to prevent unnecessary re-renders
   const sidebarProps = useMemo(() => ({
@@ -1720,7 +1722,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
         window.location.reload()
       }, 1000)
     }
-  }, [toast]) // Add toast to the dependency array
+  }, [toast])
 
   // Return the correct content based on auth state but without early return
   return (
