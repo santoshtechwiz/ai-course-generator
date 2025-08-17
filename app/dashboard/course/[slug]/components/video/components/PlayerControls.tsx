@@ -104,6 +104,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onPictureInPicture,
   isPiPSupported = false,
   isPiPActive = false,
+  onToggleTheaterMode,
+  isTheaterMode = false,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -504,7 +506,30 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             </Button>
           )}
 
-         
+          {/* Theater mode toggle */}
+          {onToggleTheaterMode && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isTheaterMode && "bg-white/20 text-blue-400")}
+              onClick={onToggleTheaterMode}
+              title={isTheaterMode ? "Exit theater mode (T)" : "Enter theater mode (T)"}
+              aria-label={isTheaterMode ? "Exit theater mode" : "Enter theater mode"}
+            >
+              {/* Use same Maximize icon for simplicity; can swap to RectangleHorizontal if available */}
+              <svg
+                className="h-4 w-4 sm:h-5 sm:w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="7" width="18" height="10" rx="2" ry="2"></rect>
+              </svg>
+            </Button>
+          )}
 
           {/* Enhanced Fullscreen */}
           <Button
