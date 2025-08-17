@@ -460,6 +460,38 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
     return () => screenfull.off("change", handleFullscreenChange)
   }, [])
 
+  // Theater mode toggle handler
+  const handleTheaterModeToggle = useCallback(() => {
+    setState((prev) => {
+      const newTheaterMode = !prev.theaterMode;
+      
+      // Toggle CSS class on body for theater mode styling
+      if (typeof document !== "undefined") {
+        if (newTheaterMode) {
+          document.body.classList.add("theater-mode-active");
+        } else {
+          document.body.classList.remove("theater-mode-active");
+        }
+      }
+      
+      return { ...prev, theaterMode: newTheaterMode };
+    });
+  }, []);
+
+  // Picture-in-Picture toggle handler
+  const handlePictureInPictureToggle = useCallback(() => {
+    setState((prev) => {
+      const newMiniPlayer = !prev.isMiniPlayer;
+      return { 
+        ...prev, 
+        isMiniPlayer: newMiniPlayer,
+        isPictureInPicture: false // Reset native PiP when using mini player
+      };
+    });
+  }, []);
+
+
+
   // Focus management for keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -580,36 +612,6 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       const newAutoPlayNext = !prev.autoPlayNext;
       savePlayerPreferences({ autoPlayNext: newAutoPlayNext });
       return { ...prev, autoPlayNext: newAutoPlayNext };
-    });
-  }, []);
-
-  // Theater mode toggle handler
-  const handleTheaterModeToggle = useCallback(() => {
-    setState((prev) => {
-      const newTheaterMode = !prev.theaterMode;
-      
-      // Toggle CSS class on body for theater mode styling
-      if (typeof document !== "undefined") {
-        if (newTheaterMode) {
-          document.body.classList.add("theater-mode-active");
-        } else {
-          document.body.classList.remove("theater-mode-active");
-        }
-      }
-      
-      return { ...prev, theaterMode: newTheaterMode };
-    });
-  }, []);
-
-  // Picture-in-Picture toggle handler
-  const handlePictureInPictureToggle = useCallback(() => {
-    setState((prev) => {
-      const newMiniPlayer = !prev.isMiniPlayer;
-      return { 
-        ...prev, 
-        isMiniPlayer: newMiniPlayer,
-        isPictureInPicture: false // Reset native PiP when using mini player
-      };
     });
   }, []);
 
