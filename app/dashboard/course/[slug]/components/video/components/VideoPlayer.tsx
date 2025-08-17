@@ -745,24 +745,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => cancelAnimationFrame(animationFrame)
   }, [])
 
-  // Monitor video progress for chapter transitions
+  // Disable big transition overlay per request
   useEffect(() => {
-    if (!state.playing || !state.duration || !onNextVideo || showChapterTransition) return
-
-    const checkProgress = () => {
-      const timeRemaining = state.duration - state.lastPlayedTime
-      
-      // Show transition overlay in last 10 seconds
-      if (timeRemaining <= 10 && timeRemaining > 0) {
-        setShowChapterTransition(true)
-        setChapterTransitionCountdown(5)
-        setShowCourseAILogo(true)
-      }
-    }
-
-    const interval = setInterval(checkProgress, 1000)
-    return () => clearInterval(interval)
-  }, [state.playing, state.duration, state.lastPlayedTime, onNextVideo, showChapterTransition])
+    return () => {}
+  }, [])
 
   const handleVideoEnd = useCallback(() => {
     console.log('Video ended - Debug info:', {
@@ -785,20 +771,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       })
       return () => cancelAnimationFrame(animationFrame)
     } else if (onNextVideo && state.autoPlayNext) {
-      // Auto-advance with a subtle toast/snackbar instead of overlay
-      try {
-        const nextTitle = nextVideoTitle || 'Next Chapter'
-        toast({ title: 'Moving to Next Chapter', description: `${nextTitle} in 3s...` })
-        // Clear any previous timer
-        if ((autoAdvanceTimeoutRef as any).current) {
-          clearTimeout((autoAdvanceTimeoutRef as any).current)
-        }
-        ;(autoAdvanceTimeoutRef as any).current = setTimeout(() => {
-          onNextVideo()
-        }, 3000)
-      } catch {
-        onNextVideo()
-      }
+      // Show small bottom-right notification with countdown and auto-advance
+      setShowNextChapterNotification(true)
+      setNextChapterCountdown(5)
+      if (nextNotifIntervalRef.current) clearInterval(nextNotifIntervalRef.current)
+      nextNotifIntervalRef.current = setInterval(() => {
+        setNextChapterCountdown((prev) => {
+          if (prev <= 1) {
+            if (nextNotifIntervalRef.current) clearInterval(nextNotifIntervalRef.current)
+            setShowNextChapterNotification(false)
+            onNextVideo()
+            return 5
+          }
+          return prev - 1
+        })
+      }, 1000)
     } else if (onNextVideo) {
       // Auto-play disabled: do nothing intrusive
       console.log('Auto-play disabled - staying on current chapter')
@@ -813,11 +800,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [onEnded, onNextVideo, state.autoPlayNext, progressStats?.progressPercentage])
 
   // Cleanup auto-advance timer on unmount or video change
-  const autoAdvanceTimeoutRef = useRef<number | null>(null)
   useEffect(() => {
     return () => {
-      if ((autoAdvanceTimeoutRef as any).current) {
-        clearTimeout((autoAdvanceTimeoutRef as any).current)
+      if (nextNotifIntervalRef.current) {
+        clearInterval(nextNotifIntervalRef.current)
       }
     }
   }, [videoId])
@@ -1199,17 +1185,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         autoAdvance={state.autoPlayNext}
       />
 
-      {/* Chapter Transition Overlay - Shows when video is about to end */}
-      <ChapterTransitionOverlay
-        visible={showChapterTransition && !state.isMiniPlayer}
-        currentChapterTitle={chapterTitleRef.current}
-        nextChapterTitle={nextVideoTitle || "Next Chapter"}
-        timeRemaining={10}
-        onContinue={handleChapterTransitionContinue}
-        onCancel={handleChapterTransitionCancel}
-        autoAdvance={state.autoPlayNext}
-        countdown={chapterTransitionCountdown}
-      />
+      {/* Transition overlay removed per request */}
 
       {/* CourseAI Logo Overlay */}
       <AnimatedCourseAILogo
