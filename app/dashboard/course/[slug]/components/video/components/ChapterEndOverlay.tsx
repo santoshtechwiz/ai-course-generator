@@ -235,8 +235,8 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
             </div>
           </motion.div>
 
-          {/* Full overlay for modal (final chapter / no next) */}
-          {!hasNextChapter && (
+          {/* Full overlay for modal (only for final course completion) */}
+          {!hasNextChapter && isFinalChapter && (
             <motion.div
               className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
               initial={{ opacity: 0 }}

@@ -33,48 +33,22 @@ export async function fetchRelatedCourses(
   limit: number = 10
 ): Promise<RelatedCourse[]> {
   try {
-    // For now, return mock data. In production, this would call your API
-    const mockRelatedCourses: RelatedCourse[] = [
-      {
-        id: "related-1",
-        slug: "advanced-javascript",
-        title: "Advanced JavaScript Concepts",
-        description: "Deep dive into advanced JS patterns and techniques",
-        image: "/api/placeholder/220/120"
-      },
-      {
-        id: "related-2", 
-        slug: "react-fundamentals",
-        title: "React Fundamentals",
-        description: "Learn the basics of React development",
-        image: "/api/placeholder/220/120"
-      },
-      {
-        id: "related-3",
-        slug: "node-backend",
-        title: "Node.js Backend Development", 
-        description: "Build scalable backend applications with Node.js",
-        image: "/api/placeholder/220/120"
-      },
-      {
-        id: "related-4",
-        slug: "typescript-mastery",
-        title: "TypeScript Mastery",
-        description: "Master TypeScript for better JavaScript development",
-        image: "/api/placeholder/220/120"
-      },
-      {
-        id: "related-5",
-        slug: "web-performance",
-        title: "Web Performance Optimization",
-        description: "Optimize your web applications for speed and efficiency",
-        image: "/api/placeholder/220/120"
-      }
-    ]
-
-    return mockRelatedCourses.slice(0, limit)
+    const response = await fetch(`/api/recommendations/related-courses?courseId=${courseId}&limit=${limit}`)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      return result.data
+    }
+    
+    throw new Error("Invalid response format")
   } catch (error) {
     console.error("Error fetching related courses:", error)
+    // Return empty array on error instead of mock data
     return []
   }
 }
@@ -89,35 +63,24 @@ export async function fetchPersonalizedRecommendations(
   limit: number = 3
 ): Promise<PersonalizedRecommendation[]> {
   try {
-    // For now, return mock data. In production, this would use ML/AI recommendations
-    const mockRecommendations: PersonalizedRecommendation[] = [
-      {
-        id: "rec-1",
-        title: "Advanced React Patterns",
-        description: "Learn advanced React patterns and best practices",
-        slug: "advanced-react-patterns",
-        matchReason: "Based on your React course completion",
-        image: "/api/placeholder/48/32"
-      },
-      {
-        id: "rec-2",
-        title: "Full-Stack Development",
-        description: "Complete full-stack development with modern tools",
-        slug: "fullstack-development",
-        matchReason: "Popular among similar learners",
-        image: "/api/placeholder/48/32"
-      },
-      {
-        id: "rec-3",
-        title: "DevOps Fundamentals", 
-        description: "Learn DevOps practices and tools",
-        slug: "devops-fundamentals",
-        matchReason: "Complements your current learning path",
-        image: "/api/placeholder/48/32"
+    const response = await fetch(`/api/recommendations/personalized?courseId=${currentCourse.id}&limit=${limit}`)
+    
+    if (!response.ok) {
+      // If unauthorized or other error, return empty array
+      if (response.status === 401) {
+        console.warn("User not authenticated for personalized recommendations")
+        return []
       }
-    ]
-
-    return mockRecommendations.slice(0, limit)
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      return result.data
+    }
+    
+    throw new Error("Invalid response format")
   } catch (error) {
     console.error("Error fetching personalized recommendations:", error)
     return []
@@ -133,25 +96,19 @@ export async function fetchQuizSuggestions(
   chapterTitle: string
 ): Promise<QuizSuggestion[]> {
   try {
-    // For now, return mock data. In production, this would fetch from your quiz system
-    const mockQuizzes: QuizSuggestion[] = [
-      {
-        id: `quiz-${chapterId}-1`,
-        title: `${chapterTitle} - Quick Review`,
-        description: "Test your understanding of the key concepts",
-        estimatedTime: 5,
-        difficulty: "easy"
-      },
-      {
-        id: `quiz-${chapterId}-2`,
-        title: `${chapterTitle} - Deep Dive`,
-        description: "Challenge yourself with advanced questions",
-        estimatedTime: 10,
-        difficulty: "medium"
-      }
-    ]
-
-    return mockQuizzes
+    const response = await fetch(`/api/recommendations/quiz-suggestions?courseId=${courseId}&chapterId=${chapterId}`)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      return result.data
+    }
+    
+    throw new Error("Invalid response format")
   } catch (error) {
     console.error("Error fetching quiz suggestions:", error)
     return []
