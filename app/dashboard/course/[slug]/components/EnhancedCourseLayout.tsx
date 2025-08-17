@@ -27,8 +27,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
 }) => {
 
   const [isFullscreen, setIsFullscreen] = useState(false)
-
-
+  const [theatreMode, setTheatreMode] = useState(false)
 
   // Handle fullscreen changes
   useEffect(() => {
