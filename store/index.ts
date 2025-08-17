@@ -9,6 +9,7 @@ import flashcardReducer from "./slices/flashcard-slice"
 import courseReducer from "./slices/course-slice"
 import certificateReducer from "./slices/certificate-slice"
 import { subscriptionSlice } from "./slices/subscription-slice"
+import courseProgressReducer from "./slices/courseProgress-slice"
 
 // Enhanced storage with fallback
 const createStorage = () => {
@@ -86,12 +87,19 @@ const quizPersistConfig = {
 }
 
 // Root reducer with session-based auth only
+const courseProgressPersistConfig = {
+  key: "courseProgress",
+  storage: createStorage(),
+  whitelist: ["byCourseId"],
+}
+
 const rootReducer = combineReducers({
   quiz: persistReducer(quizPersistConfig, quizReducer),
   flashcard: persistReducer(flashcardPersistConfig, flashcardReducer),
   course: persistReducer(coursePersistConfig, courseReducer),
   certificate: certificateReducer,
   subscription: subscriptionSlice.reducer,
+  courseProgress: persistReducer(courseProgressPersistConfig, courseProgressReducer),
 })
 
 // ✅ Clean store setup without auth middleware (session-based auth)

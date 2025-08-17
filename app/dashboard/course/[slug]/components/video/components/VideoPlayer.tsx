@@ -393,9 +393,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       } catch (error) {
         console.warn("Error getting video duration:", error)
       }
+
+      // Attempt auto-resume from local storage (per-user or guest)
+      try {
+        const userKey = (typeof window !== 'undefined' && localStorage.getItem('video-guest-id')) || 'guest'
+        const storageKey = `video-progress-${userKey}-${videoId}`
+        const saved = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          const ts = Number(parsed?.playedSeconds || parsed?.time || 0)
+          const dur = Number(parsed?.duration || videoDuration || state.duration || 0)
+          if (!isNaN(ts) && ts > 0 && dur > 0 && ts < dur - 2) {
+            // Seek slightly before saved position for context
+            playerRef.current.seekTo(Math.max(0, ts - 1))
+          }
+        }
+      } catch (e) {
+        // ignore resume failures
+      }
     }
     handlers.onReady()
-  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading])
+  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading, videoDuration, state.duration])
 
   // Enhanced play handler with better UX
   const handlePlayClick = useCallback(() => {
