@@ -264,10 +264,19 @@ const ChapterItem = React.memo(
               {/* Chapter metadata */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {chapter.duration && (
-                  <span className="flex items-center gap-1">
-                    <Timer className="h-3 w-3" />
-                    {typeof chapter.duration === 'number' && formatDuration ? formatDuration(chapter.duration) : chapter.duration}
-                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1">
+                          <Timer className="h-3 w-3" />
+                          {typeof chapter.duration === 'number' && formatDuration ? formatDuration(chapter.duration) : chapter.duration}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <span>Duration: {typeof chapter.duration === 'number' && formatDuration ? formatDuration(chapter.duration) : chapter.duration}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
 
                 <span className="flex items-center gap-1">
@@ -465,31 +474,37 @@ function DesktopSidebar({
           )}
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-              <span>
-                {completedCount} of {totalChapters} completed
+        {totalChapters === 0 ? (
+          <div className="space-y-3 text-center text-muted-foreground">
+            <p className="text-sm font-medium">Start your learning journey — your progress will appear here.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                <span>
+                  {completedCount} of {totalChapters} completed
+                </span>
               </span>
-            </span>
-            <span className="text-muted-foreground font-medium">{courseProgress}%</span>
-          </div>
+              <span className="text-muted-foreground font-medium">{courseProgress}%</span>
+            </div>
 
-          <Progress value={courseProgress} className="h-2" aria-label={`Course progress: ${courseProgress}%`} />
+            <Progress value={courseProgress} className="h-2" aria-label={`Course progress: ${courseProgress}%`} />
 
-          {/* Course stats */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Star className="h-3 w-3" />
-              Course Progress
-            </span>
-            <span className="flex items-center gap-1">
-              <BookOpen className="h-3 w-3" />
-              {totalChapters} Chapters
-            </span>
+            {/* Course stats */}
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Star className="h-3 w-3" />
+                Course Progress
+              </span>
+              <span className="flex items-center gap-1">
+                <BookOpen className="h-3 w-3" />
+                {totalChapters} Chapters
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-hidden">{children}</div>

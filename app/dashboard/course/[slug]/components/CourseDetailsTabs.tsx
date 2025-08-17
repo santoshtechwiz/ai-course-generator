@@ -5,7 +5,7 @@ import { createSelector } from "@reduxjs/toolkit"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, MessageSquare, BarChart3, Award, TrendingUp, BookmarkIcon, File } from "lucide-react"
+import { FileText, MessageSquare, BarChart3, Award, TrendingUp, BookmarkIcon, File, BookOpen, ListChecks } from "lucide-react"
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { type RootState } from "@/store"
@@ -15,6 +15,8 @@ import CourseDetailsQuiz from "./CourseQuiz"
 import CourseAISummary from "./CourseSummary"
 import CertificateGenerator from "./CertificateGenerator"
 import { PDFDownloadLink } from "@react-pdf/renderer"
+import { Badge } from "@/components/ui/badge"
+import { CircularProgress } from "@/components/ui/circular-progress"
 
 export interface AccessLevels {
   isSubscribed: boolean
@@ -145,6 +147,35 @@ export default function CourseDetailsTabs({
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
+      {/* Course Info header block */}
+      <div className="flex items-start justify-between p-4 bg-card rounded-lg border mb-4">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold leading-tight truncate">{course.title}</h2>
+          {course.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{course.description}</p>
+          )}
+          <div className="flex items-center flex-wrap gap-2 mt-2">
+            <Badge variant="secondary" className="text-xs inline-flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              Course Progress
+            </Badge>
+            <Badge variant="outline" className="text-xs inline-flex items-center gap-1">
+              <ListChecks className="h-3 w-3" />
+              {courseStats.totalChapters} Chapters
+            </Badge>
+          </div>
+        </div>
+        <div className="flex-shrink-0 ml-4">
+          <CircularProgress
+            value={courseStats.progressPercentage}
+            size={64}
+            strokeWidth={8}
+            label={courseStats.progressPercentage === 100 ? "✅" : `${courseStats.progressPercentage}%`}
+            sublabel={courseStats.progressPercentage === 0 ? "Start" : undefined}
+          />
+        </div>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full flex flex-col overflow-hidden">
         {/* Tab Navigation */}
         <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/20 rounded-none flex-shrink-0">
@@ -222,54 +253,46 @@ export default function CourseDetailsTabs({
               <CardDescription>Track your progress through the course</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Course Completion</span>
-                  <span className="font-medium">{courseStats.progressPercentage}%</span>
+              {courseStats.totalChapters === 0 ? (
+                <div className="p-6 text-center text-muted-foreground">
+                  <p className="font-medium">Start your learning journey — your progress will appear here.</p>
                 </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${courseStats.progressPercentage}%` }}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-muted/30 rounded-lg">
-                  <div className="text-xl font-bold text-primary">{courseStats.completedChapters}</div>
-                  <div className="text-xs text-muted-foreground">Completed</div>
-                </div>
-                <div className="text-center p-3 bg-muted/30 rounded-lg">
-                  <div className="text-xl font-bold">{courseStats.totalChapters}</div>
-                  <div className="text-xs text-muted-foreground">Total</div>
-                </div>
-                <div className="text-center p-3 bg-muted/30 rounded-lg">
-                  <div className="text-xl font-bold text-green-600">{bookmarks.length}</div>
-                  <div className="text-xs text-muted-foreground">Bookmarks</div>
-                </div>
-                <div className="text-center p-3 bg-muted/30 rounded-lg">
-                  <div className="text-xl font-bold text-yellow-600">
-                    {courseStats.progressPercentage === 100 ? "1" : "0"}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Certificates</div>
-                </div>
-              </div>
-                              {courseStats.progressPercentage === 100 && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
-                    <div className="flex items-center gap-3">
-                      <Award className="h-8 w-8 text-yellow-600" />
-                      <div>
-                        <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Course Completed!</h3>
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                          Congratulations! You've completed all chapters.
-                        </p>
-                      </div>
-                      <div className="ml-auto min-w-[220px]">
-                        <CertificateButton courseTitle={course.title} />
-                      </div>
+              ) : (
+                <>
+                  <div>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span>Course Completion</span>
+                      <span className="font-medium">{courseStats.progressPercentage}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${courseStats.progressPercentage}%` }}
+                      />
                     </div>
                   </div>
-                )}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-xl font-bold text-primary">{courseStats.completedChapters}</div>
+                      <div className="text-xs text-muted-foreground">Completed</div>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-xl font-bold">{courseStats.totalChapters}</div>
+                      <div className="text-xs text-muted-foreground">Total</div>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-xl font-bold text-green-600">{bookmarks.length}</div>
+                      <div className="text-xs text-muted-foreground">Bookmarks</div>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-xl font-bold text-yellow-600">
+                        {courseStats.progressPercentage === 100 ? "1" : "0"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Certificates</div>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

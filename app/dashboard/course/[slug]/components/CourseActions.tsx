@@ -15,6 +15,7 @@ import {
   Linkedin,
   Check,
   ExternalLink,
+  MoreHorizontal,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -262,57 +263,57 @@ export default function CourseActions({
     </Tooltip>
   )
 
-  const DeleteButton = () => (
-    <AlertDialog>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size={isCompact ? "sm" : "default"}
-              disabled={loading === "delete"}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20 transition-all duration-200"
-            >
-              {loading === "delete" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              {!isCompact && <span className="ml-2 hidden sm:inline">Delete</span>}
-            </Button>
-          </AlertDialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Delete this course</p>
-        </TooltipContent>
-      </Tooltip>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
-              <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
-            </div>
-            Delete Course?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            This will permanently delete your course and all its content. This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => handleAction("delete")}
-            disabled={loading === "delete"}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {loading === "delete" ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Deleting...
-              </span>
-            ) : (
-              "Delete Course"
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+  // Destructive actions moved under More menu
+  const MoreMenu = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size={isCompact ? "sm" : "default"}>
+          <MoreHorizontal className="h-4 w-4" />
+          {!isCompact && <span className="ml-2 hidden sm:inline">More</span>}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {isOwner && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem className="text-red-600 cursor-pointer">
+                <Trash2 className="h-4 w-4 mr-2" /> Delete Course
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                    <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  Delete Course?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete your course and all its content. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleAction("delete")}
+                  disabled={loading === "delete"}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {loading === "delete" ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Deleting...
+                    </span>
+                  ) : (
+                    "Delete Course"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 
   return (
@@ -364,12 +365,8 @@ export default function CourseActions({
           <FavoriteButton />
           <ShareButton />
           <RatingButton />
-          {isOwner && (
-            <>
-              <Separator orientation="vertical" className="h-6 mx-1" />
-              <DeleteButton />
-            </>
-          )}
+          <Separator orientation="vertical" className="h-6 mx-1" />
+          <MoreMenu />
         </div>
       </motion.div>
 

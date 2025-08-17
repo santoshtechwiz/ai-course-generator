@@ -26,7 +26,10 @@ import AutoplayOverlay from './AutoplayOverlay'
 import CertificateGenerator from './CertificateGenerator'
 import RecommendedSection from '@/components/shared/RecommendedSection'
 import VideoDebug from './video/components/VideoDebug'
-import { PageLoading, InlineLoading } from '@/components/ui/loading'
+import { PageLoading } from '@/components/ui/loading'
+import { Skeleton } from '@/components/ui/skeleton'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 
 // Types
 import type { FullCourseType, FullChapterType } from '@/app/types/types'
@@ -357,30 +360,40 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
         onWideModeToggle={handleWideModeToggle}
         onPIPToggle={handlePIPToggle}
         onAutoplayToggle={handleAutoplayToggle}
+        onTheaterModeToggle={handleTheaterModeToggle}
+        onFullscreenToggle={handleFullscreenToggle}
+        isTheaterMode={isTheaterMode}
+        isFullscreenActive={isFullscreenFromLayout}
       />
 
       {/* Main Content Grid */}
-      <div className={cn("grid gap-6 p-6", gridLayoutClasses)}>
+      <div className={cn("grid gap-8 p-6", gridLayoutClasses)}>
         {/* Video and Tabs Column */}
         <div className="space-y-6">
           {/* Video Player */}
           <div className="relative">
             {isVideoLoading && (
-              <div className="absolute inset-0 bg-muted/20 rounded-lg flex items-center justify-center z-10">
-                <InlineLoading text="Loading video..." />
+              <div className="absolute inset-0 rounded-lg z-10">
+                <Skeleton className="w-full h-full rounded-lg" />
               </div>
             )}
             
             {videoPlaylist.length > 0 ? (
               <MemoizedVideoPlayer {...videoPlayerProps} />
             ) : (
-              <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <div className="text-center p-8">
-                  <div className="text-6xl mb-4">📚</div>
-                  <h3 className="text-xl font-semibold mb-2">No Videos Available</h3>
-                  <p className="text-muted-foreground">
-                    This course doesn't have any video content yet.
-                  </p>
+              <div className="w-full aspect-video bg-muted rounded-lg grid place-items-center p-6">
+                <div className="text-center max-w-md">
+                  <Image src="/images/placeholder.svg" alt="Empty course content" width={200} height={160} className="mx-auto mb-4 opacity-90" />
+                  <h3 className="text-xl font-semibold mb-2">Course content will appear here once added</h3>
+                  <p className="text-muted-foreground mb-4">Add your first lecture to get started, or explore other courses while this one grows.</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button variant="default" asChild>
+                      <a href="/dashboard/create">Upload video</a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href="/dashboard/explore">Explore courses</a>
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -498,112 +511,35 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       {videoPlaylist.length > 0 && (
         <AnimatePresence>
           {showChapterTransition && nextChapterInfo && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
-            >
-              <div className="text-center max-w-md mx-auto p-8">
-                <div className="mb-6">
-                  <div className="text-6xl mb-4">🎉</div>
-                  <h2 className="text-2xl font-bold mb-2">Chapter Complete!</h2>
-                  <p className="text-muted-foreground">
-                    Moving to next chapter in {autoplayCountdown} seconds...
-                  </p>
-                </div>
-                
-                <div className="bg-muted/30 rounded-lg p-6 mb-6">
-                  <h3 className="font-semibold mb-2">Next: {nextChapterInfo.title}</h3>
-                  {nextChapterInfo.description && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {nextChapterInfo.description}
-                    </p>
-                  )}
-                  {nextChapterInfo.duration && (
-                    <p className="text-sm text-muted-foreground">
-                      Duration: {formatDuration(nextChapterInfo.duration)}
-                    </p>
-                  )}
-                </div>
-                
-                <button
-                  onClick={handleCancelAutoplay}
-                  className="w-full px-4 py-2 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-colors"
-                >
-                  Cancel Auto-play
-                </button>
-              </div>
-            </motion.div>
+            <AutoplayOverlay
+              visible={showAutoplayOverlay}
+              countdown={autoplayCountdown}
+              nextChapterTitle={nextChapterInfo.chapter.title}
+              onCancel={handleCancelAutoplay}
+              onContinue={handleNextVideo}
+            />
           )}
         </AnimatePresence>
       )}
 
-      {/* Autoplay Overlay - only show if there are videos */}
-      {videoPlaylist.length > 0 && (
-        <AnimatePresence>
-          {showAutoplayOverlay && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 bg-background/95 backdrop-blur z-50 flex items-center justify-center"
-            >
-              <AutoplayOverlay
-                countdown={autoplayCountdown}
-                onCancel={handleCancelAutoplay}
-                onNextVideo={handleNextVideo}
-                nextVideoTitle={nextChapter?.chapter.title}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Certificate Generator */}
+      {showCertificate && (
+        <div className="p-6">
+          <CertificateGenerator course={course} onClose={() => setShowCertificate(false)} />
+        </div>
       )}
 
-      {/* Certificate Modal */}
-      <AnimatePresence>
-        {showCertificate && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-background rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            >
-              <CertificateGenerator
-                courseName={course.title}
-                userName={user?.name}
-                isEligible={true}
-                progress={100}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Recommended Section */}
-      <div className="p-6">
-        <RecommendedSection />
+      <div className="px-6 pb-10">
+        <RecommendedSection title="Recommended for you">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg bg-card text-sm text-muted-foreground">
+              Explore top courses and quizzes curated for you.
+            </div>
+          </div>
+        </RecommendedSection>
       </div>
-
-      {/* Debug Info (Development Only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <VideoDebug
-          currentVideoId={currentVideoId}
-          courseId={course.id}
-          isPiPActive={isPiPActive}
-          wideMode={wideMode}
-          autoplayMode={autoplayMode}
-        />
-      )}
     </div>
   )
 }
 
-export default React.memo(MainContent)
+export default MainContent
