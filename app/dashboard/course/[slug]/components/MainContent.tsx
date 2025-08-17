@@ -782,10 +782,10 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
   // Memoized video player props
   const videoPlayerProps = useMemo(() => ({
-    videoId: currentVideoId,
+    videoId: currentVideoId || '',
     courseId: course.id,
-    chapterId: currentChapter?.id ? String(currentChapter.id) : undefined,
     courseName: course.title,
+    chapterTitle: currentChapter?.title,
     onEnded: handleVideoEnd,
     onProgress: handleVideoProgress,
     onVideoLoad: handleVideoLoad,
@@ -793,17 +793,19 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     onBookmark: handleSeekToBookmark,
     bookmarks: bookmarkItems,
     isAuthenticated: !!user,
-    autoPlay: false,
+    autoPlay: autoplayMode,
     showControls: true,
     onCertificateClick: handleCertificateClick,
     onChapterComplete: handleChapterComplete,
-    onNextVideo: undefined,
-    nextVideoId: undefined,
-    nextVideoTitle: '',
-    onPrevVideo: undefined,
-    prevVideoTitle: '',
-    hasNextVideo: false,
+    onNextVideo: handleNextVideo,
+    nextVideoId: nextChapter?.videoId || undefined,
+    nextVideoTitle: nextChapter?.chapter.title || '',
+    onPrevVideo: handlePrevVideo,
+    prevVideoTitle: prevChapter?.chapter.title || '',
+    hasNextVideo: !!nextChapter,
+    hasPrevVideo: !!prevChapter,
     isFullscreen,
+    onFullscreenToggle: () => setIsFullscreen(!isFullscreen),
     onPictureInPictureToggle: handlePIPToggle,
          className: "h-full w-full",
      initialSeekSeconds: (function(){
@@ -828,7 +830,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
    }), [
      currentVideoId,
      course.id,
-     currentChapter?.id,
      course.title,
      handleVideoEnd,
      handleVideoProgress,
@@ -839,17 +840,20 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
      user,
      handleCertificateClick,
      handleChapterComplete,
+     handleNextVideo,
+     handlePrevVideo,
+     nextChapter,
+     prevChapter,
      isFullscreen,
+     onFullscreenToggle,
      handlePIPToggle,
+     autoplayMode,
      courseProgress?.lastLectureId,
      courseProgress?.lastTimestamp,
      completedChapters,
      videoPlaylist.length,
      isKeyChapter,
-     currentChapter?.id,
-     relatedCourses,
-     personalizedRecommendations,
-     quizSuggestions
+     currentChapter?.title
    ])
 
   // Memoized wide mode toggle handler for better performance
@@ -1013,8 +1017,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                    {/* Autoplay banner removed in favor of compact toggle inside player controls */}
                     
                     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden ring-1 ring-primary/20 shadow-sm ai-glass dark:ai-glass-dark">
-                      {(!currentVideoId || isVideoLoading || progressLoading) ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6">
+                      {(!currentVideoId || isVideoLoading) ? (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center gap-3 p-6">
                           <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
                           <div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
                         </div>
