@@ -103,6 +103,16 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       const newBufferHealth = calculateBufferHealth(progressState.loaded, progressState.played);
       setBufferHealth((prev) => (Math.abs(prev - newBufferHealth) > 5 ? newBufferHealth : prev));
 
+      // Check if video is about to end (last 10 seconds) and trigger transition
+      if (state.duration && progressState.playedSeconds > 0) {
+        const timeRemaining = state.duration - progressState.playedSeconds;
+        
+        // Set nearing completion state for preloading
+        if (timeRemaining <= 10 && timeRemaining > 0) {
+          setState(prev => ({ ...prev, isNearingCompletion: true }));
+        }
+      }
+
       // Avoid duplicate/noisy tracking while in mini-player if desired
       const shouldTrack = !state.isMiniPlayer || state.played < 0.98
 
@@ -113,7 +123,7 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       // Pass to parent callback (single call per tick)
       options.onProgress?.(progressState);
     },
-    [options.onProgress, progressTracking, state.isMiniPlayer, state.played]
+    [options.onProgress, progressTracking, state.isMiniPlayer, state.played, state.duration]
   );
 
   // Memoized YouTube URL
@@ -571,6 +581,44 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
       savePlayerPreferences({ autoPlayNext: newAutoPlayNext });
       return { ...prev, autoPlayNext: newAutoPlayNext };
     });
+  }, []);
+
+  // Theater mode toggle handler
+  const handleTheaterModeToggle = useCallback(() => {
+    setState((prev) => {
+      const newTheaterMode = !prev.theaterMode;
+      
+      // Toggle CSS class on body for theater mode styling
+      if (typeof document !== "undefined") {
+        if (newTheaterMode) {
+          document.body.classList.add("theater-mode-active");
+        } else {
+          document.body.classList.remove("theater-mode-active");
+        }
+      }
+      
+      return { ...prev, theaterMode: newTheaterMode };
+    });
+  }, []);
+
+  // Picture-in-Picture toggle handler
+  const handlePictureInPictureToggle = useCallback(() => {
+    setState((prev) => {
+      const newMiniPlayer = !prev.isMiniPlayer;
+      return { 
+        ...prev, 
+        isMiniPlayer: newMiniPlayer,
+        isPictureInPicture: false // Reset native PiP when using mini player
+      };
+    });
+  }, []);
+
+  // Check PiP support on mount
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      const isPiPSupported = !!(document as any).pictureInPictureEnabled;
+      setState(prev => ({ ...prev, isPiPSupported }));
+    }
   }, []);
 
   return {

@@ -21,6 +21,8 @@ import ChapterStartOverlay from "./ChapterStartOverlay"
 import ChapterEndOverlay from "./ChapterEndOverlay"
 import AutoPlayNotification from "./AutoPlayNotification"
 import NextChapterNotification from "./NextChapterNotification"
+import ChapterTransitionOverlay from "./ChapterTransitionOverlay"
+import AnimatedCourseAILogo from "./AnimatedCourseAILogo"
 import { LoadingSpinner } from "@/components/loaders/GlobalLoader"
 // Removed in-player growth promo; we will show CTAs outside the player
 
@@ -135,6 +137,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showChapterEnd, setShowChapterEnd] = useState(false)
   const [showNextChapterNotification, setShowNextChapterNotification] = useState(false)
   const [nextChapterCountdown, setNextChapterCountdown] = useState(5)
+  const [showChapterTransition, setShowChapterTransition] = useState(false)
+  const [chapterTransitionCountdown, setChapterTransitionCountdown] = useState(5)
+  const [showCourseAILogo, setShowCourseAILogo] = useState(false)
   const [showAutoPlayNotification, setShowAutoPlayNotification] = useState(false)
   const [autoPlayCountdown, setAutoPlayCountdown] = useState(5)
   const [chapterStartShown, setChapterStartShown] = useState(false)
@@ -664,6 +669,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowChapterEnd(false)
     setShowNextChapterNotification(false)
     setNextChapterCountdown(5)
+    setShowChapterTransition(false)
+    setChapterTransitionCountdown(5)
+    setShowCourseAILogo(false)
     setPlayerReady(false)
     setVideoDuration(0)
     setIsLoadingDuration(true)
@@ -683,6 +691,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return () => cancelAnimationFrame(animationFrame)
   }, [])
+
+  // Monitor video progress for chapter transitions
+  useEffect(() => {
+    if (!state.playing || !state.duration || !onNextVideo || showChapterTransition) return
+
+    const checkProgress = () => {
+      const timeRemaining = state.duration - state.lastPlayedTime
+      
+      // Show transition overlay in last 10 seconds
+      if (timeRemaining <= 10 && timeRemaining > 0) {
+        setShowChapterTransition(true)
+        setChapterTransitionCountdown(5)
+        setShowCourseAILogo(true)
+      }
+    }
+
+    const interval = setInterval(checkProgress, 1000)
+    return () => clearInterval(interval)
+  }, [state.playing, state.duration, state.lastPlayedTime, onNextVideo, showChapterTransition])
 
   const handleVideoEnd = useCallback(() => {
     onEnded?.()
@@ -750,6 +777,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleNextChapterNotificationCancel = useCallback(() => {
     setShowNextChapterNotification(false)
     setNextChapterCountdown(5)
+  }, [])
+
+  const handleChapterTransitionContinue = useCallback(() => {
+    setShowChapterTransition(false)
+    setShowCourseAILogo(false)
+    onNextVideo?.()
+  }, [onNextVideo])
+
+  const handleChapterTransitionCancel = useCallback(() => {
+    setShowChapterTransition(false)
+    setShowCourseAILogo(false)
+    setChapterTransitionCountdown(5)
   }, [])
 
   const handleToggleAutoPlayVideo = useCallback(() => {
@@ -865,8 +904,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <div
        ref={containerRef}
        className={cn(
-         "relative object-contain w-full h-full bg-black overflow-hidden group",
+         "relative object-contain w-full h-full bg-black overflow-hidden group video-player-container",
          className,
+         state.theaterMode && "theater-mode-active",
        )}
        onMouseEnter={() => setIsHovering(true)}
        onMouseLeave={() => setIsHovering(false)}
@@ -1085,6 +1125,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         autoAdvance={state.autoPlayNext}
       />
 
+      {/* Chapter Transition Overlay - Shows when video is about to end */}
+      <ChapterTransitionOverlay
+        visible={showChapterTransition && !state.isMiniPlayer}
+        currentChapterTitle={chapterTitleRef.current}
+        nextChapterTitle={nextVideoTitle || "Next Chapter"}
+        timeRemaining={10}
+        onContinue={handleChapterTransitionContinue}
+        onCancel={handleChapterTransitionCancel}
+        autoAdvance={state.autoPlayNext}
+        countdown={chapterTransitionCountdown}
+      />
+
+      {/* CourseAI Logo Overlay */}
+      <AnimatedCourseAILogo
+        show={showCourseAILogo && !state.isMiniPlayer}
+        videoEnding={showChapterTransition}
+        onAnimationComplete={() => setShowCourseAILogo(false)}
+      />
+
       {/* Enhanced Custom controls */}
       {canPlayVideo && !state.isMiniPlayer && (
         <div
@@ -1129,9 +1188,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
             autoPlayVideo={autoPlayVideo}
             onToggleAutoPlayVideo={handleToggleAutoPlayVideo}
-                         onPictureInPicture={handlePictureInPicture}
-             isPiPSupported={state.isPiPSupported}
-             isPiPActive={state.isPictureInPicture}
+                                     onPictureInPicture={handlePictureInPicture}
+            isPiPSupported={state.isPiPSupported}
+            isPiPActive={state.isPictureInPicture}
+            onToggleTheaterMode={handlers.handleTheaterModeToggle}
+            isTheaterMode={state.theaterMode}
 
            />
         </div>
