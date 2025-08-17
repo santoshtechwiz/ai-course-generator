@@ -970,23 +970,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
              {/* Top toolbar: width toggle and keys hint */}
              <div className="mx-auto py-3 px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
                <div className="flex items-center gap-3">
-                 {/* Auto-play Mode Toggle (single, top of playlist) */}
-                 <Button
-                   variant={autoplayMode ? "default" : "outline"}
-                   size="sm"
-                   onClick={handleAutoplayToggle}
-                   className={cn(
-                     "gap-2 transition-all duration-300",
-                     autoplayMode && "bg-green-600 hover:bg-green-700 text-white"
-                   )}
-                 >
-                   <div className={cn(
-                     "w-2 h-2 rounded-full transition-all duration-300",
-                     autoplayMode ? "bg-white" : "bg-green-500"
-                   )} />
-                   {autoplayMode ? "Auto-play ON" : "Auto-play OFF"}
-                 </Button>
-                 
                  {/* PIP Status Indicator */}
                  {isPiPActive && (
                    <motion.div
@@ -1001,7 +984,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                </div>
                
                <span className="ml-2 hidden md:inline text-xs text-muted-foreground">
-                 Keys: T Theater • F Fullscreen • B Bookmark • Ctrl+P PIP • Ctrl+A Auto-play • Esc Close
+                 Video controls: T Theater • F Fullscreen • B Bookmark • P PiP • Space Play/Pause • Esc Close
                </span>
              </div>
              <ActionButtons slug={course.slug} isOwner={isOwner} variant="compact" title={course.title} />
@@ -1114,16 +1097,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                             Next: {nextChapter.chapter.title}
                           </div>
                         )}
-                      </div>
-                      
-                      {/* Progress bar */}
-                      <div className="w-full bg-muted rounded-full h-2 mb-3">
-                        <motion.div
-                          initial={{ width: "0%" }}
-                          animate={{ width: "100%" }}
-                          transition={{ duration: 1, ease: "easeInOut" }}
-                          className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full"
-                        />
                       </div>
                       
                       {/* Chapter info */}

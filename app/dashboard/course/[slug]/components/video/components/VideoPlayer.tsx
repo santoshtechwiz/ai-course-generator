@@ -105,6 +105,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   prevVideoTitle,
   hasNextVideo,
   theatreMode = false,
+  onTheaterModeToggle,
   isFullscreen = false,
 
   onPictureInPictureToggle, // Add this prop
@@ -1027,6 +1028,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                          onPictureInPicture={handlePictureInPicture}
              isPiPSupported={state.isPiPSupported}
              isPiPActive={state.isPictureInPicture}
+             theaterMode={theatreMode}
+             onToggleTheaterMode={onTheaterModeToggle}
            />
         </div>
       )}

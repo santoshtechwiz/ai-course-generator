@@ -17,6 +17,7 @@ import {
   RewindIcon,
   FastForwardIcon,
   PictureInPicture2,
+  RectangleHorizontal,
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
@@ -57,6 +58,8 @@ interface PlayerControlsProps {
   onPictureInPicture?: () => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
+  theaterMode?: boolean
+  onToggleTheaterMode?: () => void
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -96,6 +99,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onPictureInPicture,
   isPiPSupported = false,
   isPiPActive = false,
+  theaterMode = false,
+  onToggleTheaterMode,
 }) => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -381,8 +386,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
         <div className="flex items-center space-x-1 sm:space-x-2">
           {/* Enhanced Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="hidden lg:flex items-center mr-2">
-              <span className="text-xs text-white mr-2">Autoplay</span>
+            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
+              <span className="text-xs text-white mr-2">Auto-play</span>
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
@@ -392,14 +397,19 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             </div>
           )}
 
+          {/* Separator for content vs view controls */}
+          {hasNextVideo && onToggleAutoPlayNext && (isAuthenticated || onPictureInPicture || onToggleTheaterMode) && (
+            <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />
+          )}
+
           {/* Enhanced Bookmark button */}
           {isAuthenticated && onAddBookmark && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+              className="h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors hover:text-blue-400"
               onClick={handleAddBookmark}
-              title="Add bookmark"
+              title="Add bookmark (B)"
               aria-label="Add bookmark at current time"
             >
               <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -411,24 +421,36 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20", isPiPActive && "bg-white/20")}
+              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isPiPActive && "bg-white/20 text-blue-400")}
               onClick={onPictureInPicture}
-              title={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture" : "Enter Picture-in-Picture") : (isPiPActive ? "Close Mini Player" : "Open Mini Player")}
+              title={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture (P)" : "Enter Picture-in-Picture (P)") : (isPiPActive ? "Close Mini Player (P)" : "Open Mini Player (P)")}
               aria-label={isPiPSupported ? (isPiPActive ? "Exit Picture-in-Picture mode" : "Enter Picture-in-Picture mode") : (isPiPActive ? "Close Mini Player" : "Open Mini Player")}
             >
               <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           )}
 
-
+          {/* Theater Mode */}
+          {onToggleTheaterMode && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", theaterMode && "bg-white/20 text-blue-400")}
+              onClick={onToggleTheaterMode}
+              title={theaterMode ? "Exit theater mode (T)" : "Enter theater mode (T)"}
+              aria-label={theaterMode ? "Exit theater mode" : "Enter theater mode"}
+            >
+              <RectangleHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+          )}
 
           {/* Enhanced Fullscreen */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white touch-manipulation hover:bg-white/20"
+            className={cn("h-8 w-8 text-white touch-manipulation hover:bg-white/20 transition-colors", isFullscreen && "bg-white/20 text-blue-400")}
             onClick={onToggleFullscreen}
-            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            title={isFullscreen ? "Exit fullscreen (F)" : "Enter fullscreen (F)"}
             aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
           >
             <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />

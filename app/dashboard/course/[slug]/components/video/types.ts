@@ -90,7 +90,9 @@ export interface VideoPlayerProps {
   hasPrevVideo?: boolean
   isFullscreen?: boolean
   onFullscreenToggle?: () => void
-  onPictureInPictureToggle?: (isPiPActive: boolean) => void
+  onPictureInPictureToggle?: (iPiPActive: boolean) => void
+  theatreMode?: boolean
+  onTheaterModeToggle?: () => void
   initialSeekSeconds?: number
   relatedCourses?: Array<{ id?: string | number; slug?: string; title?: string; description?: string; image?: string }>
   progressStats?: { completedCount: number; totalChapters: number; progressPercentage: number }
@@ -140,6 +142,8 @@ export interface PlayerControlsProps {
   onPictureInPictureToggle?: (isPiPActive: boolean) => void
   isPiPSupported?: boolean
   isPiPActive?: boolean
+  theaterMode?: boolean
+  onToggleTheaterMode?: () => void
 }
 
 export interface ProgressBarProps {
