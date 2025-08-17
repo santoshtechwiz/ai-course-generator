@@ -117,6 +117,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   courseName,
   chapterTitle,
   initialSeekSeconds,
+  relatedCourses = [],
+  progressStats,
+  quizSuggestions = [],
+  personalizedRecommendations = [],
+  isKeyChapter = false,
 }) => {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -970,6 +975,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         certificateState={certificateState}
         isFinalChapter={!onNextVideo}
         courseTitle={courseName}
+        relatedCourses={relatedCourses}
+        progressStats={progressStats}
+        quizSuggestions={quizSuggestions}
+        personalizedRecommendations={personalizedRecommendations}
+        isKeyChapter={isKeyChapter}
       />
 
       {/* Enhanced Custom controls */}

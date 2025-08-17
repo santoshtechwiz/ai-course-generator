@@ -7,7 +7,7 @@ import { useProgress } from "@/hooks"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2, Download, Share2 } from "lucide-react"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { useAppDispatch, useAppSelector, store } from "@/store/hooks"
 import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
@@ -32,12 +32,14 @@ import CourseActions from "./CourseActions"
 import ActionButtons from "./ActionButtons"
 import CourseInfo from "./CourseInfo"
 import ReviewsSection from "./ReviewsSection"
-import { setLastPosition, markLectureCompleted as markLectureCompletedProgress, setIsCourseCompleted, makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
+import { setLastPosition, markLectureCompleted as markLectureCompletedProgress, setIsCourseCompleted, setCertificateDownloaded, makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
 import { cn } from "@/lib/utils"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import CertificateGenerator from "./CertificateGenerator"
 import RecommendedSection from "@/components/shared/RecommendedSection"
 import type { BookmarkData } from "./video/types"
+import { fetchRelatedCourses, fetchPersonalizedRecommendations, fetchQuizSuggestions } from "@/services/recommendationsService"
+import type { RelatedCourse, PersonalizedRecommendation, QuizSuggestion } from "@/services/recommendationsService"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -82,6 +84,9 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [videoEnding, setVideoEnding] = useState(false)
   const [showCertificate, setShowCertificate] = useState(false)
+  const [relatedCourses, setRelatedCourses] = useState<RelatedCourse[]>([])
+  const [personalizedRecommendations, setPersonalizedRecommendations] = useState<PersonalizedRecommendation[]>([])
+  const [quizSuggestions, setQuizSuggestions] = useState<QuizSuggestion[]>([])
   const [resumePromptShown, setResumePromptShown] = useState(false)
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({})
   const [isVideoLoading, setIsVideoLoading] = useState(true)
@@ -249,6 +254,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const isLastVideo = useMemo(() => {
     return currentIndex === videoPlaylist.length - 1
   }, [currentIndex, videoPlaylist])
+
+  // Determine if current chapter is a key chapter (every 3rd chapter or last chapter)
+  const isKeyChapter = useMemo(() => {
+    return currentIndex > 0 && ((currentIndex + 1) % 3 === 0 || isLastVideo)
+  }, [currentIndex, isLastVideo])
 
   // Progress tracking
   const { progress, updateProgress, isLoading: progressLoading } = useProgress({
@@ -454,7 +464,12 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
       }
 
       if (isLastVideo) {
-        setShowCertificate(true)
+        // Only show certificate if not already downloaded for this completion
+        const selectCourseProgressById = makeSelectCourseProgressById()
+        const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
+        if (!courseProgress?.certificateDownloaded) {
+          setShowCertificate(true)
+        }
       } else if (nextChapter && autoplayMode) {
         // Show chapter transition overlay with countdown
         setNextChapterInfo({
@@ -703,16 +718,53 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     setAutoplayCountdown(0)
   }, [])
 
-  // Certificate handler
+  // Certificate handler - only show if not already downloaded for this completion
   const handleCertificateClick = useCallback(() => {
-    setShowCertificate(true)
-  }, [])
+    const selectCourseProgressById = makeSelectCourseProgressById()
+    const courseProgress = selectCourseProgressById(store.getState(), String(course.id))
+    if (courseProgress?.isCourseCompleted && !courseProgress?.certificateDownloaded) {
+      setShowCertificate(true)
+    } else if (!courseProgress?.isCourseCompleted) {
+      // Allow manual access if course not completed yet (for testing/admin)
+      setShowCertificate(true)
+    }
+  }, [course.id])
 
   // Autoplay logic removed per request
   useEffect(() => {
     setShowAutoplayOverlay(false)
     setAutoplayCountdown(0)
   }, [])
+
+  // Fetch related courses
+  useEffect(() => {
+    fetchRelatedCourses(course.id, 5).then(setRelatedCourses)
+  }, [course.id])
+
+  // Fetch personalized recommendations when course is completed
+  useEffect(() => {
+    if (isLastVideo && user) {
+      fetchPersonalizedRecommendations(
+        user.id,
+        completedChapters?.map(String) || [],
+        course,
+        3
+      ).then(setPersonalizedRecommendations)
+    }
+  }, [isLastVideo, user, completedChapters, course])
+
+  // Fetch quiz suggestions for key chapters
+  useEffect(() => {
+    if (isKeyChapter && currentChapter) {
+      fetchQuizSuggestions(
+        course.id,
+        currentChapter.id,
+        currentChapter.title
+      ).then(setQuizSuggestions)
+    } else {
+      setQuizSuggestions([])
+    }
+  }, [isKeyChapter, currentChapter, course.id])
 
   // Memoized course stats for better performance
   const courseStats = useMemo(
@@ -798,6 +850,16 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
        } catch {}
        return undefined
      })(),
+     // Enhanced overlay props
+     relatedCourses: relatedCourses,
+     progressStats: {
+       completedCount: completedChapters?.length || 0,
+       totalChapters: videoPlaylist.length,
+       progressPercentage: videoPlaylist.length > 0 ? Math.round(((completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0
+     },
+     quizSuggestions: quizSuggestions,
+     personalizedRecommendations: personalizedRecommendations,
+     isKeyChapter: isKeyChapter,
    }), [
      currentVideoId,
      course.id,
@@ -817,7 +879,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
      onTheaterModeToggle,
      handlePIPToggle,
      courseProgress?.lastLectureId,
-     courseProgress?.lastTimestamp
+     courseProgress?.lastTimestamp,
+     completedChapters,
+     videoPlaylist.length,
+     isKeyChapter,
+     currentChapter?.id,
+     relatedCourses,
+     personalizedRecommendations,
+     quizSuggestions
    ])
 
   // Memoized wide mode toggle handler for better performance
@@ -1366,6 +1435,14 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
                       <Button 
                         disabled={loading} 
                         className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                        onClick={() => {
+                          // Mark certificate as downloaded to prevent repeated showing
+                          dispatch(setCertificateDownloaded({ courseId: String(course.id), downloaded: true }))
+                          toast({
+                            title: "Certificate Downloaded!",
+                            description: "Your course completion certificate has been downloaded successfully.",
+                          })
+                        }}
                       >
                         {loading ? (
                           <>

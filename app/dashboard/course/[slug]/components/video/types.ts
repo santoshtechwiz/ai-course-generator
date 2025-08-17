@@ -94,6 +94,9 @@ export interface VideoPlayerProps {
   initialSeekSeconds?: number
   relatedCourses?: Array<{ id?: string | number; slug?: string; title?: string; description?: string; image?: string }>
   progressStats?: { completedCount: number; totalChapters: number; progressPercentage: number }
+  quizSuggestions?: Array<{ id: string; title: string; description: string; estimatedTime: number; difficulty: "easy" | "medium" | "hard" }>
+  personalizedRecommendations?: Array<{ id: string; title: string; description: string; image?: string; slug: string; matchReason: string }>
+  isKeyChapter?: boolean
 }
 
 export interface PlayerControlsProps {

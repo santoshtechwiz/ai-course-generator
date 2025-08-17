@@ -6,6 +6,7 @@ export interface PerCourseProgress {
   lastTimestamp: number
   completedLectures: string[]
   isCourseCompleted: boolean
+  certificateDownloaded?: boolean
   lastUpdatedAt?: number
 }
 
@@ -37,6 +38,7 @@ const courseProgressSlice = createSlice({
           lastTimestamp: Math.max(0, Math.floor(action.payload.timestamp)),
           completedLectures: existing?.completedLectures ?? [],
           isCourseCompleted: existing?.isCourseCompleted ?? false,
+          certificateDownloaded: existing?.certificateDownloaded ?? false,
           lastUpdatedAt: now,
         }
       }
@@ -51,6 +53,7 @@ const courseProgressSlice = createSlice({
         lastTimestamp: 0,
         completedLectures: [],
         isCourseCompleted: false,
+        certificateDownloaded: false,
       }
       if (!existing.completedLectures.includes(action.payload.lectureId)) {
         existing.completedLectures = [...existing.completedLectures, action.payload.lectureId]
@@ -68,8 +71,28 @@ const courseProgressSlice = createSlice({
         lastTimestamp: 0,
         completedLectures: [],
         isCourseCompleted: false,
+        certificateDownloaded: false,
       }
       existing.isCourseCompleted = action.payload.isCourseCompleted
+      // Reset certificate downloaded flag when course completion status changes
+      if (!action.payload.isCourseCompleted) {
+        existing.certificateDownloaded = false
+      }
+      state.byCourseId[courseKey] = { ...existing, lastUpdatedAt: Date.now() }
+    },
+    setCertificateDownloaded(
+      state,
+      action: PayloadAction<{ courseId: string | number; downloaded: boolean }>,
+    ) {
+      const courseKey = String(action.payload.courseId)
+      const existing = state.byCourseId[courseKey] || {
+        lastLectureId: null,
+        lastTimestamp: 0,
+        completedLectures: [],
+        isCourseCompleted: false,
+        certificateDownloaded: false,
+      }
+      existing.certificateDownloaded = action.payload.downloaded
       state.byCourseId[courseKey] = { ...existing, lastUpdatedAt: Date.now() }
     },
     resetCourseProgress(state, action: PayloadAction<{ courseId: string | number }>) {
@@ -86,6 +109,7 @@ export const {
   setLastPosition,
   markLectureCompleted,
   setIsCourseCompleted,
+  setCertificateDownloaded,
   resetCourseProgress,
   resetAll,
 } = courseProgressSlice.actions
