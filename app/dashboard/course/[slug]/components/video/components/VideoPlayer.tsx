@@ -383,6 +383,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [isMounted, containerRef])
 
+  // Interval ref for next-chapter countdown
+  const nextNotifIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   // Enhanced PIP handling with callback to parent
   const handlePictureInPicture = useCallback(async () => {
     try {
@@ -834,12 +837,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const handleNextChapterNotificationContinue = useCallback(() => {
     setShowNextChapterNotification(false)
+    if (nextNotifIntervalRef.current) {
+      clearInterval(nextNotifIntervalRef.current)
+      nextNotifIntervalRef.current = null
+    }
     onNextVideo?.()
   }, [onNextVideo])
 
   const handleNextChapterNotificationCancel = useCallback(() => {
     setShowNextChapterNotification(false)
     setNextChapterCountdown(5)
+    if (nextNotifIntervalRef.current) {
+      clearInterval(nextNotifIntervalRef.current)
+      nextNotifIntervalRef.current = null
+    }
   }, [])
 
   const handleChapterTransitionContinue = useCallback(() => {
