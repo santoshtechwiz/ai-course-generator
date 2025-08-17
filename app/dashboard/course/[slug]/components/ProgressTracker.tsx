@@ -6,8 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { 
   markLectureCompleted, 
   setLastPosition, 
-  setIsCourseCompleted,
-  makeSelectCourseProgressById 
+  setIsCourseCompleted
 } from "@/store/slices/courseProgress-slice"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
@@ -58,8 +57,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   const [isSaving, setIsSaving] = useState(false)
 
   // Get course progress from Redux
-  const selectCourseProgress = useCallback(() => makeSelectCourseProgressById(), [])
-  const courseProgress = useAppSelector((state) => selectCourseProgress()(state as any, courseId))
+  const courseProgress = useAppSelector((state) => state.course.courseProgress[courseId])
 
   // Calculate progress percentage
   const progressPercentage = totalChapters > 0 ? (completedChapters.length / totalChapters) * 100 : 0

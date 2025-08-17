@@ -33,7 +33,7 @@ import CourseActions from "./CourseActions"
 import ActionButtons from "./ActionButtons"
 import CourseInfo from "./CourseInfo"
 import ReviewsSection from "./ReviewsSection"
-import { setLastPosition, markLectureCompleted as markLectureCompletedProgress, setIsCourseCompleted, setCertificateDownloaded, makeSelectCourseProgressById } from "@/store/slices/courseProgress-slice"
+import { setLastPosition, markLectureCompleted as markLectureCompletedProgress, setIsCourseCompleted, setCertificateDownloaded } from "@/store/slices/courseProgress-slice"
 import { cn } from "@/lib/utils"
 import { PDFDownloadLink } from "@react-pdf/renderer"
 import CertificateGenerator from "./CertificateGenerator"
@@ -127,11 +127,9 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   const [autoplayCountdown, setAutoplayCountdown] = useState(0)
 
   
-    // Redux state
+  // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
-  const legacyCourseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
-  const selectCourseProgress = useMemo(() => makeSelectCourseProgressById(), [])
-  const courseProgress = useAppSelector((state) => selectCourseProgress(state as any, course.id))
+  const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
   // Get bookmarks for the current video - this is more reliable than trying to get them from Redux
@@ -153,11 +151,9 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   }, [bookmarks, currentVideoId])
 
   // Fix: Initialize completedChapters safely so it's always defined
-  // Use courseProgress.completedLectures if available, otherwise empty array
   const completedChapters = useMemo(() => {
-    if (courseProgress?.completedLectures) return courseProgress.completedLectures.map((id: string) => Number(id)).filter((n: number) => !isNaN(n))
-    return (legacyCourseProgress?.completedChapters || []).map((id: number) => Number(id)).filter((n: number) => !isNaN(n))
-  }, [courseProgress, legacyCourseProgress])
+    return (courseProgress?.completedChapters || []).map((id: number) => Number(id)).filter((n: number) => !isNaN(n))
+  }, [courseProgress])
 
   // Check free video status on mount
   useEffect(() => {
@@ -317,11 +313,11 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
       )
     }
 
-    // If still not found, try to use the last watched lecture from Redux progress slice
+    // If still not found, try to use the current chapter from Redux progress slice
     try {
-      if (!targetVideo && courseProgress?.lastLectureId) {
+      if (!targetVideo && courseProgress?.currentChapterId) {
         targetVideo = videoPlaylist.find(
-          (entry) => String(entry.chapter.id) === String(courseProgress.lastLectureId)
+          (entry) => String(entry.chapter.id) === String(courseProgress.currentChapterId)
         ) || null
       }
     } catch {}
@@ -342,7 +338,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     } else {
       console.error("Failed to select a video")
     }
-  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress, courseProgress?.lastLectureId])
+  }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, progress, courseProgress?.currentChapterId])
 
   // Resume prompt
   useEffect(() => {
@@ -860,8 +856,8 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     className: "h-full w-full",
      initialSeekSeconds: (function(){
        try {
-         if (courseProgress?.lastLectureId && String(courseProgress.lastLectureId) === String(currentChapter?.id)) {
-           const ts = Number(courseProgress.lastTimestamp)
+         if (courseProgress?.currentChapterId && String(courseProgress.currentChapterId) === String(currentChapter?.id)) {
+           const ts = Number(courseProgress.resumePoint || 0)
            if (!isNaN(ts) && ts > 0) return ts
          }
        } catch {}
@@ -898,8 +894,8 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
      isFullscreen,
      onFullscreenToggle,
      handlePIPToggle,
-     courseProgress?.lastLectureId,
-     courseProgress?.lastTimestamp,
+     courseProgress?.currentChapterId,
+     courseProgress?.resumePoint,
      completedChapters,
      videoPlaylist.length,
      isKeyChapter,
