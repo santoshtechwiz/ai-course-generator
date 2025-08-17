@@ -745,10 +745,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => cancelAnimationFrame(animationFrame)
   }, [])
 
-  // Disable big transition overlay per request
+  // Show small next-chapter notification when 5s remain
   useEffect(() => {
-    return () => {}
-  }, [])
+    if (!state.playing || !state.duration || !onNextVideo) return
+    const check = () => {
+      const timeRemaining = state.duration - state.lastPlayedTime
+      if (timeRemaining <= 5 && timeRemaining > 0) {
+        setShowNextChapterNotification(true)
+        setNextChapterCountdown(Math.ceil(timeRemaining))
+      }
+    }
+    const id = setInterval(check, 500)
+    return () => clearInterval(id)
+  }, [state.playing, state.duration, state.lastPlayedTime, onNextVideo])
 
   const handleVideoEnd = useCallback(() => {
     console.log('Video ended - Debug info:', {
