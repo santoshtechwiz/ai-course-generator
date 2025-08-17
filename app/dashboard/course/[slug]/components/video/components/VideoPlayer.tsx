@@ -116,6 +116,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   chapterId,
   courseName,
   chapterTitle,
+  initialSeekSeconds,
 }) => {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -394,6 +395,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         console.warn("Error getting video duration:", error)
       }
 
+      // Attempt initial seek if provided by parent
+      if (typeof initialSeekSeconds === 'number' && initialSeekSeconds > 0) {
+        try {
+          const dur = playerRef.current.getDuration() || videoDuration || state.duration || 0
+          if (dur > 0 && initialSeekSeconds < dur - 1) {
+            playerRef.current.seekTo(Math.max(0, initialSeekSeconds))
+          }
+        } catch {}
+      }
+
       // Attempt auto-resume from local storage (per-user or guest)
       try {
         const userKey = (typeof window !== 'undefined' && localStorage.getItem('video-guest-id')) || 'guest'
@@ -413,7 +424,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     }
     handlers.onReady()
-  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading, videoDuration, state.duration])
+  }, [handlers, onVideoLoad, courseName, videoId, onPlayerReady, stopLoading, videoDuration, state.duration, initialSeekSeconds])
 
   // Enhanced play handler with better UX
   const handlePlayClick = useCallback(() => {

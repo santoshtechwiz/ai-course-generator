@@ -790,26 +790,37 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     isFullscreen,
     onTheaterModeToggle,
     onPictureInPictureToggle: handlePIPToggle,
-    className: "h-full w-full"
-  }), [
-    currentVideoId,
-    course.id,
-    currentChapter?.id,
-    course.title,
-    handleVideoEnd,
-    handleVideoProgress,
-    handleVideoLoad,
-    handlePlayerReady,
-    handleSeekToBookmark,
-    bookmarkItems,
-    user,
-    handleCertificateClick,
-    handleChapterComplete,
-    theatreMode,
-    isFullscreen,
-    onTheaterModeToggle,
-    handlePIPToggle
-  ])
+         className: "h-full w-full",
+     initialSeekSeconds: (function(){
+       try {
+         if (courseProgress?.lastLectureId && String(courseProgress.lastLectureId) === String(currentChapter?.id)) {
+           const ts = Number(courseProgress.lastTimestamp)
+           if (!isNaN(ts) && ts > 0) return ts
+         }
+       } catch {}
+       return undefined
+     })(),
+   }), [
+     currentVideoId,
+     course.id,
+     currentChapter?.id,
+     course.title,
+     handleVideoEnd,
+     handleVideoProgress,
+     handleVideoLoad,
+     handlePlayerReady,
+     handleSeekToBookmark,
+     bookmarkItems,
+     user,
+     handleCertificateClick,
+     handleChapterComplete,
+     theatreMode,
+     isFullscreen,
+     onTheaterModeToggle,
+     handlePIPToggle,
+     courseProgress?.lastLectureId,
+     courseProgress?.lastTimestamp
+   ])
 
   // Memoized wide mode toggle handler for better performance
   const handleWideModeToggle = useCallback(() => {

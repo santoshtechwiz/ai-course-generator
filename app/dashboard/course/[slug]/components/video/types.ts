@@ -91,6 +91,7 @@ export interface VideoPlayerProps {
   isFullscreen?: boolean
   onFullscreenToggle?: () => void
   onPictureInPictureToggle?: (isPiPActive: boolean) => void
+  initialSeekSeconds?: number
 }
 
 export interface PlayerControlsProps {
