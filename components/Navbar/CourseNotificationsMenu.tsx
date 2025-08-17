@@ -33,8 +33,49 @@ interface CourseNotification {
   priority: 'high' | 'medium' | 'low'
 }
 
+interface CourseData {
+  id: string
+  slug: string
+  title: string
+  description?: string
+}
+
 interface CourseNotificationsMenuProps {
   className?: string
+}
+
+// Hook to fetch course data
+const useCourseData = (courseIds: string[]) => {
+  const [courseData, setCourseData] = useState<Record<string, CourseData>>({})
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (courseIds.length === 0) return
+
+    const fetchCourseData = async () => {
+      setLoading(true)
+      try {
+        // In a real implementation, you would fetch course data from your API
+        // For now, we'll simulate this with a mock data structure
+        const mockCourseData: Record<string, CourseData> = {
+          // Add your actual course mappings here
+          // Example:
+          // '123': { id: '123', slug: 'shell-scripting-basics', title: 'Shell Scripting Basics' },
+          // '456': { id: '456', slug: 'azure-blob-storage', title: 'Azure Blob Storage' },
+        }
+
+        setCourseData(mockCourseData)
+      } catch (error) {
+        console.error('Failed to fetch course data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCourseData()
+  }, [courseIds])
+
+  return { courseData, loading }
 }
 
 export default function CourseNotificationsMenu({ className }: CourseNotificationsMenuProps) {
@@ -47,6 +88,15 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
 
   // Get all course progress from Redux
   const courseProgress = useAppSelector((state) => state.courseProgress.byCourseId)
+
+  // Get course IDs for fetching course data
+  const courseIds = useMemo(() => {
+    if (!courseProgress) return []
+    return Object.keys(courseProgress).filter(courseId => !courseProgress[courseId].isCourseCompleted)
+  }, [courseProgress])
+
+  // Fetch course data
+  const { courseData, loading: courseDataLoading } = useCourseData(courseIds)
 
   // Generate notifications from course progress
   const generateNotifications = useCallback(() => {
@@ -69,13 +119,19 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       const isRecentlyAccessed = progress.lastUpdatedAt && progress.lastUpdatedAt > oneWeekAgo
 
       if (progressPercentage < 100) {
+        // Get course data from the fetched course data
+        const courseInfo = courseData[courseId]
+        const courseSlug = courseInfo?.slug || `course-${courseId}`
+        const courseTitle = courseInfo?.title || `Course ${courseId}`
+        
         notifications.push({
           id: `course-${courseId}`,
           type: 'incomplete_course',
-          title: `Continue Learning`,
+          title: `Continue Learning: ${courseTitle}`,
           description: `You're ${Math.round(progressPercentage)}% through this course`,
           courseId,
-          courseSlug: `course-${courseId}`, // This would come from actual course data
+          courseSlug: courseSlug,
+          chapterId: progress.lastLectureId || undefined,
           progress: progressPercentage,
           lastAccessed,
           priority: isRecentlyAccessed ? 'high' : 'medium'
@@ -85,13 +141,17 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       // Add quiz notifications (this would come from quiz progress data)
       // For now, we'll add a placeholder
       if (progressPercentage > 50 && progressPercentage < 100) {
+        const courseInfo = courseData[courseId]
+        const courseSlug = courseInfo?.slug || `course-${courseId}`
+        const courseTitle = courseInfo?.title || `Course ${courseId}`
+        
         notifications.push({
           id: `quiz-${courseId}`,
           type: 'pending_quiz',
-          title: `Take Quiz`,
+          title: `Take Quiz: ${courseTitle}`,
           description: `Test your knowledge with the course quiz`,
           courseId,
-          courseSlug: `course-${courseId}`,
+          courseSlug: courseSlug,
           quizId: `quiz-${courseId}`,
           progress: progressPercentage,
           lastAccessed,
@@ -107,7 +167,7 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
       if (priorityDiff !== 0) return priorityDiff
       return b.lastAccessed.getTime() - a.lastAccessed.getTime()
     })
-  }, [user, courseProgress])
+  }, [user, courseProgress, courseData])
 
   // Update notifications when course progress changes
   useEffect(() => {
@@ -122,13 +182,23 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
     
     switch (notification.type) {
       case 'incomplete_course':
-        router.push(`/dashboard/course/${notification.courseSlug}`)
+        // Navigate to course with specific chapter if available
+        if (notification.chapterId) {
+          router.push(`/dashboard/course/${notification.courseSlug}?chapter=${notification.chapterId}`)
+        } else {
+          router.push(`/dashboard/course/${notification.courseSlug}`)
+        }
         break
       case 'pending_quiz':
         router.push(`/dashboard/quiz/${notification.quizId}`)
         break
       case 'course_reminder':
-        router.push(`/dashboard/course/${notification.courseSlug}`)
+        // Navigate to course with specific chapter if available
+        if (notification.chapterId) {
+          router.push(`/dashboard/course/${notification.courseSlug}?chapter=${notification.chapterId}`)
+        } else {
+          router.push(`/dashboard/course/${notification.courseSlug}`)
+        }
         break
     }
   }, [router])
@@ -160,6 +230,8 @@ export default function CourseNotificationsMenu({ className }: CourseNotificatio
         return 'text-muted-foreground'
     }
   }
+
+
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

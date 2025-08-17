@@ -701,11 +701,60 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     }
   }, [course.id])
 
-  // Autoplay logic removed per request
-  useEffect(() => {
-    setShowAutoplayOverlay(false)
-    setAutoplayCountdown(0)
-  }, [])
+  // Enhanced next video navigation handler
+  const handleNextVideo = useCallback(() => {
+    if (!currentChapter || !videoPlaylist.length) return
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex === -1 || currentIndex >= videoPlaylist.length - 1) return
+    
+    const nextVideo = videoPlaylist[currentIndex + 1]
+    if (nextVideo && nextVideo.chapter) {
+      console.log('Navigating to next video:', nextVideo.chapter.title)
+      handleChapterSelect(nextVideo.chapter)
+    }
+  }, [currentChapter, videoPlaylist, currentVideoId, handleChapterSelect])
+
+  // Enhanced previous video navigation handler
+  const handlePrevVideo = useCallback(() => {
+    if (!currentChapter || !videoPlaylist.length) return
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex <= 0) return
+    
+    const prevVideo = videoPlaylist[currentIndex - 1]
+    if (prevVideo && prevVideo.chapter) {
+      console.log('Navigating to previous video:', prevVideo.chapter.title)
+      handleChapterSelect(prevVideo.chapter)
+    }
+  }, [currentChapter, videoPlaylist, currentVideoId, handleChapterSelect])
+
+  // Get next and previous video info
+  const nextVideoInfo = useMemo(() => {
+    if (!currentVideoId || !videoPlaylist.length) return null
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex === -1 || currentIndex >= videoPlaylist.length - 1) return null
+    
+    const nextVideo = videoPlaylist[currentIndex + 1]
+    return nextVideo ? {
+      id: nextVideo.videoId,
+      title: nextVideo.chapter?.title || 'Next Chapter'
+    } : null
+  }, [currentVideoId, videoPlaylist])
+
+  const prevVideoInfo = useMemo(() => {
+    if (!currentVideoId || !videoPlaylist.length) return null
+    
+    const currentIndex = videoPlaylist.findIndex(item => item.videoId === currentVideoId)
+    if (currentIndex <= 0) return null
+    
+    const prevVideo = videoPlaylist[currentIndex - 1]
+    return prevVideo ? {
+      id: prevVideo.videoId,
+      title: prevVideo.chapter?.title || 'Previous Chapter'
+    } : null
+  }, [currentVideoId, videoPlaylist])
 
   // Fetch related courses
   useEffect(() => {
@@ -802,13 +851,13 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     showControls: true,
     onCertificateClick: handleCertificateClick,
     onChapterComplete: handleChapterComplete,
-    onNextVideo: undefined,
-    nextVideoId: undefined,
-    nextVideoTitle: '',
-    onPrevVideo: undefined,
-    prevVideoTitle: '',
-    hasNextVideo: false,
-    hasPrevVideo: false,
+    onNextVideo: handleNextVideo,
+    nextVideoId: nextVideoInfo?.id || undefined,
+    nextVideoTitle: nextVideoInfo?.title || '',
+    onPrevVideo: handlePrevVideo,
+    prevVideoTitle: prevVideoInfo?.title || '',
+    hasNextVideo: !!nextVideoInfo,
+    hasPrevVideo: !!prevVideoInfo,
     isFullscreen,
     onFullscreenToggle,
     onPictureInPictureToggle: handlePIPToggle,
@@ -846,6 +895,10 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
      user,
      handleCertificateClick,
      handleChapterComplete,
+     handleNextVideo,
+     handlePrevVideo,
+     nextVideoInfo,
+     prevVideoInfo,
      isFullscreen,
      onFullscreenToggle,
      handlePIPToggle,

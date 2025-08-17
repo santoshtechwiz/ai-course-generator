@@ -173,7 +173,7 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
     <AnimatePresence>
       {showOverlay && (
         <>
-          {/* Slide-up panel at bottom ~25% height (Enhanced YouTube style) - Only for non-final chapters */}
+          {/* Slide-up panel at bottom ~35% height (Enhanced YouTube style) - Only for non-final chapters */}
           {!isFinalChapter && (
             <motion.div
               className="absolute left-0 right-0 bottom-0 z-[65]"
@@ -181,7 +181,7 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
               animate={{ y: '0%', opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
-              style={{ height: '25%' }}
+              style={{ height: '35%' }}
             >
               {/* Enhanced background with gradient and blur */}
               <div className="h-full bg-gradient-to-t from-black/95 via-black/85 to-black/70 backdrop-blur-xl text-white p-4 sm:p-6 relative overflow-hidden">
