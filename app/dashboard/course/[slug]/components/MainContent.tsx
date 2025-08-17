@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Play, Lock, User as UserIcon, Award, Badge, ChevronLeft, ChevronRight, Clock, Maximize2, Minimize2, Download, Share2, AlertTriangle } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { store } from "@/store"
-import { setCurrentVideoApi, markChapterAsCompleted } from "@/store/slices/course-slice"
+import { setCurrentVideoApi, markChapterAsCompleted, setAutoplayEnabled } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import CourseDetailsTabs, { AccessLevels } from "./CourseDetailsTabs"
 import { formatDuration } from "../utils/formatUtils"
@@ -129,6 +129,7 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
+  const autoplayEnabled = useAppSelector((state) => state.course.autoplayEnabled)
   const courseProgress = useAppSelector((state) => state.course.courseProgress[course.id])
   const twoCol = useMemo(() => !isFullscreen, [isFullscreen])
 
@@ -829,7 +830,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   const videoPlayerProps = useMemo(() => ({
     videoId: currentVideoId || '',
     courseId: course.id,
-    chapterId: currentChapter?.id ? String(currentChapter.id) : undefined,
     courseName: course.title,
     chapterTitle: currentChapter?.title,
     onEnded: handleVideoEnd,
@@ -839,7 +839,13 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
     onBookmark: handleSeekToBookmark,
     bookmarks: bookmarkItems,
     isAuthenticated: !!user,
-    autoPlay: false,
+    autoPlay: autoplayEnabled,
+    onToggleAutoPlay: () => {
+      try {
+        const next = !autoplayEnabled
+        dispatch(setAutoplayEnabled(next))
+      } catch {}
+    },
     showControls: true,
     onCertificateClick: handleCertificateClick,
     onChapterComplete: handleChapterComplete,
@@ -876,7 +882,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
    }), [
      currentVideoId,
      course.id,
-     currentChapter?.id,
      course.title,
      handleVideoEnd,
      handleVideoProgress,
@@ -894,12 +899,12 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
      isFullscreen,
      onFullscreenToggle,
      handlePIPToggle,
+     autoplayEnabled,
      courseProgress?.currentChapterId,
      courseProgress?.resumePoint,
      completedChapters,
      videoPlaylist.length,
      isKeyChapter,
-     currentChapter?.id,
      relatedCourses,
      personalizedRecommendations,
      quizSuggestions
@@ -1682,7 +1687,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
           <VideoDebug
             videoId={typeof currentVideoId === 'string' ? currentVideoId : ''}
             courseId={course.id}
-            chapterId={currentChapter?.id ? String(currentChapter.id) : ''}
           />
          
         </>
