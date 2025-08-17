@@ -46,10 +46,11 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
 }) => {
   const [countdown, setCountdown] = useState(autoAdvanceDelay)
   const [showOverlay, setShowOverlay] = useState(false)
+  const [userCancelled, setUserCancelled] = useState(false)
 
   // Handle countdown for auto-advance
   useEffect(() => {
-    if (!visible || !autoAdvance || !hasNextChapter) {
+    if (!visible || !autoAdvance || !hasNextChapter || userCancelled) {
       setCountdown(autoAdvanceDelay)
       return
     }
@@ -66,12 +67,13 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [visible, countdown, autoAdvance, hasNextChapter, autoAdvanceDelay, onNextChapter])
+  }, [visible, countdown, autoAdvance, hasNextChapter, autoAdvanceDelay, onNextChapter, userCancelled])
 
   // Show/hide the overlay based on visibility prop
   useEffect(() => {
     if (visible) {
       setShowOverlay(true)
+      setUserCancelled(false)
     } else {
       setShowOverlay(false)
       setCountdown(autoAdvanceDelay)
@@ -82,6 +84,11 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
   const handleClose = () => {
     setShowOverlay(false)
     onClose?.()
+  }
+
+  const handleStay = () => {
+    setUserCancelled(true)
+    handleClose()
   }
 
   // ESC to close for better UX
@@ -153,15 +160,20 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
               <div className="flex items-center justify-between">
                 <div className="text-sm sm:text-base font-medium">
                   {hasNextChapter ? (
-                    <span>Moving to next chapter {autoAdvance && `in ${countdown}s`}…</span>
+                    <span>Next chapter ready — Would you like to continue? {autoAdvance && !userCancelled && `(${countdown}s)`}</span>
                   ) : (
                     <span>Great job! You’ve completed this chapter.</span>
                   )}
                 </div>
                 {hasNextChapter && (
-                  <Button size="sm" variant="secondary" onClick={onNextChapter} aria-label="Play next chapter">
-                    Play Now
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="secondary" onClick={onNextChapter} aria-label="Continue to next chapter">
+                      Continue
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={handleStay} aria-label="Stay on current chapter">
+                      Stay
+                    </Button>
+                  </div>
                 )}
               </div>
               {/* Related Courses row (if provided) */}
@@ -185,134 +197,124 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
             </div>
           </motion.div>
 
-          {/* Full overlay for modal */}
-          <motion.div
-            className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            role="dialog"
-            aria-label="Chapter completion"
-            aria-live="polite"
-            aria-modal="true"
-          >
+          {/* Full overlay for modal (final chapter / no next) */}
+          {!hasNextChapter && (
             <motion.div
-              className="relative max-w-xs sm:max-w-sm md:max-w-md w-full mx-auto p-4 sm:p-6 bg-card border border-border/50 rounded-xl shadow-2xl"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              onClick={(e) => e.stopPropagation()}
+              className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              role="dialog"
+              aria-label="Chapter completion"
+              aria-live="polite"
+              aria-modal="true"
             >
-              {/* Close icon (always visible) */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-8 w-8"
-                aria-label="Close overlay"
-                onClick={handleClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-
-              {/* Title and recap */}
-              <div className="mb-4 sm:mb-6 text-center">
-                <motion.h2
-                  className="text-lg sm:text-xl md:text-2xl font-bold mb-2"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.3 }}
-                >
-                  {hasNextChapter ? "Chapter Completed" : isFinalChapter ? "Course Completed!" : "Chapter Completed"}
-                </motion.h2>
-                {progressStats && (
-                  <div className="text-xs sm:text-sm text-muted-foreground">
-                    Progress: {progressStats.progressPercentage}% • {progressStats.completedCount}/{progressStats.totalChapters} completed
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
               <motion.div
-                className="space-y-3 sm:space-y-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.3 }}
+                className="relative max-w-xs sm:max-w-sm md:max-w-md w-full mx-auto p-4 sm:p-6 bg-card border border-border/50 rounded-xl shadow-2xl"
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                onClick={(e) => e.stopPropagation()}
               >
-                {hasNextChapter ? (
-                  <Button
-                    onClick={onNextChapter}
-                    className="w-full flex items-center justify-between text-sm sm:text-base"
-                    size="lg"
-                    aria-label="Continue to next chapter"
+                {/* Close icon (always visible) */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8"
+                  aria-label="Close overlay"
+                  onClick={handleClose}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+
+                {/* Title and recap */}
+                <div className="mb-4 sm:mb-6 text-center">
+                  <motion.h2
+                    className="text-lg sm:text-xl md:text-2xl font-bold mb-2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
                   >
-                    <span>Continue to Next Chapter</span>
-                    {autoAdvance && (
-                      <span className="text-xs bg-primary-foreground/20 px-2 py-1 rounded-full ml-2">{countdown}s</span>
-                    )}
-                  </Button>
-                ) : isFinalChapter && onCertificateDownload ? (
-                  <>
-                    <div className="text-center py-2 mb-2">
-                      <p className="text-muted-foreground mb-4 text-sm sm:text-base">
-                        Congratulations on completing the full course!
-                      </p>
-                      <Button
-                        onClick={onCertificateDownload}
-                        size="lg"
-                        disabled={certificateState === "downloading" || certificateState === "success"}
-                        className={cn(
-                          "w-full flex items-center justify-center gap-2 text-sm sm:text-base",
-                          certificateState === "success" && "bg-green-600 hover:bg-green-700",
-                          certificateState === "error" && "bg-red-600 hover:bg-red-700",
-                        )}
-                        aria-label="Download course completion certificate"
-                      >
-                        {getCertificateButtonContent()}
-                      </Button>
+                    {isFinalChapter ? "Course Completed!" : "Chapter Completed"}
+                  </motion.h2>
+                  {progressStats && (
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Progress: {progressStats.progressPercentage}% • {progressStats.completedCount}/{progressStats.totalChapters} completed
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center py-2 mb-2">
-                    <p className="text-muted-foreground text-sm sm:text-base">You've completed the final chapter!</p>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <motion.div
+                  className="space-y-3 sm:space-y-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35, duration: 0.3 }}
+                >
+                  {isFinalChapter && onCertificateDownload ? (
+                    <>
+                      <div className="text-center py-2 mb-2">
+                        <p className="text-muted-foreground mb-4 text-sm sm:text-base">
+                          Congratulations on completing the full course!
+                        </p>
+                        <Button
+                          onClick={onCertificateDownload}
+                          size="lg"
+                          disabled={certificateState === "downloading" || certificateState === "success"}
+                          className={cn(
+                            "w-full flex items-center justify-center gap-2 text-sm sm:text-base",
+                            certificateState === "success" && "bg-green-600 hover:bg-green-700",
+                            certificateState === "error" && "bg-red-600 hover:bg-red-700",
+                          )}
+                          aria-label="Download course completion certificate"
+                        >
+                          {getCertificateButtonContent()}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-2 mb-2">
+                      <p className="text-muted-foreground text-sm sm:text-base">You've completed the final chapter!</p>
+                    </div>
+                  )}
+
+                  {/* Engagement suggestions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a href={`/dashboard/course/${encodeURIComponent(courseTitle || '')}#recommendations`} className="h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                      Personalized recommendations
+                    </a>
+                    <a href={`/dashboard/quizzes?course=${encodeURIComponent(courseTitle || '')}`} className="h-10 inline-flex items-center justify-center rounded-md text-sm font-medium btn-gradient hover:opacity-90">
+                      Try a quick quiz
+                    </a>
+                    <a href={`/dashboard/course/${encodeURIComponent(courseTitle || '')}#discussion`} className="h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                      Discuss with peers
+                    </a>
                   </div>
-                )}
 
-                {/* Engagement suggestions */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <a href={`/dashboard/course/${encodeURIComponent(courseTitle || '')}#recommendations`} className="h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                    Personalized recommendations
-                  </a>
-                  <a href={`/dashboard/quizzes?course=${encodeURIComponent(courseTitle || '')}`} className="h-10 inline-flex items-center justify-center rounded-md text-sm font-medium btn-gradient hover:opacity-90">
-                    Try a quick quiz
-                  </a>
-                  <a href={`/dashboard/course/${encodeURIComponent(courseTitle || '')}#discussion`} className="h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                    Discuss with peers
-                  </a>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3 mt-4">
-                  <Button
-                    onClick={onReplay}
-                    variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2 text-xs sm:text-sm"
-                    aria-label="Replay current chapter"
-                  >
-                    <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>Replay</span>
-                  </Button>
-                  <Button
-                    onClick={handleClose}
-                    className="flex-1 text-xs sm:text-sm"
-                    aria-label="Close overlay"
-                  >
-                    Close
-                  </Button>
-                </div>
+                  <div className="flex items-center gap-2 sm:gap-3 mt-4">
+                    <Button
+                      onClick={onReplay}
+                      variant="outline"
+                      className="flex-1 flex items-center justify-center gap-2 text-xs sm:text-sm"
+                      aria-label="Replay current chapter"
+                    >
+                      <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span>Replay</span>
+                    </Button>
+                    <Button
+                      onClick={handleClose}
+                      className="flex-1 text-xs sm:text-sm"
+                      aria-label="Close overlay"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </motion.div>
               </motion.div>
             </motion.div>
-          </motion.div>
+          )}
         </>
       )}
     </AnimatePresence>
