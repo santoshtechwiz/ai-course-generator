@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { remark } from "remark"
 import html from "remark-html"
 // Optional: lightweight highlighting if code fences appear
-// import rehypeHighlight from "rehype-highlight"
+import rehypeHighlight from "rehype-highlight"
 
 const markdownStyles = {
   h1: "text-3xl font-bold mt-6 mb-4 pb-2 border-b",
@@ -83,7 +83,7 @@ export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => 
     <ReactMarkdown
       className="prose prose-slate dark:prose-invert max-w-none"
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw /*, rehypeHighlight*/]}
+      rehypePlugins={[rehypeRaw, rehypeHighlight]}
       components={{
         p: ({ children }) => <p className="mb-4 leading-relaxed text-base">{children}</p>,
         h3: ({ children }) => (
