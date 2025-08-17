@@ -712,6 +712,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [state.playing, state.duration, state.lastPlayedTime, onNextVideo, showChapterTransition])
 
   const handleVideoEnd = useCallback(() => {
+    console.log('Video ended - Debug info:', {
+      onNextVideo: !!onNextVideo,
+      autoPlayNext: state.autoPlayNext,
+      progressPercentage: progressStats?.progressPercentage,
+      isCourseCompleted: progressStats?.progressPercentage === 100
+    })
+    
     onEnded?.()
     
     // Check if this is the final chapter (course 100% completed)
@@ -719,12 +726,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     if (isCourseCompleted) {
       // Show course completion overlay for final chapter
+      console.log('Showing course completion overlay')
       const animationFrame = requestAnimationFrame(() => {
         setShowChapterEnd(true)
       })
       return () => cancelAnimationFrame(animationFrame)
     } else if (onNextVideo && state.autoPlayNext) {
       // For regular chapters with next video and auto-play enabled, show corner notification
+      console.log('Auto-play enabled - showing next chapter notification')
       setShowNextChapterNotification(true)
       setNextChapterCountdown(5)
       
@@ -734,6 +743,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           if (prev <= 1) {
             clearInterval(countdownInterval)
             // Auto-advance to next video
+            console.log('Auto-advancing to next video')
             onNextVideo()
             setShowNextChapterNotification(false)
             return 5
@@ -743,10 +753,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }, 1000)
     } else if (onNextVideo) {
       // For regular chapters with next video but auto-play disabled, show corner notification without auto-advance
+      console.log('Auto-play disabled - showing notification without auto-advance')
       setShowNextChapterNotification(true)
       setNextChapterCountdown(5)
     } else {
       // For chapters without next video but not course completion, show simple completion message
+      console.log('No next video - showing chapter completion')
       const animationFrame = requestAnimationFrame(() => {
         setShowChapterEnd(true)
       })
@@ -1104,6 +1116,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         quizSuggestions={quizSuggestions}
         personalizedRecommendations={personalizedRecommendations}
         isKeyChapter={isKeyChapter}
+        onToggleAutoAdvance={() => {
+          setState(prev => ({ ...prev, autoPlayNext: !prev.autoPlayNext }))
+          // Save preference
+          try {
+            localStorage.setItem('video-player-autoplay-next', (!state.autoPlayNext).toString())
+          } catch (error) {
+            console.warn('Could not save auto-play preference:', error)
+          }
+        }}
       />
 
       {/* Auto-play notification for regular chapters */}
