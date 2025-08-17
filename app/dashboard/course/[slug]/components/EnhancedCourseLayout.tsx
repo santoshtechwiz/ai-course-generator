@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 import { ModuleLayout } from "@/components/layout/ModuleLayout"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Monitor, MonitorX, Maximize2, Minimize2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { JsonLD } from "@/lib/seo"
 
@@ -28,12 +27,8 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
 }) => {
 
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [showControls, setShowControls] = useState(true)
 
-  // Handle keyboard shortcuts for theater mode
-  useEffect(() => {
-    // Moved keyboard shortcuts to player scope to avoid duplicates
-  }, [])
+
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -114,65 +109,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Floating Controls for Theater/Fullscreen Mode */}
-      <AnimatePresence>
-        {(theatreMode || isFullscreen) && showControls && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between"
-            onMouseEnter={() => setShowControls(true)}
-          >
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={toggleTheaterMode}
-                className="bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white border-white/20"
-                aria-label="Exit theater mode"
-                title="Exit Theater Mode (Ctrl+T)"
-              >
-                <MonitorX className="h-4 w-4 mr-2" />
-                Exit Theater
-              </Button>
-              
-              {isFullscreen && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={toggleFullscreen}
-                  className="bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white border-white/20"
-                  aria-label="Exit fullscreen mode"
-                  title="Exit Fullscreen (Ctrl+F)"
-                >
-                  <Minimize2 className="h-4 w-4 mr-2" />
-                  Exit Fullscreen
-                </Button>
-              )}
-            </div>
 
-            <Badge 
-              variant="secondary" 
-              className="bg-black/50 backdrop-blur-sm text-white border-white/20"
-            >
-              {course.title}
-            </Badge>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Auto-hide controls in theater mode */}
-      {(theatreMode || isFullscreen) && (
-        <div
-          className="fixed inset-0 z-40"
-          onMouseMove={() => {
-            setShowControls(true)
-            setTimeout(() => setShowControls(false), 3000)
-          }}
-        />
-      )}
 
       {/* Main Content Area */}
       <div className={cn(
