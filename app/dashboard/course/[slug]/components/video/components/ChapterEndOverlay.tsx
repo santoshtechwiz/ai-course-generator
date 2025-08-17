@@ -262,6 +262,46 @@ const ChapterEndOverlay: React.FC<ChapterEndOverlayProps> = ({
                     </div>
                   )}
 
+                  {/* Circular countdown timer */}
+                  {hasNextChapter && autoAdvance && !userCancelled && (
+                    <div className="absolute top-4 right-4 flex items-center gap-3">
+                      <div className="relative w-10 h-10">
+                        <svg className="w-10 h-10 rotate-[-90deg]" viewBox="0 0 36 36" aria-hidden="true">
+                          <path
+                            d="M18 2.0845
+                               a 15.9155 15.9155 0 0 1 0 31.831
+                               a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.2)"
+                            strokeWidth="3"
+                          />
+                          <motion.path
+                            d="M18 2.0845
+                               a 15.9155 15.9155 0 0 1 0 31.831
+                               a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="url(#grad)"
+                            strokeWidth="3"
+                            strokeDasharray="100, 100"
+                            initial={{ strokeDashoffset: 100 }}
+                            animate={{ strokeDashoffset: ((countdown / autoAdvanceDelay) * 100) }}
+                            transition={{ duration: 0.2, ease: "linear" }}
+                          />
+                          <defs>
+                            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#3b82f6" />
+                              <stop offset="50%" stopColor="#8b5cf6" />
+                              <stop offset="100%" stopColor="#ec4899" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-semibold">
+                          {countdown}s
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Related Courses row with enhanced styling */}
                   {Array.isArray(relatedCourses) && relatedCourses.length > 0 && (
                     <div className="flex-1 overflow-hidden">
