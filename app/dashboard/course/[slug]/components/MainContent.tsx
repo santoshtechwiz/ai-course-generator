@@ -830,7 +830,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
   const videoPlayerProps = useMemo(() => ({
     videoId: currentVideoId || '',
     courseId: course.id,
-    chapterId: currentChapter?.id ? String(currentChapter.id) : undefined,
     courseName: course.title,
     chapterTitle: currentChapter?.title,
     onEnded: handleVideoEnd,
@@ -883,7 +882,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
    }), [
      currentVideoId,
      course.id,
-     currentChapter?.id,
      course.title,
      handleVideoEnd,
      handleVideoProgress,
@@ -907,7 +905,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
      completedChapters,
      videoPlaylist.length,
      isKeyChapter,
-     currentChapter?.id,
      relatedCourses,
      personalizedRecommendations,
      quizSuggestions
@@ -1690,7 +1687,6 @@ const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
           <VideoDebug
             videoId={typeof currentVideoId === 'string' ? currentVideoId : ''}
             courseId={course.id}
-            chapterId={currentChapter?.id ? String(currentChapter.id) : ''}
           />
          
         </>

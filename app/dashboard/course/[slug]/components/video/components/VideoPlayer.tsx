@@ -118,7 +118,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   isAuthenticated = false,
   showControls = true,
   courseId,
-  chapterId,
   courseName,
   chapterTitle,
   initialSeekSeconds,

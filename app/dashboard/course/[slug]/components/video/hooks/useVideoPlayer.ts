@@ -25,7 +25,6 @@ interface VideoPlayerHookOptions {
   onCertificateClick?: () => void
   nextVideoId?: string | null
   courseId?: string | number
-  chapterId?: string | number
 }
 
 export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerReturn {
@@ -85,7 +84,6 @@ export function useVideoPlayer(options: VideoPlayerHookOptions): UseVideoPlayerR
   const progressTracking = useVideoProgress({
     videoId: options.courseId && options.videoId ? options.videoId : undefined,
     courseId: options.courseId || '',
-    chapterId: options.chapterId || '',
     duration: state.duration,
   });
 
