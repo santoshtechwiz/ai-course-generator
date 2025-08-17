@@ -788,20 +788,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Auto-advance with a subtle toast/snackbar instead of overlay
       try {
         const nextTitle = nextVideoTitle || 'Next Chapter'
-        let seconds = 3
-        toast({
-          title: 'Moving to Next Chapter',
-          description: `${nextTitle} in ${seconds}s...`,
-        })
-        const interval = setInterval(() => {
-          seconds -= 1
-          if (seconds <= 0) {
-            clearInterval(interval)
-            onNextVideo()
-          } else {
-            toast({ title: 'Moving to Next Chapter', description: `${nextTitle} in ${seconds}s...` })
-          }
-        }, 1000)
+        toast({ title: 'Moving to Next Chapter', description: `${nextTitle} in 3s...` })
+        // Clear any previous timer
+        if ((autoAdvanceTimeoutRef as any).current) {
+          clearTimeout((autoAdvanceTimeoutRef as any).current)
+        }
+        ;(autoAdvanceTimeoutRef as any).current = setTimeout(() => {
+          onNextVideo()
+        }, 3000)
       } catch {
         onNextVideo()
       }
@@ -817,6 +811,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return () => cancelAnimationFrame(animationFrame)
     }
   }, [onEnded, onNextVideo, state.autoPlayNext, progressStats?.progressPercentage])
+
+  // Cleanup auto-advance timer on unmount or video change
+  const autoAdvanceTimeoutRef = useRef<number | null>(null)
+  useEffect(() => {
+    return () => {
+      if ((autoAdvanceTimeoutRef as any).current) {
+        clearTimeout((autoAdvanceTimeoutRef as any).current)
+      }
+    }
+  }, [videoId])
 
   const handleNextChapter = useCallback(() => {
     setShowChapterEnd(false)
