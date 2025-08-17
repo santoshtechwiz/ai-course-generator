@@ -144,6 +144,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isHovering, setIsHovering] = useState(false)
   const [showControlsState, setShowControlsState] = useState(showControls)
   const [certificateState, setCertificateState] = useState<CertificateState>("idle")
+  const [autoPlayVideo, setAutoPlayVideo] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   // Mini player position and dragging
   const [miniPos, setMiniPos] = useState(() => {
@@ -259,6 +260,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Track mounting state to prevent "element not found" errors
   useEffect(() => {
     setIsMounted(true)
+    
+    // Load auto-play video preference
+    try {
+      const saved = localStorage.getItem('video-autoplay')
+      if (saved) {
+        setAutoPlayVideo(JSON.parse(saved))
+      }
+    } catch (error) {
+      console.warn('Could not load auto-play preference:', error)
+    }
+    
     return () => setIsMounted(false)
   }, [])
 
@@ -712,6 +724,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setAutoPlayCountdown(5)
   }, [])
 
+  const handleToggleAutoPlayVideo = useCallback(() => {
+    setAutoPlayVideo(prev => !prev)
+    // Save preference to localStorage
+    try {
+      localStorage.setItem('video-autoplay', JSON.stringify(!autoPlayVideo))
+    } catch (error) {
+      console.warn('Could not save auto-play preference:', error)
+    }
+  }, [autoPlayVideo])
+
   const handleReplay = useCallback(() => {
     setShowChapterEnd(false)
     if (playerRef.current) {
@@ -1067,6 +1089,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onToggleBookmarkPanel={handleToggleBookmarkPanel}
             autoPlayNext={state.autoPlayNext}
             onToggleAutoPlayNext={handlers.toggleAutoPlayNext}
+            autoPlayVideo={autoPlayVideo}
+            onToggleAutoPlayVideo={handleToggleAutoPlayVideo}
                          onPictureInPicture={handlePictureInPicture}
              isPiPSupported={state.isPiPSupported}
              isPiPActive={state.isPictureInPicture}

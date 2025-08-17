@@ -46,6 +46,7 @@ interface ModernCoursePageProps {
   course: FullCourseType
   initialChapterId?: string
   isFullscreen?: boolean
+  onFullscreenToggle?: () => void
 }
 
 function validateChapter(chapter: any): boolean {
@@ -63,11 +64,12 @@ const MemoizedVideoPlayer = React.memo(VideoPlayer)
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
 const MemoizedAnimatedCourseAILogo = React.memo(AnimatedCourseAILogo)
 
-const MainContent: React.FC<ModernCoursePageProps> = ({ 
-  course, 
-  initialChapterId,
-  isFullscreen = false
-}) => {
+  const MainContent: React.FC<ModernCoursePageProps> = ({ 
+    course, 
+    initialChapterId,
+    isFullscreen = false,
+    onFullscreenToggle
+  }) => {
   // Always define all hooks at the top level - no early returns or conditions before hooks
   console.log(course);
   const router = useRouter()
@@ -90,7 +92,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   const [hasPlayedFreeVideo, setHasPlayedFreeVideo] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
-  const [showAutoplayOverlay, setShowAutoplayOverlay] = useState(false)
+
   const [showLogoOverlay, setShowLogoOverlay] = useState(false)
   const [playerRef, setPlayerRef] = useState<React.RefObject<any> | null>(null)
   const [wideMode, setWideMode] = useState(false)
@@ -105,14 +107,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
   
   // Auto-play mode state
   const [autoplayMode, setAutoplayMode] = useState(false)
-  const [autoplayCountdown, setAutoplayCountdown] = useState(5)
-  const [nextChapterInfo, setNextChapterInfo] = useState<{
-    title: string
-    description?: string
-    thumbnail?: string
-    duration?: number
-  } | null>(null)
-  const [showChapterTransition, setShowChapterTransition] = useState(false)
+
   
   // Redux state
   const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
@@ -573,16 +568,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
             handlePIPToggle(false)
           }
           // Also close overlays
-          if (showChapterTransition) {
-            setShowChapterTransition(false)
-            setNextChapterInfo(null)
-            setAutoplayCountdown(5)
-          }
-          if (showAutoplayOverlay) {
-            setShowAutoplayOverlay(false)
-            setNextChapterInfo(null)
-            setAutoplayCountdown(5)
-          }
+          
           break
         case 'a':
           if (event.ctrlKey || event.metaKey) {
@@ -601,7 +587,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [currentVideoId, isPiPActive, handlePIPToggle, showChapterTransition, showAutoplayOverlay, handleAutoplayToggle])
+  }, [currentVideoId, isPiPActive, handlePIPToggle, handleAutoplayToggle])
 
   // Ensure CourseID is set when changing videos
   const handleChapterSelect = useCallback(
@@ -804,6 +790,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
     prevVideoTitle: '',
     hasNextVideo: false,
     isFullscreen,
+    onFullscreenToggle,
     onPictureInPictureToggle: handlePIPToggle,
          className: "h-full w-full",
      initialSeekSeconds: (function(){
@@ -840,6 +827,7 @@ const MainContent: React.FC<ModernCoursePageProps> = ({
      handleCertificateClick,
      handleChapterComplete,
      isFullscreen,
+     onFullscreenToggle,
      handlePIPToggle,
      courseProgress?.lastLectureId,
      courseProgress?.lastTimestamp,

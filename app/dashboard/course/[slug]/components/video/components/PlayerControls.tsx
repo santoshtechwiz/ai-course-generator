@@ -51,6 +51,8 @@ interface PlayerControlsProps {
   onToggleBookmarkPanel?: () => void
   autoPlayNext?: boolean
   onToggleAutoPlayNext?: () => void
+  autoPlayVideo?: boolean
+  onToggleAutoPlayVideo?: () => void
   hasNextVideo?: boolean
   nextVideoTitle?: string
   canAccessNextVideo?: boolean
@@ -91,6 +93,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onToggleBookmarkPanel,
   autoPlayNext = true,
   onToggleAutoPlayNext,
+  autoPlayVideo = false,
+  onToggleAutoPlayVideo,
   hasNextVideo = false,
   nextVideoTitle = "",
   canAccessNextVideo = true,
@@ -381,10 +385,23 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
 
         {/* Right controls */}
         <div className="flex items-center space-x-1 sm:space-x-2">
+          {/* Auto-play video toggle */}
+          {onToggleAutoPlayVideo && (
+            <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
+              <span className="text-xs text-white mr-2">Auto-play</span>
+              <Switch
+                checked={autoPlayVideo}
+                onCheckedChange={onToggleAutoPlayVideo}
+                size="sm"
+                aria-label="Toggle auto-play video on page load"
+              />
+            </div>
+          )}
+
           {/* Enhanced Autoplay next toggle */}
           {hasNextVideo && onToggleAutoPlayNext && (
             <div className="hidden lg:flex items-center mr-3 px-2 py-1 rounded-md bg-white/10">
-              <span className="text-xs text-white mr-2">Auto-play</span>
+              <span className="text-xs text-white mr-2">Auto-next</span>
               <Switch
                 checked={autoPlayNext}
                 onCheckedChange={onToggleAutoPlayNext}
@@ -395,7 +412,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           )}
 
           {/* Separator for content vs view controls */}
-          {hasNextVideo && onToggleAutoPlayNext && (isAuthenticated || onPictureInPicture || onToggleTheaterMode) && (
+          {(onToggleAutoPlayVideo || (hasNextVideo && onToggleAutoPlayNext)) && (isAuthenticated || onPictureInPicture) && (
             <div className="hidden lg:block w-px h-6 bg-white/20 mx-1" />
           )}
 

@@ -26,7 +26,7 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
   initialChapterId,
   breadcrumbs = []
 }) => {
-  const [theatreMode, setTheatreMode] = useState(false)
+
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
 
@@ -59,19 +59,16 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
     }
   }, [])
 
-  const toggleTheaterMode = useCallback(() => {
-    setTheatreMode(prev => !prev)
-  }, [])
+
 
   return (
     <div className={cn(
       "min-h-screen flex flex-col transition-all duration-300",
-      theatreMode && "bg-black",
       isFullscreen && "bg-black"
     )}>
-      {/* Enhanced Theater Mode Controls */}
+      {/* Header */}
       <AnimatePresence>
-        {!theatreMode && !isFullscreen && (
+        {!isFullscreen && (
           <motion.header
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -81,35 +78,6 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
           >
             <div className="flex items-center justify-between max-w-screen-2xl mx-auto">
               <div className="flex items-center gap-3">
-                <motion.div
-                  className="flex items-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleTheaterMode}
-                    className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                    aria-label="Toggle theater mode for focused learning"
-                    title="Theater Mode (Ctrl+T)"
-                  >
-                    <Monitor className="h-4 w-4" />
-                    <span className="hidden sm:inline">Theater Mode</span>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleFullscreen}
-                    className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                    aria-label="Toggle fullscreen mode"
-                    title="Fullscreen (Ctrl+F)"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Fullscreen</span>
-                  </Button>
-                </motion.div>
 
                 {/* Course Info */}
                 <div className="hidden md:flex items-center gap-2 ml-4">
@@ -214,16 +182,15 @@ const EnhancedCourseLayout: React.FC<EnhancedCourseLayoutProps> = ({
       )}>
         <div className={cn(
           "w-full mx-auto flex flex-col transition-all duration-300",
-          theatreMode || isFullscreen 
+          isFullscreen 
             ? "px-0 py-0 max-w-none" 
             : "max-w-screen-2xl px-4 md:px-6 py-6 gap-6"
         )}>
           <MainContent 
             course={course} 
             initialChapterId={initialChapterId}
-            theatreMode={theatreMode}
             isFullscreen={isFullscreen}
-            onTheaterModeToggle={toggleTheaterMode}
+            onFullscreenToggle={toggleFullscreen}
           />
         </div>
       </div>
