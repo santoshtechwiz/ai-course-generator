@@ -289,6 +289,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => setIsMounted(false)
   }, [autoPlay])
 
+  // First-time volume init at 50% if no saved preference
+  useEffect(() => {
+    try {
+      const hasSavedVolume = localStorage.getItem('VIDEO_PLAYER_VOLUME')
+      if (!hasSavedVolume) {
+        handlers.onVolumeChange(0.5)
+      }
+    } catch {}
+  }, [handlers])
+
   // Update refs when props change to ensure latest values
   useEffect(() => {
     chapterTitleRef.current = chapterTitle
@@ -775,30 +785,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       })
       return () => cancelAnimationFrame(animationFrame)
     } else if (onNextVideo && state.autoPlayNext) {
-      // For regular chapters with next video and auto-play enabled, show corner notification
-      console.log('Auto-play enabled - showing next chapter notification')
-      setShowNextChapterNotification(true)
-      setNextChapterCountdown(5)
-      
-      // Start countdown timer
-      const countdownInterval = setInterval(() => {
-        setNextChapterCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval)
-            // Auto-advance to next video
-            console.log('Auto-advancing to next video')
-            onNextVideo()
-            setShowNextChapterNotification(false)
-            return 5
-          }
-          return prev - 1
+      // Auto-advance with a subtle toast/snackbar instead of overlay
+      try {
+        const nextTitle = nextVideoTitle || 'Next Chapter'
+        let seconds = 3
+        toast({
+          title: 'Moving to Next Chapter',
+          description: `${nextTitle} in ${seconds}s...`,
         })
-      }, 1000)
+        const interval = setInterval(() => {
+          seconds -= 1
+          if (seconds <= 0) {
+            clearInterval(interval)
+            onNextVideo()
+          } else {
+            toast({ title: 'Moving to Next Chapter', description: `${nextTitle} in ${seconds}s...` })
+          }
+        }, 1000)
+      } catch {
+        onNextVideo()
+      }
     } else if (onNextVideo) {
-      // For regular chapters with next video but auto-play disabled, show corner notification without auto-advance
-      console.log('Auto-play disabled - showing notification without auto-advance')
-      setShowNextChapterNotification(true)
-      setNextChapterCountdown(5)
+      // Auto-play disabled: do nothing intrusive
+      console.log('Auto-play disabled - staying on current chapter')
     } else {
       // For chapters without next video but not course completion, show simple completion message
       console.log('No next video - showing chapter completion')
