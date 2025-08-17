@@ -499,6 +499,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       } catch (e) {
         // ignore resume failures
       }
+
+      // Set initial volume to 50%
+      try {
+        handlers.onVolumeChange(0.5)
+      } catch {}
     }
     handlers.onReady()
 
